@@ -1,0 +1,35 @@
+OpenVAS Manager
+===============
+
+The OpenVAS Manager aims to be a layer between OpenVAS-Client and
+the actual OpenVAS Server. Basically it should be responsible for
+any tasks where no high system privileges are required.
+
+This module is in an early development stage.
+At the current state OpenVAS Manager is a protocol logger for OTP.
+
+It is not mandatory to have OpenVAS Manager for using OpenVAS 1.0 or 2.0.
+
+
+Howto build
+-----------
+
+Reference system of the developers is Debian GNU Linux 'Etch' 4.0.
+The build might fail on any other systems.
+Also it is necessary to install dependent development
+packages - there is not automated configuration routine yet.
+
+Prerequisites:
+* openvas-libraries 2.0.0 (newest version from trunk)
+* gnutls
+
+First, read in src/Makefile about OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR
+Second, adjust SERCERCERT, SERVERKEY and CACERT in src/openvasmd.c if necessary.
+$ cd src
+$ make
+
+
+Howto use
+---------
+
+
