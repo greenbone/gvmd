@@ -40,7 +40,7 @@
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
 
-#define OPENVASMD_SERVER_NAME "127.0.0.1"
+#define OPENVASMD_ADDRESS "127.0.0.1"
 
 #define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
 #define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
@@ -48,7 +48,7 @@
 
 /* Enable to overide "omp" in /etc/services. */
 #if 0
-#define OPENVASMD_SERVER_PORT_OVERRIDE 25
+#define OPENVASMD_PORT_OVERRIDE 25
 #endif
 
 /* Enable to overide "openvas" in /etc/services. */
@@ -56,7 +56,7 @@
 #define OPENVASD_PORT_OVERRIDE 7775
 #endif
 
-/* Used if "omp" and OPENVASMD_SERVER_PORT_OVERRIDE missing. */
+/* Used if "omp" and OPENVASMD_PORT_OVERRIDE missing. */
 #define OPENVASMD_PORT 7776
 
 /* Used if "openvas" and OPENVASD_PORT_OVERRIDE missing. */
@@ -64,10 +64,10 @@
 
 /* The size of the data buffers.  When the client/server buffer is full
   `select' stops watching for input from the client/server. */
-#define OPENVASMD_BUFFER_SIZE 2048
+#define BUFFER_SIZE 2048
 
-/* Second argument to listen. */
-#define OPENVASMD_MAX_CONNECTIONS 512
+/* Second argument to `listen'. */
+#define MAX_CONNECTIONS 512
 
 #define LOG 1
 /* Name of log file. */
@@ -86,27 +86,27 @@
 #include <gnutls/gnutls.h>
 #endif
 
-#if OPENVASMD_BUFFER_SIZE > SSIZE_MAX
-#error OPENVASMD_BUFFER_SIZE too big for `read'
+#if BUFFER_SIZE > SSIZE_MAX
+#error BUFFER_SIZE too big for `read'
 #endif
 
 #if TRACE
-#define tracef(args...) \
-  do { \
-    fprintf (stderr, "%7i  ", getpid()); \
-    fprintf (stderr, args); \
-    fflush (stderr); \
+#define tracef(args...)                   \
+  do {                                    \
+    fprintf (stderr, "%7i  ", getpid());  \
+    fprintf (stderr, args);               \
+    fflush (stderr);                      \
   } while (0);
 #else
 #define tracef(format, args...)
 #endif
 
 #if LOG
-#define logf(args...) \
-  do { \
-    fprintf (log_stream, "%7i  ", getpid()); \
-    fprintf (log_stream, args); \
-    fflush (log_stream); \
+#define logf(args...)                         \
+  do {                                        \
+    fprintf (log_stream, "%7i  ", getpid());  \
+    fprintf (log_stream, args);               \
+    fflush (log_stream);                      \
   } while (0);
 #else
 #define logf(format, args...)
@@ -134,8 +134,8 @@ int
 serve_omp (int client_socket)
 {
   int ret;
-  char from_client[OPENVASMD_BUFFER_SIZE];
-  char from_server[OPENVASMD_BUFFER_SIZE];
+  char from_client[BUFFER_SIZE];
+  char from_server[BUFFER_SIZE];
   int from_client_end = 0, from_server_end = 0;
   int from_client_start = 0, from_server_start = 0;
   int server_socket;
@@ -273,12 +273,12 @@ serve_omp (int client_socket)
       FD_ZERO (&writefds);
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
-      if (from_client_end < OPENVASMD_BUFFER_SIZE)
+      if (from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
           fds |= CLIENT_READ;
         }
-      if (from_server_end < OPENVASMD_BUFFER_SIZE)
+      if (from_server_end < BUFFER_SIZE)
         {
           FD_SET (server_socket, &readfds);
           fds |= SERVER_READ;
@@ -322,18 +322,18 @@ serve_omp (int client_socket)
               int initial_start = from_client_end;
 #endif
               /* Read as much as possible from the client. */
-              while (from_client_end < OPENVASMD_BUFFER_SIZE)
+              while (from_client_end < BUFFER_SIZE)
                 {
                   ssize_t count;
 #if OVAS_SSL
                   count = gnutls_record_recv (*client_session,
                                               from_client + from_client_end,
-                                              OPENVASMD_BUFFER_SIZE
+                                              BUFFER_SIZE
                                               - from_client_end);
 #else
                   count = read (client_socket,
                                 from_client + from_client_end,
-                                OPENVASMD_BUFFER_SIZE - from_client_end);
+                                BUFFER_SIZE - from_client_end);
 #endif
                   if (count < 0)
                     {
@@ -440,18 +440,18 @@ serve_omp (int client_socket)
               int initial_start = from_server_end;
 #endif
               /* Read as much as possible from the server. */
-              while (from_server_end < OPENVASMD_BUFFER_SIZE)
+              while (from_server_end < BUFFER_SIZE)
                 {
                   ssize_t count;
 #if OVAS_SSL
                   count = gnutls_record_recv (server_session,
                                               from_server + from_server_end,
-                                              OPENVASMD_BUFFER_SIZE
+                                              BUFFER_SIZE
                                               - from_server_end);
 #else
                   count = read (server_socket,
                                 from_server + from_server_end,
-                                OPENVASMD_BUFFER_SIZE - from_server_end);
+                                BUFFER_SIZE - from_server_end);
 #endif
                   if (count < 0)
                     {
@@ -726,8 +726,8 @@ main (int argc, char** argv)
 
   /* Setup the server address. */
   server_address.sin_family = AF_INET;
-#ifdef OPENVASMD_SERVER_PORT_OVERRIDE
-  server_address.sin_port = htons (OPENVASMD_SERVER_PORT_OVERRIDE);
+#ifdef OPENVASMD_PORT_OVERRIDE
+  server_address.sin_port = htons (OPENVASMD_PORT_OVERRIDE);
 #else
   {
     struct servent *servent = getservbyname ("omp", "tcp");
@@ -738,11 +738,11 @@ main (int argc, char** argv)
       server_address.sin_port = htons (OPENVASMD_PORT);
   }
 #endif
-  if (inet_aton(OPENVASMD_SERVER_NAME, &server_address.sin_addr)
+  if (inet_aton(OPENVASMD_ADDRESS, &server_address.sin_addr)
       == 0)
     {
       fprintf (stderr, "Failed to create server address %s.\n",
-               OPENVASMD_SERVER_NAME);
+               OPENVASMD_ADDRESS);
       exit (EXIT_FAILURE);
     }
 
@@ -803,7 +803,7 @@ main (int argc, char** argv)
           htons (manager_address.sin_port));
 
   /* Enable connections to the socket. */
-  if (listen (manager_socket, OPENVASMD_MAX_CONNECTIONS) == -1)
+  if (listen (manager_socket, MAX_CONNECTIONS) == -1)
     {
       perror ("Failed to listen on manager socket");
       close (manager_socket);

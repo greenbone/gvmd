@@ -1,3 +1,7 @@
+2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c: Rename directives for consistency.
+
 2008-11-11  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	Starting module "openvas-manager".
