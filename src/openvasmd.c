@@ -23,6 +23,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/** @file openvasmd.c
+ *  \brief OpenVAS Manager
+ *
+ *  This file defines the OpenVAS Manager, a daemon that is layered between
+ *  the real OpenVAS Server (openvasd) and a client (e.g.
+ *  OpenVAS-Client).
+ */
+
+/** \mainpage
+ *
+ *  \verbinclude README
+ */
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -43,40 +56,54 @@
 
 // FIX
 #define PROGNAME "openvasmd"
-#define OPENVAS_VERSION "0"
+#define OPENVAS_VERSION "0.0.1.SVN"
 #define OVM_OS_NAME "os"
 
+/** Manager (openvasmd) address. */
 #define OPENVASMD_ADDRESS "127.0.0.1"
+
+/** Server (openvasd) address. */
 #define OPENVASD_ADDRESS "127.0.0.1"
 
+/** Location of server certificate. */
 #define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
+
+/** Location of server certificate private key. */
 #define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
+
+/** Location of Certificate Authority certificate. */
 #define CACERT     "/var/lib/openvas/CA/cacert.pem"
 
-/* Used if /etc/services "openvas" and -port missing. */
+/** Server port.  Used if /etc/services "openvas" and -port missing. */
 #define OPENVASD_PORT 1241
 
-/* Used if /etc/services "omp" and -sport are missing. */
+/** Manager port.  Used if /etc/services "omp" and -sport are missing. */
 #define OPENVASMD_PORT 1241
 
-/* The size of the data buffers.  When the client/server buffer is full
-  `select' stops watching for input from the client/server. */
+/** The size of the data buffers.  When the client/server buffer is full
+  * `select' stops watching for input from the client/server.
+  */
 #define BUFFER_SIZE 2048
 
-/* Second argument to `listen'. */
+/** Second argument to `listen'. */
 #define MAX_CONNECTIONS 512
 
+/** Logging flag.  All data transfered to and from the client is logged to
+  * a file.  If 0 then logging is turned off.
+  */
 #define LOG 1
-/* Name of log file. */
+
+/** Name of log file. */
 #define LOG_FILE "/tmp/openvasmd.log"
 
-/* 0 to turn off all tracing messages. */
+/** Trace flag.  0 to turn off all tracing messages. */
 #define TRACE 0
 
-/* 0 to turn off echoing of actual data transfered (requires TRACE). */
+/** Trace text flag.  0 to turn off echoing of actual data transfered
+  * (requires TRACE). */
 #define TRACE_TEXT 1
 
-/* 0 to turn off security. */
+/** Security flag.  0 to turn off all security (i.e. TLS). */
 #define OVAS_SSL 1
 
 #if OVAS_SSL
@@ -88,6 +115,8 @@
 #endif
 
 #if TRACE
+/** Formatted trace output.
+  * Prints the printf style \a args to stderr, preceded by the process ID. */
 #define tracef(args...)                   \
   do {                                    \
     fprintf (stderr, "%7i  ", getpid());  \
@@ -95,10 +124,13 @@
     fflush (stderr);                      \
   } while (0);
 #else
+/** Dummy macro, enabled with TRACE. */
 #define tracef(format, args...)
 #endif
 
 #if LOG
+/** Formatted logging output.
+  * Prints the printf style \a args to log_stream, preceded by the process ID. */
 #define logf(args...)                         \
   do {                                        \
     fprintf (log_stream, "%7i  ", getpid());  \
@@ -106,27 +138,43 @@
     fflush (log_stream);                      \
   } while (0);
 #else
+/** Dummy macro, enabled with LOG. */
 #define logf(format, args...)
 #endif
 
-/* The socket accepting OMP connections from clients. */
+/** The socket accepting OMP connections from clients. */
 int manager_socket = -1;
-/* The address of this program, "the manager". */
+
+/** The IP address of this program, "the manager". */
 struct sockaddr_in manager_address;
-/* The address of openvasd, "the server". */
+
+/** The IP address of openvasd, "the server". */
 struct sockaddr_in server_address;
-/* The log stream. */
+
+#if LOG
+/** The log stream. */
 FILE* log_stream = NULL;
+#endif
+
 #if OVAS_SSL
 /* The server context. */
 static ovas_server_context_t server_context = NULL;
 #endif
 
+/** File descriptor set mask: selecting on client read. */
 #define CLIENT_READ  1
+/** File descriptor set mask: selecting on client write. */
 #define CLIENT_WRITE 2
+/** File descriptor set mask: selecting on server read. */
 #define SERVER_READ  4
+/** File descriptor set mask: selecting on server write. */
 #define SERVER_WRITE 8
 
+/** Serve the OMP protocol.
+  *
+  * Connect to the openvasd server, then pass all messages from the client
+  * to the server, and vice versa.
+  */
 int
 serve_omp (int client_socket)
 {
@@ -589,9 +637,12 @@ serve_omp (int client_socket)
 #undef SERVER_READ
 #undef SERVER_WRITE
 
-void
-accept_and_maybe_fork ()
-{
+/** Accept and fork.
+  *
+  * Accept the client connection and fork a child process to handle the rest
+  * of the work.
+  */
+void accept_and_maybe_fork () {
   /* Accept the client connection. */
   struct sockaddr_in client_address;
   client_address.sin_family = AF_INET;
@@ -657,6 +708,7 @@ accept_and_maybe_fork ()
     }
 }
 
+/** at_exit handler.  Close sockets and streams, free the ovas context. */
 void
 cleanup ()
 {
@@ -670,6 +722,7 @@ cleanup ()
 #endif
 }
 
+/** Handler for all signals. */
 void
 handle_signal (int signal)
 {
@@ -682,6 +735,11 @@ handle_signal (int signal)
     }
 }
 
+/** Entry point to the manager.
+  *
+  * Setup the manager and then loop forever passing connections to
+  * accept_and_maybe_fork.
+  */
 int
 main (int argc, char** argv)
 {
