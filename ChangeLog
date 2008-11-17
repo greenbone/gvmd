@@ -1,5 +1,14 @@
 2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: Drop the *_PORT_OVERRIDE directives.  Turn off
+	tracing.
+	(main) Add option processing.
+	(handle_signal) Add SIGINT handling.
+
+	* src/Makefile: Add flags for glib.
+
+2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Rename directives for consistency.
 
 2008-11-11  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>

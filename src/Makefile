@@ -31,10 +31,12 @@ CFLAGS = -Wall -I$(OPENVAS_HEADER_INSTALL_DIR)
 all: openvasmd
 
 openvasmd.o: openvasmd.c
-	$(CC) $(CFLAGS) `libopenvas-config --cflags` -c openvasmd.c
+	$(CC) $(CFLAGS) `libopenvas-config --cflags` \
+	                `pkg-config --cflags glib-2.0` \
+	                -c openvasmd.c
 
 openvasmd: openvasmd.o
-	$(CC) $(LIBS) openvasmd.o -o openvasmd
+	$(CC) $(CFLAGS) $(LIBS) `pkg-config --libs glib-2.0` openvasmd.o -o openvasmd
 
 clean:
 	rm -f *.o openvasmd

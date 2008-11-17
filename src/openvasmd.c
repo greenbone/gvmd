@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <glib.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -40,27 +41,23 @@
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
 
+// FIX
+#define PROGNAME "openvasmd"
+#define OPENVAS_VERSION "0"
+#define OVM_OS_NAME "os"
+
 #define OPENVASMD_ADDRESS "127.0.0.1"
+#define OPENVASD_ADDRESS "127.0.0.1"
 
 #define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
 #define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
 #define CACERT     "/var/lib/openvas/CA/cacert.pem"
 
-/* Enable to overide "omp" in /etc/services. */
-#if 0
-#define OPENVASMD_PORT_OVERRIDE 25
-#endif
-
-/* Enable to overide "openvas" in /etc/services. */
-#if 0
-#define OPENVASD_PORT_OVERRIDE 7775
-#endif
-
-/* Used if "omp" and OPENVASMD_PORT_OVERRIDE missing. */
-#define OPENVASMD_PORT 7776
-
-/* Used if "openvas" and OPENVASD_PORT_OVERRIDE missing. */
+/* Used if /etc/services "openvas" and -port missing. */
 #define OPENVASD_PORT 1241
+
+/* Used if /etc/services "omp" and -sport are missing. */
+#define OPENVASMD_PORT 1241
 
 /* The size of the data buffers.  When the client/server buffer is full
   `select' stops watching for input from the client/server. */
@@ -74,9 +71,9 @@
 #define LOG_FILE "/tmp/openvasmd.log"
 
 /* 0 to turn off all tracing messages. */
-#define TRACE 1
+#define TRACE 0
 
-/* 0 to turn off echoing of actual data transfered. */
+/* 0 to turn off echoing of actual data transfered (requires TRACE). */
 #define TRACE_TEXT 1
 
 /* 0 to turn off security. */
@@ -680,6 +677,7 @@ handle_signal (int signal)
     {
       case SIGTERM:
       case SIGHUP:
+      case SIGINT:
         exit (EXIT_SUCCESS);
     }
 }
@@ -687,9 +685,92 @@ handle_signal (int signal)
 int
 main (int argc, char** argv)
 {
+  int server_port, manager_port;
   tracef ("OpenVAS Manager\n");
 
+  /* Process options. */
+
+  static gboolean print_version = FALSE;
+  static gchar *manager_address_string = NULL;
+  static gchar *manager_port_string = NULL;
+  static gchar *server_address_string = NULL;
+  static gchar *server_port_string = NULL;
+  GError *error = NULL;
+  GOptionContext *option_context;
+  static GOptionEntry option_entries[]
+    = {
+        { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
+        { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
+        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
+        { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
+        { "version", 'v', 0, G_OPTION_ARG_NONE, &print_version, "Print version.", NULL },
+        { NULL }
+      };
+
+  option_context = g_option_context_new ("- OpenVAS security scanner manager");
+  g_option_context_add_main_entries (option_context, option_entries, NULL);
+  if (!g_option_context_parse (option_context, &argc, &argv, &error))
+    {
+      printf ("%s\n\n", error->message);
+      exit (EXIT_FAILURE);
+    }
+
+  if (print_version)
+    {
+      printf ("openvasmd (%s) %s for %s\n",
+              PROGNAME, OPENVAS_VERSION, OVM_OS_NAME);
+      printf ("Copyright (C) 2008 Intevation GmbH\n\n");
+      exit (EXIT_SUCCESS);
+    }
+
+  if (manager_address_string == NULL)
+    manager_address_string = OPENVASMD_ADDRESS;
+
+  if (server_address_string == NULL)
+    server_address_string = OPENVASD_ADDRESS;
+
+  if (manager_port_string)
+    {
+      manager_port = atoi (manager_port_string);
+      if (manager_port <= 0 || manager_port >= 65536)
+	{
+	  fprintf (stderr, "Manager port must be a number between 0 and 65536.\n");
+	  exit (EXIT_FAILURE);
+	}
+      manager_port = htons (manager_port);
+    }
+  else
+    {
+      struct servent *servent = getservbyname ("openvas", "tcp");
+      if (servent)
+	// FIX free servent?
+	manager_address.sin_port = servent->s_port;
+      else
+	manager_address.sin_port = htons (OPENVASMD_PORT);
+    }
+
+  if (server_port_string)
+    {
+      server_port = atoi (server_port_string);
+      if (server_port <= 0 || server_port >= 65536)
+	{
+	  fprintf (stderr, "Server port must be a number between 0 and 65536.\n");
+	  exit (EXIT_FAILURE);
+	}
+      server_port = htons (server_port);
+    }
+  else
+    {
+      struct servent *servent = getservbyname ("omp", "tcp");
+      if (servent)
+	// FIX free servent?
+        server_port = servent->s_port;
+      else
+        server_port = htons (OPENVASD_PORT);
+    }
+
   /* Register the `cleanup' function. */
+
   if (atexit (&cleanup))
     {
       fprintf (stderr, "Failed to register `atexit' cleanup function.\n");
@@ -697,6 +778,7 @@ main (int argc, char** argv)
     }
 
   /* Create the manager socket. */
+
   manager_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (manager_socket == -1)
     {
@@ -706,6 +788,7 @@ main (int argc, char** argv)
 
 #if LOG
   /* Open the log file. */
+
   log_stream = fopen (LOG_FILE, "w");
   if (log_stream == NULL)
     {
@@ -715,6 +798,7 @@ main (int argc, char** argv)
 #endif
 
   /* Register the signal handler. */
+
   if (signal (SIGTERM, handle_signal) == SIG_ERR
       || signal (SIGINT, handle_signal) == SIG_ERR
       || signal (SIGHUP, handle_signal) == SIG_ERR
@@ -725,29 +809,19 @@ main (int argc, char** argv)
     }
 
   /* Setup the server address. */
+
   server_address.sin_family = AF_INET;
-#ifdef OPENVASMD_PORT_OVERRIDE
-  server_address.sin_port = htons (OPENVASMD_PORT_OVERRIDE);
-#else
-  {
-    struct servent *servent = getservbyname ("omp", "tcp");
-    if (servent)
-      // FIX free servent?
-      server_address.sin_port = servent->s_port;
-    else
-      server_address.sin_port = htons (OPENVASMD_PORT);
-  }
-#endif
-  if (inet_aton(OPENVASMD_ADDRESS, &server_address.sin_addr)
-      == 0)
+  server_address.sin_port = server_port;
+  if (!inet_aton(server_address_string, &server_address.sin_addr))
     {
       fprintf (stderr, "Failed to create server address %s.\n",
-               OPENVASMD_ADDRESS);
+               server_address_string);
       exit (EXIT_FAILURE);
     }
 
 #if OVAS_SSL
   /* Setup security. */
+
   if (nessus_SSL_init (NULL) < 0)
     {
       fprintf (stderr, "Failed to initialise security.\n");
@@ -776,20 +850,16 @@ main (int argc, char** argv)
     }
 
   /* Bind the manager socket to a port. */
+
   manager_address.sin_family = AF_INET;
-#ifdef OPENVASD_PORT_OVERRIDE
-  manager_address.sin_port = htons (OPENVASD_PORT_OVERRIDE);
-#else
-  {
-    struct servent *servent = getservbyname ("openvas", "tcp");
-    if (servent)
-      // FIX free servent?
-      manager_address.sin_port = servent->s_port;
-    else
-      manager_address.sin_port = htons (OPENVASD_PORT);
-   }
-#endif
-  manager_address.sin_addr.s_addr = INADDR_ANY;
+  manager_address.sin_port = manager_port;
+  if (!inet_aton(manager_address_string, &manager_address.sin_addr))
+    {
+      fprintf (stderr, "Failed to create manager address %s.\n",
+	       manager_address_string);
+      exit (EXIT_FAILURE);
+    }
+
   if (bind (manager_socket,
             (struct sockaddr *) &manager_address,
             sizeof (manager_address))
@@ -799,10 +869,16 @@ main (int argc, char** argv)
       close (manager_socket);
       exit (EXIT_FAILURE);
     }
-  tracef ("Manager bound to port %i\n",
-          htons (manager_address.sin_port));
+
+  tracef ("Manager bound to address %s port %i\n",
+          manager_address_string,
+          ntohs (manager_address.sin_port));
+  tracef ("Set to connect to address %s port %i\n",
+          server_address_string,
+          ntohs (server_address.sin_port));
 
   /* Enable connections to the socket. */
+
   if (listen (manager_socket, MAX_CONNECTIONS) == -1)
     {
       perror ("Failed to listen on manager socket");
@@ -811,10 +887,11 @@ main (int argc, char** argv)
     }
 
   /* Loop waiting for connections and passing the work to
-   *  `accept_and_maybe_fork'.
+   * `accept_and_maybe_fork'.
    *
    * FIX This could just loop accept_and_maybe_fork.  Might the manager
-   *     want to communicate with anything else, like the server? */
+   *     want to communicate with anything else here, like the server? */
+
   int ret, nfds;
   fd_set readfds, exceptfds;
   while (1)
