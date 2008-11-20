@@ -24,7 +24,7 @@ Prerequisites:
 * gnutls
 
 First, read in src/Makefile about OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR
-Second, adjust SERCERCERT, SERVERKEY and CACERT in src/openvasmd.c if necessary.
+Second, adjust SERVERCERT, SERVERKEY and CACERT in src/openvasmd.c if necessary.
 $ cd src
 $ make
 

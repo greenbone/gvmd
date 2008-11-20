@@ -1,3 +1,7 @@
+2008-11-20  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* README: Fixed typo.
+
 2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmc.c: Add Doxygen documentation.
