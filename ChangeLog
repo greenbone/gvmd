@@ -1,5 +1,9 @@
 2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* README: Update for new build system.
+
+2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* doc/CMakeLists.txt: Ensure html/ exists.
 
 	* doc/Doxyfile: Correct paths.

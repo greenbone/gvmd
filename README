@@ -1,6 +1,3 @@
-OpenVAS Manager
-===============
-
 The OpenVAS Manager aims to be a layer between OpenVAS-Client and
 the actual OpenVAS Server. Basically it should be responsible for
 any tasks where no high system privileges are required.
@@ -11,25 +8,27 @@ At the current state OpenVAS Manager is a protocol logger for OTP.
 It is not mandatory to have OpenVAS Manager for using OpenVAS 1.0 or 2.0.
 
 
-Howto build
------------
-
-Reference system of the developers is Debian GNU Linux 'Etch' 4.0.
-The build might fail on any other systems.
-Also it is necessary to install dependent development
-packages - there is not automated configuration routine yet.
-
-Prerequisites:
-* openvas-libraries 2.0.0 (newest version from trunk)
-* gnutls
-
-First, read in src/Makefile about OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR
-Second, adjust SERVERCERT, SERVERKEY and CACERT in src/openvasmd.c if necessary.
-$ cd src
-$ make
-
-
 Howto use
 ---------
 
+For example, if openvasd is running on port 7772, the following command
+starts the manager on port 1241.  The client can then connect to port 1241
+as though it was connecting to openvasd.
+
+    openvasmd --port 1241 --sport 7772
+
+The program usage message follows.
+
+	Usage:
+	  openvasmd [OPTION...] - OpenVAS security scanner manager
+
+	Help Options:
+	  -?, --help                  Show help options
+
+	Application Options:
+	  -a, --listen=<address>      Listen on <address>.
+	  -p, --port=<number>         Use port number <number>.
+	  -l, --slisten=<address>     Server (openvasd) address.
+	  -s, --sport=<number>        Server (openvasd) port number.
+	  -v, --version               Print version.
 
