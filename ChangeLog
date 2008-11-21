@@ -1,5 +1,26 @@
 2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* doc/CMakeLists.txt: Ensure html/ exists.
+
+	* doc/Doxyfile: Correct paths.
+
+	* doc/openvasmd.8.xml: Add header comment.
+
+2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add cmake build support and a manpage.
+
+	* Makefile: Removed.
+
+	* footer.html, Doxyfile: Removed (moved to doc/).
+
+	* CMakeLists.txt, doc/, doc/CMakeLists.txt, INSTALL,
+	src/CMakeLists.txt,	doc/openvasmd.8.xml: New.
+
+	* doc/footer.html, doc/Doxyfile: New (moved from ..).
+
+2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Flesh out \mainpage.  Add parameters to function
 	docs.  Clean up docs a little.
 	(OVM_OS_NAME): rename OPENVAS_OS_NAME.

@@ -138,6 +138,8 @@ add_custom_command (OUTPUT .built-html
 
 ## Install
 
+file (MAKE_DIRECTORY html/)
+
 install (DIRECTORY html/
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
