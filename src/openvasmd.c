@@ -24,7 +24,7 @@
  */
 
 /** @file openvasmd.c
- *  \brief OpenVAS Manager
+ *  \brief The OpenVAS Manager
  *
  *  This file defines the OpenVAS Manager, a daemon that is layered between
  *  the real OpenVAS Server (openvasd) and a client (e.g.
@@ -33,7 +33,21 @@
 
 /** \mainpage
  *
+ *  \section Introduction
  *  \verbinclude README
+ *
+ *  \section manpages Manual Pages
+ *  \subpage manpage
+ *
+ *  \section Installation
+ *  \verbinclude INSTALL
+ *
+ *  \section Implementation
+ *  \ref openvasmd.c
+ */
+
+/** \page manpage openvasmd
+ *  \htmlinclude openvasmd.html
  */
 
 #include <arpa/inet.h>
@@ -54,10 +68,19 @@
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
 
-// FIX
+/** The name of this program.
+ * \todo Use `program_invocation[_short]_name'? */
 #define PROGNAME "openvasmd"
-#define OPENVAS_VERSION "0.0.1.SVN"
-#define OVM_OS_NAME "os"
+
+/** The version number of this program. */
+#ifndef OPENVASMD_VERSION
+#define OPENVASMD_VERSION "FIX"
+#endif
+
+/** The name of the underlying Operating System. */
+#ifndef OPENVAS_OS_NAME
+#define OPENVAS_OS_NAME "FIX"
+#endif
 
 /** Manager (openvasmd) address. */
 #define OPENVASMD_ADDRESS "127.0.0.1"
@@ -66,13 +89,19 @@
 #define OPENVASD_ADDRESS "127.0.0.1"
 
 /** Location of server certificate. */
+#ifndef SERVERCERT
 #define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
+#endif
 
 /** Location of server certificate private key. */
+#ifndef SERVERKEY
 #define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
+#endif
 
 /** Location of Certificate Authority certificate. */
+#ifndef CACERT
 #define CACERT     "/var/lib/openvas/CA/cacert.pem"
+#endif
 
 /** Server port.  Used if /etc/services "openvas" and -port missing. */
 #define OPENVASD_PORT 1241
@@ -174,6 +203,10 @@ static ovas_server_context_t server_context = NULL;
   *
   * Connect to the openvasd server, then pass all messages from the client
   * to the server, and vice versa.
+  *
+  * @param[in]  client_socket  The socket connected to the client.
+  *
+  * \return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
   */
 int
 serve_omp (int client_socket)
@@ -639,10 +672,11 @@ serve_omp (int client_socket)
 
 /** Accept and fork.
   *
-  * Accept the client connection and fork a child process to handle the rest
-  * of the work.
+  * Accept the client connection and fork a child process.  The child calls
+  * \ref serve_omp to do the rest of the work.
   */
-void accept_and_maybe_fork () {
+void
+accept_and_maybe_fork () {
   /* Accept the client connection. */
   struct sockaddr_in client_address;
   client_address.sin_family = AF_INET;
@@ -722,7 +756,10 @@ cleanup ()
 #endif
 }
 
-/** Handler for all signals. */
+/** Handler for all signals.
+  *
+  * @param[in]  signal  The signal that caused this function to run.
+  */
 void
 handle_signal (int signal)
 {
@@ -738,7 +775,12 @@ handle_signal (int signal)
 /** Entry point to the manager.
   *
   * Setup the manager and then loop forever passing connections to
-  * accept_and_maybe_fork.
+  * \ref accept_and_maybe_fork.
+  *
+  * @param[in]  argc  The number of arguments in argv.
+  * @param[in]  argv  The list of arguments to the program.
+  *
+  * \return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
   */
 int
 main (int argc, char** argv)
@@ -776,7 +818,7 @@ main (int argc, char** argv)
   if (print_version)
     {
       printf ("openvasmd (%s) %s for %s\n",
-              PROGNAME, OPENVAS_VERSION, OVM_OS_NAME);
+              PROGNAME, OPENVASMD_VERSION, OPENVAS_OS_NAME);
       printf ("Copyright (C) 2008 Intevation GmbH\n\n");
       exit (EXIT_SUCCESS);
     }
