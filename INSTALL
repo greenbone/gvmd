@@ -1,0 +1,31 @@
+The reference system used by the developers is Debian GNU Linux 'Etch' 4.0.
+The build might fail on any other systems.  Also it is necessary to install
+dependent development packages.
+
+Prerequisites:
+* openvas-libraries 2.0.0 (newest version from trunk)
+* gnutls
+* cmake
+
+Prerequisites for building documentation:
+* Doxygen
+* groff (with HTML device)
+
+First, adjust any values in the Variables section of CMakeLists.txt.  The
+variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
+enabled and edited in order to link to a custom installation of OpenVAS.
+The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
+OPENVAS_SERVER_KEY and OPENVAS_CA_CERTIFICATE may also need modifying.
+
+The very first time, run the command
+
+    $ cmake .
+
+to configure the build.
+
+Thereafter, the following commands are useful.
+
+    $ make                # build the manager
+    $ make doc            # build the documentation
+    $ make install        # install the build
+    $ make rebuild_cache  # rebuild the make system cache
