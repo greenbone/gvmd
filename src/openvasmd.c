@@ -60,6 +60,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -116,6 +117,11 @@
 
 /** Second argument to `listen'. */
 #define MAX_CONNECTIONS 512
+
+/** OMP flag.  Enables handling of OpenVAS Management Protocol.
+  * If 0 then OMP is turned off.
+  */
+#define OMP 1
 
 /** Logging flag.  All data transfered to and from the client is logged to
   * a file.  If 0 then logging is turned off.
@@ -199,23 +205,470 @@ static ovas_server_context_t server_context = NULL;
 /** File descriptor set mask: selecting on server write. */
 #define SERVER_WRITE 8
 
-/** Serve the OMP protocol.
+typedef enum
+{
+  PROTOCOL_OTP,
+  PROTOCOL_OMP,
+  PROTOCOL_CLOSE,
+  PROTOCOL_FAIL
+} protocol_read_t;
+
+char from_client[BUFFER_SIZE];
+char from_server[BUFFER_SIZE];
+// FIX just make pntrs?
+int from_client_end = 0, from_server_end = 0;
+int from_client_start = 0, from_server_start = 0;
+
+/** Serve the OpenVAS Transfer Protocol (OTP).
   *
-  * Connect to the openvasd server, then pass all messages from the client
-  * to the server, and vice versa.
+  * @param[in]  client_session  The TLS session with the client.
+  * @param[in]  server_session  The TLS session with the server.
+  * @param[in]  client_socket   The socket connected to the client.
+  * @param[in]  server_socket   The socket connected to the server.
+  *
+  * \return 0 on success, -1 on error.
+  */
+int
+serve_otp (gnutls_session_t* client_session,
+	   gnutls_session_t* server_session,
+	   int client_socket, int server_socket)
+{
+  /* Handle the first client input, which was read by `read_protocol'. */
+#if TRACE || LOG
+  logf ("<= %.*s\n", from_client_end, from_client);
+#if TRACE_TEXT
+  tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
+#else
+  tracef ("<= client  %i bytes\n", from_client_end - initial_start);
+#endif
+#endif /* TRACE || LOG */
+
+  /* Loop handling input from the sockets. */
+  int nfds = 1 + (client_socket > server_socket
+                  ? client_socket : server_socket);
+  fd_set readfds, exceptfds, writefds;
+  while (1)
+    {
+      /* Setup for select. */
+      unsigned char fds = 0; /* What `select' is going to watch. */
+      FD_ZERO (&exceptfds);
+      FD_ZERO (&readfds);
+      FD_ZERO (&writefds);
+      FD_SET (client_socket, &exceptfds);
+      FD_SET (server_socket, &exceptfds);
+      if (from_client_end < BUFFER_SIZE)
+        {
+          FD_SET (client_socket, &readfds);
+          fds |= CLIENT_READ;
+        }
+      if (from_server_end < BUFFER_SIZE)
+        {
+          FD_SET (server_socket, &readfds);
+          fds |= SERVER_READ;
+        }
+      if (from_server_start < from_server_end)
+        {
+          FD_SET (client_socket, &writefds);
+          fds |= CLIENT_WRITE;
+        }
+      if (from_client_start < from_client_end)
+        {
+          FD_SET (server_socket, &writefds);
+          fds |= SERVER_WRITE;
+        }
+
+      /* Select, then handle result. */
+      int ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
+      if (ret < 0)
+        {
+          if (errno == EINTR) continue;
+          perror ("Child select failed");
+          return -1;
+        }
+      if (ret > 0)
+        {
+          if (FD_ISSET (client_socket, &exceptfds))
+            {
+              fprintf (stderr, "Exception on client in child select.\n");
+              return -1;
+            }
+
+          if (FD_ISSET (server_socket, &exceptfds))
+            {
+              fprintf (stderr, "Exception on server in child select.\n");
+              return -1;
+            }
+
+          if (fds & CLIENT_READ && FD_ISSET (client_socket, &readfds))
+            {
+#if TRACE || LOG
+              int initial_start = from_client_end;
+#endif
+              /* Read as much as possible from the client. */
+              while (from_client_end < BUFFER_SIZE)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_recv (*client_session,
+                                              from_client + from_client_end,
+                                              BUFFER_SIZE
+                                              - from_client_end);
+#else
+                  count = read (client_socket,
+                                from_client + from_client_end,
+                                BUFFER_SIZE - from_client_end);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to read from client.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      perror ("Failed to read from client");
+#endif
+                      return -1;
+                    }
+                  if (count == 0)
+                    /* End of file. */
+                    return 0;
+                  from_client_end += count;
+                }
+#if TRACE || LOG
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_client_end > initial_start)
+                {
+                  logf ("<= %.*s\n",
+                        from_client_end - initial_start,
+                        from_client + initial_start);
+#if TRACE_TEXT
+                  tracef ("<= client  \"%.*s\"\n",
+                          from_client_end - initial_start,
+                          from_client + initial_start);
+#else
+                  tracef ("<= client  %i bytes\n",
+                          from_client_end - initial_start);
+#endif
+                }
+#endif /* TRACE || LOG */
+            }
+
+          if (fds & SERVER_WRITE && FD_ISSET (server_socket, &writefds))
+            {
+              /* Write as much as possible to the server. */
+              while (from_client_start < from_client_end)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_send (*server_session,
+                                              from_client + from_client_start,
+                                              from_client_end - from_client_start);
+#else
+                  count = write (server_socket,
+                                 from_client + from_client_start,
+                                 from_client_end - from_client_start);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_server_write;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to write to server.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_server_write;
+                      if (errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      perror ("Failed to write to server");
+#endif
+                      return -1;
+                    }
+                  from_client_start += count;
+                  tracef ("=> server  %i bytes\n", count);
+                }
+              tracef ("=> server  done\n");
+              from_client_start = from_client_end = 0;
+             end_server_write:
+              ;
+            }
+
+          if (fds & SERVER_READ && FD_ISSET (server_socket, &readfds))
+            {
+#if TRACE
+              int initial_start = from_server_end;
+#endif
+              /* Read as much as possible from the server. */
+              while (from_server_end < BUFFER_SIZE)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_recv (*server_session,
+                                              from_server + from_server_end,
+                                              BUFFER_SIZE
+                                              - from_server_end);
+#else
+                  count = read (server_socket,
+                                from_server + from_server_end,
+                                BUFFER_SIZE - from_server_end);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to read to server.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      perror ("Failed to read from server");
+#endif
+                      return -1;
+                    }
+                  if (count == 0)
+                    /* End of file. */
+		    return 0;
+                  from_server_end += count;
+                }
+#if TRACE
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_server_end > initial_start)
+                {
+#if TRACE_TEXT
+                  tracef ("<= server  \"%.*s\"\n",
+                          from_server_end - initial_start,
+                          from_server + initial_start);
+#else
+                  tracef ("<= server  %i bytes\n",
+                          from_server_end - initial_start);
+#endif
+                }
+#endif /* TRACE */
+            }
+
+          if (fds & CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
+            {
+              /* Write as much as possible to the client. */
+              while (from_server_start < from_server_end)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_send (*client_session,
+                                              from_server + from_server_start,
+                                              from_server_end - from_server_start);
+#else
+                  count = write (client_socket,
+                                 from_server + from_server_start,
+                                 from_server_end - from_server_start);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_client_write;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to write to client.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_client_write;
+                      if (errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      perror ("Failed to write to client");
+#endif
+                      return -1;
+                    }
+                  logf ("=> %.*s\n",
+                        from_server_end - from_server_start,
+                        from_server + from_server_start);
+                  from_server_start += count;
+                  tracef ("=> client  %i bytes\n", count);
+                }
+              tracef ("=> client  done\n");
+              from_server_start = from_server_end = 0;
+             end_client_write:
+              ;
+            }
+        }
+    }
+}
+
+/** Serve the OpenVAS Management Protocol (OMP).
+  *
+  * @param[in]  client_session  The TLS session with the client.
+  * @param[in]  server_session  The TLS session with the server.
+  * @param[in]  client_socket   The socket connected to the client.
+  * @param[in]  server_socket   The socket connected to the server.
+  *
+  * \return 0 on success, -1 on error.
+  */
+int
+serve_omp (gnutls_session_t* client_session,
+	   gnutls_session_t* server_session,
+	   int client_socket, int server_socket)
+{
+  /* Handle the first client input, which was read by `read_protocol'. */
+#if TRACE || LOG
+  logf ("<= %.*s\n", from_client_end, from_client);
+#if TRACE_TEXT
+  tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
+#else
+  tracef ("<= client  %i bytes\n", from_client_end - initial_start);
+#endif
+#endif /* TRACE || LOG */
+
+  fprintf (stderr, "FIX Would serve OMP.\n");
+  return 0;
+}
+
+/** Read the protocol from \arg client_session, which is on \arg
+  * client_socket.
+  *
+  * @param[in]  client_session  The TLS session with the client.
+  * @param[in]  client_socket   The socket connected to the client.
+  *
+  * \return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
+  */
+protocol_read_t
+read_protocol (gnutls_session_t* client_session, int client_socket)
+{
+  /* Turn on blocking. */
+  // FIX get flags first
+  if (fcntl (client_socket, F_SETFL, 0) == -1)
+    {
+      perror ("Failed to set client socket flag (read_protocol)");
+      return PROTOCOL_FAIL;
+    }
+
+  /* Read from the client, checking the protocol when a newline or return
+     is read. */
+  protocol_read_t ret = PROTOCOL_FAIL;
+  char* from_client_current = from_client + from_client_end;
+  while (from_client_end < BUFFER_SIZE)
+    {
+      ssize_t count;
+ retry:
+#if OVAS_SSL
+      count = gnutls_record_recv (*client_session,
+				  from_client + from_client_end,
+				  BUFFER_SIZE
+				  - from_client_end);
+#else
+      count = read (client_socket,
+		    from_client + from_client_end,
+		    BUFFER_SIZE
+		    - from_client_end);
+#endif
+      if (count < 0)
+	{
+#if OVAS_SSL
+          if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+	    /* Interrupted, try read again. */
+	    goto retry;
+	  if (errno == GNUTLS_E_REHANDSHAKE)
+	    /* Try again. TODO Rehandshake. */
+	    goto retry;
+	  fprintf (stderr, "Failed to read from client (read_protocol).\n");
+	  gnutls_perror (count);
+#else
+	  if (errno == EINTR)
+	    /* Interrupted, try read again. */
+	    goto retry;
+	  perror ("Failed to read from client (read_protocol)");
+#endif
+	  break;
+	}
+      if (count == 0)
+	{
+	  /* End of file. */
+	  ret = PROTOCOL_CLOSE;
+	  break;
+	}
+      from_client_end += count;
+
+      /* Check for newline or return. */
+      from_client[from_client_end] = '\0';
+      if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
+        {
+          if (strstr (from_client, "< OTP/1.0 >"))
+	    ret = PROTOCOL_OTP;
+	  else
+	    ret = PROTOCOL_OMP;
+	  break;
+        }
+      from_client_current += count;
+    }
+
+  // FIX use orig value
+  /* Turn blocking back off. */
+  if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      perror ("Failed to reset client socket flag (read_protocol)");
+      return PROTOCOL_FAIL;
+    }
+
+  return ret;
+}
+
+/** Serve the client.
+  *
+  * Connect to the openvasd server, then call either \ref serve_otp or \ref
+  * serve_omp to serve the protocol, depending on the first message read
+  * from the client.
   *
   * @param[in]  client_socket  The socket connected to the client.
   *
   * \return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
   */
 int
-serve_omp (int client_socket)
+serve_client (int client_socket)
 {
   int ret;
-  char from_client[BUFFER_SIZE];
-  char from_server[BUFFER_SIZE];
-  int from_client_end = 0, from_server_end = 0;
-  int from_client_start = 0, from_server_start = 0;
   int server_socket;
 
   /* Make the server socket. */
@@ -302,6 +755,8 @@ serve_omp (int client_socket)
     }
 #endif
 
+  // FIX get flags first
+  // FIX after read_protocol
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the data between `select' and `read'. */
   if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
@@ -328,6 +783,7 @@ serve_omp (int client_socket)
     }
   client_socket = real_socket;
 
+  // FIX get flags first
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the data between `select' and `read'. */
   if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
@@ -338,301 +794,27 @@ serve_omp (int client_socket)
   gnutls_transport_set_lowat (*client_session, 0);
 #endif
 
-  /* Loop handling input from the sockets. */
-  int nfds = 1 + (client_socket > server_socket
-                  ? client_socket : server_socket);
-  fd_set readfds, exceptfds, writefds;
-  while (1)
+  /* Read a message from the client, and call the appropriate protocol
+     handler. */
+
+  switch (read_protocol (client_session, client_socket))
     {
-      /* Setup for select. */
-      unsigned char fds = 0; /* What `select' is going to watch. */
-      FD_ZERO (&exceptfds);
-      FD_ZERO (&readfds);
-      FD_ZERO (&writefds);
-      FD_SET (client_socket, &exceptfds);
-      FD_SET (server_socket, &exceptfds);
-      if (from_client_end < BUFFER_SIZE)
-        {
-          FD_SET (client_socket, &readfds);
-          fds |= CLIENT_READ;
-        }
-      if (from_server_end < BUFFER_SIZE)
-        {
-          FD_SET (server_socket, &readfds);
-          fds |= SERVER_READ;
-        }
-      if (from_server_start < from_server_end)
-        {
-          FD_SET (client_socket, &writefds);
-          fds |= CLIENT_WRITE;
-        }
-      if (from_client_start < from_client_end)
-        {
-          FD_SET (server_socket, &writefds);
-          fds |= SERVER_WRITE;
-        }
-
-      /* Select, then handle result. */
-      ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
-      if (ret < 0)
-        {
-          if (errno == EINTR) continue;
-          perror ("Child select failed");
-          goto fail;
-        }
-      if (ret > 0)
-        {
-          if (FD_ISSET (client_socket, &exceptfds))
-            {
-              fprintf (stderr, "Exception on client in child select.\n");
-              goto fail;
-            }
-
-          if (FD_ISSET (server_socket, &exceptfds))
-            {
-              fprintf (stderr, "Exception on server in child select.\n");
-              goto fail;
-            }
-
-          if (fds & CLIENT_READ && FD_ISSET (client_socket, &readfds))
-            {
-#if TRACE || LOG
-              int initial_start = from_client_end;
-#endif
-              /* Read as much as possible from the client. */
-              while (from_client_end < BUFFER_SIZE)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_recv (*client_session,
-                                              from_client + from_client_end,
-                                              BUFFER_SIZE
-                                              - from_client_end);
-#else
-                  count = read (client_socket,
-                                from_client + from_client_end,
-                                BUFFER_SIZE - from_client_end);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to read from client.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      perror ("Failed to read from client");
-#endif
-                      goto fail;
-                    }
-                  if (count == 0)
-                    /* End of file. */
-                    goto succeed;
-                  from_client_end += count;
-                }
-#if TRACE || LOG
-              /* This check prevents output in the "asynchronous network
-                 error" case. */
-              if (from_client_end > initial_start)
-                {
-                  logf ("<= %.*s\n",
-                        from_client_end - initial_start,
-                        from_client + initial_start);
-#if TRACE_TEXT
-                  tracef ("<= client  \"%.*s\"\n",
-                          from_client_end - initial_start,
-                          from_client + initial_start);
-#else
-                  tracef ("<= client  %i bytes\n",
-                          from_client_end - initial_start);
-#endif
-                }
-#endif /* TRACE || LOG */
-            }
-
-          if (fds & SERVER_WRITE && FD_ISSET (server_socket, &writefds))
-            {
-              /* Write as much as possible to the server. */
-              while (from_client_start < from_client_end)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_send (server_session,
-                                              from_client + from_client_start,
-                                              from_client_end - from_client_start);
-#else
-                  count = write (server_socket,
-                                 from_client + from_client_start,
-                                 from_client_end - from_client_start);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to write to server.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
-                      if (errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      perror ("Failed to write to server");
-#endif
-                      goto fail;
-                    }
-                  from_client_start += count;
-                  tracef ("=> server  %i bytes\n", count);
-                }
-              tracef ("=> server  done\n");
-              from_client_start = from_client_end = 0;
-             end_server_write:
-              ;
-            }
-
-          if (fds & SERVER_READ && FD_ISSET (server_socket, &readfds))
-            {
-#if TRACE
-              int initial_start = from_server_end;
-#endif
-              /* Read as much as possible from the server. */
-              while (from_server_end < BUFFER_SIZE)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_recv (server_session,
-                                              from_server + from_server_end,
-                                              BUFFER_SIZE
-                                              - from_server_end);
-#else
-                  count = read (server_socket,
-                                from_server + from_server_end,
-                                BUFFER_SIZE - from_server_end);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to read to server.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      perror ("Failed to read from server");
-#endif
-                      goto fail;
-                    }
-                  if (count == 0)
-                    /* End of file. */
-                    goto succeed;
-                  from_server_end += count;
-                }
-#if TRACE
-              /* This check prevents output in the "asynchronous network
-                 error" case. */
-              if (from_server_end > initial_start)
-                {
-#if TRACE_TEXT
-                  tracef ("<= server  \"%.*s\"\n",
-                          from_server_end - initial_start,
-                          from_server + initial_start);
-#else
-                  tracef ("<= server  %i bytes\n",
-                          from_server_end - initial_start);
-#endif
-                }
-#endif /* TRACE */
-            }
-
-          if (fds & CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
-            {
-              /* Write as much as possible to the client. */
-              while (from_server_start < from_server_end)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_send (*client_session,
-                                              from_server + from_server_start,
-                                              from_server_end - from_server_start);
-#else
-                  count = write (client_socket,
-                                 from_server + from_server_start,
-                                 from_server_end - from_server_start);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to write to client.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
-                      if (errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      perror ("Failed to write to client");
-#endif
-                      goto fail;
-                    }
-                  logf ("=> %.*s\n",
-                        from_server_end - from_server_start,
-                        from_server + from_server_start);
-                  from_server_start += count;
-                  tracef ("=> client  %i bytes\n", count);
-                }
-              tracef ("=> client  done\n");
-              from_server_start = from_server_end = 0;
-             end_client_write:
-              ;
-            }
-        }
+      case PROTOCOL_OTP:
+        // FIX OVAL_SSL
+        if (serve_otp (client_session, &server_session, client_socket, server_socket))
+	  goto fail;
+	break;
+      case PROTOCOL_OMP:
+        // FIX OVAL_SSL
+        if (serve_omp (client_session, &server_session, client_socket, server_socket))
+	  goto fail;
+	break;
+      case PROTOCOL_CLOSE:
+        goto fail;
+      default:
+        fprintf (stderr, "Failed to determine protocol.\n");
     }
 
- succeed:
 #if OVAS_SSL
   gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
   gnutls_deinit (server_session);
@@ -673,7 +855,7 @@ serve_omp (int client_socket)
 /** Accept and fork.
   *
   * Accept the client connection and fork a child process.  The child calls
-  * \ref serve_omp to do the rest of the work.
+  * \ref serve_client to do the rest of the work.
   */
 void
 accept_and_maybe_fork () {
@@ -703,6 +885,7 @@ accept_and_maybe_fork () {
       case 0:
         /* Child. */
         {
+	  // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
            */
@@ -713,21 +896,21 @@ accept_and_maybe_fork () {
               exit (EXIT_FAILURE);
             }
 #if OVAS_SSL
-          int secure_client_socket
-            = ovas_server_context_attach (server_context, client_socket);
-          if (secure_client_socket == -1)
-            {
-              fprintf (stderr,
-                       "Failed to attach server context to socket %i.\n",
-                       client_socket);
-              close (client_socket);
-              exit (EXIT_FAILURE);
-            }
-          tracef ("Server context attached.\n")
-          int ret = serve_omp (secure_client_socket);
-          close_stream_connection (secure_client_socket);
+	  int secure_client_socket
+	    = ovas_server_context_attach (server_context, client_socket);
+	  if (secure_client_socket == -1)
+	    {
+	      fprintf (stderr,
+		       "Failed to attach server context to socket %i.\n",
+		       client_socket);
+	      close (client_socket);
+	      exit (EXIT_FAILURE);
+	    }
+	  tracef ("Server context attached.\n")
+	  int ret = serve_client (secure_client_socket);
+	  close_stream_connection (secure_client_socket);
 #else
-          int ret = serve_omp (client_socket);
+	  int ret = serve_client (client_socket);
 #endif
           close (client_socket);
           exit (ret);
@@ -941,6 +1124,7 @@ main (int argc, char** argv)
     }
 #endif
 
+  // FIX get flags first
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the connection between `select' and `accept'. */
   if (fcntl (manager_socket, F_SETFL, O_NONBLOCK) == -1)

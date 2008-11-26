@@ -1,3 +1,13 @@
+2008-11-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add choosing of protocol based on first message.
+
+	* openvasmd.c (OMP, serve_otp, serve_client): New.
+	  (read_protocol, serve_client): New.
+	  (accept_and_maybe_fork): Call serve_client instead
+	  of serve_omp.
+	  (serve_omp): Move OTP code to serve_otp.
+
 2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* README: Update for new build system.
