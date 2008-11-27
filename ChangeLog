@@ -1,3 +1,13 @@
+2008-11-27  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OMP commands OTP_VERSION, LOGIN and NEW_TASK.
+
+	* openvasmd.c (task_t, grow_tasks, free_tasks, make_task): New.
+	(grow_description, add_task_description_line): New.
+	(RESPOND, process_omp_input): New.
+	(serve_omp): Handle OTP_VERSION, LOGIN and NEW_TASK.
+	Convert tabs to spaces.
+
 2008-11-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add choosing of protocol based on first message.

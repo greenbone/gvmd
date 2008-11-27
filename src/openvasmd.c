@@ -51,6 +51,7 @@
  */
 
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
@@ -215,9 +216,114 @@ typedef enum
 
 char from_client[BUFFER_SIZE];
 char from_server[BUFFER_SIZE];
+char to_server[BUFFER_SIZE];
+char to_client[BUFFER_SIZE];
 // FIX just make pntrs?
 int from_client_end = 0, from_server_end = 0;
 int from_client_start = 0, from_server_start = 0;
+int to_server_start = 0, to_server_end = 0;
+int to_client_start = 0, to_client_end = 0;
+
+char* login = NULL;
+char* credentials = NULL;
+
+
+/* Tasks. */
+
+typedef struct
+{
+  unsigned int id;
+  char* name;          /* NULL if free. */
+  char* comment;
+  char* description;
+  int description_length;
+  int description_size;
+} task_t;
+
+#define TASKS_INCREMENT 1024
+task_t* current_task = NULL;
+task_t* tasks = NULL;
+int tasks_size = 0;
+
+int
+grow_tasks ()
+{
+  task_t* new = realloc (tasks, tasks_size + TASKS_INCREMENT);
+  if (new == NULL) return -1;
+  tasks = new;
+  memset (tasks + tasks_size, 0, TASKS_INCREMENT);
+  tasks_size += TASKS_INCREMENT;
+  return 0;
+}
+
+void
+free_tasks ()
+{
+  task_t* index = tasks;
+  while (index < tasks + tasks_size)
+    {
+      if (index->name)
+	{
+	  free (index->name);
+	  free (index->comment);
+	  free (index->description);
+	}
+      index++;
+    }
+  tasks_size = 0;
+  free (tasks);
+  tasks = NULL;
+}
+
+task_t*
+make_task (char* name, char* comment)
+{
+  if (tasks == NULL && grow_tasks ()) return NULL;
+  task_t* index = tasks;
+ retry:
+  while (index < tasks + tasks_size)
+    if (index->name == NULL)
+      {
+        index->id = index - tasks;
+        index->name = name;
+        index->comment = comment;
+        index->description = NULL;
+        index->description_size = 0;
+        return index;
+      }
+  index = (task_t*) tasks_size;
+  if (grow_tasks ()) return NULL;
+  index = index + (int) tasks;
+  goto retry;
+}
+
+#define DESCRIPTION_INCREMENT 4096
+
+int
+grow_description (task_t* task)
+{
+  int new_size = task->description_size + DESCRIPTION_INCREMENT;
+  char* new = realloc (task->description, new_size);
+  if (new == NULL) return -1;
+  task->description = new;
+  task->description_size = new_size;
+  return 0;
+}
+
+int
+add_task_description_line (task_t* task, char* line, int line_length)
+{
+  assert (task->name);
+  if (task->description_size - task->description_length < line_length
+      && grow_description (task))
+    return -1;
+  char* description = task->description;
+  description += task->description_length;
+  strncpy (description, line, line_length);
+  return 0;
+}
+
+
 
 /** Serve the OpenVAS Transfer Protocol (OTP).
   *
@@ -230,8 +336,8 @@ int from_client_start = 0, from_server_start = 0;
   */
 int
 serve_otp (gnutls_session_t* client_session,
-	   gnutls_session_t* server_session,
-	   int client_socket, int server_socket)
+           gnutls_session_t* server_session,
+           int client_socket, int server_socket)
 {
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
@@ -463,7 +569,7 @@ serve_otp (gnutls_session_t* client_session,
                     }
                   if (count == 0)
                     /* End of file. */
-		    return 0;
+                    return 0;
                   from_server_end += count;
                 }
 #if TRACE
@@ -538,6 +644,133 @@ serve_otp (gnutls_session_t* client_session,
     }
 }
 
+#define RESPOND(msg)                                              \
+  do                                                              \
+    {                                                             \
+      if (BUFFER_SIZE - to_client_end < strlen (msg)) goto fail;  \
+      memcpy (to_client + to_client_end, msg, strlen (msg));      \
+      to_client_end += strlen (msg);                              \
+    }                                                             \
+  while (0)
+
+/** Process any lines available in from_client, writing any
+  * resulting server commands to to_server and any replies for the client
+  * to to_client.
+  *
+  * \return 0 on success, -1 on error (e.g. too little buffer space for response).
+  */
+int process_omp_input ()
+{
+  char* messages = from_client + from_client_start;
+  while (memchr (messages, 10, from_client_end - from_client_start))
+    {
+      /* Found a full line, process the message. */
+      char* command;
+      tracef ("messages: %s\n", messages);
+      char* message = strsep (&messages, "\n");
+      tracef ("message: %s\n", message);
+      from_client_start += strlen(message) + 1;
+
+      if (current_task)
+        {
+          /* A NEW_TASK description is being read. */
+
+          if (strlen (message) == 1 && message[0] == '.')
+            {
+              /* End of description marker. */
+              current_task = NULL;
+              RESPOND ("200\n");
+              continue;
+            }
+          else if (strlen (message) > 1 && message[0] == '.')
+            {
+              /* Line of description starting with a '.'.  The client is
+                 required to add an extra '.' to the front of the line. */
+              message += 1;
+            }
+
+          if (add_task_description_line (current_task,
+                                         message,
+                                         messages - message))
+            goto out_of_memory;
+
+          continue;
+        }
+
+      command = strsep (&message, " ");
+      tracef ("command: %s\n", command);
+
+      if (strncasecmp ("OMP_VERSION", command, 11) == 0)
+        RESPOND ("200 1.0\n");
+      else if (strncasecmp ("LOGIN", command, 5) == 0)
+        {
+          char* next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            RESPOND ("403 LOGIN requires a username.\n");
+          else
+            {
+              if (login) free (login);
+              login = strdup (next);
+              if (login == NULL) goto out_of_memory;
+              next = strsep (&message, " ");
+              if (next && strlen (next) > 0)
+                {
+                  if (credentials) free (credentials);
+                  credentials = strdup (next);
+                  if (credentials == NULL) goto out_of_memory;
+                }
+              RESPOND ("200\n");
+            }
+        }
+      else if (login == NULL)
+        RESPOND ("401 LOGIN first.\n");
+      else if (strncasecmp ("NEW_TASK", command, 8) == 0)
+        {
+          char* next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            RESPOND ("404 NEW_TASK requires a name.\n");
+          else
+            {
+              char* name = strdup (next);
+              if (name == NULL) goto out_of_memory;
+              char* comment = strdup (message);
+              if (comment == NULL)
+                {
+                  free (name);
+                  goto out_of_memory;
+                }
+              current_task = make_task (name, comment);
+              if (current_task == NULL)
+                {
+                  free (name);
+                  free (comment);
+                  goto out_of_memory;
+                }
+            }
+        }
+      else
+        RESPOND ("402 Command name error.\n");
+
+      continue;
+ out_of_memory:
+      RESPOND ("501 Manager out of memory.\n");
+    } /* while (memchr (... */
+
+  // FIX if the buffer is full here then respond with err and clear buffer
+  //     (or will hang waiting for buffer to empty)
+  if (from_client_start == from_client_end)
+    from_client_start = from_client_end = 0;
+  // FIX else move leftover half-line to front of buffer
+  //     (to reduce the chance of filling the buffer)
+  return 0;
+
+  /* RESPOND jumps here when there is too little space in to_client for the
+     response.  The result is that the manager closes the connection, so
+     from_client_end and from_client_start can be left as they are. */
+ fail:
+  return -1;
+}
+
 /** Serve the OpenVAS Management Protocol (OMP).
   *
   * @param[in]  client_session  The TLS session with the client.
@@ -549,8 +782,8 @@ serve_otp (gnutls_session_t* client_session,
   */
 int
 serve_omp (gnutls_session_t* client_session,
-	   gnutls_session_t* server_session,
-	   int client_socket, int server_socket)
+           gnutls_session_t* server_session,
+           int client_socket, int server_socket)
 {
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
@@ -561,8 +794,305 @@ serve_omp (gnutls_session_t* client_session,
   tracef ("<= client  %i bytes\n", from_client_end - initial_start);
 #endif
 #endif /* TRACE || LOG */
+  if (process_omp_input ()) return -1;
 
-  fprintf (stderr, "FIX Would serve OMP.\n");
+  tracef ("Serving OMP.\n");
+
+  /* Loop handling input from the sockets. */
+  int nfds = 1 + (client_socket > server_socket
+                  ? client_socket : server_socket);
+  fd_set readfds, exceptfds, writefds;
+  while (1)
+    {
+      /* Setup for select. */
+      unsigned char fds = 0; /* What `select' is going to watch. */
+      FD_ZERO (&exceptfds);
+      FD_ZERO (&readfds);
+      FD_ZERO (&writefds);
+      FD_SET (client_socket, &exceptfds);
+      FD_SET (server_socket, &exceptfds);
+      if (from_client_end < BUFFER_SIZE)
+        {
+          FD_SET (client_socket, &readfds);
+          fds |= CLIENT_READ;
+        }
+      if (from_server_end < BUFFER_SIZE)
+        {
+          FD_SET (server_socket, &readfds);
+          fds |= SERVER_READ;
+        }
+      if (to_client_start < to_client_end)
+        {
+          FD_SET (client_socket, &writefds);
+          fds |= CLIENT_WRITE;
+        }
+      if (to_server_start < to_server_end)
+        {
+          FD_SET (server_socket, &writefds);
+          fds |= SERVER_WRITE;
+        }
+
+      /* Select, then handle result. */
+      int ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
+      if (ret < 0)
+        {
+          if (errno == EINTR) continue;
+          perror ("Child select failed");
+          return -1;
+        }
+      if (ret > 0)
+        {
+          if (FD_ISSET (client_socket, &exceptfds))
+            {
+              fprintf (stderr, "Exception on client in child select.\n");
+              return -1;
+            }
+
+          if (FD_ISSET (server_socket, &exceptfds))
+            {
+              fprintf (stderr, "Exception on server in child select.\n");
+              return -1;
+            }
+
+          if (fds & CLIENT_READ && FD_ISSET (client_socket, &readfds))
+            {
+#if TRACE || LOG
+              int initial_start = from_client_end;
+#endif
+              /* Read as much as possible from the client. */
+              while (from_client_end < BUFFER_SIZE)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_recv (*client_session,
+                                              from_client + from_client_end,
+                                              BUFFER_SIZE
+                                              - from_client_end);
+#else
+                  count = read (client_socket,
+                                from_client + from_client_end,
+                                BUFFER_SIZE - from_client_end);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to read from client.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      perror ("Failed to read from client");
+#endif
+                      return -1;
+                    }
+                  if (count == 0)
+                    /* End of file. */
+                    return 0;
+                  from_client_end += count;
+                }
+#if TRACE || LOG
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_client_end > initial_start)
+                {
+                  logf ("<= %.*s\n",
+                        from_client_end - initial_start,
+                        from_client + initial_start);
+#if TRACE_TEXT
+                  tracef ("<= client  \"%.*s\"\n",
+                          from_client_end - initial_start,
+                          from_client + initial_start);
+#else
+                  tracef ("<= client  %i bytes\n",
+                          from_client_end - initial_start);
+#endif
+                }
+#endif /* TRACE || LOG */
+                if (process_omp_input ()) return -1;
+            }
+
+          if (fds & SERVER_WRITE && FD_ISSET (server_socket, &writefds))
+            {
+              /* Write as much as possible to the server. */
+              while (to_server_start < to_server_end)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_send (*server_session,
+                                              to_server + to_server_start,
+                                              to_server_end - to_server_start);
+#else
+                  count = write (server_socket,
+                                 to_server + to_server_start,
+                                 to_server_end - to_server_start);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_server_write;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to write to server.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_server_write;
+                      if (errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      perror ("Failed to write to server");
+#endif
+                      return -1;
+                    }
+                  to_server_start += count;
+                  tracef ("=> server  %i bytes\n", count);
+                }
+              tracef ("=> server  done\n");
+              to_server_start = to_server_end = 0;
+             end_server_write:
+              ;
+            }
+
+          if (fds & SERVER_READ && FD_ISSET (server_socket, &readfds))
+            {
+#if TRACE
+              int initial_start = from_server_end;
+#endif
+              /* Read as much as possible from the server. */
+              while (from_server_end < BUFFER_SIZE)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_recv (*server_session,
+                                              from_server + from_server_end,
+                                              BUFFER_SIZE
+                                              - from_server_end);
+#else
+                  count = read (server_socket,
+                                from_server + from_server_end,
+                                BUFFER_SIZE - from_server_end);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to read to server.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Got everything available, return to `select'. */
+                        break;
+                      if (errno == EINTR)
+                        /* Interrupted, try read again. */
+                        continue;
+                      perror ("Failed to read from server");
+#endif
+                      return -1;
+                    }
+                  if (count == 0)
+                    /* End of file. */
+                    return 0;
+                  from_server_end += count;
+                }
+#if TRACE
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_server_end > initial_start)
+                {
+#if TRACE_TEXT
+                  tracef ("<= server  \"%.*s\"\n",
+                          from_server_end - initial_start,
+                          from_server + initial_start);
+#else
+                  tracef ("<= server  %i bytes\n",
+                          from_server_end - initial_start);
+#endif
+                }
+#endif /* TRACE */
+            }
+
+          if (fds & CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
+            {
+              /* Write as much as possible to the client. */
+              while (to_client_start < to_client_end)
+                {
+                  ssize_t count;
+#if OVAS_SSL
+                  count = gnutls_record_send (*client_session,
+                                              to_client + to_client_start,
+                                              to_client_end - to_client_start);
+#else
+                  count = write (client_socket,
+                                 to_client + to_client_start,
+                                 to_client_end - to_client_start);
+#endif
+                  if (count < 0)
+                    {
+#if OVAS_SSL
+                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_client_write;
+                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      if (errno == GNUTLS_E_REHANDSHAKE)
+                        /* Return to select. TODO Rehandshake. */
+                        break;
+                      fprintf (stderr, "Failed to write to client.\n");
+                      gnutls_perror (count);
+#else
+                      if (errno == EAGAIN)
+                        /* Wrote as much as possible, return to `select'. */
+                        goto end_client_write;
+                      if (errno == EINTR)
+                        /* Interrupted, try write again. */
+                        continue;
+                      perror ("Failed to write to client");
+#endif
+                      return -1;
+                    }
+                  logf ("=> %.*s\n",
+                        to_client_end - to_client_start,
+                        to_client + to_client_start);
+                  to_client_start += count;
+                  tracef ("=> client  %i bytes\n", count);
+                }
+              tracef ("=> client  done\n");
+              to_client_start = to_client_end = 0;
+             end_client_write:
+              ;
+            }
+        }
+    }
+
   return 0;
 }
 
@@ -595,40 +1125,40 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
  retry:
 #if OVAS_SSL
       count = gnutls_record_recv (*client_session,
-				  from_client + from_client_end,
-				  BUFFER_SIZE
-				  - from_client_end);
+                                  from_client + from_client_end,
+                                  BUFFER_SIZE
+                                  - from_client_end);
 #else
       count = read (client_socket,
-		    from_client + from_client_end,
-		    BUFFER_SIZE
-		    - from_client_end);
+                    from_client + from_client_end,
+                    BUFFER_SIZE
+                    - from_client_end);
 #endif
       if (count < 0)
-	{
+        {
 #if OVAS_SSL
           if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-	    /* Interrupted, try read again. */
-	    goto retry;
-	  if (errno == GNUTLS_E_REHANDSHAKE)
-	    /* Try again. TODO Rehandshake. */
-	    goto retry;
-	  fprintf (stderr, "Failed to read from client (read_protocol).\n");
-	  gnutls_perror (count);
+            /* Interrupted, try read again. */
+            goto retry;
+          if (errno == GNUTLS_E_REHANDSHAKE)
+            /* Try again. TODO Rehandshake. */
+            goto retry;
+          fprintf (stderr, "Failed to read from client (read_protocol).\n");
+          gnutls_perror (count);
 #else
-	  if (errno == EINTR)
-	    /* Interrupted, try read again. */
-	    goto retry;
-	  perror ("Failed to read from client (read_protocol)");
+          if (errno == EINTR)
+            /* Interrupted, try read again. */
+            goto retry;
+          perror ("Failed to read from client (read_protocol)");
 #endif
-	  break;
-	}
+          break;
+        }
       if (count == 0)
-	{
-	  /* End of file. */
-	  ret = PROTOCOL_CLOSE;
-	  break;
-	}
+        {
+          /* End of file. */
+          ret = PROTOCOL_CLOSE;
+          break;
+        }
       from_client_end += count;
 
       /* Check for newline or return. */
@@ -636,10 +1166,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
         {
           if (strstr (from_client, "< OTP/1.0 >"))
-	    ret = PROTOCOL_OTP;
-	  else
-	    ret = PROTOCOL_OMP;
-	  break;
+            ret = PROTOCOL_OTP;
+          else
+            ret = PROTOCOL_OMP;
+          break;
         }
       from_client_current += count;
     }
@@ -802,13 +1332,13 @@ serve_client (int client_socket)
       case PROTOCOL_OTP:
         // FIX OVAL_SSL
         if (serve_otp (client_session, &server_session, client_socket, server_socket))
-	  goto fail;
-	break;
+          goto fail;
+        break;
       case PROTOCOL_OMP:
         // FIX OVAL_SSL
         if (serve_omp (client_session, &server_session, client_socket, server_socket))
-	  goto fail;
-	break;
+          goto fail;
+        break;
       case PROTOCOL_CLOSE:
         goto fail;
       default:
@@ -885,7 +1415,7 @@ accept_and_maybe_fork () {
       case 0:
         /* Child. */
         {
-	  // FIX get flags first
+          // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
            */
@@ -896,21 +1426,21 @@ accept_and_maybe_fork () {
               exit (EXIT_FAILURE);
             }
 #if OVAS_SSL
-	  int secure_client_socket
-	    = ovas_server_context_attach (server_context, client_socket);
-	  if (secure_client_socket == -1)
-	    {
-	      fprintf (stderr,
-		       "Failed to attach server context to socket %i.\n",
-		       client_socket);
-	      close (client_socket);
-	      exit (EXIT_FAILURE);
-	    }
-	  tracef ("Server context attached.\n")
-	  int ret = serve_client (secure_client_socket);
-	  close_stream_connection (secure_client_socket);
+          int secure_client_socket
+            = ovas_server_context_attach (server_context, client_socket);
+          if (secure_client_socket == -1)
+            {
+              fprintf (stderr,
+                       "Failed to attach server context to socket %i.\n",
+                       client_socket);
+              close (client_socket);
+              exit (EXIT_FAILURE);
+            }
+          tracef ("Server context attached.\n")
+          int ret = serve_client (secure_client_socket);
+          close_stream_connection (secure_client_socket);
 #else
-	  int ret = serve_client (client_socket);
+          int ret = serve_client (client_socket);
 #endif
           close (client_socket);
           exit (ret);
@@ -937,6 +1467,9 @@ cleanup ()
 #if OVAS_SSL
   ovas_server_context_free (server_context);
 #endif
+  if (login) free (login);
+  if (credentials) free (credentials);
+  if (tasks) free_tasks ();
 }
 
 /** Handler for all signals.
@@ -1016,37 +1549,37 @@ main (int argc, char** argv)
     {
       manager_port = atoi (manager_port_string);
       if (manager_port <= 0 || manager_port >= 65536)
-	{
-	  fprintf (stderr, "Manager port must be a number between 0 and 65536.\n");
-	  exit (EXIT_FAILURE);
-	}
+        {
+          fprintf (stderr, "Manager port must be a number between 0 and 65536.\n");
+          exit (EXIT_FAILURE);
+        }
       manager_port = htons (manager_port);
     }
   else
     {
       struct servent *servent = getservbyname ("openvas", "tcp");
       if (servent)
-	// FIX free servent?
-	manager_address.sin_port = servent->s_port;
+        // FIX free servent?
+        manager_address.sin_port = servent->s_port;
       else
-	manager_address.sin_port = htons (OPENVASMD_PORT);
+        manager_address.sin_port = htons (OPENVASMD_PORT);
     }
 
   if (server_port_string)
     {
       server_port = atoi (server_port_string);
       if (server_port <= 0 || server_port >= 65536)
-	{
-	  fprintf (stderr, "Server port must be a number between 0 and 65536.\n");
-	  exit (EXIT_FAILURE);
-	}
+        {
+          fprintf (stderr, "Server port must be a number between 0 and 65536.\n");
+          exit (EXIT_FAILURE);
+        }
       server_port = htons (server_port);
     }
   else
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
-	// FIX free servent?
+        // FIX free servent?
         server_port = servent->s_port;
       else
         server_port = htons (OPENVASD_PORT);
@@ -1140,7 +1673,7 @@ main (int argc, char** argv)
   if (!inet_aton(manager_address_string, &manager_address.sin_addr))
     {
       fprintf (stderr, "Failed to create manager address %s.\n",
-	       manager_address_string);
+               manager_address_string);
       exit (EXIT_FAILURE);
     }
 
