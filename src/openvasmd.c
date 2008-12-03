@@ -50,6 +50,9 @@
  *  \htmlinclude openvasmd.html
  */
 
+// FIX for asprintf
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -114,7 +117,8 @@
 /** The size of the data buffers.  When the client/server buffer is full
   * `select' stops watching for input from the client/server.
   */
-#define BUFFER_SIZE 2048
+//#define BUFFER_SIZE 8192
+#define BUFFER_SIZE 8192000
 
 /** Second argument to `listen'. */
 #define MAX_CONNECTIONS 512
@@ -133,7 +137,7 @@
 #define LOG_FILE "/tmp/openvasmd.log"
 
 /** Trace flag.  0 to turn off all tracing messages. */
-#define TRACE 0
+#define TRACE 1
 
 /** Trace text flag.  0 to turn off echoing of actual data transfered
   * (requires TRACE). */
@@ -158,7 +162,7 @@
     fprintf (stderr, "%7i  ", getpid());  \
     fprintf (stderr, args);               \
     fflush (stderr);                      \
-  } while (0);
+  } while (0)
 #else
 /** Dummy macro, enabled with TRACE. */
 #define tracef(format, args...)
@@ -172,7 +176,7 @@
     fprintf (log_stream, "%7i  ", getpid());  \
     fprintf (log_stream, args);               \
     fflush (log_stream);                      \
-  } while (0);
+  } while (0)
 #else
 /** Dummy macro, enabled with LOG. */
 #define logf(format, args...)
@@ -198,13 +202,13 @@ static ovas_server_context_t server_context = NULL;
 #endif
 
 /** File descriptor set mask: selecting on client read. */
-#define CLIENT_READ  1
+#define FD_CLIENT_READ  1
 /** File descriptor set mask: selecting on client write. */
-#define CLIENT_WRITE 2
+#define FD_CLIENT_WRITE 2
 /** File descriptor set mask: selecting on server read. */
-#define SERVER_READ  4
+#define FD_SERVER_READ  4
 /** File descriptor set mask: selecting on server write. */
-#define SERVER_WRITE 8
+#define FD_SERVER_WRITE 8
 
 typedef enum
 {
@@ -227,6 +231,44 @@ int to_client_start = 0, to_client_end = 0;
 char* login = NULL;
 char* credentials = NULL;
 
+int server_initialising = 0;
+
+
+/* Helper functions. */
+
+/** Return \ref string moved past any spaces, replacing with a terminating
+    NULL the first of any contiguos spaces at or before \ref end. */
+char*
+strip_space (char* string, char* end)
+{
+  while (string[0] == ' ') string++;
+  char *last = end, *new_end = end;
+  new_end--;
+  while (new_end > string && new_end[0] == ' ') { last--; new_end--; }
+  if (last < end) last[0] = '\0';
+  return string;
+}
+
+
+/* Server. */
+
+typedef struct
+{
+  char* plugins_md5;
+} server_t;
+
+server_t server;
+
+typedef enum
+{
+  SERVER_TOP,
+  SERVER_SERVER,
+  SERVER_DONE,
+  SERVER_PLUGINS_MD5
+} server_state_t;
+
+server_state_t server_state = SERVER_TOP;
+
 
 /* Tasks. */
 
@@ -234,25 +276,62 @@ typedef struct
 {
   unsigned int id;
   char* name;          /* NULL if free. */
+  unsigned int time;
   char* comment;
   char* description;
   int description_length;
   int description_size;
+  short running;
 } task_t;
 
 #define TASKS_INCREMENT 1024
-task_t* current_task = NULL;
+task_t* current_client_task = NULL;
+task_t* current_server_task = NULL;
 task_t* tasks = NULL;
-int tasks_size = 0;
+unsigned int tasks_size = 0;
+unsigned int num_tasks = 0;
+
+#if TRACE
+void
+print_tasks ()
+{
+  task_t *index = tasks;
+  tracef ("tasks: %p\n", tasks);
+  tracef ("tasks end: %p\n", tasks + tasks_size);
+  while (index < tasks + tasks_size)
+    {
+      //tracef ("index: %p\n", index);
+      if (index->name)
+        {
+          tracef ("Task %u: \"%s\" %s\n%s\n\n",
+                  index->id,
+                  index->name,
+                  index->comment ?: "",
+                  index->description ?: "");
+        }
+      index++;
+    }
+}
+#endif
 
 int
 grow_tasks ()
 {
-  task_t* new = realloc (tasks, tasks_size + TASKS_INCREMENT);
+  tracef ("task_t size: %i\n", sizeof (task_t));
+  task_t* new = realloc (tasks,
+                         (tasks_size + TASKS_INCREMENT) * sizeof (task_t));
   if (new == NULL) return -1;
   tasks = new;
-  memset (tasks + tasks_size, 0, TASKS_INCREMENT);
+
+  /* Clear the new part of the memory. */
+  new = tasks + tasks_size;
+  memset (new, '\0', TASKS_INCREMENT * sizeof (task_t));
+
   tasks_size += TASKS_INCREMENT;
+  tracef ("tasks grown to %i\n", tasks_size);
+#if TRACE
+  print_tasks ();
+#endif
   return 0;
 }
 
@@ -260,14 +339,21 @@ void
 free_tasks ()
 {
   task_t* index = tasks;
-  while (index < tasks + tasks_size)
+  task_t* end = tasks + tasks_size;
+  while (index < end)
     {
       if (index->name)
-	{
-	  free (index->name);
-	  free (index->comment);
-	  free (index->description);
-	}
+        {
+          tracef ("Freeing task %u: \"%s\" %s (%i)\n%s\n\n",
+                  index->id,
+                  index->name,
+                  index->comment,
+                  index->description_length,
+                  index->description);
+          free (index->name);
+          free (index->comment);
+          free (index->description);
+        }
       index++;
     }
   tasks_size = 0;
@@ -276,25 +362,106 @@ free_tasks ()
 }
 
 task_t*
-make_task (char* name, char* comment)
+make_task (char* name, unsigned int time, char* comment)
 {
+  tracef ("make_task %s %u %s\n", name, time, comment);
   if (tasks == NULL && grow_tasks ()) return NULL;
   task_t* index = tasks;
+  task_t* end = tasks + tasks_size;
  retry:
-  while (index < tasks + tasks_size)
-    if (index->name == NULL)
-      {
-        index->id = index - tasks;
-        index->name = name;
-        index->comment = comment;
-        index->description = NULL;
-        index->description_size = 0;
-        return index;
-      }
+  while (index < end)
+    {
+      if (index->name == NULL)
+        {
+          index->id = index - tasks;
+          index->name = name;
+          index->time = time;
+          index->comment = comment;
+          index->description = NULL;
+          index->description_size = 0;
+          index->running = 0;
+          tracef ("Made task %i at %p\n", index->id, index);
+          num_tasks++;
+          return index;
+        }
+      index++;
+    }
   index = (task_t*) tasks_size;
   if (grow_tasks ()) return NULL;
   index = index + (int) tasks;
   goto retry;
+}
+
+task_t*
+find_task (unsigned int id)
+{
+  task_t* index = tasks;
+  task_t* end = tasks + tasks_size;
+  while (index < end) {
+    if (index->name) tracef ("%u vs %u\n", index->id, id);
+    if (index->name && index->id == id) return index; else index++;
+  }
+  return NULL;
+}
+
+void
+modify_task (task_t* task, char* name, unsigned int time, char* comment)
+{
+  assert (task->name);
+  tracef ("modify_task %u\n", task->id);
+  task->name = name;
+  task->time = time;
+  task->comment = comment;
+  task->description_length = 0;
+}
+
+#define TO_SERVER(msg)                                            \
+  do                                                              \
+    {                                                             \
+      if (BUFFER_SIZE - to_server_end < strlen (msg)) goto fail;  \
+      memcpy (to_server + to_server_end, msg, strlen (msg));      \
+      tracef ("-> server: %s\n", msg);                            \
+      to_server_end += strlen (msg);                              \
+    }                                                             \
+  while (0)
+
+int
+start_task (task_t* task)
+{
+  tracef ("start task %u\n", task->id);
+
+  TO_SERVER ("CLIENT <|> PREFERENCES <|>\n");
+  TO_SERVER ("plugin_set <|> ");
+#if 0
+  TO_SERVER (task_plugins (task));
+#endif
+  TO_SERVER ("\n");
+#if 0
+  queue_task_preferences (task);
+  queue_task_plugin_preferences (task);
+#endif
+  TO_SERVER ("<|> CLIENT\n");
+
+  TO_SERVER ("CLIENT <|> RULES <|>\n");
+#if 0
+  queue_task_rules (task);
+#endif
+  TO_SERVER ("<|> CLIENT\n");
+
+#if 0
+  char* targets = task_preference (task, "targets");
+  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n<|> CLIENT",
+             strlen (targets), targets);
+#else
+  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n<|> CLIENT");
+#endif
+
+  task->running = 1;
+
+  return 0;
+
+ fail:
+  return -1;
 }
 
 #define DESCRIPTION_INCREMENT 4096
@@ -320,10 +487,12 @@ add_task_description_line (task_t* task, char* line, int line_length)
   char* description = task->description;
   description += task->description_length;
   strncpy (description, line, line_length);
+  task->description_length += line_length;
   return 0;
 }
 
 
+/* OpenVAS Transfer Protocol (OTP). */
 
 /** Serve the OpenVAS Transfer Protocol (OTP).
   *
@@ -365,22 +534,22 @@ serve_otp (gnutls_session_t* client_session,
       if (from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
-          fds |= CLIENT_READ;
+          fds |= FD_CLIENT_READ;
         }
       if (from_server_end < BUFFER_SIZE)
         {
           FD_SET (server_socket, &readfds);
-          fds |= SERVER_READ;
+          fds |= FD_SERVER_READ;
         }
       if (from_server_start < from_server_end)
         {
           FD_SET (client_socket, &writefds);
-          fds |= CLIENT_WRITE;
+          fds |= FD_CLIENT_WRITE;
         }
       if (from_client_start < from_client_end)
         {
           FD_SET (server_socket, &writefds);
-          fds |= SERVER_WRITE;
+          fds |= FD_SERVER_WRITE;
         }
 
       /* Select, then handle result. */
@@ -405,7 +574,7 @@ serve_otp (gnutls_session_t* client_session,
               return -1;
             }
 
-          if (fds & CLIENT_READ && FD_ISSET (client_socket, &readfds))
+          if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
             {
 #if TRACE || LOG
               int initial_start = from_client_end;
@@ -474,7 +643,7 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE || LOG */
             }
 
-          if (fds & SERVER_WRITE && FD_ISSET (server_socket, &writefds))
+          if (fds & FD_SERVER_WRITE && FD_ISSET (server_socket, &writefds))
             {
               /* Write as much as possible to the server. */
               while (from_client_start < from_client_end)
@@ -494,7 +663,7 @@ serve_otp (gnutls_session_t* client_session,
 #if OVAS_SSL
                       if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
                         /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
+                        goto end_server_fd_write;
                       if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
                         /* Interrupted, try write again. */
                         continue;
@@ -506,7 +675,7 @@ serve_otp (gnutls_session_t* client_session,
 #else
                       if (errno == EAGAIN)
                         /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
+                        goto end_server_fd_write;
                       if (errno == EINTR)
                         /* Interrupted, try write again. */
                         continue;
@@ -519,11 +688,11 @@ serve_otp (gnutls_session_t* client_session,
                 }
               tracef ("=> server  done\n");
               from_client_start = from_client_end = 0;
-             end_server_write:
+             end_server_fd_write:
               ;
             }
 
-          if (fds & SERVER_READ && FD_ISSET (server_socket, &readfds))
+          if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
             {
 #if TRACE
               int initial_start = from_server_end;
@@ -554,7 +723,7 @@ serve_otp (gnutls_session_t* client_session,
                       if (errno == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
-                      fprintf (stderr, "Failed to read to server.\n");
+                      fprintf (stderr, "Failed to read from server.\n");
                       gnutls_perror (count);
 #else
                       if (errno == EAGAIN)
@@ -589,7 +758,7 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE */
             }
 
-          if (fds & CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
+          if (fds & FD_CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
             {
               /* Write as much as possible to the client. */
               while (from_server_start < from_server_end)
@@ -609,7 +778,7 @@ serve_otp (gnutls_session_t* client_session,
 #if OVAS_SSL
                       if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
                         /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
+                        goto end_client_fd_write;
                       if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
                         /* Interrupted, try write again. */
                         continue;
@@ -621,7 +790,7 @@ serve_otp (gnutls_session_t* client_session,
 #else
                       if (errno == EAGAIN)
                         /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
+                        goto end_client_fd_write;
                       if (errno == EINTR)
                         /* Interrupted, try write again. */
                         continue;
@@ -637,18 +806,22 @@ serve_otp (gnutls_session_t* client_session,
                 }
               tracef ("=> client  done\n");
               from_server_start = from_server_end = 0;
-             end_client_write:
+             end_client_fd_write:
               ;
             }
         }
     }
 }
 
+
+/* OpenVAS Management Protocol (OMP). */
+
 #define RESPOND(msg)                                              \
   do                                                              \
     {                                                             \
       if (BUFFER_SIZE - to_client_end < strlen (msg)) goto fail;  \
       memcpy (to_client + to_client_end, msg, strlen (msg));      \
+      tracef ("-> client: %s\n", msg);                            \
       to_client_end += strlen (msg);                              \
     }                                                             \
   while (0)
@@ -659,27 +832,34 @@ serve_otp (gnutls_session_t* client_session,
   *
   * \return 0 on success, -1 on error (e.g. too little buffer space for response).
   */
-int process_omp_input ()
+int process_omp_client_input ()
 {
   char* messages = from_client + from_client_start;
+  //tracef ("consider %.*s\n", from_client_end - from_client_start, messages);
   while (memchr (messages, 10, from_client_end - from_client_start))
     {
       /* Found a full line, process the message. */
       char* command;
-      tracef ("messages: %s\n", messages);
+      tracef ("messages: %.*s...\n",
+              from_client_end - from_client_start < 200
+              ? from_client_end - from_client_start
+              : 200,
+              messages);
       char* message = strsep (&messages, "\n");
       tracef ("message: %s\n", message);
       from_client_start += strlen(message) + 1;
 
-      if (current_task)
+      if (current_client_task)
         {
-          /* A NEW_TASK description is being read. */
+          /* A NEW_TASK or MODIFY_TASK description is being read. */
 
           if (strlen (message) == 1 && message[0] == '.')
             {
               /* End of description marker. */
-              current_task = NULL;
-              RESPOND ("200\n");
+              char response[16];
+              sprintf (response, "201 %i\n", current_client_task->id);
+              RESPOND (response);
+              current_client_task = NULL;
               continue;
             }
           else if (strlen (message) > 1 && message[0] == '.')
@@ -689,7 +869,7 @@ int process_omp_input ()
               message += 1;
             }
 
-          if (add_task_description_line (current_task,
+          if (add_task_description_line (current_client_task,
                                          message,
                                          messages - message))
             goto out_of_memory;
@@ -726,26 +906,178 @@ int process_omp_input ()
         RESPOND ("401 LOGIN first.\n");
       else if (strncasecmp ("NEW_TASK", command, 8) == 0)
         {
+          /* Scan name. */
           char* next = strsep (&message, " ");
           if (next == message || next == NULL || strlen (next) == 0)
-            RESPOND ("404 NEW_TASK requires a name.\n");
-          else
             {
-              char* name = strdup (next);
-              if (name == NULL) goto out_of_memory;
-              char* comment = strdup (message);
-              if (comment == NULL)
+              // FIX flush rest of command
+              RESPOND ("404 NEW_TASK requires a name.\n");
+              continue;
+            }
+          tracef ("next %s\n", next);
+          // FIX parse name with spaces
+          char* name = strdup (next);
+          if (name == NULL) goto out_of_memory;
+          next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("405 NEW_TASK requires a time.\n");
+              continue;
+            }
+          tracef ("next %s\n", next);
+          /* Scan time. */
+          int time;
+          if (sscanf (next, "%u", &time) != 1)
+            {
+              // FIX flush rest of command
+              RESPOND ("406 Failed to parse ID.\n");
+              continue;
+            }
+          /* Scan comment. */
+          char* comment = strdup (message);
+          if (comment == NULL)
+            {
+              free (name);
+              goto out_of_memory;
+            }
+          /* Make task. */
+          current_client_task = make_task (name, time, comment);
+          if (current_client_task == NULL)
+            {
+              free (name);
+              free (comment);
+              goto out_of_memory;
+            }
+        }
+      else if (strncasecmp ("MODIFY_TASK", command, 11) == 0)
+        {
+          char* next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("405 Command requires a task ID.\n");
+              continue;
+            }
+          unsigned int id;
+          if (sscanf (next, "%u", &id) != 1)
+            {
+              RESPOND ("406 Failed to parse ID.\n");
+              // FIX flush rest of command
+              continue;
+            }
+          current_client_task = find_task (id);
+          if (current_client_task == NULL)
+            {
+              RESPOND ("407 Failed to find task.\n");
+              // FIX flush rest of command
+              continue;
+            }
+          // -- FIX same as above
+          /* Scan name. */
+          next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("404 NEW_TASK requires a name.\n");
+              continue;
+            }
+          // FIX parse name with spaces
+          char* name = strdup (next);
+          if (name == NULL) goto out_of_memory;
+          next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("405 NEW_TASK requires a time.\n");
+              free (name);
+              continue;
+            }
+          /* Scan time. */
+          int time;
+          if (sscanf (next, "%u", &time) != 1)
+            {
+              // FIX flush rest of command
+              RESPOND ("406 Failed to parse ID.\n");
+              free (name);
+              continue;
+            }
+          /* Scan comment. */
+          char* comment = strdup (message);
+          if (comment == NULL)
+            {
+              free (name);
+              goto out_of_memory;
+            }
+          // --
+          modify_task (current_client_task, name, time, comment);
+        }
+      else if (strncasecmp ("START_TASK", command, 10) == 0)
+        {
+          // -- FIX same as above
+          char* next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("405 Command requires a task ID.\n");
+              continue;
+            }
+          unsigned int id;
+          if (sscanf (next, "%u", &id) != 1)
+            {
+              RESPOND ("406 Failed to parse ID.\n");
+              // FIX flush rest of command
+              continue;
+            }
+          // --
+          current_client_task = find_task (id);
+          if (current_client_task == NULL)
+            RESPOND ("407 Failed to find task.\n");
+          else if (start_task (current_client_task))
+            RESPOND ("408 Failed to start task.\n");
+          else
+            RESPOND ("200\n");
+        }
+      else if (strncasecmp ("STATUS", command, 6) == 0)
+        {
+#if 0
+          // -- FIX same as above
+          char* next = strsep (&message, " ");
+          if (next == message || next == NULL || strlen (next) == 0)
+            {
+              // FIX flush rest of command
+              RESPOND ("405 Command requires a task ID.\n");
+              continue;
+            }
+          unsigned int id;
+          if (sscanf (next, "%u", &id) != 1)
+            {
+              RESPOND ("406 Failed to parse ID.\n");
+              // FIX flush rest of command
+              continue;
+            }
+          // --
+#endif
+          char response[16];
+          sprintf (response, "210 %u\n", num_tasks);
+          RESPOND (response);
+          task_t* index = tasks;
+          task_t* end = tasks + tasks_size;
+          while (index < end)
+            {
+              if (index->name)
                 {
-                  free (name);
-                  goto out_of_memory;
+                  char* line;
+                  if (asprintf (&line, "%u %s %c . . . . .\n",
+                                index->id,
+                                index->name,
+                                index->running ? 'R' : 'N')
+                      == -1)
+                      goto fail;
+                  RESPOND (line);
+                  free (line);
                 }
-              current_task = make_task (name, comment);
-              if (current_task == NULL)
-                {
-                  free (name);
-                  free (comment);
-                  goto out_of_memory;
-                }
+              index++;
             }
         }
       else
@@ -756,12 +1088,40 @@ int process_omp_input ()
       RESPOND ("501 Manager out of memory.\n");
     } /* while (memchr (... */
 
-  // FIX if the buffer is full here then respond with err and clear buffer
-  //     (or will hang waiting for buffer to empty)
-  if (from_client_start == from_client_end)
-    from_client_start = from_client_end = 0;
-  // FIX else move leftover half-line to front of buffer
-  //     (to reduce the chance of filling the buffer)
+  if (from_client_start > 0 && from_client_start == from_client_end)
+    {
+      from_client_start = from_client_end = 0;
+      tracef ("start caught end\n");
+    }
+  else if (from_client_start == 0)
+    {
+      if (from_client_end == BUFFER_SIZE)
+        {
+          // FIX if the buffer is entirely full here then respond with err and clear buffer
+          //     (or will hang waiting for buffer to empty)
+          //     this could happen if the client sends a line len >= buffer len
+          //         could realloc buffer
+          tracef ("buffer full\n");
+          goto fail;
+        }
+    }
+  else
+    {
+      /* Move the remaining partial line to the front of the buffer.  This
+         ensures that there is space after the partial line into which
+         serve_omp can read the rest of the line. */
+      char* start = from_client + from_client_start;
+      from_client_end -= from_client_start;
+      memmove (from_client, start, from_client_end);
+      from_client_start = 0;
+#if TRACE
+      from_client[from_client_end] = '\0';
+      //tracef ("new from_client: %s\n", from_client);
+      tracef ("new from_client_start: %i\n", from_client_start);
+      tracef ("new from_client_end: %i\n", from_client_end);
+#endif
+    }
+
   return 0;
 
   /* RESPOND jumps here when there is too little space in to_client for the
@@ -769,6 +1129,143 @@ int process_omp_input ()
      from_client_end and from_client_start can be left as they are. */
  fail:
   return -1;
+}
+
+/** Process any lines available in from_server.
+  *
+  * \return 0 on success, -1 on error (e.g. too little buffer space in to_client).
+  */
+int process_omp_server_input ()
+{
+  char* messages = from_server + from_server_start;
+  //tracef ("consider %.*s\n", from_server_end - from_server_start, messages);
+
+  if (server_initialising)
+    {
+      switch (server_initialising)
+        {
+          case 1:
+            if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
+              {
+                tracef ("server fail: expected \"< OTP/1.0 >\n\"\n");
+                goto fail;
+              }
+            server_initialising = 2;
+            from_server_start += 12;
+            break;
+          case 2:
+            if (strncasecmp ("User : ", messages, 7))
+              {
+                tracef ("server fail: expected \"User : \"\n");
+                goto fail;
+              }
+            from_server_start += 7;
+            TO_SERVER ("mattm\n"); // FIX
+            server_initialising = 3;
+            return 0;
+          case 3:
+            if (strncasecmp ("Password : ", messages, 11))
+              {
+                tracef ("server fail: expected \"Password : \"\n");
+                goto fail;
+              }
+            from_server_start += 11;
+            TO_SERVER ("mattm\n"); // FIX
+            server_initialising = 0;
+            return 0;
+          default:
+            goto fail;
+        }
+    }
+  else if (server_state == SERVER_DONE)
+    {
+      char *end;
+ server_done:
+      end = messages + from_server_end - from_server_start;
+      while (messages < end && messages[0] == ' ') messages++;
+      if ((int) (end - messages) < 6) return 0;
+      if (strncasecmp ("SERVER", messages, 6))
+        {
+          tracef ("server fail: expected final \"SERVER\"\n");
+          goto fail;
+        }
+      server_state = SERVER_TOP;
+      from_server_start += 6;
+
+      tracef ("server:: new state %i\n", server_state);
+    }
+
+  char* match;
+  while ((match = memchr (messages, '<', from_server_end - from_server_start))
+         && (((int) (match - messages) - from_server_start + 1) < from_server_end)
+         && (match[1] == '|')
+         && (match[2] == '>'))
+    {
+      /* Found a full field, process the field. */
+      tracef ("server messages: %.*s...\n",
+              from_server_end - from_server_start < 200
+              ? from_server_end - from_server_start
+              : 200,
+              messages);
+      char* message = messages;
+      *match = '\0';
+      from_server_start += match + 3 - messages;
+      messages = match + 3;
+      tracef ("server message: %s\n", message);
+
+      /* Strip leading and trailing whitespace. */
+      char* field = strip_space (message,
+                                 message + from_server_end - from_server_start);
+
+      tracef ("server:: old state %i\n", server_state);
+      tracef ("server:: field %s\n", field);
+      switch (server_state)
+        {
+          case SERVER_DONE:
+            if (strncasecmp ("SERVER", field, 6))
+              goto fail;
+            server_state = SERVER_TOP;
+            break;
+          case SERVER_PLUGINS_MD5:
+            {
+              char* md5 = strdup (field);
+              if (md5 == NULL)
+                goto out_of_memory;
+              tracef ("server:: got plugins_md5: %s\n", md5);
+              server.plugins_md5 = md5;
+              server_state = SERVER_DONE;
+              /* Jump to the done check, as this loop only considers fields
+                 ending in <|>. */
+              tracef ("server:: new state %i\n", server_state);
+              goto server_done;
+            }
+          case SERVER_SERVER:
+            if (strncasecmp ("PLUGINS_MD5", field, 11))
+              goto fail;
+            server_state = SERVER_PLUGINS_MD5;
+            break;
+          default:
+            tracef ("switch t\n");
+            tracef ("cmp %i\n", strncasecmp ("SERVER", field, 6));
+            if (strncasecmp ("SERVER", field, 6))
+              goto fail;
+            server_state = SERVER_SERVER;
+        }
+      tracef ("server:: new state %i\n", server_state);
+    }
+
+  return 0;
+
+ out_of_memory:
+  tracef ("out of mem (server)\n");
+
+  /* TO_SERVER FIX jumps here when there is too little space in to_client for the
+     response.  The result is that the manager closes the connection, so
+     from_client_end and from_client_start can be left as they are. */
+ fail:
+  return -1;
+
+
 }
 
 /** Serve the OpenVAS Management Protocol (OMP).
@@ -785,6 +1282,14 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
            int client_socket, int server_socket)
 {
+  tracef ("Serving OMP.\n");
+
+  /* Initialise with the server. */
+  memcpy (to_server + to_server_end, "< OTP/1.0 >\n", 12);
+  tracef ("-> server: < OTP/1.0 >\n");
+  to_server_end += 12;
+  server_initialising = 1;
+
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
   logf ("<= %.*s\n", from_client_end, from_client);
@@ -794,14 +1299,13 @@ serve_omp (gnutls_session_t* client_session,
   tracef ("<= client  %i bytes\n", from_client_end - initial_start);
 #endif
 #endif /* TRACE || LOG */
-  if (process_omp_input ()) return -1;
-
-  tracef ("Serving OMP.\n");
+  if (process_omp_client_input ()) return -1;
 
   /* Loop handling input from the sockets. */
   int nfds = 1 + (client_socket > server_socket
                   ? client_socket : server_socket);
   fd_set readfds, exceptfds, writefds;
+  unsigned char lastfds = 0; // FIX
   while (1)
     {
       /* Setup for select. */
@@ -811,26 +1315,33 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&writefds);
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
+      // FIX shutdown if any eg read fails
       if (from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
-          fds |= CLIENT_READ;
+          fds |= FD_CLIENT_READ;
+          if ((lastfds & FD_CLIENT_READ) == 0) tracef ("client read on\n");
+        }
+      else
+        {
+          if (lastfds & FD_CLIENT_READ) tracef ("client read off\n");
         }
       if (from_server_end < BUFFER_SIZE)
         {
           FD_SET (server_socket, &readfds);
-          fds |= SERVER_READ;
+          fds |= FD_SERVER_READ;
         }
       if (to_client_start < to_client_end)
         {
           FD_SET (client_socket, &writefds);
-          fds |= CLIENT_WRITE;
+          fds |= FD_CLIENT_WRITE;
         }
       if (to_server_start < to_server_end)
         {
           FD_SET (server_socket, &writefds);
-          fds |= SERVER_WRITE;
+          fds |= FD_SERVER_WRITE;
         }
+      lastfds = fds;
 
       /* Select, then handle result. */
       int ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
@@ -840,261 +1351,269 @@ serve_omp (gnutls_session_t* client_session,
           perror ("Child select failed");
           return -1;
         }
-      if (ret > 0)
+      if (ret == 0) continue;
+
+      if (FD_ISSET (client_socket, &exceptfds))
         {
-          if (FD_ISSET (client_socket, &exceptfds))
-            {
-              fprintf (stderr, "Exception on client in child select.\n");
-              return -1;
-            }
-
-          if (FD_ISSET (server_socket, &exceptfds))
-            {
-              fprintf (stderr, "Exception on server in child select.\n");
-              return -1;
-            }
-
-          if (fds & CLIENT_READ && FD_ISSET (client_socket, &readfds))
-            {
-#if TRACE || LOG
-              int initial_start = from_client_end;
-#endif
-              /* Read as much as possible from the client. */
-              while (from_client_end < BUFFER_SIZE)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_recv (*client_session,
-                                              from_client + from_client_end,
-                                              BUFFER_SIZE
-                                              - from_client_end);
-#else
-                  count = read (client_socket,
-                                from_client + from_client_end,
-                                BUFFER_SIZE - from_client_end);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to read from client.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      perror ("Failed to read from client");
-#endif
-                      return -1;
-                    }
-                  if (count == 0)
-                    /* End of file. */
-                    return 0;
-                  from_client_end += count;
-                }
-#if TRACE || LOG
-              /* This check prevents output in the "asynchronous network
-                 error" case. */
-              if (from_client_end > initial_start)
-                {
-                  logf ("<= %.*s\n",
-                        from_client_end - initial_start,
-                        from_client + initial_start);
-#if TRACE_TEXT
-                  tracef ("<= client  \"%.*s\"\n",
-                          from_client_end - initial_start,
-                          from_client + initial_start);
-#else
-                  tracef ("<= client  %i bytes\n",
-                          from_client_end - initial_start);
-#endif
-                }
-#endif /* TRACE || LOG */
-                if (process_omp_input ()) return -1;
-            }
-
-          if (fds & SERVER_WRITE && FD_ISSET (server_socket, &writefds))
-            {
-              /* Write as much as possible to the server. */
-              while (to_server_start < to_server_end)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_send (*server_session,
-                                              to_server + to_server_start,
-                                              to_server_end - to_server_start);
-#else
-                  count = write (server_socket,
-                                 to_server + to_server_start,
-                                 to_server_end - to_server_start);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to write to server.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_server_write;
-                      if (errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      perror ("Failed to write to server");
-#endif
-                      return -1;
-                    }
-                  to_server_start += count;
-                  tracef ("=> server  %i bytes\n", count);
-                }
-              tracef ("=> server  done\n");
-              to_server_start = to_server_end = 0;
-             end_server_write:
-              ;
-            }
-
-          if (fds & SERVER_READ && FD_ISSET (server_socket, &readfds))
-            {
-#if TRACE
-              int initial_start = from_server_end;
-#endif
-              /* Read as much as possible from the server. */
-              while (from_server_end < BUFFER_SIZE)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_recv (*server_session,
-                                              from_server + from_server_end,
-                                              BUFFER_SIZE
-                                              - from_server_end);
-#else
-                  count = read (server_socket,
-                                from_server + from_server_end,
-                                BUFFER_SIZE - from_server_end);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to read to server.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Got everything available, return to `select'. */
-                        break;
-                      if (errno == EINTR)
-                        /* Interrupted, try read again. */
-                        continue;
-                      perror ("Failed to read from server");
-#endif
-                      return -1;
-                    }
-                  if (count == 0)
-                    /* End of file. */
-                    return 0;
-                  from_server_end += count;
-                }
-#if TRACE
-              /* This check prevents output in the "asynchronous network
-                 error" case. */
-              if (from_server_end > initial_start)
-                {
-#if TRACE_TEXT
-                  tracef ("<= server  \"%.*s\"\n",
-                          from_server_end - initial_start,
-                          from_server + initial_start);
-#else
-                  tracef ("<= server  %i bytes\n",
-                          from_server_end - initial_start);
-#endif
-                }
-#endif /* TRACE */
-            }
-
-          if (fds & CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
-            {
-              /* Write as much as possible to the client. */
-              while (to_client_start < to_client_end)
-                {
-                  ssize_t count;
-#if OVAS_SSL
-                  count = gnutls_record_send (*client_session,
-                                              to_client + to_client_start,
-                                              to_client_end - to_client_start);
-#else
-                  count = write (client_socket,
-                                 to_client + to_client_start,
-                                 to_client_end - to_client_start);
-#endif
-                  if (count < 0)
-                    {
-#if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      if (errno == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
-                        break;
-                      fprintf (stderr, "Failed to write to client.\n");
-                      gnutls_perror (count);
-#else
-                      if (errno == EAGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_client_write;
-                      if (errno == EINTR)
-                        /* Interrupted, try write again. */
-                        continue;
-                      perror ("Failed to write to client");
-#endif
-                      return -1;
-                    }
-                  logf ("=> %.*s\n",
-                        to_client_end - to_client_start,
-                        to_client + to_client_start);
-                  to_client_start += count;
-                  tracef ("=> client  %i bytes\n", count);
-                }
-              tracef ("=> client  done\n");
-              to_client_start = to_client_end = 0;
-             end_client_write:
-              ;
-            }
+          fprintf (stderr, "Exception on client in child select.\n");
+          return -1;
         }
-    }
+
+      if (FD_ISSET (server_socket, &exceptfds))
+        {
+          fprintf (stderr, "Exception on server in child select.\n");
+          return -1;
+        }
+
+      if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
+        {
+          tracef ("FD_CLIENT_READ\n");
+#if TRACE || LOG
+          int initial_start = from_client_end;
+#endif
+          /* Read as much as possible from the client. */
+          while (from_client_end < BUFFER_SIZE)
+            {
+              ssize_t count;
+#if OVAS_SSL
+              count = gnutls_record_recv (*client_session,
+                                          from_client + from_client_end,
+                                          BUFFER_SIZE
+                                          - from_client_end);
+#else
+              count = read (client_socket,
+                            from_client + from_client_end,
+                            BUFFER_SIZE - from_client_end);
+#endif
+              tracef ("count: %i\n", count);
+              if (count < 0)
+                {
+#if OVAS_SSL
+                  if (count == GNUTLS_E_AGAIN) // || errno == EAGAIN) FIX
+                    /* Got everything available, return to `select'. */
+                    break;
+                  if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR) FIX
+                    /* Interrupted, try read again. */
+                    continue;
+                  if (errno == GNUTLS_E_REHANDSHAKE)
+                    {
+                      /* Return to select. TODO Rehandshake. */
+                      tracef ("FIX should rehandshake\n");
+                      break;
+                    }
+                  fprintf (stderr, "Failed to read from client.\n");
+                  gnutls_perror (count);
+#else
+                  if (errno == EAGAIN)
+                    /* Got everything available, return to `select'. */
+                    break;
+                  if (errno == EINTR)
+                    /* Interrupted, try read again. */
+                    continue;
+                  perror ("Failed to read from client");
+#endif
+                  return -1;
+                }
+              if (count == 0)
+                /* End of file. */
+                return 0;
+              from_client_end += count;
+            }
+#if TRACE || LOG
+          /* This check prevents output in the "asynchronous network
+             error" case. */
+          if (from_client_end > initial_start)
+            {
+              logf ("<= %.*s\n",
+                    from_client_end - initial_start,
+                    from_client + initial_start);
+#if TRACE_TEXT
+              tracef ("<= client  \"%.*s\"\n",
+                      from_client_end - initial_start,
+                      from_client + initial_start);
+#else
+              tracef ("<= client  %i bytes\n",
+                      from_client_end - initial_start);
+#endif
+            }
+#endif /* TRACE || LOG */
+          if (process_omp_client_input ()) return -1;
+        }
+
+      if (fds & FD_SERVER_WRITE && FD_ISSET (server_socket, &writefds))
+        {
+          /* Write as much as possible to the server. */
+          while (to_server_start < to_server_end)
+            {
+              ssize_t count;
+#if OVAS_SSL
+              count = gnutls_record_send (*server_session,
+                                          to_server + to_server_start,
+                                          to_server_end - to_server_start);
+#else
+              count = write (server_socket,
+                             to_server + to_server_start,
+                             to_server_end - to_server_start);
+#endif
+              if (count < 0)
+                {
+#if OVAS_SSL
+                  if (count == GNUTLS_E_AGAIN) // || errno == EAGAIN)
+                    /* Wrote as much as possible, return to `select'. */
+                    goto end_server_fd_write;
+                  if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR)
+                    /* Interrupted, try write again. */
+                    continue;
+                  if (errno == GNUTLS_E_REHANDSHAKE)
+                    /* Return to select. TODO Rehandshake. */
+                    break;
+                  fprintf (stderr, "Failed to write to server.\n");
+                  gnutls_perror (count);
+#else
+                  if (errno == EAGAIN)
+                    /* Wrote as much as possible, return to `select'. */
+                    goto end_server_fd_write;
+                  if (errno == EINTR)
+                    /* Interrupted, try write again. */
+                    continue;
+                  perror ("Failed to write to server");
+#endif
+                  return -1;
+                }
+              to_server_start += count;
+              tracef ("=> server  %i bytes\n", count);
+            }
+          tracef ("=> server  done\n");
+          to_server_start = to_server_end = 0;
+         end_server_fd_write:
+          ;
+        }
+
+      if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
+        {
+#if TRACE
+          int initial_start = from_server_end;
+#endif
+          /* Read as much as possible from the server. */
+          while (from_server_end < BUFFER_SIZE)
+            {
+              ssize_t count;
+#if OVAS_SSL
+              count = gnutls_record_recv (*server_session,
+                                          from_server + from_server_end,
+                                          BUFFER_SIZE
+                                          - from_server_end);
+#else
+              count = read (server_socket,
+                            from_server + from_server_end,
+                            BUFFER_SIZE - from_server_end);
+#endif
+              if (count < 0)
+                {
+#if OVAS_SSL
+                  if (count == GNUTLS_E_AGAIN) // || errno == EAGAIN)
+                    /* Got everything available, return to `select'. */
+                    break;
+                  if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR)
+                    /* Interrupted, try read again. */
+                    continue;
+                  if (errno == GNUTLS_E_REHANDSHAKE)
+                    /* Return to select. TODO Rehandshake. */
+                    break;
+                  fprintf (stderr, "Failed to read from server.\n");
+                  gnutls_perror (count);
+#else
+                  if (errno == EAGAIN)
+                    /* Got everything available, return to `select'. */
+                    break;
+                  if (errno == EINTR)
+                    /* Interrupted, try read again. */
+                    continue;
+                  perror ("Failed to read from server");
+#endif
+                  return -1;
+                }
+              if (count == 0)
+                /* End of file. */
+                return 0;
+              from_server_end += count;
+            }
+#if TRACE
+          /* This check prevents output in the "asynchronous network
+             error" case. */
+          if (from_server_end > initial_start)
+            {
+#if TRACE_TEXT
+              tracef ("<= server  \"%.*s\"\n",
+                      from_server_end - initial_start,
+                      from_server + initial_start);
+#else
+              tracef ("<= server  %i bytes\n",
+                      from_server_end - initial_start);
+#endif
+            }
+#endif /* TRACE */
+          if (process_omp_server_input ()) return -1;
+        }
+
+      if (fds & FD_CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
+        {
+          /* Write as much as possible to the client. */
+          while (to_client_start < to_client_end)
+            {
+              ssize_t count;
+#if OVAS_SSL
+              count = gnutls_record_send (*client_session,
+                                          to_client + to_client_start,
+                                          to_client_end - to_client_start);
+#else
+              count = write (client_socket,
+                             to_client + to_client_start,
+                             to_client_end - to_client_start);
+#endif
+              if (count < 0)
+                {
+#if OVAS_SSL
+                  if (count == GNUTLS_E_AGAIN) // || errno == EAGAIN)
+                    /* Wrote as much as possible, return to `select'. */
+                    goto end_client_fd_write;
+                  if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR)
+                    /* Interrupted, try write again. */
+                    continue;
+                  if (errno == GNUTLS_E_REHANDSHAKE)
+                    /* Return to select. TODO Rehandshake. */
+                    break;
+                  fprintf (stderr, "Failed to write to client.\n");
+                  gnutls_perror (count);
+#else
+                  if (errno == EAGAIN)
+                    /* Wrote as much as possible, return to `select'. */
+                    goto end_client_fd_write;
+                  if (errno == EINTR)
+                    /* Interrupted, try write again. */
+                    continue;
+                  perror ("Failed to write to client");
+#endif
+                  return -1;
+                }
+              logf ("=> %.*s\n",
+                    to_client_end - to_client_start,
+                    to_client + to_client_start);
+              to_client_start += count;
+              tracef ("=> client  %i bytes\n", count);
+            }
+          tracef ("=> client  done\n");
+          to_client_start = to_client_end = 0;
+         end_client_fd_write:
+          ;
+        }
+    } /* while (1) */
 
   return 0;
 }
+
+
+/* Other functions. */
 
 /** Read the protocol from \arg client_session, which is on \arg
   * client_socket.
@@ -1137,7 +1656,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       if (count < 0)
         {
 #if OVAS_SSL
-          if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+          if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR)
             /* Interrupted, try read again. */
             goto retry;
           if (errno == GNUTLS_E_REHANDSHAKE)
@@ -1188,8 +1707,8 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 /** Serve the client.
   *
   * Connect to the openvasd server, then call either \ref serve_otp or \ref
-  * serve_omp to serve the protocol, depending on the first message read
-  * from the client.
+  * serve_omp to serve the protocol, depending on the first message that
+  * the client sends.
   *
   * @param[in]  client_socket  The socket connected to the client.
   *
@@ -1274,8 +1793,11 @@ serve_client (int client_socket)
     {
       if (ret == GNUTLS_E_AGAIN
           || ret == GNUTLS_E_INTERRUPTED
+#if 0
           || errno == EAGAIN
-          || errno == EINTR)
+          || errno == EINTR
+#endif
+          )
         goto retry;
       fprintf (stderr, "Failed to shake hands with server.\n");
       gnutls_perror (ret);
@@ -1373,14 +1895,13 @@ serve_client (int client_socket)
 #endif
 
   close (server_socket);
-
   return EXIT_FAILURE;
 }
 
-#undef CLIENT_READ
-#undef CLIENT_WRITE
-#undef SERVER_READ
-#undef SERVER_WRITE
+#undef FD_CLIENT_READ
+#undef FD_CLIENT_WRITE
+#undef FD_SERVER_READ
+#undef FD_SERVER_WRITE
 
 /** Accept and fork.
   *
@@ -1422,6 +1943,7 @@ accept_and_maybe_fork () {
           if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
             {
               perror ("Failed to set client socket flag");
+              shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
               exit (EXIT_FAILURE);
             }
@@ -1433,16 +1955,22 @@ accept_and_maybe_fork () {
               fprintf (stderr,
                        "Failed to attach server context to socket %i.\n",
                        client_socket);
+              shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
               exit (EXIT_FAILURE);
             }
-          tracef ("Server context attached.\n")
+          tracef ("Server context attached.\n");
           int ret = serve_client (secure_client_socket);
           close_stream_connection (secure_client_socket);
 #else
           int ret = serve_client (client_socket);
-#endif
+          if (shutdown (client_socket, SHUT_RDWR) == -1)
+            {
+              fprintf (stderr, "(fail on socket %i)\n", client_socket);
+              perror ("Failed to shutdown client socket");
+            }
           close (client_socket);
+#endif
           exit (ret);
         }
       case -1:
@@ -1488,6 +2016,7 @@ handle_signal (int signal)
     }
 }
 
+
 /** Entry point to the manager.
   *
   * Setup the manager and then loop forever passing connections to
@@ -1503,6 +2032,12 @@ main (int argc, char** argv)
 {
   int server_port, manager_port;
   tracef ("OpenVAS Manager\n");
+  tracef ("GNUTLS_E_AGAIN %i\n", GNUTLS_E_AGAIN);
+  tracef ("GNUTLS_E_INTERRUPTED %i\n", GNUTLS_E_INTERRUPTED);
+  tracef ("GNUTLS_E_REHANDSHAKE %i\n", GNUTLS_E_REHANDSHAKE);
+  tracef ("-8: %s\n", strerror(8));
+  tracef ("-9: %s\n", strerror(9));
+  tracef ("-10: %s\n", strerror(10));
 
   /* Process options. */
 

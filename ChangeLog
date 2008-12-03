@@ -1,3 +1,24 @@
+2008-12-03  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add more OMP commands, start adding server communication.
+
+	* openvasmd.c: Add server records.  Add some task allocation tracing.
+	(free_tasks, make_task): Correct looping.
+	(current_task): Rename current_client_task;
+	(tracef, logf): Flush trailing semicolons.
+	(CLIENT_READ, CLIENT_WRITE): Rename FD_CLIENT_*.
+	(SERVER_READ, SERVER_WRITE): Rename FD_SERVER_*.
+	(find_task, modify_task, start_task, strip_space): New functions.
+	(process_omp_input): Rename to process_omp_client_input.
+	(process_omp_client_input): Rename from process_omp_input. Add
+	beginnings of MODIFY_TASK, START_TASK and STATUS.
+	(process_omp_server_input): New function.
+	(TO_SERVER): New macro.
+	(serve_omp): Add server init and process_omp_server_input call.
+	Improve formatting.
+	(accept_and_maybe_fork): Add client socket shutdowns.  Move client socket
+	close out of OVAS_SSL case.
+
 2008-11-27  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add OMP commands OTP_VERSION, LOGIN and NEW_TASK.
@@ -13,10 +34,10 @@
 	Add choosing of protocol based on first message.
 
 	* openvasmd.c (OMP, serve_otp, serve_client): New.
-	  (read_protocol, serve_client): New.
-	  (accept_and_maybe_fork): Call serve_client instead
-	  of serve_omp.
-	  (serve_omp): Move OTP code to serve_otp.
+	(read_protocol, serve_client): New.
+	(accept_and_maybe_fork): Call serve_client instead
+	of serve_omp.
+	(serve_omp): Move OTP code to serve_otp.
 
 2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
 
