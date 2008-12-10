@@ -1,5 +1,10 @@
 2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
 
+    * openvasmd.c (serve_otp, read_protocol, serve_client):
+	Drop EAGAIN and EINTR checks from OVAL_SSL cases.
+
+2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	After selecting, ensure that all input is read before the fd is
 	selected again.  Start handling server input: preferences, plugins
 	dependencies and rules.  Improve server input field parsing.

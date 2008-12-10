@@ -742,10 +742,10 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
 #if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                      if (count == GNUTLS_E_AGAIN)
                         /* Got everything available, return to `select'. */
                         break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                      if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try read again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
@@ -807,10 +807,10 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
 #if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                      if (count == GNUTLS_E_AGAIN)
                         /* Wrote as much as possible, return to `select'. */
                         goto end_server_fd_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                      if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try write again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
@@ -860,10 +860,10 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
 #if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                      if (count == GNUTLS_E_AGAIN)
                         /* Got everything available, return to `select'. */
                         break;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                      if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try read again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
@@ -922,10 +922,10 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
 #if OVAS_SSL
-                      if (count == GNUTLS_E_AGAIN || errno == EAGAIN)
+                      if (count == GNUTLS_E_AGAIN)
                         /* Wrote as much as possible, return to `select'. */
                         goto end_client_fd_write;
-                      if (count == GNUTLS_E_INTERRUPTED || errno == EINTR)
+                      if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try write again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
@@ -2296,7 +2296,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       if (count < 0)
         {
 #if OVAS_SSL
-          if (count == GNUTLS_E_INTERRUPTED) // || errno == EINTR)
+          if (count == GNUTLS_E_INTERRUPTED)
             /* Interrupted, try read again. */
             goto retry;
           if (count == GNUTLS_E_REHANDSHAKE)
@@ -2432,12 +2432,7 @@ serve_client (int client_socket)
   if (ret < 0)
     {
       if (ret == GNUTLS_E_AGAIN
-          || ret == GNUTLS_E_INTERRUPTED
-#if 0
-          || errno == EAGAIN
-          || errno == EINTR
-#endif
-          )
+          || ret == GNUTLS_E_INTERRUPTED)
         goto retry;
       fprintf (stderr, "Failed to shake hands with server.\n");
       gnutls_perror (ret);
