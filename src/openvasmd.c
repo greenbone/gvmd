@@ -1725,46 +1725,46 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
       ssize_t count;
 #if OVAS_SSL
       count = gnutls_record_recv (*client_session,
-				  from_client + from_client_end,
-				  BUFFER_SIZE
-				  - from_client_end);
+                                  from_client + from_client_end,
+                                  BUFFER_SIZE
+                                  - from_client_end);
 #else
       count = read (client_socket,
-		    from_client + from_client_end,
-		    BUFFER_SIZE - from_client_end);
+                    from_client + from_client_end,
+                    BUFFER_SIZE - from_client_end);
 #endif
       tracef ("   count: %i\n", count);
       if (count < 0)
-	{
+        {
 #if OVAS_SSL
-	  if (count == GNUTLS_E_AGAIN)
-	    /* Got everything available, return to `select'. */
-	    return 0;
-	  if (count == GNUTLS_E_INTERRUPTED)
-	    /* Interrupted, try read again. */
-	    continue;
-	  if (count == GNUTLS_E_REHANDSHAKE)
-	    {
-	      /* \todo Rehandshake. */
-	      tracef ("   FIX should rehandshake\n");
-	      continue;
-	    }
-	  fprintf (stderr, "Failed to read from client.\n");
-	  gnutls_perror (count);
+          if (count == GNUTLS_E_AGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (count == GNUTLS_E_INTERRUPTED)
+            /* Interrupted, try read again. */
+            continue;
+          if (count == GNUTLS_E_REHANDSHAKE)
+            {
+              /* \todo Rehandshake. */
+              tracef ("   FIX should rehandshake\n");
+              continue;
+            }
+          fprintf (stderr, "Failed to read from client.\n");
+          gnutls_perror (count);
 #else
-	  if (errno == EAGAIN)
-	    /* Got everything available, return to `select'. */
-	    return 0;
-	  if (errno == EINTR)
-	    /* Interrupted, try read again. */
-	    continue;
-	  perror ("Failed to read from client");
+          if (errno == EAGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (errno == EINTR)
+            /* Interrupted, try read again. */
+            continue;
+          perror ("Failed to read from client");
 #endif
-	  return -1;
-	}
+          return -1;
+        }
       if (count == 0)
-	/* End of file. */
-	return -3;
+        /* End of file. */
+        return -3;
       from_client_end += count;
     }
 
@@ -1782,46 +1782,46 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
       ssize_t count;
 #if OVAS_SSL
       count = gnutls_record_recv (*server_session,
-				  from_server + from_server_end,
-				  BUFFER_SIZE
-				  - from_server_end);
+                                  from_server + from_server_end,
+                                  BUFFER_SIZE
+                                  - from_server_end);
 #else
       count = read (server_socket,
-		    from_server + from_server_end,
-		    BUFFER_SIZE - from_server_end);
+                    from_server + from_server_end,
+                    BUFFER_SIZE - from_server_end);
 #endif
       tracef ("   count: %i\n", count);
       if (count < 0)
-	{
+        {
 #if OVAS_SSL
-	  if (count == GNUTLS_E_AGAIN)
-	    /* Got everything available, return to `select'. */
-	    return 0;
-	  if (count == GNUTLS_E_INTERRUPTED)
-	    /* Interrupted, try read again. */
-	    continue;
-	  if (count == GNUTLS_E_REHANDSHAKE)
-	    {
-	      /* \todo Rehandshake. */
-	      tracef ("   FIX should rehandshake\n");
-	      continue;
-	    }
-	  fprintf (stderr, "Failed to read from server.\n");
-	  gnutls_perror (count);
+          if (count == GNUTLS_E_AGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (count == GNUTLS_E_INTERRUPTED)
+            /* Interrupted, try read again. */
+            continue;
+          if (count == GNUTLS_E_REHANDSHAKE)
+            {
+              /* \todo Rehandshake. */
+              tracef ("   FIX should rehandshake\n");
+              continue;
+            }
+          fprintf (stderr, "Failed to read from server.\n");
+          gnutls_perror (count);
 #else
-	  if (errno == EAGAIN)
-	    /* Got everything available, return to `select'. */
-	    return 0;
-	  if (errno == EINTR)
-	    /* Interrupted, try read again. */
-	    continue;
-	  perror ("Failed to read from server");
+          if (errno == EAGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (errno == EINTR)
+            /* Interrupted, try read again. */
+            continue;
+          perror ("Failed to read from server");
 #endif
-	  return -1;
-	}
+          return -1;
+        }
       if (count == 0)
-	/* End of file. */
-	return -3;
+        /* End of file. */
+        return -3;
       from_server_end += count;
     }
 
@@ -1954,43 +1954,43 @@ serve_omp (gnutls_session_t* client_session,
 
           do
             {
-	      switch (read_from_client (client_session, client_socket))
-		{
-		  case  0:       /* Read everything. */
-		    from_client_more = FALSE;
-		    break;
-		  case -1:       /* Error. */
-		    return -1;
-		  case -2:       /* from_client buffer full. */
-		    from_client_more = TRUE;
-		    break;
-		  case -3:       /* End of file. */
-		    return 0;
-		  default:       /* Programming error. */
-		    assert (0);
-		}
+              switch (read_from_client (client_session, client_socket))
+                {
+                  case  0:       /* Read everything. */
+                    from_client_more = FALSE;
+                    break;
+                  case -1:       /* Error. */
+                    return -1;
+                  case -2:       /* from_client buffer full. */
+                    from_client_more = TRUE;
+                    break;
+                  case -3:       /* End of file. */
+                    return 0;
+                  default:       /* Programming error. */
+                    assert (0);
+                }
 
 #if TRACE || LOG
-	      /* This check prevents output in the "asynchronous network
-		 error" case. */
-	      if (from_client_end > initial_start)
-		{
-		  logf ("<= %.*s\n",
-			from_client_end - initial_start,
-			from_client + initial_start);
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_client_end > initial_start)
+                {
+                  logf ("<= %.*s\n",
+                        from_client_end - initial_start,
+                        from_client + initial_start);
 #if TRACE_TEXT
-		  tracef ("<= client  \"%.*s\"\n",
-			  from_client_end - initial_start,
-			  from_client + initial_start);
+                  tracef ("<= client  \"%.*s\"\n",
+                          from_client_end - initial_start,
+                          from_client + initial_start);
 #else
-		  tracef ("<= client  %i bytes\n",
-			  from_client_end - initial_start);
+                  tracef ("<= client  %i bytes\n",
+                          from_client_end - initial_start);
 #endif
-		}
+                }
 #endif /* TRACE || LOG */
 
  continue_stalled_client_input:
-	      switch (process_omp_client_input ())
+              switch (process_omp_client_input ())
                 {
                   case 0:        /* Processed all input. */
                     client_input_stalled = 0;
@@ -2014,13 +2014,13 @@ serve_omp (gnutls_session_t* client_session,
             }
           while (from_client_more);
 
-	  if (server_input_stalled)
-	    /* A process_omp_server_input and a process_omp_client_input
+          if (server_input_stalled)
+            /* A process_omp_server_input and a process_omp_client_input
                were both stalled by a full to_client buffer.  After the
                to_client write that followed, control passed to the stalled
                client processing (above).  Now jump to the stalled server
                processing. */
-	     goto continue_stalled_server_input;
+             goto continue_stalled_server_input;
         }
 
       if (fds & FD_SERVER_WRITE
@@ -2029,70 +2029,70 @@ serve_omp (gnutls_session_t* client_session,
         {
           /* Write as much as possible to the server. */
 
-	  while (to_server_start < to_server_end)
-	    {
-	      ssize_t count;
+          while (to_server_start < to_server_end)
+            {
+              ssize_t count;
 #if OVAS_SSL
-	      count = gnutls_record_send (*server_session,
-					  to_server + to_server_start,
-					  to_server_end - to_server_start);
+              count = gnutls_record_send (*server_session,
+                                          to_server + to_server_start,
+                                          to_server_end - to_server_start);
 #else
-	      count = write (server_socket,
-			     to_server + to_server_start,
-			     to_server_end - to_server_start);
+              count = write (server_socket,
+                             to_server + to_server_start,
+                             to_server_end - to_server_start);
 #endif
-	      if (count < 0)
-		{
+              if (count < 0)
+                {
 #if OVAS_SSL
-		  if (count == GNUTLS_E_AGAIN)
-		    {
-		      /* Wrote as much as possible, either return to
-			 `select' or re-attempt to process leftover
-			 client input. */
-		      to_server_ok = FALSE;
-		      goto end_server_fd_write;
-		    }
-		  if (count == GNUTLS_E_INTERRUPTED)
-		    /* Interrupted, try write again. */
-		    continue;
-		  if (count == GNUTLS_E_REHANDSHAKE)
-		    /* \todo Rehandshake. */
-		    continue;
-		  fprintf (stderr, "Failed to write to server.\n");
-		  gnutls_perror (count);
+                  if (count == GNUTLS_E_AGAIN)
+                    {
+                      /* Wrote as much as possible, either return to
+                         `select' or re-attempt to process leftover
+                         client input. */
+                      to_server_ok = FALSE;
+                      goto end_server_fd_write;
+                    }
+                  if (count == GNUTLS_E_INTERRUPTED)
+                    /* Interrupted, try write again. */
+                    continue;
+                  if (count == GNUTLS_E_REHANDSHAKE)
+                    /* \todo Rehandshake. */
+                    continue;
+                  fprintf (stderr, "Failed to write to server.\n");
+                  gnutls_perror (count);
 #else
-		  if (errno == EAGAIN)
-		    {
-		      /* Wrote as much as possible, either return to
-			 `select' or re-attempt to process leftover
-			 client input. */
-		      to_server_ok = FALSE;
-		      goto end_server_fd_write;
-		    }
-		  if (errno == EINTR)
-		    /* Interrupted, try write again. */
-		    continue;
-		  perror ("Failed to write to server");
+                  if (errno == EAGAIN)
+                    {
+                      /* Wrote as much as possible, either return to
+                         `select' or re-attempt to process leftover
+                         client input. */
+                      to_server_ok = FALSE;
+                      goto end_server_fd_write;
+                    }
+                  if (errno == EINTR)
+                    /* Interrupted, try write again. */
+                    continue;
+                  perror ("Failed to write to server");
 #endif
-		  return -1;
-		}
-	      to_server_start += count;
-	      tracef ("=> server  %i bytes\n", count);
-	    }
-	  tracef ("=> server  done\n");
-	  to_server_start = to_server_end = 0;
-	  /* For stalled client input processing.  Flag that it is OK
-	     to try write to the server again after re-attempting to
-	     process any leftover client input. */
-	  to_server_ok = TRUE;
+                  return -1;
+                }
+              to_server_start += count;
+              tracef ("=> server  %i bytes\n", count);
+            }
+          tracef ("=> server  done\n");
+          to_server_start = to_server_end = 0;
+          /* For stalled client input processing.  Flag that it is OK
+             to try write to the server again after re-attempting to
+             process any leftover client input. */
+          to_server_ok = TRUE;
  end_server_fd_write:
 
-	  if (client_input_stalled == 1)
-	    /* A previous process_omp_client_input was stalled by a
-	       full to_server buffer.  Jump back to process the
-	       remaining client input now that some of the to_server
-	       buffer may have been written.  */
-	     goto continue_stalled_client_input;
+          if (client_input_stalled == 1)
+            /* A previous process_omp_client_input was stalled by a
+               full to_server buffer.  Jump back to process the
+               remaining client input now that some of the to_server
+               buffer may have been written.  */
+             goto continue_stalled_client_input;
         }
 
       if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
@@ -2104,43 +2104,43 @@ serve_omp (gnutls_session_t* client_session,
 
           do
             {
-	      switch (read_from_server (server_session, server_socket))
-		{
-		  case  0:       /* Read everything. */
-		    from_server_more = FALSE;
-		    break;
-		  case -1:       /* Error. */
-		    return -1;
-		  case -2:       /* from_server buffer full. */
-		    from_server_more = TRUE;
-		    break;
-		  case -3:       /* End of file. */
-		    return 0;
-		  default:       /* Programming error. */
-		    assert (0);
-		}
+              switch (read_from_server (server_session, server_socket))
+                {
+                  case  0:       /* Read everything. */
+                    from_server_more = FALSE;
+                    break;
+                  case -1:       /* Error. */
+                    return -1;
+                  case -2:       /* from_server buffer full. */
+                    from_server_more = TRUE;
+                    break;
+                  case -3:       /* End of file. */
+                    return 0;
+                  default:       /* Programming error. */
+                    assert (0);
+                }
 
 #if TRACE || LOG
-	      /* This check prevents output in the "asynchronous network
-		 error" case. */
-	      if (from_server_end > initial_start)
-		{
-		  logf ("<= %.*s\n",
-			from_server_end - initial_start,
-			from_server + initial_start);
+              /* This check prevents output in the "asynchronous network
+                 error" case. */
+              if (from_server_end > initial_start)
+                {
+                  logf ("<= %.*s\n",
+                        from_server_end - initial_start,
+                        from_server + initial_start);
 #if TRACE_TEXT
-		  tracef ("<= server  \"%.*s\"\n",
-			  from_server_end - initial_start,
-			  from_server + initial_start);
+                  tracef ("<= server  \"%.*s\"\n",
+                          from_server_end - initial_start,
+                          from_server + initial_start);
 #else
-		  tracef ("<= server  %i bytes\n",
-			  from_server_end - initial_start);
+                  tracef ("<= server  %i bytes\n",
+                          from_server_end - initial_start);
 #endif
-		}
+                }
 #endif /* TRACE || LOG */
 
  continue_stalled_server_input:
-	      switch (process_omp_server_input ())
+              switch (process_omp_server_input ())
                 {
                   case 0:        /* Processed all input. */
                     server_input_stalled = FALSE;
@@ -2184,10 +2184,10 @@ serve_omp (gnutls_session_t* client_session,
 #if OVAS_SSL
                   if (count == GNUTLS_E_AGAIN)
                     {
-		      /* Wrote as much as possible, either return to
-			 `select' or re-attempt to process leftover
-			 server input. */
-		      to_client_ok = FALSE;
+                      /* Wrote as much as possible, either return to
+                         `select' or re-attempt to process leftover
+                         server input. */
+                      to_client_ok = FALSE;
                       goto end_client_fd_write;
                     }
                   if (count == GNUTLS_E_INTERRUPTED)
@@ -2201,10 +2201,10 @@ serve_omp (gnutls_session_t* client_session,
 #else
                   if (errno == EAGAIN)
                     {
-		      /* Wrote as much as possible, either return to
-			 `select' or re-attempt to process leftover
-			 server input. */
-		      to_client_ok = FALSE;
+                      /* Wrote as much as possible, either return to
+                         `select' or re-attempt to process leftover
+                         server input. */
+                      to_client_ok = FALSE;
                     }
                   if (errno == EINTR)
                     /* Interrupted, try write again. */
@@ -2221,28 +2221,28 @@ serve_omp (gnutls_session_t* client_session,
             }
           tracef ("=> client  done\n");
           to_client_start = to_client_end = 0;
-	  /* For stalled server input processing.  Flag that it is OK
-	     to try write to the server again after re-attempting to
-	     process any leftover server or client input. */
-	  to_client_ok = TRUE;
+          /* For stalled server input processing.  Flag that it is OK
+             to try write to the server again after re-attempting to
+             process any leftover server or client input. */
+          to_client_ok = TRUE;
  end_client_fd_write:
 
-	  if (client_input_stalled)
-	    /* A previous process_omp_client_input was stalled by a
-	       full to_client buffer.  Jump back to process the
-	       remaining client input now that some of the to_client
-	       buffer may have been written.  */
-	     goto continue_stalled_client_input;
+          if (client_input_stalled)
+            /* A previous process_omp_client_input was stalled by a
+               full to_client buffer.  Jump back to process the
+               remaining client input now that some of the to_client
+               buffer may have been written.  */
+             goto continue_stalled_client_input;
 
-	  if (server_input_stalled)
-	    /* A previous process_omp_server_input was stalled by a
-	       full to_client buffer.  Jump back to process the
-	       remaining server input now that some of the to_client
-	       buffer may have been written.
+          if (server_input_stalled)
+            /* A previous process_omp_server_input was stalled by a
+               full to_client buffer.  Jump back to process the
+               remaining server input now that some of the to_client
+               buffer may have been written.
 
                If this is missed because client processing is also stalled,
                it will be done after the client processing.  */
-	     goto continue_stalled_server_input;
+             goto continue_stalled_server_input;
         }
     } /* while (1) */
 
@@ -2848,11 +2848,11 @@ main (int argc, char** argv)
   if (manager_address_string)
     {
       if (!inet_aton (manager_address_string, &manager_address.sin_addr))
-	{
-	  fprintf (stderr, "Failed to create manager address %s.\n",
-		   manager_address_string);
-	  exit (EXIT_FAILURE);
-	}
+        {
+          fprintf (stderr, "Failed to create manager address %s.\n",
+                   manager_address_string);
+          exit (EXIT_FAILURE);
+        }
     }
   else
     manager_address.sin_addr.s_addr = INADDR_ANY;

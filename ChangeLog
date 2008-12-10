@@ -1,5 +1,9 @@
 2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* openvasmd.c: Convert tabs to spaces.
+
+2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* openvasmd.c (OPENVASMD_ADDRESS): Remove.
 	(main): Bind to INADDR_ANY by default.
 
