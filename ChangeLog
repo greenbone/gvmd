@@ -1,3 +1,44 @@
+2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	After selecting, ensure that all input is read before the fd is
+	selected again.  Start handling server input: preferences, plugins
+	dependencies and rules.  Improve server input field parsing.
+
+	* openvasmd.c: Prefix tracing messages with 3 spaces.  Improve a few
+	comments.
+	(strip_space): Only strip spaces.
+	(TO_SERVER, start_task): Update fail destination.
+	(serve_otp, read_protocol): Compare GNUTLS_E_REHANDSHAKE to count
+	instead of errno.
+	(RESPOND): Update to revert parsing on fail.  Update fail destination.
+	(process_omp_client_input): Update to revert parsing on start_task and
+	RESPOND failure.  Update RESPOND fail destination.
+	(process_omp_server_input): Only update from_server_start after
+	TO_SERVER, in case TO_SERVER fails.  On successful exit, reset the
+	from_server buffer.  In the SERVER_DONE handling only strip spaces,
+	exit if there are too few characters in the message and move messages
+	along on success.  Add preference, rule and plugins dependencies
+	handling.  Improve the check for <|>.
+	(serve_omp): Compare count to GNUTLS_E_REHANDSHAKE instead of errno.
+	Move reading out to new functions read_from_client and
+	read_from_server.  After selecting, ensure that all input is read
+	before the fd is selected again, including the cases where processing
+	of the input must wait for space in one of the output buffers
+	to_server and to_client.  Drop the EAGAIN and EINTR check from
+	the OVAL_SSL cases.
+	(current_server_preference, current_server_plugin_dependency_name,
+	current_server_plugin_dependency_dependencies): New variables.
+	(free_g_ptr_array, maybe_free_server_preferences,
+	make_server_preferences, add_server_preference,
+	maybe_free_server_plugins_dependencies,
+	make_server_plugins_dependencies, add_server_plugins_dependency,
+	make_current_server_plugin_dependency,
+	append_to_current_server_plugin_dependency,
+	maybe_free_current_server_plugin_dependency,
+	finish_current_server_plugin_dependency, free_rule,
+	maybe_free_server_rules, make_server_rules, add_server_rule,
+	read_from_client, read_from_server): New functions.
+
 2008-12-03  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add more OMP commands, start adding server communication.
