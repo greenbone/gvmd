@@ -1,5 +1,10 @@
 2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* openvasmd.c (OPENVASMD_ADDRESS): Remove.
+	(main): Bind to INADDR_ANY by default.
+
+2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
     * openvasmd.c (serve_otp, read_protocol, serve_client):
 	Drop EAGAIN and EINTR checks from OVAL_SSL cases.
 

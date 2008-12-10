@@ -87,9 +87,6 @@
 #define OPENVAS_OS_NAME "FIX"
 #endif
 
-/** Manager (openvasmd) address. */
-#define OPENVASMD_ADDRESS "127.0.0.1"
-
 /** Server (openvasd) address. */
 #define OPENVASD_ADDRESS "127.0.0.1"
 
@@ -2715,9 +2712,6 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
-  if (manager_address_string == NULL)
-    manager_address_string = OPENVASMD_ADDRESS;
-
   if (server_address_string == NULL)
     server_address_string = OPENVASD_ADDRESS;
 
@@ -2851,12 +2845,17 @@ main (int argc, char** argv)
 
   manager_address.sin_family = AF_INET;
   manager_address.sin_port = manager_port;
-  if (!inet_aton(manager_address_string, &manager_address.sin_addr))
+  if (manager_address_string)
     {
-      fprintf (stderr, "Failed to create manager address %s.\n",
-               manager_address_string);
-      exit (EXIT_FAILURE);
+      if (!inet_aton (manager_address_string, &manager_address.sin_addr))
+	{
+	  fprintf (stderr, "Failed to create manager address %s.\n",
+		   manager_address_string);
+	  exit (EXIT_FAILURE);
+	}
     }
+  else
+    manager_address.sin_addr.s_addr = INADDR_ANY;
 
   if (bind (manager_socket,
             (struct sockaddr *) &manager_address,
@@ -2869,7 +2868,7 @@ main (int argc, char** argv)
     }
 
   tracef ("   Manager bound to address %s port %i\n",
-          manager_address_string,
+          manager_address_string ? manager_address_string : "*",
           ntohs (manager_address.sin_port));
   tracef ("   Set to connect to address %s port %i\n",
           server_address_string,
