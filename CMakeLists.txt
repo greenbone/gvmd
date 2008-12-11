@@ -30,15 +30,14 @@ cmake_minimum_required (VERSION 2.4)
 
 ## Variables
 
-set (OPENVAS_LIB_INSTALL_DIR    "/home/mattm/lib/")
-set (OPENVAS_HEADER_INSTALL_DIR "/home/mattm/include/")
-set (OPENVAS_SERVER_CERTIFICATE "/var/lib/openvas/CA/servercert.pem")
-set (OPENVAS_SERVER_KEY         "/var/lib/openvas/private/CA/serverkey.pem")
-set (OPENVAS_CA_CERTIFICATE     "/var/lib/openvas/CA/cacert.pem")
+set (OPENVAS_LIB_INSTALL_DIR    "${CMAKE_INSTALL_PREFIX}/lib/")
+set (OPENVAS_HEADER_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
+set (OPENVAS_SERVER_CERTIFICATE "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/CA/servercert.pem")
+set (OPENVAS_SERVER_KEY         "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/private/CA/serverkey.pem")
+set (OPENVAS_CA_CERTIFICATE     "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/CA/cacert.pem")
 
 set (CMAKE_BUILD                Debug)
 set (CMAKE_VERBOSE_MAKEFILE     ON)
-#set (CMAKE_INSTALL_PREFIX      "/home/mattm/")
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 

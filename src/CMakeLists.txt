@@ -24,9 +24,6 @@
 
 ## Program
 
-include_directories (/usr/include/)
-include_directories (/usr/local/include/)
-
 add_executable (openvasmd openvasmd.c)
 
 exec_program (libopenvas-config
