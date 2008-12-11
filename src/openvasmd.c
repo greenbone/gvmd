@@ -50,9 +50,6 @@
  *  \htmlinclude openvasmd.html
  */
 
-// FIX for asprintf
-#define _GNU_SOURCE
-
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -1230,15 +1227,14 @@ int process_omp_client_input ()
             {
               if (index->name)
                 {
-                  char* line;
-                  if (asprintf (&line, "%u %s %c . . . . .\n",
-                                index->id,
-                                index->name,
-                                index->running ? 'R' : 'N')
-                      == -1)
-                      goto out_of_memory;
+                  gchar* line = g_strdup_printf ("%u %s %c . . . . .\n",
+                                                index->id,
+                                                index->name,
+                                                index->running ? 'R' : 'N');
+                  if (line == NULL) goto out_of_memory;
+                  // FIX free line if RESPOND fails
                   RESPOND (line);
-                  free (line);
+                  g_free (line);
                 }
               index++;
             }

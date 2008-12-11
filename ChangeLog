@@ -1,9 +1,7 @@
 2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	* src/CMakeLists.txt: Pass CMAKE_INSTALL_PREFIX to openvasmd.c.
-
-	* src/openvasmd.c (PREFIX): New definition.
-	(LOG_FILE): Standardise path.
+	* src/openvasmd.c (process_omp_client_input): Replace use of asprintf
+	with g_strdup_printf.
 
 2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
