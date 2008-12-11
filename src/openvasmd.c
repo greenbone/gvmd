@@ -208,6 +208,7 @@ static ovas_server_context_t server_context = NULL;
 /** File descriptor set mask: selecting on server write. */
 #define FD_SERVER_WRITE 8
 
+/** The type of the return value from \ref read_protocol. */
 typedef enum
 {
   PROTOCOL_OTP,
@@ -216,26 +217,58 @@ typedef enum
   PROTOCOL_FAIL
 } protocol_read_t;
 
+/** Buffer of input from the client. */
 char from_client[BUFFER_SIZE];
+/** Buffer of input from the server. */
 char from_server[BUFFER_SIZE];
-char to_server[BUFFER_SIZE];
+/** Buffer of output to the client. */
 char to_client[BUFFER_SIZE];
-// FIX just make pntrs?
-int from_client_end = 0, from_server_end = 0;
-int from_client_start = 0, from_server_start = 0;
-int to_server_start = 0, to_server_end = 0;
-int to_client_start = 0, to_client_end = 0;
+/** Buffer of output to the server. */
+char to_server[BUFFER_SIZE];
 
+// FIX just make these pntrs?
+/** The start of the data in the \ref from_client buffer. */
+int from_client_start = 0;
+/** The start of the data in the \ref from_server buffer. */
+int from_server_start = 0;
+/** The end of the data in the \ref from_client buffer. */
+int from_client_end = 0;
+/** The end of the data in the \ref from_server buffer. */
+int from_server_end = 0;
+/** The start of the data in the \ref to_client buffer. */
+int to_client_start = 0;
+/** The start of the data in the \ref to_server buffer. */
+int to_server_start = 0;
+/** The end of the data in the \ref to_client buffer. */
+int to_client_end = 0;
+/** The end of the data in the \ref to_server buffer. */
+int to_server_end = 0;
+
+/** Client login name, from OMP LOGIN. */
 char* login = NULL;
+
+/** Client credentials, from OMP LOGIN. */
 char* credentials = NULL;
 
+/** Record of server initialisation state. */
 int server_initialising = 0;
 
 
 /* Helper functions. */
 
-/** Return \ref string moved past any spaces, replacing with a terminating
-    NULL the first of any contiguos spaces at or before \ref end. */
+/** "Strip" spaces from either end of a string.
+  *
+  * Return the string moved past any spaces, replacing the first of any
+  * contiguous spaces at or before the end of the string with a terminating
+  * NULL.
+  *
+  * This is for use when the string points into one of the static buffers.
+  *
+  * @param[in,out]  string  The string to strip.
+  * @param[in]      end     Pointer to the end of the string.
+  *
+  * \return A new pointer into the string.
+  */
 char*
 strip_space (char* string, char* end)
 {
@@ -249,7 +282,12 @@ strip_space (char* string, char* end)
   return string;
 }
 
-/** Free \ref array. */
+/** Free a GPtrArray.
+  *
+  * Wrapper for g_ptr_array_free; passed to g_hash_table_new_full.
+  *
+  * @param[in]  array  A pointer to a GPtrArray.
+  */
 void
 free_g_ptr_array (gpointer array)
 {
@@ -259,16 +297,19 @@ free_g_ptr_array (gpointer array)
 
 /* Server state. */
 
+/** Structure of information about the server. */
 typedef struct
 {
-  char* plugins_md5;
-  GHashTable* plugins_dependencies;
-  GHashTable* preferences;
-  GPtrArray* rules;
+  char* plugins_md5;                 /**< MD5 sum over all tests. */
+  GHashTable* plugins_dependencies;  /**< Dependencies between plugins. */
+  GHashTable* preferences;           /**< Server preference. */
+  GPtrArray* rules;                  /**< Server rules. */
 } server_t;
 
+/** Information about the server. */
 server_t server;
 
+/** Possible states of the server. */
 typedef enum
 {
   SERVER_DONE,
@@ -282,19 +323,23 @@ typedef enum
   SERVER_TOP
 } server_state_t;
 
+/** The state of the server. */
 server_state_t server_state = SERVER_TOP;
 
 
 /* Server preferences. */
 
+/** The current server preference, during reading of server preferences. */
 char* current_server_preference = NULL;
 
+/** Free any server preferences. */
 void
 maybe_free_server_preferences ()
 {
   if (server.preferences) g_hash_table_destroy (server.preferences);
 }
 
+/** Create the server preferences. */
 void
 make_server_preferences ()
 {
@@ -304,6 +349,14 @@ make_server_preferences ()
                                               g_free);
 }
 
+/** Add a preference to the server preferences.
+  *
+  * Both parameters are used directly (versus copying), and are freed when
+  * the preferences are freed.
+  *
+  * @param[in]  preference  The preference.
+  * @param[in]  value       The value of the preference.
+  */
 void
 add_server_preference (char* preference, char* value)
 {
@@ -313,9 +366,13 @@ add_server_preference (char* preference, char* value)
 
 /* Server plugin dependencies. */
 
+/** The current server plugin, during reading of server plugin dependencies. */
 char* current_server_plugin_dependency_name = NULL;
+
+/** The plugins required by the current server plugin. */
 GPtrArray* current_server_plugin_dependency_dependencies = NULL;
 
+/** Free any server plugins dependencies. */
 void
 maybe_free_server_plugins_dependencies ()
 {
@@ -326,6 +383,7 @@ maybe_free_server_plugins_dependencies ()
     }
 }
 
+/** Make the server plugins dependencies. */
 void
 make_server_plugins_dependencies ()
 {
@@ -336,6 +394,11 @@ make_server_plugins_dependencies ()
                                                        free_g_ptr_array);
 }
 
+/** Add a plugin to the server dependencies.
+  *
+  * @param[in]  name          The name of the plugin.
+  * @param[in]  dependencies  The plugins required by the plugin.
+  */
 void
 add_server_plugins_dependency (char* name, GPtrArray* dependencies)
 {
@@ -344,6 +407,10 @@ add_server_plugins_dependency (char* name, GPtrArray* dependencies)
   g_hash_table_insert (server.plugins_dependencies, name, dependencies);
 }
 
+/** Set the current plugin.
+  *
+  * @param[in]  name  The name of the plugin.
+  */
 void
 make_current_server_plugin_dependency (char* name)
 {
@@ -353,6 +420,10 @@ make_current_server_plugin_dependency (char* name)
   current_server_plugin_dependency_dependencies = g_ptr_array_new ();
 }
 
+/** Append a requirement to the current plugin.
+  *
+  * @param[in]  dependency  The name of the required plugin.
+  */
 void
 append_to_current_server_plugin_dependency (char* dependency)
 {
@@ -361,6 +432,7 @@ append_to_current_server_plugin_dependency (char* dependency)
   g_ptr_array_add (current_server_plugin_dependency_dependencies, dependency);
 }
 
+/** Free any current server plugin dependency information. */
 void
 maybe_free_current_server_plugin_dependency ()
 {
@@ -370,6 +442,7 @@ maybe_free_current_server_plugin_dependency ()
     g_ptr_array_free (current_server_plugin_dependency_dependencies, TRUE);
 }
 
+/** Add the current plugin to the server dependencies. */
 void
 finish_current_server_plugin_dependency ()
 {
@@ -384,12 +457,18 @@ finish_current_server_plugin_dependency ()
 
 /* Server rules. */
 
+/** Free a server rule.
+  *
+  * @param[in]  rule   The server rule.
+  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
+  */
 void
 free_rule (void* rule, void* dummy)
 {
   free (rule);
 }
 
+/** Free any server rules. */
 void
 maybe_free_server_rules ()
 {
@@ -400,12 +479,20 @@ maybe_free_server_rules ()
     }
 }
 
+/** Create the server rules. */
 void
 make_server_rules ()
 {
   server.rules = g_ptr_array_new ();
 }
 
+/** Add a rule to the server rules.
+  *
+  * The rule is used directly (versus using a copy) and is freed with the
+  * other server rules.
+  *
+  * @param[in]  rule  The rule.
+  */
 void
 add_server_rule (char* rule)
 {
@@ -416,26 +503,36 @@ add_server_rule (char* rule)
 
 /* Tasks. */
 
+/** A task. */
 typedef struct
 {
-  unsigned int id;
-  char* name;          /* NULL if free. */
-  unsigned int time;
-  char* comment;
-  char* description;
-  int description_length;
-  int description_size;
-  short running;
+  unsigned int id;         /**< Unique ID */
+  char* name;              /**< Name.  NULL if free. */
+  unsigned int time;       /**< Repetition period, in seconds. */
+  char* comment;           /**< Comment associated with task. */
+  char* description;       /**< Description. */
+  int description_length;  /**< Length of description. */
+  int description_size;    /**< Actual size allocated for description. */
+  short running;           /**< Flag: 0 initially, 1 if running. */
 } task_t;
 
+/** Reallocation increment for the tasks array. */
 #define TASKS_INCREMENT 1024
+
+/** Current client task during OMP NEW_TASK or MODIFY_TASK. */
 task_t* current_client_task = NULL;
-task_t* current_server_task = NULL;
+
+/** The array of all defined tasks. */
 task_t* tasks = NULL;
+
+/** The size of the \ref tasks array. */
 unsigned int tasks_size = 0;
+
+/** The number of the defined tasks. */
 unsigned int num_tasks = 0;
 
 #if TRACE
+/** Print the server tasks. */
 void
 print_tasks ()
 {
@@ -458,6 +555,7 @@ print_tasks ()
 }
 #endif
 
+/** Grow the array of tasks. */
 int
 grow_tasks ()
 {
@@ -479,6 +577,7 @@ grow_tasks ()
   return 0;
 }
 
+/** Free all tasks and the array of tasks. */
 void
 free_tasks ()
 {
@@ -505,6 +604,17 @@ free_tasks ()
   tasks = NULL;
 }
 
+/** Make a task.
+  *
+  * The char* parameters name and comment are used directly and freed
+  * when the task is freed.
+  *
+  * @param[in]  name     The name of the task.
+  * @param[in]  time     The period of the task, in seconds.
+  * @param[in]  comment  A comment associated the task.
+  *
+  * \return A pointer to the new task or NULL when out of memory.
+  */
 task_t*
 make_task (char* name, unsigned int time, char* comment)
 {
@@ -536,6 +646,12 @@ make_task (char* name, unsigned int time, char* comment)
   goto retry;
 }
 
+/** Find a task.
+  *
+  * @param[in]  id  A task identifier.
+  *
+  * \return A pointer to the task with the given ID.
+  */
 task_t*
 find_task (unsigned int id)
 {
@@ -548,6 +664,16 @@ find_task (unsigned int id)
   return NULL;
 }
 
+/** Modify a task.
+  *
+  * The char* parameters are used directly and freed when the task is
+  * freed.
+  *
+  * @param[in]  task     A pointer to a task.
+  * @param[in]  name     The new name for the task.
+  * @param[in]  time     The new period for the task, in seconds.
+  * @param[in]  comment  A new comment associcated with the task.
+  */
 void
 modify_task (task_t* task, char* name, unsigned int time, char* comment)
 {
@@ -559,6 +685,10 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
   task->description_length = 0;
 }
 
+/** Send a message to the server.
+  *
+  * @param[in]  msg  The message, a string.
+  */
 #define TO_SERVER(msg)                                            \
   do                                                              \
     {                                                             \
@@ -570,6 +700,12 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
     }                                                             \
   while (0)
 
+/** Start a task.
+  *
+  * @param  task  A pointer to the task.
+  *
+  * \return 0 on success, -1 if out of space in \ref to_server buffer.
+  */
 int
 start_task (task_t* task)
 {
@@ -609,8 +745,15 @@ start_task (task_t* task)
   return -1;
 }
 
+/** Reallocation increment for a task description. */
 #define DESCRIPTION_INCREMENT 4096
 
+/** Increase the memory allocated for a task description.
+  *
+  * @param  task  A pointer to the task.
+  *
+  * \return 0 on success, -1 if out of memory.
+  */
 int
 grow_description (task_t* task)
 {
@@ -622,6 +765,14 @@ grow_description (task_t* task)
   return 0;
 }
 
+/** Add a line to a task description.
+  *
+  * The line memory is used directly, and freed with the task.
+  *
+  * @param[in]  task         A pointer to the task.
+  * @param[in]  line         The line.
+  * @param[in]  line_length  The length of the line.
+  */
 int
 add_task_description_line (task_t* task, char* line, int line_length)
 {
@@ -961,6 +1112,10 @@ serve_otp (gnutls_session_t* client_session,
 
 /* OpenVAS Management Protocol (OMP). */
 
+/** Send a response message to the client.
+  *
+  * @param[in]  msg  The message, a string.
+  */
 #define RESPOND(msg)                                              \
   do                                                              \
     {                                                             \

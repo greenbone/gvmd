@@ -1,5 +1,9 @@
 2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: Bring code documentation up to date.
+
+2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c (process_omp_client_input): Replace use of asprintf
 	with g_strdup_printf.
 
