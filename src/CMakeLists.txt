@@ -46,6 +46,7 @@ if (OPENVASMD_VERSION)
 endif (OPENVASMD_VERSION)
 
 add_definitions (-DOPENVAS_OS_NAME=\\\"${CMAKE_SYSTEM}\\\")
+add_definitions (-DPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\")
 
 if (OPENVAS_SERVER_CERTIFICATE)
   add_definitions (-DSERVERCERT=\\\"${OPENVAS_SERVER_CERTIFICATE}\\\")

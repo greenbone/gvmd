@@ -1,5 +1,12 @@
 2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/CMakeLists.txt: Pass CMAKE_INSTALL_PREFIX to openvasmd.c.
+
+	* src/openvasmd.c (PREFIX): New definition.
+	(LOG_FILE): Standardise path.
+
+2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* CMakeLists.txt: Prefix paths in variables with CMAKE_INSTALL_PREFIX.
 
 	* src/CMakeLists.txt: Drop hard coded include paths.

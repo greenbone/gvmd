@@ -73,6 +73,11 @@
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
 
+/** Installation prefix. */
+#ifndef PREFIX
+#define PREFIX ""
+#endif
+
 /** The name of this program.
  * \todo Use `program_invocation[_short]_name'? */
 #define PROGNAME "openvasmd"
@@ -130,7 +135,7 @@
 #define LOG 1
 
 /** Name of log file. */
-#define LOG_FILE "/tmp/openvasmd.log"
+#define LOG_FILE PREFIX "/var/log/openvas/openvasmd.log"
 
 /** Trace flag.  0 to turn off all tracing messages. */
 #define TRACE 1
