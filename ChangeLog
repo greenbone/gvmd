@@ -1,3 +1,8 @@
+2008-12-12  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c (read_from_client, read_from_server
+	read_protocol): Improve function docs.
+
 2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c: Bring code documentation up to date.

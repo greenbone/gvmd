@@ -1872,7 +1872,14 @@ int process_omp_server_input ()
   return -1;
 }
 
-/** Read as much as the from_client buffer will hold from the client. */
+/** Read as much from the client as the from_client buffer will hold.
+  *
+  * @param[in]  client_session  The TLS session with the client.
+  * @param[in]  client_socket   The socket connected to the client.
+  *
+  * \return 0 on reading everything available, -1 on error, -2 if
+  * from_client buffer is full or -3 on reaching end of file.
+  */
 int
 read_from_client (gnutls_session_t* client_session, int client_socket)
 {
@@ -1929,7 +1936,14 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
 }
 
 // FIX combine with read_from_client
-/** Read as much as the from_server buffer will hold from the server. */
+/** Read as much from the server as the from_server buffer will hold.
+  *
+  * @param[in]  server_session  The TLS session with the server.
+  * @param[in]  server_socket   The socket connected to the server.
+  *
+  * \return 0 on reading everything available, -1 on error, -2 if
+  * from_server buffer is full or -3 on reaching end of file.
+  */
 int
 read_from_server (gnutls_session_t* server_session, int server_socket)
 {
@@ -2408,8 +2422,7 @@ serve_omp (gnutls_session_t* client_session,
 
 /* Other functions. */
 
-/** Read the protocol from \arg client_session, which is on \arg
-  * client_socket.
+/** Read the type of protocol from the client.
   *
   * @param[in]  client_session  The TLS session with the client.
   * @param[in]  client_socket   The socket connected to the client.
