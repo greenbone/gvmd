@@ -1,5 +1,9 @@
 2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: Replace \return with @return in comment docs.
+
+2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c (current_server_task): New variable.
 	(set_task_ports): New function.
 	(process_omp_client_input): Turn off messages tracing.  Separate some

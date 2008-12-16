@@ -267,7 +267,7 @@ int server_initialising = 0;
   * @param[in,out]  string  The string to strip.
   * @param[in]      end     Pointer to the end of the string.
   *
-  * \return A new pointer into the string.
+  * @return A new pointer into the string.
   */
 char*
 strip_space (char* string, char* end)
@@ -633,7 +633,7 @@ free_tasks ()
   * @param[in]  time     The period of the task, in seconds.
   * @param[in]  comment  A comment associated the task.
   *
-  * \return A pointer to the new task or NULL when out of memory.
+  * @return A pointer to the new task or NULL when out of memory.
   */
 task_t*
 make_task (char* name, unsigned int time, char* comment)
@@ -670,7 +670,7 @@ make_task (char* name, unsigned int time, char* comment)
   *
   * @param[in]  id  A task identifier.
   *
-  * \return A pointer to the task with the given ID.
+  * @return A pointer to the task with the given ID.
   */
 task_t*
 find_task (unsigned int id)
@@ -724,7 +724,7 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
   *
   * @param  task  A pointer to the task.
   *
-  * \return 0 on success, -1 if out of space in \ref to_server buffer.
+  * @return 0 on success, -1 if out of space in \ref to_server buffer.
   */
 int
 start_task (task_t* task)
@@ -773,7 +773,7 @@ start_task (task_t* task)
   *
   * @param  task  A pointer to the task.
   *
-  * \return 0 on success, -1 if out of memory.
+  * @return 0 on success, -1 if out of memory.
   */
 int
 grow_description (task_t* task)
@@ -831,7 +831,7 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
   * @param[in]  client_socket   The socket connected to the client.
   * @param[in]  server_socket   The socket connected to the server.
   *
-  * \return 0 on success, -1 on error.
+  * @return 0 on success, -1 on error.
   */
 int
 serve_otp (gnutls_session_t* client_session,
@@ -1170,7 +1170,7 @@ serve_otp (gnutls_session_t* client_session,
   * Queue any resulting server commands in to_server and any replies for
   * the client in to_client.
   *
-  * \return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
+  * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
   */
 int process_omp_client_input ()
 {
@@ -1489,7 +1489,7 @@ int process_omp_client_input ()
   * Mostly update manager server records according to the input from the
   * server.  Only communicate with the server for initialisation.
   *
-  * \return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
+  * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
   */
 int process_omp_server_input ()
 {
@@ -2037,7 +2037,7 @@ int process_omp_server_input ()
   * @param[in]  client_session  The TLS session with the client.
   * @param[in]  client_socket   The socket connected to the client.
   *
-  * \return 0 on reading everything available, -1 on error, -2 if
+  * @return 0 on reading everything available, -1 on error, -2 if
   * from_client buffer is full or -3 on reaching end of file.
   */
 int
@@ -2101,7 +2101,7 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
   * @param[in]  server_session  The TLS session with the server.
   * @param[in]  server_socket   The socket connected to the server.
   *
-  * \return 0 on reading everything available, -1 on error, -2 if
+  * @return 0 on reading everything available, -1 on error, -2 if
   * from_server buffer is full or -3 on reaching end of file.
   */
 int
@@ -2166,7 +2166,7 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
   * @param[in]  client_socket   The socket connected to the client.
   * @param[in]  server_socket   The socket connected to the server.
   *
-  * \return 0 on success, -1 on error.
+  * @return 0 on success, -1 on error.
   */
 int
 serve_omp (gnutls_session_t* client_session,
@@ -2587,7 +2587,7 @@ serve_omp (gnutls_session_t* client_session,
   * @param[in]  client_session  The TLS session with the client.
   * @param[in]  client_socket   The socket connected to the client.
   *
-  * \return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
+  * @return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
   */
 protocol_read_t
 read_protocol (gnutls_session_t* client_session, int client_socket)
@@ -2678,7 +2678,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   *
   * @param[in]  client_socket  The socket connected to the client.
   *
-  * \return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
+  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
   */
 int
 serve_client (int client_socket)
@@ -2992,7 +2992,7 @@ handle_signal (int signal)
   * @param[in]  argc  The number of arguments in argv.
   * @param[in]  argv  The list of arguments to the program.
   *
-  * \return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
+  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
   */
 int
 main (int argc, char** argv)
