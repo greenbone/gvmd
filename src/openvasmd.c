@@ -336,6 +336,14 @@ typedef enum
 /** The state of the server. */
 server_state_t server_state = SERVER_TOP;
 
+/** Set the server state. */
+void
+set_server_state (server_state_t state)
+{
+  server_state = state;
+  tracef ("   server state set: %i\n", server_state);
+}
+
 
 /* Server preferences. */
 
@@ -1556,11 +1564,9 @@ int process_omp_server_input ()
           tracef ("   server fail: expected final \"SERVER\"\n");
           goto fail;
         }
-      server_state = SERVER_TOP;
+      set_server_state (SERVER_TOP);
       from_server_start += 6;
       messages += 6;
-
-      tracef ("   server new state: %i\n", server_state);
     }
   else if (server_state == SERVER_PREFERENCE_VALUE)
     {
@@ -1576,8 +1582,7 @@ int process_omp_server_input ()
           value = strdup (messages);
           if (value == NULL) goto out_of_memory;
           add_server_preference (current_server_preference, value);
-          server_state = SERVER_PREFERENCE_NAME;
-          tracef ("   server new state: %i\n", server_state);
+          set_server_state (SERVER_PREFERENCE_NAME);
           from_server_start += match + 1 - messages;
           messages = match + 1;
         }
@@ -1631,8 +1636,7 @@ int process_omp_server_input ()
               messages = match + 1;
               maybe_free_server_plugins_dependencies ();
               make_server_plugins_dependencies ();
-              server_state = SERVER_PLUGIN_DEPENDENCY_NAME;
-              tracef ("   server new state: %i\n", server_state);
+              set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
             }
           else
             {
@@ -1699,8 +1703,7 @@ int process_omp_server_input ()
               finish_current_server_plugin_dependency ();
               from_server_start += match + 1 - messages;
               messages = match + 1;
-              server_state = SERVER_PLUGIN_DEPENDENCY_NAME;
-              tracef ("   server new state: %i\n", server_state);
+              set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
             }
         }
     }
@@ -1745,28 +1748,26 @@ int process_omp_server_input ()
               case SERVER_DONE:
                 if (strncasecmp ("SERVER", field, 6))
                   goto fail;
-                server_state = SERVER_TOP;
+                set_server_state (SERVER_TOP);
                 break;
 #endif
               case SERVER_PLUGIN_DEPENDENCY_NAME:
                 {
                   if (strlen (field) == 0)
                     {
-                      server_state = SERVER_DONE;
+                      set_server_state (SERVER_DONE);
                       /* Jump to the done check, as this loop only considers fields
                          ending in <|>. */
-                      tracef ("   server new state: %i\n", server_state);
                       goto server_done;
                     }
                   char* name = strdup (field);
                   if (name == NULL)
                     goto out_of_memory;
                   make_current_server_plugin_dependency (name);
-                  server_state = SERVER_PLUGIN_DEPENDENCY_DEPENDENCY;
+                  set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
                   /* Jump to the newline check, as this loop only considers fields
                      ending in <|> and the list of dependencies can end in a
                      newline. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_plugin_dependency_dependency;
                 }
               case SERVER_PLUGIN_DEPENDENCY_DEPENDENCY:
@@ -1787,66 +1788,59 @@ int process_omp_server_input ()
                     goto out_of_memory;
                   tracef ("   server got plugins_md5: %s\n", md5);
                   server.plugins_md5 = md5;
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_PREFERENCE_NAME:
                 {
                   if (strlen (field) == 0)
                     {
-                      server_state = SERVER_DONE;
+                      set_server_state (SERVER_DONE);
                       /* Jump to the done check, as this loop only considers fields
                          ending in <|>. */
-                      tracef ("   server new state: %i\n", server_state);
                       goto server_done;
                     }
                   char* name = strdup (field);
                   if (name == NULL) goto out_of_memory;
                   current_server_preference = name;
-                  server_state = SERVER_PREFERENCE_VALUE;
+                  set_server_state (SERVER_PREFERENCE_VALUE);
                   /* Jump to preference value check, as values end with a
                      newline and this loop only considers fields ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_preference_value;
                 }
               case SERVER_RULE:
                 /* A <|> following a rule. */
-                server_state = SERVER_DONE;
+                set_server_state (SERVER_DONE);
                 /* Jump to the done check, as this loop only considers fields
                    ending in <|>. */
-                tracef ("   server new state: %i\n", server_state);
                 goto server_done;
               case SERVER_SERVER:
                 if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
-                  server_state = SERVER_PLUGINS_MD5;
+                  set_server_state (SERVER_PLUGINS_MD5);
                 else if (strncasecmp ("PREFERENCES", field, 11) == 0)
                   {
                     maybe_free_server_preferences ();
                     make_server_preferences ();
-                    server_state = SERVER_PREFERENCE_NAME;
+                    set_server_state (SERVER_PREFERENCE_NAME);
                   }
                 else if (strncasecmp ("RULES", field, 5) == 0)
                   {
                     maybe_free_server_rules ();
                     make_server_rules ();
-                    server_state = SERVER_RULE;
+                    set_server_state (SERVER_RULE);
                     /* Jump to rules parsing, as each rule end in a ; and this
                        loop only considers fields ending in <|>. */
-                    tracef ("   server new state: %i\n", server_state);
                     goto server_rule;
                   }
                 else if (strncasecmp ("TIME", field, 4) == 0)
                   {
-                    server_state = SERVER_TIME;
-                    tracef ("   server new state: %i\n", server_state);
+                    set_server_state (SERVER_TIME);
                   }
                 else if (strncasecmp ("STATUS", field, 6) == 0)
                   {
-                    server_state = SERVER_STATUS_HOST;
-                    tracef ("   server new state: %i\n", server_state);
+                    set_server_state (SERVER_STATUS_HOST);
                   }
                 else
                   goto fail;
@@ -1863,13 +1857,13 @@ int process_omp_server_input ()
                         free (current_server_task->attack_state);
                       current_server_task->attack_state = state;
                     }
-                  server_state = SERVER_STATUS_PORTS;
+                  set_server_state (SERVER_STATUS_PORTS);
                   break;
                 }
               case SERVER_STATUS_HOST:
                 {
                   //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  server_state = SERVER_STATUS_ATTACK_STATE;
+                  set_server_state (SERVER_STATUS_ATTACK_STATE);
                   break;
                 }
               case SERVER_STATUS_PORTS:
@@ -1881,22 +1875,21 @@ int process_omp_server_input ()
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
                         set_task_ports (current_server_task, current, max);
                     }
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_TIME:
                 {
                   if (strncasecmp ("HOST_START", field, 10) == 0)
-                    server_state = SERVER_TIME_HOST_START_HOST;
+                    set_server_state (SERVER_TIME_HOST_START_HOST);
                   else if (strncasecmp ("HOST_END", field, 8) == 0)
-                    server_state = SERVER_TIME_HOST_END;
+                    set_server_state (SERVER_TIME_HOST_END);
                   else if (strncasecmp ("SCAN_START", field, 10) == 0)
-                    server_state = SERVER_TIME_SCAN_START;
+                    set_server_state (SERVER_TIME_SCAN_START);
                   else if (strncasecmp ("SCAN_END", field, 8) == 0)
-                    server_state = SERVER_TIME_SCAN_END;
+                    set_server_state (SERVER_TIME_SCAN_END);
                   else
                     abort (); // FIX read all fields up to <|> SERVER?
                   break;
@@ -1904,7 +1897,7 @@ int process_omp_server_input ()
               case SERVER_TIME_HOST_START_HOST:
                 {
                   //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  server_state = SERVER_TIME_HOST_START_TIME;
+                  set_server_state (SERVER_TIME_HOST_START_TIME);
                   break;
                 }
               case SERVER_TIME_HOST_START_TIME:
@@ -1919,10 +1912,9 @@ int process_omp_server_input ()
                         free (current_server_task->start_time);
                       current_server_task->start_time = time;
                     }
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_TIME_HOST_END:
@@ -1937,28 +1929,25 @@ int process_omp_server_input ()
                         free (current_server_task->end_time);
                       current_server_task->end_time = time;
                     }
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_TIME_SCAN_START:
                 {
                   /* Read over it. */
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_TIME_SCAN_END:
                 {
                   /* Read over it. */
-                  server_state = SERVER_DONE;
+                  set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
                      ending in <|>. */
-                  tracef ("   server new state: %i\n", server_state);
                   goto server_done;
                 }
               case SERVER_TOP:
@@ -1967,9 +1956,8 @@ int process_omp_server_input ()
                 tracef ("   cmp %i\n", strncasecmp ("SERVER", field, 6));
                 if (strncasecmp ("SERVER", field, 6))
                   goto fail;
-                server_state = SERVER_SERVER;
+                set_server_state (SERVER_SERVER);
                 /* Jump to newline check, in case command ends in a newline. */
-                tracef ("   server new state: %i\n", server_state);
                 goto server_server;
             }
 

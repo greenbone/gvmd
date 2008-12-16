@@ -1,5 +1,11 @@
 2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: (set_server_state): New function.
+	(process_omp_server_input): Always set the server state via
+	set_server_state, to reduce the amount of tracing code.
+
+2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Replace \return with @return in comment docs.
 
 2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
