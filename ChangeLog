@@ -1,5 +1,14 @@
 2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: (strip_space): Correct terminating check.
+	(make_task, serve_client): Replace goto loops with structured loops.
+	(process_omp_client_input, process_omp_server_input): Format signatures
+	like rest of file.
+	(process_omp_server_input): Finish TIME HOST_END handling.  Move the
+	out of memory destination to be a fail case.
+
+2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: (set_server_state): New function.
 	(process_omp_server_input): Always set the server state via
 	set_server_state, to reduce the amount of tracing code.

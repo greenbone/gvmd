@@ -276,7 +276,7 @@ strip_space (char* string, char* end)
     string++;
   char *last = end, *new_end = end;
   new_end--;
-  while (new_end > string && (new_end[0] == ' ' || new_end[0] == '\n'))
+  while (new_end >= string && (new_end[0] == ' ' || new_end[0] == '\n'))
     { last--; new_end--; }
   if (last < end) last[0] = '\0';
   return string;
@@ -327,7 +327,8 @@ typedef enum
   SERVER_TIME,
   SERVER_TIME_HOST_START_HOST,
   SERVER_TIME_HOST_START_TIME,
-  SERVER_TIME_HOST_END,
+  SERVER_TIME_HOST_END_HOST,
+  SERVER_TIME_HOST_END_TIME,
   SERVER_TIME_SCAN_START,
   SERVER_TIME_SCAN_END,
   SERVER_TOP
@@ -650,28 +651,29 @@ make_task (char* name, unsigned int time, char* comment)
   if (tasks == NULL && grow_tasks ()) return NULL;
   task_t* index = tasks;
   task_t* end = tasks + tasks_size;
- retry:
-  while (index < end)
+  while (1)
     {
-      if (index->name == NULL)
+      while (index < end)
         {
-          index->id = index - tasks;
-          index->name = name;
-          index->time = time;
-          index->comment = comment;
-          index->description = NULL;
-          index->description_size = 0;
-          index->running = 0;
-          tracef ("   Made task %i at %p\n", index->id, index);
-          num_tasks++;
-          return index;
+          if (index->name == NULL)
+            {
+              index->id = index - tasks;
+              index->name = name;
+              index->time = time;
+              index->comment = comment;
+              index->description = NULL;
+              index->description_size = 0;
+              index->running = 0;
+              tracef ("   Made task %i at %p\n", index->id, index);
+              num_tasks++;
+              return index;
+            }
+          index++;
         }
-      index++;
+      index = (task_t*) tasks_size;
+      if (grow_tasks ()) return NULL;
+      index = index + (int) tasks;
     }
-  index = (task_t*) tasks_size;
-  if (grow_tasks ()) return NULL;
-  index = index + (int) tasks;
-  goto retry;
 }
 
 /** Find a task.
@@ -1180,7 +1182,8 @@ serve_otp (gnutls_session_t* client_session,
   *
   * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
   */
-int process_omp_client_input ()
+int
+process_omp_client_input ()
 {
   char* messages = from_client + from_client_start;
   int original_from_client_start;
@@ -1499,7 +1502,8 @@ int process_omp_client_input ()
   *
   * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
   */
-int process_omp_server_input ()
+int
+process_omp_server_input ()
 {
   char* match;
   char* messages = from_server + from_server_start;
@@ -1677,7 +1681,8 @@ int process_omp_server_input ()
       separator = NULL;
       /* Look for <|>. */
       input = messages;
-      from_start = from_server_start, from_end = from_server_end;
+      from_start = from_server_start;
+      from_end = from_server_end;
       while (from_start < from_end
              && (match = memchr (input, '<', from_end - from_start)))
         {
@@ -1885,7 +1890,7 @@ int process_omp_server_input ()
                   if (strncasecmp ("HOST_START", field, 10) == 0)
                     set_server_state (SERVER_TIME_HOST_START_HOST);
                   else if (strncasecmp ("HOST_END", field, 8) == 0)
-                    set_server_state (SERVER_TIME_HOST_END);
+                    set_server_state (SERVER_TIME_HOST_END_HOST);
                   else if (strncasecmp ("SCAN_START", field, 10) == 0)
                     set_server_state (SERVER_TIME_SCAN_START);
                   else if (strncasecmp ("SCAN_END", field, 8) == 0)
@@ -1917,14 +1922,20 @@ int process_omp_server_input ()
                      ending in <|>. */
                   goto server_done;
                 }
-              case SERVER_TIME_HOST_END:
+              case SERVER_TIME_HOST_END_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  set_server_state (SERVER_TIME_HOST_END_TIME);
+                  break;
+                }
+              case SERVER_TIME_HOST_END_TIME:
                 {
                   if (current_server_task)
                     {
                       char* time = strdup (field);
                       if (time == NULL)
                         goto out_of_memory;
-                      tracef ("   server got start time: %s\n", time);
+                      tracef ("   server got end time: %s\n", time);
                       if (current_server_task->end_time)
                         free (current_server_task->end_time);
                       current_server_task->end_time = time;
@@ -2006,15 +2017,15 @@ int process_omp_server_input ()
 
   return 0;
 
- out_of_memory:
-  tracef ("   out of mem (server)\n");
-
   /* TO_SERVER jumps here when there is too little space in to_server for the
      message.  This results in a retry at processing the same message
      later, so from_client_end and from_client_start should only be adjusted
      after a call to TO_SERVER. */
  to_server_fail:
   return -3;
+
+ out_of_memory:
+  tracef ("   out of mem (server)\n");
 
  fail:
   return -1;
@@ -2741,13 +2752,13 @@ serve_client (int client_socket)
   gnutls_transport_set_ptr (server_session,
                             (gnutls_transport_ptr_t) server_socket);
 
- retry:
-  ret = gnutls_handshake (server_session);
-  if (ret < 0)
+  while (1)
     {
-      if (ret == GNUTLS_E_AGAIN
-          || ret == GNUTLS_E_INTERRUPTED)
-        goto retry;
+      ret = gnutls_handshake (server_session);
+      if (ret >= 0)
+        break;
+      if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
+        continue;
       fprintf (stderr, "Failed to shake hands with server.\n");
       gnutls_perror (ret);
       if (shutdown (server_socket, SHUT_RDWR) == -1)
@@ -2987,12 +2998,6 @@ main (int argc, char** argv)
 {
   int server_port, manager_port;
   tracef ("   OpenVAS Manager\n");
-  tracef ("   GNUTLS_E_AGAIN %i\n", GNUTLS_E_AGAIN);
-  tracef ("   GNUTLS_E_INTERRUPTED %i\n", GNUTLS_E_INTERRUPTED);
-  tracef ("   GNUTLS_E_REHANDSHAKE %i\n", GNUTLS_E_REHANDSHAKE);
-  tracef ("   -8: %s\n", strerror(8));
-  tracef ("   -9: %s\n", strerror(9));
-  tracef ("   -10: %s\n", strerror(10));
 
   /* Process options. */
 
