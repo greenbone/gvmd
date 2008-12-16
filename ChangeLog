@@ -1,3 +1,13 @@
+2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c (current_server_task): New variable.
+	(set_task_ports): New function.
+	(process_omp_client_input): Turn off messages tracing.  Separate some
+	of the response codes.  Use a local variable for the task in the
+	START_TASK case.
+	(process_omp_server_input): Turn off messages tracing.  Add TIME and
+	STATUS message handling.
+
 2008-12-12  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c (read_from_client, read_from_server

@@ -320,6 +320,16 @@ typedef enum
   SERVER_PREFERENCE_VALUE,
   SERVER_RULE,
   SERVER_SERVER,
+  SERVER_STATUS,
+  SERVER_STATUS_ATTACK_STATE,
+  SERVER_STATUS_HOST,
+  SERVER_STATUS_PORTS,
+  SERVER_TIME,
+  SERVER_TIME_HOST_START_HOST,
+  SERVER_TIME_HOST_START_TIME,
+  SERVER_TIME_HOST_END,
+  SERVER_TIME_SCAN_START,
+  SERVER_TIME_SCAN_END,
   SERVER_TOP
 } server_state_t;
 
@@ -506,14 +516,19 @@ add_server_rule (char* rule)
 /** A task. */
 typedef struct
 {
-  unsigned int id;         /**< Unique ID */
-  char* name;              /**< Name.  NULL if free. */
-  unsigned int time;       /**< Repetition period, in seconds. */
-  char* comment;           /**< Comment associated with task. */
-  char* description;       /**< Description. */
-  int description_length;  /**< Length of description. */
-  int description_size;    /**< Actual size allocated for description. */
-  short running;           /**< Flag: 0 initially, 1 if running. */
+  unsigned int id;            /**< Unique ID */
+  char* name;                 /**< Name.  NULL if free. */
+  unsigned int time;          /**< Repetition period, in seconds. */
+  char* comment;              /**< Comment associated with task. */
+  char* description;          /**< Description. */
+  int description_length;     /**< Length of description. */
+  int description_size;       /**< Actual size allocated for description. */
+  short running;              /**< Flag: 0 initially, 1 if running. */
+  char* start_time;           /**< Time the task last started. */
+  char* end_time;             /**< Time the task last ended. */
+  char* attack_state;         /**< Attack status. */
+  unsigned int current_port;  /**< Port currently under test. */
+  unsigned int max_port;      /**< Last port to test. */
 } task_t;
 
 /** Reallocation increment for the tasks array. */
@@ -521,6 +536,9 @@ typedef struct
 
 /** Current client task during OMP NEW_TASK or MODIFY_TASK. */
 task_t* current_client_task = NULL;
+
+/** The task currently running on the server. */
+task_t* current_server_task = NULL;
 
 /** The array of all defined tasks. */
 task_t* tasks = NULL;
@@ -596,6 +614,8 @@ free_tasks ()
           free (index->name);
           free (index->comment);
           free (index->description);
+          if (index->start_time) free (index->start_time);
+          if (index->end_time) free (index->end_time);
         }
       index++;
     }
@@ -731,13 +751,14 @@ start_task (task_t* task)
 
 #if 0
   char* targets = task_preference (task, "targets");
-  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n<|> CLIENT",
+  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
              strlen (targets), targets);
 #else
-  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n<|> CLIENT");
+  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n");
 #endif
 
   task->running = 1;
+  current_server_task = task;
 
   return 0;
 
@@ -785,6 +806,19 @@ add_task_description_line (task_t* task, char* line, int line_length)
   strncpy (description, line, line_length);
   task->description_length += line_length;
   return 0;
+}
+
+/** Set the ports of a task.
+  *
+  * @param[in]  task     The task.
+  * @param[in]  current  New value for port currently being scanned.
+  * @param[in]  max      New value for last port to be scanned.
+  */
+void
+set_task_ports (task_t *task, unsigned int current, unsigned int max)
+{
+  task->current_port = current;
+  task->max_port = max;
 }
 
 
@@ -1148,11 +1182,13 @@ int process_omp_client_input ()
       /* Found a full line, process the message. */
       original_from_client_start = from_client_start;
       char* command = NULL;
+#if 0
       tracef ("   messages: %.*s...\n",
               from_client_end - from_client_start < 200
               ? from_client_end - from_client_start
               : 200,
               messages);
+#endif
       char* message = strsep (&messages, "\n");
       tracef ("   message: %s\n", message);
       from_client_start += strlen(message) + 1;
@@ -1207,7 +1243,7 @@ int process_omp_client_input ()
                   credentials = strdup (next);
                   if (credentials == NULL) goto out_of_memory;
                 }
-              RESPOND ("200\n");
+              RESPOND ("202\n");
             }
         }
       else if (login == NULL)
@@ -1338,10 +1374,10 @@ int process_omp_client_input ()
               continue;
             }
           // --
-          current_client_task = find_task (id);
-          if (current_client_task == NULL)
+          task_t *task = find_task (id);
+          if (task == NULL)
             RESPOND ("407 Failed to find task.\n");
-          else if (start_task (current_client_task))
+          else if (start_task (task))
             {
               /* to_server is full. */
               from_client_start = original_from_client_start;
@@ -1351,7 +1387,7 @@ int process_omp_client_input ()
               return -2;
             }
           else
-            RESPOND ("200\n");
+            RESPOND ("203\n");
         }
       else if (strncasecmp ("STATUS", command, 6) == 0)
         {
@@ -1443,6 +1479,7 @@ int process_omp_client_input ()
      response.  The result is that the manager closes the connection, so
      from_client_end and from_client_start can be left as they are. */
  respond_fail:
+  tracef ("   RESPOND out of space in to_client\n");
   from_client_start = original_from_client_start;
   return -3;
 }
@@ -1647,9 +1684,9 @@ int process_omp_server_input ()
               separator = match;
               break;
             }
-           from_start += match + 1 - input;
-           input = match + 1;
-         }
+          from_start += match + 1 - input;
+          input = match + 1;
+        }
       /* Look for newline. */
       end = messages + from_server_end - from_server_start;
       while (messages < end && (messages[0] == ' '))
@@ -1680,14 +1717,17 @@ int process_omp_server_input ()
           && (match[1] == '|')
           && (match[2] == '>'))
         {
+          char* message;
      server_server_command:
           /* Found a full field, process the field. */
+#if 1
           tracef ("   server messages: %.*s...\n",
                   from_server_end - from_server_start < 200
                   ? from_server_end - from_server_start
                   : 200,
                   messages);
-          char* message = messages;
+#endif
+          message = messages;
           *match = '\0';
           from_server_start += match + 3 - messages;
           messages = match + 3;
@@ -1798,9 +1838,129 @@ int process_omp_server_input ()
                     tracef ("   server new state: %i\n", server_state);
                     goto server_rule;
                   }
+                else if (strncasecmp ("TIME", field, 4) == 0)
+                  {
+                    server_state = SERVER_TIME;
+                    tracef ("   server new state: %i\n", server_state);
+                  }
+                else if (strncasecmp ("STATUS", field, 6) == 0)
+                  {
+                    server_state = SERVER_STATUS_HOST;
+                    tracef ("   server new state: %i\n", server_state);
+                  }
                 else
                   goto fail;
                 break;
+              case SERVER_STATUS_ATTACK_STATE:
+                {
+                  if (current_server_task)
+                    {
+                      char* state = strdup (field);
+                      if (state == NULL)
+                        goto out_of_memory;
+                      tracef ("   server got attack state: %s\n", state);
+                      if (current_server_task->attack_state)
+                        free (current_server_task->attack_state);
+                      current_server_task->attack_state = state;
+                    }
+                  server_state = SERVER_STATUS_PORTS;
+                  break;
+                }
+              case SERVER_STATUS_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  server_state = SERVER_STATUS_ATTACK_STATE;
+                  break;
+                }
+              case SERVER_STATUS_PORTS:
+                {
+                  if (current_server_task)
+                    {
+                      unsigned int current, max;
+                      tracef ("   server got ports: %s\n", field);
+                      if (sscanf (field, "%u/%u", &current, &max) == 2)
+                        set_task_ports (current_server_task, current, max);
+                    }
+                  server_state = SERVER_DONE;
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  tracef ("   server new state: %i\n", server_state);
+                  goto server_done;
+                }
+              case SERVER_TIME:
+                {
+                  if (strncasecmp ("HOST_START", field, 10) == 0)
+                    server_state = SERVER_TIME_HOST_START_HOST;
+                  else if (strncasecmp ("HOST_END", field, 8) == 0)
+                    server_state = SERVER_TIME_HOST_END;
+                  else if (strncasecmp ("SCAN_START", field, 10) == 0)
+                    server_state = SERVER_TIME_SCAN_START;
+                  else if (strncasecmp ("SCAN_END", field, 8) == 0)
+                    server_state = SERVER_TIME_SCAN_END;
+                  else
+                    abort (); // FIX read all fields up to <|> SERVER?
+                  break;
+                }
+              case SERVER_TIME_HOST_START_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  server_state = SERVER_TIME_HOST_START_TIME;
+                  break;
+                }
+              case SERVER_TIME_HOST_START_TIME:
+                {
+                  if (current_server_task)
+                    {
+                      char* time = strdup (field);
+                      if (time == NULL)
+                        goto out_of_memory;
+                      tracef ("   server got start time: %s\n", time);
+                      if (current_server_task->start_time)
+                        free (current_server_task->start_time);
+                      current_server_task->start_time = time;
+                    }
+                  server_state = SERVER_DONE;
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  tracef ("   server new state: %i\n", server_state);
+                  goto server_done;
+                }
+              case SERVER_TIME_HOST_END:
+                {
+                  if (current_server_task)
+                    {
+                      char* time = strdup (field);
+                      if (time == NULL)
+                        goto out_of_memory;
+                      tracef ("   server got start time: %s\n", time);
+                      if (current_server_task->end_time)
+                        free (current_server_task->end_time);
+                      current_server_task->end_time = time;
+                    }
+                  server_state = SERVER_DONE;
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  tracef ("   server new state: %i\n", server_state);
+                  goto server_done;
+                }
+              case SERVER_TIME_SCAN_START:
+                {
+                  /* Read over it. */
+                  server_state = SERVER_DONE;
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  tracef ("   server new state: %i\n", server_state);
+                  goto server_done;
+                }
+              case SERVER_TIME_SCAN_END:
+                {
+                  /* Read over it. */
+                  server_state = SERVER_DONE;
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  tracef ("   server new state: %i\n", server_state);
+                  goto server_done;
+                }
               case SERVER_TOP:
               default:
                 tracef ("   switch t\n");
