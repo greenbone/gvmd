@@ -1,3 +1,8 @@
+2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c: Drop the OVAS_SSL directive in favour of always
+	compiling secure transmission.
+
 2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c: (strip_space): Correct terminating check.
