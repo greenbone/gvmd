@@ -2055,6 +2055,90 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
   return -2;
 }
 
+/** Write as much as possible from to_client to the client.
+  *
+  * @param[in]  client_session  The client session.
+  *
+  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+  */
+int
+write_to_client (gnutls_session_t* client_session)
+{
+  while (to_client_start < to_client_end)
+    {
+      ssize_t count;
+      count = gnutls_record_send (*client_session,
+				  to_client + to_client_start,
+				  to_client_end - to_client_start);
+      if (count < 0)
+	{
+	  if (count == GNUTLS_E_AGAIN)
+            /* Wrote as much as server would accept. */
+            return -2;
+	  if (count == GNUTLS_E_INTERRUPTED)
+	    /* Interrupted, try write again. */
+	    continue;
+	  if (count == GNUTLS_E_REHANDSHAKE)
+	    /* \todo Rehandshake. */
+	    continue;
+	  fprintf (stderr, "Failed to write to client.\n");
+	  gnutls_perror (count);
+	  return -1;
+	}
+      logf ("=> %.*s\n",
+	    to_client_end - to_client_start,
+	    to_client + to_client_start);
+      to_client_start += count;
+      tracef ("=> client  %i bytes\n", count);
+    }
+  tracef ("=> client  done\n");
+  to_client_start = to_client_end = 0;
+
+  /* Wrote everything. */
+  return 0;
+}
+
+// FIX combine with write_to_client
+/** Write as much as possible from to_server to the server.
+  *
+  * @param[in]  server_session  The server session.
+  *
+  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+  */
+int
+write_to_server (gnutls_session_t* server_session)
+{
+  while (to_server_start < to_server_end)
+    {
+      ssize_t count;
+      count = gnutls_record_send (*server_session,
+                                  to_server + to_server_start,
+                                  to_server_end - to_server_start);
+      if (count < 0)
+        {
+          if (count == GNUTLS_E_AGAIN)
+            /* Wrote as much as server accepted. */
+            return -2;
+          if (count == GNUTLS_E_INTERRUPTED)
+            /* Interrupted, try write again. */
+            continue;
+          if (count == GNUTLS_E_REHANDSHAKE)
+            /* \todo Rehandshake. */
+            continue;
+          fprintf (stderr, "Failed to write to server.\n");
+          gnutls_perror (count);
+          return -1;
+        }
+      to_server_start += count;
+      tracef ("=> server  %i bytes\n", count);
+    }
+  tracef ("=> server  done\n");
+  to_server_start = to_server_end = 0;
+
+  /* Wrote everything. */
+  return 0;
+}
+
 /** Serve the OpenVAS Management Protocol (OMP).
   *
   * @param[in]  client_session  The TLS session with the client.
@@ -2100,7 +2184,34 @@ serve_omp (gnutls_session_t* client_session,
   // FIX handle client_input_stalled
   if (process_omp_client_input ()) return -1;
 
-  /* Loop handling input from the sockets. */
+  /* Loop forever handling input from the sockets.
+
+     That is, select on all the socket fds and then, as necessary
+       - read from the client into buffer from_client
+       - write to the server from buffer to_server
+       - read from the server into buffer from_server
+       - write to the client from buffer to_client.
+
+     On reading from an fd, immediately try react to the input.  On reading
+     from the client call process_omp_client_input, which parses OMP
+     commands and may write to to_server and to_client.  On reading from
+     the server call process_omp_server_input, which mostly just updates
+     information kept about the server.
+
+     There are a few complications here
+       - the program must read everything available on an fd before
+         selecting for read on the fd again,
+       - the program need only select on the fds for writing if there is
+         something to write,
+       - similarly, the program need only select on the fds for reading
+         if there's buffer space available,
+       - the buffers from_client and from_server can become full during
+         reading
+       - a read from the client can be stalled by the to_server buffer
+         filling up, or the to_client buffer filling up,
+       - a read from the server can, theoretically, be stalled by the
+         to_server buffer filling up (during initialisation).
+   */
   int nfds = 1 + (client_socket > server_socket
                   ? client_socket : server_socket);
   fd_set readfds, exceptfds, writefds;
@@ -2109,8 +2220,6 @@ serve_omp (gnutls_session_t* client_session,
     {
       /* Setup for select. */
       unsigned char fds = 0; /* What `select' is going to watch. */
-      gboolean to_client_ok = TRUE;
-      gboolean to_server_ok = TRUE;
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
@@ -2188,6 +2297,7 @@ serve_omp (gnutls_session_t* client_session,
                   case -1:       /* Error. */
                     return -1;
                   case -2:       /* from_client buffer full. */
+                    /* There may be more to read. */
                     from_client_more = TRUE;
                     break;
                   case -3:       /* End of file. */
@@ -2215,89 +2325,34 @@ serve_omp (gnutls_session_t* client_session,
                 }
 #endif /* TRACE || LOG */
 
- continue_stalled_client_input:
-              switch (process_omp_client_input ())
+              int ret = process_omp_client_input ();
+              if (ret == 0)
+                /* Processed all input. */
+                client_input_stalled = 0;
+              else if (ret == -1)
+                /* Error. */
+                return -1;
+              else if (ret == -2)
                 {
-                  case 0:        /* Processed all input. */
-                    client_input_stalled = 0;
-                    break;
-                  case -1:       /* Error. */
-                    return -1;
-                  case -2:       /* to_server buffer full. */
-                    tracef ("   client input stalled 1\n");
-                    client_input_stalled = 1;
-                    break;
-                  case -3:       /* to_client buffer full. */
-                    tracef ("   client input stalled 2\n");
-                    client_input_stalled = 2;
-                    break;
-                  default:       /* Programming error. */
-                    assert (0);
+                  /* to_server buffer full. */
+                  tracef ("   client input stalled 1\n");
+                  client_input_stalled = 1;
+                  /* Break to write to_server. */
+                  break;
                 }
-              if (client_input_stalled)
-                /* Break in order to write to server. */
-                break;
+              else if (ret == -3)
+                {
+                  /* to_client buffer full. */
+                  tracef ("   client input stalled 2\n");
+                  client_input_stalled = 2;
+                  /* Break to write to_client. */
+                  break;
+                }
+              else
+                /* Programming error. */
+                assert (0);
             }
           while (from_client_more);
-
-          if (server_input_stalled)
-            /* A process_omp_server_input and a process_omp_client_input
-               were both stalled by a full to_client buffer.  After the
-               to_client write that followed, control passed to the stalled
-               client processing (above).  Now jump to the stalled server
-               processing. */
-             goto continue_stalled_server_input;
-        }
-
-      if (fds & FD_SERVER_WRITE
-          && to_server_ok
-          && FD_ISSET (server_socket, &writefds))
-        {
-          /* Write as much as possible to the server. */
-
-          while (to_server_start < to_server_end)
-            {
-              ssize_t count;
-              count = gnutls_record_send (*server_session,
-                                          to_server + to_server_start,
-                                          to_server_end - to_server_start);
-              if (count < 0)
-                {
-                  if (count == GNUTLS_E_AGAIN)
-                    {
-                      /* Wrote as much as possible, either return to
-                         `select' or re-attempt to process leftover
-                         client input. */
-                      to_server_ok = FALSE;
-                      goto end_server_fd_write;
-                    }
-                  if (count == GNUTLS_E_INTERRUPTED)
-                    /* Interrupted, try write again. */
-                    continue;
-                  if (count == GNUTLS_E_REHANDSHAKE)
-                    /* \todo Rehandshake. */
-                    continue;
-                  fprintf (stderr, "Failed to write to server.\n");
-                  gnutls_perror (count);
-                  return -1;
-                }
-              to_server_start += count;
-              tracef ("=> server  %i bytes\n", count);
-            }
-          tracef ("=> server  done\n");
-          to_server_start = to_server_end = 0;
-          /* For stalled client input processing.  Flag that it is OK
-             to try write to the server again after re-attempting to
-             process any leftover client input. */
-          to_server_ok = TRUE;
- end_server_fd_write:
-
-          if (client_input_stalled == 1)
-            /* A previous process_omp_client_input was stalled by a
-               full to_server buffer.  Jump back to process the
-               remaining client input now that some of the to_server
-               buffer may have been written.  */
-             goto continue_stalled_client_input;
         }
 
       if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
@@ -2317,6 +2372,7 @@ serve_omp (gnutls_session_t* client_session,
                   case -1:       /* Error. */
                     return -1;
                   case -2:       /* from_server buffer full. */
+                    /* There may be more to read. */
                     from_server_more = TRUE;
                     break;
                   case -3:       /* End of file. */
@@ -2344,91 +2400,113 @@ serve_omp (gnutls_session_t* client_session,
                 }
 #endif /* TRACE || LOG */
 
- continue_stalled_server_input:
-              switch (process_omp_server_input ())
+              int ret =  process_omp_server_input ();
+              if (ret == 0)
+                /* Processed all input. */
+                server_input_stalled = FALSE;
+              else if (ret == -1)
+                /* Error. */
+                return -1;
+              else if (ret == -3)
                 {
-                  case 0:        /* Processed all input. */
-                    server_input_stalled = FALSE;
-                    break;
-                  case -1:       /* Error. */
-                    return -1;
-                  case -3:       /* to_server buffer full. */
-                    tracef ("   server input stalled\n");
-                    server_input_stalled = TRUE;
-                    break;
-                  case -2:
-                  default:       /* Programming error. */
-                    assert (0);
+                  /* to_server buffer full. */
+                  tracef ("   server input stalled\n");
+                  server_input_stalled = TRUE;
+                  /* Break to write to server. */
+                  break;
                 }
-              if (server_input_stalled)
-                /* Break in order to write to client. */
-                break;
+              else
+                /* Programming error. */
+                assert (0);
             }
           while (from_server_more);
         }
 
+      if (fds & FD_SERVER_WRITE
+          && FD_ISSET (server_socket, &writefds))
+        {
+          /* Write as much as possible to the server. */
+
+          switch (write_to_server (server_session))
+            {
+              case  0:      /* Wrote everything in to_server. */
+                break;
+              case -1:      /* Error. */
+                return -1;
+              case -2:      /* Wrote as much as server was willing to accept. */
+                break;
+              default:      /* Programming error. */
+                assert (0);
+            }
+        }
+
       if (fds & FD_CLIENT_WRITE
-          && to_client_ok
           && FD_ISSET (client_socket, &writefds))
         {
           /* Write as much as possible to the client. */
-          while (to_client_start < to_client_end)
+
+          switch (write_to_client (client_session))
             {
-              ssize_t count;
-              count = gnutls_record_send (*client_session,
-                                          to_client + to_client_start,
-                                          to_client_end - to_client_start);
-              if (count < 0)
-                {
-                  if (count == GNUTLS_E_AGAIN)
-                    {
-                      /* Wrote as much as possible, either return to
-                         `select' or re-attempt to process leftover
-                         server input. */
-                      to_client_ok = FALSE;
-                      goto end_client_fd_write;
-                    }
-                  if (count == GNUTLS_E_INTERRUPTED)
-                    /* Interrupted, try write again. */
-                    continue;
-                  if (count == GNUTLS_E_REHANDSHAKE)
-                    /* \todo Rehandshake. */
-                    continue;
-                  fprintf (stderr, "Failed to write to client.\n");
-                  gnutls_perror (count);
-                  return -1;
-                }
-              logf ("=> %.*s\n",
-                    to_client_end - to_client_start,
-                    to_client + to_client_start);
-              to_client_start += count;
-              tracef ("=> client  %i bytes\n", count);
+              case  0:      /* Wrote everything in to_client. */
+                break;
+              case -1:      /* Error. */
+                return -1;
+              case -2:      /* Wrote as much as client was willing to accept. */
+                break;
+              default:      /* Programming error. */
+                assert (0);
             }
-          tracef ("=> client  done\n");
-          to_client_start = to_client_end = 0;
-          /* For stalled server input processing.  Flag that it is OK
-             to try write to the server again after re-attempting to
-             process any leftover server or client input. */
-          to_client_ok = TRUE;
- end_client_fd_write:
-
-          if (client_input_stalled)
-            /* A previous process_omp_client_input was stalled by a
-               full to_client buffer.  Jump back to process the
-               remaining client input now that some of the to_client
-               buffer may have been written.  */
-             goto continue_stalled_client_input;
-
-          if (server_input_stalled)
-            /* A previous process_omp_server_input was stalled by a
-               full to_client buffer.  Jump back to process the
-               remaining server input now that some of the to_client
-               buffer may have been written.
-
-               If this is missed because client processing is also stalled,
-               it will be done after the client processing.  */
-             goto continue_stalled_server_input;
         }
+
+      if (client_input_stalled)
+        {
+          /* Try process the client input, in case writing to the server
+             or client has freed some space in to_server or to_client. */
+
+	  int ret = process_omp_client_input ();
+	  if (ret == 0)
+	    /* Processed all input. */
+	    client_input_stalled = 0;
+	  else if (ret == -1)
+	    /* Error. */
+	    return -1;
+	  else if (ret == -2)
+	    {
+	      /* to_server buffer full. */
+	      tracef ("   client input still stalled (1)\n");
+	      client_input_stalled = 1;
+	    }
+	  else if (ret == -3)
+	    {
+	      /* to_client buffer full. */
+	      tracef ("   client input still stalled (2)\n");
+	      client_input_stalled = 2;
+	    }
+	  else
+	    /* Programming error. */
+	    assert (0);
+        }
+
+      if (server_input_stalled)
+        {
+          /* Try process the server input, in case writing to the server
+             has freed some space in to_server. */
+
+	  int ret =  process_omp_server_input ();
+	  if (ret == 0)
+	    /* Processed all input. */
+	    server_input_stalled = FALSE;
+	  else if (ret == -1)
+	    /* Error. */
+	    return -1;
+	  else if (ret == -3)
+            /* to_server buffer still full. */
+            tracef ("   server input stalled\n");
+	  else
+	    /* Programming error. */
+	    assert (0);
+        }
+
     } /* while (1) */
 
   return 0;

@@ -1,5 +1,11 @@
 2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c (write_to_client, write_to_server): New functions.
+	(serve_omp): Describe and simplify the select loop.  Move writing code
+	out to new functions write_to_client and write_to_server.
+
+2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Drop the OVAS_SSL directive in favour of always
 	compiling secure transmission.
 
