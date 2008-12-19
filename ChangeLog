@@ -1,5 +1,10 @@
 2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c (process_omp_server_input): Improve open port number
+	parsing.
+
+2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c (serve_otp): Use a flag instead of a goto when
 	writing to the fd.
 

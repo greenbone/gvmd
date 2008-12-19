@@ -1796,7 +1796,7 @@ process_omp_server_input ()
                       char *name = g_newa (char, strlen (field));
                       char *protocol = g_newa (char, strlen (field));
 
-                      if (sscanf (field, "%s (%i/%s)",
+                      if (sscanf (field, "%s (%i/%[^)])",
                                   name, &number, protocol)
                           != 3)
                         {
