@@ -1,5 +1,15 @@
 2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add server PORT command handling.
+
+	* src/openvasmd.c: (append_task_open_port): New function.
+	(free_tasks): Free open_ports.
+	(make_task, start_task): Init open_ports.
+	(port_protocol_t, port_t): New types.
+	(process_omp_server_input): Add PORT handling.
+
+2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Convert tabs to spaces.
 
 2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>

@@ -309,6 +309,8 @@ typedef enum
   SERVER_PLUGINS_MD5,
   SERVER_PLUGIN_DEPENDENCY_NAME,
   SERVER_PLUGIN_DEPENDENCY_DEPENDENCY,
+  SERVER_PORT_HOST,
+  SERVER_PORT_NUMBER,
   SERVER_PREFERENCE_NAME,
   SERVER_PREFERENCE_VALUE,
   SERVER_RULE,
@@ -511,7 +513,6 @@ add_server_rule (char* rule)
   g_ptr_array_add (server.rules, rule);
 }
 
-
 
 /* Tasks. */
 
@@ -531,7 +532,22 @@ typedef struct
   char* attack_state;         /**< Attack status. */
   unsigned int current_port;  /**< Port currently under test. */
   unsigned int max_port;      /**< Last port to test. */
+  GArray *open_ports;         /**< Open ports that the server has found. */
+  int open_ports_size;        /**< Number of open ports. */
 } task_t;
+
+typedef enum
+{
+  PORT_PROTOCOL_TCP,
+  PORT_PROTOCOL_UDP,
+  PORT_PROTOCOL_OTHER
+} port_protocol_t;
+
+typedef struct
+{
+  int number;
+  port_protocol_t protocol;
+} port_t;
 
 /** Reallocation increment for the tasks array. */
 #define TASKS_INCREMENT 1024
@@ -618,6 +634,7 @@ free_tasks ()
           free (index->description);
           if (index->start_time) free (index->start_time);
           if (index->end_time) free (index->end_time);
+          if (index->open_ports) g_array_free (index->open_ports, TRUE);
         }
       index++;
     }
@@ -657,6 +674,7 @@ make_task (char* name, unsigned int time, char* comment)
               index->description = NULL;
               index->description_size = 0;
               index->running = 0;
+              index->open_ports = NULL;
               tracef ("   Made task %i at %p\n", index->id, index);
               num_tasks++;
               return index;
@@ -761,6 +779,9 @@ start_task (task_t* task)
 #endif
 
   task->running = 1;
+  if (task->open_ports) g_array_free (task->open_ports, TRUE);
+  task->open_ports = g_array_new (FALSE, FALSE, sizeof (port_t));
+  task->open_ports_size = 0;
   current_server_task = task;
 
   return 0;
@@ -822,6 +843,28 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
 {
   task->current_port = current;
   task->max_port = max;
+}
+
+/** Add an open port to a task.
+  *
+  * @param[in]  task     The task.
+  * @param[in]  port     The port number.
+  */
+void
+append_task_open_port (task_t *task, unsigned int number, char* protocol)
+{
+  port_t port;
+
+  port.number = number;
+  if (strncasecmp ("udp", protocol, 3) == 0)
+    port.protocol = PORT_PROTOCOL_UDP;
+  else if (strncasecmp ("tcp", protocol, 3) == 0)
+    port.protocol = PORT_PROTOCOL_TCP;
+  else
+    port.protocol = PORT_PROTOCOL_OTHER;
+
+  g_array_append_val (task->open_ports, port);
+  task->open_ports++;
 }
 
 
@@ -1727,6 +1770,38 @@ process_omp_server_input ()
                      ending in <|>. */
                   goto server_done;
                 }
+              case SERVER_PORT_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  set_server_state (SERVER_PORT_NUMBER);
+                  break;
+                }
+              case SERVER_PORT_NUMBER:
+                {
+                  if (current_server_task)
+                    {
+                      int number;
+                      char *name = g_newa (char, strlen (field));
+                      char *protocol = g_newa (char, strlen (field));
+
+                      if (sscanf (field, "%s (%i/%s)",
+                                  name, &number, protocol)
+                          != 3)
+                        {
+                          number = atoi (field);
+                          protocol[0] = '\0';
+                        }
+                      tracef ("   server got open port, number: %i, protocol: %s\n",
+                              number, protocol);
+                      append_task_open_port (current_server_task,
+                                             number,
+                                             protocol);
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                     ending in <|>. */
+                  goto server_done;
+                }
               case SERVER_PREFERENCE_NAME:
                 {
                   if (strlen (field) == 0)
@@ -1753,6 +1828,8 @@ process_omp_server_input ()
               case SERVER_SERVER:
                 if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
                   set_server_state (SERVER_PLUGINS_MD5);
+                else if (strncasecmp ("PORT", field, 4) == 0)
+                  set_server_state (SERVER_PORT_HOST);
                 else if (strncasecmp ("PREFERENCES", field, 11) == 0)
                   {
                     maybe_free_server_preferences ();
