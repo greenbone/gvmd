@@ -1005,6 +1005,7 @@ serve_otp (gnutls_session_t* client_session,
 
           if (fds & FD_SERVER_WRITE && FD_ISSET (server_socket, &writefds))
             {
+              gboolean wrote_all = TRUE;
               /* Write as much as possible to the server. */
               while (from_client_start < from_client_end)
                 {
@@ -1015,8 +1016,12 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
                       if (count == GNUTLS_E_AGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_server_fd_write;
+                        {
+                          /* Wrote as much server would accept, return to
+                             `select'. */
+                          wrote_all = FALSE;
+                          break;
+                        }
                       if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try write again. */
                         continue;
@@ -1030,10 +1035,11 @@ serve_otp (gnutls_session_t* client_session,
                   from_client_start += count;
                   tracef ("=> server  %i bytes\n", count);
                 }
-              tracef ("=> server  done\n");
-              from_client_start = from_client_end = 0;
-             end_server_fd_write:
-              ;
+              if (wrote_all)
+                {
+                  tracef ("=> server  done\n");
+                  from_client_start = from_client_end = 0;
+                }
             }
 
           if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
@@ -1088,6 +1094,8 @@ serve_otp (gnutls_session_t* client_session,
 
           if (fds & FD_CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
             {
+              gboolean wrote_all = TRUE;
+
               /* Write as much as possible to the client. */
               while (from_server_start < from_server_end)
                 {
@@ -1098,8 +1106,11 @@ serve_otp (gnutls_session_t* client_session,
                   if (count < 0)
                     {
                       if (count == GNUTLS_E_AGAIN)
-                        /* Wrote as much as possible, return to `select'. */
-                        goto end_client_fd_write;
+                        {
+                          /* Wrote as much as possible, return to `select'. */
+                          wrote_all = FALSE;
+                          break;
+                        }
                       if (count == GNUTLS_E_INTERRUPTED)
                         /* Interrupted, try write again. */
                         continue;
@@ -1116,10 +1127,11 @@ serve_otp (gnutls_session_t* client_session,
                   from_server_start += count;
                   tracef ("=> client  %i bytes\n", count);
                 }
-              tracef ("=> client  done\n");
-              from_server_start = from_server_end = 0;
-             end_client_fd_write:
-              ;
+              if (wrote_all)
+                {
+                  tracef ("=> client  done\n");
+                  from_server_start = from_server_end = 0;
+                }
             }
         }
     }
