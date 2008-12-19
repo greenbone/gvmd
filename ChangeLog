@@ -1,3 +1,7 @@
+2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c: Convert tabs to spaces.
+
 2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c (write_to_client, write_to_server): New functions.

@@ -2068,26 +2068,26 @@ write_to_client (gnutls_session_t* client_session)
     {
       ssize_t count;
       count = gnutls_record_send (*client_session,
-				  to_client + to_client_start,
-				  to_client_end - to_client_start);
+                                  to_client + to_client_start,
+                                  to_client_end - to_client_start);
       if (count < 0)
-	{
-	  if (count == GNUTLS_E_AGAIN)
+        {
+          if (count == GNUTLS_E_AGAIN)
             /* Wrote as much as server would accept. */
             return -2;
-	  if (count == GNUTLS_E_INTERRUPTED)
-	    /* Interrupted, try write again. */
-	    continue;
-	  if (count == GNUTLS_E_REHANDSHAKE)
-	    /* \todo Rehandshake. */
-	    continue;
-	  fprintf (stderr, "Failed to write to client.\n");
-	  gnutls_perror (count);
-	  return -1;
-	}
+          if (count == GNUTLS_E_INTERRUPTED)
+            /* Interrupted, try write again. */
+            continue;
+          if (count == GNUTLS_E_REHANDSHAKE)
+            /* \todo Rehandshake. */
+            continue;
+          fprintf (stderr, "Failed to write to client.\n");
+          gnutls_perror (count);
+          return -1;
+        }
       logf ("=> %.*s\n",
-	    to_client_end - to_client_start,
-	    to_client + to_client_start);
+            to_client_end - to_client_start,
+            to_client + to_client_start);
       to_client_start += count;
       tracef ("=> client  %i bytes\n", count);
     }
@@ -2463,28 +2463,28 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the client input, in case writing to the server
              or client has freed some space in to_server or to_client. */
 
-	  int ret = process_omp_client_input ();
-	  if (ret == 0)
-	    /* Processed all input. */
-	    client_input_stalled = 0;
-	  else if (ret == -1)
-	    /* Error. */
-	    return -1;
-	  else if (ret == -2)
-	    {
-	      /* to_server buffer full. */
-	      tracef ("   client input still stalled (1)\n");
-	      client_input_stalled = 1;
-	    }
-	  else if (ret == -3)
-	    {
-	      /* to_client buffer full. */
-	      tracef ("   client input still stalled (2)\n");
-	      client_input_stalled = 2;
-	    }
-	  else
-	    /* Programming error. */
-	    assert (0);
+          int ret = process_omp_client_input ();
+          if (ret == 0)
+            /* Processed all input. */
+            client_input_stalled = 0;
+          else if (ret == -1)
+            /* Error. */
+            return -1;
+          else if (ret == -2)
+            {
+              /* to_server buffer full. */
+              tracef ("   client input still stalled (1)\n");
+              client_input_stalled = 1;
+            }
+          else if (ret == -3)
+            {
+              /* to_client buffer full. */
+              tracef ("   client input still stalled (2)\n");
+              client_input_stalled = 2;
+            }
+          else
+            /* Programming error. */
+            assert (0);
         }
 
       if (server_input_stalled)
@@ -2492,19 +2492,19 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the server input, in case writing to the server
              has freed some space in to_server. */
 
-	  int ret =  process_omp_server_input ();
-	  if (ret == 0)
-	    /* Processed all input. */
-	    server_input_stalled = FALSE;
-	  else if (ret == -1)
-	    /* Error. */
-	    return -1;
-	  else if (ret == -3)
+          int ret =  process_omp_server_input ();
+          if (ret == 0)
+            /* Processed all input. */
+            server_input_stalled = FALSE;
+          else if (ret == -1)
+            /* Error. */
+            return -1;
+          else if (ret == -3)
             /* to_server buffer still full. */
             tracef ("   server input stalled\n");
-	  else
-	    /* Programming error. */
-	    assert (0);
+          else
+            /* Programming error. */
+            assert (0);
         }
 
     } /* while (1) */
