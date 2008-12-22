@@ -1,3 +1,18 @@
+2008-12-22  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* CMakeLists.txt: Enable testing.
+
+	* src/CMakeLists.txt: Add string library and a tests subdirectory.
+
+	* src/string.h, src/string.c, src/tracef.h, tests/, tests/CMakeLists.txt,
+	tests/strip_space_0.c, tests/strip_space_1.c, tests/strip_space_2.c,
+	tests/strip_space_3.c: New.
+
+	* src/openvasmd.c (tracef): Move to tracef.h.
+	(strip_space): Rework.  Move to string.c.
+	(process_omp_server_input): Correct from_start and input updating in
+	<|> field loop.  Correct and update call to strip_space.
+
 2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c (process_omp_server_input): Improve open port number

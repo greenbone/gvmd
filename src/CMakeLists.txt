@@ -22,9 +22,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+## Libraries
+
+add_library (string string.c)
+
 ## Program
 
+include_directories (${STRING_SOURCE_DIRECTORY}/string)
+
+link_directories (${STRING_BINARY_DIRECTORY}/string)
+
 add_executable (openvasmd openvasmd.c)
+target_link_libraries (openvasmd string)
 
 exec_program (libopenvas-config
               ARGS --cflags
@@ -86,5 +95,11 @@ install (TARGETS openvasmd
          RUNTIME DESTINATION bin
          LIBRARY DESTINATION lib
          ARCHIVE DESTINATION lib/static)
+
+## Tests
+
+ENABLE_TESTING ()
+
+add_subdirectory (tests)
 
 ## End

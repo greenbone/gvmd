@@ -58,4 +58,8 @@ add_subdirectory (src)
 
 add_subdirectory (doc)
 
+## Tests
+
+ENABLE_TESTING ()
+
 ## End

@@ -55,6 +55,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <gnutls/gnutls.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -69,6 +70,8 @@
 
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
+
+#include "string.h"
 
 /** Installation prefix. */
 #ifndef PREFIX
@@ -136,29 +139,14 @@
 
 /** Trace flag.  0 to turn off all tracing messages. */
 #define TRACE 1
+#include "tracef.h"
 
 /** Trace text flag.  0 to turn off echoing of actual data transfered
   * (requires TRACE). */
 #define TRACE_TEXT 1
 
-#include <gnutls/gnutls.h>
-
 #if BUFFER_SIZE > SSIZE_MAX
 #error BUFFER_SIZE too big for `read'
-#endif
-
-#if TRACE
-/** Formatted trace output.
-  * Prints the printf style \a args to stderr, preceded by the process ID. */
-#define tracef(args...)                   \
-  do {                                    \
-    fprintf (stderr, "%7i  ", getpid());  \
-    fprintf (stderr, args);               \
-    fflush (stderr);                      \
-  } while (0)
-#else
-/** Dummy macro, enabled with TRACE. */
-#define tracef(format, args...)
 #endif
 
 #if LOG
@@ -248,32 +236,6 @@ int server_initialising = 0;
 
 
 /* Helper functions. */
-
-/** "Strip" spaces from either end of a string.
-  *
-  * Return the string moved past any spaces, replacing the first of any
-  * contiguous spaces at or before the end of the string with a terminating
-  * NULL.
-  *
-  * This is for use when the string points into one of the static buffers.
-  *
-  * @param[in,out]  string  The string to strip.
-  * @param[in]      end     Pointer to the end of the string.
-  *
-  * @return A new pointer into the string.
-  */
-char*
-strip_space (char* string, char* end)
-{
-  while (string[0] == ' ' || string[0] == '\n')
-    string++;
-  char *last = end, *new_end = end;
-  new_end--;
-  while (new_end >= string && (new_end[0] == ' ' || new_end[0] == '\n'))
-    { last--; new_end--; }
-  if (last < end) last[0] = '\0';
-  return string;
-}
 
 /** Free a GPtrArray.
   *
@@ -1722,12 +1684,13 @@ process_omp_server_input ()
           message = messages;
           *match = '\0';
           from_server_start += match + 3 - messages;
+          from_start = from_server_start;
           messages = match + 3;
+          input = messages;
           tracef ("   server message: %s\n", message);
 
           /* Strip leading and trailing whitespace. */
-          char* field = strip_space (message,
-                                     message + from_server_end - from_server_start);
+          char* field = strip_space (message, match);
 
           tracef ("   server old state %i\n", server_state);
           tracef ("   server field: %s\n", field);
@@ -1992,8 +1955,11 @@ process_omp_server_input ()
 
           tracef ("   server new state: %i\n", server_state);
         }
-      from_start += match + 1 - input;
-      input = match + 1;
+      else
+        {
+          from_start += match + 1 - input;
+          input = match + 1;
+        }
     }
 
  succeed:
