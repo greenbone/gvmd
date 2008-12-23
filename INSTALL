@@ -11,17 +11,18 @@ Prerequisites for building documentation:
 * Doxygen
 * groff (with HTML device)
 
-First, adjust any values in the Variables section of CMakeLists.txt.  The
-variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
-enabled and edited in order to link to a custom installation of OpenVAS.
-The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
-OPENVAS_SERVER_KEY and OPENVAS_CA_CERTIFICATE may also need modifying.
-
 The very first time, run the command
+
+    $ cmake -D CMAKE_INSTALL_PREFIX=/path/to/your/installation .
+
+or (if you want to use the default installation path /usr/local):
 
     $ cmake .
 
-to configure the build.
+to configure the build. Note: It is assumed that the other
+OpenVAS components are installed to the same path. If not,
+you need to set some paths separately, see at the bottom for
+details.
 
 Thereafter, the following commands are useful.
 
@@ -29,3 +30,15 @@ Thereafter, the following commands are useful.
     $ make doc            # build the documentation
     $ make install        # install the build
     $ make rebuild_cache  # rebuild the make system cache
+
+
+In case you install openvas-manager to a different path
+than the other OpenVAS modules, you might need to set some
+paths explicely before running cmake:
+
+Adjust any values in the Variables section of CMakeLists.txt: The
+variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
+enabled and edited in order to link to a custom installation of OpenVAS.
+The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
+OPENVAS_SERVER_KEY and OPENVAS_CA_CERTIFICATE may also need modifying.
+
