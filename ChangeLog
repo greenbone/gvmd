@@ -1,5 +1,9 @@
 2008-12-23  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
+	* src/Makefile: Removed. It is overwritten by cmake anyway.
+
+2008-12-23  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
 	* INSTALL: Added information about the prefix setting for cmake.
 
 2008-12-22  Matthew Mundell <matt@mundell.ukfsn.org>
