@@ -691,17 +691,20 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
 /** Send a message to the server.
   *
   * @param[in]  msg  The message, a string.
+  *
+  * @return 0 for success, for any other values a failure happened.
   */
-#define TO_SERVER(msg)                                            \
-  do                                                              \
-    {                                                             \
-      if (BUFFER_SIZE - to_server_end < strlen (msg))             \
-        goto to_server_fail;                                      \
-      memcpy (to_server + to_server_end, msg, strlen (msg));      \
-      tracef ("-> server: %s\n", msg);                            \
-      to_server_end += strlen (msg);                              \
-    }                                                             \
-  while (0)
+int send_to_server(char * msg)
+{
+  if (BUFFER_SIZE - to_server_end < strlen (msg))
+    return 1;
+
+  memcpy (to_server + to_server_end, msg, strlen (msg));
+  tracef ("-> server: %s\n", msg);
+  to_server_end += strlen (msg);
+
+  return 0;
+}
 
 /** Start a task.
   *
@@ -714,30 +717,31 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
-  TO_SERVER ("CLIENT <|> PREFERENCES <|>\n");
-  TO_SERVER ("plugin_set <|> ");
+  if (send_to_server("CLIENT <|> PREFERENCES <|>\n")) return -1;
+
+  if (send_to_server("plugin_set <|> ")) return -1;
 #if 0
-  TO_SERVER (task_plugins (task));
+  if (send_to_server(task_plugins (task))) return -1;
 #endif
-  TO_SERVER ("\n");
+  if (send_to_server("\n")) return -1;
 #if 0
   queue_task_preferences (task);
   queue_task_plugin_preferences (task);
 #endif
-  TO_SERVER ("<|> CLIENT\n");
+  if (send_to_server("<|> CLIENT\n")) return -1;
 
-  TO_SERVER ("CLIENT <|> RULES <|>\n");
+  if (send_to_server("CLIENT <|> RULES <|>\n")) return -1;
 #if 0
   queue_task_rules (task);
 #endif
-  TO_SERVER ("<|> CLIENT\n");
+  if (send_to_server("<|> CLIENT\n")) return -1;
 
 #if 0
   char* targets = task_preference (task, "targets");
-  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
-             strlen (targets), targets);
+  if (send_to_server("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
+             strlen (targets), targets)) return -1;
 #else
-  TO_SERVER ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n");
+  if (send_to_server("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n")) return -1;
 #endif
 
   task->running = 1;
@@ -747,9 +751,6 @@ start_task (task_t* task)
   current_server_task = task;
 
   return 0;
-
- to_server_fail:
-  return -1;
 }
 
 /** Reallocation increment for a task description. */
@@ -1447,6 +1448,9 @@ process_omp_client_input ()
   * server.  Only communicate with the server for initialisation.
   *
   * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
+  *         For the latter case, this results in a retry at processing the same message
+  *         later, so from_client_end and from_client_start should only be adjusted
+  *         after a call to send_to_server.
   */
 int
 process_omp_server_input ()
@@ -1480,7 +1484,7 @@ process_omp_server_input ()
                 tracef ("   server fail: expected \"User : \"\n");
                 goto fail;
               }
-            TO_SERVER ("mattm\n"); // FIX
+            if (send_to_server("mattm\n")) return -3; // FIX
             from_server_start += 7;
             server_initialising = 3;
             goto succeed;
@@ -1490,7 +1494,7 @@ process_omp_server_input ()
                 tracef ("   server fail: expected \"Password : \"\n");
                 goto fail;
               }
-            TO_SERVER ("mattm\n"); // FIX
+            if (send_to_server("mattm\n")) return -3; // FIX
             from_server_start += 11;
             server_initialising = 0;
             goto succeed;
@@ -2000,13 +2004,6 @@ process_omp_server_input ()
     }
 
   return 0;
-
-  /* TO_SERVER jumps here when there is too little space in to_server for the
-     message.  This results in a retry at processing the same message
-     later, so from_client_end and from_client_start should only be adjusted
-     after a call to TO_SERVER. */
- to_server_fail:
-  return -3;
 
  out_of_memory:
   tracef ("   out of mem (server)\n");

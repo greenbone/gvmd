@@ -1,3 +1,14 @@
+2009-01-09  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	Turned TO_SERVER into a method and changed all calls.
+
+	* src/openvasmd.c (TO_SERVER): Transformed this macro into
+	method send_to_server.
+	(send_to_server): New. Functionlity of TO_SERVER, but returns 1
+	for error instead of goto statement.
+	(start_task, process_omp_server_input): Changed calls from
+	TO_SERVER macro to send_to_server method and did according cleanups.
+
 2008-12-23  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	* src/Makefile: Removed. It is overwritten by cmake anyway.
