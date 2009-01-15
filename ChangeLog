@@ -1,5 +1,11 @@
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/strip_space_0.c, src/tests/strip_space_1.c,
+	src/tests/strip_space_2.c, src/tests/strip_space_2.c: Add file header
+	comments.
+
+2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* INSTALL: Correct Cmake command.
 
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
