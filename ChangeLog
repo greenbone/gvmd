@@ -1,5 +1,13 @@
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add simple tests of XML OMP OMP_VERSION, NEW_TASK and MODIFY_TASK.
+
+	* src/tests/common.c, src/tests/common.h, src/tests/omp_modify_task_0.c,
+	src/tests/omp_new_task_0.c,	src/tests/omp_version_0.c: New files.
+	src/tests/CMakeLists.txt: Add config library and new tests.
+
+2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add initial XML OMP START_TASK and MODIFY_TASK.  Document functions.
 
 	* src/openvasmd.c (client_state_t): New type.

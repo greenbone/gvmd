@@ -22,7 +22,46 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+## Config
+
+exec_program (pkg-config
+              ARGS --cflags glib-2.0
+			  OUTPUT_VARIABLE GLIB_CFLAGS)
+
+exec_program (pkg-config
+              ARGS --libs glib-2.0
+			  OUTPUT_VARIABLE GLIB_LDFLAGS)
+
+## Libraries
+
+add_library (common common.c)
+set_target_properties (common PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+
 ## Programs
+
+include_directories (${COMMON_SOURCE_DIRECTORY}/common)
+link_directories (${COMMON_BINARY_DIRECTORY}/string)
+
+add_executable (omp_modify_task_0 omp_modify_task_0.c)
+target_link_libraries (omp_modify_task_0 string)
+set_target_properties (omp_modify_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_modify_task_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_LDFLAGS}")
+target_link_libraries (omp_modify_task_0 common)
+ADD_TEST (omp_modify_task_0 omp_modify_task_0)
+
+add_executable (omp_new_task_0 omp_new_task_0.c)
+target_link_libraries (omp_new_task_0 string)
+set_target_properties (omp_new_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_new_task_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_LDFLAGS}")
+target_link_libraries (omp_new_task_0 common)
+ADD_TEST (omp_new_task_0 omp_new_task_0)
+
+add_executable (omp_version_0 omp_version_0.c)
+target_link_libraries (omp_version_0 string)
+set_target_properties (omp_version_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_version_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_LDFLAGS}")
+target_link_libraries (omp_version_0 common)
+ADD_TEST (omp_version_0 omp_version_0)
 
 add_executable (strip_space_0 strip_space_0.c)
 target_link_libraries (strip_space_0 string)
