@@ -25,6 +25,7 @@
 ## Libraries
 
 add_library (string string.c)
+add_library (ovas-mngr-comm ovas-mngr-comm.c)
 
 ## Program
 
@@ -33,7 +34,7 @@ include_directories (${STRING_SOURCE_DIRECTORY}/string)
 link_directories (${STRING_BINARY_DIRECTORY}/string)
 
 add_executable (openvasmd openvasmd.c)
-target_link_libraries (openvasmd string)
+target_link_libraries (openvasmd ovas-mngr-comm string)
 
 exec_program (libopenvas-config
               ARGS --cflags

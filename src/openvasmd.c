@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2008 Intevation GmbH
+ * Copyright (C) 2008, 2009 Intevation GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -72,6 +72,7 @@
 #include <openvas/plugutils.h>
 
 #include "string.h"
+#include "ovas-mngr-comm.h"
 
 /** Installation prefix. */
 #ifndef PREFIX
@@ -207,8 +208,6 @@ char from_client[BUFFER_SIZE];
 char from_server[BUFFER_SIZE];
 /** Buffer of output to the client. */
 char to_client[BUFFER_SIZE];
-/** Buffer of output to the server. */
-char to_server[BUFFER_SIZE];
 
 // FIX just make these pntrs?
 /** The start of the data in the \ref from_client buffer. */
@@ -225,8 +224,6 @@ int to_client_start = 0;
 int to_server_start = 0;
 /** The end of the data in the \ref to_client buffer. */
 int to_client_end = 0;
-/** The end of the data in the \ref to_server buffer. */
-int to_server_end = 0;
 
 /** Client login name, from OMP LOGIN. */
 char* login = NULL;
@@ -763,24 +760,6 @@ set_task_parameter (task_t* task, char* parameter, char* value)
     }
   else
     return -2;
-  return 0;
-}
-
-/** Send a message to the server.
-  *
-  * @param[in]  msg  The message, a string.
-  *
-  * @return 0 for success, for any other values a failure happened.
-  */
-int send_to_server(char * msg)
-{
-  if (BUFFER_SIZE - to_server_end < strlen (msg))
-    return 1;
-
-  memcpy (to_server + to_server_end, msg, strlen (msg));
-  tracef ("-> server: %s\n", msg);
-  to_server_end += strlen (msg);
-
   return 0;
 }
 

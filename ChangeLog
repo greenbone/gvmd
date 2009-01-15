@@ -1,3 +1,20 @@
+2009-01-16  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	Started to move communication with server to a module
+	of its own.
+
+	* src/ovas-mngr-comm.c: New. Contains functionality
+	for communication with openvas-server factored out
+	from openvasmd.c.
+
+	* src/ovas-mngr-comm.h: New. Protos for respective API.
+
+	* src/openvasmd.c (send_to_server, to_server, to_server_end):
+	Removed. This is now
+	part of the new module ovas-mngr-comm.
+
+	* src/CMakeLists.txt: Added handling for module ovas-mngr-comm.
+
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add simple tests of XML OMP OMP_VERSION, NEW_TASK and MODIFY_TASK.
