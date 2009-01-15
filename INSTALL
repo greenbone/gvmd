@@ -13,7 +13,7 @@ Prerequisites for building documentation:
 
 The very first time, run the command
 
-    $ cmake -D CMAKE_INSTALL_PREFIX=/path/to/your/installation .
+    $ cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/installation .
 
 or (if you want to use the default installation path /usr/local):
 

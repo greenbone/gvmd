@@ -1,5 +1,9 @@
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* INSTALL: Correct Cmake command.
+
+2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Start XML OMP handling.
 
 	* src/openvasmd.c (xml_context): New variable.
