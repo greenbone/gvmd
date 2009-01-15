@@ -1,5 +1,20 @@
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add initial XML OMP START_TASK and MODIFY_TASK.  Document functions.
+
+	* src/openvasmd.c (client_state_t): New type.
+	(client_state, modify_task_parameter, modify_task_task_id,
+	modify_task_variable): New variables.
+	(append_to_task_comment, append_to_task_identifier, set_client_state,
+	set_task_parameter): New functions.
+	(add_task_description_line): Add const qualifer to parameter.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add comment docs.  Add START_TASK and
+	MODIFY_TASK.
+	(omp_xml_handle_error): Add comment doc.
+
+2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/tests/strip_space_0.c, src/tests/strip_space_1.c,
 	src/tests/strip_space_2.c, src/tests/strip_space_2.c: Add file header
 	comments.

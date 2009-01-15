@@ -253,6 +253,36 @@ free_g_ptr_array (gpointer array)
 }
 
 
+/* Client state. */
+
+/** Possible states of the client. */
+typedef enum
+{
+  CLIENT_DONE,
+  CLIENT_MODIFY_TASK,
+  CLIENT_MODIFY_TASK_TASK_ID,
+  CLIENT_MODIFY_TASK_PARAMETER,
+  CLIENT_MODIFY_TASK_VALUE,
+  CLIENT_NEW_TASK,
+  CLIENT_NEW_TASK_COMMENT,
+  CLIENT_NEW_TASK_IDENTIFIER,
+  CLIENT_NEW_TASK_TASK_FILE,
+  CLIENT_TOP,
+  CLIENT_VERSION
+} client_state_t;
+
+/** The state of the client. */
+client_state_t client_state = CLIENT_TOP;
+
+/** Set the client state. */
+void
+set_client_state (client_state_t state)
+{
+  client_state = state;
+  tracef ("   client state set: %i\n", client_state);
+}
+
+
 /* Server state. */
 
 /** Structure of information about the server. */
@@ -517,6 +547,15 @@ typedef struct
 /** Reallocation increment for the tasks array. */
 #define TASKS_INCREMENT 1024
 
+/** Parameter name during OMP MODIFY_TASK. */
+char* modify_task_parameter = NULL;
+
+/** Task ID during OMP MODIFY_TASK. */
+char* modify_task_task_id = NULL;
+
+/** Parameter value during OMP MODIFY_TASK. */
+char* modify_task_value = NULL;
+
 /** Current client task during OMP NEW_TASK or MODIFY_TASK. */
 task_t* current_client_task = NULL;
 
@@ -691,6 +730,42 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
   task->description_length = 0;
 }
 
+/** Set a task parameter.
+  *
+  * The value parameter is used directly and freed when the task is
+  * freed.
+  *
+  * @param[in]  task       A pointer to a task.
+  * @param[in]  parameter  The name of the parameter.
+  * @param[in]  value      The value of the parameter.
+  *
+  * @return 0 on success, -1 when out of memory, -2 if parameter name error.
+  */
+int
+set_task_parameter (task_t* task, char* parameter, char* value)
+{
+  tracef ("   set_task_parameter %u %s\n", task->id, parameter);
+  if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
+    {
+      task->description = value;
+      task->description_length = strlen (value);;
+    }
+  else if (strncasecmp ("IDENTIFIER", parameter, 10) == 0)
+    {
+      unsigned int id;
+      if (sscanf (value, "%u", &id) != 1) return -1;
+      free (value);
+      task->id = id;
+    }
+  else if (strncasecmp ("COMMENT", parameter, 7) == 0)
+    {
+      task->comment = value;
+    }
+  else
+    return -2;
+  return 0;
+}
+
 /** Send a message to the server.
   *
   * @param[in]  msg  The message, a string.
@@ -756,6 +831,50 @@ start_task (task_t* task)
   return 0;
 }
 
+/** Append text to the comment associated with a task.
+  *
+  * @param  task  A pointer to the task.
+  * @param  text  The text to append.
+  * @param  task  Length of the text.
+  *
+  * @return 0 on success, -1 if out of memory.
+  */
+int
+append_to_task_comment (task_t* task, const char* text, int length)
+{
+  if (task->comment)
+    {
+      // FIX
+      char* new = g_strconcat (task->comment, text, NULL);
+      task->comment = new;
+      return 0;
+    }
+  task->comment = strdup (text);
+  return task->comment == NULL;
+}
+
+/** Append text to the identifier associated with a task.
+  *
+  * @param  task  A pointer to the task.
+  * @param  text  The text to append.
+  * @param  task  Length of the text.
+  *
+  * @return 0 on success, -1 if out of memory.
+  */
+int
+append_to_task_identifier (task_t* task, const char* text, int length)
+{
+  if (task->name)
+    {
+      // FIX
+      char* new = g_strconcat (task->name, text, NULL);
+      task->name = new;
+      return 0;
+    }
+  task->name = strdup (text);
+  return task->name == NULL;
+}
+
 /** Reallocation increment for a task description. */
 #define DESCRIPTION_INCREMENT 4096
 
@@ -785,9 +904,9 @@ grow_description (task_t* task)
   * @param[in]  line_length  The length of the line.
   */
 int
-add_task_description_line (task_t* task, char* line, int line_length)
+add_task_description_line (task_t* task, const char* line, int line_length)
 {
-  assert (task->name);
+  //assert (task->name);
   if (task->description_size - task->description_length < line_length
       && grow_description (task))
     return -1;
@@ -1460,6 +1579,15 @@ process_omp_old_client_input ()
     }                                                             \
   while (0)
 
+/** Handle the start of an OMP XML element.
+  *
+  * @param[in]  context           Parser context.
+  * @param[in]  element_name      XML element name.
+  * @param[in]  attribute_names   XML attribute name.
+  * @param[in]  attribute_values  XML attribute values.
+  * @param[in]  user_data         Dummy parameter.
+  * @param[in]  error             Error parameter.
+  */
 void
 omp_xml_handle_start_element (GMarkupParseContext* context,
                               const gchar *element_name,
@@ -1468,29 +1596,187 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
                               gpointer user_data,
                               GError **error)
 {
-  tracef ("omp_xml_handle_start_element\n");
+  tracef ("   XML  start: %s\n", element_name);
 
-  if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
-    XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
-  else
-    XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+  switch (client_state)
+    {
+      case CLIENT_TOP:
+	if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
+          set_client_state (CLIENT_MODIFY_TASK);
+	else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
+          {
+            assert (current_client_task == NULL);
+            current_client_task = make_task (NULL, 0, NULL);
+            if (current_client_task == NULL) abort (); // FIX
+            set_client_state (CLIENT_NEW_TASK);
+          }
+	else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
+          set_client_state (CLIENT_VERSION);
+	else
+	  XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+        break;
+
+      case CLIENT_MODIFY_TASK:
+	if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
+	else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
+	else if (strncasecmp ("VALUE", element_name, 5) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_VALUE);
+        else
+          {
+            XML_RESPOND ("<modify_task_response><status>402</status></modify_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_NEW_TASK:
+	if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
+          set_client_state (CLIENT_NEW_TASK_TASK_FILE);
+	else if (strncasecmp ("IDENTIFIER", element_name, 10) == 0)
+          set_client_state (CLIENT_NEW_TASK_IDENTIFIER);
+	else if (strncasecmp ("COMMENT", element_name, 7) == 0)
+          set_client_state (CLIENT_NEW_TASK_COMMENT);
+        else
+          {
+            XML_RESPOND ("<new_task_response><status>402</status></new_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error (more above,below)
+          }
+        break;
+
+      default:
+        assert (0);
+        break;
+    }
+
   return;
 
-  respond_fail:
-    tracef ("   XML RESPOND out of space in to_client\n");
-    g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                 "Out of space for reply to client.\n");
+ respond_fail:
+  tracef ("   XML RESPOND out of space in to_client\n");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+               "Out of space for reply to client.\n");
 }
 
+/** Handle the end of an OMP XML element.
+  *
+  * @param[in]  context           Parser context.
+  * @param[in]  element_name      XML element name.
+  * @param[in]  user_data         Dummy parameter.
+  * @param[in]  error             Error parameter.
+  */
 void
 omp_xml_handle_end_element (GMarkupParseContext* context,
                             const gchar *element_name,
                             gpointer user_data,
                             GError **error)
 {
-  tracef ("omp_xml_handle_end_element\n");
+  tracef ("   XML    end: %s\n", element_name);
+  switch (client_state)
+    {
+      case CLIENT_TOP:
+        assert (0);
+        break;
+
+      case CLIENT_VERSION:
+	XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_MODIFY_TASK:
+	assert (current_client_task == NULL);
+	unsigned int id;
+	if (sscanf (element_name, "%u", &id) != 1)
+	  {
+	    XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
+          }
+	current_client_task = find_task (id);
+	if (current_client_task == NULL)
+	  {
+	    XML_RESPOND ("<modify_task_response><status>407</status></modify_task_response>");
+	  }
+        else
+          {
+            // FIX check if param,value else respond fail
+            int fail = set_task_parameter (current_client_task,
+                                           modify_task_parameter,
+                                           modify_task_value);
+            free (modify_task_parameter);
+            modify_task_parameter = NULL;
+            if (fail)
+              {
+                free (modify_task_parameter);
+                modify_task_value = NULL;
+                XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
+              }
+            else
+              {
+                XML_RESPOND ("<modify_task_response><status>201</status></modify_task_response>");
+                modify_task_value = NULL;
+              }
+          }
+        set_client_state (CLIENT_TOP);
+        break;
+      case CLIENT_MODIFY_TASK_PARAMETER:
+        assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_TASK_ID:
+        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_VALUE:
+        assert (strncasecmp ("VALUE", element_name, 5) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+
+      case CLIENT_NEW_TASK:
+        assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
+        assert (current_client_task);
+        // FIX if all rqrd fields given then ok, else respond fail
+        gchar* msg;
+        msg = g_strdup_printf ("<new_task_response><status>201</status><task_id>%u</task_id></new_task_response>",
+                               current_client_task->id);
+        // FIX free msg if fail
+        XML_RESPOND (msg);
+        free (msg);
+        current_client_task = NULL;
+        set_client_state (CLIENT_TOP);
+        break;
+      case CLIENT_NEW_TASK_COMMENT:
+        assert (strncasecmp ("COMMENT", element_name, 12) == 0);
+        set_client_state (CLIENT_NEW_TASK);
+        break;
+      case CLIENT_NEW_TASK_IDENTIFIER:
+        assert (strncasecmp ("IDENTIFIER", element_name, 10) == 0);
+        set_client_state (CLIENT_NEW_TASK);
+        break;
+      case CLIENT_NEW_TASK_TASK_FILE:
+        assert (strncasecmp ("TASK_FILE", element_name, 9) == 0);
+        set_client_state (CLIENT_NEW_TASK);
+        break;
+
+      default:
+        assert (0);
+    }
+
+  return;
+
+ respond_fail:
+  tracef ("   XML RESPOND out of space in to_client\n");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+               "Out of space for reply to client.\n");
 }
 
+/** Handle additional text of an OMP XML element.
+  *
+  * @param[in]  context           Parser context.
+  * @param[in]  text              The text.
+  * @param[in]  text_len          Length of the text.
+  * @param[in]  user_data         Dummy parameter.
+  * @param[in]  error             Error parameter.
+  */
 void
 omp_xml_handle_text (GMarkupParseContext* context,
                      const gchar *text,
@@ -1498,15 +1784,86 @@ omp_xml_handle_text (GMarkupParseContext* context,
                      gpointer user_data,
                      GError **error)
 {
-  tracef ("omp_xml_handle_text\n");
+  if (text_len == 0) return;
+  tracef ("   XML   text: %s\n", text);
+  switch (client_state)
+    {
+      case CLIENT_TOP:
+        assert (0);
+        break;
+      case CLIENT_MODIFY_TASK_PARAMETER:
+	if (modify_task_parameter)
+	  {
+	    // FIX
+	    char* new = g_strconcat (modify_task_parameter, text, NULL);
+	    modify_task_parameter = new;
+	  }
+        else
+          {
+            modify_task_parameter = strdup (text);
+            if (modify_task_parameter == NULL) abort (); // FIX
+          }
+        break;
+      case CLIENT_MODIFY_TASK_TASK_ID:
+	if (modify_task_task_id)
+	  {
+	    // FIX
+	    char* new = g_strconcat (modify_task_task_id, text, NULL);
+	    modify_task_task_id = new;
+	  }
+        else
+          {
+            modify_task_task_id = strdup (text);
+            if (modify_task_task_id == NULL) abort (); // FIX
+          }
+        break;
+      case CLIENT_MODIFY_TASK_VALUE:
+	if (modify_task_value)
+	  {
+	    // FIX
+	    char* new = g_strconcat (modify_task_value, text, NULL);
+	    modify_task_value = new;
+	  }
+        else
+          {
+            modify_task_value = strdup (text);
+            if (modify_task_value == NULL) abort (); // FIX
+          }
+        break;
+      case CLIENT_NEW_TASK:
+        assert (0);
+        break;
+      case CLIENT_NEW_TASK_COMMENT:
+        append_to_task_comment (current_client_task, text, text_len);
+        break;
+      case CLIENT_NEW_TASK_IDENTIFIER:
+        append_to_task_identifier (current_client_task, text, text_len);
+        break;
+      case CLIENT_NEW_TASK_TASK_FILE:
+        /* Append the text to the task description. */
+        if (add_task_description_line (current_client_task,
+                                       text,
+                                       text_len))
+          abort (); // FIX out of mem
+        break;
+      default:
+        assert (0);
+        break;
+    }
 }
 
+/** Handle an OMP XML parsing error.
+  *
+  * @param[in]  context           Parser context.
+  * @param[in]  error             The error.
+  * @param[in]  user_data         Dummy parameter.
+  */
 void
 omp_xml_handle_error (GMarkupParseContext* context,
                       GError *error,
                       gpointer user_data)
 {
-  tracef ("omp_xml_handle_error\n");
+  tracef ("   XML ERROR\n");
   abort ();
 }
 
