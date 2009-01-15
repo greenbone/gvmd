@@ -180,6 +180,9 @@ FILE* log_stream = NULL;
 /* The server context. */
 static ovas_server_context_t server_context = NULL;
 
+/* Client input parsing context. */
+GMarkupParseContext* xml_context;
+
 /** File descriptor set mask: selecting on client read. */
 #define FD_CLIENT_READ  1
 /** File descriptor set mask: selecting on client write. */
@@ -1130,7 +1133,7 @@ serve_otp (gnutls_session_t* client_session,
   * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
   */
 int
-process_omp_client_input ()
+process_omp_old_client_input ()
 {
   char* messages = from_client + from_client_start;
   int original_from_client_start;
@@ -1440,6 +1443,96 @@ process_omp_client_input ()
   tracef ("   RESPOND out of space in to_client\n");
   from_client_start = original_from_client_start;
   return -3;
+}
+
+/** Send a response message to the client.
+  *
+  * @param[in]  msg  The message, a string.
+  */
+#define XML_RESPOND(msg)                                          \
+  do                                                              \
+    {                                                             \
+      if (BUFFER_SIZE - to_client_end < strlen (msg))             \
+        goto respond_fail;                                        \
+      memcpy (to_client + to_client_end, msg, strlen (msg));      \
+      tracef ("-> client: %s\n", msg);                            \
+      to_client_end += strlen (msg);                              \
+    }                                                             \
+  while (0)
+
+void
+omp_xml_handle_start_element (GMarkupParseContext* context,
+                              const gchar *element_name,
+                              const gchar **attribute_names,
+                              const gchar **attribute_values,
+                              gpointer user_data,
+                              GError **error)
+{
+  tracef ("omp_xml_handle_start_element\n");
+
+  if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
+    XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
+  else
+    XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+  return;
+
+  respond_fail:
+    tracef ("   XML RESPOND out of space in to_client\n");
+    g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                 "Out of space for reply to client.\n");
+}
+
+void
+omp_xml_handle_end_element (GMarkupParseContext* context,
+                            const gchar *element_name,
+                            gpointer user_data,
+                            GError **error)
+{
+  tracef ("omp_xml_handle_end_element\n");
+}
+
+void
+omp_xml_handle_text (GMarkupParseContext* context,
+                     const gchar *text,
+                     gsize text_len,
+                     gpointer user_data,
+                     GError **error)
+{
+  tracef ("omp_xml_handle_text\n");
+}
+
+void
+omp_xml_handle_error (GMarkupParseContext* context,
+                      GError *error,
+                      gpointer user_data)
+{
+  tracef ("omp_xml_handle_error\n");
+  abort ();
+}
+
+/** Process any XML available in from_client.
+  *
+  * Queue any resulting server commands in to_server and any replies for
+  * the client in to_client.
+  *
+  * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
+  */
+int
+process_omp_client_input ()
+{
+  GError* error = NULL;
+  g_markup_parse_context_parse (xml_context,
+                                from_client + from_client_start,
+                                from_client_end - from_client_start,
+                                &error);
+  if (error)
+    {
+      fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
+      g_error_free (error);
+      return -1;
+    }
+  from_client_end = from_client_start = 0;
+  return 0;
 }
 
 /** Process any lines available in from_server.
@@ -2224,6 +2317,18 @@ serve_omp (gnutls_session_t* client_session,
   to_server_end += 12;
   server_initialising = 1;
 
+  /* Create the XML parser. */
+  GMarkupParser xml_parser;
+  xml_parser.start_element = omp_xml_handle_start_element;
+  xml_parser.end_element = omp_xml_handle_end_element;
+  xml_parser.text = omp_xml_handle_text;
+  xml_parser.passthrough = NULL;
+  xml_parser.error = omp_xml_handle_error;
+  xml_context = g_markup_parse_context_new (&xml_parser,
+                                            0,
+                                            NULL,
+                                            NULL);
+
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
   logf ("<= %.*s\n", from_client_end, from_client);
@@ -2617,6 +2722,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
         }
       from_client_end += count;
 
+#if 0
       /* Check for newline or return. */
       from_client[from_client_end] = '\0';
       if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
@@ -2627,6 +2733,19 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
             ret = PROTOCOL_OMP;
           break;
         }
+#else
+      /* Check for ">".  FIX need a better check */
+      from_client[from_client_end] = '\0';
+      if (strchr (from_client_current, '>'))
+        {
+          if (strstr (from_client, "< OTP/1.0 >"))
+            ret = PROTOCOL_OTP;
+          else
+            ret = PROTOCOL_OMP;
+          break;
+        }
+#endif
+
       from_client_current += count;
     }
 
@@ -2701,7 +2820,7 @@ serve_client (int client_socket)
                               GNUTLS_CRD_CERTIFICATE,
                               server_credentials))
     {
-      fprintf (stderr, "Failed to set server key exchange priority.\n");
+      fprintf (stderr, "Failed to set server credentials.\n");
       goto server_fail;
     }
 

@@ -1,3 +1,16 @@
+2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Start XML OMP handling.
+
+	* src/openvasmd.c (xml_context): New variable.
+	(process_omp_old_client_input): New function with old
+	process_omp_client_input code.
+	(process_omp_client_input): Start XML parsing.
+	(XML_RESPOND, omp_xml_handle_start_element,
+	omp_xml_handle_end_element, omp_xml_handle_text,
+	omp_xml_handle_error): New functions.
+	(serve_omp): Add XML parser and context initialisation.
+
 2009-01-09  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	Turned TO_SERVER into a method and changed all calls.
