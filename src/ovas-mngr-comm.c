@@ -51,7 +51,7 @@ int to_server_end = 0;
   *
   * @return 0 for success, for any other values a failure happened.
   */
-int send_to_server(char * msg)
+int send_to_server (char * msg)
 {
   if (BUFFER_SIZE - to_server_end < strlen (msg))
     return 1;

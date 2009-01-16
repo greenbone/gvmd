@@ -1,5 +1,9 @@
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/ovas-mngr-comm.c (send_to_server): Add space after function name.
+
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add simple test of XML OMP START_TASK.
 
 	* src/tests/omp_start_task_: New file.
