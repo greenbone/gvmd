@@ -1,5 +1,12 @@
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c (server_context, xml_context, port_protocol_t,
+	port_t): Add comments docs.
+	(append_to_task_comment, append_to_task_identifier): Correct doc for
+	length param.
+
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* doc/Doxyfile (INPUT): Add ovas-mngr-comm.c.
 
 	* doc/CMakeLists.txt: Add ovas-mngr-comm.c to doc depends.

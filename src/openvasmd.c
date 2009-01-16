@@ -178,10 +178,10 @@ struct sockaddr_in server_address;
 FILE* log_stream = NULL;
 #endif
 
-/* The server context. */
+/** The server context. */
 static ovas_server_context_t server_context = NULL;
 
-/* Client input parsing context. */
+/** Client input parsing context. */
 GMarkupParseContext* xml_context;
 
 /** File descriptor set mask: selecting on client read. */
@@ -530,6 +530,7 @@ typedef struct
   int open_ports_size;        /**< Number of open ports. */
 } task_t;
 
+/** Possible port types. */
 typedef enum
 {
   PORT_PROTOCOL_TCP,
@@ -537,10 +538,11 @@ typedef enum
   PORT_PROTOCOL_OTHER
 } port_protocol_t;
 
+/** A port. */
 typedef struct
 {
-  int number;
-  port_protocol_t protocol;
+  int number;                /**< Port number. */
+  port_protocol_t protocol;  /**< Port protocol (TCP, UDP, ...). */
 } port_t;
 
 /** Reallocation increment for the tasks array. */
@@ -814,9 +816,9 @@ start_task (task_t* task)
 
 /** Append text to the comment associated with a task.
   *
-  * @param  task  A pointer to the task.
-  * @param  text  The text to append.
-  * @param  task  Length of the text.
+  * @param  task    A pointer to the task.
+  * @param  text    The text to append.
+  * @param  length  Length of the text.
   *
   * @return 0 on success, -1 if out of memory.
   */
@@ -836,9 +838,9 @@ append_to_task_comment (task_t* task, const char* text, int length)
 
 /** Append text to the identifier associated with a task.
   *
-  * @param  task  A pointer to the task.
-  * @param  text  The text to append.
-  * @param  task  Length of the text.
+  * @param  task    A pointer to the task.
+  * @param  text    The text to append.
+  * @param  length  Length of the text.
   *
   * @return 0 on success, -1 if out of memory.
   */
@@ -913,8 +915,9 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
 
 /** Add an open port to a task.
   *
-  * @param[in]  task     The task.
-  * @param[in]  port     The port number.
+  * @param[in]  task       The task.
+  * @param[in]  number     The port number.
+  * @param[in]  protocol   The port protocol.
   */
 void
 append_task_open_port (task_t *task, unsigned int number, char* protocol)
