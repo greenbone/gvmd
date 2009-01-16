@@ -1580,27 +1580,27 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
-	if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
+        if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
-	else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
+        else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
           {
             assert (current_client_task == NULL);
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == NULL) abort (); // FIX
             set_client_state (CLIENT_NEW_TASK);
           }
-	else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
+        else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
           set_client_state (CLIENT_VERSION);
-	else
-	  XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+        else
+          XML_RESPOND ("<omp_response><status>402</status></omp_response>");
         break;
 
       case CLIENT_MODIFY_TASK:
-	if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
           set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
-	else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+        else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
-	else if (strncasecmp ("VALUE", element_name, 5) == 0)
+        else if (strncasecmp ("VALUE", element_name, 5) == 0)
           set_client_state (CLIENT_MODIFY_TASK_VALUE);
         else
           {
@@ -1611,11 +1611,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         break;
 
       case CLIENT_NEW_TASK:
-	if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
+        if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
           set_client_state (CLIENT_NEW_TASK_TASK_FILE);
-	else if (strncasecmp ("IDENTIFIER", element_name, 10) == 0)
+        else if (strncasecmp ("IDENTIFIER", element_name, 10) == 0)
           set_client_state (CLIENT_NEW_TASK_IDENTIFIER);
-	else if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        else if (strncasecmp ("COMMENT", element_name, 7) == 0)
           set_client_state (CLIENT_NEW_TASK_COMMENT);
         else
           {
@@ -1659,22 +1659,22 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         break;
 
       case CLIENT_VERSION:
-	XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
+        XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
         set_client_state (CLIENT_TOP);
         break;
 
       case CLIENT_MODIFY_TASK:
-	assert (current_client_task == NULL);
-	unsigned int id;
-	if (sscanf (element_name, "%u", &id) != 1)
-	  {
-	    XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
+        assert (current_client_task == NULL);
+        unsigned int id;
+        if (sscanf (element_name, "%u", &id) != 1)
+          {
+            XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
           }
-	current_client_task = find_task (id);
-	if (current_client_task == NULL)
-	  {
-	    XML_RESPOND ("<modify_task_response><status>407</status></modify_task_response>");
-	  }
+        current_client_task = find_task (id);
+        if (current_client_task == NULL)
+          {
+            XML_RESPOND ("<modify_task_response><status>407</status></modify_task_response>");
+          }
         else
           {
             // FIX check if param,value else respond fail
@@ -1771,12 +1771,12 @@ omp_xml_handle_text (GMarkupParseContext* context,
         assert (0);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
-	if (modify_task_parameter)
-	  {
-	    // FIX
-	    char* new = g_strconcat (modify_task_parameter, text, NULL);
-	    modify_task_parameter = new;
-	  }
+        if (modify_task_parameter)
+          {
+            // FIX
+            char* new = g_strconcat (modify_task_parameter, text, NULL);
+            modify_task_parameter = new;
+          }
         else
           {
             modify_task_parameter = strdup (text);
@@ -1784,12 +1784,12 @@ omp_xml_handle_text (GMarkupParseContext* context,
           }
         break;
       case CLIENT_MODIFY_TASK_TASK_ID:
-	if (modify_task_task_id)
-	  {
-	    // FIX
-	    char* new = g_strconcat (modify_task_task_id, text, NULL);
-	    modify_task_task_id = new;
-	  }
+        if (modify_task_task_id)
+          {
+            // FIX
+            char* new = g_strconcat (modify_task_task_id, text, NULL);
+            modify_task_task_id = new;
+          }
         else
           {
             modify_task_task_id = strdup (text);
@@ -1797,12 +1797,12 @@ omp_xml_handle_text (GMarkupParseContext* context,
           }
         break;
       case CLIENT_MODIFY_TASK_VALUE:
-	if (modify_task_value)
-	  {
-	    // FIX
-	    char* new = g_strconcat (modify_task_value, text, NULL);
-	    modify_task_value = new;
-	  }
+        if (modify_task_value)
+          {
+            // FIX
+            char* new = g_strconcat (modify_task_value, text, NULL);
+            modify_task_value = new;
+          }
         else
           {
             modify_task_value = strdup (text);

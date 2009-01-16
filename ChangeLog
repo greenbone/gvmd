@@ -1,3 +1,9 @@
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c: Convert tabs to spaces.
+
+	* ChangeLog: Correct previous entry.
+
 2009-01-16  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	Started to move communication with server to a module
@@ -25,7 +31,7 @@
 
 2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	Add initial XML OMP START_TASK and MODIFY_TASK.  Document functions.
+	Add initial XML OMP NEW_TASK and MODIFY_TASK.  Document functions.
 
 	* src/openvasmd.c (client_state_t): New type.
 	(client_state, modify_task_parameter, modify_task_task_id,
@@ -34,7 +40,7 @@
 	set_task_parameter): New functions.
 	(add_task_description_line): Add const qualifer to parameter.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
-	omp_xml_handle_text): Add comment docs.  Add START_TASK and
+	omp_xml_handle_text): Add comment docs.  Add NEW_TASK and
 	MODIFY_TASK.
 	(omp_xml_handle_error): Add comment doc.
 
