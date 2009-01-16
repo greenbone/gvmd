@@ -78,7 +78,7 @@ endif (NOT DOXYGEN_EXECUTABLE)
 
 add_custom_target (doc COMMENT "Building documentation..."
                    DEPENDS openvasmd.8 Doxyfile .built-html
-				           ../src/openvasmd.c)
+				           ../src/openvasmd.c ../src/ovas-mngr-comm.c)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT openvasmd.8

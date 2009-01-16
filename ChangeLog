@@ -1,5 +1,11 @@
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* doc/Doxyfile (INPUT): Add ovas-mngr-comm.c.
+
+	* doc/CMakeLists.txt: Add ovas-mngr-comm.c to doc depends.
+
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/ovas-mngr-comm.c: Fix a few file doc typos.
 
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
