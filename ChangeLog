@@ -1,5 +1,14 @@
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add initial XML OMP START_TASK.
+
+	* src/openvasmd.c: (client_state_t): Add START_TASK states.
+	(modify_task_task_id): Rename current_task_task_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add START_TASK handling.
+
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Convert tabs to spaces.
 
 	* ChangeLog: Correct previous entry.
