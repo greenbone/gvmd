@@ -41,8 +41,8 @@ int to_server_end = 0;
 /** @file ovas-mngr-comm.c
  *  \brief API for communication between openvas-manger and openvas-server
  *
- *  This file contains a API for communicating with a openva-server
- *  wich uses OTP as protocol.
+ *  This file contains a API for communicating with an openvas-server
+ *  which uses OTP as protocol.
  */
 
 /** Send a message to the server.

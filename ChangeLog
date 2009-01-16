@@ -1,5 +1,9 @@
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/ovas-mngr-comm.c: Fix a few file doc typos.
+
+2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/ovas-mngr-comm.c (send_to_server): Add space after function name.
 
 2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
