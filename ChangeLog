@@ -1,5 +1,9 @@
 2009-01-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* doc/Doxyfile: Turn off JAVADOC_AUTOBRIEF.
+
+2009-01-17  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c: Match comments to coding style.
 
 	* src/ovas-mngr-comm.c: Match comments to coding style.
