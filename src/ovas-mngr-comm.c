@@ -27,30 +27,39 @@
 #include <string.h>
 #include "tracef.h"
 
-/** The size of the data buffers.  When the client/server buffer is full
-  * `select' stops watching for input from the client/server.
-  */
+/**
+ * @brief The size of the data buffers.
+ *
+ * When the client/server buffer is full `select' stops watching for input
+ * from the client/server.
+ */
 #define BUFFER_SIZE 8192
 
-/** Buffer of output to the server. */
+/**
+ * @brief Buffer of output to the server.
+ */
 char to_server[BUFFER_SIZE];
 
-/** The end of the data in the \ref to_server buffer. */
+/**
+ * @brief The end of the data in the \ref to_server buffer.
+ */
 int to_server_end = 0;
 
-/** @file ovas-mngr-comm.c
- *  \brief API for communication between openvas-manger and openvas-server
+/**
+ * @file ovas-mngr-comm.c
+ * @brief API for communication between openvas-manger and openvas-server
  *
- *  This file contains a API for communicating with an openvas-server
- *  which uses OTP as protocol.
+ * This file contains a API for communicating with an openvas-server
+ * which uses OTP as protocol.
  */
 
-/** Send a message to the server.
-  *
-  * @param[in]  msg  The message, a string.
-  *
-  * @return 0 for success, for any other values a failure happened.
-  */
+/**
+ * @brief Send a message to the server.
+ *
+ * @param[in]  msg  The message, a string.
+ *
+ * @return 0 for success, for any other values a failure happened.
+ */
 int send_to_server (char * msg)
 {
   if (BUFFER_SIZE - to_server_end < strlen (msg))

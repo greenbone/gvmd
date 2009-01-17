@@ -23,31 +23,37 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/** @file openvasmd.c
- *  \brief The OpenVAS Manager
+/**
+ * @file  openvasmd.c
+ * @brief The OpenVAS Manager
  *
- *  This file defines the OpenVAS Manager, a daemon that is layered between
- *  the real OpenVAS Server (openvasd) and a client (e.g.
- *  OpenVAS-Client).
+ * This file defines the OpenVAS Manager, a daemon that is layered between
+ * the real OpenVAS Server (openvasd) and a client (such as
+ * OpenVAS-Client).
  */
 
-/** \mainpage
+/**
+ * \mainpage
  *
- *  \section Introduction
- *  \verbinclude README
+ * \section Introduction
+ * \verbinclude README
  *
- *  \section manpages Manual Pages
- *  \subpage manpage
+ * \section manpages Manual Pages
+ * \subpage manpage
  *
- *  \section Installation
- *  \verbinclude INSTALL
+ * \section Installation
+ * \verbinclude INSTALL
  *
- *  \section Implementation
- *  \ref openvasmd.c
+ * \section Implementation
+ *
+ * \ref openvasmd.c
+ *
+ * \ref ovas-mngr-comm.c
  */
 
-/** \page manpage openvasmd
- *  \htmlinclude openvasmd.html
+/**
+ * \page manpage openvasmd
+ * \htmlinclude openvasmd.html
  */
 
 #include <arpa/inet.h>
@@ -74,76 +80,120 @@
 #include "string.h"
 #include "ovas-mngr-comm.h"
 
-/** Installation prefix. */
+/**
+ * @brief Installation prefix.
+ */
 #ifndef PREFIX
 #define PREFIX ""
 #endif
 
-/** The name of this program.
- * \todo Use `program_invocation[_short]_name'? */
+/**
+ * @brief The name of this program.
+ *
+ * \todo Use `program_invocation[_short]_name'?
+ */
 #define PROGNAME "openvasmd"
 
-/** The version number of this program. */
+/**
+ * @brief The version number of this program.
+ */
 #ifndef OPENVASMD_VERSION
 #define OPENVASMD_VERSION "FIX"
 #endif
 
-/** The name of the underlying Operating System. */
+/**
+ * @brief The name of the underlying Operating System.
+ */
 #ifndef OPENVAS_OS_NAME
 #define OPENVAS_OS_NAME "FIX"
 #endif
 
-/** Server (openvasd) address. */
+/**
+ * @brief Server (openvasd) address.
+ */
 #define OPENVASD_ADDRESS "127.0.0.1"
 
-/** Location of server certificate. */
+/**
+ * @brief Location of server certificate.
+ */
 #ifndef SERVERCERT
 #define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
 #endif
 
-/** Location of server certificate private key. */
+/**
+ * @brief Location of server certificate private key.
+ */
 #ifndef SERVERKEY
 #define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
 #endif
 
-/** Location of Certificate Authority certificate. */
+/**
+ * @brief Location of Certificate Authority certificate.
+ */
 #ifndef CACERT
 #define CACERT     "/var/lib/openvas/CA/cacert.pem"
 #endif
 
-/** Server port.  Used if /etc/services "openvas" and -port missing. */
+/**
+ * @brief Server port.
+ *
+ * Used if /etc/services "openvas" and -port missing.
+ */
 #define OPENVASD_PORT 1241
 
-/** Manager port.  Used if /etc/services "omp" and -sport are missing. */
+/**
+ * @brief Manager port.
+ *
+ * Used if /etc/services "omp" and -sport are missing.
+ */
 #define OPENVASMD_PORT 1241
 
-/** The size of the data buffers.  When the client/server buffer is full
-  * `select' stops watching for input from the client/server.
-  */
+/**
+ * @brief The size of the data buffers.
+ *
+ * When the client/server buffer is full `select' stops watching for input
+ * from the client/server.
+ */
 #define BUFFER_SIZE 8192
 
-/** Second argument to `listen'. */
+/**
+ * @brief Second argument to `listen'.
+ */
 #define MAX_CONNECTIONS 512
 
-/** OMP flag.  Enables handling of OpenVAS Management Protocol.
-  * If 0 then OMP is turned off.
-  */
+/**
+ * @brief OMP flag.
+ *
+ * Enables handling of OpenVAS Management Protocol. If 0 then OMP is turned off.
+ */
 #define OMP 1
 
-/** Logging flag.  All data transfered to and from the client is logged to
-  * a file.  If 0 then logging is turned off.
-  */
+/**
+ * @brief Logging flag.
+ *
+ * All data transfered to and from the client is logged to a file.  If 0 then
+ * logging is turned off.
+ */
 #define LOG 1
 
-/** Name of log file. */
+/**
+ * @brief Name of log file.
+ */
 #define LOG_FILE PREFIX "/var/log/openvas/openvasmd.log"
 
-/** Trace flag.  0 to turn off all tracing messages. */
+/**
+ * @brief Trace flag.
+ *
+ * 0 to turn off all tracing messages.
+ */
 #define TRACE 1
 #include "tracef.h"
 
-/** Trace text flag.  0 to turn off echoing of actual data transfered
-  * (requires TRACE). */
+/**
+ * @brief Trace text flag.
+ *
+ * 0 to turn off echoing of actual data transfered (requires TRACE).
+ */
 #define TRACE_TEXT 1
 
 #if BUFFER_SIZE > SSIZE_MAX
@@ -151,8 +201,11 @@
 #endif
 
 #if LOG
-/** Formatted logging output.
-  * Prints the printf style \a args to log_stream, preceded by the process ID. */
+/**
+ * @brief Formatted logging output.
+ *
+ * Print the printf style \a args to log_stream, preceded by the process ID.
+ */
 #define logf(args...)                         \
   do {                                        \
     fprintf (log_stream, "%7i  ", getpid());  \
@@ -160,40 +213,64 @@
     fflush (log_stream);                      \
   } while (0)
 #else
-/** Dummy macro, enabled with LOG. */
+/**
+ * @brief Dummy macro, enabled with LOG.
+ */
 #define logf(format, args...)
 #endif
 
-/** The socket accepting OMP connections from clients. */
+/**
+ * @brief The socket accepting OMP connections from clients.
+ */
 int manager_socket = -1;
 
-/** The IP address of this program, "the manager". */
+/**
+ * @brief The IP address of this program, "the manager".
+ */
 struct sockaddr_in manager_address;
 
-/** The IP address of openvasd, "the server". */
+/**
+ * @brief The IP address of openvasd, "the server".
+ */
 struct sockaddr_in server_address;
 
 #if LOG
-/** The log stream. */
+/**
+ * @brief The log stream.
+ */
 FILE* log_stream = NULL;
 #endif
 
-/** The server context. */
+/**
+ * @brief The server context.
+ */
 static ovas_server_context_t server_context = NULL;
 
-/** Client input parsing context. */
+/**
+ * @brief Client input parsing context.
+ */
 GMarkupParseContext* xml_context;
 
-/** File descriptor set mask: selecting on client read. */
+/**
+ * @brief File descriptor set mask: selecting on client read.
+ */
 #define FD_CLIENT_READ  1
-/** File descriptor set mask: selecting on client write. */
+/**
+ * @brief File descriptor set mask: selecting on client write.
+ */
 #define FD_CLIENT_WRITE 2
-/** File descriptor set mask: selecting on server read. */
+/**
+ * @brief File descriptor set mask: selecting on server read.
+ */
 #define FD_SERVER_READ  4
-/** File descriptor set mask: selecting on server write. */
+/**
+ * @brief File descriptor set mask: selecting on server write.
+ */
 #define FD_SERVER_WRITE 8
 
-/** The type of the return value from \ref read_protocol. */
+/**
+ * @brief The type of the return value from \ref read_protocol.
+ */
 typedef enum
 {
   PROTOCOL_OTP,
@@ -202,47 +279,74 @@ typedef enum
   PROTOCOL_FAIL
 } protocol_read_t;
 
-/** Buffer of input from the client. */
+/**
+ * @brief Buffer of input from the client.
+ */
 char from_client[BUFFER_SIZE];
-/** Buffer of input from the server. */
+/**
+ * @brief Buffer of input from the server.
+ */
 char from_server[BUFFER_SIZE];
-/** Buffer of output to the client. */
+/**
+ * @brief Buffer of output to the client.
+ */
 char to_client[BUFFER_SIZE];
 
 // FIX just make these pntrs?
-/** The start of the data in the \ref from_client buffer. */
+/**
+ * @brief The start of the data in the \ref from_client buffer.
+ */
 int from_client_start = 0;
-/** The start of the data in the \ref from_server buffer. */
+/**
+ * @brief The start of the data in the \ref from_server buffer.
+ */
 int from_server_start = 0;
-/** The end of the data in the \ref from_client buffer. */
+/**
+ * @brief The end of the data in the \ref from_client buffer.
+ */
 int from_client_end = 0;
-/** The end of the data in the \ref from_server buffer. */
+/**
+ * @brief The end of the data in the \ref from_server buffer.
+ */
 int from_server_end = 0;
-/** The start of the data in the \ref to_client buffer. */
+/**
+ * @brief The start of the data in the \ref to_client buffer.
+ */
 int to_client_start = 0;
-/** The start of the data in the \ref to_server buffer. */
+/**
+ * @brief The start of the data in the \ref to_server buffer.
+ */
 int to_server_start = 0;
-/** The end of the data in the \ref to_client buffer. */
+/**
+ * @brief The end of the data in the \ref to_client buffer.
+ */
 int to_client_end = 0;
 
-/** Client login name, from OMP LOGIN. */
+/**
+ * @brief Client login name, from OMP LOGIN.
+ */
 char* login = NULL;
 
-/** Client credentials, from OMP LOGIN. */
+/**
+ * @brief Client credentials, from OMP LOGIN.
+ */
 char* credentials = NULL;
 
-/** Record of server initialisation state. */
+/**
+ * @brief Record of server initialisation state.
+ */
 int server_initialising = 0;
 
 
 /* Helper functions. */
 
-/** Free a GPtrArray.
-  *
-  * Wrapper for g_ptr_array_free; passed to g_hash_table_new_full.
-  *
-  * @param[in]  array  A pointer to a GPtrArray.
-  */
+/**
+ * @brief Free a GPtrArray.
+ *
+ * Wrapper for g_ptr_array_free; passed to g_hash_table_new_full.
+ *
+ * @param[in]  array  A pointer to a GPtrArray.
+ */
 void
 free_g_ptr_array (gpointer array)
 {
@@ -252,7 +356,9 @@ free_g_ptr_array (gpointer array)
 
 /* Client state. */
 
-/** Possible states of the client. */
+/**
+ * @brief Possible states of the client.
+ */
 typedef enum
 {
   CLIENT_DONE,
@@ -270,10 +376,14 @@ typedef enum
   CLIENT_VERSION
 } client_state_t;
 
-/** The state of the client. */
+/**
+ * @brief The state of the client.
+ */
 client_state_t client_state = CLIENT_TOP;
 
-/** Set the client state. */
+/**
+ * @brief Set the client state.
+ */
 void
 set_client_state (client_state_t state)
 {
@@ -284,19 +394,25 @@ set_client_state (client_state_t state)
 
 /* Server state. */
 
-/** Structure of information about the server. */
+/**
+ * @brief Structure of information about the server.
+ */
 typedef struct
 {
-  char* plugins_md5;                 /**< MD5 sum over all tests. */
-  GHashTable* plugins_dependencies;  /**< Dependencies between plugins. */
-  GHashTable* preferences;           /**< Server preference. */
-  GPtrArray* rules;                  /**< Server rules. */
+  char* plugins_md5;                 ///< MD5 sum over all tests.
+  GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
+  GHashTable* preferences;           ///< Server preference.
+  GPtrArray* rules;                  ///< Server rules.
 } server_t;
 
-/** Information about the server. */
+/**
+ * @brief Information about the server.
+ */
 server_t server;
 
-/** Possible states of the server. */
+/**
+ * @brief Possible states of the server.
+ */
 typedef enum
 {
   SERVER_DONE,
@@ -323,10 +439,14 @@ typedef enum
   SERVER_TOP
 } server_state_t;
 
-/** The state of the server. */
+/**
+ * @brief The state of the server.
+ */
 server_state_t server_state = SERVER_TOP;
 
-/** Set the server state. */
+/**
+ * @brief Set the server state.
+ */
 void
 set_server_state (server_state_t state)
 {
@@ -337,17 +457,23 @@ set_server_state (server_state_t state)
 
 /* Server preferences. */
 
-/** The current server preference, during reading of server preferences. */
+/**
+ * @brief The current server preference, during reading of server preferences.
+ */
 char* current_server_preference = NULL;
 
-/** Free any server preferences. */
+/**
+ * @brief Free any server preferences.
+ */
 void
 maybe_free_server_preferences ()
 {
   if (server.preferences) g_hash_table_destroy (server.preferences);
 }
 
-/** Create the server preferences. */
+/**
+ * @brief Create the server preferences.
+ */
 void
 make_server_preferences ()
 {
@@ -357,14 +483,15 @@ make_server_preferences ()
                                               g_free);
 }
 
-/** Add a preference to the server preferences.
-  *
-  * Both parameters are used directly (versus copying), and are freed when
-  * the preferences are freed.
-  *
-  * @param[in]  preference  The preference.
-  * @param[in]  value       The value of the preference.
-  */
+/**
+ * @brief Add a preference to the server preferences.
+ *
+ * Both parameters are used directly (versus copying), and are freed when
+ * the preferences are freed.
+ *
+ * @param[in]  preference  The preference.
+ * @param[in]  value       The value of the preference.
+ */
 void
 add_server_preference (char* preference, char* value)
 {
@@ -374,13 +501,19 @@ add_server_preference (char* preference, char* value)
 
 /* Server plugin dependencies. */
 
-/** The current server plugin, during reading of server plugin dependencies. */
+/**
+ * @brief The current server plugin, during reading of server plugin dependencies.
+ */
 char* current_server_plugin_dependency_name = NULL;
 
-/** The plugins required by the current server plugin. */
+/**
+ * @brief The plugins required by the current server plugin.
+ */
 GPtrArray* current_server_plugin_dependency_dependencies = NULL;
 
-/** Free any server plugins dependencies. */
+/**
+ * @brief Free any server plugins dependencies.
+ */
 void
 maybe_free_server_plugins_dependencies ()
 {
@@ -391,7 +524,9 @@ maybe_free_server_plugins_dependencies ()
     }
 }
 
-/** Make the server plugins dependencies. */
+/**
+ * @brief Make the server plugins dependencies.
+ */
 void
 make_server_plugins_dependencies ()
 {
@@ -402,11 +537,12 @@ make_server_plugins_dependencies ()
                                                        free_g_ptr_array);
 }
 
-/** Add a plugin to the server dependencies.
-  *
-  * @param[in]  name          The name of the plugin.
-  * @param[in]  dependencies  The plugins required by the plugin.
-  */
+/**
+ * @brief Add a plugin to the server dependencies.
+ *
+ * @param[in]  name          The name of the plugin.
+ * @param[in]  dependencies  The plugins required by the plugin.
+ */
 void
 add_server_plugins_dependency (char* name, GPtrArray* dependencies)
 {
@@ -415,10 +551,11 @@ add_server_plugins_dependency (char* name, GPtrArray* dependencies)
   g_hash_table_insert (server.plugins_dependencies, name, dependencies);
 }
 
-/** Set the current plugin.
-  *
-  * @param[in]  name  The name of the plugin.
-  */
+/**
+ * @brief Set the current plugin.
+ *
+ * @param[in]  name  The name of the plugin.
+ */
 void
 make_current_server_plugin_dependency (char* name)
 {
@@ -428,10 +565,11 @@ make_current_server_plugin_dependency (char* name)
   current_server_plugin_dependency_dependencies = g_ptr_array_new ();
 }
 
-/** Append a requirement to the current plugin.
-  *
-  * @param[in]  dependency  The name of the required plugin.
-  */
+/**
+ * @brief Append a requirement to the current plugin.
+ *
+ * @param[in]  dependency  The name of the required plugin.
+ */
 void
 append_to_current_server_plugin_dependency (char* dependency)
 {
@@ -440,7 +578,9 @@ append_to_current_server_plugin_dependency (char* dependency)
   g_ptr_array_add (current_server_plugin_dependency_dependencies, dependency);
 }
 
-/** Free any current server plugin dependency information. */
+/**
+ * @brief Free any current server plugin dependency information.
+ */
 void
 maybe_free_current_server_plugin_dependency ()
 {
@@ -450,7 +590,9 @@ maybe_free_current_server_plugin_dependency ()
     g_ptr_array_free (current_server_plugin_dependency_dependencies, TRUE);
 }
 
-/** Add the current plugin to the server dependencies. */
+/**
+ * @brief Add the current plugin to the server dependencies.
+ */
 void
 finish_current_server_plugin_dependency ()
 {
@@ -465,18 +607,21 @@ finish_current_server_plugin_dependency ()
 
 /* Server rules. */
 
-/** Free a server rule.
-  *
-  * @param[in]  rule   The server rule.
-  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
-  */
+/**
+ * @brief Free a server rule.
+ *
+ * @param[in]  rule   The server rule.
+ * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
+ */
 void
 free_rule (void* rule, void* dummy)
 {
   free (rule);
 }
 
-/** Free any server rules. */
+/**
+ * @brief Free any server rules.
+ */
 void
 maybe_free_server_rules ()
 {
@@ -487,20 +632,23 @@ maybe_free_server_rules ()
     }
 }
 
-/** Create the server rules. */
+/**
+ * @brief Create the server rules.
+ */
 void
 make_server_rules ()
 {
   server.rules = g_ptr_array_new ();
 }
 
-/** Add a rule to the server rules.
-  *
-  * The rule is used directly (versus using a copy) and is freed with the
-  * other server rules.
-  *
-  * @param[in]  rule  The rule.
-  */
+/**
+ * @brief Add a rule to the server rules.
+ *
+ * The rule is used directly (versus using a copy) and is freed with the
+ * other server rules.
+ *
+ * @param[in]  rule  The rule.
+ */
 void
 add_server_rule (char* rule)
 {
@@ -510,27 +658,31 @@ add_server_rule (char* rule)
 
 /* Tasks. */
 
-/** A task. */
+/**
+ * @brief A task.
+ */
 typedef struct
 {
-  unsigned int id;            /**< Unique ID */
-  char* name;                 /**< Name.  NULL if free. */
-  unsigned int time;          /**< Repetition period, in seconds. */
-  char* comment;              /**< Comment associated with task. */
-  char* description;          /**< Description. */
-  int description_length;     /**< Length of description. */
-  int description_size;       /**< Actual size allocated for description. */
-  short running;              /**< Flag: 0 initially, 1 if running. */
-  char* start_time;           /**< Time the task last started. */
-  char* end_time;             /**< Time the task last ended. */
-  char* attack_state;         /**< Attack status. */
-  unsigned int current_port;  /**< Port currently under test. */
-  unsigned int max_port;      /**< Last port to test. */
-  GArray *open_ports;         /**< Open ports that the server has found. */
-  int open_ports_size;        /**< Number of open ports. */
+  unsigned int id;            ///< Unique ID.
+  char* name;                 ///< Name.  NULL if free.
+  unsigned int time;          ///< Repetition period, in seconds.
+  char* comment;              ///< Comment associated with task.
+  char* description;          ///< Description.
+  int description_length;     ///< Length of description.
+  int description_size;       ///< Actual size allocated for description.
+  short running;              ///< Flag: 0 initially, 1 if running.
+  char* start_time;           ///< Time the task last started.
+  char* end_time;             ///< Time the task last ended.
+  char* attack_state;         ///< Attack status.
+  unsigned int current_port;  ///< Port currently under test.
+  unsigned int max_port;      ///< Last port to test.
+  GArray *open_ports;         ///< Open ports that the server has found.
+  int open_ports_size;        ///< Number of open ports.
 } task_t;
 
-/** Possible port types. */
+/**
+ * @brief Possible port types.
+ */
 typedef enum
 {
   PORT_PROTOCOL_TCP,
@@ -538,42 +690,64 @@ typedef enum
   PORT_PROTOCOL_OTHER
 } port_protocol_t;
 
-/** A port. */
+/**
+ * @brief A port.
+ */
 typedef struct
 {
-  int number;                /**< Port number. */
-  port_protocol_t protocol;  /**< Port protocol (TCP, UDP, ...). */
+  int number;                ///< Port number.
+  port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
 } port_t;
 
-/** Reallocation increment for the tasks array. */
+/**
+ * @brief Reallocation increment for the tasks array.
+ */
 #define TASKS_INCREMENT 1024
 
-/** Parameter name during OMP MODIFY_TASK. */
+/**
+ * @brief Parameter name during OMP MODIFY_TASK.
+ */
 char* modify_task_parameter = NULL;
 
-/** Task ID during OMP MODIFY_TASK and START_TASK. */
+/**
+ * @brief Task ID during OMP MODIFY_TASK and START_TASK.
+ */
 char* current_task_task_id = NULL;
 
-/** Parameter value during OMP MODIFY_TASK. */
+/**
+ * @brief Parameter value during OMP MODIFY_TASK.
+ */
 char* modify_task_value = NULL;
 
-/** Current client task during OMP NEW_TASK or MODIFY_TASK. */
+/**
+ * @brief Current client task during OMP NEW_TASK or MODIFY_TASK.
+ */
 task_t* current_client_task = NULL;
 
-/** The task currently running on the server. */
+/**
+ * @brief The task currently running on the server.
+ */
 task_t* current_server_task = NULL;
 
-/** The array of all defined tasks. */
+/**
+ * @brief The array of all defined tasks.
+ */
 task_t* tasks = NULL;
 
-/** The size of the \ref tasks array. */
+/**
+ * @brief The size of the \ref tasks array.
+ */
 unsigned int tasks_size = 0;
 
-/** The number of the defined tasks. */
+/**
+ * @brief The number of the defined tasks.
+ */
 unsigned int num_tasks = 0;
 
 #if TRACE
-/** Print the server tasks. */
+/**
+ * @brief Print the server tasks.
+ */
 void
 print_tasks ()
 {
@@ -596,7 +770,9 @@ print_tasks ()
 }
 #endif
 
-/** Grow the array of tasks. */
+/**
+ * @brief Grow the array of tasks.
+ */
 int
 grow_tasks ()
 {
@@ -618,7 +794,9 @@ grow_tasks ()
   return 0;
 }
 
-/** Free all tasks and the array of tasks. */
+/**
+ * @brief Free all tasks and the array of tasks.
+ */
 void
 free_tasks ()
 {
@@ -648,17 +826,18 @@ free_tasks ()
   tasks = NULL;
 }
 
-/** Make a task.
-  *
-  * The char* parameters name and comment are used directly and freed
-  * when the task is freed.
-  *
-  * @param[in]  name     The name of the task.
-  * @param[in]  time     The period of the task, in seconds.
-  * @param[in]  comment  A comment associated the task.
-  *
-  * @return A pointer to the new task or NULL when out of memory.
-  */
+/**
+ * @brief Make a task.
+ *
+ * The char* parameters name and comment are used directly and freed
+ * when the task is freed.
+ *
+ * @param[in]  name     The name of the task.
+ * @param[in]  time     The period of the task, in seconds.
+ * @param[in]  comment  A comment associated the task.
+ *
+ * @return A pointer to the new task or NULL when out of memory.
+ */
 task_t*
 make_task (char* name, unsigned int time, char* comment)
 {
@@ -692,12 +871,13 @@ make_task (char* name, unsigned int time, char* comment)
     }
 }
 
-/** Find a task.
-  *
-  * @param[in]  id  A task identifier.
-  *
-  * @return A pointer to the task with the given ID.
-  */
+/**
+ * @brief Find a task.
+ *
+ * @param[in]  id  A task identifier.
+ *
+ * @return A pointer to the task with the given ID.
+ */
 task_t*
 find_task (unsigned int id)
 {
@@ -710,16 +890,17 @@ find_task (unsigned int id)
   return NULL;
 }
 
-/** Modify a task.
-  *
-  * The char* parameters are used directly and freed when the task is
-  * freed.
-  *
-  * @param[in]  task     A pointer to a task.
-  * @param[in]  name     The new name for the task.
-  * @param[in]  time     The new period for the task, in seconds.
-  * @param[in]  comment  A new comment associcated with the task.
-  */
+/**
+ * @brief Modify a task.
+ *
+ * The char* parameters are used directly and freed when the task is
+ * freed.
+ *
+ * @param[in]  task     A pointer to a task.
+ * @param[in]  name     The new name for the task.
+ * @param[in]  time     The new period for the task, in seconds.
+ * @param[in]  comment  A new comment associcated with the task.
+ */
 void
 modify_task (task_t* task, char* name, unsigned int time, char* comment)
 {
@@ -731,17 +912,18 @@ modify_task (task_t* task, char* name, unsigned int time, char* comment)
   task->description_length = 0;
 }
 
-/** Set a task parameter.
-  *
-  * The value parameter is used directly and freed when the task is
-  * freed.
-  *
-  * @param[in]  task       A pointer to a task.
-  * @param[in]  parameter  The name of the parameter.
-  * @param[in]  value      The value of the parameter.
-  *
-  * @return 0 on success, -1 when out of memory, -2 if parameter name error.
-  */
+/**
+ * @brief Set a task parameter.
+ *
+ * The value parameter is used directly and freed when the task is
+ * freed.
+ *
+ * @param[in]  task       A pointer to a task.
+ * @param[in]  parameter  The name of the parameter.
+ * @param[in]  value      The value of the parameter.
+ *
+ * @return 0 on success, -1 when out of memory, -2 if parameter name error.
+ */
 int
 set_task_parameter (task_t* task, char* parameter, char* value)
 {
@@ -767,12 +949,13 @@ set_task_parameter (task_t* task, char* parameter, char* value)
   return 0;
 }
 
-/** Start a task.
-  *
-  * @param  task  A pointer to the task.
-  *
-  * @return 0 on success, -1 if out of space in \ref to_server buffer.
-  */
+/**
+ * @brief Start a task.
+ *
+ * @param  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
 int
 start_task (task_t* task)
 {
@@ -814,14 +997,15 @@ start_task (task_t* task)
   return 0;
 }
 
-/** Append text to the comment associated with a task.
-  *
-  * @param  task    A pointer to the task.
-  * @param  text    The text to append.
-  * @param  length  Length of the text.
-  *
-  * @return 0 on success, -1 if out of memory.
-  */
+/**
+ * @brief Append text to the comment associated with a task.
+ *
+ * @param  task    A pointer to the task.
+ * @param  text    The text to append.
+ * @param  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
 int
 append_to_task_comment (task_t* task, const char* text, int length)
 {
@@ -836,14 +1020,15 @@ append_to_task_comment (task_t* task, const char* text, int length)
   return task->comment == NULL;
 }
 
-/** Append text to the identifier associated with a task.
-  *
-  * @param  task    A pointer to the task.
-  * @param  text    The text to append.
-  * @param  length  Length of the text.
-  *
-  * @return 0 on success, -1 if out of memory.
-  */
+/**
+ * @brief Append text to the identifier associated with a task.
+ *
+ * @param  task    A pointer to the task.
+ * @param  text    The text to append.
+ * @param  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
 int
 append_to_task_identifier (task_t* task, const char* text, int length)
 {
@@ -858,15 +1043,18 @@ append_to_task_identifier (task_t* task, const char* text, int length)
   return task->name == NULL;
 }
 
-/** Reallocation increment for a task description. */
+/**
+ * @brief Reallocation increment for a task description.
+ */
 #define DESCRIPTION_INCREMENT 4096
 
-/** Increase the memory allocated for a task description.
-  *
-  * @param  task  A pointer to the task.
-  *
-  * @return 0 on success, -1 if out of memory.
-  */
+/**
+ * @brief Increase the memory allocated for a task description.
+ *
+ * @param  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
 int
 grow_description (task_t* task)
 {
@@ -878,14 +1066,15 @@ grow_description (task_t* task)
   return 0;
 }
 
-/** Add a line to a task description.
-  *
-  * The line memory is used directly, and freed with the task.
-  *
-  * @param[in]  task         A pointer to the task.
-  * @param[in]  line         The line.
-  * @param[in]  line_length  The length of the line.
-  */
+/**
+ * @brief Add a line to a task description.
+ *
+ * The line memory is used directly, and freed with the task.
+ *
+ * @param[in]  task         A pointer to the task.
+ * @param[in]  line         The line.
+ * @param[in]  line_length  The length of the line.
+ */
 int
 add_task_description_line (task_t* task, const char* line, int line_length)
 {
@@ -900,12 +1089,13 @@ add_task_description_line (task_t* task, const char* line, int line_length)
   return 0;
 }
 
-/** Set the ports of a task.
-  *
-  * @param[in]  task     The task.
-  * @param[in]  current  New value for port currently being scanned.
-  * @param[in]  max      New value for last port to be scanned.
-  */
+/**
+ * @brief Set the ports of a task.
+ *
+ * @param[in]  task     The task.
+ * @param[in]  current  New value for port currently being scanned.
+ * @param[in]  max      New value for last port to be scanned.
+ */
 void
 set_task_ports (task_t *task, unsigned int current, unsigned int max)
 {
@@ -913,12 +1103,13 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
   task->max_port = max;
 }
 
-/** Add an open port to a task.
-  *
-  * @param[in]  task       The task.
-  * @param[in]  number     The port number.
-  * @param[in]  protocol   The port protocol.
-  */
+/**
+ * @brief Add an open port to a task.
+ *
+ * @param[in]  task       The task.
+ * @param[in]  number     The port number.
+ * @param[in]  protocol   The port protocol.
+ */
 void
 append_task_open_port (task_t *task, unsigned int number, char* protocol)
 {
@@ -939,15 +1130,16 @@ append_task_open_port (task_t *task, unsigned int number, char* protocol)
 
 /* OpenVAS Transfer Protocol (OTP). */
 
-/** Serve the OpenVAS Transfer Protocol (OTP).
-  *
-  * @param[in]  client_session  The TLS session with the client.
-  * @param[in]  server_session  The TLS session with the server.
-  * @param[in]  client_socket   The socket connected to the client.
-  * @param[in]  server_socket   The socket connected to the server.
-  *
-  * @return 0 on success, -1 on error.
-  */
+/**
+ * @brief Serve the OpenVAS Transfer Protocol (OTP).
+ *
+ * @param[in]  client_session  The TLS session with the client.
+ * @param[in]  server_session  The TLS session with the server.
+ * @param[in]  client_socket   The socket connected to the client.
+ * @param[in]  server_socket   The socket connected to the server.
+ *
+ * @return 0 on success, -1 on error.
+ */
 int
 serve_otp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
@@ -1054,7 +1246,7 @@ serve_otp (gnutls_session_t* client_session,
                 }
 #if TRACE || LOG
               /* This check prevents output in the "asynchronous network
-                 error" case. */
+               * error" case. */
               if (from_client_end > initial_start)
                 {
                   logf ("<= %.*s\n",
@@ -1087,7 +1279,7 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_AGAIN)
                         {
                           /* Wrote as much server would accept, return to
-                             `select'. */
+                           * `select'. */
                           wrote_all = FALSE;
                           break;
                         }
@@ -1146,7 +1338,7 @@ serve_otp (gnutls_session_t* client_session,
                 }
 #if TRACE
               /* This check prevents output in the "asynchronous network
-                 error" case. */
+               * error" case. */
               if (from_server_end > initial_start)
                 {
 #if TRACE_TEXT
@@ -1209,10 +1401,11 @@ serve_otp (gnutls_session_t* client_session,
 
 /* OpenVAS Management Protocol (OMP). */
 
-/** Send a response message to the client.
-  *
-  * @param[in]  msg  The message, a string.
-  */
+/**
+ * @brief Send a response message to the client.
+ *
+ * @param[in]  msg  The message, a string.
+ */
 #define RESPOND(msg)                                              \
   do                                                              \
     {                                                             \
@@ -1228,13 +1421,14 @@ serve_otp (gnutls_session_t* client_session,
     }                                                             \
   while (0)
 
-/** Process any lines available in from_client.
-  *
-  * Queue any resulting server commands in to_server and any replies for
-  * the client in to_client.
-  *
-  * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
-  */
+/**
+ * @brief Process any lines available in from_client.
+ *
+ * Queue any resulting server commands in to_server and any replies for
+ * the client in to_client.
+ *
+ * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
+ */
 int
 process_omp_old_client_input ()
 {
@@ -1273,7 +1467,7 @@ process_omp_old_client_input ()
           else if (strlen (message) > 1 && message[0] == '.')
             {
               /* Line of description starting with a '.'.  The client is
-                 required to add an extra '.' to the front of the line. */
+               * required to add an extra '.' to the front of the line. */
               message += 1;
             }
 
@@ -1523,8 +1717,8 @@ process_omp_old_client_input ()
   else
     {
       /* Move the remaining partial line to the front of the buffer.  This
-         ensures that there is space after the partial line into which
-         serve_omp can read the rest of the line. */
+       * ensures that there is space after the partial line into which
+       * serve_omp can read the rest of the line. */
       char* start = from_client + from_client_start;
       from_client_end -= from_client_start;
       memmove (from_client, start, from_client_end);
@@ -1540,18 +1734,19 @@ process_omp_old_client_input ()
   return 0;
 
   /* RESPOND jumps here when there is too little space in to_client for the
-     response.  The result is that the manager closes the connection, so
-     from_client_end and from_client_start can be left as they are. */
+   * response.  The result is that the manager closes the connection, so
+   * from_client_end and from_client_start can be left as they are. */
  respond_fail:
   tracef ("   RESPOND out of space in to_client\n");
   from_client_start = original_from_client_start;
   return -3;
 }
 
-/** Send a response message to the client.
-  *
-  * @param[in]  msg  The message, a string.
-  */
+/**
+ * @brief Send a response message to the client.
+ *
+ * @param[in]  msg  The message, a string.
+ */
 #define XML_RESPOND(msg)                                          \
   do                                                              \
     {                                                             \
@@ -1563,15 +1758,16 @@ process_omp_old_client_input ()
     }                                                             \
   while (0)
 
-/** Handle the start of an OMP XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  element_name      XML element name.
-  * @param[in]  attribute_names   XML attribute name.
-  * @param[in]  attribute_values  XML attribute values.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle the start of an OMP XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  element_name      XML element name.
+ * @param[in]  attribute_names   XML attribute name.
+ * @param[in]  attribute_values  XML attribute values.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 omp_xml_handle_start_element (GMarkupParseContext* context,
                               const gchar *element_name,
@@ -1656,13 +1852,14 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
                "Out of space for reply to client.\n");
 }
 
-/** Handle the end of an OMP XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  element_name      XML element name.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle the end of an OMP XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  element_name      XML element name.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 omp_xml_handle_end_element (GMarkupParseContext* context,
                             const gchar *element_name,
@@ -1796,14 +1993,15 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                "Out of space for reply to client.\n");
 }
 
-/** Handle additional text of an OMP XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  text              The text.
-  * @param[in]  text_len          Length of the text.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle additional text of an OMP XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  text              The text.
+ * @param[in]  text_len          Length of the text.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 omp_xml_handle_text (GMarkupParseContext* context,
                      const gchar *text,
@@ -1902,12 +2100,13 @@ omp_xml_handle_text (GMarkupParseContext* context,
     }
 }
 
-/** Handle an OMP XML parsing error.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  error             The error.
-  * @param[in]  user_data         Dummy parameter.
-  */
+/**
+ * @brief Handle an OMP XML parsing error.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  error             The error.
+ * @param[in]  user_data         Dummy parameter.
+ */
 void
 omp_xml_handle_error (GMarkupParseContext* context,
                       GError *error,
@@ -1917,13 +2116,14 @@ omp_xml_handle_error (GMarkupParseContext* context,
   abort ();
 }
 
-/** Process any XML available in from_client.
-  *
-  * Queue any resulting server commands in to_server and any replies for
-  * the client in to_client.
-  *
-  * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
-  */
+/**
+ * @brief Process any XML available in from_client.
+ *
+ * Queue any resulting server commands in to_server and any replies for
+ * the client in to_client.
+ *
+ * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
+ */
 int
 process_omp_client_input ()
 {
@@ -1942,16 +2142,17 @@ process_omp_client_input ()
   return 0;
 }
 
-/** Process any lines available in from_server.
-  *
-  * Mostly update manager server records according to the input from the
-  * server.  Only communicate with the server for initialisation.
-  *
-  * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
-  *         For the latter case, this results in a retry at processing the same message
-  *         later, so from_client_end and from_client_start should only be adjusted
-  *         after a call to send_to_server.
-  */
+/**
+ * @brief Process any lines available in from_server.
+ *
+ * Mostly update manager server records according to the input from the
+ * server.  Only communicate with the server for initialisation.
+ *
+ * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
+ *         For the latter case, this results in a retry at processing the same message
+ *         later, so from_client_end and from_client_start should only be adjusted
+ *         after a call to send_to_server.
+ */
 int
 process_omp_server_input ()
 {
@@ -1962,7 +2163,7 @@ process_omp_server_input ()
   //tracef ("   consider %.*s\n", from_server_end - from_server_start, messages);
 
   /* First, handle special server states where the input from the server
-     ends in something other than <|> (usually a newline). */
+   * ends in something other than <|> (usually a newline). */
 
   if (server_initialising)
     {
@@ -2011,7 +2212,7 @@ process_omp_server_input ()
         { messages++; from_server_start++; }
       if ((int) (end - messages) < 6)
         /* Too few characters to be the end marker, return to select to
-           wait for more input. */
+         * wait for more input. */
         goto succeed;
       if (strncasecmp ("SERVER", messages, 6))
         {
@@ -2042,7 +2243,7 @@ process_omp_server_input ()
         }
       else
         /* Need to wait for a newline to end the value so return to select
-           to wait for more input. */
+         * to wait for more input. */
         goto succeed;
     }
   else if (server_state == SERVER_RULE)
@@ -2066,7 +2267,7 @@ process_omp_server_input ()
             }
           else
             /* Rules are followed by <|> SERVER so carry on, to check for
-               the <|>. */
+             * the <|>. */
             break;
         }
     }
@@ -2110,8 +2311,8 @@ process_omp_server_input ()
                         /* The next <|> is after the newline, which is an error. */
                         goto fail;
                       /* The next <|> is before the newline, which may be correct.  Jump
-                         over the <|> search in the `while' beginning the next section,
-                         to save repeating the search. */
+                       * over the <|> search in the `while' beginning the next section,
+                       * to save repeating the search. */
                       goto server_server_command;
                     }
                   from_start += match + 1 - input;
@@ -2125,7 +2326,7 @@ process_omp_server_input ()
   else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY)
     {
       /* Look for the end of dependency marker: a newline that comes before
-         the next <|>. */
+       * the next <|>. */
       char *separator, *end;
  server_plugin_dependency_dependency:
       separator = NULL;
@@ -2213,7 +2414,7 @@ process_omp_server_input ()
                     {
                       set_server_state (SERVER_DONE);
                       /* Jump to the done check, as this loop only considers fields
-                         ending in <|>. */
+                       * ending in <|>. */
                       goto server_done;
                     }
                   char* name = strdup (field);
@@ -2222,8 +2423,8 @@ process_omp_server_input ()
                   make_current_server_plugin_dependency (name);
                   set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
                   /* Jump to the newline check, as this loop only considers fields
-                     ending in <|> and the list of dependencies can end in a
-                     newline. */
+                   * ending in <|> and the list of dependencies can end in a
+                   * newline. */
                   goto server_plugin_dependency_dependency;
                 }
               case SERVER_PLUGIN_DEPENDENCY_DEPENDENCY:
@@ -2233,8 +2434,8 @@ process_omp_server_input ()
                     goto out_of_memory;
                   append_to_current_server_plugin_dependency (dep);
                   /* Jump to the newline check, as this loop only considers fields
-                     ending in <|> and the list of dependencies can end in a
-                     newline. */
+                   * ending in <|> and the list of dependencies can end in a
+                   * newline. */
                   goto server_plugin_dependency_dependency;
                 }
               case SERVER_PLUGINS_MD5:
@@ -2246,7 +2447,7 @@ process_omp_server_input ()
                   server.plugins_md5 = md5;
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_PORT_HOST:
@@ -2278,7 +2479,7 @@ process_omp_server_input ()
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_PREFERENCE_NAME:
@@ -2287,7 +2488,7 @@ process_omp_server_input ()
                     {
                       set_server_state (SERVER_DONE);
                       /* Jump to the done check, as this loop only considers fields
-                         ending in <|>. */
+                       * ending in <|>. */
                       goto server_done;
                     }
                   char* name = strdup (field);
@@ -2295,14 +2496,14 @@ process_omp_server_input ()
                   current_server_preference = name;
                   set_server_state (SERVER_PREFERENCE_VALUE);
                   /* Jump to preference value check, as values end with a
-                     newline and this loop only considers fields ending in <|>. */
+                   * newline and this loop only considers fields ending in <|>. */
                   goto server_preference_value;
                 }
               case SERVER_RULE:
                 /* A <|> following a rule. */
                 set_server_state (SERVER_DONE);
                 /* Jump to the done check, as this loop only considers fields
-                   ending in <|>. */
+                 * ending in <|>. */
                 goto server_done;
               case SERVER_SERVER:
                 if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
@@ -2321,7 +2522,7 @@ process_omp_server_input ()
                     make_server_rules ();
                     set_server_state (SERVER_RULE);
                     /* Jump to rules parsing, as each rule end in a ; and this
-                       loop only considers fields ending in <|>. */
+                     * loop only considers fields ending in <|>. */
                     goto server_rule;
                   }
                 else if (strncasecmp ("TIME", field, 4) == 0)
@@ -2367,7 +2568,7 @@ process_omp_server_input ()
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_TIME:
@@ -2404,7 +2605,7 @@ process_omp_server_input ()
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_TIME_HOST_END_HOST:
@@ -2427,7 +2628,7 @@ process_omp_server_input ()
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_TIME_SCAN_START:
@@ -2435,7 +2636,7 @@ process_omp_server_input ()
                   /* Read over it. */
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_TIME_SCAN_END:
@@ -2443,7 +2644,7 @@ process_omp_server_input ()
                   /* Read over it. */
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
-                     ending in <|>. */
+                   * ending in <|>. */
                   goto server_done;
                 }
               case SERVER_TOP:
@@ -2489,8 +2690,8 @@ process_omp_server_input ()
   else
     {
       /* Move the remaining partial line to the front of the buffer.  This
-         ensures that there is space after the partial line into which
-         serve_omp can read the rest of the line. */
+       * ensures that there is space after the partial line into which
+       * serve_omp can read the rest of the line. */
       char* start = from_server + from_server_start;
       from_server_end -= from_server_start;
       memmove (from_server, start, from_server_end);
@@ -2512,14 +2713,15 @@ process_omp_server_input ()
   return -1;
 }
 
-/** Read as much from the client as the from_client buffer will hold.
-  *
-  * @param[in]  client_session  The TLS session with the client.
-  * @param[in]  client_socket   The socket connected to the client.
-  *
-  * @return 0 on reading everything available, -1 on error, -2 if
-  * from_client buffer is full or -3 on reaching end of file.
-  */
+/**
+ * @brief Read as much from the client as the from_client buffer will hold.
+ *
+ * @param[in]  client_session  The TLS session with the client.
+ * @param[in]  client_socket   The socket connected to the client.
+ *
+ * @return 0 on reading everything available, -1 on error, -2 if
+ * from_client buffer is full or -3 on reaching end of file.
+ */
 int
 read_from_client (gnutls_session_t* client_session, int client_socket)
 {
@@ -2560,14 +2762,15 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
 }
 
 // FIX combine with read_from_client
-/** Read as much from the server as the from_server buffer will hold.
-  *
-  * @param[in]  server_session  The TLS session with the server.
-  * @param[in]  server_socket   The socket connected to the server.
-  *
-  * @return 0 on reading everything available, -1 on error, -2 if
-  * from_server buffer is full or -3 on reaching end of file.
-  */
+/**
+ * @brief Read as much from the server as the from_server buffer will hold.
+ *
+ * @param[in]  server_session  The TLS session with the server.
+ * @param[in]  server_socket   The socket connected to the server.
+ *
+ * @return 0 on reading everything available, -1 on error, -2 if
+ * from_server buffer is full or -3 on reaching end of file.
+ */
 int
 read_from_server (gnutls_session_t* server_session, int server_socket)
 {
@@ -2607,12 +2810,13 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
   return -2;
 }
 
-/** Write as much as possible from to_client to the client.
-  *
-  * @param[in]  client_session  The client session.
-  *
-  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
-  */
+/**
+ * @brief Write as much as possible from to_client to the client.
+ *
+ * @param[in]  client_session  The client session.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+ */
 int
 write_to_client (gnutls_session_t* client_session)
 {
@@ -2651,12 +2855,13 @@ write_to_client (gnutls_session_t* client_session)
 }
 
 // FIX combine with write_to_client
-/** Write as much as possible from to_server to the server.
-  *
-  * @param[in]  server_session  The server session.
-  *
-  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
-  */
+/**
+ * @brief Write as much as possible from to_server to the server.
+ *
+ * @param[in]  server_session  The server session.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+ */
 int
 write_to_server (gnutls_session_t* server_session)
 {
@@ -2691,25 +2896,26 @@ write_to_server (gnutls_session_t* server_session)
   return 0;
 }
 
-/** Serve the OpenVAS Management Protocol (OMP).
-  *
-  * @param[in]  client_session  The TLS session with the client.
-  * @param[in]  server_session  The TLS session with the server.
-  * @param[in]  client_socket   The socket connected to the client.
-  * @param[in]  server_socket   The socket connected to the server.
-  *
-  * @return 0 on success, -1 on error.
-  */
+/**
+ * @brief Serve the OpenVAS Management Protocol (OMP).
+ *
+ * @param[in]  client_session  The TLS session with the client.
+ * @param[in]  server_session  The TLS session with the server.
+ * @param[in]  client_socket   The socket connected to the client.
+ * @param[in]  server_socket   The socket connected to the server.
+ *
+ * @return 0 on success, -1 on error.
+ */
 int
 serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
            int client_socket, int server_socket)
 {
   /* True if processing of the client input is waiting for space in the
-     to_server buffer. */
+   * to_server buffer. */
   short client_input_stalled = 0;
   /* True if processing of the server input is waiting for space in the
-     to_client buffer. */
+   * to_client buffer. */
   gboolean server_input_stalled = FALSE;
   /* True if there is more to read from the client. */
   gboolean from_client_more = FALSE;
@@ -2749,32 +2955,32 @@ serve_omp (gnutls_session_t* client_session,
   if (process_omp_client_input ()) return -1;
 
   /* Loop forever handling input from the sockets.
-
-     That is, select on all the socket fds and then, as necessary
-       - read from the client into buffer from_client
-       - write to the server from buffer to_server
-       - read from the server into buffer from_server
-       - write to the client from buffer to_client.
-
-     On reading from an fd, immediately try react to the input.  On reading
-     from the client call process_omp_client_input, which parses OMP
-     commands and may write to to_server and to_client.  On reading from
-     the server call process_omp_server_input, which mostly just updates
-     information kept about the server.
-
-     There are a few complications here
-       - the program must read everything available on an fd before
-         selecting for read on the fd again,
-       - the program need only select on the fds for writing if there is
-         something to write,
-       - similarly, the program need only select on the fds for reading
-         if there's buffer space available,
-       - the buffers from_client and from_server can become full during
-         reading
-       - a read from the client can be stalled by the to_server buffer
-         filling up, or the to_client buffer filling up,
-       - a read from the server can, theoretically, be stalled by the
-         to_server buffer filling up (during initialisation).
+   *
+   * That is, select on all the socket fds and then, as necessary
+   *   - read from the client into buffer from_client
+   *   - write to the server from buffer to_server
+   *   - read from the server into buffer from_server
+   *   - write to the client from buffer to_client.
+   *
+   * On reading from an fd, immediately try react to the input.  On reading
+   * from the client call process_omp_client_input, which parses OMP
+   * commands and may write to to_server and to_client.  On reading from
+   * the server call process_omp_server_input, which mostly just updates
+   * information kept about the server.
+   *
+   * There are a few complications here
+   *   - the program must read everything available on an fd before
+   *     selecting for read on the fd again,
+   *   - the program need only select on the fds for writing if there is
+   *     something to write,
+   *   - similarly, the program need only select on the fds for reading
+   *     if there's buffer space available,
+   *   - the buffers from_client and from_server can become full during
+   *     reading
+   *   - a read from the client can be stalled by the to_server buffer
+   *     filling up, or the to_client buffer filling up,
+   *   - a read from the server can, theoretically, be stalled by the
+   *     to_server buffer filling up (during initialisation).
    */
   int nfds = 1 + (client_socket > server_socket
                   ? client_socket : server_socket);
@@ -2872,7 +3078,7 @@ serve_omp (gnutls_session_t* client_session,
 
 #if TRACE || LOG
               /* This check prevents output in the "asynchronous network
-                 error" case. */
+               * error" case. */
               if (from_client_end > initial_start)
                 {
                   logf ("<= %.*s\n",
@@ -2947,7 +3153,7 @@ serve_omp (gnutls_session_t* client_session,
 
 #if TRACE || LOG
               /* This check prevents output in the "asynchronous network
-                 error" case. */
+               * error" case. */
               if (from_server_end > initial_start)
                 {
                   logf ("<= %.*s\n",
@@ -3025,7 +3231,7 @@ serve_omp (gnutls_session_t* client_session,
       if (client_input_stalled)
         {
           /* Try process the client input, in case writing to the server
-             or client has freed some space in to_server or to_client. */
+           * or client has freed some space in to_server or to_client. */
 
           int ret = process_omp_client_input ();
           if (ret == 0)
@@ -3054,7 +3260,7 @@ serve_omp (gnutls_session_t* client_session,
       if (server_input_stalled)
         {
           /* Try process the server input, in case writing to the server
-             has freed some space in to_server. */
+           * has freed some space in to_server. */
 
           int ret =  process_omp_server_input ();
           if (ret == 0)
@@ -3079,13 +3285,14 @@ serve_omp (gnutls_session_t* client_session,
 
 /* Other functions. */
 
-/** Read the type of protocol from the client.
-  *
-  * @param[in]  client_session  The TLS session with the client.
-  * @param[in]  client_socket   The socket connected to the client.
-  *
-  * @return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
-  */
+/**
+ * @brief Read the type of protocol from the client.
+ *
+ * @param[in]  client_session  The TLS session with the client.
+ * @param[in]  client_socket   The socket connected to the client.
+ *
+ * @return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
+ */
 protocol_read_t
 read_protocol (gnutls_session_t* client_session, int client_socket)
 {
@@ -3098,7 +3305,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
     }
 
   /* Read from the client, checking the protocol when a newline or return
-     is read. */
+   * is read. */
   protocol_read_t ret = PROTOCOL_FAIL;
   char* from_client_current = from_client + from_client_end;
   while (from_client_end < BUFFER_SIZE)
@@ -3167,16 +3374,17 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   return ret;
 }
 
-/** Serve the client.
-  *
-  * Connect to the openvasd server, then call either \ref serve_otp or \ref
-  * serve_omp to serve the protocol, depending on the first message that
-  * the client sends.
-  *
-  * @param[in]  client_socket  The socket connected to the client.
-  *
-  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
-  */
+/**
+ * @brief Serve the client.
+ *
+ * Connect to the openvasd server, then call either \ref serve_otp or \ref
+ * serve_omp to serve the protocol, depending on the first message that
+ * the client sends.
+ *
+ * @param[in]  client_socket  The socket connected to the client.
+ *
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
+ */
 int
 serve_client (int client_socket)
 {
@@ -3299,7 +3507,7 @@ serve_client (int client_socket)
   gnutls_transport_set_lowat (*client_session, 0);
 
   /* Read a message from the client, and call the appropriate protocol
-     handler. */
+   * handler. */
 
   switch (read_protocol (client_session, client_socket))
     {
@@ -3342,11 +3550,12 @@ serve_client (int client_socket)
 #undef FD_SERVER_READ
 #undef FD_SERVER_WRITE
 
-/** Accept and fork.
-  *
-  * Accept the client connection and fork a child process.  The child calls
-  * \ref serve_client to do the rest of the work.
-  */
+/**
+ * @brief Accept and fork.
+ *
+ * Accept the client connection and fork a child process.  The child calls
+ * \ref serve_client to do the rest of the work.
+ */
 void
 accept_and_maybe_fork () {
   /* Accept the client connection. */
@@ -3412,7 +3621,11 @@ accept_and_maybe_fork () {
     }
 }
 
-/** at_exit handler.  Close sockets and streams, free the ovas context. */
+/**
+ * @brief Clean up for exit.
+ *
+ * Close sockets and streams, free the ovas context.
+ */
 void
 cleanup ()
 {
@@ -3433,10 +3646,11 @@ cleanup ()
   maybe_free_server_plugins_dependencies ();
 }
 
-/** Handler for all signals.
-  *
-  * @param[in]  signal  The signal that caused this function to run.
-  */
+/**
+ * @brief Handler for all signals.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
 void
 handle_signal (int signal)
 {
@@ -3450,16 +3664,17 @@ handle_signal (int signal)
 }
 
 
-/** Entry point to the manager.
-  *
-  * Setup the manager and then loop forever passing connections to
-  * \ref accept_and_maybe_fork.
-  *
-  * @param[in]  argc  The number of arguments in argv.
-  * @param[in]  argv  The list of arguments to the program.
-  *
-  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
-  */
+/**
+ * @brief Entry point to the manager.
+ *
+ * Setup the manager and then loop forever passing connections to
+ * \ref accept_and_maybe_fork.
+ *
+ * @param[in]  argc  The number of arguments in argv.
+ * @param[in]  argv  The list of arguments to the program.
+ *
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
+ */
 int
 main (int argc, char** argv)
 {
@@ -3674,7 +3889,8 @@ main (int argc, char** argv)
    * `accept_and_maybe_fork'.
    *
    * FIX This could just loop accept_and_maybe_fork.  Might the manager
-   *     want to communicate with anything else here, like the server? */
+   *     want to communicate with anything else here, like the server?
+   */
 
   int ret, nfds;
   fd_set readfds, exceptfds;
