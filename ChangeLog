@@ -1,5 +1,15 @@
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add simple test of XML OMP STATUS.
+
+	* src/tests/omp_status_0.c: New file.
+
+	* src/tests/CMakeLists.txt: Add new test.
+
+    * ChangeLog: Correct file name on previous entry.
+
+2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add initial XML OMP STATUS and improve server initialisation.
 
 	* src/openvasmd.c: (client_state_t): Add CLIENT_STATUS.
@@ -50,7 +60,7 @@
 
 	Add simple test of XML OMP START_TASK.
 
-	* src/tests/omp_start_task_0: New file.
+	* src/tests/omp_start_task_0.c: New file.
 
 	* src/tests/CMakeLists.txt: Add new test.
 
