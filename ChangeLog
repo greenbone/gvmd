@@ -1,5 +1,13 @@
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/string.h: Add header comment.
+
+	* src/string.c: Add header and @file comments.  Match comment docs to style guide.
+
+	* src/tracef.h: Add header and @file comments.  Match comment docs to style guide.
+
+2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add simple test of XML OMP STATUS.
 
 	* src/tests/omp_status_0.c: New file.
