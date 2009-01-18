@@ -1,5 +1,12 @@
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* doc/Doxyfile (INPUT): Add string.c and tracef.h.
+
+	* doc/CMakeLists.txt: Add string.c and tracef.h to .built-html rule dependencies.
+	Drop dependencies from doc rule that are covered by .built-html.
+
+2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/ovas-mngr-comm.c: Add TRACE define.  Move @file comment to beginning.
 
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>

@@ -77,8 +77,7 @@ if (NOT DOXYGEN_EXECUTABLE)
 endif (NOT DOXYGEN_EXECUTABLE)
 
 add_custom_target (doc COMMENT "Building documentation..."
-                   DEPENDS openvasmd.8 Doxyfile .built-html
-				           ../src/openvasmd.c ../src/ovas-mngr-comm.c)
+                   DEPENDS openvasmd.8 Doxyfile .built-html)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT openvasmd.8
@@ -108,7 +107,8 @@ add_custom_command (OUTPUT .built-html
                     COMMAND sh
 					ARGS -c \"${DOXYGEN_EXECUTABLE} Doxyfile && touch .built-html\;\"
 					DEPENDS openvasmd.html Doxyfile footer.html
-					        ../src/openvasmd.c
+					        ../src/openvasmd.c ../src/ovas-mngr-comm.c
+							../src/string.c ../src/tracef.h
 							../README ../INSTALL)
 
 # if (GROFF_DOES_HTML)
