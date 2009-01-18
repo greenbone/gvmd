@@ -1,3 +1,20 @@
+2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add initial XML OMP STATUS and improve server initialisation.
+
+	* src/openvasmd.c: (client_state_t): Add CLIENT_STATUS.
+	(start_task): Add space before parenthesis.
+	(process_omp_old_client_input): Fixup formatting.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add STATUS handling.  Let default case handle all
+	0 assertions.
+	(process_omp_server_input): In server init case check for enough input
+	and process all available input.
+	(read_from_client, read_from_server): Improve formatting and trace message.
+	(serve_omp): Only read from client after server has initialised.
+
+    * ChangeLog: Correct file name on previous entry.
+
 2009-01-17  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* doc/Doxyfile: Turn off JAVADOC_AUTOBRIEF.
@@ -33,7 +50,7 @@
 
 	Add simple test of XML OMP START_TASK.
 
-	* src/tests/omp_start_task_: New file.
+	* src/tests/omp_start_task_0: New file.
 
 	* src/tests/CMakeLists.txt: Add new test.
 

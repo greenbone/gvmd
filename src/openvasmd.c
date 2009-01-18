@@ -372,6 +372,7 @@ typedef enum
   CLIENT_NEW_TASK_TASK_FILE,
   CLIENT_START_TASK,
   CLIENT_START_TASK_TASK_ID,
+  CLIENT_STATUS,
   CLIENT_TOP,
   CLIENT_VERSION
 } client_state_t;
@@ -961,31 +962,31 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
-  if (send_to_server("CLIENT <|> PREFERENCES <|>\n")) return -1;
+  if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
-  if (send_to_server("plugin_set <|> ")) return -1;
+  if (send_to_server ("plugin_set <|> ")) return -1;
 #if 0
-  if (send_to_server(task_plugins (task))) return -1;
+  if (send_to_server (task_plugins (task))) return -1;
 #endif
-  if (send_to_server("\n")) return -1;
+  if (send_to_server ("\n")) return -1;
 #if 0
   queue_task_preferences (task);
   queue_task_plugin_preferences (task);
 #endif
-  if (send_to_server("<|> CLIENT\n")) return -1;
+  if (send_to_server ("<|> CLIENT\n")) return -1;
 
-  if (send_to_server("CLIENT <|> RULES <|>\n")) return -1;
+  if (send_to_server ("CLIENT <|> RULES <|>\n")) return -1;
 #if 0
   queue_task_rules (task);
 #endif
-  if (send_to_server("<|> CLIENT\n")) return -1;
+  if (send_to_server ("<|> CLIENT\n")) return -1;
 
 #if 0
   char* targets = task_preference (task, "targets");
-  if (send_to_server("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
+  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
              strlen (targets), targets)) return -1;
 #else
-  if (send_to_server("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n")) return -1;
+  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n")) return -1;
 #endif
 
   task->running = 1;
@@ -1677,9 +1678,9 @@ process_omp_old_client_input ()
               if (index->name)
                 {
                   gchar* line = g_strdup_printf ("%u %s %c . . . . .\n",
-                                                index->id,
-                                                index->name,
-                                                index->running ? 'R' : 'N');
+                                                 index->id,
+                                                 index->name,
+                                                 index->running ? 'R' : 'N');
                   if (line == NULL) goto out_of_memory;
                   // FIX free line if RESPOND fails
                   RESPOND (line);
@@ -1794,6 +1795,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_VERSION);
         else if (strncasecmp ("START_TASK", element_name, 10) == 0)
           set_client_state (CLIENT_START_TASK);
+        else if (strncasecmp ("STATUS", element_name, 6) == 0)
+          {
+            current_task_task_id = 0;
+            set_client_state (CLIENT_STATUS);
+          }
         else
           XML_RESPOND ("<omp_response><status>402</status></omp_response>");
         break;
@@ -1981,8 +1987,45 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         set_client_state (CLIENT_START_TASK);
         break;
 
+      case CLIENT_STATUS:
+        assert (strncasecmp ("STATUS", element_name, 6) == 0);
+        XML_RESPOND ("<status_response><status>200</status>");
+        gchar* response = g_strdup_printf ("<task_count>%u</task_count>", num_tasks);
+        XML_RESPOND (response);
+        task_t* index = tasks;
+        task_t* end = tasks + tasks_size;
+        while (index < end)
+          {
+            if (index->name)
+              {
+                gchar* line = g_strdup_printf ("<task>\
+                                                  <task_id>%u</task_id>\
+                                                  <identifier>%s</identifier>\
+                                                  <task_status>%s</task_status>\
+                                                  <messages>\
+                                                    <hole></hole>\
+                                                    <warning></warning>\
+                                                    <info></info>\
+                                                    <log></log>\
+                                                    <debug></debug>\
+                                                  </messages>\
+                                                </task>",
+                                               index->id,
+                                               index->name,
+                                               index->running ? "Running" : "New");
+                // FIX free line if RESPOND fails
+                XML_RESPOND (line);
+                g_free (line);
+              }
+            index++;
+          }
+        XML_RESPOND ("</status_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
       default:
         assert (0);
+        break;
     }
 
   return;
@@ -2013,13 +2056,6 @@ omp_xml_handle_text (GMarkupParseContext* context,
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
-      case CLIENT_TOP:
-        assert (0);
-        break;
-
-      case CLIENT_MODIFY_TASK:
-        assert (0);
-        break;
       case CLIENT_MODIFY_TASK_PARAMETER:
         if (modify_task_parameter)
           {
@@ -2060,9 +2096,6 @@ omp_xml_handle_text (GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_NEW_TASK:
-        assert (0);
-        break;
       case CLIENT_NEW_TASK_COMMENT:
         append_to_task_comment (current_client_task, text, text_len);
         break;
@@ -2077,9 +2110,6 @@ omp_xml_handle_text (GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
 
-      case CLIENT_START_TASK:
-        assert (0);
-        break;
       case CLIENT_START_TASK_TASK_ID:
         if (current_task_task_id)
           {
@@ -2095,7 +2125,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
         break;
 
       default:
-        assert (0);
+        /* Just pass over the text. */
         break;
     }
 }
@@ -2167,35 +2197,43 @@ process_omp_server_input ()
 
   if (server_initialising)
     {
-      // FIX read everything available
       switch (server_initialising)
         {
           case 1:
+            if (from_server_end - from_server_start < 12)
+              /* Need more input. */
+              goto succeed;
             if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
               {
                 tracef ("   server fail: expected \"< OTP/1.0 >\n\"\n");
                 goto fail;
               }
-            server_initialising = 2;
             from_server_start += 12;
-            break;
+            server_initialising = 2;
+            /* Fall through to attempt next step. */
           case 2:
+            if (from_server_end - from_server_start < 7)
+              /* Need more input. */
+              goto succeed;
             if (strncasecmp ("User : ", messages, 7))
               {
                 tracef ("   server fail: expected \"User : \"\n");
                 goto fail;
               }
-            if (send_to_server("mattm\n")) return -3; // FIX
+            if (send_to_server ("mattm\n")) return -3; // FIX
             from_server_start += 7;
             server_initialising = 3;
-            goto succeed;
+            /* Fall through to attempt next step. */
           case 3:
+            if (from_server_end - from_server_start < 11)
+              /* Need more input. */
+              goto succeed;
             if (strncasecmp ("Password : ", messages, 11))
               {
                 tracef ("   server fail: expected \"Password : \"\n");
                 goto fail;
               }
-            if (send_to_server("mattm\n")) return -3; // FIX
+            if (send_to_server ("mattm\n")) return -3; // FIX
             from_server_start += 11;
             server_initialising = 0;
             goto succeed;
@@ -2730,9 +2768,8 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
       ssize_t count;
       count = gnutls_record_recv (*client_session,
                                   from_client + from_client_end,
-                                  BUFFER_SIZE
-                                  - from_client_end);
-      tracef ("   count: %i\n", count);
+                                  BUFFER_SIZE - from_client_end);
+      tracef ("   c count: %i\n", count);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -2779,9 +2816,8 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
       ssize_t count;
       count = gnutls_record_recv (*server_session,
                                   from_server + from_server_end,
-                                  BUFFER_SIZE
-                                  - from_server_end);
-      tracef ("   count: %i\n", count);
+                                  BUFFER_SIZE - from_server_end);
+      tracef ("   s count: %i\n", count);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -2996,7 +3032,12 @@ serve_omp (gnutls_session_t* client_session,
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
       // FIX shutdown if any eg read fails
-      if (from_client_more == FALSE && from_client_end < BUFFER_SIZE)
+      /* Only read from the client when the server is initialised,
+       * otherwise processing the client input may result in output to the
+       * server before the server is initialised. */
+      if (server_initialising == 0
+          && from_client_more == FALSE
+          && from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
