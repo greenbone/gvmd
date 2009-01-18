@@ -1,5 +1,9 @@
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/ovas-mngr-comm.c: Add TRACE define.  Move @file comment to beginning.
+
+2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/string.h: Add header comment.
 
 	* src/string.c: Add header and @file comments.  Match comment docs to style guide.

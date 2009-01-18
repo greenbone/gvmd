@@ -24,6 +24,21 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file ovas-mngr-comm.c
+ * @brief API for communication between openvas-manger and openvas-server
+ *
+ * This file contains a API for communicating with an openvas-server
+ * which uses OTP as protocol.
+ */
+
+/**
+ * @brief Trace flag.
+ *
+ * 0 to turn off all tracing messages.
+ */
+#define TRACE 1
+
 #include <string.h>
 #include "tracef.h"
 
@@ -44,14 +59,6 @@ char to_server[BUFFER_SIZE];
  * @brief The end of the data in the \ref to_server buffer.
  */
 int to_server_end = 0;
-
-/**
- * @file ovas-mngr-comm.c
- * @brief API for communication between openvas-manger and openvas-server
- *
- * This file contains a API for communicating with an openvas-server
- * which uses OTP as protocol.
- */
 
 /**
  * @brief Send a message to the server.
