@@ -332,11 +332,6 @@ char* login = NULL;
  */
 char* credentials = NULL;
 
-/**
- * @brief Record of server initialisation state.
- */
-int server_initialising = 0;
-
 
 /* Helper functions. */
 
@@ -373,6 +368,7 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_START_TASK_TASK_ID,
   CLIENT_STATUS,
+  CLIENT_STATUS_TASK_ID,
   CLIENT_TOP,
   CLIENT_VERSION
 } client_state_t;
@@ -416,6 +412,7 @@ server_t server;
  */
 typedef enum
 {
+  SERVER_BYE,
   SERVER_DONE,
   SERVER_PLUGINS_MD5,
   SERVER_PLUGIN_DEPENDENCY_NAME,
@@ -453,6 +450,42 @@ set_server_state (server_state_t state)
 {
   server_state = state;
   tracef ("   server state set: %i\n", server_state);
+}
+
+/**
+ * @brief Possible initialisation states of the server.
+ */
+typedef enum
+{
+  SERVER_INIT_CONNECT_INTR,    /* `connect' to server interrupted. */
+  SERVER_INIT_CONNECTED,
+  SERVER_INIT_DONE,
+  SERVER_INIT_GOT_PASSWORD,
+  SERVER_INIT_GOT_USER,
+  SERVER_INIT_GOT_VERSION,
+  SERVER_INIT_SENT_USER,
+  SERVER_INIT_SENT_VERSION,
+  SERVER_INIT_TOP
+} server_init_state_t;
+
+/**
+ * @brief The initialisation state of the server.
+ */
+server_init_state_t server_init_state = SERVER_INIT_TOP;
+
+/**
+ * @brief Offset into initialisation string being sent to server.
+ */
+int server_init_offset = 0;
+
+/**
+ * @brief Set the server initialisation state.
+ */
+void
+set_server_init_state (server_init_state_t state)
+{
+  server_init_state = state;
+  tracef ("   server init state set: %i\n", server_init_state);
 }
 
 
@@ -984,9 +1017,12 @@ start_task (task_t* task)
 #if 0
   char* targets = task_preference (task, "targets");
   if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
-             strlen (targets), targets)) return -1;
+                      strlen (targets),
+                      targets))
+    return -1;
 #else
-  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n")) return -1;
+  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n"))
+    return -1;
 #endif
 
   task->running = 1;
@@ -1028,7 +1064,7 @@ append_to_task_comment (task_t* task, const char* text, int length)
  * @param  text    The text to append.
  * @param  length  Length of the text.
  *
- * @return 0 on success, -1 if out of memory.
+ * @return 0 on success, 1 if out of memory.
  */
 int
 append_to_task_identifier (task_t* task, const char* text, int length)
@@ -1052,16 +1088,20 @@ append_to_task_identifier (task_t* task, const char* text, int length)
 /**
  * @brief Increase the memory allocated for a task description.
  *
- * @param  task  A pointer to the task.
+ * @param  task       A pointer to the task.
+ * @param  increment  Minimum number of bytes to increase memory.
  *
  * @return 0 on success, -1 if out of memory.
  */
 int
-grow_description (task_t* task)
+grow_description (task_t* task, int increment)
 {
-  int new_size = task->description_size + DESCRIPTION_INCREMENT;
+  int new_size = task->description_size
+                 + (increment < DESCRIPTION_INCREMENT
+                    ? DESCRIPTION_INCREMENT : increment);
   char* new = realloc (task->description, new_size);
   if (new == NULL) return -1;
+  tracef ("  grew description to %i.\n", new_size);
   task->description = new;
   task->description_size = new_size;
   return 0;
@@ -1079,9 +1119,8 @@ grow_description (task_t* task)
 int
 add_task_description_line (task_t* task, const char* line, int line_length)
 {
-  //assert (task->name);
   if (task->description_size - task->description_length < line_length
-      && grow_description (task))
+      && grow_description (task, line_length))
     return -1;
   char* description = task->description;
   description += task->description_length;
@@ -1797,7 +1836,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_START_TASK);
         else if (strncasecmp ("STATUS", element_name, 6) == 0)
           {
-            current_task_task_id = 0;
+            current_task_task_id = NULL;
             set_client_state (CLIENT_STATUS);
           }
         else
@@ -1845,7 +1884,19 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_STATUS:
+        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+          set_client_state (CLIENT_STATUS_TASK_ID);
+        else
+          {
+            XML_RESPOND ("<status_response><status>402</status></status_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
       default:
+        // FIX respond fail to client
         assert (0);
         break;
     }
@@ -1990,37 +2041,64 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_STATUS:
         assert (strncasecmp ("STATUS", element_name, 6) == 0);
         XML_RESPOND ("<status_response><status>200</status>");
-        gchar* response = g_strdup_printf ("<task_count>%u</task_count>", num_tasks);
-        XML_RESPOND (response);
-        task_t* index = tasks;
-        task_t* end = tasks + tasks_size;
-        while (index < end)
+        if (current_task_task_id)
           {
-            if (index->name)
+            unsigned int id;
+            if (sscanf (current_task_task_id, "%u", &id) != 1)
+              XML_RESPOND ("<status_response><status>40x</status></status_response>");
+            else
               {
-                gchar* line = g_strdup_printf ("<task>\
-                                                  <task_id>%u</task_id>\
-                                                  <identifier>%s</identifier>\
-                                                  <task_status>%s</task_status>\
-                                                  <messages>\
-                                                    <hole></hole>\
-                                                    <warning></warning>\
-                                                    <info></info>\
-                                                    <log></log>\
-                                                    <debug></debug>\
-                                                  </messages>\
-                                                </task>",
-                                               index->id,
-                                               index->name,
-                                               index->running ? "Running" : "New");
-                // FIX free line if RESPOND fails
-                XML_RESPOND (line);
-                g_free (line);
+                task_t* task = find_task (id);
+                if (task == NULL)
+                  XML_RESPOND ("<status_response><status>407</status></status_response>");
+                else
+                  {
+                    gchar* response;
+                    response = g_strdup_printf ("<report_count>%u</report_count>",
+                                                0);
+                                                //task->report_count);
+                    XML_RESPOND (response);
+                  }
               }
-            index++;
+          }
+        else
+          {
+            gchar* response = g_strdup_printf ("<task_count>%u</task_count>", num_tasks);
+            XML_RESPOND (response);
+            task_t* index = tasks;
+            task_t* end = tasks + tasks_size;
+            while (index < end)
+              {
+                if (index->name)
+                  {
+                    gchar* line = g_strdup_printf ("<task>\
+                                                      <task_id>%u</task_id>\
+                                                      <identifier>%s</identifier>\
+                                                      <task_status>%s</task_status>\
+                                                      <messages>\
+                                                        <hole></hole>\
+                                                        <warning></warning>\
+                                                        <info></info>\
+                                                        <log></log>\
+                                                        <debug></debug>\
+                                                      </messages>\
+                                                    </task>",
+                                                   index->id,
+                                                   index->name,
+                                                   index->running ? "Running" : "New");
+                    // FIX free line if RESPOND fails
+                    XML_RESPOND (line);
+                    g_free (line);
+                  }
+                index++;
+              }
           }
         XML_RESPOND ("</status_response>");
         set_client_state (CLIENT_TOP);
+        break;
+      case CLIENT_STATUS_TASK_ID:
+        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        set_client_state (CLIENT_STATUS);
         break;
 
       default:
@@ -2111,6 +2189,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
         break;
 
       case CLIENT_START_TASK_TASK_ID:
+      case CLIENT_STATUS_TASK_ID:
         if (current_task_task_id)
           {
             // FIX
@@ -2142,7 +2221,7 @@ omp_xml_handle_error (GMarkupParseContext* context,
                       GError *error,
                       gpointer user_data)
 {
-  tracef ("   XML ERROR\n");
+  tracef ("   XML ERROR %s\n", error->message);
   abort ();
 }
 
@@ -2175,13 +2254,11 @@ process_omp_client_input ()
 /**
  * @brief Process any lines available in from_server.
  *
- * Mostly update manager server records according to the input from the
- * server.  Only communicate with the server for initialisation.
+ * Only ever update manager server records according to the input from the
+ * server.  Output to the server is always done via
+ * process_omp_client_input, in reaction to client requests.
  *
- * @return 0 on success, -1 on error or -3 if there is too little buffer space in to_server.
- *         For the latter case, this results in a retry at processing the same message
- *         later, so from_client_end and from_client_start should only be adjusted
- *         after a call to send_to_server.
+ * @return 0 on success, -1 on error.
  */
 int
 process_omp_server_input ()
@@ -2195,212 +2272,223 @@ process_omp_server_input ()
   /* First, handle special server states where the input from the server
    * ends in something other than <|> (usually a newline). */
 
-  if (server_initialising)
+  switch (server_init_state)
     {
-      switch (server_initialising)
-        {
-          case 1:
-            if (from_server_end - from_server_start < 12)
-              /* Need more input. */
-              goto succeed;
-            if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
-              {
-                tracef ("   server fail: expected \"< OTP/1.0 >\n\"\n");
-                goto fail;
-              }
-            from_server_start += 12;
-            server_initialising = 2;
-            /* Fall through to attempt next step. */
-          case 2:
-            if (from_server_end - from_server_start < 7)
-              /* Need more input. */
-              goto succeed;
-            if (strncasecmp ("User : ", messages, 7))
-              {
-                tracef ("   server fail: expected \"User : \"\n");
-                goto fail;
-              }
-            if (send_to_server ("mattm\n")) return -3; // FIX
-            from_server_start += 7;
-            server_initialising = 3;
-            /* Fall through to attempt next step. */
-          case 3:
-            if (from_server_end - from_server_start < 11)
-              /* Need more input. */
-              goto succeed;
-            if (strncasecmp ("Password : ", messages, 11))
-              {
-                tracef ("   server fail: expected \"Password : \"\n");
-                goto fail;
-              }
-            if (send_to_server ("mattm\n")) return -3; // FIX
-            from_server_start += 11;
-            server_initialising = 0;
-            goto succeed;
-          default:
+      case SERVER_INIT_SENT_VERSION:
+        if (from_server_end - from_server_start < 12)
+          /* Need more input. */
+          goto succeed;
+        if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
+          {
+            tracef ("   server fail: expected \"< OTP/1.0 >, got \"%.12s\"\n\"\n",
+                    messages);
             goto fail;
-        }
-    }
-  else if (server_state == SERVER_DONE)
-    {
-      char *end;
- server_done:
-      end = messages + from_server_end - from_server_start;
-      while (messages < end && (messages[0] == ' ' || messages[0] == '\n'))
-        { messages++; from_server_start++; }
-      if ((int) (end - messages) < 6)
-        /* Too few characters to be the end marker, return to select to
-         * wait for more input. */
+          }
+        from_server_start += 12;
+        messages += 12;
+        set_server_init_state (SERVER_INIT_GOT_VERSION);
+        /* Fall through to attempt next step. */
+      case SERVER_INIT_GOT_VERSION:
+        if (from_server_end - from_server_start < 7)
+          /* Need more input. */
+          goto succeed;
+        if (strncasecmp ("User : ", messages, 7))
+          {
+            tracef ("   server fail: expected \"User : \", got \"%7s\"\n",
+                    messages);
+            goto fail;
+          }
+        from_server_start += 7;
+        messages += 7;
+        set_server_init_state (SERVER_INIT_GOT_USER);
         goto succeed;
-      if (strncasecmp ("SERVER", messages, 6))
-        {
-          tracef ("   server fail: expected final \"SERVER\"\n");
-          goto fail;
-        }
-      set_server_state (SERVER_TOP);
-      from_server_start += 6;
-      messages += 6;
-    }
-  else if (server_state == SERVER_PREFERENCE_VALUE)
-    {
-      char *value, *end;
- server_preference_value:
-      assert (current_server_preference);
-      end = messages + from_server_end - from_server_start;
-      while (messages < end && (messages[0] == ' '))
-        { messages++; from_server_start++; }
-      if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-        {
-          match[0] = '\0';
-          value = strdup (messages);
-          if (value == NULL) goto out_of_memory;
-          add_server_preference (current_server_preference, value);
-          set_server_state (SERVER_PREFERENCE_NAME);
-          from_server_start += match + 1 - messages;
-          messages = match + 1;
-        }
-      else
-        /* Need to wait for a newline to end the value so return to select
-         * to wait for more input. */
+      case SERVER_INIT_GOT_USER:
+        /* Input from server after "User : " and before user name sent. */
+        goto fail;
+      case SERVER_INIT_SENT_USER:
+        if (from_server_end - from_server_start < 11)
+          /* Need more input. */
+          goto succeed;
+        if (strncasecmp ("Password : ", messages, 11))
+          {
+            tracef ("   server fail: expected \"Password : \", got \"%11s\"\n",
+                    messages);
+            goto fail;
+          }
+        from_server_start += 11;
+        messages += 11;
+        set_server_init_state (SERVER_INIT_GOT_PASSWORD);
         goto succeed;
-    }
-  else if (server_state == SERVER_RULE)
-    {
- server_rule:
-      while (1)
-        {
-          char *end;
-          end = messages + from_server_end - from_server_start;
-          while (messages < end && (messages[0] == ' '))
-            { messages++; from_server_start++; }
-          if ((match = memchr (messages, ';', from_server_end - from_server_start)))
-            {
-              char* rule;
-              match[0] = '\0';
-              rule = strdup (messages);
-              if (rule == NULL) goto out_of_memory;
-              add_server_rule (rule);
-              from_server_start += match + 1 - messages;
-              messages = match + 1;
-            }
-          else
-            /* Rules are followed by <|> SERVER so carry on, to check for
-             * the <|>. */
-            break;
-        }
-    }
-  else if (server_state == SERVER_SERVER)
-    {
-      /* Look for any newline delimited server commands. */
-      char *end;
- server_server:
-      end = messages + from_server_end - from_server_start;
-      while (messages < end && (messages[0] == ' '))
-        { messages++; from_server_start++; }
-      if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-        {
-          match[0] = '\0';
-          // FIX is there ever whitespace before the newline?
-          while (messages < end && (messages[0] == ' '))
-            { messages++; from_server_start++; }
-          if (strncasecmp ("PLUGINS_DEPENDENCIES", messages, 20) == 0)
-            {
-              from_server_start += match + 1 - messages;
-              messages = match + 1;
-              maybe_free_server_plugins_dependencies ();
-              make_server_plugins_dependencies ();
-              set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
-            }
-          else
-            {
-              char* newline = match;
-              newline[0] = '\n';
-              /* Check for a <|>. */
-              input = messages;
-              from_start = from_server_start, from_end = from_server_end;
-              while (from_start < from_end
-                     && (match = memchr (input, '<', from_end - from_start)))
-                {
-                  if ((((int) (match - input) - from_start + 1) < from_end)
-                      && (match[1] == '|')
-                      && (match[2] == '>'))
-                    {
-                      if (match > newline)
-                        /* The next <|> is after the newline, which is an error. */
-                        goto fail;
-                      /* The next <|> is before the newline, which may be correct.  Jump
-                       * over the <|> search in the `while' beginning the next section,
-                       * to save repeating the search. */
-                      goto server_server_command;
-                    }
-                  from_start += match + 1 - input;
-                  input = match + 1;
-                }
-              /* Need more input for a newline or <|>. */
+      case SERVER_INIT_GOT_PASSWORD:
+        /* Input from server after "Password : " and before password sent. */
+        goto fail;
+      case SERVER_INIT_CONNECT_INTR:
+      case SERVER_INIT_CONNECTED:
+        /* Input from server before version string sent. */
+        goto fail;
+      case SERVER_INIT_DONE:
+      case SERVER_INIT_TOP:
+        if (server_state == SERVER_DONE)
+          {
+            char *end;
+       server_done:
+            end = messages + from_server_end - from_server_start;
+            while (messages < end && (messages[0] == ' ' || messages[0] == '\n'))
+              { messages++; from_server_start++; }
+            if ((int) (end - messages) < 6)
+              /* Too few characters to be the end marker, return to select to
+               * wait for more input. */
               goto succeed;
-            }
-        }
-    }
-  else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY)
-    {
-      /* Look for the end of dependency marker: a newline that comes before
-       * the next <|>. */
-      char *separator, *end;
- server_plugin_dependency_dependency:
-      separator = NULL;
-      /* Look for <|>. */
-      input = messages;
-      from_start = from_server_start;
-      from_end = from_server_end;
-      while (from_start < from_end
-             && (match = memchr (input, '<', from_end - from_start)))
-        {
-          if (((int) (match - input) - from_start + 1) < from_end
-              && (match[1] == '|')
-              && (match[2] == '>'))
-            {
-              separator = match;
-              break;
-            }
-          from_start += match + 1 - input;
-          input = match + 1;
-        }
-      /* Look for newline. */
-      end = messages + from_server_end - from_server_start;
-      while (messages < end && (messages[0] == ' '))
-        { messages++; from_server_start++; }
-      if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-        {
-          /* Compare newline position to <|> position. */
-          if ((separator == NULL) || (match < separator))
-            {
-              finish_current_server_plugin_dependency ();
-              from_server_start += match + 1 - messages;
-              messages = match + 1;
-              set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
-            }
-        }
-    }
+            if (strncasecmp ("SERVER", messages, 6))
+              {
+                tracef ("   server fail: expected final \"SERVER\"\n");
+                goto fail;
+              }
+            set_server_state (SERVER_TOP);
+            from_server_start += 6;
+            messages += 6;
+          }
+        else if (server_state == SERVER_PREFERENCE_VALUE)
+          {
+            char *value, *end;
+       server_preference_value:
+            assert (current_server_preference);
+            end = messages + from_server_end - from_server_start;
+            while (messages < end && (messages[0] == ' '))
+              { messages++; from_server_start++; }
+            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
+              {
+                match[0] = '\0';
+                value = strdup (messages);
+                if (value == NULL) goto out_of_memory;
+                add_server_preference (current_server_preference, value);
+                set_server_state (SERVER_PREFERENCE_NAME);
+                from_server_start += match + 1 - messages;
+                messages = match + 1;
+              }
+            else
+              /* Need to wait for a newline to end the value so return to select
+               * to wait for more input. */
+              goto succeed;
+          }
+        else if (server_state == SERVER_RULE)
+          {
+       server_rule:
+            while (1)
+              {
+                char *end;
+                end = messages + from_server_end - from_server_start;
+                while (messages < end && (messages[0] == ' '))
+                  { messages++; from_server_start++; }
+                if ((match = memchr (messages, ';', from_server_end - from_server_start)))
+                  {
+                    char* rule;
+                    match[0] = '\0';
+                    rule = strdup (messages);
+                    if (rule == NULL) goto out_of_memory;
+                    add_server_rule (rule);
+                    from_server_start += match + 1 - messages;
+                    messages = match + 1;
+                  }
+                else
+                  /* Rules are followed by <|> SERVER so carry on, to check for
+                   * the <|>. */
+                  break;
+              }
+          }
+        else if (server_state == SERVER_SERVER)
+          {
+            /* Look for any newline delimited server commands. */
+            char *end;
+       server_server:
+            end = messages + from_server_end - from_server_start;
+            while (messages < end && (messages[0] == ' '))
+              { messages++; from_server_start++; }
+            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
+              {
+                match[0] = '\0';
+                // FIX is there ever whitespace before the newline?
+                while (messages < end && (messages[0] == ' '))
+                  { messages++; from_server_start++; }
+                if (strncasecmp ("PLUGINS_DEPENDENCIES", messages, 20) == 0)
+                  {
+                    from_server_start += match + 1 - messages;
+                    messages = match + 1;
+                    maybe_free_server_plugins_dependencies ();
+                    make_server_plugins_dependencies ();
+                    set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+                  }
+                else
+                  {
+                    char* newline = match;
+                    newline[0] = '\n';
+                    /* Check for a <|>. */
+                    input = messages;
+                    from_start = from_server_start, from_end = from_server_end;
+                    while (from_start < from_end
+                           && (match = memchr (input, '<', from_end - from_start)))
+                      {
+                        if ((((int) (match - input) - from_start + 1) < from_end)
+                            && (match[1] == '|')
+                            && (match[2] == '>'))
+                          {
+                            if (match > newline)
+                              /* The next <|> is after the newline, which is an error. */
+                              goto fail;
+                            /* The next <|> is before the newline, which may be correct.  Jump
+                             * over the <|> search in the `while' beginning the next section,
+                             * to save repeating the search. */
+                            goto server_server_command;
+                          }
+                        from_start += match + 1 - input;
+                        input = match + 1;
+                      }
+                    /* Need more input for a newline or <|>. */
+                    goto succeed;
+                  }
+              }
+          }
+        else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY)
+          {
+            /* Look for the end of dependency marker: a newline that comes before
+             * the next <|>. */
+            char *separator, *end;
+       server_plugin_dependency_dependency:
+            separator = NULL;
+            /* Look for <|>. */
+            input = messages;
+            from_start = from_server_start;
+            from_end = from_server_end;
+            while (from_start < from_end
+                   && (match = memchr (input, '<', from_end - from_start)))
+              {
+                if (((int) (match - input) - from_start + 1) < from_end
+                    && (match[1] == '|')
+                    && (match[2] == '>'))
+                  {
+                    separator = match;
+                    break;
+                  }
+                from_start += match + 1 - input;
+                input = match + 1;
+              }
+            /* Look for newline. */
+            end = messages + from_server_end - from_server_start;
+            while (messages < end && (messages[0] == ' '))
+              { messages++; from_server_start++; }
+            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
+              {
+                /* Compare newline position to <|> position. */
+                if ((separator == NULL) || (match < separator))
+                  {
+                    finish_current_server_plugin_dependency ();
+                    from_server_start += match + 1 - messages;
+                    messages = match + 1;
+                    set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+                  }
+              }
+          }
+    } /* switch (server_init_state) */
 
   /* Parse and handle any fields ending in <|>. */
 
@@ -2439,13 +2527,19 @@ process_omp_server_input ()
           tracef ("   server field: %s\n", field);
           switch (server_state)
             {
-#if 0
-              case SERVER_DONE:
-                if (strncasecmp ("SERVER", field, 6))
+              case SERVER_BYE:
+                if (strncasecmp ("BYE", field, 3))
                   goto fail;
-                set_server_state (SERVER_TOP);
-                break;
+                set_server_init_state (SERVER_INIT_TOP);
+                set_server_state (SERVER_DONE);
+// FIX
+#if 0
+                if (shutdown (server_socket, SHUT_RDWR) == -1)
+                  perror ("Failed to shutdown server socket");
 #endif
+                /* Jump to the done check, as this loop only considers fields
+                 * ending in <|>. */
+                goto server_done;
               case SERVER_PLUGIN_DEPENDENCY_NAME:
                 {
                   if (strlen (field) == 0)
@@ -2544,7 +2638,9 @@ process_omp_server_input ()
                  * ending in <|>. */
                 goto server_done;
               case SERVER_SERVER:
-                if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
+                if (strncasecmp ("BYE", field, 3) == 0)
+                  set_server_state (SERVER_BYE);
+                else if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
                   set_server_state (SERVER_PLUGINS_MD5);
                 else if (strncasecmp ("PORT", field, 4) == 0)
                   set_server_state (SERVER_PORT_HOST);
@@ -2572,7 +2668,11 @@ process_omp_server_input ()
                     set_server_state (SERVER_STATUS_HOST);
                   }
                 else
-                  goto fail;
+                  {
+                    tracef ("New server command to implement: %s\n",
+                            field);
+                    goto fail;
+                  }
                 break;
               case SERVER_STATUS_ATTACK_STATE:
                 {
@@ -2890,28 +2990,31 @@ write_to_client (gnutls_session_t* client_session)
   return 0;
 }
 
-// FIX combine with write_to_client
 /**
- * @brief Write as much as possible from to_server to the server.
+ * @brief Write as much as possible from a string to the server.
  *
  * @param[in]  server_session  The server session.
+ * @param[in]  string          The string.
  *
- * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+ * @return 0 wrote everything, -1 error, or the number of bytes written
+ *         when the server accepted fewer bytes than given in string.
  */
 int
-write_to_server (gnutls_session_t* server_session)
+write_string_to_server (gnutls_session_t* server_session, char* const string)
 {
-  while (to_server_start < to_server_end)
+  char* point = string;
+  char* end = string + strlen (string);
+  while (point < end)
     {
       ssize_t count;
       count = gnutls_record_send (*server_session,
-                                  to_server + to_server_start,
-                                  to_server_end - to_server_start);
+                                  point,
+                                  end - point);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
             /* Wrote as much as server accepted. */
-            return -2;
+            return point - string;
           if (count == GNUTLS_E_INTERRUPTED)
             /* Interrupted, try write again. */
             continue;
@@ -2922,14 +3025,133 @@ write_to_server (gnutls_session_t* server_session)
           gnutls_perror (count);
           return -1;
         }
-      to_server_start += count;
-      tracef ("=> server  %i bytes\n", count);
+      point += count;
+      tracef ("=> server  (string) %i bytes\n", count);
     }
-  tracef ("=> server  done\n");
-  to_server_start = to_server_end = 0;
-
+  tracef ("=> server  (string) done\n");
   /* Wrote everything. */
   return 0;
+}
+
+/**
+ * @brief Write as much as possible from to_server to the server.
+ *
+ * @param[in]  server_socket   The server socket.
+ * @param[in]  server_session  The server session.
+ *
+ * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
+ *         -3 did an initialisation step.
+ */
+int
+write_to_server (int server_socket, gnutls_session_t* server_session)
+{
+  switch (server_init_state)
+    {
+      case SERVER_INIT_CONNECT_INTR:
+      case SERVER_INIT_TOP:
+        switch (connect_to_server (server_socket,
+                                   &server_address,
+                                   server_session,
+                                   server_init_state
+                                   == SERVER_INIT_CONNECT_INTR))
+          {
+            case 0:
+              set_server_init_state (SERVER_INIT_CONNECTED);
+              /* Fall through to SERVER_INIT_CONNECTED case below, to write
+               * version string. */
+              break;
+            case -2:
+              set_server_init_state (SERVER_INIT_CONNECT_INTR);
+              return -3;
+            default:
+              return -1;
+          }
+      case SERVER_INIT_CONNECTED:
+        {
+          char* string = "< OTP/1.0 >\n";
+          server_init_offset = write_string_to_server (server_session,
+                                                       string
+                                                       + server_init_offset);
+          if (server_init_offset == 0)
+            set_server_init_state (SERVER_INIT_SENT_VERSION);
+          else
+            {
+              if (server_init_offset == -1)
+                {
+                  server_init_offset = 0;
+                  return -1;
+                }
+            }
+          break;
+        }
+      case SERVER_INIT_SENT_VERSION:
+      case SERVER_INIT_GOT_VERSION:
+        assert (0);
+        break;
+      case SERVER_INIT_GOT_USER:
+        {
+          char* user = "mattm\n"; // FIX (string must stay same across init)
+          server_init_offset = write_string_to_server (server_session,
+                                                       user + server_init_offset);
+          if (server_init_offset == 0)
+            set_server_init_state (SERVER_INIT_SENT_USER);
+          else if (server_init_offset == -1)
+            {
+              server_init_offset = 0;
+              return -1;
+            }
+          break;
+        }
+      case SERVER_INIT_SENT_USER:
+        assert (0);
+        break;
+      case SERVER_INIT_GOT_PASSWORD:
+        {
+          char* password = "mattm\n"; // FIX (string must stay same across init)
+          server_init_offset = write_string_to_server (server_session,
+                                                       password + server_init_offset);
+          if (server_init_offset == 0)
+            set_server_init_state (SERVER_INIT_DONE);
+            /* Fall through to send any available output. */
+          else if (server_init_offset == -1)
+            {
+              server_init_offset = 0;
+              return -1;
+            }
+          else
+            break;
+        }
+      case SERVER_INIT_DONE:
+        while (to_server_start < to_server_end)
+          {
+            ssize_t count;
+            count = gnutls_record_send (*server_session,
+                                        to_server + to_server_start,
+                                        to_server_end - to_server_start);
+            if (count < 0)
+              {
+                if (count == GNUTLS_E_AGAIN)
+                  /* Wrote as much as server accepted. */
+                  return -2;
+                if (count == GNUTLS_E_INTERRUPTED)
+                  /* Interrupted, try write again. */
+                  continue;
+                if (count == GNUTLS_E_REHANDSHAKE)
+                  /* \todo Rehandshake. */
+                  continue;
+                fprintf (stderr, "Failed to write to server.\n");
+                gnutls_perror (count);
+                return -1;
+              }
+            to_server_start += count;
+            tracef ("=> server  %i bytes\n", count);
+          }
+        tracef ("=> server  done\n");
+        to_server_start = to_server_end = 0;
+        /* Wrote everything. */
+        return 0;
+    }
+  return -3;
 }
 
 /**
@@ -2959,12 +3181,6 @@ serve_omp (gnutls_session_t* client_session,
   gboolean from_server_more = FALSE;
 
   tracef ("   Serving OMP.\n");
-
-  /* Initialise with the server. */
-  memcpy (to_server + to_server_end, "< OTP/1.0 >\n", 12);
-  tracef ("-> server: < OTP/1.0 >\n");
-  to_server_end += 12;
-  server_initialising = 1;
 
   /* Create the XML parser. */
   GMarkupParser xml_parser;
@@ -3032,11 +3248,7 @@ serve_omp (gnutls_session_t* client_session,
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
       // FIX shutdown if any eg read fails
-      /* Only read from the client when the server is initialised,
-       * otherwise processing the client input may result in output to the
-       * server before the server is initialised. */
-      if (server_initialising == 0
-          && from_client_more == FALSE
+      if (from_client_more == FALSE
           && from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
@@ -3047,7 +3259,13 @@ serve_omp (gnutls_session_t* client_session,
         {
           if (lastfds & FD_CLIENT_READ) tracef ("   client read off\n");
         }
-      if (from_server_more == FALSE && from_server_end < BUFFER_SIZE)
+      if (from_server_more == TRUE) abort ();
+      if (from_server_more == FALSE // FIX
+          && (server_init_state == SERVER_INIT_DONE
+              || server_init_state == SERVER_INIT_GOT_VERSION
+              || server_init_state == SERVER_INIT_SENT_USER
+              || server_init_state == SERVER_INIT_SENT_VERSION)
+          && from_server_end < BUFFER_SIZE)
         {
           FD_SET (server_socket, &readfds);
           fds |= FD_SERVER_READ;
@@ -3062,7 +3280,13 @@ serve_omp (gnutls_session_t* client_session,
           FD_SET (client_socket, &writefds);
           fds |= FD_CLIENT_WRITE;
         }
-      if (to_server_start < to_server_end)
+      if (((server_init_state == SERVER_INIT_TOP
+            || server_init_state == SERVER_INIT_DONE)
+           && to_server_start < to_server_end)
+          || server_init_state == SERVER_INIT_CONNECT_INTR
+          || server_init_state == SERVER_INIT_CONNECTED
+          || server_init_state == SERVER_INIT_GOT_PASSWORD
+          || server_init_state == SERVER_INIT_GOT_USER)
         {
           FD_SET (server_socket, &writefds);
           fds |= FD_SERVER_WRITE;
@@ -3109,6 +3333,7 @@ serve_omp (gnutls_session_t* client_session,
                     return -1;
                   case -2:       /* from_client buffer full. */
                     /* There may be more to read. */
+                    // FIX if client_input_stalled below, how return to this loop?
                     from_client_more = TRUE;
                     break;
                   case -3:       /* End of file. */
@@ -3181,13 +3406,18 @@ serve_omp (gnutls_session_t* client_session,
                     from_server_more = FALSE;
                     break;
                   case -1:       /* Error. */
-                    return -1;
+                    /* This may be because the server closed the connection
+                     * at the end of a command. */
+                    set_server_init_state (SERVER_INIT_TOP);
+                    break;
                   case -2:       /* from_server buffer full. */
                     /* There may be more to read. */
+                    // FIX if server_input_stalled below, how return to this loop?
                     from_server_more = TRUE;
                     break;
                   case -3:       /* End of file. */
-                    return 0;
+                    set_server_init_state (SERVER_INIT_TOP);
+                    break;
                   default:       /* Programming error. */
                     assert (0);
                 }
@@ -3211,7 +3441,7 @@ serve_omp (gnutls_session_t* client_session,
                 }
 #endif /* TRACE || LOG */
 
-              int ret =  process_omp_server_input ();
+              int ret = process_omp_server_input ();
               if (ret == 0)
                 /* Processed all input. */
                 server_input_stalled = FALSE;
@@ -3238,13 +3468,17 @@ serve_omp (gnutls_session_t* client_session,
         {
           /* Write as much as possible to the server. */
 
-          switch (write_to_server (server_session))
+          switch (write_to_server (server_socket, server_session))
             {
               case  0:      /* Wrote everything in to_server. */
                 break;
               case -1:      /* Error. */
+                /* FIX This may be because the server closed the connection
+                 * at the end of a command? */
                 return -1;
               case -2:      /* Wrote as much as server was willing to accept. */
+                break;
+              case -3:      /* Did an initialisation step. */
                 break;
               default:      /* Programming error. */
                 assert (0);
@@ -3303,7 +3537,7 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the server input, in case writing to the server
            * has freed some space in to_server. */
 
-          int ret =  process_omp_server_input ();
+          int ret = process_omp_server_input ();
           if (ret == 0)
             /* Processed all input. */
             server_input_stalled = FALSE;
@@ -3429,7 +3663,6 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 int
 serve_client (int client_socket)
 {
-  int ret;
   int server_socket;
 
   /* Make the server socket. */
@@ -3477,36 +3710,6 @@ serve_client (int client_socket)
                               server_credentials))
     {
       fprintf (stderr, "Failed to set server credentials.\n");
-      goto server_fail;
-    }
-
-  /* Connect to the server. */
-  if (connect (server_socket,
-               (struct sockaddr *) &server_address,
-               sizeof (server_address))
-      == -1)
-    {
-      perror ("Failed to connect to server");
-      goto server_fail;
-    }
-  tracef ("   Connected to server on socket %i.\n", server_socket);
-
-  /* Complete setup of server session. */
-
-  gnutls_transport_set_ptr (server_session,
-                            (gnutls_transport_ptr_t) server_socket);
-
-  while (1)
-    {
-      ret = gnutls_handshake (server_session);
-      if (ret >= 0)
-        break;
-      if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
-        continue;
-      fprintf (stderr, "Failed to shake hands with server.\n");
-      gnutls_perror (ret);
-      if (shutdown (server_socket, SHUT_RDWR) == -1)
-        perror ("Failed to shutdown server socket");
       goto server_fail;
     }
 

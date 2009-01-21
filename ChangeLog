@@ -1,3 +1,36 @@
+2009-01-20  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Do server connection and initialisation lazily, when the first command
+	is written to the server.  Start OMP STATUS TASK_ID handling.  Add OTP
+	BYE handling.  Ensure that grow_description allocates enough memory.
+
+	* src/ovas-mngr-comm.c: (connect_to_server): New function.
+
+	* src/ovas-mngr-comm.h: Match style guide.
+	(connect_to_server): New function.
+
+	* src/openvasmd.c: (server_initialising): Remove.
+	(client_state_t): Add CLIENT_STATUS_TASK_ID.
+	(server_state_t): Add SERVER_BYE.
+	(server_init_state_t): New type.
+	(server_init_state, server_init_offset): New variables.
+	(set_server_init_state, write_string_to_server): New functions.
+	(start_task): Neaten formatting.
+	(append_to_task_identifier): Correct doc return.
+	(grow_description): Add minimum increment argument.
+	(add_task_description_line): Pass grow_description minimum increment.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Use NULL instead of 0.  Start XML STATUS TASK_ID
+	handling.
+	(omp_xml_handle_error): Describe error in message.
+	(process_omp_server_input): Moving writing of server initialisation
+	messages to write_to_server.  Add OTP BYE handling.
+	(write_to_server): Add server connecting and sending of initialisation
+	messages (moved here from process_omp_server_input and serve_client).
+	(process_omp): Account for new initialisation mechanism.
+	(serve_client): Move server connecting to write_to_server (via new
+	function connect_to_server).
+
 2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* doc/Doxyfile (INPUT): Add string.c and tracef.h.

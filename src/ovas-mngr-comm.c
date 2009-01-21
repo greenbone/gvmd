@@ -39,7 +39,13 @@
  */
 #define TRACE 1
 
+#include <errno.h>
+#include <gnutls/gnutls.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+
 #include "tracef.h"
 
 /**
@@ -67,7 +73,8 @@ int to_server_end = 0;
  *
  * @return 0 for success, for any other values a failure happened.
  */
-int send_to_server (char * msg)
+int
+send_to_server (char * msg)
 {
   if (BUFFER_SIZE - to_server_end < strlen (msg))
     return 1;
@@ -75,6 +82,79 @@ int send_to_server (char * msg)
   memcpy (to_server + to_server_end, msg, strlen (msg));
   tracef ("-> server: %s\n", msg);
   to_server_end += strlen (msg);
+
+  return 0;
+}
+
+/**
+ * @brief Connect to the server.
+ *
+ * @param[in]  server_socket   Socket to connect to server.
+ * @param[in]  server_address  Server address.
+ * @param[in]  server_session  Session to connect to server.
+ * @param[in]  interrupted     0 if first connect attempt, else retrying after
+ *                             an interrupted connect.
+ *
+ * @return 0 on success, -1 on error, -2 on connect interrupt.
+ */
+int
+connect_to_server (int server_socket,
+                   struct sockaddr_in* server_address,
+                   gnutls_session_t* server_session,
+                   int interrupted)
+{
+  int ret;
+  socklen_t ret_len = sizeof (ret);
+  if (interrupted)
+    {
+      if (getsockopt (server_socket, SOL_SOCKET, SO_ERROR, &ret, &ret_len)
+          == -1)
+        {
+          perror ("Failed to get socket option");
+          return -1;
+        }
+      if (ret_len != sizeof (ret))
+        {
+          fprintf (stderr, "Weird option length from getsockopt: %i.\n",
+                   ret_len);
+          return -1;
+        }
+      if (ret)
+        {
+          if (errno == EINPROGRESS) return -2;
+          perror ("Failed to connect to server");
+          return -1;
+        }
+    }
+  else if (connect (server_socket,
+                    (struct sockaddr *) server_address,
+                    sizeof (struct sockaddr_in))
+           == -1)
+    {
+      if (errno == EINPROGRESS) return -2;
+      perror ("Failed to connect to server");
+      return -1;
+    }
+  tracef ("   Connected to server on socket %i.\n", server_socket);
+
+  /* Complete setup of server session. */
+
+  gnutls_transport_set_ptr (*server_session,
+                            (gnutls_transport_ptr_t) server_socket);
+
+  while (1)
+    {
+      int ret = gnutls_handshake (*server_session);
+      if (ret >= 0)
+        break;
+      if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
+        continue;
+      fprintf (stderr, "Failed to shake hands with server.\n");
+      gnutls_perror (ret);
+      if (shutdown (server_socket, SHUT_RDWR) == -1)
+        perror ("Failed to shutdown server socket");
+      return -1;
+    }
 
   return 0;
 }

@@ -26,15 +26,20 @@
 #ifndef OPENVAS_MANGER_OVAS_MNGR_COMM_H
 #define OPENVAS_MANGER_OVAS_MNGR_COMM_H
 
-/** @file ovas-mngr-comm.h
- *  \brief Protos for communication between openvas-manger and openvas-server
+/**
+ * @file ovas-mngr-comm.h
+ * @brief Protos for communication between openvas-manager and openvas-server.
  *
- *  This file contains the protos for \ref ovas-mngr-comm.c
+ * This file contains the protos for \ref ovas-mngr-comm.c
  */
 
 extern char to_server[];
 extern int to_server_end;
 
-int send_to_server(char *);
+int
+send_to_server (char *);
+
+int
+connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, int);
 
 #endif
