@@ -1,3 +1,7 @@
+2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/tests/common.c: Match comments to style guide.
+
 2009-01-20  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Do server connection and initialisation lazily, when the first command

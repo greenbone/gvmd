@@ -23,16 +23,24 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/** Manager (openvasmd) port. */
+/**
+ * @brief Manager (openvasmd) port.
+ */
 #define OPENVASMD_PORT 1242
 
-/** Manager (openvasmd) address. */
+/**
+ * @brief Manager (openvasmd) address.
+ */
 #define OPENVASMD_ADDRESS "127.0.0.1"
 
-/** Size of the buffer for reading from the manager. */
+/**
+ * @brief Size of the buffer for reading from the manager.
+ */
 #define BUFFER_SIZE 2048
 
-/** Trace flag. */
+/**
+ * @brief Trace flag.
+ */
 #define TRACE 1
 
 #include <arpa/inet.h>
@@ -54,12 +62,13 @@ struct sockaddr_in address;
 
 /* Manager communication. */
 
-/** Connect to the manager.
-  *
-  * @param[in]  session  Pointer to GNUTLS session.
-  *
-  * @return 0 on success, -1 on error.
-  */
+/**
+ * @brief Connect to the manager.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ *
+ * @return 0 on success, -1 on error.
+ */
 int
 connect_to_manager (gnutls_session_t * session)
 {
@@ -189,13 +198,14 @@ connect_to_manager (gnutls_session_t * session)
   return -1;
 }
 
-/** Send a string to the manager.
-  *
-  * @param[in]  session  Pointer to GNUTLS session.
-  * @param[in]  string   String to send.
-  *
-  * @return 0 on success, -1 on error.
-  */
+/**
+ * @brief Send a string to the manager.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  string   String to send.
+ *
+ * @return 0 on success, -1 on error.
+ */
 int
 send_to_manager (gnutls_session_t* session, const char* string)
 {
@@ -229,15 +239,16 @@ send_to_manager (gnutls_session_t* session, const char* string)
 
 /* Reading the XML. */
 
-/** Handle the start of an OMP XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  element_name      XML element name.
-  * @param[in]  attribute_names   XML attribute name.
-  * @param[in]  attribute_values  XML attribute values.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle the start of an OMP XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  element_name      XML element name.
+ * @param[in]  attribute_names   XML attribute name.
+ * @param[in]  attribute_values  XML attribute values.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 handle_start_element (GMarkupParseContext* context,
                       const gchar *element_name,
@@ -249,13 +260,14 @@ handle_start_element (GMarkupParseContext* context,
   tracef ("handle_start_element %s\n", element_name);
 }
 
-/** Handle the end of an XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  element_name      XML element name.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle the end of an XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  element_name      XML element name.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 handle_end_element (GMarkupParseContext* context,
                     const gchar *element_name,
@@ -266,14 +278,15 @@ handle_end_element (GMarkupParseContext* context,
   *((const char**)user_data) = g_strdup (element_name);
 }
 
-/** Handle additional text of an XML element.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  text              The text.
-  * @param[in]  text_len          Length of the text.
-  * @param[in]  user_data         Dummy parameter.
-  * @param[in]  error             Error parameter.
-  */
+/**
+ * @brief Handle additional text of an XML element.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  text              The text.
+ * @param[in]  text_len          Length of the text.
+ * @param[in]  user_data         Dummy parameter.
+ * @param[in]  error             Error parameter.
+ */
 void
 handle_text (GMarkupParseContext* context,
              const gchar *text,
@@ -284,12 +297,13 @@ handle_text (GMarkupParseContext* context,
   tracef ("handle_text\n");
 }
 
-/** Handle an OMP XML parsing error.
-  *
-  * @param[in]  context           Parser context.
-  * @param[in]  error             The error.
-  * @param[in]  user_data         Dummy parameter.
-  */
+/**
+ * @brief Handle an OMP XML parsing error.
+ *
+ * @param[in]  context           Parser context.
+ * @param[in]  error             The error.
+ * @param[in]  user_data         Dummy parameter.
+ */
 void
 handle_error (GMarkupParseContext* context,
               GError *error,
@@ -299,21 +313,28 @@ handle_error (GMarkupParseContext* context,
   tracef ("Error: %s\n", error->message);
 }
 
-/** Buffer for reading from the manager. */
+/**
+ * @brief Buffer for reading from the manager.
+ */
 char buffer_start[BUFFER_SIZE];
 
-/** Current position in the manager reading buffer. */
+/**
+ * @brief Current position in the manager reading buffer.
+ */
 char* buffer_point = buffer_start;
 
-/** End of the manager reading buffer. */
+/**
+ * @brief End of the manager reading buffer.
+ */
 char* buffer_end = buffer_start + BUFFER_SIZE;
 
-/** Read an XML entity from the manager.
-  *
-  * @param[in]  session  Pointer to GNUTLS session.
-  *
-  * @return Pointer to name of entity on success, NULL on error.
-  */
+/**
+ * @brief Read an XML entity from the manager.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ *
+ * @return Pointer to name of entity on success, NULL on error.
+ */
 char*
 read_entity (gnutls_session_t* session)
 {
