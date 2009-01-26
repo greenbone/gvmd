@@ -1,5 +1,23 @@
 2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Improve entity reading and comparison.
+
+	* src/tests/common.h: (add_entity, free_entity, print_entity,
+	print_entities, compare_entities): New functions.
+	(entities_t, entity_t): New types.
+
+	* src/tests/common.c: (add_entity, compare_entities, foreach_print_entity,
+	free_entity, make_entity, print_entity, print_entities): New functions.
+	(context_data_t): New type.
+	(handle_start_element, handle_end_element handle_text, read_entity): Read
+	the entire element.
+
+	* src/tests/omp_modify_task_0.c, src/tests/omp_new_task_0.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_status_0.c,
+	src/tests/omp_version_0.c: Use new entity reading and comparison.
+
+2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/tests/common.c: Match comments to style guide.
 
 2009-01-20  Matthew Mundell <matt@mundell.ukfsn.org>

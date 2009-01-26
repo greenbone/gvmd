@@ -23,7 +23,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define TRACE 1
+#define TRACE 0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,19 +109,13 @@ main ()
 
   /* Create a task. */
 
-  if (send_to_manager (&session, new_task_request) == -1)
-    {
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
-      goto fail;
-    }
+  if (send_to_manager (&session, new_task_request) == -1) goto fail;
 
-  char* entity = read_entity (&session);
-  tracef ("new task entity: %s\n", entity);
+  entity_t entity = NULL;
+  read_entity (&session, &entity);
+  // FIX assume ok
   // FIX get id, assume 0 for now
-
-  if (strcmp (entity, "new_task_response"))
-    goto fail;
+  free_entity (entity);
 
   /* Start the task. */
 
@@ -132,20 +126,27 @@ main ()
 
   /* Read the response. */
 
-  entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  entity = NULL;
+  read_entity (&session, &entity);
 
   /* Compare. */
 
-  if (strcmp (entity, "start_task_response") == 0)
+  entity_t expected = add_entity (NULL, "start_task_response", NULL);
+  add_entity (&expected->entities, "status", "201");
+
+  if (compare_entities (entity, expected))
     {
+      free_entity (expected);
+      free_entity (entity);
+ fail:
       gnutls_bye (session, GNUTLS_SHUT_RDWR);
       close (socket);
-      return EXIT_SUCCESS;
+      return EXIT_FAILURE;
     }
 
- fail:
+  free_entity (expected);
+  free_entity (entity);
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
   close (socket);
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }

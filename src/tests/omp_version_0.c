@@ -36,7 +36,7 @@
 int
 main ()
 {
-  int socket;
+  int socket, ret;
   gnutls_session_t session;
 
   socket = connect_to_manager (&session);
@@ -53,18 +53,26 @@ main ()
 
   /* Read the response. */
 
-  char* entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  entity_t entity = NULL;
+  read_entity (&session, &entity);
+
+  /* Compare. */
+
+  entity_t expected = add_entity (NULL, "omp_version_response", NULL);
+  add_entity (&expected->entities, "status", "200");
+  add_entity (&expected->entities, "version", "1.0");
+
+  if (compare_entities (entity, expected))
+    ret = EXIT_FAILURE;
+  else
+    ret = EXIT_SUCCESS;
 
   /* Cleanup. */
 
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
   close (socket);
+  free_entity (entity);
+  free_entity (expected);
 
-  /* Compare. */
-
-  if (strcmp (entity, "omp_version_response") == 0)
-    return EXIT_SUCCESS;
-
-  return EXIT_FAILURE;
+  return ret;
 }

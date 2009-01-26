@@ -23,13 +23,44 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <glib.h>
 #include <gnutls/gnutls.h>
+#include <stdio.h>
+
+/* Communication. */
 
 int
 connect_to_manager (gnutls_session_t *);
 
 int
-send_to_manager (gnutls_session_t* session, const char* string);
+send_to_manager (gnutls_session_t*, const char*);
 
-char*
-read_entity (gnutls_session_t*);
+/* XML */
+
+typedef GSList* entities_t;
+
+typedef struct
+{
+  char* name;
+  char* text;
+  //void* attributes;
+  entities_t entities;
+} * entity_t;
+
+entity_t
+add_entity (entities_t*, const char*, const char*);
+
+int
+compare_entities (entity_t, entity_t);
+
+void
+free_entity (entity_t);
+
+void
+print_entity (FILE*, entity_t);
+
+void
+print_entities (FILE*, entities_t);
+
+int
+read_entity (gnutls_session_t*, entity_t*);

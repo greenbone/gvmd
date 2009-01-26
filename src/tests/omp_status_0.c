@@ -109,19 +109,13 @@ main ()
 
   /* Create a task. */
 
-  if (send_to_manager (&session, new_task_request) == -1)
-    {
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
-      goto fail;
-    }
+  if (send_to_manager (&session, new_task_request) == -1) goto fail;
 
-  char* entity = read_entity (&session);
-  tracef ("new task entity: %s\n", entity);
+  entity_t entity = NULL;
+  read_entity (&session, &entity);
+  // FIX assume ok
   // FIX get id, assume 0 for now
-
-  if (strcmp (entity, "new_task_response"))
-    goto fail;
+  free_entity (entity);
 
   /* Start the task. */
 
@@ -130,29 +124,50 @@ main ()
       == -1)
     goto fail;
 
-  entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  entity = NULL;
+  read_entity (&session, &entity);
+  // FIX assume ok
+  free_entity (entity);
 
-  if (strcmp (entity, "start_task_response"))
-    goto fail;
-
-  /* Check the status. */
+  /* Request the status. */
 
   if (send_to_manager (&session, "<status/>") == -1)
     goto fail;
 
-  entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  /* Read the response. */
 
-  if (strcmp (entity, "status_response") == 0)
+  entity = NULL;
+  read_entity (&session, &entity);
+
+  /* Compare to expected response. */
+
+  entity_t expected = add_entity (NULL, "status_response", NULL);
+  add_entity (&expected->entities, "status", "200");
+  add_entity (&expected->entities, "task_count", "1");
+  entity_t task = add_entity (&expected->entities, "task", NULL);
+  add_entity (&task->entities, "task_id", "0");
+  add_entity (&task->entities, "identifier", "omp_start_task_0");
+  add_entity (&task->entities, "task_status", "Running");
+  entity_t messages = add_entity (&task->entities, "messages", "");
+  add_entity (&messages->entities, "hole", "");
+  add_entity (&messages->entities, "warning", "");
+  add_entity (&messages->entities, "info", "");
+  add_entity (&messages->entities, "log", "");
+  add_entity (&messages->entities, "debug", "");
+
+  if (compare_entities (entity, expected))
     {
+      free_entity (entity);
+      free_entity (expected);
+ fail:
       gnutls_bye (session, GNUTLS_SHUT_RDWR);
       close (socket);
-      return EXIT_SUCCESS;
+      return EXIT_FAILURE;
     }
 
- fail:
+  free_entity (entity);
+  free_entity (expected);
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
   close (socket);
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }

@@ -36,13 +36,13 @@
 int
 main ()
 {
-  int socket;
+  int socket, ret;
   gnutls_session_t session;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* Send a new_task request. */
+  /* Send request. */
 
   if (send_to_manager (&session, "<new_task><task_file>base64 text</task_file><identifier>Scan Webserver</identifier><comment>Hourly scan of the webserver</comment></new_task>")
       == -1)
@@ -54,18 +54,26 @@ main ()
 
   /* Read the response. */
 
-  char* entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  entity_t entity = NULL;
+  read_entity (&session, &entity);
+
+  /* Compare. */
+
+  entity_t expected = add_entity (NULL, "new_task_response", NULL);
+  add_entity (&expected->entities, "status", "201");
+  add_entity (&expected->entities, "task_id", "0");
+
+  if (compare_entities (entity, expected))
+    ret = EXIT_FAILURE;
+  else
+    ret = EXIT_SUCCESS;
 
   /* Cleanup. */
 
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
   close (socket);
+  free_entity (entity);
+  free_entity (expected);
 
-  /* Compare. */
-
-  if (strcmp (entity, "new_task_response") == 0)
-    return EXIT_SUCCESS;
-
-  return EXIT_FAILURE;
+  return ret;
 }

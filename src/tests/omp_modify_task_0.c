@@ -36,7 +36,7 @@
 int
 main ()
 {
-  int socket;
+  int socket, ret;
   gnutls_session_t session;
 
   socket = connect_to_manager (&session);
@@ -52,12 +52,11 @@ main ()
       return EXIT_FAILURE;
     }
 
-  char* entity = read_entity (&session);
-  tracef ("new task entity: %s\n", entity);
+  entity_t entity = NULL;
+  read_entity (&session, &entity);
+  // FIX assume ok
   // FIX get id, assume 0 for now
-
-  if (strcmp (entity, "new_task_response"))
-    return EXIT_FAILURE;
+  free_entity (entity);
 
   /* Send a modify_task request. */
 
@@ -71,18 +70,25 @@ main ()
 
   /* Read the response. */
 
-  entity = read_entity (&session);
-  tracef ("entity: %s\n", entity);
+  entity = NULL;
+  read_entity (&session, &entity);
+
+  /* Compare. */
+
+  entity_t expected = add_entity (NULL, "modify_task_response", NULL);
+  add_entity (&expected->entities, "status", "201");
+
+  if (compare_entities (entity, expected))
+    ret = EXIT_FAILURE;
+  else
+    ret = EXIT_SUCCESS;
 
   /* Cleanup. */
 
   gnutls_bye (session, GNUTLS_SHUT_RDWR);
   close (socket);
+  free_entity (entity);
+  free_entity (expected);
 
-  /* Compare. */
-
-  if (strcmp (entity, "modify_task_response") == 0)
-    return EXIT_SUCCESS;
-
-  return EXIT_FAILURE;
+  return ret;
 }
