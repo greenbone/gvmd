@@ -2071,18 +2071,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               {
                 if (index->name)
                   {
-                    gchar* line = g_strdup_printf ("<task>\
-                                                      <task_id>%u</task_id>\
-                                                      <identifier>%s</identifier>\
-                                                      <task_status>%s</task_status>\
-                                                      <messages>\
-                                                        <hole></hole>\
-                                                        <warning></warning>\
-                                                        <info></info>\
-                                                        <log></log>\
-                                                        <debug></debug>\
-                                                      </messages>\
-                                                    </task>",
+                    gchar* line = g_strdup_printf ("<task><task_id>%u</task_id><identifier>%s</identifier><task_status>%s</task_status><messages><hole></hole><warning></warning><info></info><log></log><debug></debug></messages></task>",
                                                    index->id,
                                                    index->name,
                                                    index->running ? "Running" : "New");

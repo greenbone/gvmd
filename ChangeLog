@@ -1,5 +1,10 @@
 2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/openvasmd.c: (omp_xml_handle_end_element): Flush whitespace from
+	task response XML.
+
+2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Improve entity reading and comparison.
 
 	* src/tests/common.h: (add_entity, free_entity, print_entity,
