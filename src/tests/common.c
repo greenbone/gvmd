@@ -45,6 +45,7 @@
 
 #include <assert.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <glib.h>             /* For XML parsing. */
 #include <netdb.h>
 #include <netinet/in.h>
@@ -183,7 +184,7 @@ connect_to_manager (gnutls_session_t * session)
         perror ("Failed to shutdown manager socket");
       goto manager_fail;
     }
-  tracef ("   Handshook with server.\n");
+  tracef ("   Shook hands with manager.\n");
 
   return manager_socket;
 
@@ -197,6 +198,25 @@ connect_to_manager (gnutls_session_t * session)
   close (manager_socket);
 
   return -1;
+}
+
+/**
+ * @brief Connect to the manager.
+ *
+ * @param[in]  socket   Socket connected to manager (from \ref connect_to_manager).
+ * @param[in]  session  GNUTLS session with manager.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+close_manager_connection (int socket, gnutls_session_t session)
+{
+  /* Turn off blocking. */
+  if (fcntl (socket, F_SETFL, O_NONBLOCK) == -1) return -1;
+
+  gnutls_bye (session, GNUTLS_SHUT_RDWR);
+  close (socket);
+  return 0;
 }
 
 /**
@@ -222,8 +242,11 @@ send_to_manager (gnutls_session_t* session, const char* string)
             /* Interrupted, try write again. */
             continue;
           if (count == GNUTLS_E_REHANDSHAKE)
-            /* \todo Rehandshake. */
-            continue;
+            {
+              /* \todo Rehandshake. */
+              tracef ("   send_to_manager rehandshake\n");
+              continue;
+            }
           fprintf (stderr, "Failed to write to manager.\n");
           gnutls_perror (count);
           return -1;
@@ -554,6 +577,7 @@ print_entity (FILE* stream, entity_t entity)
   fprintf (stream, "%s", entity->text);
   g_slist_foreach (entity->entities, foreach_print_entity, stream);
   fprintf (stream, "</%s>", entity->name);
+  fflush (stream);
 }
 
 /**

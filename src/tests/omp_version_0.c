@@ -46,8 +46,7 @@ main ()
 
   if (send_to_manager (&session, "<omp_version/>\n") == -1)
     {
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
+      close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
@@ -69,8 +68,7 @@ main ()
 
   /* Cleanup. */
 
-  gnutls_bye (session, GNUTLS_SHUT_RDWR);
-  close (socket);
+  close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);
 

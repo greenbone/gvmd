@@ -33,6 +33,9 @@ int
 connect_to_manager (gnutls_session_t *);
 
 int
+close_manager_connection (int, gnutls_session_t);
+
+int
 send_to_manager (gnutls_session_t*, const char*);
 
 /* XML */

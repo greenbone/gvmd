@@ -1,5 +1,20 @@
 2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/common.h (close_manager_connection): New function.
+
+	* src/tests/common.c (close_manager_connection): New function.
+	(send_to_manager): Add a trace message.
+	(print_entity): Flush stream afterwards.
+
+	* src/tests/omp_modify_task_0.c, src/tests/omp_new_task_0.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_version_0.c:
+	Use close_manager_connection.
+
+	* src/tests/omp_status_0.c: Add expected problem counts.
+	Use close_manager_connection.
+
+2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add OTP problem report handling (DEBUG, HOLE, INFO, NOTE).  Fix
 	errors in append_task_open_port and omp_xml_handle_end_element.
 	Update the OMP read loop to only try fill the read buffers once per

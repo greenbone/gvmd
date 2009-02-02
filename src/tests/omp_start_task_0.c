@@ -139,14 +139,12 @@ main ()
       free_entity (expected);
       free_entity (entity);
  fail:
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
+      close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   free_entity (expected);
   free_entity (entity);
-  gnutls_bye (session, GNUTLS_SHUT_RDWR);
-  close (socket);
+  close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

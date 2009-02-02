@@ -149,25 +149,23 @@ main ()
   add_entity (&task->entities, "identifier", "omp_start_task_0");
   add_entity (&task->entities, "task_status", "Running");
   entity_t messages = add_entity (&task->entities, "messages", "");
-  add_entity (&messages->entities, "hole", "");
-  add_entity (&messages->entities, "warning", "");
-  add_entity (&messages->entities, "info", "");
-  add_entity (&messages->entities, "log", "");
-  add_entity (&messages->entities, "debug", "");
+  add_entity (&messages->entities, "debug", "0");
+  add_entity (&messages->entities, "hole", "0");
+  add_entity (&messages->entities, "info", "0");
+  add_entity (&messages->entities, "log", "0");
+  add_entity (&messages->entities, "warning", "0");
 
   if (compare_entities (entity, expected))
     {
       free_entity (entity);
       free_entity (expected);
  fail:
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
+      close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   free_entity (entity);
   free_entity (expected);
-  gnutls_bye (session, GNUTLS_SHUT_RDWR);
-  close (socket);
+  close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

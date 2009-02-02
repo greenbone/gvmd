@@ -47,8 +47,7 @@ main ()
   if (send_to_manager (&session, "<new_task><task_file>base64 text</task_file><identifier>Scan Webserver</identifier><comment>Hourly scan of the webserver</comment></new_task>")
       == -1)
     {
-      gnutls_bye (session, GNUTLS_SHUT_RDWR);
-      close (socket);
+      close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
@@ -70,8 +69,7 @@ main ()
 
   /* Cleanup. */
 
-  gnutls_bye (session, GNUTLS_SHUT_RDWR);
-  close (socket);
+  close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);
 
