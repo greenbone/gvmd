@@ -414,6 +414,26 @@ typedef enum
 {
   SERVER_BYE,
   SERVER_DONE,
+  SERVER_DEBUG_DESCRIPTION,
+  SERVER_DEBUG_HOST,
+  SERVER_DEBUG_NUMBER,
+  SERVER_DEBUG_OID,
+  SERVER_HOLE_DESCRIPTION,
+  SERVER_HOLE_HOST,
+  SERVER_HOLE_NUMBER,
+  SERVER_HOLE_OID,
+  SERVER_INFO_DESCRIPTION,
+  SERVER_INFO_HOST,
+  SERVER_INFO_NUMBER,
+  SERVER_INFO_OID,
+  SERVER_LOG_DESCRIPTION,
+  SERVER_LOG_HOST,
+  SERVER_LOG_NUMBER,
+  SERVER_LOG_OID,
+  SERVER_NOTE_DESCRIPTION,
+  SERVER_NOTE_HOST,
+  SERVER_NOTE_NUMBER,
+  SERVER_NOTE_OID,
   SERVER_PLUGINS_MD5,
   SERVER_PLUGIN_DEPENDENCY_NAME,
   SERVER_PLUGIN_DEPENDENCY_DEPENDENCY,
@@ -707,11 +727,22 @@ typedef struct
   short running;              ///< Flag: 0 initially, 1 if running.
   char* start_time;           ///< Time the task last started.
   char* end_time;             ///< Time the task last ended.
+  // FIX rest per host?
   char* attack_state;         ///< Attack status.
   unsigned int current_port;  ///< Port currently under test.
   unsigned int max_port;      ///< Last port to test.
   GArray *open_ports;         ///< Open ports that the server has found.
   int open_ports_size;        ///< Number of open ports.
+  GPtrArray *debugs;          ///< Identified problems of class "debug".
+  int debugs_size;            ///< Number of debugs.
+  GPtrArray *holes;           ///< Identified problems of class "hole".
+  int holes_size;             ///< Number of holes.
+  GPtrArray *infos;           ///< Identified problems of class "info".
+  int infos_size;             ///< Number of infos.
+  GPtrArray *logs;            ///< Identified problems of class "log".
+  int logs_size;              ///< Number of logs.
+  GPtrArray *notes;           ///< Identified problems of class "note".
+  int notes_size;             ///< Number of notes.
 } task_t;
 
 /**
@@ -852,6 +883,31 @@ free_tasks ()
           if (index->start_time) free (index->start_time);
           if (index->end_time) free (index->end_time);
           if (index->open_ports) g_array_free (index->open_ports, TRUE);
+          if (index->debugs)
+            {
+              g_ptr_array_foreach (index->debugs, free_rule, NULL);
+              g_ptr_array_free (index->debugs, TRUE);
+            }
+          if (index->holes)
+            {
+              g_ptr_array_foreach (index->holes, free_rule, NULL);
+              g_ptr_array_free (index->holes, TRUE);
+            }
+          if (index->infos)
+            {
+              g_ptr_array_foreach (index->infos, free_rule, NULL);
+              g_ptr_array_free (index->infos, TRUE);
+            }
+          if (index->logs)
+            {
+              g_ptr_array_foreach (index->logs, free_rule, NULL);
+              g_ptr_array_free (index->logs, TRUE);
+            }
+          if (index->notes)
+            {
+              g_ptr_array_foreach (index->notes, free_rule, NULL);
+              g_ptr_array_free (index->notes, TRUE);
+            }
         }
       index++;
     }
@@ -893,6 +949,16 @@ make_task (char* name, unsigned int time, char* comment)
               index->description_size = 0;
               index->running = 0;
               index->open_ports = NULL;
+              index->debugs = g_ptr_array_new ();
+              index->debugs_size = 0;
+              index->holes = g_ptr_array_new ();
+              index->holes_size = 0;
+              index->infos = g_ptr_array_new ();
+              index->infos_size = 0;
+              index->logs = g_ptr_array_new ();
+              index->logs_size = 0;
+              index->notes = g_ptr_array_new ();
+              index->notes_size = 0;
               tracef ("   Made task %i at %p\n", index->id, index);
               num_tasks++;
               return index;
@@ -997,7 +1063,12 @@ start_task (task_t* task)
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
-  if (send_to_server ("plugin_set <|> ")) return -1;
+  if (send_to_server ("ntp_keep_communication_alive <|> yes\n")) return -1;
+  if (send_to_server ("ntp_client_accepts_notes <|> yes\n")) return -1;
+  //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
+  if (send_to_server ("plugin_set <|> \n")) return -1;
+  // FIX
+  if (send_to_server ("port_range <|> 21\n")) return -1;
 #if 0
   if (send_to_server (task_plugins (task))) return -1;
 #endif
@@ -1021,7 +1092,7 @@ start_task (task_t* task)
                       targets))
     return -1;
 #else
-  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n6\nchiles\n"))
+  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n3\ndik\n"))
     return -1;
 #endif
 
@@ -1101,7 +1172,7 @@ grow_description (task_t* task, int increment)
                     ? DESCRIPTION_INCREMENT : increment);
   char* new = realloc (task->description, new_size);
   if (new == NULL) return -1;
-  tracef ("  grew description to %i.\n", new_size);
+  tracef ("  grew description to %i (at %p).\n", new_size, new);
   task->description = new;
   task->description_size = new_size;
   return 0;
@@ -1109,8 +1180,6 @@ grow_description (task_t* task, int increment)
 
 /**
  * @brief Add a line to a task description.
- *
- * The line memory is used directly, and freed with the task.
  *
  * @param[in]  task         A pointer to the task.
  * @param[in]  line         The line.
@@ -1164,7 +1233,129 @@ append_task_open_port (task_t *task, unsigned int number, char* protocol)
     port.protocol = PORT_PROTOCOL_OTHER;
 
   g_array_append_val (task->open_ports, port);
-  task->open_ports++;
+  task->open_ports_size++;
+}
+
+
+/* Reports. */
+
+/**
+ * @brief The record of a report.
+ */
+typedef struct
+{
+  port_t port;          ///< The port.
+  char* description;    ///< Description of the report.
+  char* oid;            ///< NVT identifier.
+} report_t;
+
+/**
+ * @brief Current report during OTP SERVER report commands.
+ */
+report_t* current_report = NULL;
+
+/**
+ * @brief Make a report.
+ *
+ * @param[in]  port_number  Port number.
+ * @param[in]  protocol     Port protocol.
+ *
+ * @return A pointer to the new report.
+ */
+report_t*
+make_report (unsigned int number, const char* protocol)
+{
+  tracef ("   make_report %u %s\n", number, protocol);
+
+  report_t* report = g_malloc (sizeof (report_t));
+
+  report->port.number = number;
+  if (strncasecmp ("udp", protocol, 3) == 0)
+    report->port.protocol = PORT_PROTOCOL_UDP;
+  else if (strncasecmp ("tcp", protocol, 3) == 0)
+    report->port.protocol = PORT_PROTOCOL_TCP;
+  else
+    report->port.protocol = PORT_PROTOCOL_OTHER;
+
+  return report;
+}
+
+/**
+ * @brief Set the description of a report.
+ *
+ * @param[in]  report       Pointer to the report.
+ * @param[in]  description  Description.
+ */
+void
+set_report_description (report_t* report, char* description)
+{
+  if (report->description) free (report->description);
+  report->description = description;
+}
+
+/**
+ * @brief Append an debug report to a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  report       Report.
+ */
+void
+append_debug_report (task_t* task, report_t* report)
+{
+  g_ptr_array_add (task->debugs, (gpointer) report);
+  task->debugs_size++;
+}
+
+/**
+ * @brief Append a hole report to a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  report       Report.
+ */
+void
+append_hole_report (task_t* task, report_t* report)
+{
+  g_ptr_array_add (task->holes, (gpointer) report);
+  task->holes_size++;
+}
+
+/**
+ * @brief Append an info report to a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  report       Report.
+ */
+void
+append_info_report (task_t* task, report_t* report)
+{
+  g_ptr_array_add (task->infos, (gpointer) report);
+  task->infos_size++;
+}
+
+/**
+ * @brief Append an log report to a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  report       Report.
+ */
+void
+append_log_report (task_t* task, report_t* report)
+{
+  g_ptr_array_add (task->logs, (gpointer) report);
+  task->logs_size++;
+}
+
+/**
+ * @brief Append an note report to a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  report       Report.
+ */
+void
+append_note_report (task_t* task, report_t* report)
+{
+  g_ptr_array_add (task->notes, (gpointer) report);
+  task->notes_size++;
 }
 
 
@@ -1956,7 +2147,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   modify_task_parameter = NULL;
                   if (fail)
                     {
-                      free (modify_task_parameter);
+                      free (modify_task_value);
                       modify_task_value = NULL;
                       XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
                     }
@@ -2071,10 +2262,15 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               {
                 if (index->name)
                   {
-                    gchar* line = g_strdup_printf ("<task><task_id>%u</task_id><identifier>%s</identifier><task_status>%s</task_status><messages><hole></hole><warning></warning><info></info><log></log><debug></debug></messages></task>",
+                    gchar* line = g_strdup_printf ("<task><task_id>%u</task_id><identifier>%s</identifier><task_status>%s</task_status><messages><debug>%i</debug><hole>%i</hole><info>%i</info><log>%i</log><warning>%i</warning></messages></task>",
                                                    index->id,
                                                    index->name,
-                                                   index->running ? "Running" : "New");
+                                                   index->running ? "Running" : "New",
+                                                   index->debugs_size,
+                                                   index->holes_size,
+                                                   index->infos_size,
+                                                   index->logs_size,
+                                                   index->notes_size);
                     // FIX free line if RESPOND fails
                     XML_RESPOND (line);
                     g_free (line);
@@ -2529,6 +2725,308 @@ process_omp_server_input ()
                 /* Jump to the done check, as this loop only considers fields
                  * ending in <|>. */
                 goto server_done;
+              case SERVER_DEBUG_DESCRIPTION:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                    }
+                  set_server_state (SERVER_DEBUG_OID);
+                  break;
+                }
+              case SERVER_DEBUG_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (current_server_task)  HOST_START
+                  set_server_state (SERVER_DEBUG_NUMBER);
+                  break;
+                }
+              case SERVER_DEBUG_NUMBER:
+                {
+                  assert (current_report == NULL);
+
+                  // FIX field could be "general"
+                  int number;
+                  char *name = g_newa (char, strlen (field));
+                  char *protocol = g_newa (char, strlen (field));
+
+                  if (sscanf (field, "%s (%i/%[^)])",
+                              name, &number, protocol)
+                      != 3)
+                    {
+                      number = atoi (field);
+                      protocol[0] = '\0';
+                    }
+                  tracef ("   server got debug port, number: %i, protocol: %s\n",
+                          number, protocol);
+
+                  current_report = make_report (number, protocol);
+                  if (current_report == NULL) goto out_of_memory;
+
+                  set_server_state (SERVER_DEBUG_DESCRIPTION);
+                  break;
+                }
+              case SERVER_DEBUG_OID:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+
+                      append_debug_report (current_server_task, current_report);
+                      current_report = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                   * ending in <|>. */
+                  goto server_done;
+                }
+              case SERVER_HOLE_DESCRIPTION:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                    }
+                  set_server_state (SERVER_HOLE_OID);
+                  break;
+                }
+              case SERVER_HOLE_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (current_server_task)  HOST_START
+                  set_server_state (SERVER_HOLE_NUMBER);
+                  break;
+                }
+              case SERVER_HOLE_NUMBER:
+                {
+                  assert (current_report == NULL);
+
+                  // FIX field could be "general"
+                  int number;
+                  char *name = g_newa (char, strlen (field));
+                  char *protocol = g_newa (char, strlen (field));
+
+                  if (sscanf (field, "%s (%i/%[^)])",
+                              name, &number, protocol)
+                      != 3)
+                    {
+                      number = atoi (field);
+                      protocol[0] = '\0';
+                    }
+                  tracef ("   server got hole port, number: %i, protocol: %s\n",
+                          number, protocol);
+
+                  current_report = make_report (number, protocol);
+                  if (current_report == NULL) goto out_of_memory;
+
+                  set_server_state (SERVER_HOLE_DESCRIPTION);
+                  break;
+                }
+              case SERVER_HOLE_OID:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+
+                      append_hole_report (current_server_task, current_report);
+                      current_report = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                   * ending in <|>. */
+                  goto server_done;
+                }
+              case SERVER_INFO_DESCRIPTION:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                    }
+                  set_server_state (SERVER_INFO_OID);
+                  break;
+                }
+              case SERVER_INFO_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (current_server_task)  HOST_START
+                  set_server_state (SERVER_INFO_NUMBER);
+                  break;
+                }
+              case SERVER_INFO_NUMBER:
+                {
+                  assert (current_report == NULL);
+
+                  // FIX field could be "general"
+                  int number;
+                  char *name = g_newa (char, strlen (field));
+                  char *protocol = g_newa (char, strlen (field));
+
+                  if (sscanf (field, "%s (%i/%[^)])",
+                              name, &number, protocol)
+                      != 3)
+                    {
+                      number = atoi (field);
+                      protocol[0] = '\0';
+                    }
+                  tracef ("   server got info port, number: %i, protocol: %s\n",
+                          number, protocol);
+
+                  current_report = make_report (number, protocol);
+                  if (current_report == NULL) goto out_of_memory;
+
+                  set_server_state (SERVER_INFO_DESCRIPTION);
+                  break;
+                }
+              case SERVER_INFO_OID:
+                {
+                  if (current_report && current_server_task)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                      append_info_report (current_server_task, current_report);
+                      current_report = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                   * ending in <|>. */
+                  goto server_done;
+                }
+              case SERVER_LOG_DESCRIPTION:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                    }
+                  set_server_state (SERVER_LOG_OID);
+                  break;
+                }
+              case SERVER_LOG_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (current_server_task)  HOST_START
+                  set_server_state (SERVER_LOG_NUMBER);
+                  break;
+                }
+              case SERVER_LOG_NUMBER:
+                {
+                  assert (current_report == NULL);
+
+                  // FIX field could be "general"
+                  int number;
+                  char *name = g_newa (char, strlen (field));
+                  char *protocol = g_newa (char, strlen (field));
+
+                  if (sscanf (field, "%s (%i/%[^)])",
+                              name, &number, protocol)
+                      != 3)
+                    {
+                      number = atoi (field);
+                      protocol[0] = '\0';
+                    }
+                  tracef ("   server got log port, number: %i, protocol: %s\n",
+                          number, protocol);
+
+                  current_report = make_report (number, protocol);
+                  if (current_report == NULL) goto out_of_memory;
+
+                  set_server_state (SERVER_LOG_DESCRIPTION);
+                  break;
+                }
+              case SERVER_LOG_OID:
+                {
+                  if (current_report && current_server_task)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                      append_log_report (current_server_task, current_report);
+                      current_report = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                   * ending in <|>. */
+                  goto server_done;
+                }
+              case SERVER_NOTE_DESCRIPTION:
+                {
+                  if (current_report)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                    }
+                  set_server_state (SERVER_NOTE_OID);
+                  break;
+                }
+              case SERVER_NOTE_HOST:
+                {
+                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (current_server_task)  HOST_START
+                  set_server_state (SERVER_NOTE_NUMBER);
+                  break;
+                }
+              case SERVER_NOTE_NUMBER:
+                {
+                  assert (current_report == NULL);
+
+                  // FIX field could be "general"
+                  int number;
+                  char *name = g_newa (char, strlen (field));
+                  char *protocol = g_newa (char, strlen (field));
+
+                  if (sscanf (field, "%s (%i/%[^)])",
+                              name, &number, protocol)
+                      != 3)
+                    {
+                      number = atoi (field);
+                      protocol[0] = '\0';
+                    }
+                  tracef ("   server got note port, number: %i, protocol: %s\n",
+                          number, protocol);
+
+                  current_report = make_report (number, protocol);
+                  if (current_report == NULL) goto out_of_memory;
+
+                  set_server_state (SERVER_NOTE_DESCRIPTION);
+                  break;
+                }
+              case SERVER_NOTE_OID:
+                {
+                  if (current_report && current_server_task)
+                    {
+                      // FIX \n for newline in description
+                      char* description = strdup (field);
+                      if (description == NULL) goto out_of_memory;
+                      set_report_description (current_report, description);
+                      append_note_report (current_server_task, current_report);
+                      current_report = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  /* Jump to the done check, as this loop only considers fields
+                   * ending in <|>. */
+                  goto server_done;
+                }
               case SERVER_PLUGIN_DEPENDENCY_NAME:
                 {
                   if (strlen (field) == 0)
@@ -2629,6 +3127,16 @@ process_omp_server_input ()
               case SERVER_SERVER:
                 if (strncasecmp ("BYE", field, 3) == 0)
                   set_server_state (SERVER_BYE);
+                else if (strncasecmp ("DEBUG", field, 5) == 0)
+                  set_server_state (SERVER_HOLE_HOST);
+                else if (strncasecmp ("HOLE", field, 4) == 0)
+                  set_server_state (SERVER_HOLE_HOST);
+                else if (strncasecmp ("INFO", field, 4) == 0)
+                  set_server_state (SERVER_INFO_HOST);
+                else if (strncasecmp ("LOG", field, 3) == 0)
+                  set_server_state (SERVER_LOG_HOST);
+                else if (strncasecmp ("NOTE", field, 4) == 0)
+                  set_server_state (SERVER_NOTE_HOST);
                 else if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
                   set_server_state (SERVER_PLUGINS_MD5);
                 else if (strncasecmp ("PORT", field, 4) == 0)
@@ -3164,10 +3672,6 @@ serve_omp (gnutls_session_t* client_session,
   /* True if processing of the server input is waiting for space in the
    * to_client buffer. */
   gboolean server_input_stalled = FALSE;
-  /* True if there is more to read from the client. */
-  gboolean from_client_more = FALSE;
-  /* True if there is more to read from the server. */
-  gboolean from_server_more = FALSE;
 
   tracef ("   Serving OMP.\n");
 
@@ -3237,8 +3741,7 @@ serve_omp (gnutls_session_t* client_session,
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
       // FIX shutdown if any eg read fails
-      if (from_client_more == FALSE
-          && from_client_end < BUFFER_SIZE)
+      if (from_client_end < BUFFER_SIZE)
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
@@ -3248,9 +3751,7 @@ serve_omp (gnutls_session_t* client_session,
         {
           if (lastfds & FD_CLIENT_READ) tracef ("   client read off\n");
         }
-      if (from_server_more == TRUE) abort ();
-      if (from_server_more == FALSE // FIX
-          && (server_init_state == SERVER_INIT_DONE
+      if ((server_init_state == SERVER_INIT_DONE
               || server_init_state == SERVER_INIT_GOT_VERSION
               || server_init_state == SERVER_INIT_SENT_USER
               || server_init_state == SERVER_INIT_SENT_VERSION)
@@ -3311,73 +3812,67 @@ serve_omp (gnutls_session_t* client_session,
           int initial_start = from_client_end;
 #endif
 
-          do
+          switch (read_from_client (client_session, client_socket))
             {
-              switch (read_from_client (client_session, client_socket))
-                {
-                  case  0:       /* Read everything. */
-                    from_client_more = FALSE;
-                    break;
-                  case -1:       /* Error. */
-                    return -1;
-                  case -2:       /* from_client buffer full. */
-                    /* There may be more to read. */
-                    // FIX if client_input_stalled below, how return to this loop?
-                    from_client_more = TRUE;
-                    break;
-                  case -3:       /* End of file. */
-                    return 0;
-                  default:       /* Programming error. */
-                    assert (0);
-                }
-
-#if TRACE || LOG
-              /* This check prevents output in the "asynchronous network
-               * error" case. */
-              if (from_client_end > initial_start)
-                {
-                  logf ("<= %.*s\n",
-                        from_client_end - initial_start,
-                        from_client + initial_start);
-#if TRACE_TEXT
-                  tracef ("<= client  \"%.*s\"\n",
-                          from_client_end - initial_start,
-                          from_client + initial_start);
-#else
-                  tracef ("<= client  %i bytes\n",
-                          from_client_end - initial_start);
-#endif
-                }
-#endif /* TRACE || LOG */
-
-              int ret = process_omp_client_input ();
-              if (ret == 0)
-                /* Processed all input. */
-                client_input_stalled = 0;
-              else if (ret == -1)
-                /* Error. */
+              case  0:       /* Read everything. */
+                break;
+              case -1:       /* Error. */
                 return -1;
-              else if (ret == -2)
-                {
-                  /* to_server buffer full. */
-                  tracef ("   client input stalled 1\n");
-                  client_input_stalled = 1;
-                  /* Break to write to_server. */
-                  break;
-                }
-              else if (ret == -3)
-                {
-                  /* to_client buffer full. */
-                  tracef ("   client input stalled 2\n");
-                  client_input_stalled = 2;
-                  /* Break to write to_client. */
-                  break;
-                }
-              else
-                /* Programming error. */
+              case -2:       /* from_client buffer full. */
+                /* There may be more to read. */
+                break;
+              case -3:       /* End of file. */
+                tracef ("   EOF reading from client.\n");
+                return 0;
+              default:       /* Programming error. */
                 assert (0);
             }
-          while (from_client_more);
+
+#if TRACE || LOG
+          /* This check prevents output in the "asynchronous network
+           * error" case. */
+          if (from_client_end > initial_start)
+            {
+              logf ("<= %.*s\n",
+                    from_client_end - initial_start,
+                    from_client + initial_start);
+#if TRACE_TEXT
+              tracef ("<= client  \"%.*s\"\n",
+                      from_client_end - initial_start,
+                      from_client + initial_start);
+#else
+              tracef ("<= client  %i bytes\n",
+                      from_client_end - initial_start);
+#endif
+            }
+#endif /* TRACE || LOG */
+
+          int ret = process_omp_client_input ();
+          if (ret == 0)
+            /* Processed all input. */
+            client_input_stalled = 0;
+          else if (ret == -1)
+            /* Error. */
+            return -1;
+          else if (ret == -2)
+            {
+              /* to_server buffer full. */
+              tracef ("   client input stalled 1\n");
+              client_input_stalled = 1;
+              /* Break to write to_server. */
+              break;
+            }
+          else if (ret == -3)
+            {
+              /* to_client buffer full. */
+              tracef ("   client input stalled 2\n");
+              client_input_stalled = 2;
+              /* Break to write to_client. */
+              break;
+            }
+          else
+            /* Programming error. */
+            assert (0);
         }
 
       if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
@@ -3387,69 +3882,62 @@ serve_omp (gnutls_session_t* client_session,
           int initial_start = from_server_end;
 #endif
 
-          do
+          switch (read_from_server (server_session, server_socket))
             {
-              switch (read_from_server (server_session, server_socket))
-                {
-                  case  0:       /* Read everything. */
-                    from_server_more = FALSE;
-                    break;
-                  case -1:       /* Error. */
-                    /* This may be because the server closed the connection
-                     * at the end of a command. */
-                    set_server_init_state (SERVER_INIT_TOP);
-                    break;
-                  case -2:       /* from_server buffer full. */
-                    /* There may be more to read. */
-                    // FIX if server_input_stalled below, how return to this loop?
-                    from_server_more = TRUE;
-                    break;
-                  case -3:       /* End of file. */
-                    set_server_init_state (SERVER_INIT_TOP);
-                    break;
-                  default:       /* Programming error. */
-                    assert (0);
-                }
-
-#if TRACE || LOG
-              /* This check prevents output in the "asynchronous network
-               * error" case. */
-              if (from_server_end > initial_start)
-                {
-                  logf ("<= %.*s\n",
-                        from_server_end - initial_start,
-                        from_server + initial_start);
-#if TRACE_TEXT
-                  tracef ("<= server  \"%.*s\"\n",
-                          from_server_end - initial_start,
-                          from_server + initial_start);
-#else
-                  tracef ("<= server  %i bytes\n",
-                          from_server_end - initial_start);
-#endif
-                }
-#endif /* TRACE || LOG */
-
-              int ret = process_omp_server_input ();
-              if (ret == 0)
-                /* Processed all input. */
-                server_input_stalled = FALSE;
-              else if (ret == -1)
-                /* Error. */
-                return -1;
-              else if (ret == -3)
-                {
-                  /* to_server buffer full. */
-                  tracef ("   server input stalled\n");
-                  server_input_stalled = TRUE;
-                  /* Break to write to server. */
-                  break;
-                }
-              else
-                /* Programming error. */
+              case  0:       /* Read everything. */
+                break;
+              case -1:       /* Error. */
+                /* This may be because the server closed the connection
+                 * at the end of a command. */
+                set_server_init_state (SERVER_INIT_TOP);
+                break;
+              case -2:       /* from_server buffer full. */
+                /* There may be more to read. */
+                break;
+              case -3:       /* End of file. */
+                set_server_init_state (SERVER_INIT_TOP);
+                break;
+              default:       /* Programming error. */
                 assert (0);
             }
-          while (from_server_more);
+
+#if TRACE || LOG
+          /* This check prevents output in the "asynchronous network
+           * error" case. */
+          if (from_server_end > initial_start)
+            {
+              logf ("<= %.*s\n",
+                    from_server_end - initial_start,
+                    from_server + initial_start);
+#if TRACE_TEXT
+              tracef ("<= server  \"%.*s\"\n",
+                      from_server_end - initial_start,
+                      from_server + initial_start);
+#else
+              tracef ("<= server  %i bytes\n",
+                      from_server_end - initial_start);
+#endif
+            }
+#endif /* TRACE || LOG */
+
+          int ret = process_omp_server_input ();
+          if (ret == 0)
+            /* Processed all input. */
+            server_input_stalled = FALSE;
+          else if (ret == -1)
+            /* Error. */
+            return -1;
+          else if (ret == -3)
+            {
+              /* to_server buffer full. */
+              tracef ("   server input stalled\n");
+              server_input_stalled = TRUE;
+              /* Break to write to server. */
+              break;
+            }
+          else
+            /* Programming error. */
+            assert (0);
         }
 
       if (fds & FD_SERVER_WRITE

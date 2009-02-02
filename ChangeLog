@@ -1,3 +1,31 @@
+2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OTP problem report handling (DEBUG, HOLE, INFO, NOTE).  Fix
+	errors in append_task_open_port and omp_xml_handle_end_element.
+	Update the OMP read loop to only try fill the read buffers once per
+	select.
+
+	* src/openvasmd.c (server_state_t): Add problem report states.
+	(task_t): Add problem report members.
+	(free_tasks): Free problem report arrays.
+	(make_task): Initialise problem report arrays.
+	(start_task): Add required client preferences.
+	(add_task_description_line): Correct comment.
+	(append_task_open_port): Increment open_ports_size instead of open_ports.
+	(report_t): New type.
+	(current_report): New variable.
+	(make_report, set_report_description, append_debug_report,
+	append_hole_report, append_info_report, append_log_report,
+	append_note_report): New functions.
+	(omp_xml_handle_end_element): Free modify_task_value instead of
+	freeing modify_task_parameter twice.  Add problem report counts to status
+	response.
+	(process_omp_server_input): Add problem report handling.
+	(serve_omp): Only try fill the read buffers once per select instead of
+	reading and handling as much as possible before selecting again (as
+	introduced on 2008-12-10).  This is to ensure that the client or server
+	is read when the other party is writing alot.
+
 2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c: (omp_xml_handle_end_element): Flush whitespace from
