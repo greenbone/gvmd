@@ -356,6 +356,11 @@ free_g_ptr_array (gpointer array)
  */
 typedef enum
 {
+  CLIENT_ABORT_TASK,
+  CLIENT_ABORT_TASK_TASK_ID,
+#if 0
+  CLIENT_ABORT_TASK_CRITERION,
+#endif
   CLIENT_DONE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
@@ -1061,6 +1066,8 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
+  if (task->running) return 0;
+
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n")) return -1;
@@ -1097,11 +1104,35 @@ start_task (task_t* task)
 #endif
 
   task->running = 1;
+
   if (task->open_ports) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, sizeof (port_t));
   task->open_ports_size = 0;
+  // FIX holes,...  reset_task_data (task);
+
   current_server_task = task;
 
+  return 0;
+}
+
+/**
+ * @brief Stop a task.
+ *
+ * @param  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+stop_task (task_t* task)
+{
+  tracef ("   stop task %u\n", task->id);
+  if (task->running)
+    {
+      // FIX dik
+      if (send_to_server ("CLIENT <|> STOP_ATTACK <|> dik <|> CLIENT\n"))
+        return -1;
+      task->running = 0;
+    }
   return 0;
 }
 
@@ -2012,7 +2043,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
-        if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
+        if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
+          set_client_state (CLIENT_ABORT_TASK);
+        else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
           {
@@ -2044,6 +2077,21 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<modify_task_response><status>402</status></modify_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_ABORT_TASK:
+        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+          set_client_state (CLIENT_ABORT_TASK_TASK_ID);
+#if 0
+        else if (strncasecmp ("CRITERION", element_name, 9) == 0)
+          set_client_state (CLIENT_ABORT_TASK_CRITERION);
+#endif
+        else
+          {
+            XML_RESPOND ("<abort_task_response><status>402</status></abort_task_response>");
             set_client_state (CLIENT_TOP);
             // FIX notify parser of error
           }
@@ -2120,6 +2168,46 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_TOP:
         assert (0);
         break;
+
+      case CLIENT_ABORT_TASK:
+        {
+          assert (current_client_task == NULL);
+          unsigned int id;
+          if (sscanf (current_task_task_id, "%u", &id) != 1)
+            XML_RESPOND ("<abort_task_response><status>40x</status></abort_task_response>");
+          else
+            {
+              task_t* task = find_task (id);
+              if (task == NULL)
+                XML_RESPOND ("<abort_task_response><status>407</status></abort_task_response>");
+              else if (stop_task (task))
+                {
+                  /* to_server is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
+                }
+              else
+                XML_RESPOND ("<abort_task_response><status>201</status></abort_task_response>");
+            }
+          set_client_state (CLIENT_TOP);
+        }
+        break;
+      case CLIENT_ABORT_TASK_TASK_ID:
+        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        set_client_state (CLIENT_ABORT_TASK);
+        break;
+
+#if 0
+      case CLIENT_ABORT_TASK_CRITERION:
+        assert (strncasecmp ("CRITERION", element_name, 9) == 0);
+        set_client_state (CLIENT_ABORT_TASK);
+        break;
+      case CLIENT_ABORT_TASK_CRITERION_VALUE:
+        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        set_client_state (CLIENT_ABORT_TASK);
+        break;
+#endif
 
       case CLIENT_VERSION:
         XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
@@ -2373,6 +2461,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
 
+      case CLIENT_ABORT_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
         if (current_task_task_id)

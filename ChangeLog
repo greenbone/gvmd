@@ -1,3 +1,9 @@
+2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c (stop_task): New function.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element,
+	omp_xml_handle_text): Add ABORT_TASK handling.
+
 2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/common.h (close_manager_connection): New function.
