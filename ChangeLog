@@ -1,5 +1,13 @@
 2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add test of ABORT_TASK.
+
+	* src/tests/CMakeLists.txt: Add omp_abort_task_0.
+
+	* src/tests/omp_abort_task_0.c: New file.
+
+2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/tests/omp_start_task_0.c: Correct comment.
 
 2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
