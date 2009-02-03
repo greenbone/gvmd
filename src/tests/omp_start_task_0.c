@@ -1,6 +1,6 @@
-/* Test 0 of OMP MODIFY_TASK.
+/* Test 0 of OMP START_TASK.
  * $Id$
- * Description: Test the OMP MODIFY_TASK command.
+ * Description: Test the OMP START_TASK command.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
