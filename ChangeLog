@@ -1,3 +1,13 @@
+2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c (free_task, delete_task): New functions.
+	(free_tasks): Move single task freeing to free_task.
+	(make_task): Add a comment.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add DELETE_TASK handling.
+
+	* ChangeLog: Correct function name on 2009-02-03 entry.
+
 2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add test of ABORT_TASK.
@@ -13,7 +23,7 @@
 2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/openvasmd.c (stop_task): New function.
-	(omp_xml_handle_start_element, omp_xml_handle_start_element,
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add ABORT_TASK handling.
 
 2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>

@@ -361,6 +361,8 @@ typedef enum
 #if 0
   CLIENT_ABORT_TASK_CRITERION,
 #endif
+  CLIENT_DELETE_TASK,
+  CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_DONE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
@@ -864,6 +866,49 @@ grow_tasks ()
   return 0;
 }
 
+void
+free_task (task_t* task)
+{
+  tracef ("   Freeing task %u: \"%s\" %s (%i)\n%s\n\n",
+          task->id,
+          task->name,
+          task->comment,
+          task->description_length,
+          task->description);
+  free (task->name);
+  task->name = NULL;
+  free (task->comment);
+  free (task->description);
+  if (task->start_time) free (task->start_time);
+  if (task->end_time) free (task->end_time);
+  if (task->open_ports) g_array_free (task->open_ports, TRUE);
+  if (task->debugs)
+    {
+      g_ptr_array_foreach (task->debugs, free_rule, NULL);
+      g_ptr_array_free (task->debugs, TRUE);
+    }
+  if (task->holes)
+    {
+      g_ptr_array_foreach (task->holes, free_rule, NULL);
+      g_ptr_array_free (task->holes, TRUE);
+    }
+  if (task->infos)
+    {
+      g_ptr_array_foreach (task->infos, free_rule, NULL);
+      g_ptr_array_free (task->infos, TRUE);
+    }
+  if (task->logs)
+    {
+      g_ptr_array_foreach (task->logs, free_rule, NULL);
+      g_ptr_array_free (task->logs, TRUE);
+    }
+  if (task->notes)
+    {
+      g_ptr_array_foreach (task->notes, free_rule, NULL);
+      g_ptr_array_free (task->notes, TRUE);
+    }
+}
+
 /**
  * @brief Free all tasks and the array of tasks.
  */
@@ -874,46 +919,7 @@ free_tasks ()
   task_t* end = tasks + tasks_size;
   while (index < end)
     {
-      if (index->name)
-        {
-          tracef ("   Freeing task %u: \"%s\" %s (%i)\n%s\n\n",
-                  index->id,
-                  index->name,
-                  index->comment,
-                  index->description_length,
-                  index->description);
-          free (index->name);
-          free (index->comment);
-          free (index->description);
-          if (index->start_time) free (index->start_time);
-          if (index->end_time) free (index->end_time);
-          if (index->open_ports) g_array_free (index->open_ports, TRUE);
-          if (index->debugs)
-            {
-              g_ptr_array_foreach (index->debugs, free_rule, NULL);
-              g_ptr_array_free (index->debugs, TRUE);
-            }
-          if (index->holes)
-            {
-              g_ptr_array_foreach (index->holes, free_rule, NULL);
-              g_ptr_array_free (index->holes, TRUE);
-            }
-          if (index->infos)
-            {
-              g_ptr_array_foreach (index->infos, free_rule, NULL);
-              g_ptr_array_free (index->infos, TRUE);
-            }
-          if (index->logs)
-            {
-              g_ptr_array_foreach (index->logs, free_rule, NULL);
-              g_ptr_array_free (index->logs, TRUE);
-            }
-          if (index->notes)
-            {
-              g_ptr_array_foreach (index->notes, free_rule, NULL);
-              g_ptr_array_free (index->notes, TRUE);
-            }
-        }
+      if (index->name) free_task (index);
       index++;
     }
   tasks_size = 0;
@@ -971,6 +977,7 @@ make_task (char* name, unsigned int time, char* comment)
           index++;
         }
       index = (task_t*) tasks_size;
+      /* grow_tasks updates tasks_size. */
       if (grow_tasks ()) return NULL;
       index = index + (int) tasks;
     }
@@ -1133,6 +1140,22 @@ stop_task (task_t* task)
         return -1;
       task->running = 0;
     }
+  return 0;
+}
+
+/**
+ * @brief Delete a task.
+ *
+ * @param  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+delete_task (task_t* task)
+{
+  tracef ("   delete task %u\n", task->id);
+  if (stop_task (task) == -1) return -1;
+  free_task (task);
   return 0;
 }
 
@@ -2045,6 +2068,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
       case CLIENT_TOP:
         if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
           set_client_state (CLIENT_ABORT_TASK);
+        else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
+          set_client_state (CLIENT_DELETE_TASK);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
@@ -2065,6 +2090,17 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         else
           XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+        break;
+
+      case CLIENT_DELETE_TASK:
+        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+          set_client_state (CLIENT_DELETE_TASK_TASK_ID);
+        else
+          {
+            XML_RESPOND ("<delete_task_response><status>402</status></delete_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -2212,6 +2248,35 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_VERSION:
         XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
         set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_DELETE_TASK:
+        {
+          assert (current_client_task == NULL);
+          unsigned int id;
+          if (sscanf (current_task_task_id, "%u", &id) != 1)
+            XML_RESPOND ("<delete_task_response><status>40x</status></delete_task_response>");
+          else
+            {
+              task_t* task = find_task (id);
+              if (task == NULL)
+                XML_RESPOND ("<delete_task_response><status>407</status></delete_task_response>");
+              else if (delete_task (task))
+                {
+                  /* to_server is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
+                }
+              else
+                XML_RESPOND ("<delete_task_response><status>201</status></delete_task_response>");
+            }
+          set_client_state (CLIENT_TOP);
+        }
+        break;
+      case CLIENT_DELETE_TASK_TASK_ID:
+        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        set_client_state (CLIENT_DELETE_TASK);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -2462,6 +2527,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK_TASK_ID:
+      case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
         if (current_task_task_id)
