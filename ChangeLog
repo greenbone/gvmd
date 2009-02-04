@@ -1,5 +1,13 @@
 2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add test of DELETE_TASK.
+
+	* src/tests/CMakeLists.txt: Add omp_delete_task_0.
+
+	* src/tests/omp_delete_task_0.c: New file.
+
+2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add a few entity access functions.
 
 	* src/tests/common.c (entity_text, entity_name, compare_entity_with_name,

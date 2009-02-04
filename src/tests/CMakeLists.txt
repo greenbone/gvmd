@@ -49,6 +49,13 @@ set_target_properties (omp_abort_task_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_L
 target_link_libraries (omp_abort_task_0 common)
 ADD_TEST (omp_abort_task_0 omp_abort_task_0)
 
+add_executable (omp_delete_task_0 omp_delete_task_0.c)
+target_link_libraries (omp_delete_task_0 string)
+set_target_properties (omp_delete_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_delete_task_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_LDFLAGS}")
+target_link_libraries (omp_delete_task_0 common)
+ADD_TEST (omp_delete_task_0 omp_delete_task_0)
+
 add_executable (omp_modify_task_0 omp_modify_task_0.c)
 target_link_libraries (omp_modify_task_0 string)
 set_target_properties (omp_modify_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
