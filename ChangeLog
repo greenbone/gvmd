@@ -1,5 +1,14 @@
 2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add a few entity access functions.
+
+	* src/tests/common.c (entity_text, entity_name, compare_entity_with_name,
+	entity_child): New functions.
+
+	* src/tests/common.h: Declare new functions.
+
+2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/openvasmd.c (free_task, delete_task): New functions.
 	(free_tasks): Move single task freeing to free_task.
 	(make_task): Add a comment.

@@ -56,6 +56,15 @@ add_entity (entities_t*, const char*, const char*);
 int
 compare_entities (entity_t, entity_t);
 
+entity_t
+entity_child (entity_t entity, char* name);
+
+char*
+entity_name (entity_t entity);
+
+char*
+entity_text (entity_t entity);
+
 void
 free_entity (entity_t);
 

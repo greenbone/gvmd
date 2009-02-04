@@ -333,6 +333,37 @@ free_entity (entity_t entity)
     }
 }
 
+char*
+entity_text (entity_t entity)
+{
+  return entity->text;
+}
+
+char*
+entity_name (entity_t entity)
+{
+  return entity->name;
+}
+
+int
+compare_entity_with_name (gconstpointer entity, gconstpointer name)
+{
+  return strcmp (entity_name ((entity_t) entity), (char*) name);
+}
+
+entity_t
+entity_child (entity_t entity, char* name)
+{
+  if (entity->entities)
+    {
+      entities_t match = g_slist_find_custom (entity->entities,
+                                              name,
+                                              compare_entity_with_name);
+      return match ? (entity_t) match->data : NULL;
+    }
+  return NULL;
+}
+
 /**
  * @brief Buffer for reading from the manager.
  */
