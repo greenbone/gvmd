@@ -1,5 +1,10 @@
 2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/omp_delete_task_0.c: New file.
+	* src/tests/omp_delete_task_0: Remove.
+
+2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add test of DELETE_TASK.
 
 	* src/tests/CMakeLists.txt: Add omp_delete_task_0.
