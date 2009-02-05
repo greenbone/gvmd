@@ -1,5 +1,9 @@
 2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* doc/CMakeLists.txt: Only install manpage if xmltoman is installed.
+
+2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add OMP GET_PREFERENCES.  Retry reading from server on error.
 
 	* src/openvasmd.c (BUFFER_SIZE): Increase.

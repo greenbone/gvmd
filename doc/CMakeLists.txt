@@ -144,6 +144,8 @@ install (DIRECTORY html/
          DESTINATION share/doc/openvas-manager/html/
          COMPONENT doc)
 
-install (FILES openvasmd.8
-         DESTINATION share/man/man8/
-         COMPONENT doc)
+if (XMLTOMAN_EXECUTABLE)
+  install (FILES openvasmd.8
+		   DESTINATION share/man/man8/
+		   COMPONENT doc)
+endif
