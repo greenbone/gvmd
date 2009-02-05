@@ -1,3 +1,14 @@
+2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OMP GET_PREFERENCES.  Retry reading from server on error.
+
+	* src/openvasmd.c (BUFFER_SIZE): Increase.
+	(grow_description): Fix trace message.
+	(client_state_t, omp_xml_handle_start_element,
+	omp_xml_handle_end_element): Add GET_PREFERENCES handling.
+	(print_preference): New function.
+	(read_from_server): Retry the recv on error, up to 5 times.
+
 2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/omp_delete_task_0.c: New file.

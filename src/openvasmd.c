@@ -149,12 +149,12 @@
 #define OPENVASMD_PORT 1241
 
 /**
- * @brief The size of the data buffers.
+ * @brief The size of the data buffers, in bytes.
  *
  * When the client/server buffer is full `select' stops watching for input
  * from the client/server.
  */
-#define BUFFER_SIZE 8192
+#define BUFFER_SIZE 1048576
 
 /**
  * @brief Second argument to `listen'.
@@ -364,6 +364,7 @@ typedef enum
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_DONE,
+  CLIENT_GET_PREFERENCES,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_MODIFY_TASK_PARAMETER,
@@ -1226,7 +1227,7 @@ grow_description (task_t* task, int increment)
                     ? DESCRIPTION_INCREMENT : increment);
   char* new = realloc (task->description, new_size);
   if (new == NULL) return -1;
-  tracef ("  grew description to %i (at %p).\n", new_size, new);
+  tracef ("   grew description to %i (at %p).\n", new_size, new);
   task->description = new;
   task->description_size = new_size;
   return 0;
@@ -2070,6 +2071,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_ABORT_TASK);
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_DELETE_TASK);
+        else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
+          set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
@@ -2098,6 +2101,14 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<delete_task_response><status>402</status></delete_task_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_GET_PREFERENCES:
+          {
+            XML_RESPOND ("<get_preferences_response><status>402</status></get_preferences_response>");
             set_client_state (CLIENT_TOP);
             // FIX notify parser of error
           }
@@ -2185,6 +2196,31 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 }
 
 /**
+ * @brief Print a preference for g_hash_table_find.
+ *
+ * @param[in]  key  The hashtable key.
+ * @param[in]  key  The hashtable key.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
+gboolean
+print_preference (gpointer key, gpointer value, gpointer dummy)
+{
+  /* \todo Do these reallocations affect performance? */
+  gchar* msg1 = g_strdup_printf ("<preference><name>%s</name><value>%s</value></preference>",
+                                 (char*) key,
+                                 (char*) value);
+  gchar* msg2 = g_markup_escape_text (msg1, strlen (msg1));
+  g_free (msg1);
+  XML_RESPOND (msg2);
+  g_free (msg2);
+  return FALSE;
+ respond_fail:
+  g_free (msg2);
+  return TRUE;
+}
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * @param[in]  context           Parser context.
@@ -2244,6 +2280,19 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         set_client_state (CLIENT_ABORT_TASK);
         break;
 #endif
+
+      case CLIENT_GET_PREFERENCES:
+        if (server.preferences)
+          {
+            XML_RESPOND ("<get_preferences_response status=\"200\">");
+            if (g_hash_table_find (server.preferences, print_preference, NULL))
+              goto respond_fail;
+            XML_RESPOND ("</get_preferences_response>");
+          }
+        else
+          XML_RESPOND ("<get_preferences_response>500</get_preferences_response>");
+        set_client_state (CLIENT_TOP);
+        break;
 
       case CLIENT_VERSION:
         XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
@@ -3566,6 +3615,8 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
   while (from_server_end < BUFFER_SIZE)
     {
       ssize_t count;
+      int retries = 5;
+ retry:
       count = gnutls_record_recv (*server_session,
                                   from_server + from_server_end,
                                   BUFFER_SIZE - from_server_end);
@@ -3586,6 +3637,10 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
             }
           fprintf (stderr, "Failed to read from server.\n");
           gnutls_perror (count);
+          /* FIX Retry a few times even though there has been an error.
+             This is because the recv sometimes fails with a "decryption
+             failed" error. */
+          while (retries--) goto retry;
           return -1;
         }
       if (count == 0)
