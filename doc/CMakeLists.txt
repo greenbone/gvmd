@@ -148,4 +148,5 @@ if (XMLTOMAN_EXECUTABLE)
   install (FILES openvasmd.8
 		   DESTINATION share/man/man8/
 		   COMPONENT doc)
-endif
+endif (XMLTOMAN_EXECUTABLE)
+

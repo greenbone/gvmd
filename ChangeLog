@@ -1,3 +1,8 @@
+2009-02-06  Michael Wuegand <michael.wiegand@intevation.de>
+
+	* doc/CMakeLists.txt: Fixed syntax error which caused the build process
+	to fail.
+
 2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* doc/CMakeLists.txt: Only install manpage if xmltoman is installed.
