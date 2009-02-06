@@ -1,3 +1,23 @@
+2009-02-06  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OMP GET_DEPENDENCIES and GET_RULES.  Correct OTP rule parsing.
+
+	* src/openvasmd.c (free_g_slist, send_dependency, send_preference,
+	send_requirement, send_rule): New functions.
+	(client_state_t, omp_xml_handle_start_element,
+	omp_xml_handle_end_element): Add GET_DEPENDENCIES and GET_RULES handling.
+	(current_server_plugin_dependency_dependencies,
+	make_server_plugins_dependencies, add_server_plugins_dependency,
+	make_current_server_plugin_dependency,
+	maybe_free_current_server_plugin_dependency,
+	finish_current_server_plugin_dependency): Use a list for the requirements
+	instead of an array.
+	(server_t, maybe_free_server_rules, make_server_rules,
+	add_server_rule): Track rules size.
+	(print_preference): Rename to send_preference.
+	(process_omp_server_input): In OTP rule parsing, check for end marker
+	before searching for semicolon.
+
 2009-02-06  Michael Wuegand <michael.wiegand@intevation.de>
 
 	* doc/CMakeLists.txt: Fixed syntax error which caused the build process

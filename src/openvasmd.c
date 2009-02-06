@@ -336,6 +336,19 @@ char* credentials = NULL;
 /* Helper functions. */
 
 /**
+ * @brief Free a GSList.
+ *
+ * Wrapper for GHashTable.
+ *
+ * @param[in]  list  A pointer to a GSList.
+ */
+void
+free_g_slist (gpointer list)
+{
+  g_slist_free ((GSList*) list);
+}
+
+/**
  * @brief Free a GPtrArray.
  *
  * Wrapper for g_ptr_array_free; passed to g_hash_table_new_full.
@@ -345,6 +358,7 @@ char* credentials = NULL;
 void
 free_g_ptr_array (gpointer array)
 {
+  // FIX does this free the elements (data slot)?
   g_ptr_array_free (array, TRUE);
 }
 
@@ -364,7 +378,9 @@ typedef enum
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_DONE,
+  CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_PREFERENCES,
+  CLIENT_GET_RULES,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_MODIFY_TASK_PARAMETER,
@@ -408,6 +424,7 @@ typedef struct
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
   GHashTable* preferences;           ///< Server preference.
   GPtrArray* rules;                  ///< Server rules.
+  int rules_size;                    ///< Number of rules.
 } server_t;
 
 /**
@@ -571,7 +588,7 @@ char* current_server_plugin_dependency_name = NULL;
 /**
  * @brief The plugins required by the current server plugin.
  */
-GPtrArray* current_server_plugin_dependency_dependencies = NULL;
+GSList* current_server_plugin_dependency_dependencies = NULL;
 
 /**
  * @brief Free any server plugins dependencies.
@@ -596,21 +613,21 @@ make_server_plugins_dependencies ()
   server.plugins_dependencies = g_hash_table_new_full (g_str_hash,
                                                        g_str_equal,
                                                        g_free,
-                                                       free_g_ptr_array);
+                                                       free_g_slist);
 }
 
 /**
  * @brief Add a plugin to the server dependencies.
  *
  * @param[in]  name          The name of the plugin.
- * @param[in]  dependencies  The plugins required by the plugin.
+ * @param[in]  requirements  The plugins required by the plugin.
  */
 void
-add_server_plugins_dependency (char* name, GPtrArray* dependencies)
+add_server_plugins_dependency (char* name, GSList* requirements)
 {
   assert (server.plugins_dependencies);
   tracef ("   server new dependency name: %s\n", name);
-  g_hash_table_insert (server.plugins_dependencies, name, dependencies);
+  g_hash_table_insert (server.plugins_dependencies, name, requirements);
 }
 
 /**
@@ -624,20 +641,21 @@ make_current_server_plugin_dependency (char* name)
   assert (current_server_plugin_dependency_name == NULL);
   assert (current_server_plugin_dependency_dependencies == NULL);
   current_server_plugin_dependency_name = name;
-  current_server_plugin_dependency_dependencies = g_ptr_array_new ();
+  current_server_plugin_dependency_dependencies = NULL; /* Empty list. */
 }
 
 /**
  * @brief Append a requirement to the current plugin.
  *
- * @param[in]  dependency  The name of the required plugin.
+ * @param[in]  requirement  The name of the required plugin.
  */
 void
-append_to_current_server_plugin_dependency (char* dependency)
+append_to_current_server_plugin_dependency (char* requirement)
 {
-  assert (current_server_plugin_dependency_dependencies);
-  tracef ("   server appending plugin dependency: %s\n", dependency);
-  g_ptr_array_add (current_server_plugin_dependency_dependencies, dependency);
+  tracef ("   server appending plugin requirement: %s\n", requirement);
+  current_server_plugin_dependency_dependencies
+    = g_slist_append (current_server_plugin_dependency_dependencies,
+                      requirement);
 }
 
 /**
@@ -649,7 +667,7 @@ maybe_free_current_server_plugin_dependency ()
   if (current_server_plugin_dependency_name)
     free (current_server_plugin_dependency_name);
   if (current_server_plugin_dependency_dependencies)
-    g_ptr_array_free (current_server_plugin_dependency_dependencies, TRUE);
+    g_slist_free (current_server_plugin_dependency_dependencies);
 }
 
 /**
@@ -659,7 +677,6 @@ void
 finish_current_server_plugin_dependency ()
 {
   assert (current_server_plugin_dependency_name);
-  assert (current_server_plugin_dependency_dependencies);
   add_server_plugins_dependency (current_server_plugin_dependency_name,
                                  current_server_plugin_dependency_dependencies);
   current_server_plugin_dependency_name = NULL;
@@ -691,6 +708,7 @@ maybe_free_server_rules ()
     {
       g_ptr_array_foreach (server.rules, free_rule, NULL);
       g_ptr_array_free (server.rules, TRUE);
+      server.rules_size = 0;
     }
 }
 
@@ -701,6 +719,7 @@ void
 make_server_rules ()
 {
   server.rules = g_ptr_array_new ();
+  server.rules_size = 0;
 }
 
 /**
@@ -715,6 +734,7 @@ void
 add_server_rule (char* rule)
 {
   g_ptr_array_add (server.rules, rule);
+  server.rules_size++;
 }
 
 
@@ -2071,8 +2091,12 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_ABORT_TASK);
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_DELETE_TASK);
+        else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
+          set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
+        else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
+          set_client_state (CLIENT_GET_RULES);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
@@ -2106,9 +2130,25 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_GET_DEPENDENCIES:
+          {
+            XML_RESPOND ("<get_dependencies_response><status>402</status></get_dependencies_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
       case CLIENT_GET_PREFERENCES:
           {
             XML_RESPOND ("<get_preferences_response><status>402</status></get_preferences_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_GET_RULES:
+          {
+            XML_RESPOND ("<get_rules_response><status>402</status></get_rules_response>");
             set_client_state (CLIENT_TOP);
             // FIX notify parser of error
           }
@@ -2196,27 +2236,106 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 }
 
 /**
- * @brief Print a preference for g_hash_table_find.
+ * @brief Send XML for a requirement of a plugin.
  *
- * @param[in]  key  The hashtable key.
- * @param[in]  key  The hashtable key.
+ * @param[in]  element  The required plugin.
+ * @param[in]  dummy    Dummy variable for g_hash_table_find.
+ *
+ * @return 0 if out of space in to_client buffer, else 1.
+ */
+gint
+send_requirement (gconstpointer element, gconstpointer dummy)
+{
+  gchar* text = g_markup_escape_text ((char*) element,
+                                      strlen ((char*) element));
+  gchar* msg = g_strdup_printf ("<need>%s</need>", text);
+  g_free (text);
+
+  XML_RESPOND (msg);
+
+  g_free (msg);
+  return 1;
+ respond_fail:
+  g_free (msg);
+  return 0;
+}
+
+/**
+ * @brief Send XML for a plugin dependency.
+ *
+ * @param[in]  key    The dependency hashtable key.
+ * @param[in]  value  The dependency hashtable value.
+ * @param[in]  dummy  Dummy variable for g_hash_table_find.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 gboolean
-print_preference (gpointer key, gpointer value, gpointer dummy)
+send_dependency (gpointer key, gpointer value, gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
-  gchar* msg1 = g_strdup_printf ("<preference><name>%s</name><value>%s</value></preference>",
-                                 (char*) key,
-                                 (char*) value);
-  gchar* msg2 = g_markup_escape_text (msg1, strlen (msg1));
-  g_free (msg1);
-  XML_RESPOND (msg2);
-  g_free (msg2);
+  gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
+  gchar* msg = g_strdup_printf ("<dependency><needer>%s</needer>",
+                                key_text);
+  g_free (key_text);
+  XML_RESPOND (msg);
+
+  if (g_slist_find_custom ((GSList*) value, NULL, send_requirement))
+    {
+ respond_fail:
+      g_free (msg);
+      return TRUE;
+    }
+
+  XML_RESPOND ("</dependency>");
+  return FALSE;
+}
+
+/**
+ * @brief Send XML for a preference.
+ *
+ * @param[in]  key    The preferences hashtable key.
+ * @param[in]  value  The preferences hashtable value.
+ * @param[in]  dummy  Dummy variable for g_hash_table_find.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
+gboolean
+send_preference (gpointer key, gpointer value, gpointer dummy)
+{
+  /* \todo Do these reallocations affect performance? */
+  gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
+  gchar* value_text = g_markup_escape_text ((char*) value, strlen ((char*) value));
+  gchar* msg = g_strdup_printf ("<preference><name>%s</name><value>%s</value></preference>",
+                                key_text, value_text);
+  g_free (key_text);
+  g_free (value_text);
+  XML_RESPOND (msg);
+  g_free (msg);
   return FALSE;
  respond_fail:
-  g_free (msg2);
+  g_free (msg);
+  return TRUE;
+}
+
+/**
+ * @brief Send XML for a rule.
+ *
+ * @param[in]  rule  The rule.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
+gboolean
+send_rule (gpointer rule)
+{
+  /* \todo Do these reallocations affect performance? */
+  gchar* rule_text = g_markup_escape_text ((char*) rule, strlen ((char*) rule));
+  gchar* msg = g_strdup_printf ("<rule>%s</rule>", rule_text);
+  g_free (rule_text);
+  XML_RESPOND (msg);
+  g_free (msg);
+  return FALSE;
+ respond_fail:
+  g_free (msg);
   return TRUE;
 }
 
@@ -2284,13 +2403,43 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_GET_PREFERENCES:
         if (server.preferences)
           {
-            XML_RESPOND ("<get_preferences_response status=\"200\">");
-            if (g_hash_table_find (server.preferences, print_preference, NULL))
+            XML_RESPOND ("<get_preferences_response><status>200</status>");
+            if (g_hash_table_find (server.preferences, send_preference, NULL))
               goto respond_fail;
             XML_RESPOND ("</get_preferences_response>");
           }
         else
-          XML_RESPOND ("<get_preferences_response>500</get_preferences_response>");
+          XML_RESPOND ("<get_preferences_response><status>500</status></get_preferences_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_GET_DEPENDENCIES:
+        if (server.plugins_dependencies)
+          {
+            XML_RESPOND ("<get_dependencies_response><status>200</status>");
+            if (g_hash_table_find (server.plugins_dependencies,
+                                   send_dependency,
+                                   NULL))
+              goto respond_fail;
+            XML_RESPOND ("</get_dependencies_response>");
+          }
+        else
+          XML_RESPOND ("<get_dependencies_response><status>500</status></get_dependencies_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_GET_RULES:
+        if (server.rules)
+          {
+            int index;
+            XML_RESPOND ("<get_rules_response><status>200</status>");
+            for (index = 0; index < server.rules_size; index++)
+              if (send_rule (g_ptr_array_index (server.rules, index)))
+                goto respond_fail;
+            XML_RESPOND ("</get_rules_response>");
+          }
+        else
+          XML_RESPOND ("<get_rules_response><status>500</status></get_rules_response>");
         set_client_state (CLIENT_TOP);
         break;
 
@@ -2767,8 +2916,19 @@ process_omp_server_input ()
               {
                 char *end;
                 end = messages + from_server_end - from_server_start;
+                while (messages < end && (messages[0] == '\n'))
+                  { messages++; from_server_start++; }
                 while (messages < end && (messages[0] == ' '))
                   { messages++; from_server_start++; }
+                /* Check for the end marker. */
+                if (end - messages > 2
+                    && messages[0] == '<'
+                    && messages[1] == '|'
+                    && messages[2] == '>')
+                  /* The rules list ends with "<|> SERVER" so carry on, to
+                   * process the ending. */
+                  break;
+                /* There may be a rule ending in a semicolon. */
                 if ((match = memchr (messages, ';', from_server_end - from_server_start)))
                   {
                     char* rule;
@@ -2780,9 +2940,8 @@ process_omp_server_input ()
                     messages = match + 1;
                   }
                 else
-                  /* Rules are followed by <|> SERVER so carry on, to check for
-                   * the <|>. */
-                  break;
+                  /* Need more input for a ; or <|>. */
+                  goto succeed;
               }
           }
         else if (server_state == SERVER_SERVER)
