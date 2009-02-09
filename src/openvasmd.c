@@ -379,6 +379,9 @@ typedef enum
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_DONE,
   CLIENT_GET_DEPENDENCIES,
+  CLIENT_GET_NVT_FEED_ALL,
+  CLIENT_GET_NVT_FEED_CHECKSUM,
+  CLIENT_GET_NVT_FEED_DETAILS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_RULES,
   CLIENT_MODIFY_TASK,
@@ -2093,6 +2096,12 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_TASK);
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
+        else if (strncasecmp ("GET_NVT_FEED_ALL", element_name, 16) == 0)
+          set_client_state (CLIENT_GET_NVT_FEED_ALL);
+        else if (strncasecmp ("GET_NVT_FEED_CHECKSUM", element_name, 21) == 0)
+          set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
+        else if (strncasecmp ("GET_NVT_FEED_DETAILS", element_name, 20) == 0)
+          set_client_state (CLIENT_GET_NVT_FEED_DETAILS);
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
@@ -2133,6 +2142,30 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
       case CLIENT_GET_DEPENDENCIES:
           {
             XML_RESPOND ("<get_dependencies_response><status>402</status></get_dependencies_response>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_GET_NVT_FEED_ALL:
+          {
+            XML_RESPOND ("<get_nvt_feed_all><status>402</status></get_nvt_feed_all>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_GET_NVT_FEED_CHECKSUM:
+          {
+            XML_RESPOND ("<get_nvt_feed_checksum><status>402</status></get_nvt_feed_checksum>");
+            set_client_state (CLIENT_TOP);
+            // FIX notify parser of error
+          }
+        break;
+
+      case CLIENT_GET_NVT_FEED_DETAILS:
+          {
+            XML_RESPOND ("<get_nvt_feed_details><status>402</status></get_nvt_feed_details>");
             set_client_state (CLIENT_TOP);
             // FIX notify parser of error
           }
@@ -2425,6 +2458,63 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           XML_RESPOND ("<get_dependencies_response><status>500</status></get_dependencies_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_GET_NVT_FEED_ALL:
+        XML_RESPOND ("<get_nvt_feed_all_response><status>200</status>");
+        XML_RESPOND ("<nvt_count>2</nvt_count>");
+        XML_RESPOND ("<feed_checksum><algorithm>md5</algorithm>333</feed_checksum>");
+        XML_RESPOND ("<nvt>"
+                     "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                     "<name>FooBar 1.5 installed</name>"
+                     "<checksum><algorithm>md5</algorithm>222</checksum>"
+                     "</nvt>");
+        XML_RESPOND ("<nvt>"
+                     "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                     "<name>FooBar 2.1 XSS vulnerability</name>"
+                     "<checksum><algorithm>md5</algorithm>223</checksum>"
+                     "</nvt>");
+        XML_RESPOND ("</get_nvt_feed_all_response>");
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_GET_NVT_FEED_CHECKSUM:
+#if 0
+        if (server.plugins_md5)
+          {
+            XML_RESPOND ("<get_nvt_feed_checksum_response><status>200</status><algorithm>md5</algorithm>");
+            XML_RESPOND (server.plugins_md5);
+            XML_RESPOND ("</get_nvt_feed_checksum_response>");
+          }
+        else
+          XML_RESPOND ("<get_nvt_feed_checksum_response><status>500</status></get_nvt_feed_checksum_response>");
+#else
+        XML_RESPOND ("<get_nvt_feed_checksum_response><status>200</status><algorithm>md5</algorithm>");
+        XML_RESPOND ("111");
+        XML_RESPOND ("</get_nvt_feed_checksum_response>");
+#endif
+        set_client_state (CLIENT_TOP);
+        break;
+
+      case CLIENT_GET_NVT_FEED_DETAILS:
+        XML_RESPOND ("<get_nvt_feed_details_response><status>200</status>");
+        XML_RESPOND ("<nvt>"
+                     "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                     "<cve>CVE-2008-4877</cve>"
+                     "<cve>CVE-2008-4881</cve>"
+                     "<bugtraq_id>12345</bugtraq_id>"
+                     "<filename>foobar_15_detect.nasl</filename>"
+                     "<description>This script detects whether FooBar 1.5 is installed.</description>"
+                     "</nvt>");
+        XML_RESPOND ("<nvt>"
+                     "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                     "<cve>CVE-2008-5142</cve>"
+                     "<bugtraq_id>12478</bugtraq_id>"
+                     "<filename>foobar_21_xss.nasl</filename>"
+                     "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
+                     "</nvt>");
+        XML_RESPOND ("</get_nvt_feed_details_response>");
         set_client_state (CLIENT_TOP);
         break;
 

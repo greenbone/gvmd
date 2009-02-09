@@ -1,3 +1,9 @@
+2009-02-09  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/openvasmd.c (client_state_t, omp_xml_handle_start_element,
+	omp_xml_handle_end_element): Add dummy GET_NVT_FEED_ALL,
+	GET_NVT_FEED_CHECKSUM and GET_NVT_FEED_DETAILS handling.
+
 2009-02-06  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add OMP GET_DEPENDENCIES and GET_RULES.  Correct OTP rule parsing.
