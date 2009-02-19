@@ -58,6 +58,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
@@ -741,40 +742,7 @@ add_server_rule (char* rule)
 }
 
 
-/* Tasks. */
-
-/**
- * @brief A task.
- */
-typedef struct
-{
-  unsigned int id;            ///< Unique ID.
-  char* name;                 ///< Name.  NULL if free.
-  unsigned int time;          ///< Repetition period, in seconds.
-  char* comment;              ///< Comment associated with task.
-  char* description;          ///< Description.
-  int description_length;     ///< Length of description.
-  int description_size;       ///< Actual size allocated for description.
-  short running;              ///< Flag: 0 initially, 1 if running.
-  char* start_time;           ///< Time the task last started.
-  char* end_time;             ///< Time the task last ended.
-  // FIX rest per host?
-  char* attack_state;         ///< Attack status.
-  unsigned int current_port;  ///< Port currently under test.
-  unsigned int max_port;      ///< Last port to test.
-  GArray *open_ports;         ///< Open ports that the server has found.
-  int open_ports_size;        ///< Number of open ports.
-  GPtrArray *debugs;          ///< Identified problems of class "debug".
-  int debugs_size;            ///< Number of debugs.
-  GPtrArray *holes;           ///< Identified problems of class "hole".
-  int holes_size;             ///< Number of holes.
-  GPtrArray *infos;           ///< Identified problems of class "info".
-  int infos_size;             ///< Number of infos.
-  GPtrArray *logs;            ///< Identified problems of class "log".
-  int logs_size;              ///< Number of logs.
-  GPtrArray *notes;           ///< Identified problems of class "note".
-  int notes_size;             ///< Number of notes.
-} task_t;
+/* Ports. */
 
 /**
  * @brief Possible port types.
@@ -794,6 +762,194 @@ typedef struct
   int number;                ///< Port number.
   port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
 } port_t;
+
+/**
+ * @brief Get the name of the protocol of a port.
+ *
+ * @param[in]  port  The port.
+ *
+ * @return The name.
+ */
+char*
+port_protocol_name (port_t* port)
+{
+  switch (port->protocol)
+    {
+      case PORT_PROTOCOL_TCP: return "tcp";
+      case PORT_PROTOCOL_UDP: return "udp";
+      case PORT_PROTOCOL_OTHER: return "???";
+      default: assert (0); return "";
+    }
+}
+
+void
+print_port (FILE* stream, port_t* port)
+{
+  fprintf (stream, "FIX (%d/%s)", port->number, port_protocol_name (port));
+}
+
+
+/* Messages. */
+
+/**
+ * @brief The record of a message.
+ */
+typedef struct
+{
+  port_t port;          ///< The port.
+  char* description;    ///< Description of the message.
+  char* oid;            ///< NVT identifier.
+} message_t;
+
+/**
+ * @brief Current message during OTP SERVER message commands.
+ */
+message_t* current_message = NULL;
+
+/**
+ * @brief Make a message.
+ *
+ * @param[in]  port_number  Port number.
+ * @param[in]  protocol     Port protocol.
+ *
+ * @return A pointer to the new message.
+ */
+message_t*
+make_message (unsigned int number, const char* protocol)
+{
+  tracef ("   make_message %u %s\n", number, protocol);
+
+  message_t* message = g_malloc (sizeof (message_t));
+
+  message->description = NULL;
+  message->oid = NULL;
+  message->port.number = number;
+  if (strncasecmp ("udp", protocol, 3) == 0)
+    message->port.protocol = PORT_PROTOCOL_UDP;
+  else if (strncasecmp ("tcp", protocol, 3) == 0)
+    message->port.protocol = PORT_PROTOCOL_TCP;
+  else
+    message->port.protocol = PORT_PROTOCOL_OTHER;
+
+  return message;
+}
+
+/**
+ * @brief Free a message for g_ptr_array_foreach.
+ *
+ * @param[in]  message       Pointer to the message.
+ */
+void
+free_message (gpointer message, gpointer dummy)
+{
+  message_t* msg = (message_t*) message;
+  if (msg->description) free (msg->description);
+  if (msg->oid) free (msg->oid);
+  free (msg);
+}
+
+/**
+ * @brief Set the description of a message.
+ *
+ * @param[in]  message       Pointer to the message.
+ * @param[in]  description  Description.
+ */
+void
+set_message_description (message_t* message, char* description)
+{
+  if (message->description) free (message->description);
+  message->description = description;
+}
+
+/**
+ * @brief Set the OID of a message.
+ *
+ * @param[in]  message       Pointer to the message.
+ * @param[in]  oid          OID.
+ */
+void
+set_message_oid (message_t* message, char* oid)
+{
+  if (message->oid) free (message->oid);
+  message->oid = oid;
+}
+
+/**
+ * @brief Pair of stream and type for write_messages.
+ */
+typedef struct
+{
+  FILE* stream;
+  char* type;
+} message_data_t;
+
+/**
+ * @brief Write a message for g_ptr_array_foreach.
+ *
+ * @param[in]  message       The message.
+ * @param[in]  message_data  The stream and message type.
+ */
+void
+write_message (gpointer message, gpointer message_data)
+{
+  message_t* msg = (message_t*) message;
+  message_data_t* data = (message_data_t*) message_data;
+  fprintf (data->stream, "results|%s|%s|", "dik", "dik"); // FIX
+  print_port (data->stream, &msg->port);
+  fprintf (data->stream, "|%s|%s|%s|\n",
+           msg->oid, data->type, msg->description);
+}
+
+/**
+ * @brief Write an array of messages to a stream.
+ *
+ * @param[in]  file       The stream.
+ * @param[in]  messages   Array of messages.
+ * @param[in]  type       Type of message.
+ */
+void
+write_messages (FILE* file, GPtrArray* messages, char* type)
+{
+  message_data_t data = { file, type};
+  g_ptr_array_foreach (messages, write_message, &data);
+}
+
+
+/* Tasks. */
+
+/**
+ * @brief A task.
+ */
+typedef struct
+{
+  unsigned int id;            ///< Unique ID.
+  char* name;                 ///< Name.  NULL if free.
+  unsigned int time;          ///< Repetition period, in seconds.
+  char* comment;              ///< Comment associated with task.
+  char* description;          ///< Description.
+  int description_length;     ///< Length of description.
+  int description_size;       ///< Actual size allocated for description.
+  short running;              ///< Flag: 0 initially, 1 if running.
+  char* start_time;           ///< Time the task last started.
+  char* end_time;             ///< Time the task last ended.
+  unsigned int report_count;  ///< The number of existing reports on the task.
+  /* The rest are for the current scan. */
+  char* attack_state;         ///< Attack status.
+  unsigned int current_port;  ///< Port currently under test.
+  unsigned int max_port;      ///< Last port to test.
+  GArray *open_ports;         ///< Open ports that the server has found.
+  int open_ports_size;        ///< Number of open ports.
+  GPtrArray *debugs;          ///< Identified messages of class "debug".
+  int debugs_size;            ///< Number of debugs.
+  GPtrArray *holes;           ///< Identified messages of class "hole".
+  int holes_size;             ///< Number of holes.
+  GPtrArray *infos;           ///< Identified messages of class "info".
+  int infos_size;             ///< Number of infos.
+  GPtrArray *logs;            ///< Identified messages of class "log".
+  int logs_size;              ///< Number of logs.
+  GPtrArray *notes;           ///< Identified messages of class "note".
+  int notes_size;             ///< Number of notes.
+} task_t;
 
 /**
  * @brief Reallocation increment for the tasks array.
@@ -839,6 +995,27 @@ unsigned int tasks_size = 0;
  * @brief The number of the defined tasks.
  */
 unsigned int num_tasks = 0;
+
+/**
+ * @brief Return a string version of the ID of a task.
+ *
+ * @param[in]   task  Task.
+ * @param[out]  id    Pointer to a string.  On successful return contains a
+ *                    pointer to a static buffer with the task ID as a string.
+ *                    The static buffer is overwritten across successive calls.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+task_id_string (task_t* task, const char ** id)
+{
+  static char buffer[11]; /* (expt 2 32) => 4294967296 */
+  int length = sprintf (buffer, "%010u", task->id);
+  assert (length < 11);
+  if (length < 1) return -1;
+  *id = buffer;
+  return 0;
+}
 
 #if TRACE
 /**
@@ -908,27 +1085,27 @@ free_task (task_t* task)
   if (task->open_ports) g_array_free (task->open_ports, TRUE);
   if (task->debugs)
     {
-      g_ptr_array_foreach (task->debugs, free_rule, NULL);
+      g_ptr_array_foreach (task->debugs, free_message, NULL);
       g_ptr_array_free (task->debugs, TRUE);
     }
   if (task->holes)
     {
-      g_ptr_array_foreach (task->holes, free_rule, NULL);
+      g_ptr_array_foreach (task->holes, free_message, NULL);
       g_ptr_array_free (task->holes, TRUE);
     }
   if (task->infos)
     {
-      g_ptr_array_foreach (task->infos, free_rule, NULL);
+      g_ptr_array_foreach (task->infos, free_message, NULL);
       g_ptr_array_free (task->infos, TRUE);
     }
   if (task->logs)
     {
-      g_ptr_array_foreach (task->logs, free_rule, NULL);
+      g_ptr_array_foreach (task->logs, free_message, NULL);
       g_ptr_array_free (task->logs, TRUE);
     }
   if (task->notes)
     {
-      g_ptr_array_foreach (task->notes, free_rule, NULL);
+      g_ptr_array_foreach (task->notes, free_message, NULL);
       g_ptr_array_free (task->notes, TRUE);
     }
 }
@@ -961,7 +1138,8 @@ free_tasks ()
  * @param[in]  time     The period of the task, in seconds.
  * @param[in]  comment  A comment associated the task.
  *
- * @return A pointer to the new task or NULL when out of memory.
+ * @return A pointer to the new task or NULL when out of memory (in which
+ *         case caller must free name and comment).
  */
 task_t*
 make_task (char* name, unsigned int time, char* comment)
@@ -983,6 +1161,7 @@ make_task (char* name, unsigned int time, char* comment)
               index->description = NULL;
               index->description_size = 0;
               index->running = 0;
+              index->report_count = 0;
               index->open_ports = NULL;
               index->debugs = g_ptr_array_new ();
               index->debugs_size = 0;
@@ -1007,6 +1186,271 @@ make_task (char* name, unsigned int time, char* comment)
     }
 }
 
+int
+ahplasort (const void *a, const void *b)
+{
+  const struct dirent **d_a = (const struct dirent **) a;
+  const struct dirent **d_b = (const struct dirent **) b;
+  return - strcmp ((*d_a)->d_name, (*d_b)->d_name);
+}
+
+/**
+ * @brief Load the tasks from disk.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+load_tasks ()
+{
+  assert (num_tasks == 0 && tasks_size == 0);
+  assert (tasks == NULL);
+
+  tracef ("   Loading tasks...\n");
+
+  GError* error = NULL;
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "tasks",
+                                      NULL);
+
+  struct dirent ** names;
+  int count;
+
+  count = scandir (dir_name, &names, NULL, ahplasort);
+  if (count < 0)
+    {
+      if (errno == ENOENT)
+        {
+          free (dir_name);
+          tracef ("   Loading tasks... done\n");
+          return 0;
+        }
+      fprintf (stderr, "Failed to open dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      return -1;
+    }
+
+  while (count--)
+    {
+      const char* task_name = names[count]->d_name;
+
+      if (task_name[0] == '.') continue;
+
+      gchar *name, *comment, *description;
+      unsigned int time;
+
+      tracef ("     %s\n", task_name);
+
+      gchar* file_name = g_build_filename (dir_name, task_name, "name", NULL);
+      g_file_get_contents (file_name, &name, NULL, &error);
+      if (error)
+        {
+         contents_fail:
+          fprintf (stderr, "Failed to get contents of %s: %s\n",
+                   file_name,
+                   error->message);
+         fail:
+          g_error_free (error);
+          g_free (dir_name);
+          g_free (file_name);
+          free (names[count]);
+          while (count--) free (names[count]);
+          free (names);
+          return -1;
+        }
+
+      g_free (file_name);
+      file_name = g_build_filename (dir_name, task_name, "time", NULL);
+      g_file_get_contents (file_name, &comment, NULL, &error);
+      if (error)
+        {
+          g_free (name);
+          goto contents_fail;
+        }
+      if (sscanf (comment, "%u", &time) != 1)
+        {
+          fprintf (stderr, "Failed to scan time: %s\n", comment);
+          g_free (comment);
+          g_free (name);
+          goto fail;
+        }
+      g_free (comment);
+
+      g_free (file_name);
+      file_name = g_build_filename (dir_name, task_name, "comment", NULL);
+      g_file_get_contents (file_name, &comment, NULL, &error);
+      if (error)
+        {
+          g_free (name);
+          goto contents_fail;
+        }
+      g_free (file_name);
+
+      task_t* task = make_task (name, time, comment);
+      if (task == NULL)
+        {
+          g_free (name);
+          g_free (comment);
+          g_free (dir_name);
+          free (names[count]);
+          while (count--) free (names[count]);
+          free (names);
+          return -1;
+        }
+      /* name and comment are freed with the new task. */
+
+      gsize description_length;
+      file_name = g_build_filename (dir_name, task_name, "description", NULL);
+      g_file_get_contents (file_name,
+                           &description,
+                           &description_length,
+                           &error);
+      if (error) goto contents_fail;
+
+      task->description = description;
+      task->description_size = task->description_length = description_length;
+
+      g_free (file_name);
+      file_name = g_build_filename (dir_name, task_name, "report_count", NULL);
+      g_file_get_contents (file_name, &comment, NULL, &error);
+      if (error) goto contents_fail;
+      if (sscanf (comment, "%u", &task->report_count) != 1)
+        {
+          fprintf (stderr, "Failed to scan report count: %s\n", comment);
+          goto fail;
+        }
+
+      free (names[count]);
+    }
+
+  g_free (dir_name);
+  free (names);
+
+  tracef ("   Loading tasks... done\n");
+  return 0;
+}
+
+/**
+ * @brief Save a task to a directory.
+ *
+ * Save a task to a given directory, ensuring that the directory exists
+ * before saving the task.
+ *
+ * @param[in]  task      The task.
+ * @param[in]  dir_name  The directory.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+save_task (task_t* task, gchar* dir_name)
+{
+  GError* error = NULL;
+
+  /* Ensure directory exists. */
+
+  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
+    {
+      fprintf (stderr, "Failed to create task dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      return -1;
+    }
+
+  /* Save each component of the task. */
+
+  gchar* file_name = g_build_filename (dir_name, "name", NULL);
+
+  g_file_set_contents (file_name, task->name, -1, &error);
+  if (error)
+    {
+     contents_fail:
+      fprintf (stderr, "Failed to set contents of %s: %s\n",
+               file_name,
+               error->message);
+      g_error_free (error);
+      g_free (file_name);
+      return -1;
+    }
+  g_free (file_name);
+
+  file_name = g_build_filename (dir_name, "comment", NULL);
+  g_file_set_contents (file_name, task->comment, -1, &error);
+  if (error) goto contents_fail;
+  g_free (file_name);
+
+  file_name = g_build_filename (dir_name, "description", NULL);
+  g_file_set_contents (file_name,
+                       task->description,
+                       task->description_length,
+                       &error);
+  if (error) goto contents_fail;
+  g_free (file_name);
+
+  file_name = g_build_filename (dir_name, "time", NULL);
+  static char buffer[11]; /* (expt 2 32) => 4294967296 */
+  int length = sprintf (buffer, "%u", task->time);
+  assert (length < 11);
+  if (length < 1) goto contents_fail;
+  g_file_set_contents (file_name, buffer, -1, &error);
+  if (error) goto contents_fail;
+  g_free (file_name);
+
+  file_name = g_build_filename (dir_name, "report_count", NULL);
+  length = sprintf (buffer, "%u", task->report_count);
+  assert (length < 11);
+  if (length < 1) goto contents_fail;
+  g_file_set_contents (file_name, buffer, -1, &error);
+  if (error) goto contents_fail;
+  g_free (file_name);
+
+  return 0;
+}
+
+/**
+ * @brief Save all tasks to disk.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+save_tasks ()
+{
+  tracef ("   Saving tasks...\n");
+
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "tasks",
+                                      NULL);
+
+  task_t* index = tasks;
+  task_t* end = tasks + tasks_size;
+  while (index < end)
+    {
+      if (index->name)
+        {
+          const char* id;
+          tracef ("     %u\n", index->id);
+
+          if (task_id_string (index, &id)) return -1;
+
+          gchar* file_name = g_build_filename (dir_name,
+                                               id,
+                                               NULL);
+          if (save_task (index, file_name))
+            {
+              g_free (file_name);
+              return -1;
+            }
+          g_free (file_name);
+        }
+      index++;
+    }
+
+  tracef ("   Saving tasks... done.\n");
+  return 0;
+}
+
 /**
  * @brief Find a task.
  *
@@ -1019,10 +1463,11 @@ find_task (unsigned int id)
 {
   task_t* index = tasks;
   task_t* end = tasks + tasks_size;
-  while (index < end) {
-    if (index->name) tracef ("   %u vs %u\n", index->id, id);
-    if (index->name && index->id == id) return index; else index++;
-  }
+  while (index < end)
+    {
+      if (index->name) tracef ("   %u vs %u\n", index->id, id);
+      if (index->name && index->id == id) return index; else index++;
+    }
   return NULL;
 }
 
@@ -1067,7 +1512,7 @@ set_task_parameter (task_t* task, char* parameter, char* value)
   if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
     {
       task->description = value;
-      task->description_length = strlen (value);;
+      task->description_size = task->description_length = strlen (value);
     }
   else if (strncasecmp ("IDENTIFIER", parameter, 10) == 0)
     {
@@ -1088,7 +1533,7 @@ set_task_parameter (task_t* task, char* parameter, char* value)
 /**
  * @brief Start a task.
  *
- * @param  task  A pointer to the task.
+ * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
@@ -1149,7 +1594,7 @@ start_task (task_t* task)
 /**
  * @brief Stop a task.
  *
- * @param  task  A pointer to the task.
+ * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
@@ -1170,7 +1615,7 @@ stop_task (task_t* task)
 /**
  * @brief Delete a task.
  *
- * @param  task  A pointer to the task.
+ * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
@@ -1186,9 +1631,9 @@ delete_task (task_t* task)
 /**
  * @brief Append text to the comment associated with a task.
  *
- * @param  task    A pointer to the task.
- * @param  text    The text to append.
- * @param  length  Length of the text.
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
  *
  * @return 0 on success, -1 if out of memory.
  */
@@ -1209,9 +1654,9 @@ append_to_task_comment (task_t* task, const char* text, int length)
 /**
  * @brief Append text to the identifier associated with a task.
  *
- * @param  task    A pointer to the task.
- * @param  text    The text to append.
- * @param  length  Length of the text.
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
  *
  * @return 0 on success, 1 if out of memory.
  */
@@ -1237,8 +1682,8 @@ append_to_task_identifier (task_t* task, const char* text, int length)
 /**
  * @brief Increase the memory allocated for a task description.
  *
- * @param  task       A pointer to the task.
- * @param  increment  Minimum number of bytes to increase memory.
+ * @param[in]  task       A pointer to the task.
+ * @param[in]  increment  Minimum number of bytes to increase memory.
  *
  * @return 0 on success, -1 if out of memory.
  */
@@ -1315,125 +1760,177 @@ append_task_open_port (task_t *task, unsigned int number, char* protocol)
 }
 
 
-/* Reports. */
+/* Appending messages to tasks. */
 
 /**
- * @brief The record of a report.
- */
-typedef struct
-{
-  port_t port;          ///< The port.
-  char* description;    ///< Description of the report.
-  char* oid;            ///< NVT identifier.
-} report_t;
-
-/**
- * @brief Current report during OTP SERVER report commands.
- */
-report_t* current_report = NULL;
-
-/**
- * @brief Make a report.
- *
- * @param[in]  port_number  Port number.
- * @param[in]  protocol     Port protocol.
- *
- * @return A pointer to the new report.
- */
-report_t*
-make_report (unsigned int number, const char* protocol)
-{
-  tracef ("   make_report %u %s\n", number, protocol);
-
-  report_t* report = g_malloc (sizeof (report_t));
-
-  report->port.number = number;
-  if (strncasecmp ("udp", protocol, 3) == 0)
-    report->port.protocol = PORT_PROTOCOL_UDP;
-  else if (strncasecmp ("tcp", protocol, 3) == 0)
-    report->port.protocol = PORT_PROTOCOL_TCP;
-  else
-    report->port.protocol = PORT_PROTOCOL_OTHER;
-
-  return report;
-}
-
-/**
- * @brief Set the description of a report.
- *
- * @param[in]  report       Pointer to the report.
- * @param[in]  description  Description.
- */
-void
-set_report_description (report_t* report, char* description)
-{
-  if (report->description) free (report->description);
-  report->description = description;
-}
-
-/**
- * @brief Append an debug report to a task.
+ * @brief Append a debug message to a task.
  *
  * @param[in]  task         Task.
- * @param[in]  report       Report.
+ * @param[in]  message      Message.
  */
 void
-append_debug_report (task_t* task, report_t* report)
+append_debug_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->debugs, (gpointer) report);
+  g_ptr_array_add (task->debugs, (gpointer) message);
   task->debugs_size++;
 }
 
 /**
- * @brief Append a hole report to a task.
+ * @brief Append a hole message to a task.
  *
  * @param[in]  task         Task.
- * @param[in]  report       Report.
+ * @param[in]  message      Message.
  */
 void
-append_hole_report (task_t* task, report_t* report)
+append_hole_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->holes, (gpointer) report);
+  g_ptr_array_add (task->holes, (gpointer) message);
   task->holes_size++;
 }
 
 /**
- * @brief Append an info report to a task.
+ * @brief Append an info message to a task.
  *
  * @param[in]  task         Task.
- * @param[in]  report       Report.
+ * @param[in]  message      Message.
  */
 void
-append_info_report (task_t* task, report_t* report)
+append_info_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->infos, (gpointer) report);
+  g_ptr_array_add (task->infos, (gpointer) message);
   task->infos_size++;
 }
 
 /**
- * @brief Append an log report to a task.
+ * @brief Append a log message to a task.
  *
  * @param[in]  task         Task.
- * @param[in]  report       Report.
+ * @param[in]  message      Message.
  */
 void
-append_log_report (task_t* task, report_t* report)
+append_log_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->logs, (gpointer) report);
+  g_ptr_array_add (task->logs, (gpointer) message);
   task->logs_size++;
 }
 
 /**
- * @brief Append an note report to a task.
+ * @brief Append a note message to a task.
  *
  * @param[in]  task         Task.
- * @param[in]  report       Report.
+ * @param[in]  message      Message.
  */
 void
-append_note_report (task_t* task, report_t* report)
+append_note_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->notes, (gpointer) report);
+  g_ptr_array_add (task->notes, (gpointer) message);
   task->notes_size++;
+}
+
+
+/* Reports. */
+
+/**
+ * @brief Write a timestamp to a stream.
+ *
+ * @param[in]  file       The stream.
+ * @param[in]  type       Type of timestamp.
+ * @param[in]  time       The time.
+ */
+void
+write_timestamp (FILE* file, char* type, char* time)
+{
+  fprintf (file, "timestamps|%s|%s|%s|%s|\n", "dik", "dik", type, time); // FIX
+}
+
+/**
+ * @brief Save a report to a file.
+ *
+ * @param[in]  task       The task.
+ *
+ * @return 0 success, -1 failed to open file, -2 failed to close file.
+ */
+int
+save_report (task_t* task)
+{
+  const char* id;
+
+  tracef ("   Saving report %s on task %u\n", task->start_time, task->id);
+
+  if (task_id_string (task, &id)) return -1;
+
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "tasks",
+                                      id,
+                                      "reports",
+                                      NULL);
+
+  /* Ensure reports directory exists. */
+
+  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
+    {
+      fprintf (stderr, "Failed to create report dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      return -1;
+    }
+
+  /* Generate report name. */
+
+  // FIX OID
+  static char buffer[15]; /* (expt 2 32) => 4294967296 + .nbe */
+  int length = sprintf (buffer, "%010u.nbe", task->report_count);
+  assert (length < 15);
+  if (length < 4)
+    {
+      fprintf (stderr, "Failed to generate report id.\n");
+      g_free (dir_name);
+      return -1;
+    }
+
+  gchar* name = g_build_filename (dir_name, buffer, NULL);
+  g_free (dir_name);
+
+  /* Write report. */
+
+  FILE* file = fopen (name, "w");
+  if (file == NULL)
+    {
+      fprintf (stderr, "Failed to open report file %s: %s\n",
+               name,
+               strerror (errno));
+      g_free (name);
+      return -1;
+    }
+
+  write_timestamp (file, "scan_start", task->start_time); // FIX
+  write_timestamp (file, "host_start", task->start_time);
+
+  //write_messages (file, task->open_ports, task->open_ports_size); FIX
+  write_messages (file, task->debugs, "Debug Message");
+  write_messages (file, task->holes, "Security Hole");
+  write_messages (file, task->infos, "Security Warning");
+  write_messages (file, task->logs, "Log Message");
+  write_messages (file, task->notes, "Security Note");
+
+  write_timestamp (file, "host_end", task->end_time);
+  write_timestamp (file, "scan_end", task->end_time); // FIX
+
+  task->report_count++;
+
+  if (fclose (file))
+    {
+      fprintf (stderr, "Failed to close report file %s: %s\n",
+               name,
+               strerror (errno));
+      g_free (name);
+      return -2;
+    }
+
+  g_free (name);
+  return 0;
 }
 
 
@@ -1636,6 +2133,15 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
+                      if (gnutls_error_is_fatal (count) == 0
+                          && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                              || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+                        {
+                          int alert = gnutls_alert_get (*server_session);
+                          fprintf (stderr, "TLS Alert %d: %s.\n",
+                                   alert,
+                                   gnutls_alert_get_name (alert));
+                        }
                       fprintf (stderr, "Failed to read from server.\n");
                       gnutls_perror (count);
                       return -1;
@@ -2687,9 +3193,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   {
                     gchar* response;
                     response = g_strdup_printf ("<report_count>%u</report_count>",
-                                                0);
-                                                //task->report_count);
+                                                task->report_count);
                     XML_RESPOND (response);
+                    // FIX output reports
                   }
               }
           }
@@ -3180,12 +3686,12 @@ process_omp_server_input ()
                 goto server_done;
               case SERVER_DEBUG_DESCRIPTION:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
                       // FIX \n for newline in description
                       char* description = strdup (field);
                       if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_DEBUG_OID);
                   break;
@@ -3199,7 +3705,7 @@ process_omp_server_input ()
                 }
               case SERVER_DEBUG_NUMBER:
                 {
-                  assert (current_report == NULL);
+                  assert (current_message == NULL);
 
                   // FIX field could be "general"
                   int number;
@@ -3216,23 +3722,22 @@ process_omp_server_input ()
                   tracef ("   server got debug port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_report = make_report (number, protocol);
-                  if (current_report == NULL) goto out_of_memory;
+                  current_message = make_message (number, protocol);
+                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_DEBUG_DESCRIPTION);
                   break;
                 }
               case SERVER_DEBUG_OID:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
-                      // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      char* oid = strdup (field);
+                      if (oid == NULL) goto out_of_memory;
+                      set_message_oid (current_message, oid);
 
-                      append_debug_report (current_server_task, current_report);
-                      current_report = NULL;
+                      append_debug_message (current_server_task, current_message);
+                      current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3241,12 +3746,12 @@ process_omp_server_input ()
                 }
               case SERVER_HOLE_DESCRIPTION:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
                       // FIX \n for newline in description
                       char* description = strdup (field);
                       if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_HOLE_OID);
                   break;
@@ -3260,7 +3765,7 @@ process_omp_server_input ()
                 }
               case SERVER_HOLE_NUMBER:
                 {
-                  assert (current_report == NULL);
+                  assert (current_message == NULL);
 
                   // FIX field could be "general"
                   int number;
@@ -3277,23 +3782,22 @@ process_omp_server_input ()
                   tracef ("   server got hole port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_report = make_report (number, protocol);
-                  if (current_report == NULL) goto out_of_memory;
+                  current_message = make_message (number, protocol);
+                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_HOLE_DESCRIPTION);
                   break;
                 }
               case SERVER_HOLE_OID:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
-                      // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      char* oid = strdup (field);
+                      if (oid == NULL) goto out_of_memory;
+                      set_message_oid (current_message, oid);
 
-                      append_hole_report (current_server_task, current_report);
-                      current_report = NULL;
+                      append_hole_message (current_server_task, current_message);
+                      current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3302,12 +3806,12 @@ process_omp_server_input ()
                 }
               case SERVER_INFO_DESCRIPTION:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
                       // FIX \n for newline in description
                       char* description = strdup (field);
                       if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_INFO_OID);
                   break;
@@ -3321,7 +3825,7 @@ process_omp_server_input ()
                 }
               case SERVER_INFO_NUMBER:
                 {
-                  assert (current_report == NULL);
+                  assert (current_message == NULL);
 
                   // FIX field could be "general"
                   int number;
@@ -3338,22 +3842,22 @@ process_omp_server_input ()
                   tracef ("   server got info port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_report = make_report (number, protocol);
-                  if (current_report == NULL) goto out_of_memory;
+                  current_message = make_message (number, protocol);
+                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_INFO_DESCRIPTION);
                   break;
                 }
               case SERVER_INFO_OID:
                 {
-                  if (current_report && current_server_task)
+                  if (current_message && current_server_task)
                     {
-                      // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
-                      append_info_report (current_server_task, current_report);
-                      current_report = NULL;
+                      char* oid = strdup (field);
+                      if (oid == NULL) goto out_of_memory;
+                      set_message_oid (current_message, oid);
+
+                      append_info_message (current_server_task, current_message);
+                      current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3362,12 +3866,12 @@ process_omp_server_input ()
                 }
               case SERVER_LOG_DESCRIPTION:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
                       // FIX \n for newline in description
                       char* description = strdup (field);
                       if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_LOG_OID);
                   break;
@@ -3381,7 +3885,7 @@ process_omp_server_input ()
                 }
               case SERVER_LOG_NUMBER:
                 {
-                  assert (current_report == NULL);
+                  assert (current_message == NULL);
 
                   // FIX field could be "general"
                   int number;
@@ -3398,22 +3902,22 @@ process_omp_server_input ()
                   tracef ("   server got log port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_report = make_report (number, protocol);
-                  if (current_report == NULL) goto out_of_memory;
+                  current_message = make_message (number, protocol);
+                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_LOG_DESCRIPTION);
                   break;
                 }
               case SERVER_LOG_OID:
                 {
-                  if (current_report && current_server_task)
+                  if (current_message && current_server_task)
                     {
-                      // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
-                      append_log_report (current_server_task, current_report);
-                      current_report = NULL;
+                      char* oid = strdup (field);
+                      if (oid == NULL) goto out_of_memory;
+                      set_message_oid (current_message, oid);
+
+                      append_log_message (current_server_task, current_message);
+                      current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3422,12 +3926,12 @@ process_omp_server_input ()
                 }
               case SERVER_NOTE_DESCRIPTION:
                 {
-                  if (current_report)
+                  if (current_message)
                     {
                       // FIX \n for newline in description
                       char* description = strdup (field);
                       if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
+                      set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_NOTE_OID);
                   break;
@@ -3441,7 +3945,7 @@ process_omp_server_input ()
                 }
               case SERVER_NOTE_NUMBER:
                 {
-                  assert (current_report == NULL);
+                  assert (current_message == NULL);
 
                   // FIX field could be "general"
                   int number;
@@ -3458,22 +3962,22 @@ process_omp_server_input ()
                   tracef ("   server got note port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_report = make_report (number, protocol);
-                  if (current_report == NULL) goto out_of_memory;
+                  current_message = make_message (number, protocol);
+                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_NOTE_DESCRIPTION);
                   break;
                 }
               case SERVER_NOTE_OID:
                 {
-                  if (current_report && current_server_task)
+                  if (current_message && current_server_task)
                     {
-                      // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
-                      set_report_description (current_report, description);
-                      append_note_report (current_server_task, current_report);
-                      current_report = NULL;
+                      char* oid = strdup (field);
+                      if (oid == NULL) goto out_of_memory;
+                      set_message_oid (current_message, oid);
+
+                      append_note_message (current_server_task, current_message);
+                      current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3713,6 +4217,10 @@ process_omp_server_input ()
                       if (current_server_task->end_time)
                         free (current_server_task->end_time);
                       current_server_task->end_time = time;
+
+                      if (save_report (current_server_task)) goto fail;
+
+                      current_server_task = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   /* Jump to the done check, as this loop only considers fields
@@ -3834,6 +4342,15 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
               tracef ("   FIX should rehandshake\n");
               continue;
             }
+          if (gnutls_error_is_fatal (count) == 0
+              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+            {
+              int alert = gnutls_alert_get (*client_session);
+              fprintf (stderr, "TLS Alert %d: %s.\n",
+                       alert,
+                       gnutls_alert_get_name (alert));
+            }
           fprintf (stderr, "Failed to read from client.\n");
           gnutls_perror (count);
           return -1;
@@ -3883,6 +4400,16 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
               /* \todo Rehandshake. */
               tracef ("   FIX should rehandshake\n");
               continue;
+            }
+          fprintf (stderr, "is_fatal: %i\n", gnutls_error_is_fatal (count));
+          if (gnutls_error_is_fatal (count) == 0
+              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+            {
+              int alert = gnutls_alert_get (*server_session);
+              fprintf (stderr, "TLS Alert %d: %s.\n",
+                       alert,
+                       gnutls_alert_get_name (alert));
             }
           fprintf (stderr, "Failed to read from server.\n");
           gnutls_perror (count);
@@ -4535,6 +5062,15 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
           if (count == GNUTLS_E_REHANDSHAKE)
             /* Try again. TODO Rehandshake. */
             goto retry;
+          if (gnutls_error_is_fatal (count) == 0
+              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+            {
+              int alert = gnutls_alert_get (*client_session);
+              fprintf (stderr, "TLS Alert %d: %s.\n",
+                       alert,
+                       gnutls_alert_get_name (alert));
+            }
           fprintf (stderr, "Failed to read from client (read_protocol).\n");
           gnutls_perror (count);
           break;
@@ -4625,9 +5161,32 @@ serve_client (int client_socket)
       goto server_free_fail;
     }
 
-  if (gnutls_set_default_priority (server_session))
+  const int protocol_priority[] = { GNUTLS_TLS1,
+                                    0 };
+  if (gnutls_protocol_set_priority (server_session, protocol_priority))
     {
-      fprintf (stderr, "Failed to set server session priority.\n");
+      fprintf (stderr, "Failed to set protocol priority.\n");
+      goto server_fail;
+    }
+
+  const int cipher_priority[] = { GNUTLS_CIPHER_NULL,
+                                  GNUTLS_CIPHER_AES_128_CBC,
+                                  GNUTLS_CIPHER_3DES_CBC,
+                                  GNUTLS_CIPHER_AES_256_CBC,
+                                  GNUTLS_CIPHER_ARCFOUR_128,
+                                  0 };
+  if (gnutls_cipher_set_priority (server_session, cipher_priority))
+    {
+      fprintf (stderr, "Failed to set cipher priority.\n");
+      goto server_fail;
+    }
+
+  const int comp_priority[] = { GNUTLS_COMP_ZLIB,
+                                GNUTLS_COMP_NULL,
+                                0 };
+  if (gnutls_compression_set_priority (server_session, comp_priority))
+    {
+      fprintf (stderr, "Failed to set compression priority.\n");
       goto server_fail;
     }
 
@@ -4638,6 +5197,16 @@ serve_client (int client_socket)
   if (gnutls_kx_set_priority (server_session, kx_priority))
     {
       fprintf (stderr, "Failed to set server key exchange priority.\n");
+      goto server_fail;
+    }
+
+  const int mac_priority[] = { GNUTLS_MAC_NULL,
+                               GNUTLS_MAC_SHA1,
+                               GNUTLS_MAC_MD5,
+                               0 };
+  if (gnutls_mac_set_priority (server_session, mac_priority))
+    {
+      fprintf (stderr, "Failed to set mac priority.\n");
       goto server_fail;
     }
 
@@ -4764,6 +5333,14 @@ accept_and_maybe_fork () {
       case 0:
         /* Child. */
         {
+          if (load_tasks ())
+            {
+              fprintf (stderr, "Failed to load tasks.\n");
+              shutdown (client_socket, SHUT_RDWR);
+              close (client_socket);
+              exit (EXIT_FAILURE);
+            }
+
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
@@ -4789,6 +5366,7 @@ accept_and_maybe_fork () {
           tracef ("   Server context attached.\n");
           int ret = serve_client (secure_client_socket);
           close_stream_connection (secure_client_socket);
+          save_tasks ();
           exit (ret);
         }
       case -1:
