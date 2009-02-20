@@ -1,10 +1,49 @@
+2009-02-20  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OMP AUTHENTICATE.  Remove handling of first OMP specification.
+
+	* src/openvasmd.c (credentials, login, process_omp_old_client_input,
+	RESPOND): Remove.
+	(client_state_t): Add authentication states.
+	(credentials_t): New type.
+	(current_credentials): New variable.
+	(append_to_credentials_password, append_to_credentials_username,
+	authenticate, free_credentials): New functions.
+	(tasks): Clarify doc.
+	(load_tasks): Return if tasks already loaded.  Use username from
+	current_credentials.  Free tasks on error.
+	(save_tasks): Check if tasks are loaded.  Use username from
+	current_credentials.
+	(save_report): Use username from current_credentials.
+	(omp_xml_handle_end_element, omp_xml_handle_start_element,
+	omp_xml_handle_text): Add AUTHENTICATE handling.  Set error parameter on
+	error.
+	(omp_xml_handle_error): Remove abort call.
+	(process_omp_client_input): Add some error trace messages.
+	(serve_omp): Note behaviour on process_omp_client_input error.
+	(serve_client): Neaten some formatting.
+	(accept_and_maybe_fork): Remove task loading now done after	authentication.
+	(cleanup): Adjust credential freeing.
+
+	* src/tests/common.c (authenticate): New function.
+	(compare_entity_with_name, entity_child, entity_name, entity_text): Add doc.
+	(read_entity): Check context_data.first has been set before accessing
+	member.
+
+	* src/tests/common.h (authenticate): New function.
+
+	* src/tests/omp_new_task_0.c, src/tests/omp_version_0.c,
+	src/tests/omp_abort_task_0.c, src/tests/omp_delete_task_0.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_modify_task_0.c,
+	src/tests/omp_status_0.c: Add authentication.
+
 2009-02-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add saving of reports and tasks on disk.  Rename "reports" to
 	"messages".  Move port code up to a dedicated page.  Check for alerts
 	on TLS error.  Explicitly set all TLS priorities.
 
-	* src/openvasmd.c: (ahplasort, free_message, load_tasks, print_port,
+	* src/openvasmd.c (ahplasort, free_message, load_tasks, print_port,
 	port_protocol_name, save_report, save_task, save_tasks, set_message_oid,
 	task_id_string, write_message, write_messages, write_timestamp): New
 	functions.

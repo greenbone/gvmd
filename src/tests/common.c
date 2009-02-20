@@ -220,6 +220,50 @@ close_manager_connection (int socket, gnutls_session_t session)
 }
 
 /**
+ * @brief Authenticate with the manager.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  username  Username.
+ * @param[in]  password  Password.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+authenticate (gnutls_session_t* session,
+              const char* username,
+              const char* password)
+{
+  gchar* msg = g_strdup_printf ("<authenticate><credentials>"
+                                "<username>%s</username>"
+                                "<password>%s</password>"
+                                "</credentials></authenticate>",
+                                username,
+                                password);
+  int ret = send_to_manager (session, msg);
+  g_free (msg);
+  if (ret) return -1;
+
+#if 1
+  return 0;
+#else
+  /* What to do if OMP authenticate is changed to always respond. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  entity_t expected = add_entity (NULL, "authenticate_response", NULL);
+  add_entity (&expected->entities, "status", "201");
+
+  ret = compare_entities (entity, expected);
+
+  free_entity (expected);
+  free_entity (entity);
+
+  return ret ? -1 : 0;
+#endif
+}
+
+/**
  * @brief Send a string to the manager.
  *
  * @param[in]  session  Pointer to GNUTLS session.
@@ -333,24 +377,55 @@ free_entity (entity_t entity)
     }
 }
 
+/**
+ * @brief Get the text an entity.
+ *
+ * @param  entity  Entity.
+ *
+ * @return Entity text, which is freed by free_entity.
+ */
 char*
 entity_text (entity_t entity)
 {
   return entity->text;
 }
 
+/**
+ * @brief Get the name an entity.
+ *
+ * @param  entity  Entity.
+ *
+ * @return Entity name, which is freed by free_entity.
+ */
 char*
 entity_name (entity_t entity)
 {
   return entity->name;
 }
 
+/**
+ * @brief Compare a given name with the name of a given entity.
+ *
+ * @param  entity  Entity.
+ * @param  entity  Name.
+ *
+ * @return Zero if entity name matches name, otherwise a positive or negative
+ *         number as from strcmp.
+ */
 int
 compare_entity_with_name (gconstpointer entity, gconstpointer name)
 {
   return strcmp (entity_name ((entity_t) entity), (char*) name);
 }
 
+/**
+ * @brief Get a child of an entity.
+ *
+ * @param  entity  Entity.
+ * @param  name    Name of the child.
+ *
+ * @return Entity if found, else NULL.
+ */
 entity_t
 entity_child (entity_t entity, char* name)
 {
@@ -536,7 +611,8 @@ read_entity (gnutls_session_t* session, entity_t* entity)
                 continue;
               fprintf (stderr, "Failed to read from manager (read_entity).\n");
               gnutls_perror (count);
-              free_entity (context_data.first->data);
+              if (context_data.first && context_data.first->data)
+                free_entity (context_data.first->data);
               return -1;
             }
           if (count == 0)
@@ -548,7 +624,8 @@ read_entity (gnutls_session_t* session, entity_t* entity)
                   tracef ("   End error: %s\n", error->message);
                   g_error_free (error);
                 }
-              free_entity (context_data.first->data);
+              if (context_data.first && context_data.first->data)
+                free_entity (context_data.first->data);
               return -3;
             }
           break;
@@ -564,7 +641,8 @@ read_entity (gnutls_session_t* session, entity_t* entity)
 	{
 	  fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
 	  g_error_free (error);
-          free_entity (context_data.first->data);
+          if (context_data.first && context_data.first->data)
+            free_entity (context_data.first->data);
 	  return -2;
 	}
       if (context_data.done)
@@ -574,7 +652,8 @@ read_entity (gnutls_session_t* session, entity_t* entity)
             {
               tracef ("   End error: %s\n", error->message);
               g_error_free (error);
-              free_entity (context_data.first->data);
+              if (context_data.first && context_data.first->data)
+                free_entity (context_data.first->data);
               return -2;
             }
           *entity = (entity_t) context_data.first->data;

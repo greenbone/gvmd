@@ -53,7 +53,17 @@ main ()
 
   /* Create a task. */
 
-  if (send_to_manager (&session, new_task_request) == -1) goto fail;
+  if (authenticate (&session, "mattm", "mattm"))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
+  if (send_to_manager (&session, new_task_request) == -1)
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   entity_t entity = NULL;
   read_entity (&session, &entity);
@@ -63,10 +73,19 @@ main ()
 
   /* Start the task. */
 
+  if (authenticate (&session, "mattm", "mattm"))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
   if (send_to_manager (&session,
                        "<start_task><task_id>0</task_id></start_task>")
       == -1)
-    goto fail;
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   entity = NULL;
   read_entity (&session, &entity);
@@ -81,10 +100,19 @@ main ()
 
   /* Cancel the task. */
 
+  if (authenticate (&session, "mattm", "mattm"))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
   if (send_to_manager (&session,
                        "<abort_task><task_id>0</task_id></abort_task>")
       == -1)
-    goto fail;
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Read the response. */
 
@@ -101,7 +129,6 @@ main ()
     {
       free_entity (expected);
       free_entity (entity);
- fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }

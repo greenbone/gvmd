@@ -53,6 +53,8 @@ main ()
 
   /* Create a task. */
 
+  if (authenticate (&session, "mattm", "mattm")) goto fail;
+
   if (send_to_manager (&session, new_task_request) == -1) goto fail;
 
   entity_t entity = NULL;
@@ -62,6 +64,8 @@ main ()
   free_entity (entity);
 
   /* Remove the task. */
+
+  if (authenticate (&session, "mattm", "mattm")) goto fail;
 
   if (send_to_manager (&session,
                        "<delete_task><task_id>0</task_id></delete_task>")
@@ -91,8 +95,9 @@ main ()
 
   /* Check the status. */
 
-  if (send_to_manager (&session, "<status/>") == -1)
-    goto fail;
+  if (authenticate (&session, "mattm", "mattm")) goto fail;
+
+  if (send_to_manager (&session, "<status/>") == -1) goto fail;
 
   entity = NULL;
   read_entity (&session, &entity);

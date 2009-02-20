@@ -323,16 +323,6 @@ int to_server_start = 0;
  */
 int to_client_end = 0;
 
-/**
- * @brief Client login name, from OMP LOGIN.
- */
-char* login = NULL;
-
-/**
- * @brief Client credentials, from OMP LOGIN.
- */
-char* credentials = NULL;
-
 
 /* Helper functions. */
 
@@ -371,14 +361,20 @@ free_g_ptr_array (gpointer array)
  */
 typedef enum
 {
+  CLIENT_TOP,
+  CLIENT_AUTHENTIC,
+
   CLIENT_ABORT_TASK,
   CLIENT_ABORT_TASK_TASK_ID,
 #if 0
   CLIENT_ABORT_TASK_CRITERION,
 #endif
+  CLIENT_AUTHENTICATE,
+  CLIENT_CREDENTIALS,
+  CLIENT_CREDENTIALS_USERNAME,
+  CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
-  CLIENT_DONE,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_FEED_ALL,
   CLIENT_GET_NVT_FEED_CHECKSUM,
@@ -397,7 +393,6 @@ typedef enum
   CLIENT_START_TASK_TASK_ID,
   CLIENT_STATUS,
   CLIENT_STATUS_TASK_ID,
-  CLIENT_TOP,
   CLIENT_VERSION
 } client_state_t;
 
@@ -742,6 +737,86 @@ add_server_rule (char* rule)
 }
 
 
+/* Credentials. */
+
+/**
+ * @brief A username password pair.
+ */
+typedef struct
+{
+  gchar* username;
+  gchar* password;
+} credentials_t;
+
+/**
+ * @brief Current credentials during any OMP command.
+ */
+credentials_t current_credentials;
+
+/**
+ * @brief Free credentials.
+ *
+ * Free the members of a credentials pair.
+ *
+ * @param[in]  credentials  Pointer to the credentials.
+ */
+void
+free_credentials (credentials_t* credentials)
+{
+  if (credentials->username)
+    {
+      g_free (credentials->username);
+      credentials->username = NULL;
+    }
+  if (credentials->password)
+    {
+      g_free (credentials->password);
+      credentials->password = NULL;
+    }
+}
+
+/**
+ * @brief Append text to the username of a credential pair.
+ *
+ * @param[in]  credentials  Credentials.
+ * @param[in]  text         The text to append.
+ * @param[in]  length       Length of the text.
+ */
+void
+append_to_credentials_username (credentials_t* credentials,
+                                const char* text,
+                                int length)
+{
+  credentials->username = credentials->username
+                          ? g_strconcat (credentials->username, text, NULL)
+                          : g_strndup (text, length);
+}
+
+/**
+ * @brief Append text to the password of a credential pair.
+ *
+ * @param[in]  credentials  Credentials.
+ * @param[in]  text         The text to append.
+ * @param[in]  length       Length of the text.
+ */
+void
+append_to_credentials_password (credentials_t* credentials,
+                                const char* text,
+                                int length)
+{
+  credentials->password = credentials->password
+                          ? g_strconcat (credentials->password, text, NULL)
+                          : g_strndup (text, length);
+}
+
+int
+authenticate (credentials_t credentials)
+{
+  if (credentials.username) return 1;
+  return 0;
+}
+
+
 /* Ports. */
 
 /**
@@ -982,7 +1057,7 @@ task_t* current_client_task = NULL;
 task_t* current_server_task = NULL;
 
 /**
- * @brief The array of all defined tasks.
+ * @brief The array of all the tasks of the current user.
  */
 task_t* tasks = NULL;
 
@@ -1202,14 +1277,16 @@ ahplasort (const void *a, const void *b)
 int
 load_tasks ()
 {
-  assert (num_tasks == 0 && tasks_size == 0);
-  assert (tasks == NULL);
+  if (tasks) return -1;
+
+  if (current_credentials.username == NULL) return -1;
 
   tracef ("   Loading tasks...\n");
 
   GError* error = NULL;
   gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
                                       "tasks",
                                       NULL);
 
@@ -1258,6 +1335,7 @@ load_tasks ()
           free (names[count]);
           while (count--) free (names[count]);
           free (names);
+          free_tasks ();
           return -1;
         }
 
@@ -1297,6 +1375,7 @@ load_tasks ()
           free (names[count]);
           while (count--) free (names[count]);
           free (names);
+          free_tasks ();
           return -1;
         }
       /* name and comment are freed with the new task. */
@@ -1416,10 +1495,16 @@ save_task (task_t* task, gchar* dir_name)
 int
 save_tasks ()
 {
+  if (tasks == NULL) return 0;
+  if (current_credentials.username == NULL) return -1;
+
   tracef ("   Saving tasks...\n");
 
+  // FIX Could check if up to date already.
+
   gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
                                       "tasks",
                                       NULL);
 
@@ -1855,12 +1940,15 @@ save_report (task_t* task)
 {
   const char* id;
 
+  if (current_credentials.username == NULL) return -1;
+
   tracef ("   Saving report %s on task %u\n", task->start_time, task->id);
 
   if (task_id_string (task, &id)) return -1;
 
   gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/mattm/", // FIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
                                       "tasks",
                                       id,
                                       "reports",
@@ -2221,347 +2309,6 @@ serve_otp (gnutls_session_t* client_session,
  *
  * @param[in]  msg  The message, a string.
  */
-#define RESPOND(msg)                                              \
-  do                                                              \
-    {                                                             \
-      if (BUFFER_SIZE - to_client_end < strlen (msg))             \
-        {                                                         \
-          (messages - 1)[0] = '\n';                               \
-          if (command) (message - 1)[0] = ' ';                    \
-          goto respond_fail;                                      \
-        }                                                         \
-      memcpy (to_client + to_client_end, msg, strlen (msg));      \
-      tracef ("-> client: %s\n", msg);                            \
-      to_client_end += strlen (msg);                              \
-    }                                                             \
-  while (0)
-
-/**
- * @brief Process any lines available in from_client.
- *
- * Queue any resulting server commands in to_server and any replies for
- * the client in to_client.
- *
- * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
- */
-int
-process_omp_old_client_input ()
-{
-  char* messages = from_client + from_client_start;
-  int original_from_client_start;
-  //tracef ("   consider %.*s\n", from_client_end - from_client_start, messages);
-  while (memchr (messages, 10, from_client_end - from_client_start))
-    {
-      /* Found a full line, process the message. */
-      original_from_client_start = from_client_start;
-      char* command = NULL;
-#if 0
-      tracef ("   messages: %.*s...\n",
-              from_client_end - from_client_start < 200
-              ? from_client_end - from_client_start
-              : 200,
-              messages);
-#endif
-      char* message = strsep (&messages, "\n");
-      tracef ("   message: %s\n", message);
-      from_client_start += strlen(message) + 1;
-
-      if (current_client_task)
-        {
-          /* A NEW_TASK or MODIFY_TASK description is being read. */
-
-          if (strlen (message) == 1 && message[0] == '.')
-            {
-              /* End of description marker. */
-              char response[16];
-              sprintf (response, "201 %i\n", current_client_task->id);
-              RESPOND (response);
-              current_client_task = NULL;
-              continue;
-            }
-          else if (strlen (message) > 1 && message[0] == '.')
-            {
-              /* Line of description starting with a '.'.  The client is
-               * required to add an extra '.' to the front of the line. */
-              message += 1;
-            }
-
-          if (add_task_description_line (current_client_task,
-                                         message,
-                                         messages - message))
-            goto out_of_memory;
-
-          continue;
-        }
-
-      command = strsep (&message, " ");
-      tracef ("   command: %s\n", command);
-
-      if (strncasecmp ("OMP_VERSION", command, 11) == 0)
-        RESPOND ("200 1.0\n");
-      else if (strncasecmp ("LOGIN", command, 5) == 0)
-        {
-          char* next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            RESPOND ("403 LOGIN requires a username.\n");
-          else
-            {
-              if (login) free (login);
-              login = strdup (next);
-              if (login == NULL) goto out_of_memory;
-              next = strsep (&message, " ");
-              if (next && strlen (next) > 0)
-                {
-                  if (credentials) free (credentials);
-                  credentials = strdup (next);
-                  if (credentials == NULL) goto out_of_memory;
-                }
-              RESPOND ("202\n");
-            }
-        }
-      else if (login == NULL)
-        RESPOND ("401 LOGIN first.\n");
-      else if (strncasecmp ("NEW_TASK", command, 8) == 0)
-        {
-          /* Scan name. */
-          char* next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("404 NEW_TASK requires a name.\n");
-              continue;
-            }
-          tracef ("   next %s\n", next);
-          // FIX parse name with spaces
-          char* name = strdup (next);
-          if (name == NULL) goto out_of_memory;
-          next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("405 NEW_TASK requires a time.\n");
-              continue;
-            }
-          tracef ("   next %s\n", next);
-          /* Scan time. */
-          int time;
-          if (sscanf (next, "%u", &time) != 1)
-            {
-              // FIX flush rest of command
-              RESPOND ("406 Failed to parse ID.\n");
-              continue;
-            }
-          /* Scan comment. */
-          char* comment = strdup (message);
-          if (comment == NULL)
-            {
-              free (name);
-              goto out_of_memory;
-            }
-          /* Make task. */
-          current_client_task = make_task (name, time, comment);
-          if (current_client_task == NULL)
-            {
-              free (name);
-              free (comment);
-              goto out_of_memory;
-            }
-        }
-      else if (strncasecmp ("MODIFY_TASK", command, 11) == 0)
-        {
-          char* next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("405 Command requires a task ID.\n");
-              continue;
-            }
-          unsigned int id;
-          if (sscanf (next, "%u", &id) != 1)
-            {
-              RESPOND ("406 Failed to parse ID.\n");
-              // FIX flush rest of command
-              continue;
-            }
-          current_client_task = find_task (id);
-          if (current_client_task == NULL)
-            {
-              RESPOND ("407 Failed to find task.\n");
-              // FIX flush rest of command
-              continue;
-            }
-          // -- FIX same as above
-          /* Scan name. */
-          next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("404 NEW_TASK requires a name.\n");
-              continue;
-            }
-          // FIX parse name with spaces
-          char* name = strdup (next);
-          if (name == NULL) goto out_of_memory;
-          next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("405 NEW_TASK requires a time.\n");
-              free (name);
-              continue;
-            }
-          /* Scan time. */
-          int time;
-          if (sscanf (next, "%u", &time) != 1)
-            {
-              // FIX flush rest of command
-              RESPOND ("406 Failed to parse ID.\n");
-              free (name);
-              continue;
-            }
-          /* Scan comment. */
-          char* comment = strdup (message);
-          if (comment == NULL)
-            {
-              free (name);
-              goto out_of_memory;
-            }
-          // --
-          modify_task (current_client_task, name, time, comment);
-        }
-      else if (strncasecmp ("START_TASK", command, 10) == 0)
-        {
-          // -- FIX same as above
-          char* next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("405 Command requires a task ID.\n");
-              continue;
-            }
-          unsigned int id;
-          if (sscanf (next, "%u", &id) != 1)
-            {
-              RESPOND ("406 Failed to parse ID.\n");
-              // FIX flush rest of command
-              continue;
-            }
-          // --
-          task_t *task = find_task (id);
-          if (task == NULL)
-            RESPOND ("407 Failed to find task.\n");
-          else if (start_task (task))
-            {
-              /* to_server is full. */
-              from_client_start = original_from_client_start;
-              /* Revert parsing. */
-              (message - 1)[0] = ' ';
-              (messages - 1)[0] = '\n';
-              return -2;
-            }
-          else
-            RESPOND ("203\n");
-        }
-      else if (strncasecmp ("STATUS", command, 6) == 0)
-        {
-#if 0
-          // -- FIX same as above
-          char* next = strsep (&message, " ");
-          if (next == message || next == NULL || strlen (next) == 0)
-            {
-              // FIX flush rest of command
-              RESPOND ("405 Command requires a task ID.\n");
-              continue;
-            }
-          unsigned int id;
-          if (sscanf (next, "%u", &id) != 1)
-            {
-              RESPOND ("406 Failed to parse ID.\n");
-              // FIX flush rest of command
-              continue;
-            }
-          // --
-#endif
-          char response[16];
-          sprintf (response, "210 %u\n", num_tasks);
-          RESPOND (response);
-          task_t* index = tasks;
-          task_t* end = tasks + tasks_size;
-          while (index < end)
-            {
-              if (index->name)
-                {
-                  gchar* line = g_strdup_printf ("%u %s %c . . . . .\n",
-                                                 index->id,
-                                                 index->name,
-                                                 index->running ? 'R' : 'N');
-                  if (line == NULL) goto out_of_memory;
-                  // FIX free line if RESPOND fails
-                  RESPOND (line);
-                  g_free (line);
-                }
-              index++;
-            }
-        }
-      else
-        RESPOND ("402 Command name error.\n");
-
-      continue;
- out_of_memory:
-      RESPOND ("501 Manager out of memory.\n");
-    } /* while (memchr (... */
-
-  if (from_client_start > 0 && from_client_start == from_client_end)
-    {
-      from_client_start = from_client_end = 0;
-      tracef ("   client start caught end\n");
-    }
-  else if (from_client_start == 0)
-    {
-      if (from_client_end == BUFFER_SIZE)
-        {
-          // FIX if the buffer is entirely full here then respond with err and close connection
-          //     (or will hang waiting for buffer to empty)
-          //     this could happen if the client sends a field with length >= buffer length
-          //         could realloc buffer
-          //             which may eventually use all mem and bring down manager
-          tracef ("   client buffer full\n");
-          return -1;
-        }
-    }
-  else
-    {
-      /* Move the remaining partial line to the front of the buffer.  This
-       * ensures that there is space after the partial line into which
-       * serve_omp can read the rest of the line. */
-      char* start = from_client + from_client_start;
-      from_client_end -= from_client_start;
-      memmove (from_client, start, from_client_end);
-      from_client_start = 0;
-#if TRACE
-      from_client[from_client_end] = '\0';
-      //tracef ("   new from_client: %s\n", from_client);
-      tracef ("   new from_client_start: %i\n", from_client_start);
-      tracef ("   new from_client_end: %i\n", from_client_end);
-#endif
-    }
-
-  return 0;
-
-  /* RESPOND jumps here when there is too little space in to_client for the
-   * response.  The result is that the manager closes the connection, so
-   * from_client_end and from_client_start can be left as they are. */
- respond_fail:
-  tracef ("   RESPOND out of space in to_client\n");
-  from_client_start = original_from_client_start;
-  return -3;
-}
-
-/**
- * @brief Send a response message to the client.
- *
- * @param[in]  msg  The message, a string.
- */
 #define XML_RESPOND(msg)                                          \
   do                                                              \
     {                                                             \
@@ -2596,7 +2343,32 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
-        if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
+        if (strncasecmp ("AUTHENTICATE", element_name, 10) == 0)
+          {
+            assert (tasks == NULL);
+            assert (current_credentials.username == NULL);
+            assert (current_credentials.password == NULL);
+            set_client_state (CLIENT_AUTHENTICATE);
+          }
+        else
+          {
+            XML_RESPOND ("<omp_response><status>401</status></omp_response>");
+            g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Must authenticate first.");
+          }
+        break;
+
+      case CLIENT_AUTHENTIC:
+        if (strncasecmp ("AUTHENTICATE", element_name, 10) == 0)
+          {
+            // FIX Could check if reauthenticating current credentials, to
+            // save the loading of the tasks.
+            save_tasks ();
+            free_tasks ();
+            free_credentials (&current_credentials);
+            set_client_state (CLIENT_AUTHENTICATE);
+          }
+        else if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
           set_client_state (CLIENT_ABORT_TASK);
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_DELETE_TASK);
@@ -2631,7 +2403,45 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
             set_client_state (CLIENT_STATUS);
           }
         else
-          XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+          {
+            XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_AUTHENTICATE:
+        if (strncasecmp ("CREDENTIALS", element_name, 11) == 0)
+          set_client_state (CLIENT_CREDENTIALS);
+        else
+          {
+            XML_RESPOND ("<authenticate_response><status>402</status></authenticate_response>");
+            free_credentials (&current_credentials);
+            set_client_state (CLIENT_TOP);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREDENTIALS:
+        if (strncasecmp ("USERNAME", element_name, 8) == 0)
+          set_client_state (CLIENT_CREDENTIALS_USERNAME);
+        else if (strncasecmp ("PASSWORD", element_name, 8) == 0)
+          set_client_state (CLIENT_CREDENTIALS_PASSWORD);
+        else
+          {
+            XML_RESPOND ("<authenticate_response><status>402</status></authenticate_response>");
+            free_credentials (&current_credentials);
+            set_client_state (CLIENT_TOP);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_DELETE_TASK:
@@ -2640,56 +2450,77 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<delete_task_response><status>402</status></delete_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_DEPENDENCIES:
           {
             XML_RESPOND ("<get_dependencies_response><status>402</status></get_dependencies_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_NVT_FEED_ALL:
           {
             XML_RESPOND ("<get_nvt_feed_all><status>402</status></get_nvt_feed_all>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
           {
             XML_RESPOND ("<get_nvt_feed_checksum><status>402</status></get_nvt_feed_checksum>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
           {
             XML_RESPOND ("<get_nvt_feed_details><status>402</status></get_nvt_feed_details>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_PREFERENCES:
           {
             XML_RESPOND ("<get_preferences_response><status>402</status></get_preferences_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       case CLIENT_GET_RULES:
           {
             XML_RESPOND ("<get_rules_response><status>402</status></get_rules_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
@@ -2703,8 +2534,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<modify_task_response><status>402</status></modify_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
@@ -2718,8 +2552,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<abort_task_response><status>402</status></abort_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
@@ -2733,8 +2570,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<new_task_response><status>402</status></new_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error (more above,below)
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
@@ -2744,8 +2584,11 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<start_task_response><status>402</status></start_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
@@ -2755,14 +2598,21 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else
           {
             XML_RESPOND ("<status_response><status>402</status></status_task_response>");
-            set_client_state (CLIENT_TOP);
-            // FIX notify parser of error
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
           }
         break;
 
       default:
-        // FIX respond fail to client
         assert (0);
+        // FIX respond fail to client
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_PARSE,
+                     "Manager programming error.");
         break;
     }
 
@@ -2770,8 +2620,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
  respond_fail:
   tracef ("   XML RESPOND out of space in to_client\n");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-               "Out of space for reply to client.\n");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+               "Manager out of space for reply to client.");
 }
 
 /**
@@ -2920,7 +2770,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               else
                 XML_RESPOND ("<abort_task_response><status>201</status></abort_task_response>");
             }
-          set_client_state (CLIENT_TOP);
+          set_client_state (CLIENT_AUTHENTIC);
         }
         break;
       case CLIENT_ABORT_TASK_TASK_ID:
@@ -2939,6 +2789,43 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         break;
 #endif
 
+      case CLIENT_AUTHENTICATE:
+        if (authenticate (current_credentials))
+          {
+            if (load_tasks ())
+              {
+                fprintf (stderr, "Failed to load tasks.\n");
+                g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+                             "Manager failed to load tasks.");
+                free_credentials (&current_credentials);
+                set_client_state (CLIENT_TOP);
+              }
+            else
+              set_client_state (CLIENT_AUTHENTIC);
+          }
+        else
+          {
+            XML_RESPOND ("<authenticate_response><status>403</status></authenticate_response>");
+            free_credentials (&current_credentials);
+            set_client_state (CLIENT_TOP);
+          }
+        break;
+
+      case CLIENT_CREDENTIALS:
+        assert (strncasecmp ("CREDENTIALS", element_name, 11) == 0);
+        set_client_state (CLIENT_AUTHENTICATE);
+        break;
+
+      case CLIENT_CREDENTIALS_USERNAME:
+        assert (strncasecmp ("USERNAME", element_name, 8) == 0);
+        set_client_state (CLIENT_CREDENTIALS);
+        break;
+
+      case CLIENT_CREDENTIALS_PASSWORD:
+        assert (strncasecmp ("PASSWORD", element_name, 8) == 0);
+        set_client_state (CLIENT_CREDENTIALS);
+        break;
+
       case CLIENT_GET_PREFERENCES:
         if (server.preferences)
           {
@@ -2949,7 +2836,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           XML_RESPOND ("<get_preferences_response><status>500</status></get_preferences_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_DEPENDENCIES:
@@ -2964,7 +2851,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           XML_RESPOND ("<get_dependencies_response><status>500</status></get_dependencies_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_ALL:
@@ -2982,7 +2869,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                      "<checksum><algorithm>md5</algorithm>223</checksum>"
                      "</nvt>");
         XML_RESPOND ("</get_nvt_feed_all_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
@@ -3000,7 +2887,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         XML_RESPOND ("111");
         XML_RESPOND ("</get_nvt_feed_checksum_response>");
 #endif
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
@@ -3021,7 +2908,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                      "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
                      "</nvt>");
         XML_RESPOND ("</get_nvt_feed_details_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_RULES:
@@ -3036,12 +2923,12 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           XML_RESPOND ("<get_rules_response><status>500</status></get_rules_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_VERSION:
         XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_TASK:
@@ -3065,7 +2952,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               else
                 XML_RESPOND ("<delete_task_response><status>201</status></delete_task_response>");
             }
-          set_client_state (CLIENT_TOP);
+          set_client_state (CLIENT_AUTHENTIC);
         }
         break;
       case CLIENT_DELETE_TASK_TASK_ID:
@@ -3105,7 +2992,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     }
                 }
             }
-          set_client_state (CLIENT_TOP);
+          set_client_state (CLIENT_AUTHENTIC);
         }
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
@@ -3132,7 +3019,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         XML_RESPOND (msg);
         free (msg);
         current_client_task = NULL;
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_NEW_TASK_COMMENT:
         assert (strncasecmp ("COMMENT", element_name, 12) == 0);
@@ -3168,7 +3055,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               else
                 XML_RESPOND ("<start_task_response><status>201</status></start_task_response>");
             }
-          set_client_state (CLIENT_TOP);
+          set_client_state (CLIENT_AUTHENTIC);
         }
         break;
       case CLIENT_START_TASK_TASK_ID:
@@ -3226,7 +3113,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               }
           }
         XML_RESPOND ("</status_response>");
-        set_client_state (CLIENT_TOP);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_STATUS_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
@@ -3242,8 +3129,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
  respond_fail:
   tracef ("   XML RESPOND out of space in to_client\n");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-               "Out of space for reply to client.\n");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+               "Manager out of space for reply to client.\n");
 }
 
 /**
@@ -3306,6 +3193,13 @@ omp_xml_handle_text (GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_CREDENTIALS_USERNAME:
+        append_to_credentials_username (&current_credentials, text, text_len);
+        break;
+      case CLIENT_CREDENTIALS_PASSWORD:
+        append_to_credentials_password (&current_credentials, text, text_len);
+        break;
+
       case CLIENT_NEW_TASK_COMMENT:
         append_to_task_comment (current_client_task, text, text_len);
         break;
@@ -3356,7 +3250,6 @@ omp_xml_handle_error (GMarkupParseContext* context,
                       gpointer user_data)
 {
   tracef ("   XML ERROR %s\n", error->message);
-  abort ();
 }
 
 /**
@@ -3377,8 +3270,23 @@ process_omp_client_input ()
                                 &error);
   if (error)
     {
+      if (g_error_matches (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_UNKNOWN_ELEMENT))
+        tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+      else if (g_error_matches (error,
+                                G_MARKUP_ERROR,
+                                G_MARKUP_ERROR_INVALID_CONTENT))
+        tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+      else if (g_error_matches (error,
+                                G_MARKUP_ERROR,
+                                G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
+        tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
       fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
       g_error_free (error);
+      /* In all error cases return -1 to close the connection, because it
+         would be too hard, if possible at all, to figure out where the
+         next command starts. */
       return -1;
     }
   from_client_end = from_client_start = 0;
@@ -4839,6 +4747,9 @@ serve_omp (gnutls_session_t* client_session,
             client_input_stalled = 0;
           else if (ret == -1)
             /* Error. */
+            // FIX might be nice to write rest of to_client to client, so
+            // that the client gets any buffered output and the response to
+            // the error
             return -1;
           else if (ret == -2)
             {
@@ -5261,11 +5172,13 @@ serve_client (int client_socket)
   switch (read_protocol (client_session, client_socket))
     {
       case PROTOCOL_OTP:
-        if (serve_otp (client_session, &server_session, client_socket, server_socket))
+        if (serve_otp (client_session, &server_session,
+                       client_socket, server_socket))
           goto fail;
         break;
       case PROTOCOL_OMP:
-        if (serve_omp (client_session, &server_session, client_socket, server_socket))
+        if (serve_omp (client_session, &server_session,
+                       client_socket, server_socket))
           goto fail;
         break;
       case PROTOCOL_CLOSE:
@@ -5333,14 +5246,6 @@ accept_and_maybe_fork () {
       case 0:
         /* Child. */
         {
-          if (load_tasks ())
-            {
-              fprintf (stderr, "Failed to load tasks.\n");
-              shutdown (client_socket, SHUT_RDWR);
-              close (client_socket);
-              exit (EXIT_FAILURE);
-            }
-
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
@@ -5394,10 +5299,9 @@ cleanup ()
 #endif
   ovas_server_context_free (server_context);
   /** \todo Are these really necessary? */
-  if (login) free (login);
-  if (credentials) free (credentials);
   if (tasks) free_tasks ();
   if (current_server_preference) free (current_server_preference);
+  free_credentials (&current_credentials);
   maybe_free_current_server_plugin_dependency ();
   maybe_free_server_preferences ();
   maybe_free_server_rules ();

@@ -54,6 +54,11 @@ entity_t
 add_entity (entities_t*, const char*, const char*);
 
 int
+authenticate (gnutls_session_t* session,
+              const char* username,
+              const char* password);
+
+int
 compare_entities (entity_t, entity_t);
 
 entity_t

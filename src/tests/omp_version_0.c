@@ -44,6 +44,12 @@ main ()
 
   /* Send a version request. */
 
+  if (authenticate (&session, "mattm", "mattm") == -1) // FIX
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
   if (send_to_manager (&session, "<omp_version/>\n") == -1)
     {
       close_manager_connection (socket, session);
@@ -53,7 +59,12 @@ main ()
   /* Read the response. */
 
   entity_t entity = NULL;
-  read_entity (&session, &entity);
+  if (read_entity (&session, &entity))
+    {
+      fprintf (stderr, "Failed to read response.\n");
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Compare. */
 

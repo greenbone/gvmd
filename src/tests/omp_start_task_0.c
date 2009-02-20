@@ -109,6 +109,8 @@ main ()
 
   /* Create a task. */
 
+  if (authenticate (&session, "mattm", "mattm")) goto fail;
+
   if (send_to_manager (&session, new_task_request) == -1) goto fail;
 
   entity_t entity = NULL;
@@ -118,6 +120,8 @@ main ()
   free_entity (entity);
 
   /* Start the task. */
+
+  if (authenticate (&session, "mattm", "mattm")) goto fail;
 
   if (send_to_manager (&session,
                        "<start_task><task_id>0</task_id></start_task>")
