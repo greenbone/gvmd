@@ -38,15 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  gchar* new_task_request = NULL;
-  GError* error = NULL;
-
-  g_file_get_contents ("new_task_small.xml", &new_task_request, NULL, &error);
-  if (error)
-    {
-      fprintf (stderr, "%s\n", error->message);
-      return EXIT_FAILURE;
-    }
+  unsigned int id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -55,26 +47,27 @@ main ()
 
   if (authenticate (&session, "mattm", "mattm")) goto fail;
 
-  if (send_to_manager (&session, new_task_request) == -1) goto fail;
-
-  entity_t entity = NULL;
-  read_entity (&session, &entity);
-  // FIX assume ok
-  // FIX get id, assume 0 for now
-  free_entity (entity);
+  if (create_task_from_rc_file (&session,
+                                "new_task_small_rc",
+                                "Simple scan",
+                                "Simple test scan.",
+                                &id))
+    goto fail;
 
   /* Remove the task. */
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
-
-  if (send_to_manager (&session,
-                       "<delete_task><task_id>0</task_id></delete_task>")
-      == -1)
+  gchar* msg = g_strdup_printf ("<delete_task>"
+                                "<task_id>%u</task_id>"
+                                "</delete_task>",
+                                id);
+  int ret = send_to_manager (&session, msg);
+  g_free (msg);
+  if (ret == -1)
     goto fail;
 
   /* Read the response. */
 
-  entity = NULL;
+  entity_t entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare to expected response. */
@@ -95,13 +88,10 @@ main ()
 
   /* Check the status. */
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
-
   if (send_to_manager (&session, "<status/>") == -1) goto fail;
 
   entity = NULL;
-  read_entity (&session, &entity);
-  // FIX assume ok
+  if (read_entity (&session, &entity)) goto fail;
 
   entity_t count = entity_child (entity, "task_count");
   if (count && strcmp (entity_text (count), "1") == 0)

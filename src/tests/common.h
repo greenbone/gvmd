@@ -38,6 +38,14 @@ close_manager_connection (int, gnutls_session_t);
 int
 send_to_manager (gnutls_session_t*, const char*);
 
+int
+create_task (gnutls_session_t*, char*, unsigned int, char*, char*,
+             unsigned int*);
+
+int
+create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
+                          unsigned int*);
+
 /* XML */
 
 typedef GSList* entities_t;

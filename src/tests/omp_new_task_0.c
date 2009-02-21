@@ -50,7 +50,11 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<new_task><task_file>base64 text</task_file><identifier>Scan Webserver</identifier><comment>Hourly scan of the webserver</comment></new_task>")
+  if (send_to_manager (&session, "<new_task>"
+                                 "<task_file>YmFzZTY0IHRleHQ=</task_file>"
+                                 "<identifier>omp_new_task_0 task</identifier>"
+                                 "<comment>Task for omp_new_task_0.</comment>"
+                                 "</new_task>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -60,13 +64,25 @@ main ()
   /* Read the response. */
 
   entity_t entity = NULL;
-  read_entity (&session, &entity);
+  if (read_entity (&session, &entity))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
+  entity_t id_entity = entity_child (entity, "task_id");
+  if (id_entity == NULL)
+    {
+      free_entity (entity);
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "new_task_response", NULL);
   add_entity (&expected->entities, "status", "201");
-  add_entity (&expected->entities, "task_id", "0");
+  add_entity (&expected->entities, "task_id", entity_text (id_entity));
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

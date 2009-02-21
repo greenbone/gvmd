@@ -1,0 +1,73 @@
+<new_task><task_file># This file was automagically created by OpenVAS-Client
+trusted_ca = cacert.pem
+hide_toolbar = no
+hide_msglog = yes
+auto_enable_new_plugins = yes
+targets = localhost
+tree_autoexpand = yes
+sort_order = 0
+nessusd_autoconnect = no
+protocol_version = 0
+cache_plugin_information = yes
+reports_use_plugin_cache = yes
+scopes_load_plugin_cache_immediately = yes
+report_plugin_details_in_pdf = yes
+show_nvt_name_and_oid = yes
+use_client_cert = no
+nessusd_port = 7772
+paranoia_level = 1
+
+begin(SCANNER_SET)
+end(SCANNER_SET)
+
+begin(SERVER_PREFS)
+ max_hosts = 20
+ max_checks = 4
+ cgi_path = /cgi-bin:/scripts
+ port_range = default
+ auto_enable_dependencies = yes
+ silent_dependencies = yes
+ host_expansion = ip
+ ping_hosts = no
+ reverse_lookup = no
+ optimize_test = yes
+ safe_checks = yes
+ use_mac_addr = no
+ unscanned_closed = no
+ save_knowledge_base = yes
+ only_test_hosts_whose_kb_we_dont_have = no
+ only_test_hosts_whose_kb_we_have = no
+ kb_restore = no
+ kb_dont_replay_scanners = no
+ kb_dont_replay_info_gathering = no
+ kb_dont_replay_attacks = no
+ kb_dont_replay_denials = no
+ kb_max_age = 864000
+ log_whole_attack = no
+ language = english
+ checks_read_timeout = 5
+ non_simult_ports = 139, 445
+ plugins_timeout = 320
+ slice_network_addresses = no
+ nasl_no_signature_check = yes
+end(SERVER_PREFS)
+
+begin(CLIENTSIDE_USERRULES)
+end(CLIENTSIDE_USERRULES)
+
+begin(PLUGINS_PREFS)
+end(PLUGINS_PREFS)
+
+begin(PLUGIN_SET)
+end(PLUGIN_SET)
+
+begin(SERVER_INFO)
+ server_info_openvasd_version = 2.0.0
+ server_info_libnasl_version = 2.0.0.beta3.SVN
+ server_info_libnessus_version = 2.0.0.beta3.SVN
+ server_info_thread_manager = fork
+ server_info_os = Linux
+ server_info_os_version = 2.6.18-6-486
+end(SERVER_INFO)
+
+</task_file><identifier>Simple scan</identifier><comment>Simple scan, for tests.</comment></new_task>

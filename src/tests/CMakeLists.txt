@@ -41,6 +41,19 @@ set_target_properties (common PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
 
 include_directories (${COMMON_SOURCE_DIRECTORY}/common)
 link_directories (${COMMON_BINARY_DIRECTORY}/string)
+link_directories (${COMMON_BINARY_DIRECTORY}/file)
+
+add_executable (rmdir_recursively_0 rmdir_recursively_0.c)
+target_link_libraries (rmdir_recursively_0 file)
+set_target_properties (rmdir_recursively_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (rmdir_recursively_0 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
+ADD_TEST (rmdir_recursively_0 rmdir_recursively_0)
+
+add_executable (rmdir_recursively_1 rmdir_recursively_1.c)
+target_link_libraries (rmdir_recursively_1 file)
+set_target_properties (rmdir_recursively_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (rmdir_recursively_1 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
+ADD_TEST (rmdir_recursively_1 rmdir_recursively_1)
 
 add_executable (omp_abort_task_0 omp_abort_task_0.c)
 target_link_libraries (omp_abort_task_0 string)

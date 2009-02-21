@@ -1,3 +1,46 @@
+2009-02-21  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add Base64 task file handling.  Add new library with function
+	rmdir_recursively.  Add tests of rmdir_recursively.  Update DELETE_TASK
+	to remove the task directory on	disk.  Update tests to use shared
+	functions for creating tasks.
+
+	* src/file.h, src/file.c, src/tests/new_task_empty_rc,
+	src/tests/new_task_medium_rc, src/tests/new_task_small_rc,
+	src/tests/rmdir_recursively_0.c, src/tests/rmdir_recursively_1.c: New
+	files.
+
+	* src/openvasmd.c: Include new file library.
+	(free_task): Reduce tracing.
+	(save_tasks): Add a comment.
+	(modify_task): Remove, was for old OMP spec.
+	(set_task_parameter): Clarify doc.  Add base64 task file handling.
+	(delete_task): Update to remove task directory.
+	(omp_xml_handle_end_element): Add base64 task file handling.
+	(serve_client): Enable cipher and mac.
+
+	* src/CMakeLists.txt: Add file library.
+
+	* src/tests/CMakeLists.txt: Add tests rmdir_recursively_0 and
+	rmdir_recursively_1.
+
+	* src/tests/common.c (create_task_from_rc_file, create_task): New
+	functions.
+	(add_entity): Clarify doc.
+	(compare_entities): Add NULL checks.  Correct typo.
+
+	* src/tests/common.h (create_task_from_rc_file, create_task): New headers.
+
+	* src/tests/omp_start_task_0.c, src/tests/omp_status_0.c: Use
+	create_task_from_rc_file.  Read task description from file instead of var.
+
+	* src/tests/omp_modify_task_0.c: Use create_task.
+
+	* src/tests/omp_new_task_0.c: Neaten XML string.  Get and use actual task
+	ID.
+
+	* src/tests/omp_delete_task_0.c: Use create_task_from_rc_file.
+
 2009-02-20  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add OMP AUTHENTICATE.  Remove handling of first OMP specification.

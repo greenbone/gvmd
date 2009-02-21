@@ -304,6 +304,114 @@ send_to_manager (gnutls_session_t* session, const char* string)
   return 0;
 }
 
+/**
+ * @brief Create a task, given the task description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   config      Task configuration.
+ * @param[in]   config_len  Length of config.
+ * @param[in]   identifier  Task identifier.
+ * @param[in]   comment     Task comment.
+ * @param[out]  id          ID of new task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+create_task (gnutls_session_t* session,
+             char* config,
+             unsigned int config_len,
+             char* identifier,
+             char* comment,
+             unsigned int* id)
+{
+  /* Convert the file contents to base64. */
+
+  gchar* new_task_file = g_base64_encode ((guchar*) config,
+                                          config_len);
+
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<new_task>"
+                                      "<task_file>%s</task_file>"
+                                      "<identifier>%s</identifier>"
+                                      "<comment>%s</comment>"
+                                      "</new_task>",
+                                      new_task_file,
+                                      identifier,
+                                      comment);
+  g_free (new_task_file);
+
+  /* Send the request. */
+
+  int ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Get the ID of the new task from the response. */
+
+  entity_t id_entity = entity_child (entity, "task_id");
+  if (id_entity == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  ret = sscanf (entity_text (id_entity), "%u", id);
+  free_entity (entity);
+  if (ret == 1)
+    return 0;
+  return -1;
+}
+
+/**
+ * @brief Create a task, given the task description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   file_name   Name of the RC file.
+ * @param[in]   identifier  Task identifier.
+ * @param[in]   comment     Task comment.
+ * @param[out]  id          ID of new task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+create_task_from_rc_file (gnutls_session_t* session,
+                          char* file_name,
+                          char* identifier,
+                          char* comment,
+                          unsigned int* id)
+{
+  gchar* new_task_rc = NULL;
+  gsize new_task_rc_len;
+  GError* error = NULL;
+
+  /* Read in the RC file. */
+
+  g_file_get_contents (file_name,
+                       &new_task_rc,
+                       &new_task_rc_len,
+                       &error);
+  if (error)
+    {
+      g_error_free (error);
+      return -1;
+    }
+
+  int ret = create_task (session,
+                         new_task_rc,
+                         new_task_rc_len,
+                         identifier,
+                         comment,
+                         id);
+  g_free (new_task_rc);
+  return ret;
+}
+
 
 /* XML. */
 
@@ -337,8 +445,10 @@ make_entity (const char* name, const char* text)
  * @brief Add an XML entity to a tree of entities.
  *
  * @param[in]  entities  The tree of entities
- * @param[in]  name      Name of the entity.  Copied, freed by free_entity.
- * @param[in]  text      Text of the entity.  Copied, freed by free_entity.
+ * @param[in]  name      Name of the entity.  Copied, copy is freed by
+ *                       free_entity.
+ * @param[in]  text      Text of the entity.  Copied, copy is freed by
+ *                       free_entity.
  *
  * @return The new entity.
  */
@@ -708,11 +818,14 @@ print_entities (FILE* stream, entities_t entities)
  * @param[in]  entity1  First entity.
  * @param[in]  entity2  First entity.
  *
- * @return 0 is equal, 1 otherwise.
+ * @return 0 if equal, 1 otherwise.
  */
 int
 compare_entities (entity_t entity1, entity_t entity2)
 {
+  if (entity1 == NULL) return entity2 == NULL;
+  if (entity2 == NULL) return 1;
+
   if (strcmp (entity1->name, entity2->name))
     {
       tracef ("  compare failed name: %s vs %s\n", entity1->name, entity2->name);

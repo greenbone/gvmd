@@ -38,11 +38,10 @@ main ()
 {
   int socket, ret;
   gnutls_session_t session;
+  unsigned int id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
-
-  /* Create a task. */
 
   if (authenticate (&session, "mattm", "mattm"))
     {
@@ -50,18 +49,20 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<new_task><task_file>base64 text</task_file><identifier>Scan Webserver</identifier><comment>Hourly scan of the webserver</comment></new_task>")
-      == -1)
+  /* Create a task. */
+
+#define CONFIG "Task configuration."
+
+  if (create_task (&session,
+                   CONFIG,
+                   strlen (CONFIG),
+                   "Simple scan",
+                   "Simple test scan.",
+                   &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-
-  entity_t entity = NULL;
-  read_entity (&session, &entity);
-  // FIX assume ok
-  // FIX get id, assume 0 for now
-  free_entity (entity);
 
   /* Send a modify_task request. */
 
@@ -71,7 +72,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<modify_task><task_id>0</task_id><parameter>task_file</parameter><value>Modified hourly scan of the webserver</value></modify_task>")
+  if (send_to_manager (&session, "<modify_task><task_id>0</task_id><parameter>comment</parameter><value>Modified task for test omp_modify_task_0.</value></modify_task>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -80,7 +81,7 @@ main ()
 
   /* Read the response. */
 
-  entity = NULL;
+  entity_t entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare. */

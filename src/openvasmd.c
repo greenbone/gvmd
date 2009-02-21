@@ -78,8 +78,9 @@
 #include <openvas/network.h>
 #include <openvas/plugutils.h>
 
-#include "string.h"
+#include "file.h"
 #include "ovas-mngr-comm.h"
+#include "string.h"
 
 /**
  * @brief Installation prefix.
@@ -1145,11 +1146,12 @@ grow_tasks ()
 void
 free_task (task_t* task)
 {
-  tracef ("   Freeing task %u: \"%s\" %s (%i)\n%s\n\n",
+  tracef ("   Freeing task %u: \"%s\" %s (%i) %.*s[...]\n\n",
           task->id,
           task->name,
           task->comment,
           task->description_length,
+          (task->description_length > 20) ? 20 : task->description_length,
           task->description);
   free (task->name);
   task->name = NULL;
@@ -1508,6 +1510,8 @@ save_tasks ()
                                       "tasks",
                                       NULL);
 
+  /* Write each task in the tasks array to disk. */
+
   task_t* index = tasks;
   task_t* end = tasks + tasks_size;
   while (index < end)
@@ -1557,36 +1561,16 @@ find_task (unsigned int id)
 }
 
 /**
- * @brief Modify a task.
- *
- * The char* parameters are used directly and freed when the task is
- * freed.
- *
- * @param[in]  task     A pointer to a task.
- * @param[in]  name     The new name for the task.
- * @param[in]  time     The new period for the task, in seconds.
- * @param[in]  comment  A new comment associcated with the task.
- */
-void
-modify_task (task_t* task, char* name, unsigned int time, char* comment)
-{
-  assert (task->name);
-  tracef ("   modify_task %u\n", task->id);
-  task->name = name;
-  task->time = time;
-  task->comment = comment;
-  task->description_length = 0;
-}
-
-/**
  * @brief Set a task parameter.
  *
- * The value parameter is used directly and freed when the task is
- * freed.
+ * The value parameter is used directly and freed immediately or when the
+ * task is freed.
  *
  * @param[in]  task       A pointer to a task.
- * @param[in]  parameter  The name of the parameter.
- * @param[in]  value      The value of the parameter.
+ * @param[in]  parameter  The name of the parameter: "TASK_FILE", "IDENTIFIER"
+ *                        or "COMMENT".
+ * @param[in]  value      The value of the parameter, in base64 if parameter
+ *                        is "TASK_FILE".
  *
  * @return 0 on success, -1 when out of memory, -2 if parameter name error.
  */
@@ -1596,8 +1580,13 @@ set_task_parameter (task_t* task, char* parameter, char* value)
   tracef ("   set_task_parameter %u %s\n", task->id, parameter);
   if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
     {
-      task->description = value;
-      task->description_size = task->description_length = strlen (value);
+      gsize out_len;
+      guchar* out;
+      out = g_base64_decode (value, &out_len);
+      free (value);
+      free (current_client_task->description);
+      task->description = (char*) out;
+      task->description_length = task->description_size = out_len;
     }
   else if (strncasecmp ("IDENTIFIER", parameter, 10) == 0)
     {
@@ -1707,9 +1696,37 @@ stop_task (task_t* task)
 int
 delete_task (task_t* task)
 {
+  const char* id;
   tracef ("   delete task %u\n", task->id);
+
+  if (task_id_string (task, &id)) return -1;
+
+  if (current_credentials.username == NULL) return -1;
+
   if (stop_task (task) == -1) return -1;
+
+  // FIX may be atomic problems here
+
+  gchar* name = g_build_filename (PREFIX
+                                  "/var/lib/openvas/mgr/users/",
+                                  current_credentials.username,
+                                  "tasks",
+                                  id,
+                                  NULL);
+  GError* error = NULL;
+  if (rmdir_recursively (name, &error))
+    {
+      fprintf (stderr, "Failed to remove task dir %s: %s\n",
+               name,
+               error->message);
+      g_error_free (error);
+      g_free (name);
+      return -1;
+    }
+  g_free (name);
+
   free_task (task);
+
   return 0;
 }
 
@@ -3012,8 +3029,13 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
         assert (current_client_task);
         // FIX if all rqrd fields given then ok, else respond fail
+        // FIX only here should the task be added to tasks
+        //       eg on err half task could be saved (or saved with base64 file)
         gchar* msg;
-        msg = g_strdup_printf ("<new_task_response><status>201</status><task_id>%u</task_id></new_task_response>",
+        msg = g_strdup_printf ("<new_task_response>"
+                               "<status>201</status>"
+                               "<task_id>%u</task_id>"
+                               "</new_task_response>",
                                current_client_task->id);
         // FIX free msg if fail
         XML_RESPOND (msg);
@@ -3031,7 +3053,17 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         break;
       case CLIENT_NEW_TASK_TASK_FILE:
         assert (strncasecmp ("TASK_FILE", element_name, 9) == 0);
-        set_client_state (CLIENT_NEW_TASK);
+        if (current_client_task)
+          {
+            gsize out_len;
+            guchar* out;
+            out = g_base64_decode (current_client_task->description, &out_len);
+            free (current_client_task->description);
+            current_client_task->description = (char*) out;
+            current_client_task->description_length = out_len;
+            current_client_task->description_size = out_len;
+            set_client_state (CLIENT_NEW_TASK);
+          }
         break;
 
       case CLIENT_START_TASK:
@@ -5080,8 +5112,7 @@ serve_client (int client_socket)
       goto server_fail;
     }
 
-  const int cipher_priority[] = { GNUTLS_CIPHER_NULL,
-                                  GNUTLS_CIPHER_AES_128_CBC,
+  const int cipher_priority[] = { GNUTLS_CIPHER_AES_128_CBC,
                                   GNUTLS_CIPHER_3DES_CBC,
                                   GNUTLS_CIPHER_AES_256_CBC,
                                   GNUTLS_CIPHER_ARCFOUR_128,
@@ -5111,8 +5142,7 @@ serve_client (int client_socket)
       goto server_fail;
     }
 
-  const int mac_priority[] = { GNUTLS_MAC_NULL,
-                               GNUTLS_MAC_SHA1,
+  const int mac_priority[] = { GNUTLS_MAC_SHA1,
                                GNUTLS_MAC_MD5,
                                0 };
   if (gnutls_mac_set_priority (server_session, mac_priority))

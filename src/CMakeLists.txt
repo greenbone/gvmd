@@ -6,7 +6,7 @@
 # Matthew Mundell <matt@mundell.ukfsn.org>
 #
 # Copyright:
-# Copyright (C) 2008 Intevation GmbH
+# Copyright (C) 2008, 2009 Intevation GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2,
@@ -22,19 +22,34 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+## Config
+
+exec_program (pkg-config
+              ARGS --cflags glib-2.0
+			  OUTPUT_VARIABLE GLIB_CFLAGS)
+exec_program (pkg-config
+              ARGS --libs glib-2.0
+			  OUTPUT_VARIABLE GLIB_LDFLAGS)
+
 ## Libraries
 
-add_library (string string.c)
+add_library (file file.c)
+set_target_properties (file PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
+set_target_properties (file PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+
 add_library (ovas-mngr-comm ovas-mngr-comm.c)
+add_library (string string.c)
 
 ## Program
 
 include_directories (${STRING_SOURCE_DIRECTORY}/string)
+include_directories (${FILE_SOURCE_DIRECTORY}/file)
 
 link_directories (${STRING_BINARY_DIRECTORY}/string)
+link_directories (${FILE_BINARY_DIRECTORY}/file)
 
 add_executable (openvasmd openvasmd.c)
-target_link_libraries (openvasmd ovas-mngr-comm string)
+target_link_libraries (openvasmd ovas-mngr-comm string file)
 
 exec_program (libopenvas-config
               ARGS --cflags
@@ -42,12 +57,6 @@ exec_program (libopenvas-config
 exec_program (libopenvas-config
               ARGS --libs
 			  OUTPUT_VARIABLE OPENVAS_LDFLAGS)
-exec_program (pkg-config
-              ARGS --cflags glib-2.0
-			  OUTPUT_VARIABLE GLIB_CFLAGS)
-exec_program (pkg-config
-              ARGS --libs glib-2.0
-			  OUTPUT_VARIABLE GLIB_LDFLAGS)
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 
