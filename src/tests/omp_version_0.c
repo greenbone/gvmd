@@ -70,7 +70,8 @@ main ()
 
   entity_t expected = add_entity (NULL, "omp_version_response", NULL);
   add_entity (&expected->entities, "status", "200");
-  add_entity (&expected->entities, "version", "1.0");
+  entity_t version = add_entity (&expected->entities, "version", "1.0");
+  add_entity (&version->entities, "preferred", NULL);
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

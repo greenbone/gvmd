@@ -1,3 +1,28 @@
+2009-02-22  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup docs.  Neaten XML strings.  Rename XML_RESPOND to
+	SEND_TO_CLIENT.  Update load_tasks to loop through dirs forwards
+	instead of sorting dirs backwards.
+
+	* src/openvasmd.c: Cleanup docs.  Neaten XML strings.
+	(ahplasort): Remove.
+	(load_tasks): Loop through dirs forwards instead of sorting backwards.
+	(set_task_parameter): Add const to parameter argument.
+	(XML_RESPOND): Remove, rename SEND_TO_CLIENT.
+	(SEND_TO_CLIENT): New macro, previously XML_RESPOND.
+	(omp_xml_handle_end_element): Move OMP_VERSION_RESPONSE attribute to
+	entity.
+
+	* src/ovas-mngr-comm.c: Correct doc typos.
+
+	* src/tests/common.c: Cleanup docs.  Add @file doc.
+
+	* src/tests/omp_version_0.c: Move expected attribute to entity.
+
+	* doc/CMakeLists.txt: Run Doxygen in top-level dir to get relative paths.
+
+	* doc/Doxyfile: Adjust paths for running in top-level dir.
+
 2009-02-21  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add Base64 task file handling.  Add new library with function

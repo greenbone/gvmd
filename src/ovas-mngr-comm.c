@@ -26,9 +26,9 @@
 
 /**
  * @file ovas-mngr-comm.c
- * @brief API for communication between openvas-manger and openvas-server
+ * @brief API for communication between openvas-manager and openvas-server
  *
- * This file contains a API for communicating with an openvas-server
+ * This file contains an API for communicating with an openvas-server
  * which uses OTP as protocol.
  */
 

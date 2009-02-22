@@ -24,6 +24,28 @@
  */
 
 /**
+ * @file common.c
+ * @brief Common utilities for tests.
+ *
+ * There are two sets of utilities here.
+ *
+ * The first set provides higher level
+ * facilities for communicating with the manager.  The functions provided include
+ * \ref authenticate,
+ * \ref connect_to_manager,
+ * \ref close_manager_connection,
+ * \ref create_task,
+ * \ref create_task_from_rc_file and
+ * \ref send_to_manager.
+ *
+ * The second set is a generic XML interface.
+ * The tests use the interface to read and handle the XML returned by
+ * the manager.  The key function is \ref read_entity.
+ *
+ * There are many examples of using this interface in the tests.
+ */
+
+/**
  * @brief Manager (openvasmd) port.
  */
 #define OPENVASMD_PORT 1242
@@ -59,6 +81,9 @@
 #include "common.h"
 #include "../tracef.h"
 
+/**
+ * @brief Manager address.
+ */
 struct sockaddr_in address;
 
 
@@ -415,11 +440,16 @@ create_task_from_rc_file (gnutls_session_t* session,
 
 /* XML. */
 
-typedef struct
-{
-  GSList* first;
-  GSList* current;
-  gboolean done;
+/**
+ * @brief XML context.
+ *
+ * This structure is used to pass data between XML event handlers and the
+ * caller of the XML parser.
+ */
+typedef struct {
+  GSList* first;    ///< The name of the very first entity.
+  GSList* current;  ///< The element currently being parsed.
+  gboolean done;    ///< Flag which is true when the first element is closed.
 } context_data_t;
 
 /**
@@ -517,7 +547,7 @@ entity_name (entity_t entity)
  * @brief Compare a given name with the name of a given entity.
  *
  * @param  entity  Entity.
- * @param  entity  Name.
+ * @param  name    Name.
  *
  * @return Zero if entity name matches name, otherwise a positive or negative
  *         number as from strcmp.
@@ -673,7 +703,7 @@ handle_error (GMarkupParseContext* context,
  * @brief Read an XML entity tree from the manager.
  *
  * @param[in]   session   Pointer to GNUTLS session.
- * @param[out]  entities  Pointer to an entity tree.
+ * @param[out]  entity    Pointer to an entity tree.
  *
  * @return 0 success, -1 read error, -2 parse error, -3 end of file.
  */

@@ -30,6 +30,10 @@
  * This file defines the OpenVAS Manager, a daemon that is layered between
  * the real OpenVAS Server (openvasd) and a client (such as
  * OpenVAS-Client).
+ *
+ * The entry point to the manager is the \ref main function.  From there
+ * the references in the function documentation describe the flow of
+ * control in the program.
  */
 
 /**
@@ -46,9 +50,11 @@
  *
  * \section Implementation
  *
- * \ref openvasmd.c
+ * src/\ref openvasmd.c
  *
- * \ref ovas-mngr-comm.c
+ * src/\ref ovas-mngr-comm.c
+ *
+ * src/tests/\ref common.c
  */
 
 /**
@@ -488,7 +494,7 @@ typedef enum
 server_state_t server_state = SERVER_TOP;
 
 /**
- * @brief Set the server state.
+ * @brief Set the server state, \ref server_state.
  */
 void
 set_server_state (server_state_t state)
@@ -524,7 +530,7 @@ server_init_state_t server_init_state = SERVER_INIT_TOP;
 int server_init_offset = 0;
 
 /**
- * @brief Set the server initialisation state.
+ * @brief Set the server initialisation state, \ref server_init_state.
  */
 void
 set_server_init_state (server_init_state_t state)
@@ -565,8 +571,8 @@ make_server_preferences ()
 /**
  * @brief Add a preference to the server preferences.
  *
- * Both parameters are used directly (versus copying), and are freed when
- * the preferences are freed.
+ * Both parameters are used directly, and are freed when the
+ * preferences are freed.
  *
  * @param[in]  preference  The preference.
  * @param[in]  value       The value of the preference.
@@ -745,8 +751,8 @@ add_server_rule (char* rule)
  */
 typedef struct
 {
-  gchar* username;
-  gchar* password;
+  gchar* username;  ///< Login name of user.
+  gchar* password;  ///< Password of user.
 } credentials_t;
 
 /**
@@ -810,6 +816,13 @@ append_to_credentials_password (credentials_t* credentials,
                           : g_strndup (text, length);
 }
 
+/**
+ * @brief Authenticate credentials.
+ *
+ * @param[in]  credentials  Credentials.
+ *
+ * @return 1 if credentials are authentic, else 0.
+ */
 int
 authenticate (credentials_t credentials)
 {
@@ -858,6 +871,12 @@ port_protocol_name (port_t* port)
     }
 }
 
+/**
+ * @brief Print a string representation of a port to a stream.
+ *
+ * @param[in]  stream  Destination stream.
+ * @param[in]  port    Port to print.
+ */
 void
 print_port (FILE* stream, port_t* port)
 {
@@ -885,8 +904,8 @@ message_t* current_message = NULL;
 /**
  * @brief Make a message.
  *
- * @param[in]  port_number  Port number.
- * @param[in]  protocol     Port protocol.
+ * @param[in]  number    Port number.
+ * @param[in]  protocol  Port protocol.
  *
  * @return A pointer to the new message.
  */
@@ -914,6 +933,7 @@ make_message (unsigned int number, const char* protocol)
  * @brief Free a message for g_ptr_array_foreach.
  *
  * @param[in]  message       Pointer to the message.
+ * @param[in]  dummy         Dummy parameter.
  */
 void
 free_message (gpointer message, gpointer dummy)
@@ -955,8 +975,8 @@ set_message_oid (message_t* message, char* oid)
  */
 typedef struct
 {
-  FILE* stream;
-  char* type;
+  FILE* stream;  ///< Destination stream.
+  char* type;    ///< Type of message.
 } message_data_t;
 
 /**
@@ -1048,7 +1068,7 @@ char* current_task_task_id = NULL;
 char* modify_task_value = NULL;
 
 /**
- * @brief Current client task during OMP NEW_TASK or MODIFY_TASK.
+ * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
  */
 task_t* current_client_task = NULL;
 
@@ -1121,6 +1141,8 @@ print_tasks ()
 
 /**
  * @brief Grow the array of tasks.
+ *
+ * @return 0 on success, -1 on error (out of memory).
  */
 int
 grow_tasks ()
@@ -1143,6 +1165,13 @@ grow_tasks ()
   return 0;
 }
 
+/**
+ * @brief Free a task.
+ *
+ * Free all the members of a task.
+ *
+ * @param[in]  task  The task to free.
+ */
 void
 free_task (task_t* task)
 {
@@ -1263,14 +1292,6 @@ make_task (char* name, unsigned int time, char* comment)
     }
 }
 
-int
-ahplasort (const void *a, const void *b)
-{
-  const struct dirent **d_a = (const struct dirent **) a;
-  const struct dirent **d_b = (const struct dirent **) b;
-  return - strcmp ((*d_a)->d_name, (*d_b)->d_name);
-}
-
 /**
  * @brief Load the tasks from disk.
  *
@@ -1295,7 +1316,7 @@ load_tasks ()
   struct dirent ** names;
   int count;
 
-  count = scandir (dir_name, &names, NULL, ahplasort);
+  count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)
     {
       if (errno == ENOENT)
@@ -1311,9 +1332,10 @@ load_tasks ()
       return -1;
     }
 
-  while (count--)
+  int index;
+  for (index = 0; index < count; index++)
     {
-      const char* task_name = names[count]->d_name;
+      const char* task_name = names[index]->d_name;
 
       if (task_name[0] == '.') continue;
 
@@ -1334,8 +1356,7 @@ load_tasks ()
           g_error_free (error);
           g_free (dir_name);
           g_free (file_name);
-          free (names[count]);
-          while (count--) free (names[count]);
+          for (; index < count; index++) free (names[index]);
           free (names);
           free_tasks ();
           return -1;
@@ -1374,8 +1395,7 @@ load_tasks ()
           g_free (name);
           g_free (comment);
           g_free (dir_name);
-          free (names[count]);
-          while (count--) free (names[count]);
+          for (; index < count; index++) free (names[index]);
           free (names);
           free_tasks ();
           return -1;
@@ -1403,7 +1423,7 @@ load_tasks ()
           goto fail;
         }
 
-      free (names[count]);
+      free (names[index]);
     }
 
   g_free (dir_name);
@@ -1541,7 +1561,7 @@ save_tasks ()
 }
 
 /**
- * @brief Find a task.
+ * @brief Find a task given an identifier.
  *
  * @param[in]  id  A task identifier.
  *
@@ -1563,19 +1583,19 @@ find_task (unsigned int id)
 /**
  * @brief Set a task parameter.
  *
- * The value parameter is used directly and freed immediately or when the
- * task is freed.
+ * The "value" parameter is used directly and freed either immediately or
+ * when the task is freed.
  *
  * @param[in]  task       A pointer to a task.
- * @param[in]  parameter  The name of the parameter: "TASK_FILE", "IDENTIFIER"
- *                        or "COMMENT".
+ * @param[in]  parameter  The name of the parameter (in any case): TASK_FILE,
+ *                        IDENTIFIER or COMMENT.
  * @param[in]  value      The value of the parameter, in base64 if parameter
  *                        is "TASK_FILE".
  *
  * @return 0 on success, -1 when out of memory, -2 if parameter name error.
  */
 int
-set_task_parameter (task_t* task, char* parameter, char* value)
+set_task_parameter (task_t* task, const char* parameter, char* value)
 {
   tracef ("   set_task_parameter %u %s\n", task->id, parameter);
   if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
@@ -1606,6 +1626,8 @@ set_task_parameter (task_t* task, char* parameter, char* value)
 
 /**
  * @brief Start a task.
+ *
+ * Use \ref send_to_server to queue the task start sequence in \ref to_server.
  *
  * @param[in]  task  A pointer to the task.
  *
@@ -1668,6 +1690,9 @@ start_task (task_t* task)
 /**
  * @brief Stop a task.
  *
+ * Use \ref send_to_server to queue the task stop sequence in
+ * \ref to_server.
+ *
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
@@ -1688,6 +1713,8 @@ stop_task (task_t* task)
 
 /**
  * @brief Delete a task.
+ *
+ * Stop the task beforehand with \ref stop_task, if it is running.
  *
  * @param[in]  task  A pointer to the task.
  *
@@ -2044,6 +2071,12 @@ save_report (task_t* task)
 /**
  * @brief Serve the OpenVAS Transfer Protocol (OTP).
  *
+ * Loop reading input from the sockets, and writing client input to the
+ * server socket and server input to the client socket.  Exit the loop
+ * on reaching end of file on either of the sockets.
+ *
+ * If compiled with logging (\ref LOG) then log all output with \ref logf.
+ *
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  server_session  The TLS session with the server.
  * @param[in]  client_socket   The socket connected to the client.
@@ -2324,9 +2357,11 @@ serve_otp (gnutls_session_t* client_session,
 /**
  * @brief Send a response message to the client.
  *
+ * Queue a message in \ref to_client.
+ *
  * @param[in]  msg  The message, a string.
  */
-#define XML_RESPOND(msg)                                          \
+#define SEND_TO_CLIENT(msg)                                       \
   do                                                              \
     {                                                             \
       if (BUFFER_SIZE - to_client_end < strlen (msg))             \
@@ -2339,6 +2374,13 @@ serve_otp (gnutls_session_t* client_session,
 
 /**
  * @brief Handle the start of an OMP XML element.
+ *
+ * React to the start of an XML element according to the current value
+ * of \ref client_state, usually adjusting \ref client_state to indicate
+ * the change (with \ref set_client_state).  Call \ref SEND_TO_CLIENT to
+ * queue any responses for the client.
+ *
+ * Set error parameter on encountering an error.
  *
  * @param[in]  context           Parser context.
  * @param[in]  element_name      XML element name.
@@ -2369,7 +2411,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         else
           {
-            XML_RESPOND ("<omp_response><status>401</status></omp_response>");
+            SEND_TO_CLIENT ("<omp_response>"
+                            "<status>401</status>"
+                            "</omp_response>");
             g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Must authenticate first.");
           }
@@ -2421,7 +2465,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         else
           {
-            XML_RESPOND ("<omp_response><status>402</status></omp_response>");
+            SEND_TO_CLIENT ("<omp_response>"
+                            "<status>402</status>"
+                            "</omp_response>");
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -2434,7 +2480,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS);
         else
           {
-            XML_RESPOND ("<authenticate_response><status>402</status></authenticate_response>");
+            SEND_TO_CLIENT ("<authenticate_response>"
+                            "<status>402</status>"
+                            "</authenticate_response>");
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
             g_set_error (error,
@@ -2451,7 +2499,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS_PASSWORD);
         else
           {
-            XML_RESPOND ("<authenticate_response><status>402</status></authenticate_response>");
+            SEND_TO_CLIENT ("<authenticate_response>"
+                            "<status>402</status>"
+                            "</authenticate_response>");
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
             g_set_error (error,
@@ -2466,7 +2516,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_TASK_TASK_ID);
         else
           {
-            XML_RESPOND ("<delete_task_response><status>402</status></delete_task_response>");
+            SEND_TO_CLIENT ("<delete_task_response>"
+                            "<status>402</status>"
+                            "</delete_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2477,7 +2529,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_DEPENDENCIES:
           {
-            XML_RESPOND ("<get_dependencies_response><status>402</status></get_dependencies_response>");
+            SEND_TO_CLIENT ("<get_dependencies_response>"
+                            "<status>402</status>"
+                            "</get_dependencies_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2488,7 +2542,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_ALL:
           {
-            XML_RESPOND ("<get_nvt_feed_all><status>402</status></get_nvt_feed_all>");
+            SEND_TO_CLIENT ("<get_nvt_feed_all>"
+                            "<status>402</status>"
+                            "</get_nvt_feed_all>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2499,7 +2555,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
           {
-            XML_RESPOND ("<get_nvt_feed_checksum><status>402</status></get_nvt_feed_checksum>");
+            SEND_TO_CLIENT ("<get_nvt_feed_checksum>"
+                            "<status>402</status>"
+                            "</get_nvt_feed_checksum>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2510,7 +2568,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_DETAILS:
           {
-            XML_RESPOND ("<get_nvt_feed_details><status>402</status></get_nvt_feed_details>");
+            SEND_TO_CLIENT ("<get_nvt_feed_details>"
+                            "<status>402</status>"
+                            "</get_nvt_feed_details>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2521,7 +2581,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_PREFERENCES:
           {
-            XML_RESPOND ("<get_preferences_response><status>402</status></get_preferences_response>");
+            SEND_TO_CLIENT ("<get_preferences_response>"
+                            "<status>402</status>"
+                            "</get_preferences_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2532,7 +2594,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 
       case CLIENT_GET_RULES:
           {
-            XML_RESPOND ("<get_rules_response><status>402</status></get_rules_response>");
+            SEND_TO_CLIENT ("<get_rules_response>"
+                            "<status>402</status>"
+                            "</get_rules_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2550,7 +2614,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TASK_VALUE);
         else
           {
-            XML_RESPOND ("<modify_task_response><status>402</status></modify_task_response>");
+            SEND_TO_CLIENT ("<modify_task_response>"
+                            "<status>402</status>"
+                            "</modify_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2568,7 +2634,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
 #endif
         else
           {
-            XML_RESPOND ("<abort_task_response><status>402</status></abort_task_response>");
+            SEND_TO_CLIENT ("<abort_task_response>"
+                            "<status>402</status>"
+                            "</abort_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2586,7 +2654,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_NEW_TASK_COMMENT);
         else
           {
-            XML_RESPOND ("<new_task_response><status>402</status></new_task_response>");
+            SEND_TO_CLIENT ("<new_task_response>"
+                            "<status>402</status>"
+                            "</new_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2600,7 +2670,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_START_TASK_TASK_ID);
         else
           {
-            XML_RESPOND ("<start_task_response><status>402</status></start_task_response>");
+            SEND_TO_CLIENT ("<start_task_response>"
+                            "<status>402</status>"
+                            "</start_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2614,7 +2686,9 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_STATUS_TASK_ID);
         else
           {
-            XML_RESPOND ("<status_response><status>402</status></status_task_response>");
+            SEND_TO_CLIENT ("<status_response>"
+                            "<status>402</status>"
+                            "</status_task_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -2657,7 +2731,7 @@ send_requirement (gconstpointer element, gconstpointer dummy)
   gchar* msg = g_strdup_printf ("<need>%s</need>", text);
   g_free (text);
 
-  XML_RESPOND (msg);
+  SEND_TO_CLIENT (msg);
 
   g_free (msg);
   return 1;
@@ -2683,7 +2757,7 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
   gchar* msg = g_strdup_printf ("<dependency><needer>%s</needer>",
                                 key_text);
   g_free (key_text);
-  XML_RESPOND (msg);
+  SEND_TO_CLIENT (msg);
 
   if (g_slist_find_custom ((GSList*) value, NULL, send_requirement))
     {
@@ -2692,7 +2766,7 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
       return TRUE;
     }
 
-  XML_RESPOND ("</dependency>");
+  SEND_TO_CLIENT ("</dependency>");
   return FALSE;
 }
 
@@ -2709,13 +2783,17 @@ gboolean
 send_preference (gpointer key, gpointer value, gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
-  gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
-  gchar* value_text = g_markup_escape_text ((char*) value, strlen ((char*) value));
-  gchar* msg = g_strdup_printf ("<preference><name>%s</name><value>%s</value></preference>",
+  gchar* key_text = g_markup_escape_text ((char*) key,
+                                          strlen ((char*) key));
+  gchar* value_text = g_markup_escape_text ((char*) value,
+                                            strlen ((char*) value));
+  gchar* msg = g_strdup_printf ("<preference>"
+                                "<name>%s</name><value>%s</value>"
+                                "</preference>",
                                 key_text, value_text);
   g_free (key_text);
   g_free (value_text);
-  XML_RESPOND (msg);
+  SEND_TO_CLIENT (msg);
   g_free (msg);
   return FALSE;
  respond_fail:
@@ -2734,10 +2812,11 @@ gboolean
 send_rule (gpointer rule)
 {
   /* \todo Do these reallocations affect performance? */
-  gchar* rule_text = g_markup_escape_text ((char*) rule, strlen ((char*) rule));
+  gchar* rule_text = g_markup_escape_text ((char*) rule,
+                                           strlen ((char*) rule));
   gchar* msg = g_strdup_printf ("<rule>%s</rule>", rule_text);
   g_free (rule_text);
-  XML_RESPOND (msg);
+  SEND_TO_CLIENT (msg);
   g_free (msg);
   return FALSE;
  respond_fail:
@@ -2747,6 +2826,15 @@ send_rule (gpointer rule)
 
 /**
  * @brief Handle the end of an OMP XML element.
+ *
+ * React to the end of an XML element according to the current value
+ * of \ref client_state, usually adjusting \ref client_state to indicate
+ * the change (with \ref set_client_state).  Call \ref SEND_TO_CLIENT to queue
+ * any responses for the client.  Call the task utilities to adjust the
+ * tasks (for example \ref start_task, \ref stop_task, \ref set_task_parameter,
+ * \ref delete_task and \ref find_task).
+ *
+ * Set error parameter on encountering an error.
  *
  * @param[in]  context           Parser context.
  * @param[in]  element_name      XML element name.
@@ -2771,12 +2859,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           assert (current_client_task == NULL);
           unsigned int id;
           if (sscanf (current_task_task_id, "%u", &id) != 1)
-            XML_RESPOND ("<abort_task_response><status>40x</status></abort_task_response>");
+            SEND_TO_CLIENT ("<abort_task_response>"
+                            "<status>40x</status>"
+                            "</abort_task_response>");
           else
             {
               task_t* task = find_task (id);
               if (task == NULL)
-                XML_RESPOND ("<abort_task_response><status>407</status></abort_task_response>");
+                SEND_TO_CLIENT ("<abort_task_response>"
+                                "<status>407</status>"
+                                "</abort_task_response>");
               else if (stop_task (task))
                 {
                   /* to_server is full. */
@@ -2785,7 +2877,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   abort ();
                 }
               else
-                XML_RESPOND ("<abort_task_response><status>201</status></abort_task_response>");
+                SEND_TO_CLIENT ("<abort_task_response>"
+                                "<status>201</status>"
+                                "</abort_task_response>");
             }
           set_client_state (CLIENT_AUTHENTIC);
         }
@@ -2822,7 +2916,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           {
-            XML_RESPOND ("<authenticate_response><status>403</status></authenticate_response>");
+            SEND_TO_CLIENT ("<authenticate_response>"
+                            "<status>403</status>"
+                            "</authenticate_response>");
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
           }
@@ -2846,85 +2942,99 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_GET_PREFERENCES:
         if (server.preferences)
           {
-            XML_RESPOND ("<get_preferences_response><status>200</status>");
+            SEND_TO_CLIENT ("<get_preferences_response><status>200</status>");
             if (g_hash_table_find (server.preferences, send_preference, NULL))
               goto respond_fail;
-            XML_RESPOND ("</get_preferences_response>");
+            SEND_TO_CLIENT ("</get_preferences_response>");
           }
         else
-          XML_RESPOND ("<get_preferences_response><status>500</status></get_preferences_response>");
+          SEND_TO_CLIENT ("<get_preferences_response>"
+                          "<status>500</status>"
+                          "</get_preferences_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_DEPENDENCIES:
         if (server.plugins_dependencies)
           {
-            XML_RESPOND ("<get_dependencies_response><status>200</status>");
+            SEND_TO_CLIENT ("<get_dependencies_response><status>200</status>");
             if (g_hash_table_find (server.plugins_dependencies,
                                    send_dependency,
                                    NULL))
               goto respond_fail;
-            XML_RESPOND ("</get_dependencies_response>");
+            SEND_TO_CLIENT ("</get_dependencies_response>");
           }
         else
-          XML_RESPOND ("<get_dependencies_response><status>500</status></get_dependencies_response>");
+          SEND_TO_CLIENT ("<get_dependencies_response>"
+                          "<status>500</status>"
+                          "</get_dependencies_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_ALL:
-        XML_RESPOND ("<get_nvt_feed_all_response><status>200</status>");
-        XML_RESPOND ("<nvt_count>2</nvt_count>");
-        XML_RESPOND ("<feed_checksum><algorithm>md5</algorithm>333</feed_checksum>");
-        XML_RESPOND ("<nvt>"
+        SEND_TO_CLIENT ("<get_nvt_feed_all_response><status>200</status>");
+        SEND_TO_CLIENT ("<nvt_count>2</nvt_count>");
+        SEND_TO_CLIENT ("<feed_checksum>"
+                        "<algorithm>md5</algorithm>"
+                        "333"
+                        "</feed_checksum>");
+        SEND_TO_CLIENT ("<nvt>"
                      "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
                      "<name>FooBar 1.5 installed</name>"
                      "<checksum><algorithm>md5</algorithm>222</checksum>"
                      "</nvt>");
-        XML_RESPOND ("<nvt>"
+        SEND_TO_CLIENT ("<nvt>"
                      "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
                      "<name>FooBar 2.1 XSS vulnerability</name>"
                      "<checksum><algorithm>md5</algorithm>223</checksum>"
                      "</nvt>");
-        XML_RESPOND ("</get_nvt_feed_all_response>");
+        SEND_TO_CLIENT ("</get_nvt_feed_all_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
+// FIX
 #if 0
         if (server.plugins_md5)
           {
-            XML_RESPOND ("<get_nvt_feed_checksum_response><status>200</status><algorithm>md5</algorithm>");
-            XML_RESPOND (server.plugins_md5);
-            XML_RESPOND ("</get_nvt_feed_checksum_response>");
+            SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
+                            "<status>200</status>"
+                            "<algorithm>md5</algorithm>");
+            SEND_TO_CLIENT (server.plugins_md5);
+            SEND_TO_CLIENT ("</get_nvt_feed_checksum_response>");
           }
         else
-          XML_RESPOND ("<get_nvt_feed_checksum_response><status>500</status></get_nvt_feed_checksum_response>");
+          SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
+                          "<status>500</status>"
+                          "</get_nvt_feed_checksum_response>");
 #else
-        XML_RESPOND ("<get_nvt_feed_checksum_response><status>200</status><algorithm>md5</algorithm>");
-        XML_RESPOND ("111");
-        XML_RESPOND ("</get_nvt_feed_checksum_response>");
+        SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
+                        "<status>200</status>"
+                        "<algorithm>md5</algorithm>");
+        SEND_TO_CLIENT ("111");
+        SEND_TO_CLIENT ("</get_nvt_feed_checksum_response>");
 #endif
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
-        XML_RESPOND ("<get_nvt_feed_details_response><status>200</status>");
-        XML_RESPOND ("<nvt>"
-                     "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                     "<cve>CVE-2008-4877</cve>"
-                     "<cve>CVE-2008-4881</cve>"
-                     "<bugtraq_id>12345</bugtraq_id>"
-                     "<filename>foobar_15_detect.nasl</filename>"
-                     "<description>This script detects whether FooBar 1.5 is installed.</description>"
-                     "</nvt>");
-        XML_RESPOND ("<nvt>"
-                     "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                     "<cve>CVE-2008-5142</cve>"
-                     "<bugtraq_id>12478</bugtraq_id>"
-                     "<filename>foobar_21_xss.nasl</filename>"
-                     "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
-                     "</nvt>");
-        XML_RESPOND ("</get_nvt_feed_details_response>");
+        SEND_TO_CLIENT ("<get_nvt_feed_details_response><status>200</status>");
+        SEND_TO_CLIENT ("<nvt>"
+                        "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                        "<cve>CVE-2008-4877</cve>"
+                        "<cve>CVE-2008-4881</cve>"
+                        "<bugtraq_id>12345</bugtraq_id>"
+                        "<filename>foobar_15_detect.nasl</filename>"
+                        "<description>This script detects whether FooBar 1.5 is installed.</description>"
+                        "</nvt>");
+        SEND_TO_CLIENT ("<nvt>"
+                        "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                        "<cve>CVE-2008-5142</cve>"
+                        "<bugtraq_id>12478</bugtraq_id>"
+                        "<filename>foobar_21_xss.nasl</filename>"
+                        "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
+                        "</nvt>");
+        SEND_TO_CLIENT ("</get_nvt_feed_details_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -2932,19 +3042,24 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         if (server.rules)
           {
             int index;
-            XML_RESPOND ("<get_rules_response><status>200</status>");
+            SEND_TO_CLIENT ("<get_rules_response><status>200</status>");
             for (index = 0; index < server.rules_size; index++)
               if (send_rule (g_ptr_array_index (server.rules, index)))
                 goto respond_fail;
-            XML_RESPOND ("</get_rules_response>");
+            SEND_TO_CLIENT ("</get_rules_response>");
           }
         else
-          XML_RESPOND ("<get_rules_response><status>500</status></get_rules_response>");
+          SEND_TO_CLIENT ("<get_rules_response>"
+                          "<status>500</status>"
+                          "</get_rules_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_VERSION:
-        XML_RESPOND ("<omp_version_response><status>200</status><version preferred=\"yes\">1.0</version></omp_version_response>");
+        SEND_TO_CLIENT ("<omp_version_response>"
+                        "<status>200</status>"
+                        "<version><preferred/>1.0</version>"
+                        "</omp_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -2953,12 +3068,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           assert (current_client_task == NULL);
           unsigned int id;
           if (sscanf (current_task_task_id, "%u", &id) != 1)
-            XML_RESPOND ("<delete_task_response><status>40x</status></delete_task_response>");
+            SEND_TO_CLIENT ("<delete_task_response>"
+                            "<status>40x</status>"
+                            "</delete_task_response>");
           else
             {
               task_t* task = find_task (id);
               if (task == NULL)
-                XML_RESPOND ("<delete_task_response><status>407</status></delete_task_response>");
+                SEND_TO_CLIENT ("<delete_task_response>"
+                                "<status>407</status>"
+                                "</delete_task_response>");
               else if (delete_task (task))
                 {
                   /* to_server is full. */
@@ -2967,7 +3086,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   abort ();
                 }
               else
-                XML_RESPOND ("<delete_task_response><status>201</status></delete_task_response>");
+                SEND_TO_CLIENT ("<delete_task_response>"
+                                "<status>201</status>"
+                                "</delete_task_response>");
             }
           set_client_state (CLIENT_AUTHENTIC);
         }
@@ -2982,12 +3103,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           assert (current_client_task == NULL);
           unsigned int id;
           if (sscanf (current_task_task_id, "%u", &id) != 1)
-            XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
+            SEND_TO_CLIENT ("<modify_task_response>"
+                            "<status>40x</status>"
+                            "</modify_task_response>");
           else
             {
               current_client_task = find_task (id);
               if (current_client_task == NULL)
-                XML_RESPOND ("<modify_task_response><status>407</status></modify_task_response>");
+                SEND_TO_CLIENT ("<modify_task_response>"
+                                "<status>407</status>"
+                                "</modify_task_response>");
               else
                 {
                   // FIX check if param,value else respond fail
@@ -3000,12 +3125,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     {
                       free (modify_task_value);
                       modify_task_value = NULL;
-                      XML_RESPOND ("<modify_task_response><status>40x</status></modify_task_response>");
+                      SEND_TO_CLIENT ("<modify_task_response>"
+                                      "<status>40x</status>"
+                                      "</modify_task_response>");
                     }
                   else
                     {
                       modify_task_value = NULL;
-                      XML_RESPOND ("<modify_task_response><status>201</status></modify_task_response>");
+                      SEND_TO_CLIENT ("<modify_task_response>"
+                                      "<status>201</status>"
+                                      "</modify_task_response>");
                     }
                 }
             }
@@ -3038,7 +3167,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                "</new_task_response>",
                                current_client_task->id);
         // FIX free msg if fail
-        XML_RESPOND (msg);
+        SEND_TO_CLIENT (msg);
         free (msg);
         current_client_task = NULL;
         set_client_state (CLIENT_AUTHENTIC);
@@ -3071,12 +3200,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           assert (current_client_task == NULL);
           unsigned int id;
           if (sscanf (current_task_task_id, "%u", &id) != 1)
-            XML_RESPOND ("<start_task_response><status>40x</status></start_task_response>");
+            SEND_TO_CLIENT ("<start_task_response>"
+                            "<status>40x</status>"
+                            "</start_task_response>");
           else
             {
               task_t* task = find_task (id);
               if (task == NULL)
-                XML_RESPOND ("<start_task_response><status>407</status></start_task_response>");
+                SEND_TO_CLIENT ("<start_task_response>"
+                                "<status>407</status>"
+                                "</start_task_response>");
               else if (start_task (task))
                 {
                   /* to_server is full. */
@@ -3085,7 +3218,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   abort ();
                 }
               else
-                XML_RESPOND ("<start_task_response><status>201</status></start_task_response>");
+                SEND_TO_CLIENT ("<start_task_response>"
+                                "<status>201</status>"
+                                "</start_task_response>");
             }
           set_client_state (CLIENT_AUTHENTIC);
         }
@@ -3097,54 +3232,71 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_STATUS:
         assert (strncasecmp ("STATUS", element_name, 6) == 0);
-        XML_RESPOND ("<status_response><status>200</status>");
         if (current_task_task_id)
           {
             unsigned int id;
             if (sscanf (current_task_task_id, "%u", &id) != 1)
-              XML_RESPOND ("<status_response><status>40x</status></status_response>");
+              SEND_TO_CLIENT ("<status_response>"
+                              "<status>40x</status>"
+                              "</status_response>");
             else
               {
                 task_t* task = find_task (id);
                 if (task == NULL)
-                  XML_RESPOND ("<status_response><status>407</status></status_response>");
+                  SEND_TO_CLIENT ("<status_response>"
+                                  "<status>407</status>"
+                                  "</status_response>");
                 else
                   {
+                    SEND_TO_CLIENT ("<status_response><status>200</status>");
                     gchar* response;
                     response = g_strdup_printf ("<report_count>%u</report_count>",
                                                 task->report_count);
-                    XML_RESPOND (response);
+                    SEND_TO_CLIENT (response);
                     // FIX output reports
                   }
               }
           }
         else
           {
+            SEND_TO_CLIENT ("<status_response><status>200</status>");
             gchar* response = g_strdup_printf ("<task_count>%u</task_count>", num_tasks);
-            XML_RESPOND (response);
+            SEND_TO_CLIENT (response);
             task_t* index = tasks;
             task_t* end = tasks + tasks_size;
             while (index < end)
               {
                 if (index->name)
                   {
-                    gchar* line = g_strdup_printf ("<task><task_id>%u</task_id><identifier>%s</identifier><task_status>%s</task_status><messages><debug>%i</debug><hole>%i</hole><info>%i</info><log>%i</log><warning>%i</warning></messages></task>",
-                                                   index->id,
-                                                   index->name,
-                                                   index->running ? "Running" : "New",
-                                                   index->debugs_size,
-                                                   index->holes_size,
-                                                   index->infos_size,
-                                                   index->logs_size,
-                                                   index->notes_size);
+                    gchar* line;
+                    line = g_strdup_printf ("<task>"
+                                            "<task_id>%u</task_id>"
+                                            "<identifier>%s</identifier>"
+                                            "<task_status>%s</task_status>"
+                                            "<messages>"
+                                            "<debug>%i</debug>"
+                                            "<hole>%i</hole>"
+                                            "<info>%i</info>"
+                                            "<log>%i</log>"
+                                            "<warning>%i</warning>"
+                                            "</messages>"
+                                            "</task>",
+                                            index->id,
+                                            index->name,
+                                            index->running ? "Running" : "New",
+                                            index->debugs_size,
+                                            index->holes_size,
+                                            index->infos_size,
+                                            index->logs_size,
+                                            index->notes_size);
                     // FIX free line if RESPOND fails
-                    XML_RESPOND (line);
+                    SEND_TO_CLIENT (line);
                     g_free (line);
                   }
                 index++;
               }
           }
-        XML_RESPOND ("</status_response>");
+        SEND_TO_CLIENT ("</status_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_STATUS_TASK_ID:
@@ -3166,7 +3318,13 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 }
 
 /**
- * @brief Handle additional text of an OMP XML element.
+ * @brief Handle the addition of text to an OMP XML element.
+ *
+ * React to the addition of text to the value of an XML element.
+ * React according to the current value of \ref client_state,
+ * usually appending the text to some part of the current task
+ * (\ref current_client_task) with functions like
+ * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
  * @param[in]  text              The text.
@@ -3272,6 +3430,8 @@ omp_xml_handle_text (GMarkupParseContext* context,
 /**
  * @brief Handle an OMP XML parsing error.
  *
+ * Simply leave the error for the caller of the parser to handle.
+ *
  * @param[in]  context           Parser context.
  * @param[in]  error             The error.
  * @param[in]  user_data         Dummy parameter.
@@ -3285,12 +3445,18 @@ omp_xml_handle_error (GMarkupParseContext* context,
 }
 
 /**
- * @brief Process any XML available in from_client.
+ * @brief Process any XML available in \ref from_client.
  *
- * Queue any resulting server commands in to_server and any replies for
- * the client in to_client.
+ * Call the XML parser and let the callback functions do the work
+ * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
+ * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
  *
- * @return 0 success, -1 error, -2 or -3 too little space in to_client or to_server.
+ * The callback functions will queue any resulting server commands in
+ * \ref to_server (using \ref send_to_server) and any replies for
+ * the client in \ref to_client (using \ref SEND_TO_CLIENT).
+ *
+ * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
+ *         or \ref to_server.
  */
 int
 process_omp_client_input ()
@@ -3326,11 +3492,16 @@ process_omp_client_input ()
 }
 
 /**
- * @brief Process any lines available in from_server.
+ * @brief Process any lines available in \ref from_server.
  *
- * Only ever update manager server records according to the input from the
- * server.  Output to the server is always done via
- * process_omp_client_input, in reaction to client requests.
+ * Update server information according to the input from the server.
+ * This includes updating the server state with \ref set_server_state
+ * and \ref set_server_init_state, and updating server records with functions
+ * like \ref add_server_preference and \ref append_task_open_port.
+ *
+ * This function simply records input from the server.  Output to the server
+ * or client is always done via \ref process_omp_client_input in reaction to
+ * client requests.
  *
  * @return 0 on success, -1 on error.
  */
@@ -4250,7 +4421,7 @@ process_omp_server_input ()
 }
 
 /**
- * @brief Read as much from the client as the from_client buffer will hold.
+ * @brief Read as much from the client as the \ref from_client buffer will hold.
  *
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  client_socket   The socket connected to the client.
@@ -4307,7 +4478,7 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
 
 // FIX combine with read_from_client
 /**
- * @brief Read as much from the server as the from_server buffer will hold.
+ * @brief Read as much from the server as the \ref from_server buffer will hold.
  *
  * @param[in]  server_session  The TLS session with the server.
  * @param[in]  server_socket   The socket connected to the server.
@@ -4370,7 +4541,7 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
 }
 
 /**
- * @brief Write as much as possible from to_client to the client.
+ * @brief Write as much as possible from \ref to_client to the client.
  *
  * @param[in]  client_session  The client session.
  *
@@ -4457,7 +4628,7 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
 }
 
 /**
- * @brief Write as much as possible from to_server to the server.
+ * @brief Write as much as possible from \ref to_server to the server.
  *
  * @param[in]  server_socket   The server socket.
  * @param[in]  server_session  The server session.
@@ -4580,6 +4751,18 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
 /**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
+ * Loop reading input from the sockets, processing
+ * the input, and writing any results to the appropriate socket.
+ * Exit the loop on reaching end of file on the client socket.
+ *
+ * Read input with \ref read_from_client and \ref read_from_server.
+ * Process the input with \ref process_omp_client_input and
+ * \ref process_omp_server_input.  Write the results with
+ * \ref write_to_client and \ref write_to_server.
+ *
+ * If compiled with logging (\ref LOG) then log all input and output
+ * with \ref logf.
+ *
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  server_session  The TLS session with the server.
  * @param[in]  client_socket   The socket connected to the client.
@@ -4625,7 +4808,7 @@ serve_omp (gnutls_session_t* client_session,
   // FIX handle client_input_stalled
   if (process_omp_client_input ()) return -1;
 
-  /* Loop forever handling input from the sockets.
+  /* Loop handling input from the sockets.
    *
    * That is, select on all the socket fds and then, as necessary
    *   - read from the client into buffer from_client
@@ -4636,21 +4819,21 @@ serve_omp (gnutls_session_t* client_session,
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_omp_client_input, which parses OMP
    * commands and may write to to_server and to_client.  On reading from
-   * the server call process_omp_server_input, which mostly just updates
-   * information kept about the server.
+   * the server call process_omp_server_input, which updates information
+   * kept about the server.
    *
    * There are a few complications here
-   *   - the program must read everything available on an fd before
-   *     selecting for read on the fd again,
+   *   - the program must read from or write to an fd returned by select
+   *     before selecting for read on the fd again,
    *   - the program need only select on the fds for writing if there is
    *     something to write,
    *   - similarly, the program need only select on the fds for reading
-   *     if there's buffer space available,
+   *     if there is buffer space available,
    *   - the buffers from_client and from_server can become full during
    *     reading
    *   - a read from the client can be stalled by the to_server buffer
    *     filling up, or the to_client buffer filling up,
-   *   - a read from the server can, theoretically, be stalled by the
+   *   - FIX a read from the server can, theoretically, be stalled by the
    *     to_server buffer filling up (during initialisation).
    */
   int nfds = 1 + (client_socket > server_socket
@@ -4967,7 +5150,7 @@ serve_omp (gnutls_session_t* client_session,
 /* Other functions. */
 
 /**
- * @brief Read the type of protocol from the client.
+ * @brief Read and return the type of protocol from the client.
  *
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  client_socket   The socket connected to the client.
@@ -5069,7 +5252,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
  *
  * Connect to the openvasd server, then call either \ref serve_otp or \ref
  * serve_omp to serve the protocol, depending on the first message that
- * the client sends.
+ * the client sends.  Read the first message with \ref read_protocol.
  *
  * @param[in]  client_socket  The socket connected to the client.
  *
@@ -5245,8 +5428,8 @@ serve_client (int client_socket)
 /**
  * @brief Accept and fork.
  *
- * Accept the client connection and fork a child process.  The child calls
- * \ref serve_client to do the rest of the work.
+ * Accept the client connection and fork a child process to serve the client.
+ * The child calls \ref serve_client to do the rest of the work.
  */
 void
 accept_and_maybe_fork () {
@@ -5339,7 +5522,7 @@ cleanup ()
 }
 
 /**
- * @brief Handler for all signals.
+ * @brief Handle a signal.
  *
  * @param[in]  signal  The signal that caused this function to run.
  */

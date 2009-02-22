@@ -105,10 +105,11 @@ endif (XMLMANTOHTML_EXECUTABLE)
 
 add_custom_command (OUTPUT .built-html
                     COMMAND sh
-					ARGS -c \"${DOXYGEN_EXECUTABLE} Doxyfile && touch .built-html\;\"
+					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\"
 					DEPENDS openvasmd.html Doxyfile footer.html
 					        ../src/openvasmd.c ../src/ovas-mngr-comm.c
-							../src/string.c ../src/tracef.h
+							../src/string.c ../src/file.c ../src/tracef.h
+							../src/tests/common.c
 							../README ../INSTALL)
 
 # if (GROFF_DOES_HTML)
@@ -149,4 +150,3 @@ if (XMLTOMAN_EXECUTABLE)
 		   DESTINATION share/man/man8/
 		   COMPONENT doc)
 endif (XMLTOMAN_EXECUTABLE)
-
