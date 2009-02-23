@@ -1,5 +1,16 @@
 2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Update commands to clear current_task_task_id after use.
+
+	* src/openvasmd.c (free_string_var, append_string): New functions.
+	(omp_xml_handle_start_element): Leave clearing of current_task_task_id
+	to omp_xml_handle_end_element.
+	(omp_xml_handle_end_element): Free current_task_task_id after use.
+	(omp_xml_handle_text): Append to string variables with append_string.
+	(serve_omp): Note exit behaviour.
+
+2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Use shared functions for starting tasks.  Authenticate only once per
 	session, for now.
 

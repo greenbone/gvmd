@@ -360,6 +360,47 @@ free_g_ptr_array (gpointer array)
   g_ptr_array_free (array, TRUE);
 }
 
+/**
+ * @brief Free a string variable.
+ *
+ * Free the string in the variable and set the variable to NULL.
+ *
+ * @param[in]  var  The address of a string variable, that is, a pointer to
+ *                  a string.
+ */
+void
+free_string_var (char** var)
+{
+  g_free (*var);
+  *var = NULL;
+}
+
+/**
+ * @brief Append a string to a string variable.
+ *
+ * When the variable is NULL store a copy of the given string in the variable.
+ *
+ * When the variable already contains a string replace the string with a new
+ * string that is the concatenation of the two, freeing the old string.  It is
+ * up to the caller to free the given string if it was dynamically allocated.
+ *
+ * @param[in]  var     The address of a string variable, that is, a pointer to
+ *                     a string.
+ * @param[in]  string  The string to append to the string in the variable.
+ */
+void
+append_string (char** var, const char* string)
+{
+  if (*var)
+    {
+      char* old = *var;
+      *var = g_strconcat (old, string, NULL);
+      g_free (old);
+    }
+  else
+    *var = g_strdup (string);
+}
+
 
 /* Client state. */
 
@@ -2459,10 +2500,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
         else if (strncasecmp ("START_TASK", element_name, 10) == 0)
           set_client_state (CLIENT_START_TASK);
         else if (strncasecmp ("STATUS", element_name, 6) == 0)
-          {
-            current_task_task_id = NULL;
-            set_client_state (CLIENT_STATUS);
-          }
+          set_client_state (CLIENT_STATUS);
         else
           {
             SEND_TO_CLIENT ("<omp_response>"
@@ -2858,11 +2896,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         {
           assert (current_client_task == NULL);
           unsigned int id;
-          if (sscanf (current_task_task_id, "%u", &id) != 1)
-            SEND_TO_CLIENT ("<abort_task_response>"
-                            "<status>40x</status>"
-                            "</abort_task_response>");
-          else
+          if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
               if (task == NULL)
@@ -2881,6 +2915,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                 "<status>201</status>"
                                 "</abort_task_response>");
             }
+          else
+            SEND_TO_CLIENT ("<abort_task_response>"
+                            "<status>40x</status>"
+                            "</abort_task_response>");
+          free_string_var (&current_task_task_id);
           set_client_state (CLIENT_AUTHENTIC);
         }
         break;
@@ -3067,11 +3106,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         {
           assert (current_client_task == NULL);
           unsigned int id;
-          if (sscanf (current_task_task_id, "%u", &id) != 1)
-            SEND_TO_CLIENT ("<delete_task_response>"
-                            "<status>40x</status>"
-                            "</delete_task_response>");
-          else
+          if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
               if (task == NULL)
@@ -3090,6 +3125,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                 "<status>201</status>"
                                 "</delete_task_response>");
             }
+          else
+            SEND_TO_CLIENT ("<delete_task_response>"
+                            "<status>40x</status>"
+                            "</delete_task_response>");
+          free_string_var (&current_task_task_id);
           set_client_state (CLIENT_AUTHENTIC);
         }
         break;
@@ -3102,11 +3142,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         {
           assert (current_client_task == NULL);
           unsigned int id;
-          if (sscanf (current_task_task_id, "%u", &id) != 1)
-            SEND_TO_CLIENT ("<modify_task_response>"
-                            "<status>40x</status>"
-                            "</modify_task_response>");
-          else
+          if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               current_client_task = find_task (id);
               if (current_client_task == NULL)
@@ -3138,6 +3174,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     }
                 }
             }
+          else
+            SEND_TO_CLIENT ("<modify_task_response>"
+                            "<status>40x</status>"
+                            "</modify_task_response>");
+          free_string_var (&current_task_task_id);
           set_client_state (CLIENT_AUTHENTIC);
         }
         break;
@@ -3199,11 +3240,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         {
           assert (current_client_task == NULL);
           unsigned int id;
-          if (sscanf (current_task_task_id, "%u", &id) != 1)
-            SEND_TO_CLIENT ("<start_task_response>"
-                            "<status>40x</status>"
-                            "</start_task_response>");
-          else
+          if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
               if (task == NULL)
@@ -3222,6 +3259,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                 "<status>201</status>"
                                 "</start_task_response>");
             }
+          else
+            SEND_TO_CLIENT ("<start_task_response>"
+                            "<status>40x</status>"
+                            "</start_task_response>");
+          free_string_var (&current_task_task_id);
           set_client_state (CLIENT_AUTHENTIC);
         }
         break;
@@ -3235,11 +3277,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         if (current_task_task_id)
           {
             unsigned int id;
-            if (sscanf (current_task_task_id, "%u", &id) != 1)
-              SEND_TO_CLIENT ("<status_response>"
-                              "<status>40x</status>"
-                              "</status_response>");
-            else
+            if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
                 task_t* task = find_task (id);
                 if (task == NULL)
@@ -3256,6 +3294,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     // FIX output reports
                   }
               }
+            else
+              SEND_TO_CLIENT ("<status_response>"
+                              "<status>40x</status>"
+                              "</status_response>");
+            free_string_var (&current_task_task_id);
           }
         else
           {
@@ -3323,7 +3366,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * (\ref current_client_task) with functions like
+ * (\ref current_client_task) with functions like \ref append_string,
  * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
@@ -3344,43 +3387,13 @@ omp_xml_handle_text (GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_MODIFY_TASK_PARAMETER:
-        if (modify_task_parameter)
-          {
-            // FIX
-            char* new = g_strconcat (modify_task_parameter, text, NULL);
-            modify_task_parameter = new;
-          }
-        else
-          {
-            modify_task_parameter = strdup (text);
-            if (modify_task_parameter == NULL) abort (); // FIX
-          }
+        append_string (&modify_task_parameter, text);
         break;
       case CLIENT_MODIFY_TASK_TASK_ID:
-        if (current_task_task_id)
-          {
-            // FIX
-            char* new = g_strconcat (current_task_task_id, text, NULL);
-            current_task_task_id = new;
-          }
-        else
-          {
-            current_task_task_id = strdup (text);
-            if (current_task_task_id == NULL) abort (); // FIX
-          }
+        append_string (&current_task_task_id, text);
         break;
       case CLIENT_MODIFY_TASK_VALUE:
-        if (modify_task_value)
-          {
-            // FIX
-            char* new = g_strconcat (modify_task_value, text, NULL);
-            modify_task_value = new;
-          }
-        else
-          {
-            modify_task_value = strdup (text);
-            if (modify_task_value == NULL) abort (); // FIX
-          }
+        append_string (&modify_task_value, text);
         break;
 
       case CLIENT_CREDENTIALS_USERNAME:
@@ -3408,17 +3421,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
       case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
-        if (current_task_task_id)
-          {
-            // FIX
-            char* new = g_strconcat (current_task_task_id, text, NULL);
-            current_task_task_id = new;
-          }
-        else
-          {
-            current_task_task_id = strdup (text);
-            if (current_task_task_id == NULL) abort (); // FIX
-          }
+        append_string (&current_task_task_id, text);
         break;
 
       default:
@@ -4932,6 +4935,8 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
+                // FIX exit if reached server EOF, otherwise
+                // shutdown client_socket.
                 return 0;
               default:       /* Programming error. */
                 assert (0);
@@ -5008,6 +5013,7 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -3:       /* End of file. */
                 set_server_init_state (SERVER_INIT_TOP);
+                // FIX if client EOF then exit.
                 break;
               default:       /* Programming error. */
                 assert (0);
