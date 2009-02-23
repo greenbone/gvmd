@@ -35,8 +35,9 @@
  * \ref connect_to_manager,
  * \ref close_manager_connection,
  * \ref create_task,
- * \ref create_task_from_rc_file and
- * \ref send_to_manager.
+ * \ref create_task_from_rc_file,
+ * \ref send_to_manager and
+ * \ref start_task.
  *
  * The second set is a generic XML interface.
  * The tests use the interface to read and handle the XML returned by
@@ -71,6 +72,7 @@
 #include <glib.h>             /* For XML parsing. */
 #include <netdb.h>
 #include <netinet/in.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -330,6 +332,26 @@ send_to_manager (gnutls_session_t* session, const char* string)
 }
 
 /**
+ * @brief Format and send a string to the manager.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  format   printf-style format string for message.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+sendf_to_manager (gnutls_session_t* session, const char* format, ...)
+{
+  va_list args;
+  va_start (args, format);
+  gchar* msg = g_strdup_vprintf (format, args);
+  int ret = send_to_manager (session, msg);
+  g_free (msg);
+  va_end (args);
+  return ret;
+}
+
+/**
  * @brief Create a task, given the task description as an RC file.
  *
  * @param[in]   session     Pointer to GNUTLS session.
@@ -435,6 +457,49 @@ create_task_from_rc_file (gnutls_session_t* session,
                          id);
   g_free (new_task_rc);
   return ret;
+}
+
+/**
+ * @brief Start a task and read the manager response.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+start_task (gnutls_session_t* session,
+            unsigned int id)
+{
+  if (sendf_to_manager (session,
+                        "<start_task><task_id>%u</task_id></start_task>",
+                        id)
+      == -1)
+    return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  entity_t status = entity_child (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  const char* status_text = entity_text (status);
+  if (strlen (status_text) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status_text[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
 }
 
 

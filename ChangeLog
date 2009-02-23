@@ -1,3 +1,24 @@
+2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Use shared functions for starting tasks.  Authenticate only once per
+	session, for now.
+
+	* src/tests/common.c (sendf_to_manager, start_task): New functions.
+
+	* src/tests/common.h (sendf_to_manager, start_task): New headers.
+
+	* src/tests/omp_abort_task_0.c: Use start_task.  Send actual task ID.
+	Authenticate once per session.
+
+	* src/tests/omp_delete_task_0.c: Improve task name.
+
+	* src/tests/omp_start_task_0.c: Authenticate once.
+
+	* src/tests/omp_modify_task_0.c: Improve task name.  Authenticate once.
+	Send actual task ID.
+
+	* src/tests/omp_status_0.c: Use start_task.  Authenticate once.
+
 2009-02-22  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Cleanup docs.  Neaten XML strings.  Rename XML_RESPOND to

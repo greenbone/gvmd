@@ -56,8 +56,8 @@ main ()
   if (create_task (&session,
                    CONFIG,
                    strlen (CONFIG),
-                   "Simple scan",
-                   "Simple test scan.",
+                   "Test for omp_modify_task",
+                   "Comment.",
                    &id))
     {
       close_manager_connection (socket, session);
@@ -66,13 +66,21 @@ main ()
 
   /* Send a modify_task request. */
 
+#if 0
   if (authenticate (&session, "mattm", "mattm"))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
+#endif
 
-  if (send_to_manager (&session, "<modify_task><task_id>0</task_id><parameter>comment</parameter><value>Modified task for test omp_modify_task_0.</value></modify_task>")
+  if (sendf_to_manager (&session,
+                        "<modify_task>"
+                        "<task_id>%u</task_id>"
+                        "<parameter>comment</parameter>"
+                        "<value>Modified comment.</value>"
+                        "</modify_task>",
+                        id)
       == -1)
     {
       close_manager_connection (socket, session);

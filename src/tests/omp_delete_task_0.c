@@ -49,7 +49,7 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Simple scan",
+                                "Test for omp_delete_task_0",
                                 "Simple test scan.",
                                 &id))
     goto fail;

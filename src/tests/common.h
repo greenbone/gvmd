@@ -39,12 +39,18 @@ int
 send_to_manager (gnutls_session_t*, const char*);
 
 int
+sendf_to_manager (gnutls_session_t*, const char*, ...);
+
+int
 create_task (gnutls_session_t*, char*, unsigned int, char*, char*,
              unsigned int*);
 
 int
 create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
                           unsigned int*);
+
+int
+start_task (gnutls_session_t* , unsigned int);
 
 /* XML */
 

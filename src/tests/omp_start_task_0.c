@@ -56,7 +56,9 @@ main ()
 
   /* Start the task. */
 
+#if 0
   if (authenticate (&session, "mattm", "mattm")) goto fail;
+#endif
 
   gchar* msg = g_strdup_printf ("<start_task>"
                                 "<task_id>%u</task_id>"

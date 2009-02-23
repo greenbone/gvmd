@@ -56,36 +56,20 @@ main ()
 
   /* Start the task. */
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
-
-  int ret;
-  gchar* msg = g_strdup_printf ("<start_task>"
-                                "<task_id>%u</task_id>"
-                                "</start_task>",
-                                id);
-  ret = send_to_manager (&session, msg);
-  g_free (msg);
-  if (ret == -1)
-    goto fail;
-
-  entity_t entity = NULL;
-  if (read_entity (&session, &entity))
-    {
-      fprintf (stderr, "Failed to read response.\n");
-      goto fail;
-    }
-  free_entity (entity);
+  if (start_task (&session, id)) goto fail;
 
   /* Request the status. */
 
+#if 0
   if (authenticate (&session, "mattm", "mattm")) goto fail;
+#endif
 
   if (send_to_manager (&session, "<status/>") == -1)
     goto fail;
 
   /* Read the response. */
 
-  entity = NULL;
+  entity_t entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare to expected response. */

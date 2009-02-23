@@ -38,15 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  gchar* new_task_request = NULL;
-  GError* error = NULL;
-
-  g_file_get_contents ("new_task_small.xml", &new_task_request, NULL, &error);
-  if (error)
-    {
-      fprintf (stderr, "%s\n", error->message);
-      return EXIT_FAILURE;
-    }
+  unsigned int id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -59,55 +51,42 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, new_task_request) == -1)
+  if (create_task_from_rc_file (&session,
+                                "new_task_small_rc",
+                                "Task for omp_abort_task_1",
+                                "Test omp_abort_task_1 task.",
+                                &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-
-  entity_t entity = NULL;
-  read_entity (&session, &entity);
-  // FIX assume ok
-  // FIX get id, assume 0 for now
-  free_entity (entity);
 
   /* Start the task. */
 
-  if (authenticate (&session, "mattm", "mattm"))
+  if (start_task (&session, id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session,
-                       "<start_task><task_id>0</task_id></start_task>")
-      == -1)
-    {
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
-    }
+  /* Wait for the task to start on the server. */
 
-  entity = NULL;
-  read_entity (&session, &entity);
-  // FIX assume ok
-  // FIX get id, assume 0 for now
-  free_entity (entity);
-
-  /* Wait for the task to start. */
-
-  // FIX wait on <status><task_id>0<task_id><status>
+  // FIX wait on <status><task_id>%u<task_id><status>
   sleep (5);
 
   /* Cancel the task. */
 
+#if 0
   if (authenticate (&session, "mattm", "mattm"))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
+#endif
 
-  if (send_to_manager (&session,
-                       "<abort_task><task_id>0</task_id></abort_task>")
+  if (sendf_to_manager (&session,
+                        "<abort_task><task_id>%i</task_id></abort_task>",
+                        id)
       == -1)
     {
       close_manager_connection (socket, session);
@@ -116,7 +95,7 @@ main ()
 
   /* Read the response. */
 
-  entity = NULL;
+  entity_t entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare. */
