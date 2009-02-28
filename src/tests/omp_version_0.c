@@ -44,7 +44,7 @@ main ()
 
   /* Send a version request. */
 
-  if (authenticate (&session, "mattm", "mattm") == -1) // FIX
+  if (env_authenticate (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

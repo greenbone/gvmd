@@ -43,7 +43,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
+  if (env_authenticate (&session)) goto fail;
 
   /* Create a task. */
 
@@ -57,7 +57,7 @@ main ()
   /* Start the task. */
 
 #if 0
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
+  if (env_authenticate (&session)) goto fail;
 #endif
 
   gchar* msg = g_strdup_printf ("<start_task>"

@@ -27,23 +27,28 @@
  * @file common.c
  * @brief Common utilities for tests.
  *
- * There are two sets of utilities here.
+ * There are three sets of utilities here.
  *
- * The first set provides higher level
- * facilities for communicating with the manager.  The functions provided include
- * \ref authenticate,
+ * The first set provides lower level facilities for communicating with the
+ * manager.  The functions are
  * \ref connect_to_manager,
  * \ref close_manager_connection,
- * \ref create_task,
- * \ref create_task_from_rc_file,
  * \ref send_to_manager and
- * \ref start_task.
+ * \ref sendf_to_manager.
  *
  * The second set is a generic XML interface.
  * The tests use the interface to read and handle the XML returned by
  * the manager.  The key function is \ref read_entity.
  *
- * There are many examples of using this interface in the tests.
+ * The third set uses the other two to provide higher level, OMP-aware,
+ * facilities for communicating with the manager.  The functions are
+ * \ref authenticate,
+ * \ref env_authenticate,
+ * \ref create_task,
+ * \ref create_task_from_rc_file and
+ * \ref start_task.
+ *
+ * There are examples of using this interface in the tests.
  */
 
 /**
@@ -89,7 +94,7 @@
 struct sockaddr_in address;
 
 
-/* Manager communication. */
+/* Low level manager communication. */
 
 /**
  * @brief Connect to the manager.
@@ -247,50 +252,6 @@ close_manager_connection (int socket, gnutls_session_t session)
 }
 
 /**
- * @brief Authenticate with the manager.
- *
- * @param[in]  session   Pointer to GNUTLS session.
- * @param[in]  username  Username.
- * @param[in]  password  Password.
- *
- * @return 0 on success, -1 on error.
- */
-int
-authenticate (gnutls_session_t* session,
-              const char* username,
-              const char* password)
-{
-  gchar* msg = g_strdup_printf ("<authenticate><credentials>"
-                                "<username>%s</username>"
-                                "<password>%s</password>"
-                                "</credentials></authenticate>",
-                                username,
-                                password);
-  int ret = send_to_manager (session, msg);
-  g_free (msg);
-  if (ret) return -1;
-
-#if 1
-  return 0;
-#else
-  /* What to do if OMP authenticate is changed to always respond. */
-
-  entity_t entity = NULL;
-  if (read_entity (session, &entity)) return -1;
-
-  entity_t expected = add_entity (NULL, "authenticate_response", NULL);
-  add_entity (&expected->entities, "status", "201");
-
-  ret = compare_entities (entity, expected);
-
-  free_entity (expected);
-  free_entity (entity);
-
-  return ret ? -1 : 0;
-#endif
-}
-
-/**
  * @brief Send a string to the manager.
  *
  * @param[in]  session  Pointer to GNUTLS session.
@@ -349,157 +310,6 @@ sendf_to_manager (gnutls_session_t* session, const char* format, ...)
   g_free (msg);
   va_end (args);
   return ret;
-}
-
-/**
- * @brief Create a task, given the task description as an RC file.
- *
- * @param[in]   session     Pointer to GNUTLS session.
- * @param[in]   config      Task configuration.
- * @param[in]   config_len  Length of config.
- * @param[in]   identifier  Task identifier.
- * @param[in]   comment     Task comment.
- * @param[out]  id          ID of new task.
- *
- * @return 0 on success, -1 on error.
- */
-int
-create_task (gnutls_session_t* session,
-             char* config,
-             unsigned int config_len,
-             char* identifier,
-             char* comment,
-             unsigned int* id)
-{
-  /* Convert the file contents to base64. */
-
-  gchar* new_task_file = g_base64_encode ((guchar*) config,
-                                          config_len);
-
-  /* Create the OMP request. */
-
-  gchar* new_task_request;
-  new_task_request = g_strdup_printf ("<new_task>"
-                                      "<task_file>%s</task_file>"
-                                      "<identifier>%s</identifier>"
-                                      "<comment>%s</comment>"
-                                      "</new_task>",
-                                      new_task_file,
-                                      identifier,
-                                      comment);
-  g_free (new_task_file);
-
-  /* Send the request. */
-
-  int ret = send_to_manager (session, new_task_request);
-  g_free (new_task_request);
-  if (ret) return -1;
-
-  /* Read the response. */
-
-  entity_t entity = NULL;
-  if (read_entity (session, &entity)) return -1;
-
-  /* Get the ID of the new task from the response. */
-
-  entity_t id_entity = entity_child (entity, "task_id");
-  if (id_entity == NULL)
-    {
-      free_entity (entity);
-      return -1;
-    }
-  ret = sscanf (entity_text (id_entity), "%u", id);
-  free_entity (entity);
-  if (ret == 1)
-    return 0;
-  return -1;
-}
-
-/**
- * @brief Create a task, given the task description as an RC file.
- *
- * @param[in]   session     Pointer to GNUTLS session.
- * @param[in]   file_name   Name of the RC file.
- * @param[in]   identifier  Task identifier.
- * @param[in]   comment     Task comment.
- * @param[out]  id          ID of new task.
- *
- * @return 0 on success, -1 on error.
- */
-int
-create_task_from_rc_file (gnutls_session_t* session,
-                          char* file_name,
-                          char* identifier,
-                          char* comment,
-                          unsigned int* id)
-{
-  gchar* new_task_rc = NULL;
-  gsize new_task_rc_len;
-  GError* error = NULL;
-
-  /* Read in the RC file. */
-
-  g_file_get_contents (file_name,
-                       &new_task_rc,
-                       &new_task_rc_len,
-                       &error);
-  if (error)
-    {
-      g_error_free (error);
-      return -1;
-    }
-
-  int ret = create_task (session,
-                         new_task_rc,
-                         new_task_rc_len,
-                         identifier,
-                         comment,
-                         id);
-  g_free (new_task_rc);
-  return ret;
-}
-
-/**
- * @brief Start a task and read the manager response.
- *
- * @param[in]  session  Pointer to GNUTLS session.
- * @param[in]  id       ID of task.
- *
- * @return 0 on success, -1 on error.
- */
-int
-start_task (gnutls_session_t* session,
-            unsigned int id)
-{
-  if (sendf_to_manager (session,
-                        "<start_task><task_id>%u</task_id></start_task>",
-                        id)
-      == -1)
-    return -1;
-
-  /* Read the response. */
-
-  entity_t entity = NULL;
-  if (read_entity (session, &entity)) return -1;
-
-  /* Check the response. */
-
-  entity_t status = entity_child (entity, "status");
-  if (status == NULL)
-    {
-      free_entity (entity);
-      return -1;
-    }
-  const char* status_text = entity_text (status);
-  if (strlen (status_text) == 0)
-    {
-      free_entity (entity);
-      return -1;
-    }
-  char first = status_text[0];
-  free_entity (entity);
-  if (first == '2') return 0;
-  return -1;
 }
 
 
@@ -946,4 +756,228 @@ compare_entities (entity_t entity1, entity_t entity2)
   /* More entities in one of the two. */
   tracef ("  compare failed number of entities (%s)\n", entity1->name);
   return 1;
+}
+
+
+/* OMP. */
+
+/**
+ * @brief Authenticate with the manager.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  username  Username.
+ * @param[in]  password  Password.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+authenticate (gnutls_session_t* session,
+              const char* username,
+              const char* password)
+{
+  gchar* msg = g_strdup_printf ("<authenticate><credentials>"
+                                "<username>%s</username>"
+                                "<password>%s</password>"
+                                "</credentials></authenticate>",
+                                username,
+                                password);
+  int ret = send_to_manager (session, msg);
+  g_free (msg);
+  if (ret) return -1;
+
+#if 1
+  return 0;
+#else
+  /* What to do if OMP authenticate is changed to always respond. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  entity_t expected = add_entity (NULL, "authenticate_response", NULL);
+  add_entity (&expected->entities, "status", "201");
+
+  ret = compare_entities (entity, expected);
+
+  free_entity (expected);
+  free_entity (entity);
+
+  return ret ? -1 : 0;
+#endif
+}
+
+/**
+ * @brief Authenticate, getting credentials from the environment.
+ *
+ * Get the user name from environment variable OPENVAS_TEST_USER if that is
+ * set, else from USER.  Get the password from OPENVAS_TEST_PASSWORD.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+env_authenticate (gnutls_session_t* session)
+{
+  char* user = getenv ("OPENVAS_TEST_USER");
+  if (user == NULL)
+    {
+      user = getenv ("USER");
+      if (user == NULL) return -1;
+    }
+
+  char* password = getenv ("OPENVAS_TEST_PASSWORD");
+  if (password == NULL) return -1;
+
+  return authenticate (session, user, password);
+}
+
+/**
+ * @brief Create a task, given the task description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   config      Task configuration.
+ * @param[in]   config_len  Length of config.
+ * @param[in]   identifier  Task identifier.
+ * @param[in]   comment     Task comment.
+ * @param[out]  id          ID of new task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+create_task (gnutls_session_t* session,
+             char* config,
+             unsigned int config_len,
+             char* identifier,
+             char* comment,
+             unsigned int* id)
+{
+  /* Convert the file contents to base64. */
+
+  gchar* new_task_file = g_base64_encode ((guchar*) config,
+                                          config_len);
+
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<new_task>"
+                                      "<task_file>%s</task_file>"
+                                      "<identifier>%s</identifier>"
+                                      "<comment>%s</comment>"
+                                      "</new_task>",
+                                      new_task_file,
+                                      identifier,
+                                      comment);
+  g_free (new_task_file);
+
+  /* Send the request. */
+
+  int ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Get the ID of the new task from the response. */
+
+  entity_t id_entity = entity_child (entity, "task_id");
+  if (id_entity == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  ret = sscanf (entity_text (id_entity), "%u", id);
+  free_entity (entity);
+  if (ret == 1)
+    return 0;
+  return -1;
+}
+
+/**
+ * @brief Create a task, given the task description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   file_name   Name of the RC file.
+ * @param[in]   identifier  Task identifier.
+ * @param[in]   comment     Task comment.
+ * @param[out]  id          ID of new task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+create_task_from_rc_file (gnutls_session_t* session,
+                          char* file_name,
+                          char* identifier,
+                          char* comment,
+                          unsigned int* id)
+{
+  gchar* new_task_rc = NULL;
+  gsize new_task_rc_len;
+  GError* error = NULL;
+
+  /* Read in the RC file. */
+
+  g_file_get_contents (file_name,
+                       &new_task_rc,
+                       &new_task_rc_len,
+                       &error);
+  if (error)
+    {
+      g_error_free (error);
+      return -1;
+    }
+
+  int ret = create_task (session,
+                         new_task_rc,
+                         new_task_rc_len,
+                         identifier,
+                         comment,
+                         id);
+  g_free (new_task_rc);
+  return ret;
+}
+
+/**
+ * @brief Start a task and read the manager response.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+start_task (gnutls_session_t* session,
+            unsigned int id)
+{
+  if (sendf_to_manager (session,
+                        "<start_task><task_id>%u</task_id></start_task>",
+                        id)
+      == -1)
+    return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  entity_t status = entity_child (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  const char* status_text = entity_text (status);
+  if (strlen (status_text) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status_text[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
 }

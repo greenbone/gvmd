@@ -45,7 +45,7 @@ main ()
 
   /* Create a task. */
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
+  if (env_authenticate (&session)) goto fail;
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",

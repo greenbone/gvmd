@@ -45,7 +45,7 @@ main ()
 
   /* Create a task. */
 
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
+  if (env_authenticate (&session)) goto fail;
 
   if (create_task_from_rc_file (&session,
                                 "new_task_empty_rc",
@@ -61,7 +61,7 @@ main ()
   /* Request the status. */
 
 #if 0
-  if (authenticate (&session, "mattm", "mattm")) goto fail;
+  if (env_authenticate (&session)) goto fail;
 #endif
 
   if (send_to_manager (&session, "<status/>") == -1)

@@ -1,5 +1,20 @@
 2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add env_authenticate and use it in tests.
+
+	* src/tests/common.c: Reorder functions.
+	(env_authenticate): New function.
+
+	* src/tests/common.h: Reorder headers.
+	(env_authenticate): New header.
+
+	* src/tests/omp_new_task_0.c, src/tests/omp_version_0.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_abort_task_0.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_modify_task_0.c,
+	src/tests/omp_status_0.c: Use env_authenticate instead of authenticate.
+
+2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Start separating the implementation into components.
 
 	* src/openvasmd.c: Move most functions and variables out to new files.

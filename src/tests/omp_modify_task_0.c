@@ -43,7 +43,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (authenticate (&session, "mattm", "mattm"))
+  if (env_authenticate (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -67,7 +67,7 @@ main ()
   /* Send a modify_task request. */
 
 #if 0
-  if (authenticate (&session, "mattm", "mattm"))
+  if (env_authenticate (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

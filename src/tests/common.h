@@ -41,18 +41,7 @@ send_to_manager (gnutls_session_t*, const char*);
 int
 sendf_to_manager (gnutls_session_t*, const char*, ...);
 
-int
-create_task (gnutls_session_t*, char*, unsigned int, char*, char*,
-             unsigned int*);
-
-int
-create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
-                          unsigned int*);
-
-int
-start_task (gnutls_session_t* , unsigned int);
-
-/* XML */
+/* XML. */
 
 typedef GSList* entities_t;
 
@@ -66,11 +55,6 @@ typedef struct
 
 entity_t
 add_entity (entities_t*, const char*, const char*);
-
-int
-authenticate (gnutls_session_t* session,
-              const char* username,
-              const char* password);
 
 int
 compare_entities (entity_t, entity_t);
@@ -95,3 +79,25 @@ print_entities (FILE*, entities_t);
 
 int
 read_entity (gnutls_session_t*, entity_t*);
+
+/* OMP. */
+
+int
+authenticate (gnutls_session_t* session,
+              const char* username,
+              const char* password);
+
+int
+env_authenticate (gnutls_session_t* session);
+
+int
+create_task (gnutls_session_t*, char*, unsigned int, char*, char*,
+             unsigned int*);
+
+int
+create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
+                          unsigned int*);
+
+int
+start_task (gnutls_session_t* , unsigned int);
+
