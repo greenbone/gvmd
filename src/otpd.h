@@ -1,9 +1,9 @@
 /* OpenVAS Manager
  * $Id$
- * Description: See below.
+ * Description: Headers for OpenVAS Manager: the OTP daemon.
  *
  * Authors:
- * Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+ * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
  * Copyright (C) 2009 Intevation GmbH
@@ -23,34 +23,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANGER_OVAS_MNGR_COMM_H
-#define OPENVAS_MANGER_OVAS_MNGR_COMM_H
-
-#include <gnutls/gnutls.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-
-/**
- * @file ovas-mngr-comm.h
- * @brief Protos for communication between openvas-manager and openvas-server.
- *
- * This file contains the protos for \ref ovas-mngr-comm.c
- */
+#ifndef OPENVAS_MANAGER_OTPD_H
+#define OPENVAS_MANAGER_OTPD_H
 
 int
-send_to_server (char *);
-
-int
-connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, int);
-
-int
-write_string_to_server (gnutls_session_t*, char* const);
-
-int
-write_to_server_buffer (gnutls_session_t*);
-
-unsigned int
-to_server_buffer_space ();
+serve_otp ();
 
 #endif

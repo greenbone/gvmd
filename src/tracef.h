@@ -31,11 +31,29 @@
 #ifndef OPENVAS_MANAGER_TRACE_H
 #define OPENVAS_MANAGER_TRACE_H
 
+#include <strings.h>
+
+#ifndef TRACE
+/**
+ * @brief Trace flag.
+ *
+ * 0 to turn off all tracing messages.
+ */
+#define TRACE 1
+#endif
+
+/**
+ * @brief Trace text flag.
+ *
+ * 0 to turn off echoing of actual data transfered (requires TRACE).
+ */
+#define TRACE_TEXT 1
+
+#if TRACE
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#if TRACE
 /**
  * @brief Formatted trace output.
  *

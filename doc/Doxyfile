@@ -459,12 +459,18 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = src/openvasmd.c \
-                         src/ovas-mngr-comm.c \
-                         src/string.c \
+INPUT                  = src/string.c \
                          src/file.c \
                          src/tests/common.c \
-                         src/tracef.h
+                         src/logf.h \
+                         src/tracef.h \
+						 src/manage.c \
+						 src/ovas-mngr-comm.c \
+						 src/otp.c \
+						 src/omp.c \
+						 src/ompd.c \
+						 src/otpd.c \
+						 src/openvasmd.c
 
 # If the value of the INPUT tag contains directories, you can use the
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp

@@ -108,8 +108,10 @@ add_custom_command (OUTPUT .built-html
 					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\"
 					DEPENDS openvasmd.html Doxyfile footer.html
 					        ../src/openvasmd.c ../src/ovas-mngr-comm.c
+							../src/ompd.c ../src/otpd.c
+							../src/manage.c ../src/omp.c ../src/otp.c
 							../src/string.c ../src/file.c ../src/tracef.h
-							../src/tests/common.c
+							../src/logf.h ../src/tests/common.c
 							../README ../INSTALL)
 
 # if (GROFF_DOES_HTML)

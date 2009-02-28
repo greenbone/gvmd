@@ -1,3 +1,43 @@
+2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Start separating the implementation into components.
+
+	* src/openvasmd.c: Move most functions and variables out to new files.
+	Improve	implementation notes in @file.
+	(free_g_ptr_array): Remove old function.
+	(OMP): Remove old directive.
+	(BUFFER_SIZE): Rename FROM_BUFFER_SIZE.
+	(from_buffer_size): New variable.
+
+	* src/logf.h, src/manage.c, src/manage.h, src/otp.c, src/otp.h, src/omp.c,
+	src/omp.h, src/ompd.c, src/ompd.h, src/otpd.c, src/otpd.h: New files.
+
+	* src/tracef.h (TRACE, TRACE_TEXT): New directive, previously in
+	openvasmd.c.
+
+	* src/file.c: Include unistd.h.
+
+	* src/string.c (free_string_var, append_string): New functions, previously
+	in openvasmd.c.
+
+	* src/string.h (free_string_var, append_string): New headers.
+
+	* src/ovas-mngr-comm.c (write_string_to_server, write_to_server_buffer):
+	New functions, previously in openvasmd.c.
+	(to_server_buffer_space): New function.
+	(BUFFER_SIZE): Rename TO_SERVER_BUFFER_SIZE.
+
+	* src/ovas-mngr-comm.h (write_string_to_server, write_to_server_buffer,
+	to_server_buffer_space): New headers.
+
+	* src/CMakeLists.txt: Build new libraries.
+
+    * src/tests/CMakeLists.txt: Add GLIB path to strip_space LDFLAGS.
+
+	* doc/CMakeLists.txt (.build-html): Add new files.
+
+	* doc/Doxyfile (INPUT): Add new files.
+
 2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Update commands to clear current_task_task_id after use.

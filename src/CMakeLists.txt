@@ -33,12 +33,24 @@ exec_program (pkg-config
 
 ## Libraries
 
+# file and string are just in libraries to aid testing.
+
 add_library (file file.c)
-set_target_properties (file PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 set_target_properties (file PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
-add_library (ovas-mngr-comm ovas-mngr-comm.c)
 add_library (string string.c)
+set_target_properties (string PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+
+add_library (ovas-mngr-comm ovas-mngr-comm.c)
+
+add_library (manage manage.c)
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+
+add_library (omp omp.c)
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+
+add_library (otp otp.c)
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 ## Program
 
@@ -48,8 +60,8 @@ include_directories (${FILE_SOURCE_DIRECTORY}/file)
 link_directories (${STRING_BINARY_DIRECTORY}/string)
 link_directories (${FILE_BINARY_DIRECTORY}/file)
 
-add_executable (openvasmd openvasmd.c)
-target_link_libraries (openvasmd ovas-mngr-comm string file)
+add_executable (openvasmd openvasmd.c ompd.c otpd.c)
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage string file)
 
 exec_program (libopenvas-config
               ARGS --cflags

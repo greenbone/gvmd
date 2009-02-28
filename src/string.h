@@ -27,6 +27,12 @@
 #ifndef OPENVAS_MANAGER_STRING_H
 #define OPENVAS_MANAGER_STRING_H
 
+void
+append_string (char** var, const char* string);
+
+void
+free_string_var (char** var);
+
 char*
 strip_space (char* string, char* end);
 

@@ -6,7 +6,7 @@
 # Matthew Mundell <matt@mundell.ukfsn.org>
 #
 # Copyright:
-# Copyright (C) 2008 Intevation GmbH
+# Copyright (C) 2008, 2009 Intevation GmbH
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2,
@@ -107,21 +107,25 @@ ADD_TEST (omp_version_0 omp_version_0)
 add_executable (strip_space_0 strip_space_0.c)
 target_link_libraries (strip_space_0 string)
 set_target_properties (strip_space_0 PROPERTIES COMPILE_FLAGS "-I ..")
+set_target_properties (strip_space_0 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 ADD_TEST (strip_space_0 strip_space_0)
 
 add_executable (strip_space_1 strip_space_1.c)
 target_link_libraries (strip_space_1 string)
 set_target_properties (strip_space_1 PROPERTIES COMPILE_FLAGS "-I ..")
+set_target_properties (strip_space_1 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 ADD_TEST (strip_space_1 strip_space_1)
 
 add_executable (strip_space_2 strip_space_2.c)
 target_link_libraries (strip_space_2 string)
 set_target_properties (strip_space_2 PROPERTIES COMPILE_FLAGS "-I ..")
+set_target_properties (strip_space_2 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 ADD_TEST (strip_space_2 strip_space_2)
 
 add_executable (strip_space_3 strip_space_3.c)
 target_link_libraries (strip_space_3 string)
 set_target_properties (strip_space_3 PROPERTIES COMPILE_FLAGS "-I ..")
+set_target_properties (strip_space_3 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 ADD_TEST (strip_space_3 strip_space_3)
 
 ## End

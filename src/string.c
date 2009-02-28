@@ -36,12 +36,54 @@
 #define TRACE 0
 
 #include <assert.h>
+#include <glib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "tracef.h"
 #include "string.h"
+
+/**
+ * @brief Append a string to a string variable.
+ *
+ * When the variable is NULL store a copy of the given string in the variable.
+ *
+ * When the variable already contains a string replace the string with a new
+ * string that is the concatenation of the two, freeing the old string.  It is
+ * up to the caller to free the given string if it was dynamically allocated.
+ *
+ * @param[in]  var     The address of a string variable, that is, a pointer to
+ *                     a string.
+ * @param[in]  string  The string to append to the string in the variable.
+ */
+void
+append_string (char** var, const char* string)
+{
+  if (*var)
+    {
+      char* old = *var;
+      *var = g_strconcat (old, string, NULL);
+      g_free (old);
+    }
+  else
+    *var = g_strdup (string);
+}
+
+/**
+ * @brief Free a string variable.
+ *
+ * Free the string in the variable and set the variable to NULL.
+ *
+ * @param[in]  var  The address of a string variable, that is, a pointer to
+ *                  a string.
+ */
+void
+free_string_var (char** var)
+{
+  g_free (*var);
+  *var = NULL;
+}
 
 /**
  * @brief "Strip" space and newline characters from either end of some memory.
@@ -83,5 +125,3 @@ strip_space (char* string, char* end)
     }
   return string;
 }
-
-#undef TRACE
