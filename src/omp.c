@@ -561,13 +561,16 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
 
   if (g_slist_find_custom ((GSList*) value, NULL, send_requirement))
     {
- send_to_client_fail:
       g_free (msg);
       return TRUE;
     }
 
   SEND_TO_CLIENT ("</dependency>");
   return FALSE;
+
+ send_to_client_fail:
+  g_free (msg);
+  return TRUE;
 }
 
 /**
@@ -780,15 +783,15 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                         "333"
                         "</feed_checksum>");
         SEND_TO_CLIENT ("<nvt>"
-                     "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                     "<name>FooBar 1.5 installed</name>"
-                     "<checksum><algorithm>md5</algorithm>222</checksum>"
-                     "</nvt>");
+                        "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                        "<name>FooBar 1.5 installed</name>"
+                        "<checksum><algorithm>md5</algorithm>222</checksum>"
+                        "</nvt>");
         SEND_TO_CLIENT ("<nvt>"
-                     "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                     "<name>FooBar 2.1 XSS vulnerability</name>"
-                     "<checksum><algorithm>md5</algorithm>223</checksum>"
-                     "</nvt>");
+                        "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                        "<name>FooBar 2.1 XSS vulnerability</name>"
+                        "<checksum><algorithm>md5</algorithm>223</checksum>"
+                        "</nvt>");
         SEND_TO_CLIENT ("</get_nvt_feed_all_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;

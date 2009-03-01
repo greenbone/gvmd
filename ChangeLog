@@ -1,3 +1,25 @@
+2009-03-01  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Reduce number of gotos.
+
+	* src/ompd.c (read_from_server): Retry with while instead of goto.
+
+	* src/omp.c (send_dependency): Move SEND_TO_CLIENT destination to end
+	of function.
+	(omp_xml_handle_end_element): Neaten indentation.
+
+	* src/openvasmd.c (read_protocol): Retry with while instead of goto.
+
+	* src/otp.c (parse_server_done, parse_server_preference_value,
+	parse_server_rule, parse_server_plugin_dependency_dependency,
+	parse_server_server, sync_buffer): New functions.
+	(process_otp_server_input): Call new parsing and sync functions instead
+	of jumping.  Return immediately instead of jumping to fail code.  Use
+	g_strdup instead of strdup.  Drop make_message return checks.
+
+    * src/manage.c (load_tasks, save_task): Move fail destinations to ends
+	of functions.
+
 2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add env_authenticate and use it in tests.

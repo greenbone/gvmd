@@ -276,19 +276,24 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   while (from_client_end < FROM_BUFFER_SIZE)
     {
       ssize_t count;
- retry:
-      count = gnutls_record_recv (*client_session,
-                                  from_client + from_client_end,
-                                  FROM_BUFFER_SIZE
-                                  - from_client_end);
-      if (count < 0)
+
+      while (1)
         {
+          count = gnutls_record_recv (*client_session,
+                                      from_client + from_client_end,
+                                      FROM_BUFFER_SIZE
+                                      - from_client_end);
           if (count == GNUTLS_E_INTERRUPTED)
             /* Interrupted, try read again. */
-            goto retry;
+            continue;
           if (count == GNUTLS_E_REHANDSHAKE)
             /* Try again. TODO Rehandshake. */
-            goto retry;
+            continue;
+          break;
+        }
+
+      if (count < 0)
+        {
           if (gnutls_error_is_fatal (count) == 0
               && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))

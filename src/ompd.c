@@ -152,8 +152,6 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
   while (from_server_end < from_buffer_size)
     {
       ssize_t count;
-      int retries = 5;
- retry:
       count = gnutls_record_recv (*server_session,
                                   from_server + from_server_end,
                                   from_buffer_size - from_server_end);
@@ -184,10 +182,6 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
             }
           fprintf (stderr, "Failed to read from server.\n");
           gnutls_perror (count);
-          /* FIX Retry a few times even though there has been an error.
-             This is because the recv sometimes fails with a "decryption
-             failed" error. */
-          while (retries--) goto retry;
           return -1;
         }
       if (count == 0)

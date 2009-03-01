@@ -414,6 +414,7 @@ load_tasks ()
     }
 
   int index;
+  gchar* file_name = NULL;
   for (index = 0; index < count; index++)
     {
       const char* task_name = names[index]->d_name;
@@ -425,23 +426,9 @@ load_tasks ()
 
       tracef ("     %s\n", task_name);
 
-      gchar* file_name = g_build_filename (dir_name, task_name, "name", NULL);
+      file_name = g_build_filename (dir_name, task_name, "name", NULL);
       g_file_get_contents (file_name, &name, NULL, &error);
-      if (error)
-        {
-         contents_fail:
-          fprintf (stderr, "Failed to get contents of %s: %s\n",
-                   file_name,
-                   error->message);
-         fail:
-          g_error_free (error);
-          g_free (dir_name);
-          g_free (file_name);
-          for (; index < count; index++) free (names[index]);
-          free (names);
-          free_tasks ();
-          return -1;
-        }
+      if (error) goto contents_fail;
 
       g_free (file_name);
       file_name = g_build_filename (dir_name, task_name, "time", NULL);
@@ -512,6 +499,19 @@ load_tasks ()
 
   tracef ("   Loading tasks... done\n");
   return 0;
+
+ contents_fail:
+  fprintf (stderr, "Failed to get contents of %s: %s\n",
+           file_name,
+           error->message);
+ fail:
+  g_error_free (error);
+  g_free (dir_name);
+  g_free (file_name);
+  for (; index < count; index++) free (names[index]);
+  free (names);
+  free_tasks ();
+  return -1;
 }
 
 /**
@@ -545,16 +545,7 @@ save_task (task_t* task, gchar* dir_name)
   gchar* file_name = g_build_filename (dir_name, "name", NULL);
 
   g_file_set_contents (file_name, task->name, -1, &error);
-  if (error)
-    {
-     contents_fail:
-      fprintf (stderr, "Failed to set contents of %s: %s\n",
-               file_name,
-               error->message);
-      g_error_free (error);
-      g_free (file_name);
-      return -1;
-    }
+  if (error) goto contents_fail;
   g_free (file_name);
 
   file_name = g_build_filename (dir_name, "comment", NULL);
@@ -588,6 +579,14 @@ save_task (task_t* task, gchar* dir_name)
   g_free (file_name);
 
   return 0;
+
+ contents_fail:
+  fprintf (stderr, "Failed to set contents of %s: %s\n",
+           file_name,
+           error->message);
+  g_error_free (error);
+  g_free (file_name);
+  return -1;
 }
 
 /**

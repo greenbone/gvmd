@@ -746,6 +746,261 @@ extern int from_server_start;
 extern int from_server_end;
 
 /**
+ * @brief Parse the final SERVER field of an OTP message.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 success, -1 fail, -2 too few characters (need more input).
+ */
+int
+parse_server_done (char** messages)
+{
+  char *end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' ' || (*messages)[0] == '\n'))
+    { (*messages)++; from_server_start++; }
+  if ((int) (end - *messages) < 6)
+    /* Too few characters to be the end marker, return to select to
+     * wait for more input. */
+    return -2;
+  if (strncasecmp ("SERVER", *messages, 6))
+    {
+      tracef ("   server fail: expected final \"SERVER\"\n");
+      return -1;
+    }
+  set_server_state (SERVER_TOP);
+  from_server_start += 6;
+  (*messages) += 6;
+  return 0;
+}
+
+/**
+ * @brief Parse the final SERVER field of an OTP message.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 success, -2 too few characters (need more input).
+ */
+int
+parse_server_preference_value (char** messages)
+{
+  char *value, *end, *match;
+  assert (current_server_preference);
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+    {
+      match[0] = '\0';
+      value = g_strdup (*messages);
+      add_server_preference (current_server_preference, value);
+      set_server_state (SERVER_PREFERENCE_NAME);
+      from_server_start += match + 1 - *messages;
+      *messages = match + 1;
+      return 0;
+    }
+  return -2;
+}
+
+/**
+ * @brief Parse an OTP rule.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 read a rule, -1 read a <|>, -2 too few characters (need
+ *         more input).
+ */
+int
+parse_server_rule (char** messages)
+{
+  char *end, *match;
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == '\n'))
+    { (*messages)++; from_server_start++; }
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  /* Check for the end marker. */
+  if (end - *messages > 2
+      && (*messages)[0] == '<'
+      && (*messages)[1] == '|'
+      && (*messages)[2] == '>')
+    /* The rules list ends with "<|> SERVER". */
+    return -1;
+  /* There may be a rule ending in a semicolon. */
+  if ((match = memchr (*messages, ';', from_server_end - from_server_start)))
+    {
+      char* rule;
+      match[0] = '\0';
+      rule = g_strdup (*messages);
+      add_server_rule (rule);
+      from_server_start += match + 1 - *messages;
+      *messages = match + 1;
+      return 0;
+    }
+  return -2;
+}
+
+/**
+ * @brief Parse the dependency of a server plugin.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 1 if a <|> follows in the buffer, otherwise 0.
+ */
+int
+parse_server_plugin_dependency_dependency (char** messages)
+{
+  /* Look for the end of dependency marker: a newline that comes before
+   * the next <|>. */
+  char *separator, *end, *match, *input;
+  int from_start, from_end;
+  separator = NULL;
+  /* Look for <|>. */
+  input = *messages;
+  from_start = from_server_start;
+  from_end = from_server_end;
+  while (from_start < from_end
+         && (match = memchr (input, '<', from_end - from_start)))
+    {
+      if (((int) (match - input) - from_start + 1) < from_end
+          && (match[1] == '|')
+          && (match[2] == '>'))
+        {
+          separator = match;
+          break;
+        }
+      from_start += match + 1 - input;
+      input = match + 1;
+    }
+  /* Look for newline. */
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+    {
+      /* Compare newline position to <|> position. */
+      if ((separator == NULL) || (match < separator))
+        {
+          finish_current_server_plugin_dependency ();
+          from_server_start += match + 1 - *messages;
+          *messages = match + 1;
+          set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+        }
+    }
+  return separator == NULL;
+}
+
+
+/**
+ * @brief Parse the field following "SERVER <|>".
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 found a newline delimited field, -1 error, -2 need more input,
+ *         -3 found a <|> before next newline (that is, a <|> delimited
+ *         field follows), -4 failed to find a newline (may be a <|>)
+ */
+int
+parse_server_server (char** messages)
+{
+  char *end, *match;
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+    {
+      match[0] = '\0';
+      // FIX is there ever whitespace before the newline?
+      while (*messages < end && ((*messages)[0] == ' '))
+        { (*messages)++; from_server_start++; }
+      // FIX 20 available?
+      if (strncasecmp ("PLUGINS_DEPENDENCIES", *messages, 20) == 0)
+        {
+          from_server_start += match + 1 - *messages;
+          *messages = match + 1;
+          maybe_free_server_plugins_dependencies ();
+          make_server_plugins_dependencies ();
+          set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+          return 0;
+        }
+      char* newline = match;
+      newline[0] = '\n';
+      /* Check for a <|>. */
+      char* input = *messages;
+      int from_start = from_server_start;
+      int from_end = from_server_end;
+      while (from_start < from_end
+             && (match = memchr (input, '<', from_end - from_start)))
+        {
+          if ((((int) (match - input) - from_start + 1) < from_end)
+              && (match[1] == '|')
+              && (match[2] == '>'))
+            {
+              if (match > newline)
+                /* The next <|> is after the newline, which is an error. */
+                return -1;
+              /* The next <|> is before the newline, which may be correct. */
+              return -3;
+            }
+          from_start += match + 1 - input;
+          input = match + 1;
+        }
+      /* Need more input for a newline or <|>. */
+      return -2;
+    }
+  return -4;
+}
+
+/**
+ * @brief "Synchronise" the \ref from_server buffer.
+ *
+ * Move any OTP in the \ref from_server buffer to the front of the buffer.
+ *
+ * @return 0 success, -1 \ref from_server is full.
+ */
+int
+sync_buffer ()
+{
+  if (from_server_start > 0 && from_server_start == from_server_end)
+    {
+      from_server_start = from_server_end = 0;
+      tracef ("   server start caught end\n");
+    }
+  else if (from_server_start == 0)
+    {
+      if (from_server_end == from_buffer_size)
+        {
+          // FIX if the buffer is entirely full here then exit
+          //     (or will hang waiting for buffer to empty)
+          //     this could happen if the server sends a field with length >= buffer length
+          //         could realloc buffer
+          //             which may eventually use all mem and bring down manager
+          //                 would only bring down the process serving the client
+          //                 may lead to out of mem in other processes?
+          //                 could realloc to an upper limit within avail mem
+          tracef ("   server buffer full\n");
+          return -1;
+        }
+    }
+  else
+    {
+      /* Move the remaining partial line to the front of the buffer.  This
+       * ensures that there is space after the partial line into which
+       * serve_omp can read the rest of the line. */
+      char* start = from_server + from_server_start;
+      from_server_end -= from_server_start;
+      memmove (from_server, start, from_server_end);
+      from_server_start = 0;
+#if TRACE
+      from_server[from_server_end] = '\0';
+      //tracef ("   new from_server: %s\n", from_server);
+      tracef ("   new from_server_start: %i\n", from_server_start);
+      tracef ("   new from_server_end: %i\n", from_server_end);
+#endif
+    }
+  return 0;
+}
+
+/**
  * @brief Process any lines available in \ref from_server.
  *
  * Update server information according to the input from the server.
@@ -775,13 +1030,16 @@ process_otp_server_input ()
     {
       case SERVER_INIT_SENT_VERSION:
         if (from_server_end - from_server_start < 12)
-          /* Need more input. */
-          goto succeed;
+          {
+            /* Need more input. */
+            if (sync_buffer ()) return -1;
+            return 0;
+          }
         if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
           {
             tracef ("   server fail: expected \"< OTP/1.0 >, got \"%.12s\"\n\"\n",
                     messages);
-            goto fail;
+            return -1;
           }
         from_server_start += 12;
         messages += 12;
@@ -789,214 +1047,104 @@ process_otp_server_input ()
         /* Fall through to attempt next step. */
       case SERVER_INIT_GOT_VERSION:
         if (from_server_end - from_server_start < 7)
-          /* Need more input. */
-          goto succeed;
+          {
+            /* Need more input. */
+            if (sync_buffer ()) return -1;
+            return 0;
+          }
         if (strncasecmp ("User : ", messages, 7))
           {
             tracef ("   server fail: expected \"User : \", got \"%7s\"\n",
                     messages);
-            goto fail;
+            return -1;
           }
         from_server_start += 7;
         messages += 7;
         set_server_init_state (SERVER_INIT_GOT_USER);
-        goto succeed;
+        if (sync_buffer ()) return -1;
+        return 0;
       case SERVER_INIT_GOT_USER:
         /* Input from server after "User : " and before user name sent. */
-        goto fail;
+        return -1;
       case SERVER_INIT_SENT_USER:
         if (from_server_end - from_server_start < 11)
-          /* Need more input. */
-          goto succeed;
+          {
+            /* Need more input. */
+            if (sync_buffer ()) return -1;
+            return 0;
+          }
         if (strncasecmp ("Password : ", messages, 11))
           {
             tracef ("   server fail: expected \"Password : \", got \"%11s\"\n",
                     messages);
-            goto fail;
+            return -1;
           }
         from_server_start += 11;
         messages += 11;
         set_server_init_state (SERVER_INIT_GOT_PASSWORD);
-        goto succeed;
+        if (sync_buffer ()) return -1;
+        return 0;
       case SERVER_INIT_GOT_PASSWORD:
         /* Input from server after "Password : " and before password sent. */
-        goto fail;
+        return -1;
       case SERVER_INIT_CONNECT_INTR:
       case SERVER_INIT_CONNECTED:
         /* Input from server before version string sent. */
-        goto fail;
+        return -1;
       case SERVER_INIT_DONE:
       case SERVER_INIT_TOP:
         if (server_state == SERVER_DONE)
-          {
-            char *end;
-       server_done:
-            end = messages + from_server_end - from_server_start;
-            while (messages < end && (messages[0] == ' ' || messages[0] == '\n'))
-              { messages++; from_server_start++; }
-            if ((int) (end - messages) < 6)
-              /* Too few characters to be the end marker, return to select to
-               * wait for more input. */
-              goto succeed;
-            if (strncasecmp ("SERVER", messages, 6))
-              {
-                tracef ("   server fail: expected final \"SERVER\"\n");
-                goto fail;
-              }
-            set_server_state (SERVER_TOP);
-            from_server_start += 6;
-            messages += 6;
-          }
+          switch (parse_server_done (&messages))
+            {
+              case -1: return -1;
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return 0;
+            }
         else if (server_state == SERVER_PREFERENCE_VALUE)
-          {
-            char *value, *end;
-       server_preference_value:
-            assert (current_server_preference);
-            end = messages + from_server_end - from_server_start;
-            while (messages < end && (messages[0] == ' '))
-              { messages++; from_server_start++; }
-            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-              {
-                match[0] = '\0';
-                value = strdup (messages);
-                if (value == NULL) goto out_of_memory;
-                add_server_preference (current_server_preference, value);
-                set_server_state (SERVER_PREFERENCE_NAME);
-                from_server_start += match + 1 - messages;
-                messages = match + 1;
-              }
-            else
-              /* Need to wait for a newline to end the value so return to select
-               * to wait for more input. */
-              goto succeed;
-          }
+          switch (parse_server_preference_value (&messages))
+            {
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return 0;
+            }
         else if (server_state == SERVER_RULE)
-          {
-       server_rule:
-            while (1)
-              {
-                char *end;
-                end = messages + from_server_end - from_server_start;
-                while (messages < end && (messages[0] == '\n'))
-                  { messages++; from_server_start++; }
-                while (messages < end && (messages[0] == ' '))
-                  { messages++; from_server_start++; }
-                /* Check for the end marker. */
-                if (end - messages > 2
-                    && messages[0] == '<'
-                    && messages[1] == '|'
-                    && messages[2] == '>')
-                  /* The rules list ends with "<|> SERVER" so carry on, to
-                   * process the ending. */
-                  break;
-                /* There may be a rule ending in a semicolon. */
-                if ((match = memchr (messages, ';', from_server_end - from_server_start)))
-                  {
-                    char* rule;
-                    match[0] = '\0';
-                    rule = strdup (messages);
-                    if (rule == NULL) goto out_of_memory;
-                    add_server_rule (rule);
-                    from_server_start += match + 1 - messages;
-                    messages = match + 1;
-                  }
-                else
-                  /* Need more input for a ; or <|>. */
-                  goto succeed;
-              }
-          }
+          while (1)
+            {
+              switch (parse_server_rule (&messages))
+                {
+                  case  0: continue;     /* Read a rule. */
+                  case -1: break;        /* At final <|>. */
+                  case -2:
+                    /* Need more input. */
+                    if (sync_buffer ()) return -1;
+                    return 0;
+                }
+              break;
+            }
         else if (server_state == SERVER_SERVER)
+          /* Look for any newline delimited server commands. */
+          switch (parse_server_server (&messages))
+            {
+              case  0: break;        /* Found newline delimited command. */
+              case -1: return -1;    /* Error. */
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return 0;
+              case -3: break;        /* Next <|> is before next \n. */
+              case -4: break;        /* Failed to find \n, try for <|>. */
+            }
+        else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY
+                 && parse_server_plugin_dependency_dependency (&messages))
           {
-            /* Look for any newline delimited server commands. */
-            char *end;
-       server_server:
-            end = messages + from_server_end - from_server_start;
-            while (messages < end && (messages[0] == ' '))
-              { messages++; from_server_start++; }
-            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-              {
-                match[0] = '\0';
-                // FIX is there ever whitespace before the newline?
-                while (messages < end && (messages[0] == ' '))
-                  { messages++; from_server_start++; }
-                if (strncasecmp ("PLUGINS_DEPENDENCIES", messages, 20) == 0)
-                  {
-                    from_server_start += match + 1 - messages;
-                    messages = match + 1;
-                    maybe_free_server_plugins_dependencies ();
-                    make_server_plugins_dependencies ();
-                    set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
-                  }
-                else
-                  {
-                    char* newline = match;
-                    newline[0] = '\n';
-                    /* Check for a <|>. */
-                    input = messages;
-                    from_start = from_server_start, from_end = from_server_end;
-                    while (from_start < from_end
-                           && (match = memchr (input, '<', from_end - from_start)))
-                      {
-                        if ((((int) (match - input) - from_start + 1) < from_end)
-                            && (match[1] == '|')
-                            && (match[2] == '>'))
-                          {
-                            if (match > newline)
-                              /* The next <|> is after the newline, which is an error. */
-                              goto fail;
-                            /* The next <|> is before the newline, which may be correct.  Jump
-                             * over the <|> search in the `while' beginning the next section,
-                             * to save repeating the search. */
-                            goto server_server_command;
-                          }
-                        from_start += match + 1 - input;
-                        input = match + 1;
-                      }
-                    /* Need more input for a newline or <|>. */
-                    goto succeed;
-                  }
-              }
+            /* Need more input for a <|>. */
+            if (sync_buffer ()) return -1;
+            return 0;
           }
-        else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY)
-          {
-            /* Look for the end of dependency marker: a newline that comes before
-             * the next <|>. */
-            char *separator, *end;
-       server_plugin_dependency_dependency:
-            separator = NULL;
-            /* Look for <|>. */
-            input = messages;
-            from_start = from_server_start;
-            from_end = from_server_end;
-            while (from_start < from_end
-                   && (match = memchr (input, '<', from_end - from_start)))
-              {
-                if (((int) (match - input) - from_start + 1) < from_end
-                    && (match[1] == '|')
-                    && (match[2] == '>'))
-                  {
-                    separator = match;
-                    break;
-                  }
-                from_start += match + 1 - input;
-                input = match + 1;
-              }
-            /* Look for newline. */
-            end = messages + from_server_end - from_server_start;
-            while (messages < end && (messages[0] == ' '))
-              { messages++; from_server_start++; }
-            if ((match = memchr (messages, '\n', from_server_end - from_server_start)))
-              {
-                /* Compare newline position to <|> position. */
-                if ((separator == NULL) || (match < separator))
-                  {
-                    finish_current_server_plugin_dependency ();
-                    from_server_start += match + 1 - messages;
-                    messages = match + 1;
-                    set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
-                  }
-              }
-          }
+        break;
     } /* switch (server_init_state) */
 
   /* Parse and handle any fields ending in <|>. */
@@ -1012,7 +1160,6 @@ process_otp_server_input ()
           && (match[2] == '>'))
         {
           char* message;
-     server_server_command:
           /* Found a full field, process the field. */
 #if 1
           tracef ("   server messages: %.*s...\n",
@@ -1038,7 +1185,7 @@ process_otp_server_input ()
             {
               case SERVER_BYE:
                 if (strncasecmp ("BYE", field, 3))
-                  goto fail;
+                  return -1;
                 set_server_init_state (SERVER_INIT_TOP);
                 set_server_state (SERVER_DONE);
 // FIX
@@ -1046,16 +1193,21 @@ process_otp_server_input ()
                 if (shutdown (server_socket, SHUT_RDWR) == -1)
                   perror ("Failed to shutdown server socket");
 #endif
-                /* Jump to the done check, as this loop only considers fields
-                 * ending in <|>. */
-                goto server_done;
+                switch (parse_server_done (&messages))
+                  {
+                    case -1: return -1;
+                    case -2:
+                      /* Need more input. */
+                      if (sync_buffer ()) return -1;
+                      return 0;
+                  }
+                break;
               case SERVER_DEBUG_DESCRIPTION:
                 {
                   if (current_message)
                     {
                       // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
+                      char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_DEBUG_OID);
@@ -1088,7 +1240,6 @@ process_otp_server_input ()
                           number, protocol);
 
                   current_message = make_message (number, protocol);
-                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_DEBUG_DESCRIPTION);
                   break;
@@ -1097,25 +1248,29 @@ process_otp_server_input ()
                 {
                   if (current_message)
                     {
-                      char* oid = strdup (field);
-                      if (oid == NULL) goto out_of_memory;
+                      char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_debug_message (current_server_task, current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_HOLE_DESCRIPTION:
                 {
                   if (current_message)
                     {
                       // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
+                      char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_HOLE_OID);
@@ -1148,7 +1303,6 @@ process_otp_server_input ()
                           number, protocol);
 
                   current_message = make_message (number, protocol);
-                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_HOLE_DESCRIPTION);
                   break;
@@ -1157,25 +1311,29 @@ process_otp_server_input ()
                 {
                   if (current_message)
                     {
-                      char* oid = strdup (field);
-                      if (oid == NULL) goto out_of_memory;
+                      char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_hole_message (current_server_task, current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_INFO_DESCRIPTION:
                 {
                   if (current_message)
                     {
                       // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
+                      char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_INFO_OID);
@@ -1208,7 +1366,6 @@ process_otp_server_input ()
                           number, protocol);
 
                   current_message = make_message (number, protocol);
-                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_INFO_DESCRIPTION);
                   break;
@@ -1217,25 +1374,29 @@ process_otp_server_input ()
                 {
                   if (current_message && current_server_task)
                     {
-                      char* oid = strdup (field);
-                      if (oid == NULL) goto out_of_memory;
+                      char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_info_message (current_server_task, current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_LOG_DESCRIPTION:
                 {
                   if (current_message)
                     {
                       // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
+                      char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_LOG_OID);
@@ -1268,7 +1429,6 @@ process_otp_server_input ()
                           number, protocol);
 
                   current_message = make_message (number, protocol);
-                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_LOG_DESCRIPTION);
                   break;
@@ -1277,25 +1437,29 @@ process_otp_server_input ()
                 {
                   if (current_message && current_server_task)
                     {
-                      char* oid = strdup (field);
-                      if (oid == NULL) goto out_of_memory;
+                      char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_log_message (current_server_task, current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_NOTE_DESCRIPTION:
                 {
                   if (current_message)
                     {
                       // FIX \n for newline in description
-                      char* description = strdup (field);
-                      if (description == NULL) goto out_of_memory;
+                      char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
                   set_server_state (SERVER_NOTE_OID);
@@ -1328,7 +1492,6 @@ process_otp_server_input ()
                           number, protocol);
 
                   current_message = make_message (number, protocol);
-                  if (current_message == NULL) goto out_of_memory;
 
                   set_server_state (SERVER_NOTE_DESCRIPTION);
                   break;
@@ -1337,59 +1500,76 @@ process_otp_server_input ()
                 {
                   if (current_message && current_server_task)
                     {
-                      char* oid = strdup (field);
-                      if (oid == NULL) goto out_of_memory;
+                      char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_note_message (current_server_task, current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_PLUGIN_DEPENDENCY_NAME:
                 {
                   if (strlen (field) == 0)
                     {
                       set_server_state (SERVER_DONE);
-                      /* Jump to the done check, as this loop only considers fields
-                       * ending in <|>. */
-                      goto server_done;
+                      switch (parse_server_done (&messages))
+                        {
+                          case -1: return -1;
+                          case -2:
+                            /* Need more input. */
+                            if (sync_buffer ()) return -1;
+                            return 0;
+                        }
+                      break;
                     }
-                  char* name = strdup (field);
-                  if (name == NULL)
-                    goto out_of_memory;
+                  char* name = g_strdup (field);
                   make_current_server_plugin_dependency (name);
                   set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
-                  /* Jump to the newline check, as this loop only considers fields
-                   * ending in <|> and the list of dependencies can end in a
-                   * newline. */
-                  goto server_plugin_dependency_dependency;
+                  if (parse_server_plugin_dependency_dependency (&messages))
+                    {
+                      /* Need more input for a <|>. */
+                      if (sync_buffer ()) return -1;
+                      return 0;
+                    }
+                  break;
                 }
               case SERVER_PLUGIN_DEPENDENCY_DEPENDENCY:
                 {
-                  char* dep = strdup (field);
-                  if (dep == NULL)
-                    goto out_of_memory;
+                  char* dep = g_strdup (field);
                   append_to_current_server_plugin_dependency (dep);
-                  /* Jump to the newline check, as this loop only considers fields
-                   * ending in <|> and the list of dependencies can end in a
-                   * newline. */
-                  goto server_plugin_dependency_dependency;
+                  if (parse_server_plugin_dependency_dependency (&messages))
+                    {
+                      /* Need more input for a <|>. */
+                      if (sync_buffer ()) return -1;
+                      return 0;
+                    }
+                  break;
                 }
               case SERVER_PLUGINS_MD5:
                 {
-                  char* md5 = strdup (field);
-                  if (md5 == NULL)
-                    goto out_of_memory;
+                  char* md5 = g_strdup (field);
                   tracef ("   server got plugins_md5: %s\n", md5);
                   server.plugins_md5 = md5;
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_PORT_HOST:
                 {
@@ -1419,33 +1599,55 @@ process_otp_server_input ()
                                              protocol);
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_PREFERENCE_NAME:
                 {
                   if (strlen (field) == 0)
                     {
                       set_server_state (SERVER_DONE);
-                      /* Jump to the done check, as this loop only considers fields
-                       * ending in <|>. */
-                      goto server_done;
+                      switch (parse_server_done (&messages))
+                        {
+                          case -1: return -1;
+                          case -2:
+                            /* Need more input. */
+                            if (sync_buffer ()) return -1;
+                            return 0;
+                        }
+                      break;
                     }
-                  char* name = strdup (field);
-                  if (name == NULL) goto out_of_memory;
+                  char* name = g_strdup (field);
                   current_server_preference = name;
                   set_server_state (SERVER_PREFERENCE_VALUE);
-                  /* Jump to preference value check, as values end with a
-                   * newline and this loop only considers fields ending in <|>. */
-                  goto server_preference_value;
+                  switch (parse_server_preference_value (&messages))
+                    {
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_RULE:
                 /* A <|> following a rule. */
                 set_server_state (SERVER_DONE);
-                /* Jump to the done check, as this loop only considers fields
-                 * ending in <|>. */
-                goto server_done;
+                switch (parse_server_done (&messages))
+                  {
+                    case -1: return -1;
+                    case -2:
+                      /* Need more input. */
+                      if (sync_buffer ()) return -1;
+                      return 0;
+                  }
+                break;
               case SERVER_SERVER:
                 if (strncasecmp ("BYE", field, 3) == 0)
                   set_server_state (SERVER_BYE);
@@ -1474,9 +1676,20 @@ process_otp_server_input ()
                     maybe_free_server_rules ();
                     make_server_rules ();
                     set_server_state (SERVER_RULE);
-                    /* Jump to rules parsing, as each rule end in a ; and this
-                     * loop only considers fields ending in <|>. */
-                    goto server_rule;
+                    while (1)
+                      {
+                        switch (parse_server_rule (&messages))
+                          {
+                            case  0: continue;     /* Read a rule. */
+                            case -1: break;        /* At final <|>. */
+                            case -2:
+                              /* Need more input. */
+                              if (sync_buffer ()) return -1;
+                              return 0;
+                          }
+                        break;
+                      }
+                    break;
                   }
                 else if (strncasecmp ("TIME", field, 4) == 0)
                   {
@@ -1490,16 +1703,14 @@ process_otp_server_input ()
                   {
                     tracef ("New server command to implement: %s\n",
                             field);
-                    goto fail;
+                    return -1;
                   }
                 break;
               case SERVER_STATUS_ATTACK_STATE:
                 {
                   if (current_server_task)
                     {
-                      char* state = strdup (field);
-                      if (state == NULL)
-                        goto out_of_memory;
+                      char* state = g_strdup (field);
                       tracef ("   server got attack state: %s\n", state);
                       if (current_server_task->attack_state)
                         free (current_server_task->attack_state);
@@ -1524,9 +1735,15 @@ process_otp_server_input ()
                         set_task_ports (current_server_task, current, max);
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_TIME:
                 {
@@ -1552,18 +1769,22 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      char* time = strdup (field);
-                      if (time == NULL)
-                        goto out_of_memory;
+                      char* time = g_strdup (field);
                       tracef ("   server got start time: %s\n", time);
                       if (current_server_task->start_time)
                         free (current_server_task->start_time);
                       current_server_task->start_time = time;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_TIME_HOST_END_HOST:
                 {
@@ -1575,48 +1796,75 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      char* time = strdup (field);
-                      if (time == NULL)
-                        goto out_of_memory;
+                      char* time = g_strdup (field);
                       tracef ("   server got end time: %s\n", time);
                       if (current_server_task->end_time)
                         free (current_server_task->end_time);
                       current_server_task->end_time = time;
 
-                      if (save_report (current_server_task)) goto fail;
+                      if (save_report (current_server_task)) return -1;
 
                       current_server_task = NULL;
                     }
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_TIME_SCAN_START:
                 {
                   /* Read over it. */
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_TIME_SCAN_END:
                 {
                   /* Read over it. */
                   set_server_state (SERVER_DONE);
-                  /* Jump to the done check, as this loop only considers fields
-                   * ending in <|>. */
-                  goto server_done;
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
                 }
               case SERVER_TOP:
               default:
                 tracef ("   switch t\n");
                 tracef ("   cmp %i\n", strncasecmp ("SERVER", field, 6));
                 if (strncasecmp ("SERVER", field, 6))
-                  goto fail;
+                  return -1;
                 set_server_state (SERVER_SERVER);
-                /* Jump to newline check, in case command ends in a newline. */
-                goto server_server;
+                /* Look for any newline delimited server commands. */
+                switch (parse_server_server (&messages))
+                  {
+                    case  0: break;        /* Found newline delimited command. */
+                    case -1: return -1;    /* Error. */
+                    case -2:
+                      /* Need more input. */
+                      if (sync_buffer ()) return -1;
+                      return 0;
+                    case -3: break;        /* Next <|> is before next \n. */
+                    case -4: break;        /* Failed to find \n, try for <|>. */
+                  }
+                break;
             }
 
           tracef ("   server new state: %i\n", server_state);
@@ -1628,48 +1876,6 @@ process_otp_server_input ()
         }
     }
 
- succeed:
-
-  if (from_server_start > 0 && from_server_start == from_server_end)
-    {
-      from_server_start = from_server_end = 0;
-      tracef ("   server start caught end\n");
-    }
-  else if (from_server_start == 0)
-    {
-      if (from_server_end == from_buffer_size)
-        {
-          // FIX if the buffer is entirely full here then exit
-          //     (or will hang waiting for buffer to empty)
-          //     this could happen if the server sends a field with length >= buffer length
-          //         could realloc buffer
-          //             which may eventually use all mem and bring down manager
-          tracef ("   server buffer full\n");
-          return -1;
-        }
-    }
-  else
-    {
-      /* Move the remaining partial line to the front of the buffer.  This
-       * ensures that there is space after the partial line into which
-       * serve_omp can read the rest of the line. */
-      char* start = from_server + from_server_start;
-      from_server_end -= from_server_start;
-      memmove (from_server, start, from_server_end);
-      from_server_start = 0;
-#if TRACE
-      from_server[from_server_end] = '\0';
-      //tracef ("   new from_server: %s\n", from_server);
-      tracef ("   new from_server_start: %i\n", from_server_start);
-      tracef ("   new from_server_end: %i\n", from_server_end);
-#endif
-    }
-
+  if (sync_buffer ()) return -1;
   return 0;
-
- out_of_memory:
-  tracef ("   out of mem (server)\n");
-
- fail:
-  return -1;
 }
