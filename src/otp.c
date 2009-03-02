@@ -1819,7 +1819,8 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_SCAN_START:
                 {
-                  /* Read over it. */
+                  if (current_server_task)
+                    current_server_task->running = 2;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {

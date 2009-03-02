@@ -488,7 +488,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           {
             SEND_TO_CLIENT ("<status_response>"
                             "<status>402</status>"
-                            "</status_task_response>");
+                            "</status_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -909,15 +909,15 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           unsigned int id;
           if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
-              current_client_task = find_task (id);
-              if (current_client_task == NULL)
+              task_t* task = find_task (id);
+              if (task == NULL)
                 SEND_TO_CLIENT ("<modify_task_response>"
                                 "<status>407</status>"
                                 "</modify_task_response>");
               else
                 {
                   // FIX check if param,value else respond fail
-                  int fail = set_task_parameter (current_client_task,
+                  int fail = set_task_parameter (task,
                                                  modify_task_parameter,
                                                  modify_task_value);
                   free (modify_task_parameter);
@@ -1047,8 +1047,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                 task_t* task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT ("<status_response>"
-                                  "<status>407</status>"
-                                  "</status_response>");
+                                  "<status>407</status>");
                 else
                   {
                     SEND_TO_CLIENT ("<status_response><status>200</status>");
@@ -1061,8 +1060,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
               }
             else
               SEND_TO_CLIENT ("<status_response>"
-                              "<status>40x</status>"
-                              "</status_response>");
+                              "<status>40x</status>");
             free_string_var (&current_task_task_id);
           }
         else
@@ -1082,7 +1080,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     line = g_strdup_printf ("<task>"
                                             "<task_id>%u</task_id>"
                                             "<identifier>%s</identifier>"
-                                            "<task_status>%s</task_status>"
+                                            "<status>%s</status>"
                                             "<messages>"
                                             "<debug>%i</debug>"
                                             "<hole>%i</hole>"
@@ -1093,7 +1091,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                             "</task>",
                                             index->id,
                                             index->name,
-                                            index->running ? "Running" : "New",
+                                            index->running
+                                            ? (index->running == 1
+                                               ? "Requested"
+                                               : "Running")
+                                            : "New",
                                             index->debugs_size,
                                             index->holes_size,
                                             index->infos_size,

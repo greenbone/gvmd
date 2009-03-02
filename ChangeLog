@@ -1,5 +1,20 @@
 2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add "Requested" task running state.  Correct STATUS_RESPONSE tags and
+	CLIENT_MODIFY_TASK variable usage.
+
+	* src/otp.c (process_otp_server_input): Update task running state
+	on receiving SCAN_START.
+
+	* src/omp.c (omp_xml_handle_end_element): Add printing of new running
+	state.  Rename TASK_STATUS entity in TASK in STATUS_RESPONSE to STATUS.
+	Correct STATUS_RESPONSE closing tags.  In CLIENT_MODIFY_TASK case
+	use local var instead of setting current_client_task.
+
+	* src/manage.h (task_t): Note new running state.
+
+2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/tests/common.c: Turn off some tracing.
 	(DO_CHILDREN, id_string, wait_for_task_start, delete_task): New functions.
 

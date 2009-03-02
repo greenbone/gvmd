@@ -101,7 +101,7 @@ typedef struct
   char* description;          ///< Description.
   int description_length;     ///< Length of description.
   int description_size;       ///< Actual size allocated for description.
-  short running;              ///< Flag: 0 initially, 1 if running.
+  short running;              ///< Flag: 0 new, 1 started, 2 running.
   char* start_time;           ///< Time the task last started.
   char* end_time;             ///< Time the task last ended.
   unsigned int report_count;  ///< The number of existing reports on the task.
