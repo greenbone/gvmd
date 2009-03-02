@@ -1,5 +1,9 @@
 2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/manage.c (delete_task): Correct error check.
+
+2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Add "Requested" task running state.  Correct STATUS_RESPONSE tags and
 	CLIENT_MODIFY_TASK variable usage.
 

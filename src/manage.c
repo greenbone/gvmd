@@ -821,7 +821,8 @@ delete_task (task_t* task)
                                   id,
                                   NULL);
   GError* error = NULL;
-  if (rmdir_recursively (name, &error))
+  rmdir_recursively (name, &error);
+  if (error)
     {
       fprintf (stderr, "Failed to remove task dir %s: %s\n",
                name,
