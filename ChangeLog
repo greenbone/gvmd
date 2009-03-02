@@ -1,3 +1,14 @@
+2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/tests/common.c: Turn off some tracing.
+	(DO_CHILDREN, id_string, wait_for_task_start, delete_task): New functions.
+
+	* src/tests/common.h (delete_task, wait_for_task_start): New headers.
+
+	* src/tests/omp_abort_task_0.c, src/tests/omp_start_task_0.c,
+	src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_0.c: Wait for
+	server with	wait_for_task_start.  Delete task on exit.
+
 2009-03-01  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Reduce number of gotos.

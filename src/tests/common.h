@@ -99,5 +99,10 @@ create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
                           unsigned int*);
 
 int
+delete_task (gnutls_session_t*, unsigned int);
+
+int
 start_task (gnutls_session_t* , unsigned int);
 
+int
+wait_for_task_start (gnutls_session_t*, unsigned int);

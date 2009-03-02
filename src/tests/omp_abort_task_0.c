@@ -65,20 +65,26 @@ main ()
 
   if (start_task (&session, id))
     {
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   /* Wait for the task to start on the server. */
 
-  // FIX wait on <status><task_id>%u<task_id><status>
-  sleep (5);
+  if (wait_for_task_start (&session, id))
+    {
+      delete_task (&session, id);
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Cancel the task. */
 
 #if 0
   if (env_authenticate (&session))
     {
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -89,6 +95,7 @@ main ()
                         id)
       == -1)
     {
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -102,18 +109,19 @@ main ()
 
   entity_t expected = add_entity (NULL, "abort_task_response", NULL);
   add_entity (&expected->entities, "status", "201");
-  print_entity (stdout, expected);
 
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
       free_entity (entity);
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   free_entity (expected);
   free_entity (entity);
+  delete_task (&session, id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

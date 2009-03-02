@@ -45,8 +45,10 @@
  * \ref authenticate,
  * \ref env_authenticate,
  * \ref create_task,
- * \ref create_task_from_rc_file and
- * \ref start_task.
+ * \ref create_task_from_rc_file,
+ * \ref delete_task,
+ * \ref start_task and
+ * \ref wait_for_task_start.
  *
  * There are examples of using this interface in the tests.
  */
@@ -488,7 +490,7 @@ handle_start_element (GMarkupParseContext* context,
                       GError **error)
 {
   entity_t entity;
-  tracef ("   handle_start_element %s\n", element_name);
+  //tracef ("   handle_start_element %s\n", element_name);
   context_data_t* data = (context_data_t*) user_data;
   if (data->current)
     {
@@ -519,7 +521,7 @@ handle_end_element (GMarkupParseContext* context,
                     gpointer user_data,
                     GError **error)
 {
-  tracef ("   handle_end_element %s\n", element_name);
+  //tracef ("   handle_end_element %s\n", element_name);
   context_data_t* data = (context_data_t*) user_data;
   assert (data->current && data->first);
   if (data->current == data->first)
@@ -550,7 +552,7 @@ handle_text (GMarkupParseContext* context,
              gpointer user_data,
              GError **error)
 {
-  tracef ("   handle_text\n");
+  //tracef ("   handle_text\n");
   context_data_t* data = (context_data_t*) user_data;
   entity_t current = (entity_t) data->current->data;
   current->text = current->text
@@ -570,7 +572,7 @@ handle_error (GMarkupParseContext* context,
               GError *error,
               gpointer user_data)
 {
-  tracef ("   handle_error\n");
+  //tracef ("   handle_error\n");
   tracef ("   Error: %s\n", error->message);
 }
 
@@ -757,6 +759,41 @@ compare_entities (entity_t entity1, entity_t entity2)
   tracef ("  compare failed number of entities (%s)\n", entity1->name);
   return 1;
 }
+
+/**
+ * @brief Do something for each child of an entity.
+ *
+ * Calling "break" during body exits the loop.
+ *
+ * @param[in]  entity  The entity.
+ * @param[in]  child   Name to use for child variable.
+ * @param[in]  temp    Name to use for internal variable.
+ * @param[in]  body    The code to run for each child.
+ */
+#define DO_CHILDREN(entity, child, temp, body)      \
+  do                                                \
+    {                                               \
+      GSList* temp = entity->entities;              \
+      while (temp)                                  \
+        {                                           \
+          entity_t child = temp->data;              \
+          {                                         \
+            body;                                   \
+          }                                         \
+          temp = g_slist_next (temp);               \
+        }                                           \
+    }                                               \
+  while (0)
+
+#if 0
+/* Lisp version of DO_CHILDREN. */
+(defmacro do-children ((entity child) &body body)
+  "Do something for each child of an entity."
+  (let ((temp (gensym)))
+    `(while ((,temp (entity-entities ,entity) (rest ,temp)))
+            (,temp)
+       ,@body)))
+#endif
 
 
 /* OMP. */
@@ -953,6 +990,177 @@ start_task (gnutls_session_t* session,
 {
   if (sendf_to_manager (session,
                         "<start_task><task_id>%u</task_id></start_task>",
+                        id)
+      == -1)
+    return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  entity_t status = entity_child (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  const char* status_text = entity_text (status);
+  if (strlen (status_text) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status_text[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
+}
+
+/**
+ * @brief Return a string version of an ID.
+ *
+ * @param[in]   id      ID.
+ * @param[out]  string  Pointer to a string.  On successful return contains a
+ *                      pointer to a static buffer with the task ID as a string.
+ *                      The static buffer is overwritten across successive
+ *                      calls.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+id_string (int id, const char ** string)
+{
+  static char buffer[11]; /* (expt 2 32) => 4294967296 */
+  int length = sprintf (buffer, "%u", id);
+  assert (length < 11);
+  if (length < 1) return -1;
+  *string = buffer;
+  return 0;
+}
+
+/**
+ * @brief Wait for a task to start running on the server.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+wait_for_task_start (gnutls_session_t* session,
+                     unsigned int id)
+{
+  while (1)
+    {
+      if (sendf_to_manager (session, "<status/>") == -1)
+        return -1;
+
+      /* Read the response. */
+
+      entity_t entity = NULL;
+      if (read_entity (session, &entity)) return -1;
+
+      /* Check the response. */
+
+      entity_t status = entity_child (entity, "status");
+      if (status == NULL)
+        {
+          free_entity (entity);
+          return -1;
+        }
+      const char* status_text = entity_text (status);
+      if (strlen (status_text) == 0)
+        {
+          free_entity (entity);
+          return -1;
+        }
+      if (status_text[0] == '2')
+        {
+          /* Check the running status of the given task. */
+
+          char* run_state = NULL;
+          const char* string_id;
+          if (id_string (id, &string_id))
+            {
+              free_entity (entity);
+              return -1;
+            }
+
+#if 0
+          /* Lisp version. */
+          (do-children (entity child)
+            (when (string= (entity-type child) "task")
+              (let ((task-id (entity-child child "task_id")))
+                (fi* task-id
+                  (free-entity entity)
+                  (return-from wait-for-task-start -1))
+                (when (string= (entity-text task-id) string-id)
+                  (let ((status (entity-child child "status")))
+                    (fi* status
+                      (free-entity entity)
+                      (return-from wait-for-task-start -1))
+                    (setq run-state (entity-text status)))
+                  (return)))))
+#endif
+
+          DO_CHILDREN (entity, child, temp,
+                       if (strcasecmp (entity_name (child), "task") == 0)
+                         {
+                           entity_t task_id = entity_child (child, "task_id");
+                           if (task_id == NULL)
+                             {
+                               free_entity (entity);
+                               return -1;
+                             }
+                           if (strcasecmp (entity_text (task_id), string_id)
+                               == 0)
+                             {
+                               entity_t status = entity_child (child, "status");
+                               if (status == NULL)
+                                 {
+                                   free_entity (entity);
+                                   return -1;
+                                 }
+                               run_state = entity_text (status);
+                               break;
+                             }
+                         });
+
+          if (run_state == NULL)
+            {
+              free_entity (entity);
+              return -1;
+            }
+
+          if (strcmp (run_state, "Running") == 0
+              || strcmp (run_state, "Done") == 0)
+            {
+              free_entity (entity);
+              return 0;
+            }
+          free_entity (entity);
+        }
+
+      sleep (1);
+    }
+}
+
+/**
+ * @brief Delete a task and read the manager response.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+delete_task (gnutls_session_t* session, unsigned int id)
+{
+  if (sendf_to_manager (session,
+                        "<delete_task><task_id>%u</task_id></delete_task>",
                         id)
       == -1)
     return -1;

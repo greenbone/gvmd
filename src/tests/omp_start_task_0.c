@@ -83,6 +83,7 @@ main ()
     {
       free_entity (expected);
       free_entity (entity);
+      delete_task (&session, id);
  fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -90,6 +91,7 @@ main ()
 
   free_entity (expected);
   free_entity (entity);
+  delete_task (&session, id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

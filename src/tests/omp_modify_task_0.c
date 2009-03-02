@@ -69,6 +69,7 @@ main ()
 #if 0
   if (env_authenticate (&session))
     {
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -83,6 +84,7 @@ main ()
                         id)
       == -1)
     {
+      delete_task (&session, id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -104,6 +106,7 @@ main ()
 
   /* Cleanup. */
 
+  delete_task (&session, id);
   close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);

@@ -56,16 +56,16 @@ main ()
 
   /* Start the task. */
 
-  if (start_task (&session, id)) goto fail;
+  if (start_task (&session, id)) goto delete_fail;
 
   /* Request the status. */
 
 #if 0
-  if (env_authenticate (&session)) goto fail;
+  if (env_authenticate (&session)) goto delete_fail;
 #endif
 
   if (send_to_manager (&session, "<status/>") == -1)
-    goto fail;
+    goto delete_fail;
 
   /* Read the response. */
 
@@ -80,7 +80,7 @@ main ()
   entity_t task = add_entity (&expected->entities, "task", NULL);
   add_entity (&task->entities, "task_id", "0");
   add_entity (&task->entities, "identifier", "omp_start_task_0");
-  add_entity (&task->entities, "task_status", "Running");
+  add_entity (&task->entities, "status", "Running");
   entity_t messages = add_entity (&task->entities, "messages", "");
   add_entity (&messages->entities, "debug", "0");
   add_entity (&messages->entities, "hole", "0");
@@ -92,6 +92,8 @@ main ()
     {
       free_entity (entity);
       free_entity (expected);
+ delete_fail:
+      delete_task (&session, id);
  fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -99,6 +101,7 @@ main ()
 
   free_entity (entity);
   free_entity (expected);
+  delete_task (&session, id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }
