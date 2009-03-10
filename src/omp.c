@@ -1094,7 +1094,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                             index->running
                                             ? (index->running == 1
                                                ? "Requested"
-                                               : "Running")
+                                               : (index->running == 2
+                                                  ? "Running"
+                                                  : "Done"))
                                             : "New",
                                             index->debugs_size,
                                             index->holes_size,

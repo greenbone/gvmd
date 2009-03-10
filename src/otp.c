@@ -1803,8 +1803,6 @@ process_otp_server_input ()
                       current_server_task->end_time = time;
 
                       if (save_report (current_server_task)) return -1;
-
-                      current_server_task = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -1834,7 +1832,9 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_SCAN_END:
                 {
-                  /* Read over it. */
+                  if (current_server_task)
+                    current_server_task->running = 3;
+                  current_server_task = NULL;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {

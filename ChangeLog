@@ -1,3 +1,9 @@
+2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/otp.c (process_otp_server_input): Add "done" task state.
+
+	* src/omp.c (omp_xml_handle_end_element): Add "done" task state.
+
 2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/manage.c (delete_task): Correct error check.
