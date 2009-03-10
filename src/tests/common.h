@@ -105,4 +105,7 @@ int
 start_task (gnutls_session_t* , unsigned int);
 
 int
+wait_for_task_end (gnutls_session_t*, unsigned int);
+
+int
 wait_for_task_start (gnutls_session_t*, unsigned int);

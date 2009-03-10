@@ -1,5 +1,11 @@
 2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/common.c (wait_for_task_end): New function.
+
+	* src/tests/common.h (wait_for_task_end): New header.
+
+2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (output_reports_xml): New function.
 	(omp_xml_handle_end_element): Add reports to STATUS response
 	in case where STATUS is given a task ID.
