@@ -42,6 +42,8 @@
 #include "tracef.h"
 
 #include <assert.h>
+#include <dirent.h>
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -627,6 +629,86 @@ send_rule (gpointer rule)
   return TRUE;
 }
 
+gboolean
+output_reports_xml (task_t* task)
+{
+  const char* id;
+
+  if (task_id_string (task, &id)) return FALSE;
+
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
+                                      "tasks",
+                                      id,
+                                      "reports",
+                                      NULL);
+
+  struct dirent ** names;
+  int count;
+
+  count = scandir (dir_name, &names, NULL, alphasort);
+  if (count < 0)
+    {
+      if (errno == ENOENT)
+        {
+          free (dir_name);
+          return 0;
+        }
+      fprintf (stderr, "Failed to open dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      return -1;
+    }
+
+  int index;
+  gchar* msg = NULL;
+  for (index = 0; index < count; index++)
+    {
+      const char* report_name = names[index]->d_name;
+
+      if (report_name[0] == '.'
+          || strlen (report_name) < 5
+          || strcmp (report_name + strlen (report_name) - 4, ".nbe"))
+        continue;
+
+#if 0
+      report_dir_name = g_build_filename (dir_name, report_name, NULL);
+#endif
+
+      tracef ("     %s\n", report_name);
+
+      msg = g_strdup_printf ("<report>"
+                             "<id>%.*s</id>"
+                             "<timestamp>FIX</timestamp>"
+                             "<messages>"
+                             "<hole>0</hole>"
+                             "<info>0</info>"
+                             "<log>0</log>"
+                             "<debug>0</debug>"
+                             "</messages>"
+                             "</report>",
+                             strlen (report_name) - 4,
+                             g_path_get_basename (report_name));
+      free (names[index]);
+      SEND_TO_CLIENT (msg);
+    }
+
+#if 0
+  g_free (dir_name);
+#endif
+  free (names);
+
+  SEND_TO_CLIENT (msg);
+  g_free (msg);
+  return FALSE;
+ send_to_client_fail:
+  g_free (names);
+  g_free (msg);
+  return TRUE;
+}
+
 /**
  * @brief Handle the end of an OMP XML element.
  *
@@ -1055,7 +1137,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     response = g_strdup_printf ("<report_count>%u</report_count>",
                                                 task->report_count);
                     SEND_TO_CLIENT (response);
-                    // FIX output reports
+                    output_reports_xml (task);
                   }
               }
             else
