@@ -1,5 +1,18 @@
 2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Add per-user reports directories.
+
+	* src/otp.c (save_report): Save the report to the report directory of the
+	user and link the repot to the task directory, instead of saving to the
+	task directory.
+
+	* src/omp.c (omp_xml_handle_end_element): Get the report from the user
+	report directory instead of the task directory.  Ensure the report name
+	has the right format.  Free content_error. Free current_task_task_id in
+	the fail case.
+
+2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (output_reports_xml): Rename to send_reports.
 	(send_reports): Rename from output_reports_xml.  Add doc.
 

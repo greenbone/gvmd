@@ -953,26 +953,37 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_task_task_id)
+        unsigned int id;
+        if (current_task_task_id
+            && sscanf (current_task_task_id, "%u", &id) == 1)
           {
+            gchar* base_name;
+            static char buffer[11]; /* (expt 2 32) => 4294967296 */
+
+            free_string_var (&current_task_task_id);
+
+            sprintf (buffer, "%010u", id);
+            base_name = g_strdup_printf ("%s.nbe", buffer);
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
                                             current_credentials.username,
                                             "reports",
-                                            current_task_task_id,
+                                            base_name,
                                             NULL);
-            free_string_var (&current_task_task_id);
+            g_free (base_name);
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
                 gchar* content;
                 gsize content_length;
                 GError* content_error = NULL;
-                tracef ("file name: %s\n", name);
                 g_file_get_contents (name, &content, &content_length,
                                      &content_error);
                 if (content_error)
-                  SEND_TO_CLIENT ("<get_report_response>"
-                                  "<status>50x</status>");
+                  {
+                    g_error_free (content_error);
+                    SEND_TO_CLIENT ("<get_report_response>"
+                                    "<status>50x</status>");
+                  }
                 else
                   {
                     gchar* base64_content;
@@ -993,8 +1004,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                               "<status>40x</status>");
           }
         else
-          SEND_TO_CLIENT ("<get_report_reponse>"
-                          "<status>500</status>");
+          {
+            free_string_var (&current_task_task_id);
+            SEND_TO_CLIENT ("<get_report_reponse>"
+                            "<status>500</status>");
+          }
         SEND_TO_CLIENT ("</get_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
