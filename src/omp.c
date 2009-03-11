@@ -119,6 +119,8 @@ typedef enum
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_NVT_FEED_DETAILS,
   CLIENT_GET_PREFERENCES,
+  CLIENT_GET_REPORT,
+  CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
@@ -248,6 +250,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_GET_NVT_FEED_DETAILS);
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
+        else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
+          set_client_state (CLIENT_GET_REPORT);
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
           set_client_state (CLIENT_GET_RULES);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
@@ -386,6 +390,22 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
             SEND_TO_CLIENT ("<get_preferences_response>"
                             "<status>402</status>"
                             "</get_preferences_response>");
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_REPORT:
+        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
+          set_client_state (CLIENT_GET_REPORT_ID);
+        else
+          {
+            SEND_TO_CLIENT ("<get_report_response>"
+                            "<status>402</status>"
+                            "</get_report_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -924,6 +944,58 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_GET_REPORT:
+        assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
+        if (current_task_task_id)
+          {
+            gchar* name = g_build_filename (PREFIX
+                                            "/var/lib/openvas/mgr/users/",
+                                            current_credentials.username,
+                                            "reports",
+                                            current_task_task_id,
+                                            NULL);
+            free_string_var (&current_task_task_id);
+            if (g_file_test (name, G_FILE_TEST_EXISTS))
+              {
+                gchar* content;
+                gsize content_length;
+                GError* content_error = NULL;
+                tracef ("file name: %s\n", name);
+                g_file_get_contents (name, &content, &content_length,
+                                     &content_error);
+                if (content_error)
+                  SEND_TO_CLIENT ("<get_report_response>"
+                                  "<status>50x</status>");
+                else
+                  {
+                    gchar* base64_content;
+                    base64_content = g_base64_encode ((guchar*) content,
+                                                      content_length);
+                    g_free (content);
+                    // FIX free base64_content if SEND_TO_CLIENT fail
+                    SEND_TO_CLIENT ("<get_report_response>"
+                                    "<status>200</status>"
+                                    "<report>");
+                    SEND_TO_CLIENT (base64_content);
+                    g_free (base64_content);
+                    SEND_TO_CLIENT ("</report>");
+                  }
+              }
+            else
+              SEND_TO_CLIENT ("<get_report_response>"
+                              "<status>40x</status>");
+          }
+        else
+          SEND_TO_CLIENT ("<get_report_reponse>"
+                          "<status>500</status>");
+        SEND_TO_CLIENT ("</get_report_response>");
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_GET_REPORT_ID:
+        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
+        set_client_state (CLIENT_GET_REPORT);
+        break;
+
       case CLIENT_GET_RULES:
         if (server.rules)
           {
@@ -1271,6 +1343,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK_TASK_ID:
+      case CLIENT_GET_REPORT_ID:
       case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:

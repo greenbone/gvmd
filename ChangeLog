@@ -1,3 +1,9 @@
+2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/omp.c (client_state_t): Add GET_REPORT states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add GET_REPORT handling.
+
 2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/common.c (wait_for_task_end): New function.
