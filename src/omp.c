@@ -649,8 +649,15 @@ send_rule (gpointer rule)
   return TRUE;
 }
 
+/**
+ * @brief Send XML for the reports of a task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
 gboolean
-output_reports_xml (task_t* task)
+send_reports (task_t* task)
 {
   const char* id;
 
@@ -1209,7 +1216,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     response = g_strdup_printf ("<report_count>%u</report_count>",
                                                 task->report_count);
                     SEND_TO_CLIENT (response);
-                    output_reports_xml (task);
+                    send_reports (task);
                   }
               }
             else

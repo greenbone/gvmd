@@ -1,5 +1,10 @@
 2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/omp.c (output_reports_xml): Rename to send_reports.
+	(send_reports): Rename from output_reports_xml.  Add doc.
+
+2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (client_state_t): Add GET_REPORT states.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add GET_REPORT handling.
