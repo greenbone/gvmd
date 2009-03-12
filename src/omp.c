@@ -112,6 +112,8 @@ typedef enum
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_CREDENTIALS_PASSWORD,
+  CLIENT_DELETE_REPORT,
+  CLIENT_DELETE_REPORT_ID,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_GET_DEPENDENCIES,
@@ -238,6 +240,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           }
         else if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
           set_client_state (CLIENT_ABORT_TASK);
+        else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
+          set_client_state (CLIENT_DELETE_REPORT);
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_DELETE_TASK);
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
@@ -310,6 +314,22 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
                             "</authenticate_response>");
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_DELETE_REPORT:
+        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
+          set_client_state (CLIENT_DELETE_REPORT_ID);
+        else
+          {
+            SEND_TO_CLIENT ("<delete_report_response>"
+                            "<status>402</status>"
+                            "</delete_report_response>");
+            set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -951,6 +971,80 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_REPORT:
+        {
+          assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
+          unsigned int id;
+          if (current_task_task_id
+              && sscanf (current_task_task_id, "%u", &id) == 1)
+            {
+              gchar* base_name;
+              static char buffer[11]; /* (expt 2 32) => 4294967296 */
+
+              free_string_var (&current_task_task_id);
+
+              sprintf (buffer, "%010u", id);
+              base_name = g_strdup_printf ("%s.nbe", buffer);
+              gchar* link_name;
+              link_name = g_build_filename (PREFIX
+                                            "/var/lib/openvas/mgr/users/",
+                                            current_credentials.username,
+                                            "reports",
+                                            base_name,
+                                            NULL);
+              g_free (base_name);
+              // FIX glib access setuid note
+              if (g_file_test (link_name,
+                               G_FILE_TEST_EXISTS && G_FILE_TEST_IS_SYMLINK))
+                {
+                  GError* link_error = NULL;
+                  gchar* name = g_file_read_link (link_name, &link_error);
+                  if (link_error || unlink (name))
+                    {
+                      if (link_error)
+                        {
+                          fprintf (stderr,
+                                   "Failed to read report symlink: %s.\n",
+                                   link_error->message);
+                          g_error_free (link_error);
+                        }
+                      g_free (name);
+                      g_free (link_name);
+                      SEND_TO_CLIENT ("<delete_report_response>"
+                                      "<status>50x</status>");
+                    }
+                  else
+                    {
+                      if (unlink (link_name))
+                        /* Just log the error. */
+                        fprintf (stderr,
+                                 "Failed to remove report symlink %s.\n",
+                                 link_name);
+                      g_free (name);
+                      g_free (link_name);
+                      SEND_TO_CLIENT ("<delete_report_response>"
+                                      "<status>200</status>");
+                    }
+                }
+              else
+                SEND_TO_CLIENT ("<delete_report_response>"
+                                "<status>40x</status>");
+            }
+          else
+            {
+              free_string_var (&current_task_task_id);
+              SEND_TO_CLIENT ("<delete_report_response>"
+                              "<status>500</status>");
+            }
+          SEND_TO_CLIENT ("</delete_report_response>");
+          set_client_state (CLIENT_AUTHENTIC);
+        }
+        break;
+      case CLIENT_DELETE_REPORT_ID:
+        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
+        set_client_state (CLIENT_DELETE_REPORT);
+        break;
+
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
         unsigned int id;
@@ -971,6 +1065,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                             base_name,
                                             NULL);
             g_free (base_name);
+            // FIX glib access setuid note
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
                 gchar* content;
@@ -1364,6 +1459,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK_TASK_ID:
+      case CLIENT_DELETE_REPORT_ID:
       case CLIENT_GET_REPORT_ID:
       case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:

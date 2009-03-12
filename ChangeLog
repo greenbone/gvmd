@@ -1,4 +1,12 @@
-2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-12  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add OMP DELETE_REPORT.
+
+	* src/otm.c (client_state_t): Add DELETE_REPORT states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element,
+	omp_xml_handle_text): Add DELETE_REPORT handling.
+
+2009-03-12  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/otp.c (save_report): Move the actual report into the task directory.
 
