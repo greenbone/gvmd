@@ -338,11 +338,11 @@ save_report (task_t* task)
       return -1;
     }
 
-  gchar* name = g_build_filename (user_dir_name, buffer, NULL);
-  g_free (user_dir_name);
-
-  gchar* symlink_name = g_build_filename (dir_name, buffer, NULL);
+  gchar* name = g_build_filename (dir_name, buffer, NULL);
   g_free (dir_name);
+
+  gchar* symlink_name = g_build_filename (user_dir_name, buffer, NULL);
+  g_free (user_dir_name);
 
   /* Write report. */
 
