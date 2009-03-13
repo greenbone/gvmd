@@ -404,7 +404,7 @@ serve_omp (gnutls_session_t* client_session,
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_omp_client_input, which parses OMP
    * commands and may write to to_server and to_client.  On reading from
-   * the server calls process_otp_server_input, which updates information
+   * the server call process_otp_server_input, which updates information
    * kept about the server.
    *
    * There are a few complications here

@@ -1,5 +1,9 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/ompd.c (serve_omp): Revert bogus typo correction.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (omp_xml_handle_end_element): Free name in CLIENT_GET_REPORT
 	case.
 
