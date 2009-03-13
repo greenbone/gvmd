@@ -58,7 +58,7 @@ authenticate (credentials_t);
 /* Reports. */
 
 int
-delete_report (char*);
+delete_report (const char*);
 
 
 /* Tasks. */

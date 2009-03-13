@@ -139,7 +139,7 @@ authenticate (credentials_t credentials)
  * @param[in]  report_id  ID of report.
  */
 int
-delete_report (char* report_id)
+delete_report (const char* report_id)
 {
   unsigned int id;
   if (sscanf (report_id, "%u", &id) == 1)
@@ -858,6 +858,71 @@ stop_task (task_t* task)
 }
 
 /**
+ * @brief Delete all the reports for a task.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+delete_reports (task_t* task)
+{
+  const char* id;
+
+  if (task_id_string (task, &id)) return -1;
+
+  if (current_credentials.username == NULL) return -1;
+
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
+                                      "tasks",
+                                      id,
+                                      "reports",
+                                      NULL);
+
+  struct dirent ** names;
+  int count;
+
+  count = scandir (dir_name, &names, NULL, alphasort);
+  if (count < 0)
+    {
+      if (errno == ENOENT)
+        {
+          g_free (dir_name);
+          return 0;
+        }
+      fprintf (stderr, "Failed to open dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      return -1;
+    }
+  g_free (dir_name);
+
+  int index;
+  for (index = 0; index < count; index++)
+    {
+      const char* report_name = names[index]->d_name;
+
+      if (report_name[0] == '.'
+          || strlen (report_name) < 5
+          || strcmp (report_name + strlen (report_name) - 4, ".nbe"))
+        continue;
+
+      int ret = delete_report (report_name);
+      free (names[index]);
+      switch (ret)
+        {
+          case 0: break;
+          default: free (names); return -1;
+        }
+    }
+  free (names);
+  return 0;
+}
+
+/**
  * @brief Delete a task.
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
@@ -879,6 +944,8 @@ delete_task (task_t* task)
   if (stop_task (task) == -1) return -1;
 
   // FIX may be atomic problems here
+
+  if (delete_reports (task)) return -1;
 
   gchar* name = g_build_filename (PREFIX
                                   "/var/lib/openvas/mgr/users/",

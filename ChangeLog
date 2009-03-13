@@ -1,5 +1,16 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Ensure that delete_task also removes the symlinks to the directory of
+	all the user's reports.
+
+	* manage.h (delete_report): Add const to arg.
+
+	* manage.c (delete_report): Add const to arg.
+	(delete_reports): New function.
+	(delete_task): Call delete_reports to delete reports.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Move report deleting into manage library.
 
 	* src/manage.c (delete_report): New function.
