@@ -1033,6 +1033,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                 GError* content_error = NULL;
                 g_file_get_contents (name, &content, &content_length,
                                      &content_error);
+                g_free (name);
                 if (content_error)
                   {
                     g_error_free (content_error);
@@ -1055,8 +1056,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   }
               }
             else
-              SEND_TO_CLIENT ("<get_report_response>"
-                              "<status>40x</status>");
+              {
+                g_free (name);
+                SEND_TO_CLIENT ("<get_report_response>"
+                                "<status>40x</status>");
+              }
           }
         else
           {

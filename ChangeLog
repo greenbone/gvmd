@@ -1,5 +1,10 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/omp.c (omp_xml_handle_end_element): Free name in CLIENT_GET_REPORT
+	case.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (send_reports): Use scandir's report_name directly, instead
 	of wrapping it in a g_path_get_basename.
 
