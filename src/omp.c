@@ -737,7 +737,7 @@ send_reports (task_t* task)
                              "</messages>"
                              "</report>",
                              strlen (report_name) - 4,
-                             g_path_get_basename (report_name));
+                             report_name);
       free (names[index]);
       SEND_TO_CLIENT (msg);
     }
