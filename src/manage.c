@@ -31,8 +31,9 @@
  * Managers such as the OpenVAS Manager daemon.
  *
  * This library provides facilities for storing and manipulating credential
- * and task information.  Task manipulation includes sending task commands
- * to the OTP server that is running the tasks.
+ * and task information, and manipulating reports.  Task manipulation
+ * includes sending task commands to the OTP server that is running the
+ * tasks.
  */
 
 // FIX might be cleaner to separate server funcs like start_task
@@ -127,6 +128,71 @@ authenticate (credentials_t credentials)
 {
   if (credentials.username) return 1;
   return 0;
+}
+
+
+/* Reports. */
+
+/**
+ * @brief Delete a report.
+ *
+ * @param[in]  report_id  ID of report.
+ */
+int
+delete_report (char* report_id)
+{
+  unsigned int id;
+  if (sscanf (report_id, "%u", &id) == 1)
+    {
+      gchar* base_name;
+      static char buffer[11]; /* (expt 2 32) => 4294967296 */
+
+      sprintf (buffer, "%010u", id);
+      base_name = g_strdup_printf ("%s.nbe", buffer);
+      gchar* link_name;
+      link_name = g_build_filename (PREFIX
+                                    "/var/lib/openvas/mgr/users/",
+                                    current_credentials.username,
+                                    "reports",
+                                    base_name,
+                                    NULL);
+      g_free (base_name);
+      // FIX glib access setuid note
+      if (g_file_test (link_name,
+                       G_FILE_TEST_EXISTS && G_FILE_TEST_IS_SYMLINK))
+        {
+          GError* link_error = NULL;
+          gchar* name = g_file_read_link (link_name, &link_error);
+          if (link_error || unlink (name))
+            {
+              if (link_error)
+                {
+                  fprintf (stderr,
+                           "Failed to read report symlink: %s.\n",
+                           link_error->message);
+                  g_error_free (link_error);
+                }
+              g_free (name);
+              g_free (link_name);
+              return link_error ? -3 : -4;
+            }
+          else
+            {
+              if (unlink (link_name))
+                /* Just log the error. */
+                fprintf (stderr,
+                         "Failed to remove report symlink %s.\n",
+                         link_name);
+              g_free (name);
+              g_free (link_name);
+              return 0;
+            }
+        }
+      else
+        return -2;
+    }
+  else
+    return -1;
 }
 
 

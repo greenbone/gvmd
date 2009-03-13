@@ -1,3 +1,13 @@
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Move report deleting into manage library.
+
+	* src/manage.c (delete_report): New function.
+
+	* src/manage.h (delete_report): New header.
+
+	* src/omp.c (omp_xml_handle_end_element): Use new function delete_report.
+
 2009-03-12  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add OMP DELETE_REPORT.

@@ -55,6 +55,12 @@ int
 authenticate (credentials_t);
 
 
+/* Reports. */
+
+int
+delete_report (char*);
+
+
 /* Tasks. */
 
 // FIX should be in otp.c/h
