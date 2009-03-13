@@ -137,6 +137,9 @@ authenticate (credentials_t credentials)
  * @brief Delete a report.
  *
  * @param[in]  report_id  ID of report.
+ *
+ * @return 0 success, -1 failed to parse ID, -2 report file missing,
+ *         -3 failed to read link, -4 failed to remove report.
  */
 int
 delete_report (const char* report_id)

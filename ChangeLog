@@ -1,29 +1,35 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/manage.c (delete_report): Add @return doc.
+
+	* ChangeLog: Fixup pathnames for today's entries.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Reactivate BYE-initiated server socket shutdown.
 
-	* otp.c (process_otp_server_input): Return a unique value on receiving
+	* src/otp.c (process_otp_server_input): Return a unique value on receiving
 	BYE.
 
-	* ompd.c (serve_omp): Shutdown server socket according to
+	* src/ompd.c (serve_omp): Shutdown server socket according to
 	process_otp_server_input return.
 
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	* ompd.c (serve_omp): Correct typo and formatting.
+	* src/ompd.c (serve_omp): Correct typo and formatting.
 
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	* manage.c (stop_task, start_task): Correct conditions of running checks.
+	* src/manage.c (stop_task, start_task): Correct conditions of running checks.
 
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Ensure that delete_task also removes the symlinks to the directory of
 	all the user's reports.
 
-	* manage.h (delete_report): Add const to arg.
+	* src/manage.h (delete_report): Add const to arg.
 
-	* manage.c (delete_report): Add const to arg.
+	* src/manage.c (delete_report): Add const to arg.
 	(delete_reports): New function.
 	(delete_task): Call delete_reports to delete reports.
 
