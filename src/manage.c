@@ -784,7 +784,9 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
-  if (task->running) return 0;
+  if (task->running == 1      /* Requested. */
+      || task->running == 2)  /* Running. */
+    return 0;
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
@@ -847,7 +849,8 @@ int
 stop_task (task_t* task)
 {
   tracef ("   stop task %u\n", task->id);
-  if (task->running)
+  if (task->running == 1      /* Requested. */
+      || task->running == 2)  /* Running. */
     {
       // FIX dik
       if (send_to_server ("CLIENT <|> STOP_ATTACK <|> dik <|> CLIENT\n"))

@@ -1,5 +1,9 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* manage.c (stop_task, start_task): Correct conditions of running checks.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Ensure that delete_task also removes the symlinks to the directory of
 	all the user's reports.
 
