@@ -1,5 +1,15 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Reactivate BYE-initiated server socket shutdown.
+
+	* otp.c (process_otp_server_input): Return a unique value on receiving
+	BYE.
+
+	* ompd.c (serve_omp): Shutdown server socket according to
+	process_otp_server_input return.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* ompd.c (serve_omp): Correct typo and formatting.
 
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>

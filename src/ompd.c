@@ -624,6 +624,12 @@ serve_omp (gnutls_session_t* client_session,
           if (ret == 0)
             /* Processed all input. */
             server_input_stalled = FALSE;
+          else if (ret == 1)
+            {
+              /* Received server BYE. */
+              if (shutdown (server_socket, SHUT_RDWR) == -1)
+                perror ("Failed to shutdown server socket");
+            }
           else if (ret == -1)
             /* Error. */
             return -1;

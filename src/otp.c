@@ -1053,7 +1053,7 @@ sync_buffer ()
  * or client is always done via \ref process_omp_client_input in reaction to
  * client requests.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 success, 1 received server BYE, -1 error.
  */
 int
 process_otp_server_input ()
@@ -1229,18 +1229,13 @@ process_otp_server_input ()
                   return -1;
                 set_server_init_state (SERVER_INIT_TOP);
                 set_server_state (SERVER_DONE);
-// FIX
-#if 0
-                if (shutdown (server_socket, SHUT_RDWR) == -1)
-                  perror ("Failed to shutdown server socket");
-#endif
                 switch (parse_server_done (&messages))
                   {
                     case -1: return -1;
                     case -2:
                       /* Need more input. */
                       if (sync_buffer ()) return -1;
-                      return 0;
+                      return -2;
                   }
                 break;
               case SERVER_DEBUG_DESCRIPTION:
