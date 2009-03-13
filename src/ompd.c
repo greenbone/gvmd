@@ -404,7 +404,7 @@ serve_omp (gnutls_session_t* client_session,
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_omp_client_input, which parses OMP
    * commands and may write to to_server and to_client.  On reading from
-   * the server call process_otp_server_input, which updates information
+   * the server calls process_otp_server_input, which updates information
    * kept about the server.
    *
    * There are a few complications here
@@ -446,9 +446,9 @@ serve_omp (gnutls_session_t* client_session,
           if (lastfds & FD_CLIENT_READ) tracef ("   client read off\n");
         }
       if ((server_init_state == SERVER_INIT_DONE
-              || server_init_state == SERVER_INIT_GOT_VERSION
-              || server_init_state == SERVER_INIT_SENT_USER
-              || server_init_state == SERVER_INIT_SENT_VERSION)
+           || server_init_state == SERVER_INIT_GOT_VERSION
+           || server_init_state == SERVER_INIT_SENT_USER
+           || server_init_state == SERVER_INIT_SENT_VERSION)
           && from_server_end < from_buffer_size)
         {
           FD_SET (server_socket, &readfds);

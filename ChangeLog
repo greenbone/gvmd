@@ -1,5 +1,9 @@
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* ompd.c (serve_omp): Correct typo and formatting.
+
+2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* manage.c (stop_task, start_task): Correct conditions of running checks.
 
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
