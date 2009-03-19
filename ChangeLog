@@ -1,3 +1,12 @@
+2009-03-20  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	* packaging/: New.
+
+	* packaging/debian: New.
+
+	* packaging/debian/control: New. First approaches for
+	Debian packaging.
+
 2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add per-report directories.  Add initial OMP MODIFY_REPORT.
