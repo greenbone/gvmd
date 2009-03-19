@@ -124,6 +124,10 @@ typedef enum
   CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
+  CLIENT_MODIFY_REPORT,
+  CLIENT_MODIFY_REPORT_REPORT_ID,
+  CLIENT_MODIFY_REPORT_PARAMETER,
+  CLIENT_MODIFY_REPORT_VALUE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_MODIFY_TASK_PARAMETER,
@@ -258,6 +262,8 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           set_client_state (CLIENT_GET_REPORT);
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
           set_client_state (CLIENT_GET_RULES);
+        else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
@@ -439,6 +445,26 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
             SEND_TO_CLIENT ("<get_rules_response>"
                             "<status>402</status>"
                             "</get_rules_response>");
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_REPORT:
+        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_REPORT_ID);
+        else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
+        else if (strncasecmp ("VALUE", element_name, 5) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_VALUE);
+        else
+          {
+            SEND_TO_CLIENT ("<modify_report_response>"
+                            "<status>402</status>"
+                            "</modify_report_response>");
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -1011,20 +1037,18 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         if (current_task_task_id
             && sscanf (current_task_task_id, "%u", &id) == 1)
           {
-            gchar* base_name;
             static char buffer[11]; /* (expt 2 32) => 4294967296 */
 
             free_string_var (&current_task_task_id);
 
             sprintf (buffer, "%010u", id);
-            base_name = g_strdup_printf ("%s.nbe", buffer);
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
                                             current_credentials.username,
                                             "reports",
-                                            base_name,
+                                            buffer,
+                                            "report.nbe",
                                             NULL);
-            g_free (base_name);
             // FIX glib access setuid note
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
@@ -1135,6 +1159,59 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
       case CLIENT_DELETE_TASK_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
         set_client_state (CLIENT_DELETE_TASK);
+        break;
+
+      case CLIENT_MODIFY_REPORT:
+        if (current_task_task_id
+            && modify_task_parameter
+            && modify_task_value)
+          {
+            int ret = set_report_parameter (current_task_task_id,
+                                            modify_task_parameter,
+                                            modify_task_value);
+            free_string_var (&modify_task_parameter);
+            free_string_var (&modify_task_value);
+            free_string_var (&current_task_task_id);
+            switch (ret)
+              {
+                case 0:
+                  SEND_TO_CLIENT ("<modify_report_response>"
+                                  "<status>200</status>");
+                  break;
+                case -1: /* Failed to scan ID. */
+                case -2: /* Parameter name error. */
+                  SEND_TO_CLIENT ("<modify_report_response>"
+                                  "<status>40x</status>");
+                  break;
+                case -3: /* Failed to write to disk. */
+                default:
+                  SEND_TO_CLIENT ("<modify_report_response>"
+                                  "<status>50x</status>");
+                  break;
+              }
+          }
+        else
+          {
+            free_string_var (&modify_task_parameter);
+            free_string_var (&modify_task_value);
+            free_string_var (&current_task_task_id);
+            SEND_TO_CLIENT ("<modify_report_response>"
+                            "<status>500</status>");
+          }
+        SEND_TO_CLIENT ("</modify_report_response>");
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_REPORT_PARAMETER:
+        assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT);
+        break;
+      case CLIENT_MODIFY_REPORT_REPORT_ID:
+        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT);
+        break;
+      case CLIENT_MODIFY_REPORT_VALUE:
+        assert (strncasecmp ("VALUE", element_name, 5) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -1391,11 +1468,15 @@ omp_xml_handle_text (GMarkupParseContext* context,
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
-      case CLIENT_MODIFY_TASK_PARAMETER:
+      case CLIENT_MODIFY_REPORT_PARAMETER:
         append_string (&modify_task_parameter, text);
         break;
-      case CLIENT_MODIFY_TASK_TASK_ID:
-        append_string (&current_task_task_id, text);
+      case CLIENT_MODIFY_REPORT_VALUE:
+        append_string (&modify_task_value, text);
+        break;
+
+      case CLIENT_MODIFY_TASK_PARAMETER:
+        append_string (&modify_task_parameter, text);
         break;
       case CLIENT_MODIFY_TASK_VALUE:
         append_string (&modify_task_value, text);
@@ -1424,8 +1505,10 @@ omp_xml_handle_text (GMarkupParseContext* context,
 
       case CLIENT_ABORT_TASK_TASK_ID:
       case CLIENT_DELETE_REPORT_ID:
-      case CLIENT_GET_REPORT_ID:
       case CLIENT_DELETE_TASK_TASK_ID:
+      case CLIENT_GET_REPORT_ID:
+      case CLIENT_MODIFY_REPORT_REPORT_ID:
+      case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
         append_string (&current_task_task_id, text);

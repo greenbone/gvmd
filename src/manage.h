@@ -60,6 +60,9 @@ authenticate (credentials_t);
 int
 delete_report (const char*);
 
+int
+set_report_parameter (char*, const char*, char*);
+
 
 /* Tasks. */
 

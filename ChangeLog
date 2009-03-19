@@ -1,6 +1,23 @@
 2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
 
-    Update OTP BYE handling for reconnecting to the server during an OMP
+	Add per-report directories.  Add initial OMP MODIFY_REPORT.
+
+	* src/omp.c (client_state_t): Add MODIFY_REPORT states.
+	(omp_xml_handle_start_element, omp_xml_handle_text): Add MODIFY_REPORT
+	 handling.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT get the report from the
+	report's directory.  Add MODIFY_REPORT handling.
+
+	* src/otp.c (save_report): Save report to a dedicated directory.
+
+	* src/manage.h (set_report_parameter): New header.
+
+	* src/manage.c (set_report_parameter): New function.
+	(delete_report): Account for per-report directory.
+
+2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Update OTP BYE handling for reconnecting to the server during an OMP
 	session.
 
 	* src/openvasmd.c (serve_client): Move session creation and freeing to

@@ -273,7 +273,8 @@ write_timestamp (FILE* file, char* type, char* time)
  * @param[in]  task       The task.
  *
  * @return 0 success, -1 failed to open file, -2 failed to close file,
- *         -3 failed to symlink file to task dir.
+ *         -3 failed to symlink file to task dir, -4 failed to create dir,
+ *         -5 failed to generate ID.
  */
 int
 save_report (task_t* task)
@@ -286,31 +287,11 @@ save_report (task_t* task)
 
   if (task_id_string (task, &id)) return -1;
 
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      id,
-                                      "reports",
-                                      NULL);
-
   gchar* user_dir_name = g_build_filename (PREFIX
                                            "/var/lib/openvas/mgr/users/",
                                            current_credentials.username,
                                            "reports",
                                            NULL);
-
-  /* Ensure task reports directory exists. */
-
-  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
-    {
-      fprintf (stderr, "Failed to create report dir %s: %s\n",
-               dir_name,
-               strerror (errno));
-      g_free (user_dir_name);
-      g_free (dir_name);
-      return -1;
-    }
 
   /* Ensure user reports directory exists. */
 
@@ -320,38 +301,71 @@ save_report (task_t* task)
                user_dir_name,
                strerror (errno));
       g_free (user_dir_name);
-      g_free (dir_name);
-      return -1;
+      return -4;
     }
 
-  /* Generate report name. */
+  /* Generate report directory name. */
 
   // FIX OID
-  static char buffer[15]; /* (expt 2 32) => 4294967296 + .nbe */
-  int length = sprintf (buffer, "%010u.nbe", task->report_count);
+  static char buffer[11]; /* (expt 2 32) => 4294967296 */
+  int length = sprintf (buffer, "%010u", task->report_count);
   assert (length < 15);
   if (length < 4)
     {
       fprintf (stderr, "Failed to generate report id.\n");
       g_free (user_dir_name);
-      g_free (dir_name);
-      return -1;
+      return -5;
     }
 
-  gchar* name = g_build_filename (dir_name, buffer, NULL);
-  g_free (dir_name);
+  gchar* dir_name = g_build_filename (PREFIX
+                                      "/var/lib/openvas/mgr/users/",
+                                      current_credentials.username,
+                                      "tasks",
+                                      id,
+                                      "reports",
+                                      buffer,
+                                      NULL);
 
   gchar* symlink_name = g_build_filename (user_dir_name, buffer, NULL);
   g_free (user_dir_name);
 
+  /* Ensure task report directory exists. */
+
+  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
+    {
+      fprintf (stderr, "Failed to create report dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      g_free (symlink_name);
+      return -4;
+    }
+
+  /* Link report directory into task directory. */
+
+  if (symlink (dir_name, symlink_name))
+    {
+      rmdir (dir_name);
+      fprintf (stderr, "Failed to symlink %s to %s\n",
+               dir_name,
+               symlink_name);
+      g_free (dir_name);
+      g_free (symlink_name);
+      return -3;
+    }
+
   /* Write report. */
+
+  gchar* name = g_build_filename (dir_name, "report.nbe", NULL);
 
   FILE* file = fopen (name, "w");
   if (file == NULL)
     {
+      rmdir (dir_name);
       fprintf (stderr, "Failed to open report file %s: %s\n",
                name,
                strerror (errno));
+      g_free (dir_name);
       g_free (name);
       g_free (symlink_name);
       return -1;
@@ -373,29 +387,19 @@ save_report (task_t* task)
   if (fclose (file))
     {
       unlink (name);
+      rmdir (dir_name);
       fprintf (stderr, "Failed to close report file %s: %s\n",
                name,
                strerror (errno));
+      g_free (dir_name);
       g_free (name);
       g_free (symlink_name);
       return -2;
     }
 
-  /* Link report into task directory. */
-
-  if (symlink (name, symlink_name))
-    {
-      unlink (name);
-      fprintf (stderr, "Failed to symlink %s to %s\n",
-               name,
-               symlink_name);
-      g_free (name);
-      g_free (symlink_name);
-      return -3;
-    }
-
   task->report_count++;
 
+  g_free (dir_name);
   g_free (name);
   g_free (symlink_name);
   return 0;

@@ -147,45 +147,51 @@ delete_report (const char* report_id)
   unsigned int id;
   if (sscanf (report_id, "%u", &id) == 1)
     {
-      gchar* base_name;
       static char buffer[11]; /* (expt 2 32) => 4294967296 */
 
       sprintf (buffer, "%010u", id);
-      base_name = g_strdup_printf ("%s.nbe", buffer);
       gchar* link_name;
       link_name = g_build_filename (PREFIX
                                     "/var/lib/openvas/mgr/users/",
                                     current_credentials.username,
                                     "reports",
-                                    base_name,
+                                    buffer,
                                     NULL);
-      g_free (base_name);
       // FIX glib access setuid note
-      if (g_file_test (link_name,
-                       G_FILE_TEST_EXISTS && G_FILE_TEST_IS_SYMLINK))
+      if (g_file_test (link_name, G_FILE_TEST_IS_SYMLINK)
+          && g_file_test (link_name, G_FILE_TEST_IS_DIR))
         {
-          GError* link_error = NULL;
-          gchar* name = g_file_read_link (link_name, &link_error);
-          if (link_error || unlink (name))
+          GError* error = NULL;
+          gchar* name = g_file_read_link (link_name, &error);
+          if (error)
             {
-              if (link_error)
-                {
-                  fprintf (stderr,
-                           "Failed to read report symlink: %s.\n",
-                           link_error->message);
-                  g_error_free (link_error);
-                }
+              fprintf (stderr,
+                       "Failed to read report symlink: %s.\n",
+                       error->message);
+              g_error_free (error);
               g_free (name);
               g_free (link_name);
-              return link_error ? -3 : -4;
+              return -3;
+            }
+          else if (rmdir_recursively (name, &error) == FALSE)
+            {
+              fprintf (stderr,
+                       "Failed to remove %s: %s.\n",
+                       name,
+                       error->message);
+              g_error_free (error);
+              g_free (name);
+              g_free (link_name);
+              return -4;
             }
           else
             {
               if (unlink (link_name))
                 /* Just log the error. */
                 fprintf (stderr,
-                         "Failed to remove report symlink %s.\n",
-                         link_name);
+                         "Failed to remove report symlink %s: %s.\n",
+                         link_name,
+                         strerror (errno));
               g_free (name);
               g_free (link_name);
               return 0;
@@ -196,6 +202,57 @@ delete_report (const char* report_id)
     }
   else
     return -1;
+}
+
+/**
+ * @brief Set a report parameter.
+ *
+ * @param[in]  report     The ID of the report.
+ * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
+ * @param[in]  value      The value of the parameter.
+ *
+ * @return 0 success, -1 failed to scan ID, -2 parameter name error,
+ *         -3 failed to write parameter to disk.
+ */
+int
+set_report_parameter (char* report_id, const char* parameter, char* value)
+{
+  tracef ("   set_report_parameter %s %s\n", report_id, parameter);
+  if (strncasecmp ("COMMENT", parameter, 7) == 0)
+    {
+      unsigned int id;
+      if (sscanf (report_id, "%u", &id) == 1)
+        {
+          static char buffer[11]; /* (expt 2 32) => 4294967296 */
+
+          sprintf (buffer, "%010u", id);
+          gchar* name;
+          name = g_build_filename (PREFIX
+                                   "/var/lib/openvas/mgr/users/",
+                                   current_credentials.username,
+                                   "reports",
+                                   buffer,
+                                   "comment",
+                                   NULL);
+          GError* error = NULL;
+          g_file_set_contents (name, value, -1, &error);
+          if (error)
+            {
+              fprintf (stderr,
+                       "Failed to save comment to %s: %s.\n",
+                       name,
+                       error->message);
+              g_free (name);
+              return -3;
+            }
+          g_free (name);
+        }
+      else
+        return -1;
+    }
+  else
+    return -2;
+  return 0;
 }
 
 
