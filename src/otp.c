@@ -1070,6 +1070,10 @@ process_otp_server_input ()
   switch (server_init_state)
     {
       case SERVER_INIT_SENT_VERSION:
+        /* Read over any whitespace left by the previous session. */
+        while (from_server_start < from_server_end
+               && (messages[0] == ' ' || messages[0] == '\n'))
+          from_server_start++, messages++;
         if (from_server_end - from_server_start < 12)
           {
             /* Need more input. */
@@ -1231,11 +1235,14 @@ process_otp_server_input ()
                 set_server_state (SERVER_DONE);
                 switch (parse_server_done (&messages))
                   {
+                    case  0:
+                      if (sync_buffer ()) return -1;
+                      return 1;
                     case -1: return -1;
                     case -2:
                       /* Need more input. */
                       if (sync_buffer ()) return -1;
-                      return -2;
+                      return 0;
                   }
                 break;
               case SERVER_DEBUG_DESCRIPTION:

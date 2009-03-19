@@ -1,3 +1,28 @@
+2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
+
+    Update OTP BYE handling for reconnecting to the server during an OMP
+	session.
+
+	* src/openvasmd.c (serve_client): Move session creation and freeing to
+	src/ovas-mngr-comm.c.
+	(serve_client): Pass server_socket pointer to serve_omp.
+
+	* src/ovas-mngr-comm.c (make_session, end_session): New functions, from
+	src/openvasmd.c.
+	(connect_to_server): Improve message slightly.
+
+	* src/ovas-mngr-comm.h (make_session, end_session): New headers.
+
+	* src/ompd.c (serve_omp): Take a pointer to the server socket instead
+	of the server socket.  On receiving server BYE recreate the server
+	socket and session.
+
+	* src/ompd.h (serve_omp): Add arguments.
+
+	* src/otp.c (process_otp_server_input): Read over whitespace at start of
+	SERVER_INIT_SENT_VERSION.  In SERVER_BYE add success case and correct the
+	"need more input" return value.
+
 2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/ompd.c (serve_omp): Revert bogus typo correction.

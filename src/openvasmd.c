@@ -104,6 +104,7 @@
 #include "manage.h"
 #include "ompd.h"
 #include "otpd.h"
+#include "ovas-mngr-comm.h"
 #include "tracef.h"
 
 /**
@@ -368,6 +369,8 @@ int
 serve_client (int client_socket)
 {
   int server_socket;
+  gnutls_session_t server_session;
+  gnutls_certificate_credentials_t server_credentials;
 
   /* Make the server socket. */
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -377,86 +380,8 @@ serve_client (int client_socket)
       return EXIT_FAILURE;
     }
 
-  /* Setup server session. */
-
-  gnutls_certificate_credentials_t server_credentials;
-  if (gnutls_certificate_allocate_credentials (&server_credentials))
-    {
-      fprintf (stderr, "Failed to allocate server credentials.\n");
-      goto close_fail;
-    }
-
-  gnutls_session_t server_session;
-  if (gnutls_init (&server_session, GNUTLS_CLIENT))
-    {
-      fprintf (stderr, "Failed to initialise server session.\n");
-      goto server_free_fail;
-    }
-
-  const int protocol_priority[] = { GNUTLS_TLS1,
-                                    0 };
-  if (gnutls_protocol_set_priority (server_session, protocol_priority))
-    {
-      fprintf (stderr, "Failed to set protocol priority.\n");
-      goto server_fail;
-    }
-
-  const int cipher_priority[] = { GNUTLS_CIPHER_AES_128_CBC,
-                                  GNUTLS_CIPHER_3DES_CBC,
-                                  GNUTLS_CIPHER_AES_256_CBC,
-                                  GNUTLS_CIPHER_ARCFOUR_128,
-                                  0 };
-  if (gnutls_cipher_set_priority (server_session, cipher_priority))
-    {
-      fprintf (stderr, "Failed to set cipher priority.\n");
-      goto server_fail;
-    }
-
-  const int comp_priority[] = { GNUTLS_COMP_ZLIB,
-                                GNUTLS_COMP_NULL,
-                                0 };
-  if (gnutls_compression_set_priority (server_session, comp_priority))
-    {
-      fprintf (stderr, "Failed to set compression priority.\n");
-      goto server_fail;
-    }
-
-  const int kx_priority[] = { GNUTLS_KX_DHE_RSA,
-                              GNUTLS_KX_RSA,
-                              GNUTLS_KX_DHE_DSS,
-                              0 };
-  if (gnutls_kx_set_priority (server_session, kx_priority))
-    {
-      fprintf (stderr, "Failed to set server key exchange priority.\n");
-      goto server_fail;
-    }
-
-  const int mac_priority[] = { GNUTLS_MAC_SHA1,
-                               GNUTLS_MAC_MD5,
-                               0 };
-  if (gnutls_mac_set_priority (server_session, mac_priority))
-    {
-      fprintf (stderr, "Failed to set mac priority.\n");
-      goto server_fail;
-    }
-
-  if (gnutls_credentials_set (server_session,
-                              GNUTLS_CRD_CERTIFICATE,
-                              server_credentials))
-    {
-      fprintf (stderr, "Failed to set server credentials.\n");
-      goto server_fail;
-    }
-
-  // FIX get flags first
-  // FIX after read_protocol
-  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-   * error" removes the data between `select' and `read'. */
-  if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
-    {
-      perror ("Failed to set server socket flag");
-      goto fail;
-    }
+  if (make_session (server_socket, &server_session, &server_credentials))
+    return EXIT_FAILURE;
 
   /* Get client socket and session from libopenvas. */
 
@@ -498,8 +423,8 @@ serve_client (int client_socket)
           goto fail;
         break;
       case PROTOCOL_OMP:
-        if (serve_omp (client_session, &server_session,
-                       client_socket, server_socket))
+        if (serve_omp (client_session, &server_session, &server_credentials,
+                       client_socket, &server_socket))
           goto fail;
         break;
       case PROTOCOL_CLOSE:
@@ -509,22 +434,16 @@ serve_client (int client_socket)
         fprintf (stderr, "Failed to determine protocol.\n");
     }
 
-  gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
-  gnutls_deinit (server_session);
-  gnutls_certificate_free_credentials (server_credentials);
-  close (server_socket);
+  end_session (server_socket, server_session, server_credentials);
+  if (close (server_socket) == -1)
+    {
+      perror ("Failed to close server socket.");
+      return EXIT_FAILURE;
+    }
   return EXIT_SUCCESS;
 
  fail:
-  gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
- server_fail:
-  gnutls_deinit (server_session);
-
- server_free_fail:
-  gnutls_certificate_free_credentials (server_credentials);
-
- close_fail:
-
+  end_session (server_socket, server_session, server_credentials);
   close (server_socket);
   return EXIT_FAILURE;
 }

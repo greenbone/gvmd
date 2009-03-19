@@ -26,8 +26,12 @@
 #ifndef OPENVAS_MANAGER_OMPD_H
 #define OPENVAS_MANAGER_OMPD_H
 
+#include <gnutls/gnutls.h>
+
 int
-serve_omp ();
+serve_omp (gnutls_session_t*, gnutls_session_t*,
+           gnutls_certificate_credentials_t*,
+           int, int*);
 
 extern struct sockaddr_in server_address;
 

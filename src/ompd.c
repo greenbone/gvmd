@@ -364,8 +364,10 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
 int
 serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
-           int client_socket, int server_socket)
+           gnutls_certificate_credentials_t* server_credentials,
+           int client_socket, int* server_socket_addr)
 {
+  int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
    * to_server buffer. */
   short client_input_stalled = 0;
@@ -587,7 +589,7 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -1:       /* Error. */
                 /* This may be because the server closed the connection
-                 * at the end of a command. */
+                 * at the end of a command. */ // FIX then should get eof (-3)
                 set_server_init_state (SERVER_INIT_TOP);
                 break;
               case -2:       /* from_server buffer full. */
@@ -626,9 +628,25 @@ serve_omp (gnutls_session_t* client_session,
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE. */
-              if (shutdown (server_socket, SHUT_RDWR) == -1)
-                perror ("Failed to shutdown server socket");
+              /* Received server BYE, so recreate the server session. */
+              end_session (server_socket, *server_session, *server_credentials);
+              if (close (server_socket) == -1)
+                {
+                  perror ("Failed to close server socket.");
+                  return -1;
+                }
+              /* Make the server socket. */
+              server_socket = socket (PF_INET, SOCK_STREAM, 0);
+              if (server_socket == -1)
+                {
+                  perror ("Failed to create server socket");
+                  return -1;
+                }
+              *server_socket_addr = server_socket;
+              if (make_session (server_socket,
+                                server_session,
+                                server_credentials))
+                return -1;
             }
           else if (ret == -1)
             /* Error. */
@@ -724,6 +742,28 @@ serve_omp (gnutls_session_t* client_session,
           if (ret == 0)
             /* Processed all input. */
             server_input_stalled = FALSE;
+          else if (ret == 1)
+            {
+              /* Received server BYE, so recreate the server session. */
+              end_session (server_socket, *server_session, *server_credentials);
+              if (close (server_socket) == -1)
+                {
+                  perror ("Failed to close server socket.");
+                  return -1;
+                }
+              /* Make the server socket. */
+              server_socket = socket (PF_INET, SOCK_STREAM, 0);
+              if (server_socket == -1)
+                {
+                  perror ("Failed to create server socket");
+                  return -1;
+                }
+              *server_socket_addr = server_socket;
+              if (make_session (server_socket,
+                                server_session,
+                                server_credentials))
+                return -1;
+            }
           else if (ret == -1)
             /* Error. */
             return -1;

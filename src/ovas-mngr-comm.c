@@ -40,11 +40,13 @@
 #define TRACE 1
 
 #include <errno.h>
+#include <fcntl.h>
 #include <gnutls/gnutls.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "tracef.h"
 
@@ -67,6 +69,156 @@ int to_server_end = 0;
  * @brief The start of the data in the \ref to_server buffer.
  */
 int to_server_start = 0;
+
+/**
+ * @brief Make a session for connecting to the server.
+ *
+ * @param[out]  server_socket       The socket connected to the server.
+ * @param[out]  server_session      The session with the server.
+ * @param[out]  server_credentials  Credentials.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+make_session (int server_socket,
+              gnutls_session_t* server_session,
+              gnutls_certificate_credentials_t* server_credentials)
+{
+  /* Setup server session. */
+
+  if (gnutls_certificate_allocate_credentials (server_credentials))
+    {
+      fprintf (stderr, "Failed to allocate server credentials.\n");
+      goto close_fail;
+    }
+
+  if (gnutls_init (server_session, GNUTLS_CLIENT))
+    {
+      fprintf (stderr, "Failed to initialise server session.\n");
+      goto server_free_fail;
+    }
+
+  const int protocol_priority[] = { GNUTLS_TLS1,
+                                    0 };
+  if (gnutls_protocol_set_priority (*server_session, protocol_priority))
+    {
+      fprintf (stderr, "Failed to set protocol priority.\n");
+      goto server_fail;
+    }
+
+  const int cipher_priority[] = { GNUTLS_CIPHER_AES_128_CBC,
+                                  GNUTLS_CIPHER_3DES_CBC,
+                                  GNUTLS_CIPHER_AES_256_CBC,
+                                  GNUTLS_CIPHER_ARCFOUR_128,
+                                  0 };
+  if (gnutls_cipher_set_priority (*server_session, cipher_priority))
+    {
+      fprintf (stderr, "Failed to set cipher priority.\n");
+      goto server_fail;
+    }
+
+  const int comp_priority[] = { GNUTLS_COMP_ZLIB,
+                                GNUTLS_COMP_NULL,
+                                0 };
+  if (gnutls_compression_set_priority (*server_session, comp_priority))
+    {
+      fprintf (stderr, "Failed to set compression priority.\n");
+      goto server_fail;
+    }
+
+  const int kx_priority[] = { GNUTLS_KX_DHE_RSA,
+                              GNUTLS_KX_RSA,
+                              GNUTLS_KX_DHE_DSS,
+                              0 };
+  if (gnutls_kx_set_priority (*server_session, kx_priority))
+    {
+      fprintf (stderr, "Failed to set server key exchange priority.\n");
+      goto server_fail;
+    }
+
+  const int mac_priority[] = { GNUTLS_MAC_SHA1,
+                               GNUTLS_MAC_MD5,
+                               0 };
+  if (gnutls_mac_set_priority (*server_session, mac_priority))
+    {
+      fprintf (stderr, "Failed to set mac priority.\n");
+      goto server_fail;
+    }
+
+  if (gnutls_credentials_set (*server_session,
+                              GNUTLS_CRD_CERTIFICATE,
+                              *server_credentials))
+    {
+      fprintf (stderr, "Failed to set server credentials.\n");
+      goto server_fail;
+    }
+
+  // FIX get flags first
+  // FIX after read_protocol
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the data between `select' and `read'. */
+  if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      perror ("Failed to set server socket flag");
+      goto fail;
+    }
+
+  return 0;
+
+ fail:
+  gnutls_bye (*server_session, GNUTLS_SHUT_RDWR);
+ server_fail:
+  gnutls_deinit (*server_session);
+
+ server_free_fail:
+  gnutls_certificate_free_credentials (*server_credentials);
+
+ close_fail:
+  close (server_socket);
+
+  return -1;
+}
+
+/**
+ * @brief Cleanup a server session.
+ *
+ * @param[in]  server_socket       The socket connected to the server.
+ * @param[in]  server_session      The session with the server.
+ * @param[in]  server_credentials  Credentials.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+end_session (int server_socket,
+             gnutls_session_t server_session,
+             gnutls_certificate_credentials_t server_credentials)
+{
+#if 1
+  /* Turn on blocking. */
+  // FIX get flags first
+  if (fcntl (server_socket, F_SETFL, 0) == -1)
+    {
+      perror ("Failed to set server socket flag (end_session)");
+      return -1;
+    }
+#endif
+  gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
+  gnutls_deinit (server_session);
+  gnutls_certificate_free_credentials (server_credentials);
+  if (shutdown (server_socket, SHUT_RDWR) == -1)
+    {
+      perror ("Failed to shutdown server socket");
+      return -1;
+    }
+#if 0
+  if (close (server_socket) == -1)
+    {
+      perror ("Failed to close server socket.");
+      return -1;
+    }
+#endif
+  return 0;
+}
 
 /**
  * @brief Get the number of characters free in the \ref to_server buffer.
@@ -134,8 +286,8 @@ connect_to_server (int server_socket,
         }
       if (ret)
         {
-          if (errno == EINPROGRESS) return -2;
-          perror ("Failed to connect to server");
+          if (ret == EINPROGRESS) return -2;
+          perror ("Failed to connect to server (interrupted)");
           return -1;
         }
     }

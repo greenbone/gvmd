@@ -39,6 +39,16 @@
  */
 
 int
+make_session (int,
+              gnutls_session_t*,
+              gnutls_certificate_credentials_t*);
+
+void
+end_session (int,
+             gnutls_session_t,
+             gnutls_certificate_credentials_t);
+
+int
 send_to_server (char *);
 
 int
