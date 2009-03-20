@@ -473,7 +473,7 @@ make_task (char* name, unsigned int time, char* comment)
               index->comment = comment;
               index->description = NULL;
               index->description_size = 0;
-              index->running = 0;
+              index->run_status = TASK_STATUS_NEW;
               index->report_count = 0;
               index->open_ports = NULL;
               index->debugs = g_ptr_array_new ();
@@ -844,8 +844,8 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
-  if (task->running == 1      /* Requested. */
-      || task->running == 2)  /* Running. */
+  if (task->run_status == TASK_STATUS_REQUESTED
+      || task->run_status == TASK_STATUS_RUNNING)
     return 0;
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
@@ -883,7 +883,7 @@ start_task (task_t* task)
     return -1;
 #endif
 
-  task->running = 1;
+  task->run_status = TASK_STATUS_REQUESTED;
 
   if (task->open_ports) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, sizeof (port_t));
@@ -909,13 +909,14 @@ int
 stop_task (task_t* task)
 {
   tracef ("   stop task %u\n", task->id);
-  if (task->running == 1      /* Requested. */
-      || task->running == 2)  /* Running. */
+  if (task->run_status == TASK_STATUS_REQUESTED
+      || task->run_status == TASK_STATUS_RUNNING)
     {
       // FIX dik
       if (send_to_server ("CLIENT <|> STOP_ATTACK <|> dik <|> CLIENT\n"))
         return -1;
-      task->running = 0;
+      // FIX TASK_STATUS_STOP_REQUESTED?
+      task->run_status = TASK_STATUS_DONE;
     }
   return 0;
 }

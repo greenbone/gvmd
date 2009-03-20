@@ -1865,7 +1865,7 @@ process_otp_server_input ()
               case SERVER_TIME_SCAN_START:
                 {
                   if (current_server_task)
-                    current_server_task->running = 2;
+                    current_server_task->run_status = TASK_STATUS_RUNNING;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {
@@ -1880,7 +1880,7 @@ process_otp_server_input ()
               case SERVER_TIME_SCAN_END:
                 {
                   if (current_server_task)
-                    current_server_task->running = 3;
+                    current_server_task->run_status = TASK_STATUS_DONE;
                   current_server_task = NULL;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))

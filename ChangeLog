@@ -1,3 +1,17 @@
+2009-03-20  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Add a task status enumeration.  Rename task_t running slot to run_status.
+
+	* src/manage.h (task_status_t): New type.
+	(task_t): Rename running to run_state.
+
+	* src/manage.c (make_task, start_task, stop_task): Use new task status
+	enum.
+
+	* src/omp.c (omp_xml_handle_end_element): Use new task status enum.
+
+	* src/otp.c (process_otp_server_input): Use new task status enum.
+
 2009-03-20  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	* packaging/: New.

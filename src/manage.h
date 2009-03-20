@@ -98,6 +98,14 @@ typedef struct
   char* oid;            ///< NVT identifier.
 } message_t;
 
+typedef enum
+{
+  TASK_STATUS_NEW,
+  TASK_STATUS_REQUESTED,
+  TASK_STATUS_RUNNING,
+  TASK_STATUS_DONE
+} task_status_t;
+
 /**
  * @brief A task.
  */
@@ -110,7 +118,7 @@ typedef struct
   char* description;          ///< Description.
   int description_length;     ///< Length of description.
   int description_size;       ///< Actual size allocated for description.
-  short running;              ///< Flag: 0 new, 1 started, 2 running.
+  short run_status;           ///< Run status of task.
   char* start_time;           ///< Time the task last started.
   char* end_time;             ///< Time the task last ended.
   unsigned int report_count;  ///< The number of existing reports on the task.

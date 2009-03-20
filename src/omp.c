@@ -1402,13 +1402,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                             "</task>",
                                             index->id,
                                             index->name,
-                                            index->running
-                                            ? (index->running == 1
+                                            index->run_status
+                                            == TASK_STATUS_NEW
+                                            ? "New"
+                                            : (index->run_status
+                                               == TASK_STATUS_REQUESTED
                                                ? "Requested"
-                                               : (index->running == 2
+                                               : (index->run_status
+                                                  == TASK_STATUS_RUNNING
                                                   ? "Running"
-                                                  : "Done"))
-                                            : "New",
+                                                  : "Done")),
                                             index->debugs_size,
                                             index->holes_size,
                                             index->infos_size,
