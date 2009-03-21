@@ -98,7 +98,7 @@ else (OPENVAS_LIB_INSTALL_DIR)
 endif (OPENVAS_LIB_INSTALL_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls ${GLIB_LDFLAGS}")
+                       "${TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS}")
 
 if (OPENVAS_HEADER_INSTALL_DIR)
   set (TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")

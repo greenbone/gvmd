@@ -27,6 +27,7 @@
 #define OPENVAS_MANAGER_MANAGE_H
 
 #include <glib.h>
+#include <ossp/uuid.h>
 
 
 /* Credentials. */
@@ -43,7 +44,7 @@ typedef struct
 extern credentials_t current_credentials;
 
 void
-free_credentials (credentials_t* credentials);
+free_credentials (credentials_t*);
 
 void
 append_to_credentials_username (credentials_t*, const char*, int);
@@ -53,15 +54,6 @@ append_to_credentials_password (credentials_t*, const char*, int);
 
 int
 authenticate (credentials_t);
-
-
-/* Reports. */
-
-int
-delete_report (const char*);
-
-int
-set_report_parameter (char*, const char*, char*);
 
 
 /* Tasks. */
@@ -198,5 +190,26 @@ set_task_ports (task_t*, unsigned int, unsigned int);
 
 void
 append_task_open_port (task_t*, unsigned int, char*);
+
+
+/* Reports. */
+
+// FIX how is this doc'd?
+#define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
+
+char*
+make_report_id ();
+
+gchar*
+report_path_task_name (gchar*);
+
+task_t*
+report_task (const char*);
+
+int
+delete_report (const char*);
+
+int
+set_report_parameter (char*, const char*, char*);
 
 #endif

@@ -283,7 +283,7 @@ save_report (task_t* task)
 
   if (current_credentials.username == NULL) return -1;
 
-  tracef ("   Saving report %s on task %u\n", task->start_time, task->id);
+  tracef ("   Saving report (%s) on task %u\n", task->start_time, task->id);
 
   if (task_id_string (task, &id)) return -1;
 
@@ -306,16 +306,7 @@ save_report (task_t* task)
 
   /* Generate report directory name. */
 
-  // FIX OID
-  static char buffer[11]; /* (expt 2 32) => 4294967296 */
-  int length = sprintf (buffer, "%010u", task->report_count);
-  assert (length < 15);
-  if (length < 4)
-    {
-      fprintf (stderr, "Failed to generate report id.\n");
-      g_free (user_dir_name);
-      return -5;
-    }
+  char* report_id = make_report_id ();
 
   gchar* dir_name = g_build_filename (PREFIX
                                       "/var/lib/openvas/mgr/users/",
@@ -323,10 +314,11 @@ save_report (task_t* task)
                                       "tasks",
                                       id,
                                       "reports",
-                                      buffer,
+                                      report_id,
                                       NULL);
 
-  gchar* symlink_name = g_build_filename (user_dir_name, buffer, NULL);
+  gchar* symlink_name = g_build_filename (user_dir_name, report_id, NULL);
+  free (report_id);
   g_free (user_dir_name);
 
   /* Ensure task report directory exists. */

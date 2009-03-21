@@ -48,6 +48,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <dirent.h>
+#include <ossp/uuid.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -134,74 +135,171 @@ authenticate (credentials_t credentials)
 /* Reports. */
 
 /**
+ * @brief Make a new universal identifier for a report.
+ *
+ * @return A newly allocated string holding the identifier, which the
+ *         caller must free.
+ */
+char*
+make_report_id ()
+{
+  uuid_t *uuid;
+
+  // FIX check errs
+  uuid_create (&uuid);
+  uuid_make (uuid, UUID_MAKE_V1);
+  char* id = NULL;
+  uuid_export (uuid, UUID_FMT_STR, (void**) &id, NULL);
+  uuid_destroy (uuid);
+  return id;
+}
+
+/**
+ * @brief Get the name of the task from the pathname of a report.
+ *
+ * @param[in]  path  Absolute path of report in task directory.
+ *
+ * @return The name of the task as a newly allocated string, which the
+ *         caller must free.
+ */
+gchar*
+report_path_task_name (gchar* path)
+{
+#if 0
+  gchar* task_dir = g_build_filename (path, "..", "..", NULL);
+  // FIX how to do this (expand .. (and resolve links))?
+  gchar* task_actual_dir = g_truename (task_dir);
+  gchar* basename = g_path_get_basename (task_actual_dir);
+  g_free (task_actual_dir);
+  return basename;
+#else
+  gchar* path2 = g_strdup (path);
+  /* mgr/users/user/tasks/ID/reports/report_id */
+  gchar* last = g_path_get_basename (path2);
+  int path2_length = strlen (path2);
+  path2_length -= strlen (last);
+  path2_length--; /* In case trailing slash. */
+  path2[path2_length] = '\0';
+  g_free (last);
+  /* mgr/users/user/tasks/ID/reports/ */
+  last = g_path_get_basename (path2);
+  path2_length -= strlen (last);
+  path2_length--; /* Trailing slash. */
+  path2[path2_length] = '\0';
+  g_free (last);
+  /* mgr/users/user/tasks/ID/ */
+  gchar* basename = g_path_get_basename (path2);
+  g_free (path2);
+  return basename;
+#endif
+}
+
+/**
+ * @brief Get the task associated with a report.
+ *
+ * @param[in]  report_id  ID of report.
+ *
+ * @return Pointer to task on success, else NULL.
+ */
+task_t*
+report_task (const char* report_id)
+{
+  gchar* link_name;
+  link_name = g_build_filename (PREFIX
+                                "/var/lib/openvas/mgr/users/",
+                                current_credentials.username,
+                                "reports",
+                                report_id,
+                                NULL);
+  // FIX glib access setuid note
+  if (g_file_test (link_name, G_FILE_TEST_IS_SYMLINK)
+      && g_file_test (link_name, G_FILE_TEST_IS_DIR))
+    {
+      GError* error = NULL;
+      gchar* report_path = g_file_read_link (link_name, &error);
+      if (error)
+        {
+          fprintf (stderr,
+                   "Failed to read report symlink: %s.\n",
+                   error->message);
+          g_error_free (error);
+          g_free (report_path);
+          g_free (link_name);
+          return NULL;
+        }
+      gchar* task_name = report_path_task_name (report_path);
+      unsigned int id;
+      int ret = sscanf (task_name, "%u", &id);
+      g_free (task_name);
+      if (ret == 1) return find_task (id);
+    }
+  return NULL;
+}
+
+/**
  * @brief Delete a report.
  *
  * @param[in]  report_id  ID of report.
  *
- * @return 0 success, -1 failed to parse ID, -2 report file missing,
+ * @return 0 success, -1 failed to find task, -2 report file missing,
  *         -3 failed to read link, -4 failed to remove report.
  */
 int
 delete_report (const char* report_id)
 {
-  unsigned int id;
-  if (sscanf (report_id, "%u", &id) == 1)
-    {
-      static char buffer[11]; /* (expt 2 32) => 4294967296 */
+  task_t* task = report_task (report_id);
+  if (task == NULL) return -1;
 
-      sprintf (buffer, "%010u", id);
-      gchar* link_name;
-      link_name = g_build_filename (PREFIX
-                                    "/var/lib/openvas/mgr/users/",
-                                    current_credentials.username,
-                                    "reports",
-                                    buffer,
-                                    NULL);
-      // FIX glib access setuid note
-      if (g_file_test (link_name, G_FILE_TEST_IS_SYMLINK)
-          && g_file_test (link_name, G_FILE_TEST_IS_DIR))
+  gchar* link_name;
+  link_name = g_build_filename (PREFIX
+                                "/var/lib/openvas/mgr/users/",
+                                current_credentials.username,
+                                "reports",
+                                report_id,
+                                NULL);
+  // FIX glib access setuid note
+  if (g_file_test (link_name, G_FILE_TEST_IS_SYMLINK)
+      && g_file_test (link_name, G_FILE_TEST_IS_DIR))
+    {
+      GError* error = NULL;
+      gchar* name = g_file_read_link (link_name, &error);
+      if (error)
         {
-          GError* error = NULL;
-          gchar* name = g_file_read_link (link_name, &error);
-          if (error)
-            {
-              fprintf (stderr,
-                       "Failed to read report symlink: %s.\n",
-                       error->message);
-              g_error_free (error);
-              g_free (name);
-              g_free (link_name);
-              return -3;
-            }
-          else if (rmdir_recursively (name, &error) == FALSE)
-            {
-              fprintf (stderr,
-                       "Failed to remove %s: %s.\n",
-                       name,
-                       error->message);
-              g_error_free (error);
-              g_free (name);
-              g_free (link_name);
-              return -4;
-            }
-          else
-            {
-              if (unlink (link_name))
-                /* Just log the error. */
-                fprintf (stderr,
-                         "Failed to remove report symlink %s: %s.\n",
-                         link_name,
-                         strerror (errno));
-              g_free (name);
-              g_free (link_name);
-              return 0;
-            }
+          fprintf (stderr,
+                   "Failed to read report symlink: %s.\n",
+                   error->message);
+          g_error_free (error);
+          g_free (name);
+          g_free (link_name);
+          return -3;
+        }
+      else if (rmdir_recursively (name, &error) == FALSE)
+        {
+          fprintf (stderr,
+                   "Failed to remove %s: %s.\n",
+                   name,
+                   error->message);
+          g_error_free (error);
+          g_free (name);
+          g_free (link_name);
+          return -4;
         }
       else
-        return -2;
+        {
+          if (unlink (link_name))
+            /* Just log the error. */
+            fprintf (stderr,
+                     "Failed to remove report symlink %s: %s.\n",
+                     link_name,
+                     strerror (errno));
+          g_free (name);
+          g_free (link_name);
+          task->report_count--;
+          return 0;
+        }
     }
   else
-    return -1;
+    return -2;
 }
 
 /**
@@ -211,7 +309,7 @@ delete_report (const char* report_id)
  * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
  * @param[in]  value      The value of the parameter.
  *
- * @return 0 success, -1 failed to scan ID, -2 parameter name error,
+ * @return 0 success, -2 parameter name error,
  *         -3 failed to write parameter to disk.
  */
 int
@@ -220,35 +318,26 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
   tracef ("   set_report_parameter %s %s\n", report_id, parameter);
   if (strncasecmp ("COMMENT", parameter, 7) == 0)
     {
-      unsigned int id;
-      if (sscanf (report_id, "%u", &id) == 1)
+      gchar* name;
+      name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "reports",
+                               report_id,
+                               "comment",
+                               NULL);
+      GError* error = NULL;
+      g_file_set_contents (name, value, -1, &error);
+      if (error)
         {
-          static char buffer[11]; /* (expt 2 32) => 4294967296 */
-
-          sprintf (buffer, "%010u", id);
-          gchar* name;
-          name = g_build_filename (PREFIX
-                                   "/var/lib/openvas/mgr/users/",
-                                   current_credentials.username,
-                                   "reports",
-                                   buffer,
-                                   "comment",
-                                   NULL);
-          GError* error = NULL;
-          g_file_set_contents (name, value, -1, &error);
-          if (error)
-            {
-              fprintf (stderr,
-                       "Failed to save comment to %s: %s.\n",
-                       name,
-                       error->message);
-              g_free (name);
-              return -3;
-            }
+          fprintf (stderr,
+                   "Failed to save comment to %s: %s.\n",
+                   name,
+                   error->message);
           g_free (name);
+          return -3;
         }
-      else
-        return -1;
+      g_free (name);
     }
   else
     return -2;

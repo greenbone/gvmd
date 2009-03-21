@@ -1,3 +1,22 @@
+2009-03-21  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Switch to universal report identifiers.
+
+	* src/manage.h (make_report_id, report_path_task_name, report_task): New
+	headers.
+
+	* src/manage.c (make_report_id, report_path_task_name, report_task): New
+	functions.
+	(delete_report, set_report_parameter): Switch to UUIDs.
+
+	* src/omp.c (send_reports): Switch to UUIDs.  Free all names on	send fail.
+	(omp_xml_handle_end_element): Switch to UUIDs for reports.  Correct
+	response tag in CLIENT_GET_REPORT.
+
+	* src/otp.c (save_report): Switch to UUIDs.
+
+	* src/CMakeLists.txt: Add -lossp-uuid to openvasmd.
+
 2009-03-20  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add a task status enumeration.  Rename task_t running slot to run_status.

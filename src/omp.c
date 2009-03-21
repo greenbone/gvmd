@@ -741,42 +741,43 @@ send_reports (task_t* task)
     {
       const char* report_name = names[index]->d_name;
 
-      if (report_name[0] == '.'
-          || strlen (report_name) < 5
-          || strcmp (report_name + strlen (report_name) - 4, ".nbe"))
-        continue;
+      if (report_name[0] == '.') continue;
 
+      if (strlen (report_name) == OVAS_MANAGE_REPORT_ID_LENGTH)
+        {
 #if 0
-      report_dir_name = g_build_filename (dir_name, report_name, NULL);
+          report_dir_name = g_build_filename (dir_name, report_name, NULL);
 #endif
 
-      tracef ("     %s\n", report_name);
+          tracef ("     %s\n", report_name);
 
-      msg = g_strdup_printf ("<report>"
-                             "<id>%.*s</id>"
-                             "<timestamp>FIX</timestamp>"
-                             "<messages>"
-                             "<hole>0</hole>"
-                             "<info>0</info>"
-                             "<log>0</log>"
-                             "<debug>0</debug>"
-                             "</messages>"
-                             "</report>",
-                             strlen (report_name) - 4,
-                             report_name);
-      free (names[index]);
-      SEND_TO_CLIENT (msg);
+          msg = g_strdup_printf ("<report>"
+                                 "<id>%s</id>"
+                                 "<timestamp>FIX</timestamp>"
+                                 "<messages>"
+                                 // FIX
+                                 "<hole>0</hole>"
+                                 "<info>0</info>"
+                                 "<log>0</log>"
+                                 "<debug>0</debug>"
+                                 "</messages>"
+                                 "</report>",
+                                 report_name);
+          free (names[index]);
+          SEND_TO_CLIENT (msg);
+        }
     }
 
-#if 0
   g_free (dir_name);
-#endif
   free (names);
 
   SEND_TO_CLIENT (msg);
   g_free (msg);
   return FALSE;
+
  send_to_client_fail:
+  while (++index < count) { free (names[index]); }
+  g_free (dir_name);
   g_free (names);
   g_free (msg);
   return TRUE;
@@ -1009,11 +1010,11 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   SEND_TO_CLIENT ("<delete_report_response>"
                                   "<status>200</status>");
                   break;
+                case -1: /* Failed to find associated task. */
                 case -2: /* Report file missing. */
                   SEND_TO_CLIENT ("<delete_report_response>"
                                   "<status>40x</status>");
                   break;
-                case -1: /* Failed to parse id. */
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
@@ -1033,22 +1034,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        unsigned int id;
-        if (current_task_task_id
-            && sscanf (current_task_task_id, "%u", &id) == 1)
+        if (current_task_task_id)
           {
-            static char buffer[11]; /* (expt 2 32) => 4294967296 */
-
-            free_string_var (&current_task_task_id);
-
-            sprintf (buffer, "%010u", id);
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
                                             current_credentials.username,
                                             "reports",
-                                            buffer,
+                                            current_task_task_id,
                                             "report.nbe",
                                             NULL);
+            free_string_var (&current_task_task_id);
             // FIX glib access setuid note
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
@@ -1089,7 +1084,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         else
           {
             free_string_var (&current_task_task_id);
-            SEND_TO_CLIENT ("<get_report_reponse>"
+            SEND_TO_CLIENT ("<get_report_response>"
                             "<status>500</status>");
           }
         SEND_TO_CLIENT ("</get_report_response>");
@@ -1178,7 +1173,6 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                   SEND_TO_CLIENT ("<modify_report_response>"
                                   "<status>200</status>");
                   break;
-                case -1: /* Failed to scan ID. */
                 case -2: /* Parameter name error. */
                   SEND_TO_CLIENT ("<modify_report_response>"
                                   "<status>40x</status>");
