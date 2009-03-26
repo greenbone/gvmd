@@ -1,5 +1,9 @@
 2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/omp_delete_task_1.c: Read report ID from response.
+
+2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/omp.c (omp_xml_handle_end_element): Always respond to the client,
 	in CLIENT_DELETE_REPORT.
 

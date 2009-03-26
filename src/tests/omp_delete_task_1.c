@@ -79,13 +79,25 @@ main ()
       == -1)
     goto delete_fail;
 
-  /* FIX Read the first report ID from the response. */
+  /* Read the first report ID from the response. */
 
   entity_t entity = NULL;
   if (read_entity (&session, &entity))
     {
       fprintf (stderr, "Failed to read response.\n");
       goto delete_fail;
+    }
+  entity_t report = entity_child (entity, "report");
+  if (report == NULL)
+    {
+      fprintf (stderr, "Failed to find report.\n");
+      goto free_fail;
+    }
+  entity_t report_id = entity_child (report, "id");
+  if (report_id == NULL)
+    {
+      fprintf (stderr, "Failed to find report id.\n");
+      goto free_fail;
     }
 
   /* Remove the task. */
@@ -108,7 +120,7 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<get_report><report_id>%u</report_id></get_report>",
-                        0)
+                        report_id)
       == -1)
     goto delete_fail;
 
@@ -125,6 +137,7 @@ main ()
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
+ free_fail:
       free_entity (entity);
  delete_fail:
       delete_task (&session, id);
