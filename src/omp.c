@@ -705,6 +705,8 @@ send_rule (gpointer rule)
 gboolean
 send_reports (task_t* task)
 {
+  // FIX Abstract report iterator and move it to manage.c.
+
   const char* id;
 
   if (task_id_string (task, &id)) return FALSE;
@@ -1000,6 +1002,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
+        SEND_TO_CLIENT ("<delete_report_response>");
         if (current_task_task_id)
           {
             int ret = delete_report (current_task_task_id);
@@ -1007,25 +1010,25 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
             switch (ret)
               {
                 case 0:
-                  SEND_TO_CLIENT ("<delete_report_response>"
-                                  "<status>200</status>");
+                  SEND_TO_CLIENT ("<status>200</status>");
                   break;
                 case -1: /* Failed to find associated task. */
                 case -2: /* Report file missing. */
-                  SEND_TO_CLIENT ("<delete_report_response>"
-                                  "<status>40x</status>");
+                  SEND_TO_CLIENT ("<status>40x</status>");
                   break;
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
                   free_string_var (&current_task_task_id);
-                  SEND_TO_CLIENT ("<delete_report_response>"
-                                  "<status>500</status>");
+                  SEND_TO_CLIENT ("<status>500</status>");
                   break;
               }
-            SEND_TO_CLIENT ("</delete_report_response>");
-            set_client_state (CLIENT_AUTHENTIC);
           }
+        else
+          // FIX could be a client error
+          SEND_TO_CLIENT ("<status>50x</status>");
+        SEND_TO_CLIENT ("</delete_report_response>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_REPORT_ID:
         assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);

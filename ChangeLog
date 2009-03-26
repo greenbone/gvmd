@@ -1,3 +1,11 @@
+2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/omp.c (omp_xml_handle_end_element): Always respond to the client,
+	in CLIENT_DELETE_REPORT.
+
+	* src/tests/omp_delete_report_1.c: New test.  Tests DELETE_REPORT with
+	empty ID.
+
 2009-03-24  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Add more tests.
