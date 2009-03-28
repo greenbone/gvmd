@@ -28,12 +28,12 @@
 #define OPENVAS_MANAGER_STRING_H
 
 void
-append_string (char** var, const char* string);
+append_string (char**, const char*);
 
 void
-free_string_var (char** var);
+free_string_var (char**);
 
-char*
-strip_space (char* string, char* end);
+/*@shared@*/ char*
+strip_space (char*, char*);
 
 #endif

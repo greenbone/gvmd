@@ -47,10 +47,10 @@ void
 free_credentials (credentials_t*);
 
 void
-append_to_credentials_username (credentials_t*, const char*, int);
+append_to_credentials_username (credentials_t*, const char*, gsize);
 
 void
-append_to_credentials_password (credentials_t*, const char*, int);
+append_to_credentials_password (credentials_t*, const char*, gsize);
 
 int
 authenticate (credentials_t);
@@ -144,7 +144,7 @@ extern unsigned int tasks_size;
 /**
  * @brief The task currently running on the server.
  */
-extern task_t* current_server_task;
+extern /*@null@*/ task_t* current_server_task;
 
 int
 task_id_string (task_t*, const char **);

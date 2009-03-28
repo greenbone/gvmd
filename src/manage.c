@@ -40,9 +40,18 @@
 //     from storage and manip funcs like make_task and
 //     add_task_description_line
 
+#if S_SPLINT_S
+/*@-exportheader@*/
+/*@-incondefs@*/
+void g_free (/*@only@*/ /*@out@*/ /*@null@*/ gpointer mem);
+/*@=incondefs@*/
+/*@=exportheader@*/
+#endif
+
 #include "manage.h"
 #include "file.h"
 #include "ovas-mngr-comm.h"
+#include "string.h"
 #include "tracef.h"
 
 #include <assert.h>
@@ -52,6 +61,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+
+/**
+ * @brief Installation prefix.
+ */
+#ifndef PREFIX
+#define PREFIX ""
+#endif
 
 
 /* Credentials. */
@@ -93,11 +110,9 @@ free_credentials (credentials_t* credentials)
 void
 append_to_credentials_username (credentials_t* credentials,
                                 const char* text,
-                                int length)
+                                /*@unused@*/ gsize length)
 {
-  credentials->username = credentials->username
-                          ? g_strconcat (credentials->username, text, NULL)
-                          : g_strndup (text, length);
+  append_string (&credentials->username, text);
 }
 
 /**
@@ -110,11 +125,9 @@ append_to_credentials_username (credentials_t* credentials,
 void
 append_to_credentials_password (credentials_t* credentials,
                                 const char* text,
-                                int length)
+                                /*@unused@*/ gsize length)
 {
-  credentials->password = credentials->password
-                          ? g_strconcat (credentials->password, text, NULL)
-                          : g_strndup (text, length);
+  append_string (&credentials->password, text);
 }
 
 /**
@@ -143,12 +156,13 @@ authenticate (credentials_t credentials)
 char*
 make_report_id ()
 {
+  char* id;
   uuid_t *uuid;
 
   // FIX check errs
   uuid_create (&uuid);
   uuid_make (uuid, UUID_MAKE_V1);
-  char* id = NULL;
+  id = NULL;
   uuid_export (uuid, UUID_FMT_STR, (void**) &id, NULL);
   uuid_destroy (uuid);
   return id;
@@ -173,10 +187,12 @@ report_path_task_name (gchar* path)
   g_free (task_actual_dir);
   return basename;
 #else
+  gchar* basename;
   gchar* path2 = g_strdup (path);
   /* mgr/users/user/tasks/ID/reports/report_id */
   gchar* last = g_path_get_basename (path2);
-  int path2_length = strlen (path2);
+  size_t path2_length = strlen (path2);
+
   path2_length -= strlen (last);
   path2_length--; /* In case trailing slash. */
   path2[path2_length] = '\0';
@@ -188,8 +204,9 @@ report_path_task_name (gchar* path)
   path2[path2_length] = '\0';
   g_free (last);
   /* mgr/users/user/tasks/ID/ */
-  gchar* basename = g_path_get_basename (path2);
+  basename = g_path_get_basename (path2);
   g_free (path2);
+
   return basename;
 #endif
 }
@@ -227,11 +244,13 @@ report_task (const char* report_id)
           g_free (link_name);
           return NULL;
         }
-      gchar* task_name = report_path_task_name (report_path);
-      unsigned int id;
-      int ret = sscanf (task_name, "%u", &id);
-      g_free (task_name);
-      if (ret == 1) return find_task (id);
+      {
+        unsigned int id;
+        gchar* task_name = report_path_task_name (report_path);
+        int ret = sscanf (task_name, "%u", &id);
+        g_free (task_name);
+        if (ret == 1) return find_task (id);
+      }
     }
   return NULL;
 }
@@ -247,10 +266,10 @@ report_task (const char* report_id)
 int
 delete_report (const char* report_id)
 {
+  gchar* link_name;
   task_t* task = report_task (report_id);
   if (task == NULL) return -1;
 
-  gchar* link_name;
   link_name = g_build_filename (PREFIX
                                 "/var/lib/openvas/mgr/users/",
                                 current_credentials.username,
@@ -318,6 +337,7 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
   tracef ("   set_report_parameter %s %s\n", report_id, parameter);
   if (strncasecmp ("COMMENT", parameter, 7) == 0)
     {
+      GError* error;
       gchar* name;
       name = g_build_filename (PREFIX
                                "/var/lib/openvas/mgr/users/",
@@ -326,7 +346,7 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
                                report_id,
                                "comment",
                                NULL);
-      GError* error = NULL;
+      error = NULL;
       g_file_set_contents (name, value, -1, &error);
       if (error)
         {
@@ -355,7 +375,7 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
 /**
  * @brief The array of all the tasks of the current user.
  */
-task_t* tasks = NULL;
+/*@null@*/ task_t* tasks = NULL;
 
 /**
  * @brief The size of the \ref tasks array.
@@ -370,7 +390,7 @@ unsigned int num_tasks = 0;
 /**
  * @brief The task currently running on the server.
  */
-task_t* current_server_task = NULL;
+/*@null@*/ task_t* current_server_task = NULL;
 
 /**
  * @brief Return a string version of the ID of a task.
@@ -397,7 +417,7 @@ task_id_string (task_t* task, const char ** id)
 /**
  * @brief Print the server tasks.
  */
-void
+static void
 print_tasks ()
 {
   task_t *index = tasks;
@@ -411,8 +431,8 @@ print_tasks ()
           tracef ("   Task %u: \"%s\" %s\n%s\n\n",
                   index->id,
                   index->name,
-                  index->comment ?: "",
-                  index->description ?: "");
+                  index->comment ? index->comment : "",
+                  index->description ? index->description : "");
         }
       index++;
     }
@@ -424,12 +444,13 @@ print_tasks ()
  *
  * @return 0 on success, -1 on error (out of memory).
  */
-int
+static int
 grow_tasks ()
 {
+  task_t* new;
   tracef ("   task_t size: %i\n", sizeof (task_t));
-  task_t* new = realloc (tasks,
-                         (tasks_size + TASKS_INCREMENT) * sizeof (task_t));
+  new = realloc (tasks,  /* RATS: ignore */
+                 (tasks_size + TASKS_INCREMENT) * sizeof (task_t));
   if (new == NULL) return -1;
   tasks = new;
 
@@ -452,7 +473,7 @@ grow_tasks ()
  * @param[in]  message       Pointer to the message.
  * @param[in]  dummy         Dummy parameter.
  */
-void
+static void
 free_message (gpointer message, gpointer dummy)
 {
   message_t* msg = (message_t*) message;
@@ -468,7 +489,7 @@ free_message (gpointer message, gpointer dummy)
  *
  * @param[in]  task  The task to free.
  */
-void
+static void
 free_task (task_t* task)
 {
   tracef ("   Freeing task %u: \"%s\" %s (%i) %.*s[...]\n\n",
@@ -546,10 +567,12 @@ free_tasks ()
 task_t*
 make_task (char* name, unsigned int time, char* comment)
 {
+  task_t* index;
+  task_t* end;
   tracef ("   make_task %s %u %s\n", name, time, comment);
   if (tasks == NULL && grow_tasks ()) return NULL;
-  task_t* index = tasks;
-  task_t* end = tasks + tasks_size;
+  index = tasks;
+  end = tasks + tasks_size;
   while (1)
     {
       while (index < end)
@@ -596,21 +619,24 @@ make_task (char* name, unsigned int time, char* comment)
 int
 load_tasks ()
 {
+  GError* error;
+  gchar* dir_name;
+  gchar* file_name;
+  struct dirent ** names;
+  int count, index;
+
   if (tasks) return -1;
 
   if (current_credentials.username == NULL) return -1;
 
   tracef ("   Loading tasks...\n");
 
-  GError* error = NULL;
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      NULL);
-
-  struct dirent ** names;
-  int count;
+  error = NULL;
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               NULL);
 
   count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)
@@ -628,16 +654,15 @@ load_tasks ()
       return -1;
     }
 
-  int index;
-  gchar* file_name = NULL;
+  file_name = NULL;
   for (index = 0; index < count; index++)
     {
-      const char* task_name = names[index]->d_name;
-
-      if (task_name[0] == '.') continue;
-
       gchar *name, *comment, *description;
       unsigned int time;
+      const char* task_name = names[index]->d_name;
+      task_t* task;
+
+      if (task_name[0] == '.') continue;
 
       tracef ("     %s\n", task_name);
 
@@ -672,7 +697,7 @@ load_tasks ()
         }
       g_free (file_name);
 
-      task_t* task = make_task (name, time, comment);
+      task = make_task (name, time, comment);
       if (task == NULL)
         {
           g_free (name);
@@ -685,16 +710,18 @@ load_tasks ()
         }
       /* name and comment are freed with the new task. */
 
-      gsize description_length;
-      file_name = g_build_filename (dir_name, task_name, "description", NULL);
-      g_file_get_contents (file_name,
-                           &description,
-                           &description_length,
-                           &error);
-      if (error) goto contents_fail;
+      {
+        gsize description_length;
+        file_name = g_build_filename (dir_name, task_name, "description", NULL);
+        g_file_get_contents (file_name,
+                             &description,
+                             &description_length,
+                             &error);
+        if (error) goto contents_fail;
 
-      task->description = description;
-      task->description_size = task->description_length = description_length;
+        task->description = description;
+        task->description_size = task->description_length = description_length;
+      }
 
       g_free (file_name);
       file_name = g_build_filename (dir_name, task_name, "report_count", NULL);
@@ -740,9 +767,10 @@ load_tasks ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 save_task (task_t* task, gchar* dir_name)
 {
+  gchar* file_name;
   GError* error = NULL;
 
   /* Ensure directory exists. */
@@ -757,7 +785,7 @@ save_task (task_t* task, gchar* dir_name)
 
   /* Save each component of the task. */
 
-  gchar* file_name = g_build_filename (dir_name, "name", NULL);
+  file_name = g_build_filename (dir_name, "name", NULL);
 
   g_file_set_contents (file_name, task->name, -1, &error);
   if (error) goto contents_fail;
@@ -777,20 +805,23 @@ save_task (task_t* task, gchar* dir_name)
   g_free (file_name);
 
   file_name = g_build_filename (dir_name, "time", NULL);
-  static char buffer[11]; /* (expt 2 32) => 4294967296 */
-  int length = sprintf (buffer, "%u", task->time);
-  assert (length < 11);
-  if (length < 1) goto contents_fail;
-  g_file_set_contents (file_name, buffer, -1, &error);
-  if (error) goto contents_fail;
-  g_free (file_name);
+  {
+    static char buffer[11]; /* (expt 2 32) => 4294967296 */
+    int length = sprintf (buffer, "%u", task->time);
+    assert (length < 11);
 
-  file_name = g_build_filename (dir_name, "report_count", NULL);
-  length = sprintf (buffer, "%u", task->report_count);
-  assert (length < 11);
-  if (length < 1) goto contents_fail;
-  g_file_set_contents (file_name, buffer, -1, &error);
-  if (error) goto contents_fail;
+    if (length < 1) goto contents_fail;
+    g_file_set_contents (file_name, buffer, -1, &error);
+    if (error) goto contents_fail;
+    g_free (file_name);
+
+    file_name = g_build_filename (dir_name, "report_count", NULL);
+    length = sprintf (buffer, "%u", task->report_count);
+    assert (length < 11);
+    if (length < 1) goto contents_fail;
+    g_file_set_contents (file_name, buffer, -1, &error);
+    if (error) goto contents_fail;
+  }
   g_free (file_name);
 
   return 0;
@@ -812,6 +843,10 @@ save_task (task_t* task, gchar* dir_name)
 int
 save_tasks ()
 {
+  gchar* dir_name;
+  task_t* index;
+  task_t* end;
+
   if (tasks == NULL) return 0;
   if (current_credentials.username == NULL) return -1;
 
@@ -819,28 +854,29 @@ save_tasks ()
 
   // FIX Could check if up to date already.
 
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      NULL);
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               NULL);
 
   /* Write each task in the tasks array to disk. */
 
-  task_t* index = tasks;
-  task_t* end = tasks + tasks_size;
+  index = tasks;
+  end = tasks + tasks_size;
   while (index < end)
     {
       if (index->name)
         {
           const char* id;
+          gchar* file_name;
           tracef ("     %u\n", index->id);
 
           if (task_id_string (index, &id)) return -1;
 
-          gchar* file_name = g_build_filename (dir_name,
-                                               id,
-                                               NULL);
+          file_name = g_build_filename (dir_name,
+                                        id,
+                                        NULL);
           if (save_task (index, file_name))
             {
               g_free (file_name);
@@ -1017,25 +1053,25 @@ stop_task (task_t* task)
  *
  * @return 0 on success, -1 on error.
  */
-int
+static int
 delete_reports (task_t* task)
 {
   const char* id;
+  gchar* dir_name;
+  struct dirent ** names;
+  int count, index;
 
   if (task_id_string (task, &id)) return -1;
 
   if (current_credentials.username == NULL) return -1;
 
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      id,
-                                      "reports",
-                                      NULL);
-
-  struct dirent ** names;
-  int count;
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               id,
+                               "reports",
+                               NULL);
 
   count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)
@@ -1053,17 +1089,15 @@ delete_reports (task_t* task)
     }
   g_free (dir_name);
 
-  int index;
   for (index = 0; index < count; index++)
     {
+      int ret;
       const char* report_name = names[index]->d_name;
 
-      if (report_name[0] == '.'
-          || strlen (report_name) < 5
-          || strcmp (report_name + strlen (report_name) - 4, ".nbe"))
+      if (report_name[0] == '.')
         continue;
 
-      int ret = delete_report (report_name);
+      ret = delete_report (report_name);
       free (names[index]);
       switch (ret)
         {
@@ -1088,6 +1122,9 @@ int
 delete_task (task_t* task)
 {
   const char* id;
+  gchar* name;
+  GError* error;
+
   tracef ("   delete task %u\n", task->id);
 
   if (task_id_string (task, &id)) return -1;
@@ -1100,13 +1137,13 @@ delete_task (task_t* task)
 
   if (delete_reports (task)) return -1;
 
-  gchar* name = g_build_filename (PREFIX
-                                  "/var/lib/openvas/mgr/users/",
-                                  current_credentials.username,
-                                  "tasks",
-                                  id,
-                                  NULL);
-  GError* error = NULL;
+  name = g_build_filename (PREFIX
+                           "/var/lib/openvas/mgr/users/",
+                           current_credentials.username,
+                           "tasks",
+                           id,
+                           NULL);
+  error = NULL;
   rmdir_recursively (name, &error);
   if (error)
     {
@@ -1183,14 +1220,15 @@ append_to_task_identifier (task_t* task, const char* text, int length)
  *
  * @return 0 on success, -1 if out of memory.
  */
-int
+static int
 grow_description (task_t* task, int increment)
 {
   int new_size = task->description_size
                  + (increment < DESCRIPTION_INCREMENT
                     ? DESCRIPTION_INCREMENT : increment);
-  char* new = realloc (task->description, new_size);
+  char* new = realloc (task->description, new_size); /* RATS: ignore */
   if (new == NULL) return -1;
+  memset (new, '\0', new_size - task->description_size);
   tracef ("   grew description to %i (at %p).\n", new_size, new);
   task->description = new;
   task->description_size = new_size;
@@ -1207,10 +1245,11 @@ grow_description (task_t* task, int increment)
 int
 add_task_description_line (task_t* task, const char* line, int line_length)
 {
+  char* description;
   if (task->description_size - task->description_length < line_length
       && grow_description (task, line_length))
     return -1;
-  char* description = task->description;
+  description = task->description;
   description += task->description_length;
   strncpy (description, line, line_length);
   task->description_length += line_length;

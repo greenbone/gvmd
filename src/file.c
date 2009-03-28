@@ -46,6 +46,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef S_SPLINT_S
+/*@-exportheader@*/
+int fchdir(int fd);
+/*@=exportheader@*/
+#endif
+
 /**
  * @brief Remove a directory, including all contents.
  *
@@ -57,10 +63,16 @@
 gboolean
 rmdir_recursively (const gchar* dir_name, GError** error)
 {
+  GDir* dir;
+  int pwd;
+  const gchar* file_name;
   GError* temp_error = NULL;
+
+  // FIX Comment this function.
+
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  GDir* dir = g_dir_open (dir_name, 0, &temp_error);
+  dir = g_dir_open (dir_name, 0, &temp_error);
   if (temp_error)
     {
       if (g_error_matches (temp_error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
@@ -72,7 +84,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
       return FALSE;
     }
 
-  int pwd = open (".", O_RDONLY);
+  pwd = open (".", O_RDONLY);
   if (pwd == -1)
     {
       g_set_error (error,
@@ -93,17 +105,17 @@ rmdir_recursively (const gchar* dir_name, GError** error)
       return FALSE;
     }
 
-  const gchar* file_name = g_dir_read_name (dir);
+  file_name = g_dir_read_name (dir);
   while (file_name)
     {
       if (g_file_test (file_name, G_FILE_TEST_IS_DIR))
         {
-          rmdir_recursively (file_name, &temp_error);
+          (void) rmdir_recursively (file_name, &temp_error);
           if (temp_error)
             {
               g_propagate_error (error, temp_error);
               g_dir_close (dir);
-              fchdir (pwd);
+              (void) fchdir (pwd);
               return FALSE;
             }
         }
@@ -114,7 +126,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                        g_file_error_from_errno (errno),
                        (gchar*) strerror (errno));
           g_dir_close (dir);
-          fchdir (pwd);
+          (void) fchdir (pwd);
           return FALSE;
         }
       file_name = g_dir_read_name (dir);
@@ -135,7 +147,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                    g_file_error_from_errno (errno),
                    (gchar*) strerror (errno));
       g_dir_close (dir);
-      fchdir (pwd);
+      (void) fchdir (pwd);
       return FALSE;
     }
 

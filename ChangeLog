@@ -2,6 +2,31 @@
 
 	Start implementing splint and RATS cleanups.
 
+	* src/manage.h (append_to_credentials_username): Change third arg to
+	gsize.
+	(current_server_task): Annotate as null.
+
+	* src/manage.c: Define g_free with annotation for splint.  Include
+	string and strings.  Define PREFIX.  Declare functions and vars static.
+	Move all local vars to beginnings of blocks.  Annotate global vars as null.
+	(append_to_credentials_username, append_to_credentials_password): Append
+	with append_string.
+	(report_path_task_name): Change type of path2_length to size_t.
+	(print_tasks): Use standard ternary format.
+	(grow_tasks): Add "RATS: ignore" to realloc.
+	(grow_description): Add "RATS: ignore" to realloc.  Clear new memory.
+
+	* src/file.c: Declare fchdir for splint.  Move all local variable
+	declarations to beginnings of blocks.
+	(rmdir_recursively): Cast variables to quiet splint.
+
+	* src/string.h (append_string, free_string_var): Drop arg names.
+	(strip_space): Annotate return as shared.
+
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Start implementing splint and RATS cleanups.
+
 	* src/openvasmd.c: Conditionalise some includes for splint.  Correct
 	the openvas includes.
 	(cleanup): Move the OMP freeing note to src/ompd.c.
