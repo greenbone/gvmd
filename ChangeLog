@@ -1,5 +1,9 @@
 2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/CMakeLists.txt: Add omp_delete_report_1.
+
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Start implementing splint and RATS cleanups.
 
 	* src/ovas-mngr-comm.h (end_session): Correct return type.

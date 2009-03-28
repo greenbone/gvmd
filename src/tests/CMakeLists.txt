@@ -159,6 +159,13 @@ set_target_properties (omp_delete_report_0 PROPERTIES LINK_FLAGS "-lgnutls ${GLI
 target_link_libraries (omp_delete_report_0 common)
 ADD_TEST (omp_delete_report_0 omp_delete_report_0)
 
+add_executable (omp_delete_report_1 omp_delete_report_1.c)
+target_link_libraries (omp_delete_report_1 string)
+set_target_properties (omp_delete_report_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_delete_report_1 PROPERTIES LINK_FLAGS "-lgnutls ${GLIB_LDFLAGS}")
+target_link_libraries (omp_delete_report_1 common)
+ADD_TEST (omp_delete_report_1 omp_delete_report_1)
+
 add_executable (omp_get_report_0 omp_get_report_0.c)
 target_link_libraries (omp_get_report_0 string)
 set_target_properties (omp_get_report_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
