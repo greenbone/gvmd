@@ -2,6 +2,29 @@
 
 	Start implementing splint and RATS cleanups.
 
+	* src/ovas-mngr-comm.h (end_session): Correct return type.
+	(connect_to_server): Change argument "interrupted" to a gboolean.
+
+	* src/ovas-mngr-comm.c: Define socklen_t for splint.  Include glib.
+	Declare global vars static.  Move all local vars to beginnings of blocks.
+	(make_session): Cast some returns to please splint.
+	(send_to_server): Use memmove instead of memcpy, just to be sure.
+	(connect_to_server): Change argument "interrupted" to a gboolean.  Cast
+	the sizeof return to match the ret_len type.
+
+	* src/otp.c: Define PREFIX.  Declare functions and vars static.  Move
+	all local vars to beginnings of blocks.  Annotate most global vars as
+	null.
+	(process_otp_server_input): Add fallthrough to SERVER_INIT_SENT_VERSION
+	case.
+
+	* src/otpd.c: Move all local vars to beginnings of blocks.
+	(serve_otp): Annotate reach.
+
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Start implementing splint and RATS cleanups.
+
 	* src/manage.h (append_to_credentials_username): Change third arg to
 	gsize.
 	(current_server_task): Annotate as null.

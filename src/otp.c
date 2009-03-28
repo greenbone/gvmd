@@ -46,6 +46,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Installation prefix.
+ */
+#ifndef PREFIX
+#define PREFIX ""
+#endif
+
 // FIX Should probably be passed into process_otp_server_input.
 extern int from_buffer_size;
 
@@ -59,7 +66,7 @@ extern int from_buffer_size;
  *
  * @param[in]  list  A pointer to a GSList.
  */
-void
+static void
 free_g_slist (gpointer list)
 {
   g_slist_free ((GSList*) list);
@@ -97,7 +104,7 @@ typedef struct
  *
  * @return The name.
  */
-char*
+static char*
 port_protocol_name (port_t* port)
 {
   switch (port->protocol)
@@ -115,7 +122,7 @@ port_protocol_name (port_t* port)
  * @param[in]  stream  Destination stream.
  * @param[in]  port    Port to print.
  */
-void
+static void
 print_port (FILE* stream, port_t* port)
 {
   fprintf (stream, "FIX (%d/%s)", port->number, port_protocol_name (port));
@@ -140,7 +147,7 @@ typedef struct
 /**
  * @brief Current message during OTP SERVER message commands.
  */
-message_t* current_message = NULL;
+static /*@null@*/ message_t* current_message = NULL;
 
 /**
  * @brief Make a message.
@@ -150,12 +157,13 @@ message_t* current_message = NULL;
  *
  * @return A pointer to the new message.
  */
-message_t*
+static message_t*
 make_message (unsigned int number, const char* protocol)
 {
+  message_t* message;
   tracef ("   make_message %u %s\n", number, protocol);
 
-  message_t* message = g_malloc (sizeof (message_t));
+  message = g_malloc (sizeof (message_t));
 
   message->description = NULL;
   message->oid = NULL;
@@ -194,7 +202,7 @@ free_message (gpointer message, gpointer dummy)
  * @param[in]  message       Pointer to the message.
  * @param[in]  description  Description.
  */
-void
+static void
 set_message_description (message_t* message, char* description)
 {
   if (message->description) free (message->description);
@@ -207,7 +215,7 @@ set_message_description (message_t* message, char* description)
  * @param[in]  message       Pointer to the message.
  * @param[in]  oid          OID.
  */
-void
+static void
 set_message_oid (message_t* message, char* oid)
 {
   if (message->oid) free (message->oid);
@@ -229,7 +237,7 @@ typedef struct
  * @param[in]  message       The message.
  * @param[in]  message_data  The stream and message type.
  */
-void
+static void
 write_message (gpointer message, gpointer message_data)
 {
   message_t* msg = (message_t*) message;
@@ -247,7 +255,7 @@ write_message (gpointer message, gpointer message_data)
  * @param[in]  messages   Array of messages.
  * @param[in]  type       Type of message.
  */
-void
+static void
 write_messages (FILE* file, GPtrArray* messages, char* type)
 {
   message_data_t data = { file, type};
@@ -261,7 +269,7 @@ write_messages (FILE* file, GPtrArray* messages, char* type)
  * @param[in]  type       Type of timestamp.
  * @param[in]  time       The time.
  */
-void
+static void
 write_timestamp (FILE* file, char* type, char* time)
 {
   fprintf (file, "timestamps|%s|%s|%s|%s|\n", "dik", "dik", type, time); // FIX
@@ -276,10 +284,16 @@ write_timestamp (FILE* file, char* type, char* time)
  *         -3 failed to symlink file to task dir, -4 failed to create dir,
  *         -5 failed to generate ID.
  */
-int
+static int
 save_report (task_t* task)
 {
   const char* id;
+  char* report_id;
+  gchar* user_dir_name;
+  gchar* dir_name;
+  gchar* name;
+  gchar* symlink_name;
+  FILE* file;
 
   if (current_credentials.username == NULL) return -1;
 
@@ -287,11 +301,11 @@ save_report (task_t* task)
 
   if (task_id_string (task, &id)) return -1;
 
-  gchar* user_dir_name = g_build_filename (PREFIX
-                                           "/var/lib/openvas/mgr/users/",
-                                           current_credentials.username,
-                                           "reports",
-                                           NULL);
+  user_dir_name = g_build_filename (PREFIX
+                                    "/var/lib/openvas/mgr/users/",
+                                    current_credentials.username,
+                                    "reports",
+                                    NULL);
 
   /* Ensure user reports directory exists. */
 
@@ -306,18 +320,18 @@ save_report (task_t* task)
 
   /* Generate report directory name. */
 
-  char* report_id = make_report_id ();
+  report_id = make_report_id ();
 
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      id,
-                                      "reports",
-                                      report_id,
-                                      NULL);
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               id,
+                               "reports",
+                               report_id,
+                               NULL);
 
-  gchar* symlink_name = g_build_filename (user_dir_name, report_id, NULL);
+  symlink_name = g_build_filename (user_dir_name, report_id, NULL);
   free (report_id);
   g_free (user_dir_name);
 
@@ -348,9 +362,9 @@ save_report (task_t* task)
 
   /* Write report. */
 
-  gchar* name = g_build_filename (dir_name, "report.nbe", NULL);
+  name = g_build_filename (dir_name, "report.nbe", NULL);
 
-  FILE* file = fopen (name, "w");
+  file = fopen (name, "w");
   if (file == NULL)
     {
       rmdir (dir_name);
@@ -406,7 +420,7 @@ save_report (task_t* task)
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
-void
+static void
 append_debug_message (task_t* task, message_t* message)
 {
   g_ptr_array_add (task->debugs, (gpointer) message);
@@ -419,7 +433,7 @@ append_debug_message (task_t* task, message_t* message)
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
-void
+static void
 append_hole_message (task_t* task, message_t* message)
 {
   g_ptr_array_add (task->holes, (gpointer) message);
@@ -432,7 +446,7 @@ append_hole_message (task_t* task, message_t* message)
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
-void
+static void
 append_info_message (task_t* task, message_t* message)
 {
   g_ptr_array_add (task->infos, (gpointer) message);
@@ -445,7 +459,7 @@ append_info_message (task_t* task, message_t* message)
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
-void
+static void
 append_log_message (task_t* task, message_t* message)
 {
   g_ptr_array_add (task->logs, (gpointer) message);
@@ -458,7 +472,7 @@ append_log_message (task_t* task, message_t* message)
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
-void
+static void
 append_note_message (task_t* task, message_t* message)
 {
   g_ptr_array_add (task->notes, (gpointer) message);
@@ -471,12 +485,12 @@ append_note_message (task_t* task, message_t* message)
 /**
  * @brief The current server preference, during reading of server preferences.
  */
-char* current_server_preference = NULL;
+static /*@null@*/ char* current_server_preference = NULL;
 
 /**
  * @brief Free any server preferences.
  */
-void
+static void
 maybe_free_server_preferences ()
 {
   if (server.preferences) g_hash_table_destroy (server.preferences);
@@ -485,7 +499,7 @@ maybe_free_server_preferences ()
 /**
  * @brief Create the server preferences.
  */
-void
+static void
 make_server_preferences ()
 {
   server.preferences = g_hash_table_new_full (g_str_hash,
@@ -503,7 +517,7 @@ make_server_preferences ()
  * @param[in]  preference  The preference.
  * @param[in]  value       The value of the preference.
  */
-void
+static void
 add_server_preference (char* preference, char* value)
 {
   g_hash_table_insert (server.preferences, preference, value);
@@ -515,17 +529,17 @@ add_server_preference (char* preference, char* value)
 /**
  * @brief The current server plugin, during reading of server plugin dependencies.
  */
-char* current_server_plugin_dependency_name = NULL;
+static char* current_server_plugin_dependency_name = NULL;
 
 /**
  * @brief The plugins required by the current server plugin.
  */
-GSList* current_server_plugin_dependency_dependencies = NULL;
+static GSList* current_server_plugin_dependency_dependencies = NULL;
 
 /**
  * @brief Free any server plugins dependencies.
  */
-void
+static void
 maybe_free_server_plugins_dependencies ()
 {
   if (server.plugins_dependencies)
@@ -538,7 +552,7 @@ maybe_free_server_plugins_dependencies ()
 /**
  * @brief Make the server plugins dependencies.
  */
-void
+static void
 make_server_plugins_dependencies ()
 {
   assert (server.plugins_dependencies == NULL);
@@ -554,7 +568,7 @@ make_server_plugins_dependencies ()
  * @param[in]  name          The name of the plugin.
  * @param[in]  requirements  The plugins required by the plugin.
  */
-void
+static void
 add_server_plugins_dependency (char* name, GSList* requirements)
 {
   assert (server.plugins_dependencies);
@@ -567,7 +581,7 @@ add_server_plugins_dependency (char* name, GSList* requirements)
  *
  * @param[in]  name  The name of the plugin.
  */
-void
+static void
 make_current_server_plugin_dependency (char* name)
 {
   assert (current_server_plugin_dependency_name == NULL);
@@ -581,7 +595,7 @@ make_current_server_plugin_dependency (char* name)
  *
  * @param[in]  requirement  The name of the required plugin.
  */
-void
+static void
 append_to_current_server_plugin_dependency (char* requirement)
 {
   tracef ("   server appending plugin requirement: %s\n", requirement);
@@ -605,7 +619,7 @@ maybe_free_current_server_plugin_dependency ()
 /**
  * @brief Add the current plugin to the server dependencies.
  */
-void
+static void
 finish_current_server_plugin_dependency ()
 {
   assert (current_server_plugin_dependency_name);
@@ -624,7 +638,7 @@ finish_current_server_plugin_dependency ()
  * @param[in]  rule   The server rule.
  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
  */
-void
+static void
 free_rule (void* rule, void* dummy)
 {
   free (rule);
@@ -633,7 +647,7 @@ free_rule (void* rule, void* dummy)
 /**
  * @brief Free any server rules.
  */
-void
+static void
 maybe_free_server_rules ()
 {
   if (server.rules)
@@ -647,7 +661,7 @@ maybe_free_server_rules ()
 /**
  * @brief Create the server rules.
  */
-void
+static void
 make_server_rules ()
 {
   server.rules = g_ptr_array_new ();
@@ -662,7 +676,7 @@ make_server_rules ()
  *
  * @param[in]  rule  The rule.
  */
-void
+static void
 add_server_rule (char* rule)
 {
   g_ptr_array_add (server.rules, rule);
@@ -742,12 +756,12 @@ typedef enum
 /**
  * @brief The state of the server.
  */
-server_state_t server_state = SERVER_TOP;
+static server_state_t server_state = SERVER_TOP;
 
 /**
  * @brief Set the server state, \ref server_state.
  */
-void
+static void
 set_server_state (server_state_t state)
 {
   server_state = state;
@@ -789,7 +803,7 @@ extern int from_server_end;
  *
  * @return 0 success, -1 fail, -2 too few characters (need more input).
  */
-int
+static int
 parse_server_done (char** messages)
 {
   char *end = *messages + from_server_end - from_server_start;
@@ -817,7 +831,7 @@ parse_server_done (char** messages)
  *
  * @return 0 success, -2 too few characters (need more input).
  */
-int
+static int
 parse_server_preference_value (char** messages)
 {
   char *value, *end, *match;
@@ -846,7 +860,7 @@ parse_server_preference_value (char** messages)
  * @return 0 read a rule, -1 read a <|>, -2 too few characters (need
  *         more input).
  */
-int
+static int
 parse_server_rule (char** messages)
 {
   char *end, *match;
@@ -883,7 +897,7 @@ parse_server_rule (char** messages)
  *
  * @return 1 if a <|> follows in the buffer, otherwise 0.
  */
-int
+static int
 parse_server_plugin_dependency_dependency (char** messages)
 {
   /* Look for the end of dependency marker: a newline that comes before
@@ -936,7 +950,7 @@ parse_server_plugin_dependency_dependency (char** messages)
  *         -3 found a <|> before next newline (that is, a <|> delimited
  *         field follows), -4 failed to find a newline (may be a <|>)
  */
-int
+static int
 parse_server_server (char** messages)
 {
   char *end, *match;
@@ -945,6 +959,9 @@ parse_server_server (char** messages)
     { (*messages)++; from_server_start++; }
   if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
     {
+      char* newline;
+      char* input;
+      int from_start, from_end;
       match[0] = '\0';
       // FIX is there ever whitespace before the newline?
       while (*messages < end && ((*messages)[0] == ' '))
@@ -959,12 +976,12 @@ parse_server_server (char** messages)
           set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
           return 0;
         }
-      char* newline = match;
+      newline = match;
       newline[0] = '\n';
       /* Check for a <|>. */
-      char* input = *messages;
-      int from_start = from_server_start;
-      int from_end = from_server_end;
+      input = *messages;
+      from_start = from_server_start;
+      from_end = from_server_end;
       while (from_start < from_end
              && (match = memchr (input, '<', from_end - from_start)))
         {
@@ -994,7 +1011,7 @@ parse_server_server (char** messages)
  *
  * @return 0 success, -1 \ref from_server is full.
  */
-int
+static int
 sync_buffer ()
 {
   if (from_server_start > 0 && from_server_start == from_server_end)
@@ -1086,6 +1103,7 @@ process_otp_server_input ()
         messages += 12;
         set_server_init_state (SERVER_INIT_GOT_VERSION);
         /* Fall through to attempt next step. */
+        /*@fallthrough@*/
       case SERVER_INIT_GOT_VERSION:
         if (from_server_end - from_server_start < 7)
           {
@@ -1201,6 +1219,7 @@ process_otp_server_input ()
           && (match[2] == '>'))
         {
           char* message;
+          char* field;
           /* Found a full field, process the field. */
 #if 1
           tracef ("   server messages: %.*s...\n",
@@ -1218,7 +1237,7 @@ process_otp_server_input ()
           tracef ("   server message: %s\n", message);
 
           /* Strip leading and trailing whitespace. */
-          char* field = strip_space (message, match);
+          field = strip_space (message, match);
 
           tracef ("   server old state %i\n", server_state);
           tracef ("   server field: %s\n", field);
@@ -1261,12 +1280,15 @@ process_otp_server_input ()
                 }
               case SERVER_DEBUG_NUMBER:
                 {
-                  assert (current_message == NULL);
-
                   // FIX field could be "general"
                   int number;
-                  char *name = g_newa (char, strlen (field));
-                  char *protocol = g_newa (char, strlen (field));
+                  char *name;
+                  char *protocol;
+
+                  assert (current_message == NULL);
+
+                  name = g_newa (char, strlen (field));
+                  protocol = g_newa (char, strlen (field));
 
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
@@ -1324,12 +1346,15 @@ process_otp_server_input ()
                 }
               case SERVER_HOLE_NUMBER:
                 {
-                  assert (current_message == NULL);
-
                   // FIX field could be "general"
                   int number;
-                  char *name = g_newa (char, strlen (field));
-                  char *protocol = g_newa (char, strlen (field));
+                  char *name;
+                  char *protocol;
+
+                  assert (current_message == NULL);
+
+                  name = g_newa (char, strlen (field));
+                  protocol = g_newa (char, strlen (field));
 
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
@@ -1387,12 +1412,15 @@ process_otp_server_input ()
                 }
               case SERVER_INFO_NUMBER:
                 {
-                  assert (current_message == NULL);
-
                   // FIX field could be "general"
                   int number;
-                  char *name = g_newa (char, strlen (field));
-                  char *protocol = g_newa (char, strlen (field));
+                  char *name;
+                  char *protocol;
+
+                  assert (current_message == NULL);
+
+                  name = g_newa (char, strlen (field));
+                  protocol = g_newa (char, strlen (field));
 
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
@@ -1450,12 +1478,15 @@ process_otp_server_input ()
                 }
               case SERVER_LOG_NUMBER:
                 {
-                  assert (current_message == NULL);
-
                   // FIX field could be "general"
                   int number;
-                  char *name = g_newa (char, strlen (field));
-                  char *protocol = g_newa (char, strlen (field));
+                  char *name;
+                  char *protocol;
+
+                  assert (current_message == NULL);
+
+                  name = g_newa (char, strlen (field));
+                  protocol = g_newa (char, strlen (field));
 
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
@@ -1513,12 +1544,15 @@ process_otp_server_input ()
                 }
               case SERVER_NOTE_NUMBER:
                 {
-                  assert (current_message == NULL);
-
                   // FIX field could be "general"
                   int number;
-                  char *name = g_newa (char, strlen (field));
-                  char *protocol = g_newa (char, strlen (field));
+                  char *name;
+                  char *protocol;
+
+                  assert (current_message == NULL);
+
+                  name = g_newa (char, strlen (field));
+                  protocol = g_newa (char, strlen (field));
 
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
@@ -1571,15 +1605,17 @@ process_otp_server_input ()
                         }
                       break;
                     }
-                  char* name = g_strdup (field);
-                  make_current_server_plugin_dependency (name);
-                  set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
-                  if (parse_server_plugin_dependency_dependency (&messages))
-                    {
-                      /* Need more input for a <|>. */
-                      if (sync_buffer ()) return -1;
-                      return 0;
-                    }
+                  {
+                    char* name = g_strdup (field);
+                    make_current_server_plugin_dependency (name);
+                    set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
+                    if (parse_server_plugin_dependency_dependency (&messages))
+                      {
+                        /* Need more input for a <|>. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                      }
+                  }
                   break;
                 }
               case SERVER_PLUGIN_DEPENDENCY_DEPENDENCY:
@@ -1663,16 +1699,17 @@ process_otp_server_input ()
                         }
                       break;
                     }
-                  char* name = g_strdup (field);
-                  current_server_preference = name;
-                  set_server_state (SERVER_PREFERENCE_VALUE);
-                  switch (parse_server_preference_value (&messages))
-                    {
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
-                    }
+                  {
+                    current_server_preference = g_strdup (field);
+                    set_server_state (SERVER_PREFERENCE_VALUE);
+                    switch (parse_server_preference_value (&messages))
+                      {
+                        case -2:
+                          /* Need more input. */
+                          if (sync_buffer ()) return -1;
+                          return 0;
+                      }
+                  }
                   break;
                 }
               case SERVER_RULE:

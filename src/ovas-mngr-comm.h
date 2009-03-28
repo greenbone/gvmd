@@ -26,6 +26,7 @@
 #ifndef OPENVAS_MANGER_OVAS_MNGR_COMM_H
 #define OPENVAS_MANGER_OVAS_MNGR_COMM_H
 
+#include <glib.h>
 #include <gnutls/gnutls.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -43,7 +44,7 @@ make_session (int,
               gnutls_session_t*,
               gnutls_certificate_credentials_t*);
 
-void
+int
 end_session (int,
              gnutls_session_t,
              gnutls_certificate_credentials_t);
@@ -52,7 +53,7 @@ int
 send_to_server (char *);
 
 int
-connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, int);
+connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, gboolean);
 
 int
 write_string_to_server (gnutls_session_t*, char* const);

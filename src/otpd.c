@@ -94,6 +94,9 @@ serve_otp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
            int client_socket, int server_socket)
 {
+  int nfds;
+  fd_set readfds, exceptfds, writefds;
+
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
   logf ("<= %.*s\n", from_client_end, from_client);
@@ -105,11 +108,12 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE || LOG */
 
   /* Loop handling input from the sockets. */
-  int nfds = 1 + (client_socket > server_socket
-                  ? client_socket : server_socket);
-  fd_set readfds, exceptfds, writefds;
+  nfds = 1 + (client_socket > server_socket
+              ? client_socket : server_socket);
   while (1)
     {
+      int ret;
+
       /* Setup for select. */
       unsigned char fds = 0; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
@@ -139,7 +143,7 @@ serve_otp (gnutls_session_t* client_session,
         }
 
       /* Select, then handle result. */
-      int ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
+      ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
       if (ret < 0)
         {
           if (errno == EINTR) continue;
@@ -354,4 +358,5 @@ serve_otp (gnutls_session_t* client_session,
             }
         }
     }
+  /*@notreached@*/
 }

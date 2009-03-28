@@ -39,8 +39,14 @@
  */
 #define TRACE 1
 
+#ifdef S_SPLINT_S
+/* splint parse error at socklen_t, maybe missing header? */
+#define socklen_t int
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
+#include <glib.h>
 #include <gnutls/gnutls.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -58,17 +64,17 @@
 /**
  * @brief Buffer of output to the server.
  */
-char to_server[TO_SERVER_BUFFER_SIZE];
+static char to_server[TO_SERVER_BUFFER_SIZE];
 
 /**
  * @brief The end of the data in the \ref to_server buffer.
  */
-int to_server_end = 0;
+static int to_server_end = 0;
 
 /**
  * @brief The start of the data in the \ref to_server buffer.
  */
-int to_server_start = 0;
+static int to_server_start = 0;
 
 /**
  * @brief Make a session for connecting to the server.
@@ -86,6 +92,24 @@ make_session (int server_socket,
 {
   /* Setup server session. */
 
+  const int protocol_priority[] = { GNUTLS_TLS1,
+                                    0 };
+  const int cipher_priority[] = { GNUTLS_CIPHER_AES_128_CBC,
+                                  GNUTLS_CIPHER_3DES_CBC,
+                                  GNUTLS_CIPHER_AES_256_CBC,
+                                  GNUTLS_CIPHER_ARCFOUR_128,
+                                  0 };
+  const int comp_priority[] = { GNUTLS_COMP_ZLIB,
+                                GNUTLS_COMP_NULL,
+                                0 };
+  const int kx_priority[] = { GNUTLS_KX_DHE_RSA,
+                              GNUTLS_KX_RSA,
+                              GNUTLS_KX_DHE_DSS,
+                              0 };
+  const int mac_priority[] = { GNUTLS_MAC_SHA1,
+                               GNUTLS_MAC_MD5,
+                               0 };
+
   if (gnutls_certificate_allocate_credentials (server_credentials))
     {
       fprintf (stderr, "Failed to allocate server credentials.\n");
@@ -98,47 +122,30 @@ make_session (int server_socket,
       goto server_free_fail;
     }
 
-  const int protocol_priority[] = { GNUTLS_TLS1,
-                                    0 };
   if (gnutls_protocol_set_priority (*server_session, protocol_priority))
     {
       fprintf (stderr, "Failed to set protocol priority.\n");
       goto server_fail;
     }
 
-  const int cipher_priority[] = { GNUTLS_CIPHER_AES_128_CBC,
-                                  GNUTLS_CIPHER_3DES_CBC,
-                                  GNUTLS_CIPHER_AES_256_CBC,
-                                  GNUTLS_CIPHER_ARCFOUR_128,
-                                  0 };
   if (gnutls_cipher_set_priority (*server_session, cipher_priority))
     {
       fprintf (stderr, "Failed to set cipher priority.\n");
       goto server_fail;
     }
 
-  const int comp_priority[] = { GNUTLS_COMP_ZLIB,
-                                GNUTLS_COMP_NULL,
-                                0 };
   if (gnutls_compression_set_priority (*server_session, comp_priority))
     {
       fprintf (stderr, "Failed to set compression priority.\n");
       goto server_fail;
     }
 
-  const int kx_priority[] = { GNUTLS_KX_DHE_RSA,
-                              GNUTLS_KX_RSA,
-                              GNUTLS_KX_DHE_DSS,
-                              0 };
   if (gnutls_kx_set_priority (*server_session, kx_priority))
     {
       fprintf (stderr, "Failed to set server key exchange priority.\n");
       goto server_fail;
     }
 
-  const int mac_priority[] = { GNUTLS_MAC_SHA1,
-                               GNUTLS_MAC_MD5,
-                               0 };
   if (gnutls_mac_set_priority (*server_session, mac_priority))
     {
       fprintf (stderr, "Failed to set mac priority.\n");
@@ -166,15 +173,15 @@ make_session (int server_socket,
   return 0;
 
  fail:
-  gnutls_bye (*server_session, GNUTLS_SHUT_RDWR);
+  (void) gnutls_bye (*server_session, GNUTLS_SHUT_RDWR);
  server_fail:
-  gnutls_deinit (*server_session);
+  (void) gnutls_deinit (*server_session);
 
  server_free_fail:
   gnutls_certificate_free_credentials (*server_credentials);
 
  close_fail:
-  close (server_socket);
+  (void) close (server_socket);
 
   return -1;
 }
@@ -244,7 +251,7 @@ send_to_server (char * msg)
   if (TO_SERVER_BUFFER_SIZE - to_server_end < strlen (msg))
     return 1;
 
-  memcpy (to_server + to_server_end, msg, strlen (msg));
+  memmove (to_server + to_server_end, msg, strlen (msg));
   tracef ("-> server: %s\n", msg);
   to_server_end += strlen (msg);
 
@@ -266,7 +273,7 @@ int
 connect_to_server (int server_socket,
                    struct sockaddr_in* server_address,
                    gnutls_session_t* server_session,
-                   int interrupted)
+                   gboolean interrupted)
 {
   int ret;
   socklen_t ret_len = sizeof (ret);
@@ -278,7 +285,7 @@ connect_to_server (int server_socket,
           perror ("Failed to get socket option");
           return -1;
         }
-      if (ret_len != sizeof (ret))
+      if (ret_len != (socklen_t) sizeof (ret))
         {
           fprintf (stderr, "Weird option length from getsockopt: %i.\n",
                    ret_len);
@@ -309,7 +316,7 @@ connect_to_server (int server_socket,
 
   while (1)
     {
-      int ret = gnutls_handshake (*server_session);
+      ret = gnutls_handshake (*server_session);
       if (ret >= 0)
         break;
       if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
