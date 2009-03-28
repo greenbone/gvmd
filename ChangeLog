@@ -1,3 +1,9 @@
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/CMakeLists.txt (splint, rats, flawfinder, check, etags, ctags,
+	tags): New targets.
+	(ovas-mngr-comm): Add Glib C flags.
+
 2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/omp_delete_task_1.c: Read report ID from response.

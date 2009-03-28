@@ -42,6 +42,7 @@ add_library (string string.c)
 set_target_properties (string PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (ovas-mngr-comm ovas-mngr-comm.c)
+set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (manage manage.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
@@ -123,5 +124,32 @@ install (TARGETS openvasmd
 ENABLE_TESTING ()
 
 add_subdirectory (tests)
+
+## Static analysis
+
+# FIX test coverage
+
+add_custom_target (splint COMMENT "Running splint..."
+                   COMMAND sh -c \"splint -booltype gboolean -predboolint +posixlib +export-header `pkg-config --cflags glib-2.0` `libopenvas-config --cflags` *.c\")
+
+add_custom_target (rats COMMENT "Running rats..."
+                   COMMAND sh -c \"rats --warning 2 *.[ch]\")
+
+add_custom_target (flawfinder COMMENT "Running flawfinder..."
+                   COMMAND sh -c \"flawfinder *.[ch]\")
+
+add_custom_target (check COMMENT "Checking code...")
+ADD_DEPENDENCIES (check splint rats flawfinder)
+
+## Tag files
+
+set (C_FILES "openvasmd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
+             "manage.c" "ovas-mngr-comm.c" "string.c")
+add_custom_target (etags COMMENT "Building TAGS..."
+                   COMMAND etags ${C_FILES})
+add_custom_target (ctags COMMENT "Building tags..."
+                   COMMAND ctags ${C_FILES})
+add_custom_target (tags COMMENT "Building tags files...")
+ADD_DEPENDENCIES (tags etags ctags)
 
 ## End
