@@ -1,5 +1,13 @@
 2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/logf.h: Include stdlib.
+	(logf): Cast getpid return.  Check fflush return.
+
+	* src/tracef.h: Include stdlib.
+	(tracef): Cast getpid return.  Check fflush return.
+
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/CMakeLists.txt (splint, rats, flawfinder, check, etags, ctags,
 	tags): New targets.
 	(ovas-mngr-comm): Add Glib C flags.

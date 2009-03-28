@@ -51,6 +51,7 @@
 
 #if TRACE
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -59,11 +60,11 @@
  *
  * Print the printf style \a args to stderr, preceded by the process ID.
  */
-#define tracef(args...)                   \
-  do {                                    \
-    fprintf (stderr, "%7i  ", getpid());  \
-    fprintf (stderr, args);               \
-    fflush (stderr);                      \
+#define tracef(args...)                        \
+  do {                                         \
+    fprintf (stderr, "%7i  ", (int) getpid()); \
+    fprintf (stderr, args);                    \
+    if (fflush (stderr) == EOF) abort ();      \
   } while (0)
 #else
 /**

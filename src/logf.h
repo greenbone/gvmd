@@ -32,6 +32,7 @@
 #define OPENVAS_MANAGER_LOG_H
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -63,11 +64,11 @@ extern FILE* log_stream;
  *
  * Print the printf style \a args to log_stream, preceded by the process ID.
  */
-#define logf(args...)                         \
-  do {                                        \
-    fprintf (log_stream, "%7i  ", getpid());  \
-    fprintf (log_stream, args);               \
-    fflush (log_stream);                      \
+#define logf(args...)                               \
+  do {                                              \
+    fprintf (log_stream, "%7i  ", (int) getpid());  \
+    fprintf (log_stream, args);                     \
+    if (fflush (log_stream) == EOF) abort ();       \
   } while (0)
 #else
 /**
