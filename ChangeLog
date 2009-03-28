@@ -1,5 +1,31 @@
 2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Start implementing splint and RATS cleanups.
+
+	* src/openvasmd.c: Conditionalise some includes for splint.  Correct
+	the openvas includes.
+	(cleanup): Move the OMP freeing note to src/ompd.c.
+	(handle_signal): Remove.
+	(handle_sigint, handle_sighup, handle_sigterm): New functions.
+	(main): Separate signal handlers.
+
+	* src/omp.c: Define PREFIX.  Declare functions and vars static.
+	Annotate global null vars.  Move all local vars to beginnings of
+	blocks.
+	(send_reports): Correct freeing of msg and names.
+	(omp_xml_handle_end_element): Add block for CLIENT_NEW_TASK case.  Free
+	response in CLIENT_STATUS case.
+
+	* src/ompd.c: Declare functions and vars static.  Move all local
+	variable declarations to beginnings of blocks.  Add missing includes.
+	(read_from_client, read_from_server, write_to_client): Cast variables
+	to quiet splint.  Annotate dummy arguments.
+	(write_to_server): Annotate fallthrough cases.
+	(serve_omp): Add OMP freeing note from src/openvasmd.c.  Cast
+	variables.
+
+2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/logf.h: Include stdlib.
 	(logf): Cast getpid return.  Check fflush return.
 

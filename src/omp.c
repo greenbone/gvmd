@@ -48,6 +48,13 @@
 #include <stdlib.h>
 
 /**
+ * @brief Installation prefix.
+ */
+#ifndef PREFIX
+#define PREFIX ""
+#endif
+
+/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -64,33 +71,32 @@ int to_client_end = 0;
 /**
  * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
  */
-task_t* current_client_task = NULL;
+static /*@null@*/ task_t* current_client_task = NULL;
 
 /**
  * @brief Task ID during OMP MODIFY_TASK and START_TASK.
  */
-char* current_task_task_id = NULL;
+static /*@null@*/ char* current_task_task_id = NULL;
 
 /**
  * @brief Parameter name during OMP MODIFY_TASK.
  */
-char* modify_task_parameter = NULL;
+static /*@null@*/ char* modify_task_parameter = NULL;
 
 /**
  * @brief Parameter value during OMP MODIFY_TASK.
  */
-char* modify_task_value = NULL;
+static /*@null@*/ char* modify_task_value = NULL;
 
 /**
  * @brief Client input parsing context.
  */
-GMarkupParseContext* xml_context;
+static GMarkupParseContext* xml_context;
 
 /**
  * @brief Client input parser.
  */
-GMarkupParser xml_parser;
-
+static GMarkupParser xml_parser;
 
 
 /* Client state. */
@@ -146,12 +152,12 @@ typedef enum
 /**
  * @brief The state of the client.
  */
-client_state_t client_state = CLIENT_TOP;
+static client_state_t client_state = CLIENT_TOP;
 
 /**
  * @brief Set the client state.
  */
-void
+static void
 set_client_state (client_state_t state)
 {
   client_state = state;
@@ -199,7 +205,7 @@ set_client_state (client_state_t state)
  * @param[in]  user_data         Dummy parameter.
  * @param[in]  error             Error parameter.
  */
-void
+static void
 omp_xml_handle_start_element (GMarkupParseContext* context,
                               const gchar *element_name,
                               const gchar **attribute_names,
@@ -591,7 +597,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
  *
  * @return 0 if out of space in to_client buffer, else 1.
  */
-gint
+static gint
 send_requirement (gconstpointer element, gconstpointer dummy)
 {
   gchar* text = g_markup_escape_text ((char*) element,
@@ -617,7 +623,7 @@ send_requirement (gconstpointer element, gconstpointer dummy)
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
-gboolean
+static gboolean
 send_dependency (gpointer key, gpointer value, gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
@@ -650,7 +656,7 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
-gboolean
+static gboolean
 send_preference (gpointer key, gpointer value, gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
@@ -679,7 +685,7 @@ send_preference (gpointer key, gpointer value, gpointer dummy)
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
-gboolean
+static gboolean
 send_rule (gpointer rule)
 {
   /* \todo Do these reallocations affect performance? */
@@ -702,25 +708,26 @@ send_rule (gpointer rule)
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
-gboolean
+static gboolean
 send_reports (task_t* task)
 {
   // FIX Abstract report iterator and move it to manage.c.
 
+  gchar* dir_name;
   const char* id;
+  struct dirent ** names;
+  int count, index;
+  gchar* msg;
 
   if (task_id_string (task, &id)) return FALSE;
 
-  gchar* dir_name = g_build_filename (PREFIX
-                                      "/var/lib/openvas/mgr/users/",
-                                      current_credentials.username,
-                                      "tasks",
-                                      id,
-                                      "reports",
-                                      NULL);
-
-  struct dirent ** names;
-  int count;
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               id,
+                               "reports",
+                               NULL);
 
   count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)
@@ -737,13 +744,16 @@ send_reports (task_t* task)
       return -1;
     }
 
-  int index;
-  gchar* msg = NULL;
+  msg = NULL;
   for (index = 0; index < count; index++)
     {
       const char* report_name = names[index]->d_name;
 
-      if (report_name[0] == '.') continue;
+      if (report_name[0] == '.')
+        {
+          free (names[index]);
+          continue;
+        }
 
       if (strlen (report_name) == OVAS_MANAGE_REPORT_ID_LENGTH)
         {
@@ -765,23 +775,22 @@ send_reports (task_t* task)
                                  "</messages>"
                                  "</report>",
                                  report_name);
-          free (names[index]);
           SEND_TO_CLIENT (msg);
+          g_free (msg);
         }
+
+      free (names[index]);
     }
 
-  g_free (dir_name);
   free (names);
-
-  SEND_TO_CLIENT (msg);
-  g_free (msg);
+  g_free (dir_name);
   return FALSE;
 
  send_to_client_fail:
-  while (++index < count) { free (names[index]); }
-  g_free (dir_name);
-  g_free (names);
   g_free (msg);
+  while (index < count) { free (names[index++]); }
+  free (names);
+  g_free (dir_name);
   return TRUE;
 }
 
@@ -802,7 +811,7 @@ send_reports (task_t* task)
  * @param[in]  user_data         Dummy parameter.
  * @param[in]  error             Error parameter.
  */
-void
+static void
 omp_xml_handle_end_element (GMarkupParseContext* context,
                             const gchar *element_name,
                             gpointer user_data,
@@ -817,8 +826,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_ABORT_TASK:
         {
-          assert (current_client_task == NULL);
           unsigned int id;
+          assert (current_client_task == NULL);
           if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
@@ -1125,8 +1134,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_DELETE_TASK:
         {
-          assert (current_client_task == NULL);
           unsigned int id;
+          assert (current_client_task == NULL);
           if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
@@ -1213,8 +1222,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TASK:
         {
-          assert (current_client_task == NULL);
           unsigned int id;
+          assert (current_client_task == NULL);
           if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
@@ -1269,23 +1278,25 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
         break;
 
       case CLIENT_NEW_TASK:
-        assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
-        assert (current_client_task);
-        // FIX if all rqrd fields given then ok, else respond fail
-        // FIX only here should the task be added to tasks
-        //       eg on err half task could be saved (or saved with base64 file)
-        gchar* msg;
-        msg = g_strdup_printf ("<new_task_response>"
-                               "<status>201</status>"
-                               "<task_id>%u</task_id>"
-                               "</new_task_response>",
-                               current_client_task->id);
-        // FIX free msg if fail
-        SEND_TO_CLIENT (msg);
-        free (msg);
-        current_client_task = NULL;
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        {
+          gchar* msg;
+          assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
+          assert (current_client_task);
+          // FIX if all rqrd fields given then ok, else respond fail
+          // FIX only here should the task be added to tasks
+          //       eg on err half task could be saved (or saved with base64 file)
+          msg = g_strdup_printf ("<new_task_response>"
+                                 "<status>201</status>"
+                                 "<task_id>%u</task_id>"
+                                 "</new_task_response>",
+                                 current_client_task->id);
+          // FIX free msg if fail
+          SEND_TO_CLIENT (msg);
+          free (msg);
+          current_client_task = NULL;
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
       case CLIENT_NEW_TASK_COMMENT:
         assert (strncasecmp ("COMMENT", element_name, 12) == 0);
         set_client_state (CLIENT_NEW_TASK);
@@ -1311,8 +1322,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_START_TASK:
         {
-          assert (current_client_task == NULL);
           unsigned int id;
+          assert (current_client_task == NULL);
           if (sscanf (current_task_task_id, "%u", &id) == 1)
             {
               task_t* task = find_task (id);
@@ -1358,11 +1369,13 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                                   "<status>407</status>");
                 else
                   {
-                    SEND_TO_CLIENT ("<status_response><status>200</status>");
                     gchar* response;
+                    SEND_TO_CLIENT ("<status_response><status>200</status>");
                     response = g_strdup_printf ("<report_count>%u</report_count>",
                                                 task->report_count);
+                    // FIX free if fail
                     SEND_TO_CLIENT (response);
+                    g_free (response);
                     send_reports (task);
                   }
               }
@@ -1373,13 +1386,16 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
           }
         else
           {
+            gchar* response;
+            task_t* index;
+            task_t* end;
             SEND_TO_CLIENT ("<status_response><status>200</status>");
-            gchar* response = g_strdup_printf ("<task_count>%u</task_count>",
-                                               num_tasks);
+            response = g_strdup_printf ("<task_count>%u</task_count>",
+                                        num_tasks);
             SEND_TO_CLIENT (response);
             // FIX this is the only place that accesses "tasks"  foreach_task?
-            task_t* index = tasks;
-            task_t* end = tasks + tasks_size;
+            index = tasks;
+            end = tasks + tasks_size;
             while (index < end)
               {
                 if (index->name)
@@ -1457,7 +1473,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
  * @param[in]  user_data         Dummy parameter.
  * @param[in]  error             Error parameter.
  */
-void
+static void
 omp_xml_handle_text (GMarkupParseContext* context,
                      const gchar *text,
                      gsize text_len,
@@ -1529,7 +1545,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
  * @param[in]  error             The error.
  * @param[in]  user_data         Dummy parameter.
  */
-void
+static void
 omp_xml_handle_error (GMarkupParseContext* context,
                       GError *error,
                       gpointer user_data)

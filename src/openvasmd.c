@@ -78,7 +78,9 @@
  * \htmlinclude openvasmd.html
  */
 
+#ifndef S_SPLINT_S
 #include <arpa/inet.h>
+#endif
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -86,8 +88,10 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 #include <netdb.h>
+#ifndef S_SPLINT_S
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,8 +101,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <openvas/network.h>
-#include <openvas/plugutils.h>
+#include <network.h>
+#include <plugutils.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -538,33 +542,39 @@ cleanup ()
   if (fclose (log_stream)) perror ("Failed to close log stream");
 #endif
   ovas_server_context_free (server_context);
-#if 0
-  /** \todo Are these really necessary? */
-  if (tasks) free_tasks ();
-  if (current_server_preference) free (current_server_preference);
-  free_credentials (&current_credentials);
-  maybe_free_current_server_plugin_dependency ();
-  maybe_free_server_preferences ();
-  maybe_free_server_rules ();
-  maybe_free_server_plugins_dependencies ();
-#endif
 }
 
 /**
- * @brief Handle a signal.
+ * @brief Handle a SIGTERM signal.
  *
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_signal (int signal)
+handle_sigterm (int signal)
 {
-  switch (signal)
-    {
-      case SIGTERM:
-      case SIGHUP:
-      case SIGINT:
-        exit (EXIT_SUCCESS);
-    }
+  exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Handle a SIGHUP signal.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sighup (int signal)
+{
+  exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Handle a SIGINT signal.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sigint (int signal)
+{
+  exit (EXIT_SUCCESS);
 }
 
 
@@ -702,10 +712,10 @@ main (int argc, char** argv)
 
   /* Register the signal handler. */
 
-  if (signal (SIGTERM, handle_signal) == SIG_ERR
-      || signal (SIGINT, handle_signal) == SIG_ERR
-      || signal (SIGHUP, handle_signal) == SIG_ERR
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)
+  if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
+      || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
     {
       fprintf (stderr, "Failed to register signal handler.\n");
       exit (EXIT_FAILURE);

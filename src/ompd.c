@@ -46,6 +46,12 @@
 #include <assert.h>
 #include <errno.h>
 
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 /**
  * @brief File descriptor set mask: selecting on client read.
  */
@@ -89,8 +95,9 @@ extern int from_server_end;
  * @return 0 on reading everything available, -1 on error, -2 if
  * from_client buffer is full or -3 on reaching end of file.
  */
-int
-read_from_client (gnutls_session_t* client_session, int client_socket)
+static int
+read_from_client (gnutls_session_t* client_session,
+                  /*@unused@*/ int client_socket)
 {
   while (from_client_end < from_buffer_size)
     {
@@ -113,17 +120,18 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
               tracef ("   FIX should rehandshake\n");
               continue;
             }
-          if (gnutls_error_is_fatal (count) == 0
+          if (gnutls_error_is_fatal ((int) count) == 0
               && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*client_session);
+              const char* alert_name = gnutls_alert_get_name (alert);
               fprintf (stderr, "TLS Alert %d: %s.\n",
                        alert,
-                       gnutls_alert_get_name (alert));
+                       alert_name);
             }
           fprintf (stderr, "Failed to read from client.\n");
-          gnutls_perror (count);
+          gnutls_perror ((int) count);
           return -1;
         }
       if (count == 0)
@@ -146,8 +154,9 @@ read_from_client (gnutls_session_t* client_session, int client_socket)
  * @return 0 on reading everything available, -1 on error, -2 if
  * from_server buffer is full or -3 on reaching end of file.
  */
-int
-read_from_server (gnutls_session_t* server_session, int server_socket)
+static int
+read_from_server (gnutls_session_t* server_session,
+                  /*@unused@*/ int server_socket)
 {
   while (from_server_end < from_buffer_size)
     {
@@ -155,7 +164,7 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
       count = gnutls_record_recv (*server_session,
                                   from_server + from_server_end,
                                   from_buffer_size - from_server_end);
-      tracef ("   s count: %i\n", count);
+      tracef ("   s count: %i\n", (int) count);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -176,12 +185,13 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*server_session);
+              const char* alert_name = gnutls_alert_get_name (alert);
               fprintf (stderr, "TLS Alert %d: %s.\n",
                        alert,
-                       gnutls_alert_get_name (alert));
+                       alert_name);
             }
           fprintf (stderr, "Failed to read from server.\n");
-          gnutls_perror (count);
+          gnutls_perror ((int) count);
           return -1;
         }
       if (count == 0)
@@ -201,7 +211,7 @@ read_from_server (gnutls_session_t* server_session, int server_socket)
  *
  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
  */
-int
+static int
 write_to_client (gnutls_session_t* client_session)
 {
   while (to_client_start < to_client_end)
@@ -222,7 +232,7 @@ write_to_client (gnutls_session_t* client_session)
             /* \todo Rehandshake. */
             continue;
           fprintf (stderr, "Failed to write to client.\n");
-          gnutls_perror (count);
+          gnutls_perror ((int) count);
           return -1;
         }
       logf ("=> %.*s\n",
@@ -247,7 +257,7 @@ write_to_client (gnutls_session_t* client_session)
  * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
  *         -3 did an initialisation step.
  */
-int
+static int
 write_to_server (int server_socket, gnutls_session_t* server_session)
 {
   switch (server_init_state)
@@ -271,6 +281,7 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
             default:
               return -1;
           }
+        /*@fallthrough@*/
       case SERVER_INIT_CONNECTED:
         {
           char* string = "< OTP/1.0 >\n";
@@ -326,6 +337,7 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
           else
             break;
         }
+        /*@fallthrough@*/
       case SERVER_INIT_DONE:
         while (1)
           switch (write_to_server_buffer (server_session))
@@ -367,6 +379,9 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* server_credentials,
            int client_socket, int* server_socket_addr)
 {
+  int nfds;
+  unsigned char lastfds;
+  fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
    * to_server buffer. */
@@ -382,6 +397,16 @@ serve_omp (gnutls_session_t* client_session,
 
   /* Initialise the XML parser. */
   init_omp_data ();
+#if 0
+  // FIX consider free_omp_data (); on return
+  if (tasks) free_tasks ();
+  if (current_server_preference) free (current_server_preference);
+  free_credentials (&current_credentials);
+  maybe_free_current_server_plugin_dependency ();
+  maybe_free_server_preferences ();
+  maybe_free_server_rules ();
+  maybe_free_server_plugins_dependencies ();
+#endif
 
   /* Handle the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
@@ -423,12 +448,13 @@ serve_omp (gnutls_session_t* client_session,
    *   - FIX a read from the server can, theoretically, be stalled by the
    *     to_server buffer filling up (during initialisation).
    */
-  int nfds = 1 + (client_socket > server_socket
-                  ? client_socket : server_socket);
-  fd_set readfds, exceptfds, writefds;
-  unsigned char lastfds = 0; // FIX
+
+  nfds = 1 + (client_socket > server_socket
+              ? client_socket : server_socket);
+  lastfds = '\0'; // FIX
   while (1)
     {
+      int ret;
       /* Setup for select. */
       unsigned char fds = 0; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
@@ -441,11 +467,13 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
-          if ((lastfds & FD_CLIENT_READ) == 0) tracef ("   client read on\n");
+          if ((lastfds & FD_CLIENT_READ) == (unsigned char) 0)
+            tracef ("   client read on\n");
         }
       else
         {
-          if (lastfds & FD_CLIENT_READ) tracef ("   client read off\n");
+          if ((lastfds & FD_CLIENT_READ) != (unsigned char) 0)
+            tracef ("   client read off\n");
         }
       if ((server_init_state == SERVER_INIT_DONE
            || server_init_state == SERVER_INIT_GOT_VERSION
@@ -455,11 +483,13 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (server_socket, &readfds);
           fds |= FD_SERVER_READ;
-          if ((lastfds & FD_SERVER_READ) == 0) tracef ("   server read on\n");
+          if ((lastfds & FD_SERVER_READ) == (unsigned char) 0)
+            tracef ("   server read on\n");
         }
       else
         {
-          if (lastfds & FD_SERVER_READ) tracef ("   server read off\n");
+          if ((lastfds & FD_SERVER_READ) != (unsigned char) 0)
+            tracef ("   server read off\n");
         }
       if (to_client_start < to_client_end)
         {
@@ -480,7 +510,7 @@ serve_omp (gnutls_session_t* client_session,
       lastfds = fds;
 
       /* Select, then handle result. */
-      int ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
+      ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
       if (ret < 0)
         {
           if (errno == EINTR) continue;
@@ -503,10 +533,11 @@ serve_omp (gnutls_session_t* client_session,
 
       if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
         {
-          tracef ("   FD_CLIENT_READ\n");
+          int ret;
 #if TRACE || LOG
           int initial_start = from_client_end;
 #endif
+          tracef ("   FD_CLIENT_READ\n");
 
           switch (read_from_client (client_session, client_socket))
             {
@@ -545,7 +576,7 @@ serve_omp (gnutls_session_t* client_session,
             }
 #endif /* TRACE || LOG */
 
-          int ret = process_omp_client_input ();
+          ret = process_omp_client_input ();
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
@@ -578,10 +609,11 @@ serve_omp (gnutls_session_t* client_session,
 
       if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
         {
-          tracef ("   FD_SERVER_READ\n");
+          int ret;
 #if TRACE || LOG
           int initial_start = from_server_end;
 #endif
+          tracef ("   FD_SERVER_READ\n");
 
           switch (read_from_server (server_session, server_socket))
             {
@@ -622,7 +654,7 @@ serve_omp (gnutls_session_t* client_session,
             }
 #endif /* TRACE || LOG */
 
-          int ret = process_otp_server_input ();
+          ret = process_otp_server_input ();
           if (ret == 0)
             /* Processed all input. */
             server_input_stalled = FALSE;
