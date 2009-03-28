@@ -856,14 +856,14 @@ authenticate (gnutls_session_t* session,
 int
 env_authenticate (gnutls_session_t* session)
 {
-  char* user = getenv ("OPENVAS_TEST_USER");
+  char* user = getenv ("OPENVAS_TEST_USER"); /* RATS: ignore */
   if (user == NULL)
     {
-      user = getenv ("USER");
+      user = getenv ("USER"); /* RATS: ignore */
       if (user == NULL) return -1;
     }
 
-  char* password = getenv ("OPENVAS_TEST_PASSWORD");
+  char* password = getenv ("OPENVAS_TEST_PASSWORD"); /* RATS: ignore */
   if (password == NULL) return -1;
 
   return authenticate (session, user, password);
