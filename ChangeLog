@@ -1,3 +1,54 @@
+2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate, from Splint.
+
+	* src/splint.h: New file.
+
+	* src/manage.h (credentials_t): Null annotate username and password.
+	(task_t): Change types to gsize.  Annotate description.
+	(tasks, task_id_string, make_task, find_task, set_task_parameter,
+	make_report_id, report_task): Annotate.
+	(add_task_description_line): Change int to size_t.
+
+	* src/manage.c: Include splint.h.
+	(append_to_credentials_username, append_to_credentials_password): Use
+	append_text.
+	(make_report_id): Doc fail return.  Init uuid.  Check returns.
+	(report_task): Check that username is set.  Free link_name afterwards.
+	(delete_report): Check that username is set.  Check error before use.
+	Free link_name is fail case.
+	(set_report_parameter): Check that username is set.  Check return of
+	g_file_set_contents directly.  Check error before use.
+	(tasks): Annotate.
+	(task_id_string): Use snprintf instead of sprintf.
+	(print_tasks): Check index before use.
+	(grow_tasks): Change return to boolean.  Turn off checks around realloc
+	and return.  Change memset arg to int.  Correct tracef directive.
+	(free_message): Annotate args.
+	(free_task): Annotate args.  Cast for tracef.  Cast away g_ptr_array_free
+	returns.
+	(free_tasks): Check tasks first.
+	(make_tasks): Free name and comment on failure.  Add safety check on
+	tasks.  Cast for id.  Turn off checks around assignments.  Correct tracef
+	directive.
+	(load_tasks): Init names and comment.  Free names[index] for hidden files.
+    Check g_file_get_contents return directly.  Check error before use.
+	Remove freeing of name and comment on failure, as now done in make_task.
+	(save_task): Check g_file_get_contents return directly.  Check error before
+	use.  Use snprintf instead of sprintf.
+	(save_tasks): Free dir_name.
+	(find_task): Check tasks before using.  Compare to NULL explicitly.
+	(set_task_parameter): Check parameter before use.
+	(start_task): Cast away g_array_free return.  Cast size for g_array_new.
+	(delete_reports): Anotate var.  Free names[index] for hidden files.
+	(delete_task): Check return from rmdir_recursively directly.  Check error
+	before use.
+	(append_to_task_comment): Annotate arg.  Return integer explicitly.
+	(append_to_task_identifier): Annotate arg.  Free task->name.  Return
+	integer explicitly.  Correct return value.
+	(grow_description): Change new_size to size_t.  Cast char for memset.
+	(add_task_description_line): Use return from g_array_append_val.
+
 2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/common.c (env_authenticate): Add "RATS: ignore" for getenv.

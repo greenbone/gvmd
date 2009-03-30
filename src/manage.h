@@ -37,8 +37,8 @@
  */
 typedef struct
 {
-  gchar* username;  ///< Login name of user.
-  gchar* password;  ///< Password of user.
+  /*@null@*/ gchar* username; ///< Login name of user.
+  /*@null@*/ gchar* password; ///< Password of user.
 } credentials_t;
 
 extern credentials_t current_credentials;
@@ -107,9 +107,10 @@ typedef struct
   char* name;                 ///< Name.  NULL if free.
   unsigned int time;          ///< Repetition period, in seconds.
   char* comment;              ///< Comment associated with task.
+  /*@null@*/
   char* description;          ///< Description.
-  int description_length;     ///< Length of description.
-  int description_size;       ///< Actual size allocated for description.
+  gsize description_length;   ///< Length of description.
+  gsize description_size;     ///< Actual size allocated for description.
   short run_status;           ///< Run status of task.
   char* start_time;           ///< Time the task last started.
   char* end_time;             ///< Time the task last ended.
@@ -134,7 +135,7 @@ typedef struct
 
 // FIX only for STATUS response in omp.c
 #if 1
-extern task_t* tasks;
+extern /*@null@*/ /*@owned@*/ task_t* tasks;
 
 extern unsigned int num_tasks;
 
@@ -147,13 +148,16 @@ extern unsigned int tasks_size;
 extern /*@null@*/ task_t* current_server_task;
 
 int
-task_id_string (task_t*, const char **);
+task_id_string (task_t*, /*@out@*/ const char **);
 
 void
 free_tasks ();
 
+/*@null@*/ /*@dependent@*/ /*@special@*/
 task_t*
-make_task (char*, unsigned int, char*);
+make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
+  /*@defines result->debugs, result->open_ports@*/
+  /*@ensures isnull result->description@*/;
 
 int
 load_tasks ();
@@ -161,11 +165,12 @@ load_tasks ();
 int
 save_tasks ();
 
+/*@dependent@*/
 task_t*
 find_task (unsigned int id);
 
 int
-set_task_parameter (task_t*, const char*, char*);
+set_task_parameter (task_t*, /*@null@*/ const char*, /*@only@*/ char*);
 
 int
 start_task (task_t*);
@@ -183,7 +188,7 @@ int
 append_to_task_identifier (task_t*, const char*, int);
 
 int
-add_task_description_line (task_t*, const char*, int);
+add_task_description_line (task_t*, const char*, size_t);
 
 void
 set_task_ports (task_t*, unsigned int, unsigned int);
@@ -197,12 +202,14 @@ append_task_open_port (task_t*, unsigned int, char*);
 // FIX how is this doc'd?
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
+/*@only@*/ /*@null@*/
 char*
 make_report_id ();
 
 gchar*
 report_path_task_name (gchar*);
 
+/*@shared@*/ /*@null@*/
 task_t*
 report_task (const char*);
 
