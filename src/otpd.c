@@ -62,7 +62,7 @@
 #define FD_SERVER_WRITE 8
 
 // FIX Should probably be passed into serve_otp.
-extern int from_buffer_size;
+extern size_t from_buffer_size;
 
 // FIX mv these here when read_protocol sorted out in openvasmd.c
 // FIX how to share these buffers with ompd.c?
@@ -115,7 +115,7 @@ serve_otp (gnutls_session_t* client_session,
       int ret;
 
       /* Setup for select. */
-      unsigned char fds = 0; /* What `select' is going to watch. */
+      unsigned short fds = 0; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);

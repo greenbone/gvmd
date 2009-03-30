@@ -2,6 +2,40 @@
 
 	Cleanup and annotate, from Splint.
 
+	* src/otp.c: Include unistd.h and splint.h.
+	(set_message_description, set_message_oid,
+	append_to_current_server_plugin_dependency): Annotate.  Describe freeing of args.
+	(write_messages): Add whitespace.
+	(save_report): Check make_report_id return.  Cast away rmdir and unlink
+	returns in error cases.
+	(maybe_free_server_preferences,
+	maybe_free_server_plugins_dependencies,
+	maybe_free_current_server_plugin_dependency): Remove.
+	(make_server_preferences): Free preferences first.
+	(add_server_preference, make_current_server_plugin_dependency): Annotate
+	args.
+	(make_server_plugin_dependencies): Free dependencies first.
+	(free_rule): Annotate args.  Cast away g_ptr_array_free rule.
+	(add_server_rule): Annotate args.
+	(init_otp_data): Clear plugins_md5.
+	(parse_server_plugin_dependency_dependency): Return gboolean instead of
+	int.  Annotate args.  Cast char for memchr.
+	(parse_server_server): Annotate args and vars.  Cast char for memchr.
+	Remove call to make_server_plugins_dependencies.
+	(process_otp_server_input): Annotate vars.  Initialise match.  Free
+	server.plugins_md5 before setting.  Remove call to
+	maybe_free_server_preferences.
+
+	* src/otpd.c (from_buffer_size): Change int to size_t.
+	(serve_otp): Change fds to a short.
+
+	* src/openvasmd.c (from_buffer_size, from_client_start, from_server_start,
+	from_server_end): Change types to size_t.
+
+2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate, from Splint.
+
 	* src/omp.h: Include sys/types.h.
 	(to_client_start, to_client_end): Change type to size_t.
 

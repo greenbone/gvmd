@@ -232,25 +232,25 @@ char from_server[FROM_BUFFER_SIZE];
 /**
  * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
  */
-int from_buffer_size = FROM_BUFFER_SIZE;
+size_t from_buffer_size = FROM_BUFFER_SIZE;
 
 // FIX just make these pntrs?
 /**
  * @brief The start of the data in the \ref from_client buffer.
  */
-int from_client_start = 0;
+size_t from_client_start = 0;
 /**
  * @brief The start of the data in the \ref from_server buffer.
  */
-int from_server_start = 0;
+size_t from_server_start = 0;
 /**
  * @brief The end of the data in the \ref from_client buffer.
  */
-int from_client_end = 0;
+size_t from_client_end = 0;
 /**
  * @brief The end of the data in the \ref from_server buffer.
  */
-int from_server_end = 0;
+size_t from_server_end = 0;
 
 
 /* Checking protocol, forking, serving the client. */

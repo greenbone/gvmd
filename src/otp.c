@@ -45,6 +45,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
 
 /**
  * @brief Installation prefix.
@@ -199,11 +204,12 @@ free_message (gpointer message, gpointer dummy)
 /**
  * @brief Set the description of a message.
  *
- * @param[in]  message       Pointer to the message.
+ * @param[in]  message      Pointer to the message.  Used directly, freed by
+ *                          free_message.
  * @param[in]  description  Description.
  */
 static void
-set_message_description (message_t* message, char* description)
+set_message_description (message_t* message, /*@only@*/ char* description)
 {
   if (message->description) free (message->description);
   message->description = description;
@@ -212,11 +218,12 @@ set_message_description (message_t* message, char* description)
 /**
  * @brief Set the OID of a message.
  *
- * @param[in]  message       Pointer to the message.
+ * @param[in]  message      Pointer to the message.  Used directly, freed by
+ *                          free_message.
  * @param[in]  oid          OID.
  */
 static void
-set_message_oid (message_t* message, char* oid)
+set_message_oid (message_t* message, /*@only@*/ char* oid)
 {
   if (message->oid) free (message->oid);
   message->oid = oid;
@@ -258,7 +265,7 @@ write_message (gpointer message, gpointer message_data)
 static void
 write_messages (FILE* file, GPtrArray* messages, char* type)
 {
-  message_data_t data = { file, type};
+  message_data_t data = { file, type };
   g_ptr_array_foreach (messages, write_message, &data);
 }
 
@@ -321,6 +328,11 @@ save_report (task_t* task)
   /* Generate report directory name. */
 
   report_id = make_report_id ();
+  if (report_id == NULL)
+    {
+      g_free (user_dir_name);
+      return -5;
+    }
 
   dir_name = g_build_filename (PREFIX
                                "/var/lib/openvas/mgr/users/",
@@ -351,7 +363,7 @@ save_report (task_t* task)
 
   if (symlink (dir_name, symlink_name))
     {
-      rmdir (dir_name);
+      (void) rmdir (dir_name);
       fprintf (stderr, "Failed to symlink %s to %s\n",
                dir_name,
                symlink_name);
@@ -367,7 +379,7 @@ save_report (task_t* task)
   file = fopen (name, "w");
   if (file == NULL)
     {
-      rmdir (dir_name);
+      (void) rmdir (dir_name);
       fprintf (stderr, "Failed to open report file %s: %s\n",
                name,
                strerror (errno));
@@ -392,8 +404,8 @@ save_report (task_t* task)
 
   if (fclose (file))
     {
-      unlink (name);
-      rmdir (dir_name);
+      (void) unlink (name);
+      (void) rmdir (dir_name);
       fprintf (stderr, "Failed to close report file %s: %s\n",
                name,
                strerror (errno));
@@ -488,20 +500,12 @@ append_note_message (task_t* task, message_t* message)
 static /*@null@*/ char* current_server_preference = NULL;
 
 /**
- * @brief Free any server preferences.
- */
-static void
-maybe_free_server_preferences ()
-{
-  if (server.preferences) g_hash_table_destroy (server.preferences);
-}
-
-/**
  * @brief Create the server preferences.
  */
 static void
 make_server_preferences ()
 {
+  if (server.preferences) g_hash_table_destroy (server.preferences);
   server.preferences = g_hash_table_new_full (g_str_hash,
                                               g_str_equal,
                                               g_free,
@@ -518,7 +522,7 @@ make_server_preferences ()
  * @param[in]  value       The value of the preference.
  */
 static void
-add_server_preference (char* preference, char* value)
+add_server_preference (/*@only@*/ char* preference, /*@only@*/ char* value)
 {
   g_hash_table_insert (server.preferences, preference, value);
 }
@@ -537,25 +541,16 @@ static char* current_server_plugin_dependency_name = NULL;
 static GSList* current_server_plugin_dependency_dependencies = NULL;
 
 /**
- * @brief Free any server plugins dependencies.
+ * @brief Make the server plugins dependencies.
  */
 static void
-maybe_free_server_plugins_dependencies ()
+make_server_plugins_dependencies ()
 {
   if (server.plugins_dependencies)
     {
       g_hash_table_destroy (server.plugins_dependencies);
       server.plugins_dependencies = NULL;
     }
-}
-
-/**
- * @brief Make the server plugins dependencies.
- */
-static void
-make_server_plugins_dependencies ()
-{
-  assert (server.plugins_dependencies == NULL);
   server.plugins_dependencies = g_hash_table_new_full (g_str_hash,
                                                        g_str_equal,
                                                        g_free,
@@ -579,10 +574,11 @@ add_server_plugins_dependency (char* name, GSList* requirements)
 /**
  * @brief Set the current plugin.
  *
- * @param[in]  name  The name of the plugin.
+ * @param[in]  name  The name of the plugin.  Used directly, freed by
+ *                   maybe_free_current_server_plugin_dependency.
  */
 static void
-make_current_server_plugin_dependency (char* name)
+make_current_server_plugin_dependency (/*@only@*/ char* name)
 {
   assert (current_server_plugin_dependency_name == NULL);
   assert (current_server_plugin_dependency_dependencies == NULL);
@@ -593,27 +589,17 @@ make_current_server_plugin_dependency (char* name)
 /**
  * @brief Append a requirement to the current plugin.
  *
- * @param[in]  requirement  The name of the required plugin.
+ * @param[in]  requirement  The name of the required plugin.  Used directly,
+ *                          freed when the dependencies are freed in
+ *                          make_server_plugins_dependencies.
  */
 static void
-append_to_current_server_plugin_dependency (char* requirement)
+append_to_current_server_plugin_dependency (/*@only@*/ char* requirement)
 {
   tracef ("   server appending plugin requirement: %s\n", requirement);
   current_server_plugin_dependency_dependencies
     = g_slist_append (current_server_plugin_dependency_dependencies,
                       requirement);
-}
-
-/**
- * @brief Free any current server plugin dependency information.
- */
-void
-maybe_free_current_server_plugin_dependency ()
-{
-  if (current_server_plugin_dependency_name)
-    free (current_server_plugin_dependency_name);
-  if (current_server_plugin_dependency_dependencies)
-    g_slist_free (current_server_plugin_dependency_dependencies);
 }
 
 /**
@@ -639,7 +625,7 @@ finish_current_server_plugin_dependency ()
  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
  */
 static void
-free_rule (void* rule, void* dummy)
+free_rule (void* rule, /*@unused@*/ void* dummy)
 {
   free (rule);
 }
@@ -653,7 +639,7 @@ maybe_free_server_rules ()
   if (server.rules)
     {
       g_ptr_array_foreach (server.rules, free_rule, NULL);
-      g_ptr_array_free (server.rules, TRUE);
+      (void) g_ptr_array_free (server.rules, TRUE);
       server.rules_size = 0;
     }
 }
@@ -671,13 +657,12 @@ make_server_rules ()
 /**
  * @brief Add a rule to the server rules.
  *
- * The rule is used directly (versus using a copy) and is freed with the
- * other server rules.
+ * The rule is used directly and is freed with the other server rules.
  *
  * @param[in]  rule  The rule.
  */
 static void
-add_server_rule (char* rule)
+add_server_rule (/*@only@*/ char* rule)
 {
   g_ptr_array_add (server.rules, rule);
   server.rules_size++;
@@ -701,6 +686,7 @@ init_otp_data ()
 {
   server.preferences = NULL;
   server.rules = NULL;
+  server.plugins_md5 = NULL;
 }
 
 /**
@@ -895,10 +881,10 @@ parse_server_rule (char** messages)
  *
  * @param  messages  A pointer into the OTP input buffer.
  *
- * @return 1 if a <|> follows in the buffer, otherwise 0.
+ * @return TRUE if a <|> follows in the buffer, otherwise FALSE.
  */
-static int
-parse_server_plugin_dependency_dependency (char** messages)
+static gboolean
+parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
 {
   /* Look for the end of dependency marker: a newline that comes before
    * the next <|>. */
@@ -910,7 +896,8 @@ parse_server_plugin_dependency_dependency (char** messages)
   from_start = from_server_start;
   from_end = from_server_end;
   while (from_start < from_end
-         && (match = memchr (input, '<', from_end - from_start)))
+         && (match = memchr (input, (int) '<', from_end - from_start))
+            != NULL)
     {
       if (((int) (match - input) - from_start + 1) < from_end
           && (match[1] == '|')
@@ -926,7 +913,9 @@ parse_server_plugin_dependency_dependency (char** messages)
   end = *messages + from_server_end - from_server_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_server_start++; }
-  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
     {
       /* Compare newline position to <|> position. */
       if ((separator == NULL) || (match < separator))
@@ -951,13 +940,15 @@ parse_server_plugin_dependency_dependency (char** messages)
  *         field follows), -4 failed to find a newline (may be a <|>)
  */
 static int
-parse_server_server (char** messages)
+parse_server_server (/*@dependent@*/ char** messages)
 {
-  char *end, *match;
+  /*@dependent@*/ char *end, *match;
   end = *messages + from_server_end - from_server_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_server_start++; }
-  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
     {
       char* newline;
       char* input;
@@ -971,7 +962,6 @@ parse_server_server (char** messages)
         {
           from_server_start += match + 1 - *messages;
           *messages = match + 1;
-          maybe_free_server_plugins_dependencies ();
           make_server_plugins_dependencies ();
           set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
           return 0;
@@ -983,7 +973,10 @@ parse_server_server (char** messages)
       from_start = from_server_start;
       from_end = from_server_end;
       while (from_start < from_end
-             && (match = memchr (input, '<', from_end - from_start)))
+             && (match = memchr (input,
+                                 (int) '<',
+                                 from_end - from_start))
+                != NULL)
         {
           if ((((int) (match - input) - from_start + 1) < from_end)
               && (match[1] == '|')
@@ -1071,9 +1064,9 @@ sync_buffer ()
 int
 process_otp_server_input ()
 {
-  char* match;
-  char* messages = from_server + from_server_start;
-  char* input;
+  char* match = NULL;
+  /*@shared@*/ char* messages = from_server + from_server_start;
+  /*@shared@*/ char* input;
   int from_start, from_end;
   //tracef ("   consider %.*s\n", from_server_end - from_server_start, messages);
 
@@ -1634,6 +1627,7 @@ process_otp_server_input ()
                 {
                   char* md5 = g_strdup (field);
                   tracef ("   server got plugins_md5: %s\n", md5);
+                  if (server.plugins_md5) g_free (server.plugins_md5);
                   server.plugins_md5 = md5;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -1743,7 +1737,6 @@ process_otp_server_input ()
                   set_server_state (SERVER_PORT_HOST);
                 else if (strncasecmp ("PREFERENCES", field, 11) == 0)
                   {
-                    maybe_free_server_preferences ();
                     make_server_preferences ();
                     set_server_state (SERVER_PREFERENCE_NAME);
                   }
