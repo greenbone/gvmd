@@ -2,6 +2,36 @@
 
 	Cleanup and annotate, from Splint.
 
+	* src/omp.h: Include sys/types.h.
+	(to_client_start, to_client_end): Change type to size_t.
+
+	* src/omp.c: Include splint.h.
+	(to_client_start, to_client_end): Change type to size_t.
+	(current_task_task_id, modify_task_parameter, modify_task_value,
+	xml_context, send_requirement, send_preference,
+	omp_xml_handle_error): Annotate.
+	(send_dependency): Annotate.  Free msg.
+	(SEND_TO_CLIENT): Cast TO_CLIENT_BUFFER_SIZE to size_t.
+	(omp_xml_handle_start_element): Annotate arguments.  Check save_task
+	return.
+	(send_reports): Change return to int.
+	(omp_xml_handle_end_element): Annotate.  In CLIENT_GET_REPORT case
+	check for credentials username and check g_file_get_contents return
+	directly.  In CLIENT_STATUS cast send_reports return and free reponse.
+	(omp_xml_handle_text): Annotate args.  Use append_text instead of
+	append_string.
+	(process_omp_client_input): Check g_markup_parse_context_parse return
+	directly.  Check error before using.
+
+	* src/ovas-mngr-comm.c: Change Splint socklen_t to typedef.  Include
+	splint.h.
+	(end_session): Return success is shutdown error is ENOTCONN.
+	(write_string_to_server): Cast gnutls_record_send arg.
+
+2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate, from Splint.
+
 	* src/ompd.h: (to_client_start, to_client_end): Change to size_t.
 
 	* src/ompd.c: Define socket for Splint.

@@ -26,6 +26,8 @@
 #ifndef OPENVAS_MANAGER_OMP_H
 #define OPENVAS_MANAGER_OMP_H
 
+#include <sys/types.h>
+
 /**
  * @brief The size of the \ref to_client data buffer, in bytes.
  */
@@ -40,7 +42,7 @@ process_omp_client_input ();
 // FIX probably should be passed to process_omp_client_input/init_omp_data
 //     and defined in caller
 extern char to_client[];
-extern int to_client_start;
-extern int to_client_end;
+extern size_t to_client_start;
+extern size_t to_client_end;
 
 #endif

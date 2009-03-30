@@ -41,7 +41,7 @@
 
 #ifdef S_SPLINT_S
 /* splint parse error at socklen_t, maybe missing header? */
-#define socklen_t int
+typedef int socklen_t;
 #endif
 
 #include <errno.h>
@@ -55,6 +55,10 @@
 #include <unistd.h>
 
 #include "tracef.h"
+
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
 
 /**
  * @brief The size of the \ref to_server data buffer.
@@ -214,6 +218,7 @@ end_session (int server_socket,
   gnutls_certificate_free_credentials (server_credentials);
   if (shutdown (server_socket, SHUT_RDWR) == -1)
     {
+      if (errno == ENOTCONN) return 0;
       perror ("Failed to shutdown server socket");
       return -1;
     }
@@ -350,7 +355,7 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
       ssize_t count;
       count = gnutls_record_send (*server_session,
                                   point,
-                                  end - point);
+                                  (size_t) (end - point));
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)

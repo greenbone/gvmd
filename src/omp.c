@@ -47,6 +47,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
+
 /**
  * @brief Installation prefix.
  */
@@ -62,11 +66,11 @@ char to_client[TO_CLIENT_BUFFER_SIZE];
 /**
  * @brief The start of the data in the \ref to_client buffer.
  */
-int to_client_start = 0;
+size_t to_client_start = 0;
 /**
  * @brief The end of the data in the \ref to_client buffer.
  */
-int to_client_end = 0;
+size_t to_client_end = 0;
 
 /**
  * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
@@ -76,22 +80,26 @@ static /*@null@*/ task_t* current_client_task = NULL;
 /**
  * @brief Task ID during OMP MODIFY_TASK and START_TASK.
  */
-static /*@null@*/ char* current_task_task_id = NULL;
+static /*@null@*/ /*@only@*/ char*
+current_task_task_id = NULL;
 
 /**
  * @brief Parameter name during OMP MODIFY_TASK.
  */
-static /*@null@*/ char* modify_task_parameter = NULL;
+static /*@null@*/ /*@only@*/ char*
+modify_task_parameter = NULL;
 
 /**
  * @brief Parameter value during OMP MODIFY_TASK.
  */
-static /*@null@*/ char* modify_task_value = NULL;
+static /*@null@*/ /*@only@*/ char*
+modify_task_value = NULL;
 
 /**
  * @brief Client input parsing context.
  */
-static GMarkupParseContext* xml_context;
+static /*@null@*/ /*@only@*/ GMarkupParseContext*
+xml_context;
 
 /**
  * @brief Client input parser.
@@ -174,15 +182,15 @@ set_client_state (client_state_t state)
  *
  * @param[in]  msg  The message, a string.
  */
-#define SEND_TO_CLIENT(msg)                                       \
-  do                                                              \
-    {                                                             \
-      if (TO_CLIENT_BUFFER_SIZE - to_client_end < strlen (msg))   \
-        goto send_to_client_fail;                                 \
-      memcpy (to_client + to_client_end, msg, strlen (msg));      \
-      tracef ("-> client: %s\n", msg);                            \
-      to_client_end += strlen (msg);                              \
-    }                                                             \
+#define SEND_TO_CLIENT(msg)                                                  \
+  do                                                                         \
+    {                                                                        \
+      if (((size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end < strlen (msg))   \
+        goto send_to_client_fail;                                            \
+      memcpy (to_client + to_client_end, msg, strlen (msg));                 \
+      tracef ("-> client: %s\n", msg);                                       \
+      to_client_end += strlen (msg);                                         \
+    }                                                                        \
   while (0)
 
 
@@ -206,11 +214,11 @@ set_client_state (client_state_t state)
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_start_element (GMarkupParseContext* context,
+omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               const gchar *element_name,
-                              const gchar **attribute_names,
-                              const gchar **attribute_values,
-                              gpointer user_data,
+                              /*@unused@*/ const gchar **attribute_names,
+                              /*@unused@*/ const gchar **attribute_values,
+                              /*@unused@*/ gpointer user_data,
                               GError **error)
 {
   tracef ("   XML  start: %s\n", element_name);
@@ -243,7 +251,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
           {
             // FIX Could check if reauthenticating current credentials, to
             // save the loading of the tasks.
-            save_tasks ();
+            if (save_tasks ()) abort ();
             free_tasks ();
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
@@ -598,7 +606,7 @@ omp_xml_handle_start_element (GMarkupParseContext* context,
  * @return 0 if out of space in to_client buffer, else 1.
  */
 static gint
-send_requirement (gconstpointer element, gconstpointer dummy)
+send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
 {
   gchar* text = g_markup_escape_text ((char*) element,
                                       strlen ((char*) element));
@@ -624,7 +632,7 @@ send_requirement (gconstpointer element, gconstpointer dummy)
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_dependency (gpointer key, gpointer value, gpointer dummy)
+send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
   gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
@@ -640,6 +648,7 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
     }
 
   SEND_TO_CLIENT ("</dependency>");
+  g_free (msg);
   return FALSE;
 
  send_to_client_fail:
@@ -657,7 +666,7 @@ send_dependency (gpointer key, gpointer value, gpointer dummy)
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_preference (gpointer key, gpointer value, gpointer dummy)
+send_preference (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
   gchar* key_text = g_markup_escape_text ((char*) key,
@@ -706,9 +715,10 @@ send_rule (gpointer rule)
  *
  * @param[in]  task  The task.
  *
- * @return TRUE if out of space in to_client buffer, else FALSE.
+ * @return 0 success, -1 task name error, -2 credentials missing,
+ *         failed to open task dir, -4 out of space in to_client.
  */
-static gboolean
+static int
 send_reports (task_t* task)
 {
   // FIX Abstract report iterator and move it to manage.c.
@@ -719,7 +729,11 @@ send_reports (task_t* task)
   int count, index;
   gchar* msg;
 
-  if (task_id_string (task, &id)) return FALSE;
+  // FIX return error code?
+  if (task_id_string (task, &id)) return -1;
+
+  // FIX return error code
+  if (current_credentials.username == NULL) return -2;
 
   dir_name = g_build_filename (PREFIX
                                "/var/lib/openvas/mgr/users/",
@@ -741,13 +755,13 @@ send_reports (task_t* task)
                dir_name,
                strerror (errno));
       g_free (dir_name);
-      return -1;
+      return -3;
     }
 
   msg = NULL;
   for (index = 0; index < count; index++)
     {
-      const char* report_name = names[index]->d_name;
+      /*@dependent@*/ const char* report_name = names[index]->d_name;
 
       if (report_name[0] == '.')
         {
@@ -784,14 +798,14 @@ send_reports (task_t* task)
 
   free (names);
   g_free (dir_name);
-  return FALSE;
+  return 0;
 
  send_to_client_fail:
   g_free (msg);
   while (index < count) { free (names[index++]); }
   free (names);
   g_free (dir_name);
-  return TRUE;
+  return -4;
 }
 
 /**
@@ -812,9 +826,9 @@ send_reports (task_t* task)
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_end_element (GMarkupParseContext* context,
+omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             const gchar *element_name,
-                            gpointer user_data,
+                            /*@unused@*/ gpointer user_data,
                             GError **error)
 {
   tracef ("   XML    end: %s\n", element_name);
@@ -1046,7 +1060,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_task_task_id)
+        if (current_task_task_id && current_credentials.username)
           {
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
@@ -1059,15 +1073,19 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
             // FIX glib access setuid note
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
+                gboolean success;
                 gchar* content;
-                gsize content_length;
+                gsize content_length = 0;
                 GError* content_error = NULL;
-                g_file_get_contents (name, &content, &content_length,
-                                     &content_error);
+                success = g_file_get_contents (name,
+                                               &content,
+                                               &content_length,
+                                               &content_error);
                 g_free (name);
-                if (content_error)
+                if (success == FALSE)
                   {
-                    g_error_free (content_error);
+                    if (content_error)
+                      g_error_free (content_error);
                     SEND_TO_CLIENT ("<get_report_response>"
                                     "<status>50x</status>");
                   }
@@ -1376,7 +1394,8 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
                     // FIX free if fail
                     SEND_TO_CLIENT (response);
                     g_free (response);
-                    send_reports (task);
+                    // FIX need to handle err cases before send status
+                    (void) send_reports (task);
                   }
               }
             else
@@ -1392,7 +1411,9 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
             SEND_TO_CLIENT ("<status_response><status>200</status>");
             response = g_strdup_printf ("<task_count>%u</task_count>",
                                         num_tasks);
+            // FIX free response on fail
             SEND_TO_CLIENT (response);
+            g_free (response);
             // FIX this is the only place that accesses "tasks"  foreach_task?
             index = tasks;
             end = tasks + tasks_size;
@@ -1464,7 +1485,7 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * (\ref current_client_task) with functions like \ref append_string,
+ * (\ref current_client_task) with functions like \ref append_text,
  * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
@@ -1474,28 +1495,28 @@ omp_xml_handle_end_element (GMarkupParseContext* context,
  * @param[in]  error             Error parameter.
  */
 static void
-omp_xml_handle_text (GMarkupParseContext* context,
+omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                      const gchar *text,
                      gsize text_len,
-                     gpointer user_data,
-                     GError **error)
+                     /*@unused@*/ gpointer user_data,
+                     /*@unused@*/ GError **error)
 {
   if (text_len == 0) return;
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
       case CLIENT_MODIFY_REPORT_PARAMETER:
-        append_string (&modify_task_parameter, text);
+        append_text (&modify_task_parameter, text, text_len);
         break;
       case CLIENT_MODIFY_REPORT_VALUE:
-        append_string (&modify_task_value, text);
+        append_text (&modify_task_value, text, text_len);
         break;
 
       case CLIENT_MODIFY_TASK_PARAMETER:
-        append_string (&modify_task_parameter, text);
+        append_text (&modify_task_parameter, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_VALUE:
-        append_string (&modify_task_value, text);
+        append_text (&modify_task_value, text, text_len);
         break;
 
       case CLIENT_CREDENTIALS_USERNAME:
@@ -1527,7 +1548,7 @@ omp_xml_handle_text (GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
-        append_string (&current_task_task_id, text);
+        append_text (&current_task_task_id, text, text_len);
         break;
 
       default:
@@ -1546,9 +1567,9 @@ omp_xml_handle_text (GMarkupParseContext* context,
  * @param[in]  user_data         Dummy parameter.
  */
 static void
-omp_xml_handle_error (GMarkupParseContext* context,
+omp_xml_handle_error (/*@unused@*/ GMarkupParseContext* context,
                       GError *error,
-                      gpointer user_data)
+                      /*@unused@*/ gpointer user_data)
 {
   tracef ("   XML ERROR %s\n", error->message);
 }
@@ -1598,27 +1619,31 @@ init_omp_data ()
 int
 process_omp_client_input ()
 {
+  gboolean success;
   GError* error = NULL;
-  g_markup_parse_context_parse (xml_context,
-                                from_client + from_client_start,
-                                from_client_end - from_client_start,
-                                &error);
-  if (error)
+  success = g_markup_parse_context_parse (xml_context,
+                                          from_client + from_client_start,
+                                          from_client_end - from_client_start,
+                                          &error);
+  if (success == FALSE)
     {
-      if (g_error_matches (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_UNKNOWN_ELEMENT))
-        tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
-      else if (g_error_matches (error,
-                                G_MARKUP_ERROR,
-                                G_MARKUP_ERROR_INVALID_CONTENT))
-        tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
-      else if (g_error_matches (error,
-                                G_MARKUP_ERROR,
-                                G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
-        tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
-      fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
-      g_error_free (error);
+      if (error)
+        {
+          if (g_error_matches (error,
+                               G_MARKUP_ERROR,
+                               G_MARKUP_ERROR_UNKNOWN_ELEMENT))
+            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ELEMENT\n");
+          else if (g_error_matches (error,
+                                    G_MARKUP_ERROR,
+                                    G_MARKUP_ERROR_INVALID_CONTENT))
+            tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+          else if (g_error_matches (error,
+                                    G_MARKUP_ERROR,
+                                    G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
+            tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+          fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
+          g_error_free (error);
+        }
       /* In all error cases return -1 to close the connection, because it
          would be too hard, if possible at all, to figure out where the
          next command starts. */
