@@ -37,7 +37,7 @@ extern struct sockaddr_in server_address;
 
 // FIX Temporarily, for omp.c SEND_TO_CLIENT.
 extern char to_client[];
-extern int to_client_start;
-extern int to_client_end;
+extern size_t to_client_start;
+extern size_t to_client_end;
 
 #endif

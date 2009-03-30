@@ -2,6 +2,34 @@
 
 	Cleanup and annotate, from Splint.
 
+	* src/ompd.h: (to_client_start, to_client_end): Change to size_t.
+
+	* src/ompd.c: Define socket for Splint.
+	(read_from_client, read_from_server): Mark alert_name dependent.
+	(write_to_client): Cast count for tracef.
+	(serve_omp): Note old functions.  Use a single ret variable.  Check the
+	return from end_session.
+
+	* src/string.h (string): New type.
+	(append_text): New function.
+	(append_string): Use string.
+	(strip_space): Annotate.
+
+	* src/string.c (append_text): New function.
+	(append_string): Change chars to gchars.
+	(free_string_var): Chage var type to string.
+
+	* src/file.c (G_LOG_DOMAIN): New define.
+	(g_propagate_error, g_set_error, g_dir_close): New annotated headers for
+	Splint.
+	(rmdir_recursively): Annotate g_return_val_if_fail call.  Check return
+	from g_dir_open directly, and on failure check that temp_error is set.
+	Remove duplicate cleanup calls.
+
+2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate, from Splint.
+
 	* src/splint.h: New file.
 
 	* src/manage.h (credentials_t): Null annotate username and password.

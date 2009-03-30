@@ -27,13 +27,20 @@
 #ifndef OPENVAS_MANAGER_STRING_H
 #define OPENVAS_MANAGER_STRING_H
 
-void
-append_string (char**, const char*);
+#include <glib.h>
+
+typedef /*@only@*/ /*@null@*/ gchar* string;
 
 void
-free_string_var (char**);
+append_string (string*, const gchar*);
+
+void
+append_text (string*, const gchar*, gsize);
+
+void
+free_string_var (string*);
 
 /*@shared@*/ char*
-strip_space (char*, char*);
+strip_space (/*@shared@*/ char*, /*@shared@*/ char*);
 
 #endif

@@ -52,6 +52,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef S_SPLINT_S
+/* FIX Weird that these are missing. */
+/*@-exportheader@*/
+int socket(int domain, int type, int protocol);
+/*@=exportheader@*/
+#endif
+
 /**
  * @brief File descriptor set mask: selecting on client read.
  */
@@ -125,6 +132,7 @@ read_from_client (gnutls_session_t* client_session,
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*client_session);
+              /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
               fprintf (stderr, "TLS Alert %d: %s.\n",
                        alert,
@@ -185,6 +193,7 @@ read_from_server (gnutls_session_t* server_session,
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
             {
               int alert = gnutls_alert_get (*server_session);
+              /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
               fprintf (stderr, "TLS Alert %d: %s.\n",
                        alert,
@@ -239,7 +248,7 @@ write_to_client (gnutls_session_t* client_session)
             to_client_end - to_client_start,
             to_client + to_client_start);
       to_client_start += count;
-      tracef ("=> client  %i bytes\n", count);
+      tracef ("=> client  %u bytes\n", (unsigned int) count);
     }
   tracef ("=> client  done\n");
   to_client_start = to_client_end = 0;
@@ -403,9 +412,9 @@ serve_omp (gnutls_session_t* client_session,
   if (current_server_preference) free (current_server_preference);
   free_credentials (&current_credentials);
   maybe_free_current_server_plugin_dependency ();
-  maybe_free_server_preferences ();
+  maybe_free_server_preferences (); // old
   maybe_free_server_rules ();
-  maybe_free_server_plugins_dependencies ();
+  maybe_free_server_plugins_dependencies (); // old
 #endif
 
   /* Handle the first client input, which was read by `read_protocol'. */
@@ -533,7 +542,6 @@ serve_omp (gnutls_session_t* client_session,
 
       if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
         {
-          int ret;
 #if TRACE || LOG
           int initial_start = from_client_end;
 #endif
@@ -609,7 +617,6 @@ serve_omp (gnutls_session_t* client_session,
 
       if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
         {
-          int ret;
 #if TRACE || LOG
           int initial_start = from_server_end;
 #endif
@@ -661,7 +668,12 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == 1)
             {
               /* Received server BYE, so recreate the server session. */
-              end_session (server_socket, *server_session, *server_credentials);
+              if (end_session (server_socket,
+                               *server_session,
+                               *server_credentials))
+                {
+                  return -1;
+                }
               if (close (server_socket) == -1)
                 {
                   perror ("Failed to close server socket.");
@@ -741,7 +753,7 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the client input, in case writing to the server
            * or client has freed some space in to_server or to_client. */
 
-          int ret = process_omp_client_input ();
+          ret = process_omp_client_input ();
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
@@ -770,14 +782,19 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the server input, in case writing to the server
            * has freed some space in to_server. */
 
-          int ret = process_otp_server_input ();
+          ret = process_otp_server_input ();
           if (ret == 0)
             /* Processed all input. */
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
               /* Received server BYE, so recreate the server session. */
-              end_session (server_socket, *server_session, *server_credentials);
+              if (end_session (server_socket,
+                               *server_session,
+                               *server_credentials))
+                {
+                  return -1;
+                }
               if (close (server_socket) == -1)
                 {
                   perror ("Failed to close server socket.");

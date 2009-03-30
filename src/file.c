@@ -35,6 +35,8 @@
  */
 #define TRACE 0
 
+#define G_LOG_DOMAIN "OpenVAS-File"
+
 #include "tracef.h"
 #include "file.h"
 
@@ -49,6 +51,16 @@
 #ifdef S_SPLINT_S
 /*@-exportheader@*/
 int fchdir(int fd);
+/*@-incondefs@*/
+void g_propagate_error (/*@null@*/ GError **dest, GError *src);
+void g_set_error (/*@null@*/ GError **err,
+                  GQuark domain,
+                  gint code,
+                  const gchar *format,
+                  ...);
+void g_dir_close (/*@only@*/ /*@out@*/ /*@null@*/ GDir *dir);
+/*@shared@*/ const gchar* g_dir_read_name (GDir *dir);
+/*@=incondefs@*/
 /*@=exportheader@*/
 #endif
 
@@ -70,17 +82,22 @@ rmdir_recursively (const gchar* dir_name, GError** error)
 
   // FIX Comment this function.
 
+/*@-noeffect@*/
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+/*@=noeffect@*/
 
   dir = g_dir_open (dir_name, 0, &temp_error);
-  if (temp_error)
+  if (dir == NULL)
     {
-      if (g_error_matches (temp_error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+      if (temp_error)
         {
-          g_error_free (temp_error);
-          return TRUE;
+          if (g_error_matches (temp_error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            {
+              g_error_free (temp_error);
+              return TRUE;
+            }
+          g_propagate_error (error, temp_error);
         }
-      g_propagate_error (error, temp_error);
       return FALSE;
     }
 
@@ -146,8 +163,6 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                    G_FILE_ERROR,
                    g_file_error_from_errno (errno),
                    (gchar*) strerror (errno));
-      g_dir_close (dir);
-      (void) fchdir (pwd);
       return FALSE;
     }
 

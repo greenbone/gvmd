@@ -58,7 +58,7 @@
  * @param[in]  string  The string to append to the string in the variable.
  */
 void
-append_string (char** var, const char* string)
+append_string (gchar** var, const gchar* string)
 {
   if (*var)
     {
@@ -71,6 +71,36 @@ append_string (char** var, const char* string)
 }
 
 /**
+ * @brief Append a string of a known length to a string variable.
+ *
+ * When the variable is NULL store a copy of the given string in the variable.
+ *
+ * When the variable already contains a string replace the string with a new
+ * string that is the concatenation of the two, freeing the old string.  It is
+ * up to the caller to free the given string if it was dynamically allocated.
+ *
+ * The string must be NULL terminated, and the given length must be the
+ * actual length of the string.
+ *
+ * @param[in]  var     The address of a string variable, that is, a pointer to
+ *                     a string.
+ * @param[in]  string  The string to append to the string in the variable.
+ * @param[in]  length  The length of string.
+ */
+void
+append_text (gchar** var, const gchar* string, gsize length)
+{
+  if (*var)
+    {
+      char* old = *var;
+      *var = g_strconcat (old, string, NULL);
+      g_free (old);
+    }
+  else
+    *var = g_strndup (string, length);
+}
+
+/**
  * @brief Free a string variable.
  *
  * Free the string in the variable and set the variable to NULL.
@@ -79,7 +109,7 @@ append_string (char** var, const char* string)
  *                  a string.
  */
 void
-free_string_var (char** var)
+free_string_var (string* var)
 {
   g_free (*var);
   *var = NULL;
