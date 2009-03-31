@@ -712,10 +712,12 @@ main (int argc, char** argv)
 
   /* Register the signal handler. */
 
-  if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
-      || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
-      || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
+  /* Warning from RATS heeded (signals now use small, separate handlers)
+   * hence annotations. */
+  if (signal (SIGTERM, handle_sigterm) == SIG_ERR  /* RATS: ignore */
+      || signal (SIGINT, handle_sigint) == SIG_ERR /* RATS: ignore */
+      || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)     /* RATS: ignore */
     {
       fprintf (stderr, "Failed to register signal handler.\n");
       exit (EXIT_FAILURE);

@@ -119,6 +119,7 @@ typedef struct
   char* attack_state;         ///< Attack status.
   unsigned int current_port;  ///< Port currently under test.
   unsigned int max_port;      ///< Last port to test.
+  /*@null@*/
   GArray *open_ports;         ///< Open ports that the server has found.
   int open_ports_size;        ///< Number of open ports.
   GPtrArray *debugs;          ///< Identified messages of class "debug".
@@ -179,7 +180,7 @@ int
 stop_task (task_t*);
 
 int
-delete_task (task_t*);
+delete_task (task_t**);
 
 int
 append_to_task_comment (task_t*, const char*, int);

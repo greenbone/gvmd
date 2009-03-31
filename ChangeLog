@@ -1,3 +1,51 @@
+2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate, from Splint.  Comment RATS annotations.
+
+	* src/CMakeLists.txt (splint): Switch to +unixlib.
+
+	* src/splint.h: Add page headings.
+	(gerrorpointer): New type.
+	(g_error_free, g_ptr_array_free, g_file_set_contents,
+	g_build_filename): New headers.
+	(g_base64_decode): Correct return type.
+	(strncasecmp, symlink): Remove.
+	(scandir): Annotate filter arg.  "allocate" instead of "define" *namelist.
+
+	* src/ompd.c (serve_omp): Set fds to a char.
+
+	* src/manage.h (task_t): Annotate open_ports.
+	(delete_task): Change arg type to **.
+
+	* src/omp.c (omp_xml_handle_end_element): Use new delete_task arg type
+	in CLIENT_DELETE_TASK.
+
+	* src/ovas-mngr-comm.c: Remove socklen_t typedef.
+	(write_to_server_buffer): Cast size for gnutls_record_send.
+
+	* src/openvasmd.c (main): Comment RATS annotations.
+
+	* src/manage.c (make_report_id): Check id before freeing.
+	(grow_tasks): Comment RATS annotation.
+	(free_task): Complete "releases" annotation.  Check task->description
+	before freeing.  Turn off "branchstate" around free_task.
+	(only_dirent_pointer): New type.
+	(load_tasks_free, save_task_error): New functions.
+	(load_tasks): Check names after scandir.  Call a shared cleanup function
+	instead	of jumping.  Free file_name at the end of each task iteration.
+	(save_task): Call a shared cleanup function	instead	of jumping.  Check
+	task->description before using it.
+	(set_task_parameter): Annotate value arg.  Check parameter for tracef.
+	Fail if parameter is NULL.  Check values before freeing them.  Always free
+	value.
+	(delete_reports): Initialise names.
+	(delete_task): Take a pointer to the task pointer.  Set the task pointer
+	NULL before successfully returning.
+	(append_to_task_comment, append_to_task_identifier): Free task member
+	before assigning.  strdup to a temp for Splint.
+	(grow_description): Comment RATS annotation.  Change tracef specifier.
+	(add_task_description_line): Compare return to integer.
+
 2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Cleanup and annotate, from Splint.
@@ -59,7 +107,7 @@
 
 	* src/ovas-mngr-comm.c: Change Splint socklen_t to typedef.  Include
 	splint.h.
-	(end_session): Return success is shutdown error is ENOTCONN.
+	(end_session): Return success if shutdown error is ENOTCONN.
 	(write_string_to_server): Cast gnutls_record_send arg.
 
 2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>

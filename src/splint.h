@@ -29,19 +29,30 @@
 
 /*@-exportheader@*/
 /*@-incondefs@*/
+
+
+/* GLib. */
+
 void
 g_free (/*@only@*/ /*@out@*/ /*@null@*/ gpointer mem);
+
+void
+g_error_free (/*@only@*/ /*@out@*/ /*@null@*/ GError* error);
 
 gchar*
 g_array_free (/*@only@*/ /*@out@*/ /*@null@*/ GArray *array,
               gboolean free_segment);
+
+gchar*
+g_ptr_array_free (/*@only@*/ /*@out@*/ /*@null@*/ GPtrArray *array,
+                  gboolean free_segment);
 
 void
 g_ptr_array_foreach (GPtrArray *array,
                      GFunc func,
                      /*@null@*/ gpointer user_data);
 
-gchar*
+guchar*
 g_base64_decode (const gchar *text, /*@out@*/ gsize *out_len);
 
 typedef /*@out@*/ gchar* gchar_pointer;
@@ -52,6 +63,20 @@ g_file_get_contents (const gchar *filename,
                      /*@null@*/ /*@out@*/ gsize *length,
                      /*@null@*/ /*@out@*/ GError **error)
   /*@defines *contents*/;
+
+typedef /*@null@*/ GError * gerrorpointer;
+
+gboolean
+g_file_set_contents (const gchar *filename,
+                     const gchar *contents,
+                     gssize length,
+                     /*@null@*/ gerrorpointer* error);
+
+/*@notnull@*/ gchar*
+g_build_filename (const gchar *first, ...);
+
+
+/* UUIDS. */
 
 /*@shared@*/ char*
 uuid_error (uuid_rc_t error);
@@ -66,29 +91,28 @@ uuid_export (const uuid_t *uuid,
              voidpointer* data,
              /*@null@*/ size_t* len);
 
+
+/* GNUTLS. */
+
 /*@owned@*/ const char*
 gnutls_alert_get_name (gnutls_alert_description_t alert);
-/*@=incondefs@*/
 
-/* FIX Weird that these are missing. */
-
-int
-strncasecmp (const char *s1, const char *s2, size_t n);
+
+/* Standard functions. */
 
 typedef /*@null@*/ struct dirent * dirent_pointer;
 typedef /*@out@*/ /*@null@*/ dirent_pointer* dirent_pointer_pointer;
 
 int
 scandir (const char *dir, dirent_pointer_pointer *namelist,
-         int(*filter)(const struct dirent *),
+         /*@null@*/ int(*filter)(const struct dirent *),
          int(*compar)(const struct dirent **, const struct dirent **))
-  /*@defines *namelist@*/;
+  /*@allocates *namelist@*/;
 
 int
 alphasort (const void *a, const void *b);
 
-int
-symlink (const char *oldpath, const char *newpath);
+/*@=incondefs@*/
 /*@=exportheader@*/
 
 #endif /* !OPENVAS_MANAGER_SPLINT_H */

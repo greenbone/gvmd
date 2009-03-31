@@ -1161,7 +1161,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT ("<delete_task_response>"
                                 "<status>407</status>"
                                 "</delete_task_response>");
-              else if (delete_task (task))
+              else if (delete_task (&task))
                 {
                   /* to_server is full. */
                   // FIX revert parsing for retry

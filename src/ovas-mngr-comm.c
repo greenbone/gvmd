@@ -39,11 +39,6 @@
  */
 #define TRACE 1
 
-#ifdef S_SPLINT_S
-/* splint parse error at socklen_t, maybe missing header? */
-typedef int socklen_t;
-#endif
-
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
@@ -396,7 +391,7 @@ write_to_server_buffer (gnutls_session_t* server_session)
       ssize_t count;
       count = gnutls_record_send (*server_session,
                                   to_server + to_server_start,
-                                  to_server_end - to_server_start);
+                                  (size_t) to_server_end - to_server_start);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)

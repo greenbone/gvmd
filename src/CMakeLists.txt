@@ -130,7 +130,7 @@ add_subdirectory (tests)
 # FIX test coverage
 
 add_custom_target (splint COMMENT "Running splint..."
-                   COMMAND sh -c \"splint -booltype gboolean -predboolint +posixlib +export-header `pkg-config --cflags glib-2.0` `libopenvas-config --cflags` *.c\")
+                   COMMAND sh -c \"splint -booltype gboolean -predboolint +unixlib +export-header `pkg-config --cflags glib-2.0` `libopenvas-config --cflags` *.c\")
 
 add_custom_target (rats COMMENT "Running rats..."
                    COMMAND sh -c \"rats --warning 2 *.[ch]\")

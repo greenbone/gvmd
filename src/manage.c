@@ -195,7 +195,7 @@ make_report_id ()
       fprintf (stderr,
                "Failed to free UUID structure: %s.\n",
                uuid_error (ret));
-      free (id);
+      if (id) free (id);
       return NULL;
     }
 
@@ -516,7 +516,8 @@ grow_tasks ()
   tracef ("   task_t size: %i\n", (int) sizeof (task_t));
 /*@-compdestroy@*/
 /*@-sharedtrans@*/
-  new = realloc (tasks,  /* RATS: ignore */
+  /* RATS: ignore *//* Memory cleared below. */
+  new = realloc (tasks,
                  (tasks_size + TASKS_INCREMENT) * sizeof (task_t));
 /*@=sharedtrans@*/
 /*@=compdestroy@*/
@@ -564,7 +565,8 @@ free_message (/*@only@*/ gpointer message,
 static void
 free_task (/*@special@*/ /*@dependent@*/ task_t* task)
   /*@ensures isnull task->name@*/
-  /*@releases task->comment, task->open_ports@*/
+  /*@releases task->comment, task->open_ports, task->debugs, task->holes,
+              task->infos, task->logs, task->notes@*/
 {
   tracef ("   Freeing task %u: \"%s\" %s (%i) %.*s[...]\n\n",
           task->id,
@@ -576,7 +578,7 @@ free_task (/*@special@*/ /*@dependent@*/ task_t* task)
   free (task->name);
   task->name = NULL;
   free (task->comment);
-  free (task->description);
+  if (task->description) free (task->description);
   if (task->start_time) free (task->start_time);
   if (task->end_time) free (task->end_time);
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
@@ -620,7 +622,11 @@ free_tasks ()
     task_t* end = tasks + tasks_size;
     while (index < end)
       {
+        /* This indicates that the state of the task depends on which
+         * branch of the `if' is taken. */
+        /*@-branchstate@*/
         if (index->name) free_task (index);
+        /*@=branchstate@*/
         index++;
       }
     tasks_size = 0;
@@ -703,6 +709,19 @@ make_task (char* name, unsigned int time, char* comment)
     }
 }
 
+typedef /*@only@*/ struct dirent * only_dirent_pointer;
+
+static void
+load_tasks_free (/*@only@*/ gchar* dir_name, /*@only@*/ gchar* file_name,
+                 int index, int count, /*@only@*/ only_dirent_pointer* names)
+{
+  g_free (dir_name);
+  g_free (file_name);
+  for (; index < count; index++) free (names[index]);
+  free (names);
+  free_tasks ();
+}
+
 /**
  * @brief Load the tasks from disk.
  *
@@ -731,7 +750,7 @@ load_tasks ()
                                NULL);
 
   count = scandir (dir_name, &names, NULL, alphasort);
-  if (count < 0)
+  if (count < 0 || names == NULL)
     {
       if (errno == ENOENT)
         {
@@ -765,7 +784,18 @@ load_tasks ()
 
       file_name = g_build_filename (dir_name, task_name, "name", NULL);
       success = g_file_get_contents (file_name, &name, NULL, &error);
-      if (success == FALSE) goto contents_fail;
+      if (success == FALSE)
+        {
+          if (error)
+            {
+              fprintf (stderr, "Failed to get contents of %s: %s\n",
+                       file_name,
+                       error->message);
+              g_error_free (error);
+            }
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
+        }
 
       g_free (file_name);
       file_name = g_build_filename (dir_name, task_name, "time", NULL);
@@ -773,14 +803,24 @@ load_tasks ()
       if (success == FALSE)
         {
           g_free (name);
-          goto contents_fail;
+          if (error)
+            {
+              fprintf (stderr, "Failed to get contents of %s: %s\n",
+                       file_name,
+                       error->message);
+              g_error_free (error);
+            }
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
         }
       if (sscanf (comment, "%u", &time) != 1)
         {
           fprintf (stderr, "Failed to scan time: %s\n", comment);
           g_free (comment);
           g_free (name);
-          goto fail;
+          if (error) g_error_free (error);
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
         }
       g_free (comment);
 
@@ -791,7 +831,15 @@ load_tasks ()
       if (success == FALSE)
         {
           g_free (name);
-          goto contents_fail;
+          if (error)
+            {
+              fprintf (stderr, "Failed to get contents of %s: %s\n",
+                       file_name,
+                       error->message);
+              g_error_free (error);
+            }
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
         }
       g_free (file_name);
 
@@ -814,7 +862,18 @@ load_tasks ()
                                        &description,
                                        &description_length,
                                        &error);
-        if (success == FALSE) goto contents_fail;
+        if (success == FALSE)
+          {
+            if (error)
+              {
+                fprintf (stderr, "Failed to get contents of %s: %s\n",
+                         file_name,
+                         error->message);
+                g_error_free (error);
+              }
+            load_tasks_free (dir_name, file_name, index, count, names);
+            return -1;
+          }
 
         task->description = description;
         task->description_size = task->description_length = description_length;
@@ -824,13 +883,27 @@ load_tasks ()
       file_name = g_build_filename (dir_name, task_name, "report_count", NULL);
       comment = NULL;
       success = g_file_get_contents (file_name, &comment, NULL, &error);
-      if (success == FALSE) goto contents_fail;
+      if (success == FALSE)
+        {
+          if (error)
+            {
+              fprintf (stderr, "Failed to get contents of %s: %s\n",
+                       file_name,
+                       error->message);
+              g_error_free (error);
+            }
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
+        }
       if (sscanf (comment, "%u", &task->report_count) != 1)
         {
           fprintf (stderr, "Failed to scan report count: %s\n", comment);
-          goto fail;
+          if (error) g_error_free (error);
+          load_tasks_free (dir_name, file_name, index, count, names);
+          return -1;
         }
 
+      g_free (file_name);
       free (names[index]);
     }
 
@@ -839,22 +912,19 @@ load_tasks ()
 
   tracef ("   Loading tasks... done\n");
   return 0;
+}
 
- contents_fail:
+static void
+save_task_error (/*@only@*/ gchar* file_name, /*@only@*/ GError* error)
+{
   if (error)
     {
-      fprintf (stderr, "Failed to get contents of %s: %s\n",
+      fprintf (stderr, "Failed to set contents of %s: %s\n",
                file_name,
                error->message);
+      g_error_free (error);
     }
- fail:
-  if (error) g_error_free (error);
-  g_free (dir_name);
   g_free (file_name);
-  for (; index < count; index++) free (names[index]);
-  free (names);
-  free_tasks ();
-  return -1;
 }
 
 /**
@@ -890,20 +960,35 @@ save_task (task_t* task, gchar* dir_name)
   file_name = g_build_filename (dir_name, "name", NULL);
 
   success = g_file_set_contents (file_name, task->name, -1, &error);
-  if (success == FALSE) goto contents_fail;
+  if (success == FALSE)
+    {
+      save_task_error (file_name, error);
+      return -1;
+    }
   g_free (file_name);
 
   file_name = g_build_filename (dir_name, "comment", NULL);
   success = g_file_set_contents (file_name, task->comment, -1, &error);
-  if (success == FALSE) goto contents_fail;
+  if (success == FALSE)
+    {
+      save_task_error (file_name, error);
+      return -1;
+    }
   g_free (file_name);
 
   file_name = g_build_filename (dir_name, "description", NULL);
-  success = g_file_set_contents (file_name,
-                                 task->description,
-                                 task->description_length,
-                                 &error);
-  if (success == FALSE) goto contents_fail;
+  if (task->description == NULL)
+    success = g_file_set_contents (file_name, "", 0, &error);
+  else
+    success = g_file_set_contents (file_name,
+                                   task->description,
+                                   task->description_length,
+                                   &error);
+  if (success == FALSE)
+    {
+      save_task_error (file_name, error);
+      return -1;
+    }
   g_free (file_name);
 
   file_name = g_build_filename (dir_name, "time", NULL);
@@ -912,32 +997,37 @@ save_task (task_t* task, gchar* dir_name)
     int length = snprintf (buffer, 11, "%u", task->time);
     assert (length < 11);
 
-    if (length < 1 || length > 10) goto contents_fail;
+    if (length < 1 || length > 10)
+      {
+        save_task_error (file_name, error);
+        return -1;
+      }
     success = g_file_set_contents (file_name, buffer, -1, &error);
-    if (success == FALSE) goto contents_fail;
+    if (success == FALSE)
+      {
+        save_task_error (file_name, error);
+        return -1;
+      }
     g_free (file_name);
 
     file_name = g_build_filename (dir_name, "report_count", NULL);
     length = snprintf (buffer, 11, "%u", task->report_count);
     assert (length < 11);
-    if (length < 1 || length > 10) goto contents_fail;
+    if (length < 1 || length > 10)
+      {
+        save_task_error (file_name, error);
+        return -1;
+      }
     success = g_file_set_contents (file_name, buffer, -1, &error);
-    if (success == FALSE) goto contents_fail;
+    if (success == FALSE)
+      {
+        save_task_error (file_name, error);
+        return -1;
+      }
   }
   g_free (file_name);
 
   return 0;
-
- contents_fail:
-  if (error)
-    {
-      fprintf (stderr, "Failed to set contents of %s: %s\n",
-               file_name,
-               error->message);
-      g_error_free (error);
-    }
-  g_free (file_name);
-  return -1;
 }
 
 /**
@@ -1046,33 +1136,44 @@ find_task (unsigned int id)
  * @return 0 on success, -1 when out of memory, -2 if parameter name error.
  */
 int
-set_task_parameter (task_t* task, const char* parameter, char* value)
+set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
 {
-  tracef ("   set_task_parameter %u %s\n", task->id, parameter);
-  if (parameter == NULL) return -2;
+  tracef ("   set_task_parameter %u %s\n",
+          task->id,
+          parameter ? parameter : "(null)");
+  if (parameter == NULL)
+    {
+      free (value);
+      return -2;
+    }
   if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
     {
       gsize out_len;
       guchar* out;
       out = g_base64_decode (value, &out_len);
       free (value);
-      free (task->description);
+      if (task->description) free (task->description);
       task->description = (char*) out;
       task->description_length = task->description_size = out_len;
     }
   else if (strncasecmp ("IDENTIFIER", parameter, 10) == 0)
     {
       unsigned int id;
-      if (sscanf (value, "%u", &id) != 1) return -1;
+      int ret = sscanf (value, "%u", &id);
       free (value);
+      if (ret != 1) return -1;
       task->id = id;
     }
   else if (strncasecmp ("COMMENT", parameter, 7) == 0)
     {
+      free (task->comment);
       task->comment = value;
     }
   else
-    return -2;
+    {
+      free (value);
+      return -2;
+    }
   return 0;
 }
 
@@ -1179,7 +1280,7 @@ delete_reports (task_t* task)
 {
   const char* id;
   gchar* dir_name;
-  struct dirent ** names;
+  struct dirent ** names = NULL;
   int count, index;
 
   if (task_id_string (task, &id)) return -1;
@@ -1243,12 +1344,13 @@ delete_reports (task_t* task)
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
 int
-delete_task (task_t* task)
+delete_task (task_t** task_pointer)
 {
   gboolean success;
   const char* id;
   gchar* name;
   GError* error;
+  task_t* task = *task_pointer;
 
   tracef ("   delete task %u\n", task->id);
 
@@ -1285,6 +1387,7 @@ delete_task (task_t* task)
   g_free (name);
 
   free_task (task);
+  *task_pointer = NULL;
 
   return 0;
 }
@@ -1301,15 +1404,19 @@ delete_task (task_t* task)
 int
 append_to_task_comment (task_t* task, const char* text, /*@unused@*/ int length)
 {
+  char* new;
   if (task->comment)
     {
       // FIX
-      char* new = g_strconcat (task->comment, text, NULL);
+      new = g_strconcat (task->comment, text, NULL);
+      free (task->comment);
       task->comment = new;
       return 0;
     }
-  task->comment = strdup (text);
-  return task->comment == NULL ? -1 : 0;
+  new = strdup (text);
+  if (new == NULL) return -1;
+  task->comment = new;
+  return 0;
 }
 
 /**
@@ -1325,15 +1432,18 @@ int
 append_to_task_identifier (task_t* task, const char* text,
                            /*@unused@*/ int length)
 {
+  char* new;
   if (task->name)
     {
-      char* new = g_strconcat (task->name, text, NULL);
+      new = g_strconcat (task->name, text, NULL);
       g_free (task->name);
       task->name = new;
       return 0;
     }
-  task->name = strdup (text);
-  return task->name == NULL ? -1 : 0;
+  new = strdup (text);
+  if (new == NULL) return -1;
+  task->name = new;
+  return 0;
 }
 
 /**
@@ -1350,15 +1460,16 @@ append_to_task_identifier (task_t* task, const char* text,
  * @return 0 on success, -1 if out of memory.
  */
 static int
-grow_description (task_t* task, int increment)
+grow_description (task_t* task, size_t increment)
 {
   size_t new_size = task->description_size
                     + (increment < DESCRIPTION_INCREMENT
                        ? DESCRIPTION_INCREMENT : increment);
-  char* new = realloc (task->description, new_size); /* RATS: ignore */
+  /* RATS: ignore *//* Memory cleared below. */
+  char* new = realloc (task->description, new_size);
   if (new == NULL) return -1;
   memset (new, (int) '\0', new_size - task->description_size);
-  tracef ("   grew description to %i (at %p).\n", new_size, new);
+  tracef ("   grew description to %u (at %p).\n", new_size, new);
   task->description = new;
   task->description_size = new_size;
   return 0;
@@ -1376,7 +1487,7 @@ add_task_description_line (task_t* task, const char* line, size_t line_length)
 {
   char* description;
   if (task->description_size - task->description_length < line_length
-      && grow_description (task, line_length))
+      && grow_description (task, line_length) < 0)
     return -1;
   description = task->description;
   description += task->description_length;

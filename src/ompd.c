@@ -465,7 +465,7 @@ serve_omp (gnutls_session_t* client_session,
     {
       int ret;
       /* Setup for select. */
-      unsigned char fds = 0; /* What `select' is going to watch. */
+      unsigned char fds = '0'; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
