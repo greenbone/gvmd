@@ -1,5 +1,10 @@
 2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/omp_delete_task_0.c: Test by checking status instead of
+	counting tasks.
+
+2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Cleanup and annotate, from Splint.  Comment RATS annotations.
 
 	* src/CMakeLists.txt (splint): Switch to +unixlib.

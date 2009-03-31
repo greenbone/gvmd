@@ -45,14 +45,21 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session)) goto fail;
+  if (env_authenticate (&session))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
                                 "Test for omp_delete_task_0",
                                 "Simple test scan.",
                                 &id))
-    goto fail;
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Remove the task. */
 
@@ -63,7 +70,10 @@ main ()
   int ret = send_to_manager (&session, msg);
   g_free (msg);
   if (ret == -1)
-    goto fail;
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Read the response. */
 
@@ -86,24 +96,39 @@ main ()
   free_entity (expected);
   free_entity (entity);
 
-  /* Check the status. */
+  /* Check the status of the task. */
 
-  if (send_to_manager (&session, "<status/>") == -1) goto fail;
-
-  entity = NULL;
-  if (read_entity (&session, &entity)) goto fail;
-
-  entity_t count = entity_child (entity, "task_count");
-  if (count && strcmp (entity_text (count), "1") == 0)
+  if (sendf_to_manager (&session,
+                        "<status>"
+                        "<task_id>%u</task_id>"
+                        "</status>",
+                        id)
+      == -1)
     {
-      free_entity (entity);
       close_manager_connection (socket, session);
-      return EXIT_SUCCESS;
+      return EXIT_FAILURE;
     }
 
-  free_entity (entity);
+  entity = NULL;
+  if (read_entity (&session, &entity))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
- fail:
+  expected = add_entity (NULL, "status_response", NULL);
+  add_entity (&expected->entities, "status", "407");
+
+  if (compare_entities (entity, expected))
+    {
+      free_entity (expected);
+      free_entity (entity);
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
+  free_entity (expected);
+  free_entity (entity);
   close_manager_connection (socket, session);
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }
