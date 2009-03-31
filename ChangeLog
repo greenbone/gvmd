@@ -1,5 +1,9 @@
 2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/common.c (env_authenticate): Remove RATS annotation.
+
+2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/tests/omp_delete_task_0.c: Test by checking status instead of
 	counting tasks.
 
