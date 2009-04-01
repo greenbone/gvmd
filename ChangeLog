@@ -1,3 +1,7 @@
+2009-04-01  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* src/tests/CMakeLists.txt: Added missing GLIB_CFLAGS to target properties.
+
 2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/common.c (env_authenticate): Remove RATS annotation.
