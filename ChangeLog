@@ -1,3 +1,13 @@
+2009-04-01  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	* packaging/debian/control: Lower dependecy for debhelper from 6 to 5.
+
+	* packaging/debian/changelog: New. A initial stub.
+
+	* packaging/debian/copyright: New.
+
+	* packaging/debian/rules: New. Initial version, not fully functional yet.
+
 2009-04-01  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* src/tests/CMakeLists.txt: Added missing GLIB_CFLAGS to target properties.
