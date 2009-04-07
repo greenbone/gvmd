@@ -1,3 +1,34 @@
+2009-04-07  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+
+	* CMakeLists.txt, doc/CMakeLists.txt, doc/openvasmd.8.xml,
+	src/CMakeLists.txt, src/file.c, src/file.h, src/logf.h,
+	src/manage.c, src/manage.h, src/omp.c, src/omp.h, src/ompd.c,
+	src/ompd.h, src/openvasmd.c, src/otp.c, src/otp.h, src/otpd.c,
+	src/otpd.h, src/ovas-mngr-comm.c, src/ovas-mngr-comm.h, src/splint.h,
+	src/string.c, src/string.h, src/task.h, src/tracef.h,
+	src/tests/CMakeLists.txt, src/tests/common.c, src/tests/common.h,
+	src/tests/make_report_id_0.c, src/tests/omp_abort_task_0.c,
+	src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_get_dependencies_0.c, src/tests/omp_get_dependencies_1.c,
+	src/tests/omp_get_nvt_feed_all_0.c, src/tests/omp_get_nvt_feed_all_1.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c, src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_feed_details_0.c, src/tests/omp_get_nvt_feed_details_1.c,
+	src/tests/omp_get_preferences_0.c, src/tests/omp_get_preferences_1.c,
+	src/tests/omp_get_report_0.c, src/tests/omp_get_rules_0.c,
+	src/tests/omp_get_rules_1.c, src/tests/omp_modify_report_0.c,
+	src/tests/omp_modify_task_0.c, src/tests/omp_new_task_0.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_start_task_1.c,
+	src/tests/omp_status_0.c, src/tests/omp_status_1.c,
+	src/tests/omp_status_2.c, src/tests/omp_status_3.c,
+	src/tests/omp_status_4.c, src/tests/omp_version_0.c,
+	src/tests/report_path_task_name_0.c, src/tests/report_path_task_name_1.c,
+	src/tests/report_path_task_name_2.c, src/tests/rmdir_recursively_0.c,
+	src/tests/rmdir_recursively_1.c, src/tests/strip_space_0.c,
+	src/tests/strip_space_1.c, src/tests/strip_space_2.c,
+	src/tests/strip_space_3.c, packaging/debian/copyright:
+	Transferred Copyright from Intevation to Greenbone Networks.
+
 2009-04-01  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	* packaging/debian/control: Lower dependecy for debhelper from 6 to 5.

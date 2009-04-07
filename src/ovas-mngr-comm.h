@@ -3,10 +3,10 @@
  * Description: See below.
  *
  * Authors:
- * Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
+ * Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2009 Intevation GmbH
+ * Copyright (C) 2009 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,

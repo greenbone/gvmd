@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2008, 2009 Intevation GmbH
+ * Copyright (C) 2009 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -628,7 +628,7 @@ main (int argc, char** argv)
     {
       printf ("openvasmd (%s) %s for %s\n",
               PROGNAME, OPENVASMD_VERSION, OPENVAS_OS_NAME);
-      printf ("Copyright (C) 2008 Intevation GmbH\n\n");
+      printf ("Copyright (C) 2009 Greenbone Networks GmbH\n\n");
       exit (EXIT_SUCCESS);
     }
 
