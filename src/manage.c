@@ -1133,7 +1133,8 @@ find_task (unsigned int id)
  * @param[in]  value      The value of the parameter, in base64 if parameter
  *                        is "TASK_FILE".
  *
- * @return 0 on success, -1 when out of memory, -2 if parameter name error.
+ * @return 0 on success, -1 when out of memory, -2 if parameter name error,
+ *         -3 value error (NULL).
  */
 int
 set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
@@ -1141,6 +1142,7 @@ set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
   tracef ("   set_task_parameter %u %s\n",
           task->id,
           parameter ? parameter : "(null)");
+  if (value == NULL) return -3;
   if (parameter == NULL)
     {
       free (value);
@@ -1199,6 +1201,7 @@ start_task (task_t* task)
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n")) return -1;
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n")) return -1;
+  if (send_to_server ("ntp_opt_show_end <|> no\n")) return -1;
   //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
   if (send_to_server ("plugin_set <|> \n")) return -1;
   // FIX
@@ -1469,7 +1472,6 @@ grow_description (task_t* task, size_t increment)
   char* new = realloc (task->description, new_size);
   if (new == NULL) return -1;
   memset (new, (int) '\0', new_size - task->description_size);
-  tracef ("   grew description to %u (at %p).\n", new_size, new);
   task->description = new;
   task->description_size = new_size;
   return 0;
@@ -1520,16 +1522,20 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
 void
 append_task_open_port (task_t *task, unsigned int number, char* protocol)
 {
-  port_t port;
+  assert (task->open_ports != NULL);
+  if (task->open_ports)
+    {
+      port_t port;
 
-  port.number = number;
-  if (strncasecmp ("udp", protocol, 3) == 0)
-    port.protocol = PORT_PROTOCOL_UDP;
-  else if (strncasecmp ("tcp", protocol, 3) == 0)
-    port.protocol = PORT_PROTOCOL_TCP;
-  else
-    port.protocol = PORT_PROTOCOL_OTHER;
+      port.number = number;
+      if (strncasecmp ("udp", protocol, 3) == 0)
+        port.protocol = PORT_PROTOCOL_UDP;
+      else if (strncasecmp ("tcp", protocol, 3) == 0)
+        port.protocol = PORT_PROTOCOL_TCP;
+      else
+        port.protocol = PORT_PROTOCOL_OTHER;
 
-  task->open_ports = g_array_append_val (task->open_ports, port);
-  task->open_ports_size++;
+      (void) g_array_append_val (task->open_ports, port);
+      task->open_ports_size++;
+    }
 }

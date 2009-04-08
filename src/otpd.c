@@ -37,6 +37,7 @@
  * client and server.
  */
 
+#include "types.h"
 #include "otpd.h"
 #include "logf.h"
 #include "tracef.h"
@@ -62,16 +63,16 @@
 #define FD_SERVER_WRITE 8
 
 // FIX Should probably be passed into serve_otp.
-extern size_t from_buffer_size;
+extern buffer_size_t from_buffer_size;
 
 // FIX mv these here when read_protocol sorted out in openvasmd.c
 // FIX how to share these buffers with ompd.c?
 extern char from_client[];
-extern int from_client_start;
-extern int from_client_end;
+extern buffer_size_t from_client_start;
+extern buffer_size_t from_client_end;
 extern char from_server[];
-extern int from_server_start;
-extern int from_server_end;
+extern buffer_size_t from_server_start;
+extern buffer_size_t from_server_end;
 
 /**
  * @brief Serve the OpenVAS Transfer Protocol (OTP).
@@ -103,7 +104,8 @@ serve_otp (gnutls_session_t* client_session,
 #if TRACE_TEXT
   tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
 #else
-  tracef ("<= client  %i bytes\n", from_client_end - initial_start);
+  tracef ("<= client  %" BUFFER_SIZE_T_FORMAT " bytes\n",
+          from_client_end);
 #endif
 #endif /* TRACE || LOG */
 
@@ -164,10 +166,11 @@ serve_otp (gnutls_session_t* client_session,
               return -1;
             }
 
-          if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
+          if ((fds & FD_CLIENT_READ) == FD_CLIENT_READ
+              && FD_ISSET (client_socket, &readfds))
             {
 #if TRACE || LOG
-              int initial_start = from_client_end;
+              buffer_size_t initial_start = from_client_end;
 #endif
               /* Read as much as possible from the client. */
               while (from_client_end < from_buffer_size)
@@ -189,7 +192,7 @@ serve_otp (gnutls_session_t* client_session,
                         /* Return to select. TODO Rehandshake. */
                         break;
                       fprintf (stderr, "Failed to read from client.\n");
-                      gnutls_perror (count);
+                      gnutls_perror ((int) count);
                       return -1;
                     }
                   if (count == 0)
@@ -217,7 +220,8 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE || LOG */
             }
 
-          if (fds & FD_SERVER_WRITE && FD_ISSET (server_socket, &writefds))
+          if ((fds & FD_SERVER_WRITE) == FD_SERVER_WRITE
+              && FD_ISSET (server_socket, &writefds))
             {
               int wrote_all = 1;
               /* Write as much as possible to the server. */
@@ -243,11 +247,11 @@ serve_otp (gnutls_session_t* client_session,
                         /* Return to select. TODO Rehandshake. */
                         break;
                       fprintf (stderr, "Failed to write to server.\n");
-                      gnutls_perror (count);
+                      gnutls_perror ((int) count);
                       return -1;
                     }
                   from_client_start += count;
-                  tracef ("=> server  %i bytes\n", count);
+                  tracef ("=> server  %zi bytes\n", count);
                 }
               if (wrote_all)
                 {
@@ -256,10 +260,11 @@ serve_otp (gnutls_session_t* client_session,
                 }
             }
 
-          if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
+          if ((fds & FD_SERVER_READ) == FD_SERVER_READ
+              && FD_ISSET (server_socket, &readfds))
             {
 #if TRACE
-              int initial_start = from_server_end;
+              buffer_size_t initial_start = from_server_end;
 #endif
               /* Read as much as possible from the server. */
               while (from_server_end < from_buffer_size)
@@ -290,7 +295,7 @@ serve_otp (gnutls_session_t* client_session,
                                    gnutls_alert_get_name (alert));
                         }
                       fprintf (stderr, "Failed to read from server.\n");
-                      gnutls_perror (count);
+                      gnutls_perror ((int) count);
                       return -1;
                     }
                   if (count == 0)
@@ -315,7 +320,8 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE */
             }
 
-          if (fds & FD_CLIENT_WRITE && FD_ISSET (client_socket, &writefds))
+          if ((fds & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
+              && FD_ISSET (client_socket, &writefds))
             {
               int wrote_all = 1;
 
@@ -341,14 +347,14 @@ serve_otp (gnutls_session_t* client_session,
                         /* Return to select. TODO Rehandshake. */
                         break;
                       fprintf (stderr, "Failed to write to client.\n");
-                      gnutls_perror (count);
+                      gnutls_perror ((int) count);
                       return -1;
                     }
                   logf ("=> %.*s\n",
                         from_server_end - from_server_start,
                         from_server + from_server_start);
                   from_server_start += count;
-                  tracef ("=> client  %i bytes\n", count);
+                  tracef ("=> client  %zi bytes\n", count);
                 }
               if (wrote_all)
                 {

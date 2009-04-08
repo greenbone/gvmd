@@ -26,6 +26,7 @@
 #ifndef OPENVAS_MANAGER_OMP_H
 #define OPENVAS_MANAGER_OMP_H
 
+#include "types.h"
 #include <sys/types.h>
 
 /**
@@ -42,7 +43,7 @@ process_omp_client_input ();
 // FIX probably should be passed to process_omp_client_input/init_omp_data
 //     and defined in caller
 extern char to_client[];
-extern size_t to_client_start;
-extern size_t to_client_end;
+extern buffer_size_t to_client_start;
+extern buffer_size_t to_client_end;
 
 #endif

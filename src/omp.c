@@ -66,16 +66,17 @@ char to_client[TO_CLIENT_BUFFER_SIZE];
 /**
  * @brief The start of the data in the \ref to_client buffer.
  */
-size_t to_client_start = 0;
+buffer_size_t to_client_start = 0;
 /**
  * @brief The end of the data in the \ref to_client buffer.
  */
-size_t to_client_end = 0;
+buffer_size_t to_client_end = 0;
 
 /**
  * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
  */
-static /*@null@*/ task_t* current_client_task = NULL;
+/*@null@*/ /*@dependent@*/
+static task_t* current_client_task = NULL;
 
 /**
  * @brief Task ID during OMP MODIFY_TASK and START_TASK.
@@ -99,7 +100,7 @@ modify_task_value = NULL;
  * @brief Client input parsing context.
  */
 static /*@null@*/ /*@only@*/ GMarkupParseContext*
-xml_context;
+xml_context = NULL;
 
 /**
  * @brief Client input parser.
@@ -181,17 +182,29 @@ set_client_state (client_state_t state)
  * Queue a message in \ref to_client.
  *
  * @param[in]  msg  The message, a string.
+ *
+ * @return TRUE if out of space in to_client, else FALSE.
  */
-#define SEND_TO_CLIENT(msg)                                                  \
-  do                                                                         \
-    {                                                                        \
-      if (((size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end < strlen (msg))   \
-        goto send_to_client_fail;                                            \
-      memcpy (to_client + to_client_end, msg, strlen (msg));                 \
-      tracef ("-> client: %s\n", msg);                                       \
-      to_client_end += strlen (msg);                                         \
-    }                                                                        \
-  while (0)
+static gboolean
+send_to_client (char* msg)
+{
+  assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
+  if (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
+      < strlen (msg))
+    return TRUE;
+  memmove (to_client + to_client_end, msg, strlen (msg));
+  tracef ("-> client: %s\n", msg);
+  to_client_end += strlen (msg);
+  return FALSE;
+}
+
+static void
+error_send_to_client (GError** error)
+{
+  tracef ("   send_to_client out of space in to_client\n");
+  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+               "Manager out of space for reply to client.");
+}
 
 
 /* XML parser handlers. */
@@ -201,7 +214,7 @@ set_client_state (client_state_t state)
  *
  * React to the start of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
- * the change (with \ref set_client_state).  Call \ref SEND_TO_CLIENT to
+ * the change (with \ref set_client_state).  Call \ref send_to_client to
  * queue any responses for the client.
  *
  * Set error parameter on encountering an error.
@@ -238,9 +251,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            SEND_TO_CLIENT ("<omp_response>"
-                            "<status>401</status>"
-                            "</omp_response>");
+            if (send_to_client ("<omp_response>"
+                                "<status>401</status>"
+                                "</omp_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Must authenticate first.");
           }
@@ -295,9 +312,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_STATUS);
         else
           {
-            SEND_TO_CLIENT ("<omp_response>"
-                            "<status>402</status>"
-                            "</omp_response>");
+            if (send_to_client ("<omp_response>"
+                                "<status>402</status>"
+                                "</omp_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -310,9 +331,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS);
         else
           {
-            SEND_TO_CLIENT ("<authenticate_response>"
-                            "<status>402</status>"
-                            "</authenticate_response>");
+            if (send_to_client ("<authenticate_response>"
+                                "<status>402</status>"
+                                "</authenticate_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
             g_set_error (error,
@@ -329,9 +354,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS_PASSWORD);
         else
           {
-            SEND_TO_CLIENT ("<authenticate_response>"
-                            "<status>402</status>"
-                            "</authenticate_response>");
+            if (send_to_client ("<authenticate_response>"
+                                "<status>402</status>"
+                                "</authenticate_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
             g_set_error (error,
@@ -346,9 +375,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_REPORT_ID);
         else
           {
-            SEND_TO_CLIENT ("<delete_report_response>"
-                            "<status>402</status>"
-                            "</delete_report_response>");
+            if (send_to_client ("<delete_report_response>"
+                                "<status>402</status>"
+                                "</delete_report_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -362,9 +395,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_TASK_TASK_ID);
         else
           {
-            SEND_TO_CLIENT ("<delete_task_response>"
-                            "<status>402</status>"
-                            "</delete_task_response>");
+            if (send_to_client ("<delete_task_response>"
+                                "<status>402</status>"
+                                "</delete_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -375,9 +412,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_DEPENDENCIES:
           {
-            SEND_TO_CLIENT ("<get_dependencies_response>"
-                            "<status>402</status>"
-                            "</get_dependencies_response>");
+            if (send_to_client ("<get_dependencies_response>"
+                                "<status>402</status>"
+                                "</get_dependencies_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -388,9 +429,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_ALL:
           {
-            SEND_TO_CLIENT ("<get_nvt_feed_all>"
-                            "<status>402</status>"
-                            "</get_nvt_feed_all>");
+            if (send_to_client ("<get_nvt_feed_all>"
+                                "<status>402</status>"
+                                "</get_nvt_feed_all>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -401,9 +446,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
           {
-            SEND_TO_CLIENT ("<get_nvt_feed_checksum>"
-                            "<status>402</status>"
-                            "</get_nvt_feed_checksum>");
+            if (send_to_client ("<get_nvt_feed_checksum>"
+                                "<status>402</status>"
+                                "</get_nvt_feed_checksum>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -414,9 +463,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_DETAILS:
           {
-            SEND_TO_CLIENT ("<get_nvt_feed_details>"
-                            "<status>402</status>"
-                            "</get_nvt_feed_details>");
+            if (send_to_client ("<get_nvt_feed_details>"
+                                "<status>402</status>"
+                                "</get_nvt_feed_details>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -427,9 +480,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_PREFERENCES:
           {
-            SEND_TO_CLIENT ("<get_preferences_response>"
-                            "<status>402</status>"
-                            "</get_preferences_response>");
+            if (send_to_client ("<get_preferences_response>"
+                                "<status>402</status>"
+                                "</get_preferences_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -443,9 +500,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_REPORT_ID);
         else
           {
-            SEND_TO_CLIENT ("<get_report_response>"
-                            "<status>402</status>"
-                            "</get_report_response>");
+            if (send_to_client ("<get_report_response>"
+                                "<status>402</status>"
+                                "</get_report_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -456,9 +517,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_RULES:
           {
-            SEND_TO_CLIENT ("<get_rules_response>"
-                            "<status>402</status>"
-                            "</get_rules_response>");
+            if (send_to_client ("<get_rules_response>"
+                                "<status>402</status>"
+                                "</get_rules_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -476,9 +541,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_VALUE);
         else
           {
-            SEND_TO_CLIENT ("<modify_report_response>"
-                            "<status>402</status>"
-                            "</modify_report_response>");
+            if (send_to_client ("<modify_report_response>"
+                                "<status>402</status>"
+                                "</modify_report_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -496,9 +565,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TASK_VALUE);
         else
           {
-            SEND_TO_CLIENT ("<modify_task_response>"
-                            "<status>402</status>"
-                            "</modify_task_response>");
+            if (send_to_client ("<modify_task_response>"
+                                "<status>402</status>"
+                                "</modify_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -516,9 +589,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
         else
           {
-            SEND_TO_CLIENT ("<abort_task_response>"
-                            "<status>402</status>"
-                            "</abort_task_response>");
+            if (send_to_client ("<abort_task_response>"
+                                "<status>402</status>"
+                                "</abort_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -536,9 +613,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_NEW_TASK_COMMENT);
         else
           {
-            SEND_TO_CLIENT ("<new_task_response>"
-                            "<status>402</status>"
-                            "</new_task_response>");
+            if (send_to_client ("<new_task_response>"
+                                "<status>402</status>"
+                                "</new_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -552,9 +633,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_START_TASK_TASK_ID);
         else
           {
-            SEND_TO_CLIENT ("<start_task_response>"
-                            "<status>402</status>"
-                            "</start_task_response>");
+            if (send_to_client ("<start_task_response>"
+                                "<status>402</status>"
+                                "</start_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -568,9 +653,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_STATUS_TASK_ID);
         else
           {
-            SEND_TO_CLIENT ("<status_response>"
-                            "<status>402</status>"
-                            "</status_response>");
+            if (send_to_client ("<status_response>"
+                                "<status>402</status>"
+                                "</status_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
             set_client_state (CLIENT_AUTHENTIC);
             g_set_error (error,
                          G_MARKUP_ERROR,
@@ -590,11 +679,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
     }
 
   return;
-
- send_to_client_fail:
-  tracef ("   SEND_TO_CLIENT out of space in to_client\n");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-               "Manager out of space for reply to client.");
 }
 
 /**
@@ -608,18 +692,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 static gint
 send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
 {
+  gboolean fail;
   gchar* text = g_markup_escape_text ((char*) element,
                                       strlen ((char*) element));
   gchar* msg = g_strdup_printf ("<need>%s</need>", text);
   g_free (text);
 
-  SEND_TO_CLIENT (msg);
-
+  fail = send_to_client (msg);
   g_free (msg);
-  return 1;
- send_to_client_fail:
-  g_free (msg);
-  return 0;
+  return fail ? 0 : 1;
 }
 
 /**
@@ -639,7 +720,11 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
   gchar* msg = g_strdup_printf ("<dependency><needer>%s</needer>",
                                 key_text);
   g_free (key_text);
-  SEND_TO_CLIENT (msg);
+  if (send_to_client (msg))
+    {
+      g_free (msg);
+      return TRUE;
+    }
 
   if (g_slist_find_custom ((GSList*) value, NULL, send_requirement))
     {
@@ -647,13 +732,14 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
       return TRUE;
     }
 
-  SEND_TO_CLIENT ("</dependency>");
+  if (send_to_client ("</dependency>"))
+    {
+      g_free (msg);
+      return TRUE;
+    }
+
   g_free (msg);
   return FALSE;
-
- send_to_client_fail:
-  g_free (msg);
-  return TRUE;
 }
 
 /**
@@ -679,12 +765,13 @@ send_preference (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
                                 key_text, value_text);
   g_free (key_text);
   g_free (value_text);
-  SEND_TO_CLIENT (msg);
+  if (send_to_client (msg))
+    {
+      g_free (msg);
+      return TRUE;
+    }
   g_free (msg);
   return FALSE;
- send_to_client_fail:
-  g_free (msg);
-  return TRUE;
 }
 
 /**
@@ -702,12 +789,13 @@ send_rule (gpointer rule)
                                            strlen ((char*) rule));
   gchar* msg = g_strdup_printf ("<rule>%s</rule>", rule_text);
   g_free (rule_text);
-  SEND_TO_CLIENT (msg);
+  if (send_to_client (msg))
+    {
+      g_free (msg);
+      return TRUE;
+    }
   g_free (msg);
   return FALSE;
- send_to_client_fail:
-  g_free (msg);
-  return TRUE;
 }
 
 /**
@@ -789,7 +877,14 @@ send_reports (task_t* task)
                                  "</messages>"
                                  "</report>",
                                  report_name);
-          SEND_TO_CLIENT (msg);
+          if (send_to_client (msg))
+            {
+              g_free (msg);
+              while (index < count) { free (names[index++]); }
+              free (names);
+              g_free (dir_name);
+              return -4;
+            }
           g_free (msg);
         }
 
@@ -799,21 +894,33 @@ send_reports (task_t* task)
   free (names);
   g_free (dir_name);
   return 0;
-
- send_to_client_fail:
-  g_free (msg);
-  while (index < count) { free (names[index++]); }
-  free (names);
-  g_free (dir_name);
-  return -4;
 }
+
+/**
+ * @brief Send response message to client, returning on fail.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   msg    The message, a string.
+ */
+#define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
+  do                                                                         \
+    {                                                                        \
+      if (send_to_client (msg))                                              \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
+  while (0)
 
 /**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
  * of \ref client_state, usually adjusting \ref client_state to indicate
- * the change (with \ref set_client_state).  Call \ref SEND_TO_CLIENT to queue
+ * the change (with \ref set_client_state).  Call \ref send_to_client to queue
  * any responses for the client.  Call the task utilities to adjust the
  * tasks (for example \ref start_task, \ref stop_task, \ref set_task_parameter,
  * \ref delete_task and \ref find_task).
@@ -839,35 +946,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK:
-        {
-          unsigned int id;
-          assert (current_client_task == NULL);
-          if (sscanf (current_task_task_id, "%u", &id) == 1)
-            {
-              task_t* task = find_task (id);
-              if (task == NULL)
-                SEND_TO_CLIENT ("<abort_task_response>"
-                                "<status>407</status>"
-                                "</abort_task_response>");
-              else if (stop_task (task))
-                {
-                  /* to_server is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
-                  abort ();
-                }
-              else
-                SEND_TO_CLIENT ("<abort_task_response>"
-                                "<status>201</status>"
-                                "</abort_task_response>");
-            }
-          else
-            SEND_TO_CLIENT ("<abort_task_response>"
-                            "<status>40x</status>"
-                            "</abort_task_response>");
-          free_string_var (&current_task_task_id);
-          set_client_state (CLIENT_AUTHENTIC);
-        }
+        if (current_task_task_id)
+          {
+            unsigned int id;
+            assert (current_client_task == NULL);
+            if (sscanf (current_task_task_id, "%u", &id) == 1)
+              {
+                task_t* task = find_task (id);
+                if (task == NULL)
+                  SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
+                                          "<status>407</status>"
+                                          "</abort_task_response>");
+                else if (stop_task (task))
+                  {
+                    /* to_server is full. */
+                    // FIX revert parsing for retry
+                    // process_omp_client_input must return -2
+                    abort ();
+                  }
+                else
+                  SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
+                                          "<status>201</status>"
+                                          "</abort_task_response>");
+              }
+            else
+              SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
+                                      "<status>40x</status>"
+                                      "</abort_task_response>");
+            free_string_var (&current_task_task_id);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_ABORT_TASK_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
@@ -901,9 +1011,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            SEND_TO_CLIENT ("<authenticate_response>"
-                            "<status>403</status>"
-                            "</authenticate_response>");
+            SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
+                                    "<status>403</status>"
+                                    "</authenticate_response>");
             free_credentials (&current_credentials);
             set_client_state (CLIENT_TOP);
           }
@@ -927,53 +1037,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_PREFERENCES:
         if (server.preferences)
           {
-            SEND_TO_CLIENT ("<get_preferences_response><status>200</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
+                                    "<status>200</status>");
             if (g_hash_table_find (server.preferences, send_preference, NULL))
-              goto send_to_client_fail;
-            SEND_TO_CLIENT ("</get_preferences_response>");
+              {
+                error_send_to_client (error);
+                return;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
           }
         else
-          SEND_TO_CLIENT ("<get_preferences_response>"
-                          "<status>500</status>"
-                          "</get_preferences_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
+                                  "<status>500</status>"
+                                  "</get_preferences_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_DEPENDENCIES:
         if (server.plugins_dependencies)
           {
-            SEND_TO_CLIENT ("<get_dependencies_response><status>200</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response>"
+                                    "<status>200</status>");
             if (g_hash_table_find (server.plugins_dependencies,
                                    send_dependency,
                                    NULL))
-              goto send_to_client_fail;
-            SEND_TO_CLIENT ("</get_dependencies_response>");
+              {
+                error_send_to_client (error);
+                return;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</get_dependencies_response>");
           }
         else
-          SEND_TO_CLIENT ("<get_dependencies_response>"
-                          "<status>500</status>"
-                          "</get_dependencies_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response>"
+                                  "<status>500</status>"
+                                  "</get_dependencies_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_ALL:
-        SEND_TO_CLIENT ("<get_nvt_feed_all_response><status>200</status>");
-        SEND_TO_CLIENT ("<nvt_count>2</nvt_count>");
-        SEND_TO_CLIENT ("<feed_checksum>"
-                        "<algorithm>md5</algorithm>"
-                        "333"
-                        "</feed_checksum>");
-        SEND_TO_CLIENT ("<nvt>"
-                        "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                        "<name>FooBar 1.5 installed</name>"
-                        "<checksum><algorithm>md5</algorithm>222</checksum>"
-                        "</nvt>");
-        SEND_TO_CLIENT ("<nvt>"
-                        "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                        "<name>FooBar 2.1 XSS vulnerability</name>"
-                        "<checksum><algorithm>md5</algorithm>223</checksum>"
-                        "</nvt>");
-        SEND_TO_CLIENT ("</get_nvt_feed_all_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
+                                "<status>200</status>");
+        // FIX
+        SEND_TO_CLIENT_OR_FAIL ("<nvt_count>2</nvt_count>");
+        SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
+                                "<algorithm>md5</algorithm>"
+                                "333"
+                                "</feed_checksum>");
+        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
+                                "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                                "<name>FooBar 1.5 installed</name>"
+                                "<checksum>"
+                                "<algorithm>md5</algorithm>"
+                                "222"
+                                "</checksum>"
+                                "</nvt>");
+        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
+                                "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                                "<name>FooBar 2.1 XSS vulnerability</name>"
+                                "<checksum>"
+                                "<algorithm>md5</algorithm>"
+                                "223"
+                                "</checksum>"
+                                "</nvt>");
+        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_all_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -982,50 +1108,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 #if 0
         if (server.plugins_md5)
           {
-            SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
-                            "<status>200</status>"
-                            "<algorithm>md5</algorithm>");
-            SEND_TO_CLIENT (server.plugins_md5);
-            SEND_TO_CLIENT ("</get_nvt_feed_checksum_response>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
+                                    "<status>200</status>"
+                                    "<algorithm>md5</algorithm>");
+            SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
+            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_checksum_response>");
           }
         else
-          SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
-                          "<status>500</status>"
-                          "</get_nvt_feed_checksum_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
+                                  "<status>500</status>"
+                                  "</get_nvt_feed_checksum_response>");
 #else
-        SEND_TO_CLIENT ("<get_nvt_feed_checksum_response>"
-                        "<status>200</status>"
-                        "<algorithm>md5</algorithm>");
-        SEND_TO_CLIENT ("111");
-        SEND_TO_CLIENT ("</get_nvt_feed_checksum_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
+                                "<status>200</status>"
+                                "<algorithm>md5</algorithm>");
+        SEND_TO_CLIENT_OR_FAIL ("111");
+        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_checksum_response>");
 #endif
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
-        SEND_TO_CLIENT ("<get_nvt_feed_details_response><status>200</status>");
-        SEND_TO_CLIENT ("<nvt>"
-                        "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                        "<cve>CVE-2008-4877</cve>"
-                        "<cve>CVE-2008-4881</cve>"
-                        "<bugtraq_id>12345</bugtraq_id>"
-                        "<filename>foobar_15_detect.nasl</filename>"
-                        "<description>This script detects whether FooBar 1.5 is installed.</description>"
-                        "</nvt>");
-        SEND_TO_CLIENT ("<nvt>"
-                        "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                        "<cve>CVE-2008-5142</cve>"
-                        "<bugtraq_id>12478</bugtraq_id>"
-                        "<filename>foobar_21_xss.nasl</filename>"
-                        "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
-                        "</nvt>");
-        SEND_TO_CLIENT ("</get_nvt_feed_details_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response><status>200</status>");
+        // FIX
+        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
+                                "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
+                                "<cve>CVE-2008-4877</cve>"
+                                "<cve>CVE-2008-4881</cve>"
+                                "<bugtraq_id>12345</bugtraq_id>"
+                                "<filename>foobar_15_detect.nasl</filename>"
+                                "<description>This script detects whether FooBar 1.5 is installed.</description>"
+                                "</nvt>");
+        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
+                                "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
+                                "<cve>CVE-2008-5142</cve>"
+                                "<bugtraq_id>12478</bugtraq_id>"
+                                "<filename>foobar_21_xss.nasl</filename>"
+                                "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
+                                "</nvt>");
+        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_details_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
-        SEND_TO_CLIENT ("<delete_report_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<delete_report_response>");
         if (current_task_task_id)
           {
             int ret = delete_report (current_task_task_id);
@@ -1033,24 +1160,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             switch (ret)
               {
                 case 0:
-                  SEND_TO_CLIENT ("<status>200</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<status>200</status>");
                   break;
                 case -1: /* Failed to find associated task. */
                 case -2: /* Report file missing. */
-                  SEND_TO_CLIENT ("<status>40x</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<status>40x</status>");
                   break;
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
                   free_string_var (&current_task_task_id);
-                  SEND_TO_CLIENT ("<status>500</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<status>500</status>");
                   break;
               }
           }
         else
           // FIX could be a client error
-          SEND_TO_CLIENT ("<status>50x</status>");
-        SEND_TO_CLIENT ("</delete_report_response>");
+          //        init to "" at ele start, then always server err
+          SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
+        SEND_TO_CLIENT_OR_FAIL ("</delete_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_REPORT_ID:
@@ -1060,7 +1188,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_task_task_id && current_credentials.username)
+        if (current_task_task_id != NULL
+            && current_credentials.username != NULL)
           {
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
@@ -1086,38 +1215,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     if (content_error)
                       g_error_free (content_error);
-                    SEND_TO_CLIENT ("<get_report_response>"
-                                    "<status>50x</status>");
+                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
+                                            "<status>50x</status>");
                   }
                 else
                   {
                     gchar* base64_content;
+                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
+                                            "<status>200</status>"
+                                            "<report>");
                     base64_content = g_base64_encode ((guchar*) content,
                                                       content_length);
                     g_free (content);
-                    // FIX free base64_content if SEND_TO_CLIENT fail
-                    SEND_TO_CLIENT ("<get_report_response>"
-                                    "<status>200</status>"
-                                    "<report>");
-                    SEND_TO_CLIENT (base64_content);
+                    if (send_to_client (base64_content))
+                      {
+                        g_free (base64_content);
+                        error_send_to_client (error);
+                        return;
+                      }
                     g_free (base64_content);
-                    SEND_TO_CLIENT ("</report>");
+                    SEND_TO_CLIENT_OR_FAIL ("</report>");
                   }
               }
             else
               {
                 g_free (name);
-                SEND_TO_CLIENT ("<get_report_response>"
-                                "<status>40x</status>");
+                SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
+                                        "<status>40x</status>");
               }
           }
         else
           {
             free_string_var (&current_task_task_id);
-            SEND_TO_CLIENT ("<get_report_response>"
-                            "<status>500</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
+                                    "<status>500</status>");
           }
-        SEND_TO_CLIENT ("</get_report_response>");
+        SEND_TO_CLIENT_OR_FAIL ("</get_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_GET_REPORT_ID:
@@ -1129,57 +1262,63 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (server.rules)
           {
             int index;
-            SEND_TO_CLIENT ("<get_rules_response><status>200</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_rules_response><status>200</status>");
             for (index = 0; index < server.rules_size; index++)
               if (send_rule (g_ptr_array_index (server.rules, index)))
-                goto send_to_client_fail;
-            SEND_TO_CLIENT ("</get_rules_response>");
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            SEND_TO_CLIENT_OR_FAIL ("</get_rules_response>");
           }
         else
-          SEND_TO_CLIENT ("<get_rules_response>"
-                          "<status>500</status>"
-                          "</get_rules_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_rules_response>"
+                                  "<status>500</status>"
+                                  "</get_rules_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_VERSION:
-        SEND_TO_CLIENT ("<omp_version_response>"
-                        "<status>200</status>"
-                        "<version><preferred/>1.0</version>"
-                        "</omp_version_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<omp_version_response>"
+                                "<status>200</status>"
+                                "<version><preferred/>1.0</version>"
+                                "</omp_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_TASK:
-        {
-          unsigned int id;
-          assert (current_client_task == NULL);
-          if (sscanf (current_task_task_id, "%u", &id) == 1)
-            {
-              task_t* task = find_task (id);
-              if (task == NULL)
-                SEND_TO_CLIENT ("<delete_task_response>"
-                                "<status>407</status>"
-                                "</delete_task_response>");
-              else if (delete_task (&task))
-                {
-                  /* to_server is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
-                  abort ();
-                }
-              else
-                SEND_TO_CLIENT ("<delete_task_response>"
-                                "<status>201</status>"
-                                "</delete_task_response>");
-            }
-          else
-            SEND_TO_CLIENT ("<delete_task_response>"
-                            "<status>40x</status>"
-                            "</delete_task_response>");
-          free_string_var (&current_task_task_id);
-          set_client_state (CLIENT_AUTHENTIC);
-        }
+        if (current_task_task_id)
+          {
+            unsigned int id;
+            assert (current_client_task == NULL);
+            if (sscanf (current_task_task_id, "%u", &id) == 1)
+              {
+                task_t* task = find_task (id);
+                if (task == NULL)
+                  SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
+                                          "<status>407</status>"
+                                          "</delete_task_response>");
+                else if (delete_task (&task))
+                  {
+                    /* to_server is full. */
+                    // FIX revert parsing for retry
+                    // process_omp_client_input must return -2
+                    abort ();
+                  }
+                else
+                  SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
+                                          "<status>201</status>"
+                                          "</delete_task_response>");
+              }
+            else
+              SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
+                                      "<status>40x</status>"
+                                      "</delete_task_response>");
+            free_string_var (&current_task_task_id);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_TASK_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
@@ -1187,9 +1326,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (current_task_task_id
-            && modify_task_parameter
-            && modify_task_value)
+        if (current_task_task_id != NULL
+            && modify_task_parameter != NULL
+            && modify_task_value != NULL)
           {
             int ret = set_report_parameter (current_task_task_id,
                                             modify_task_parameter,
@@ -1200,17 +1339,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             switch (ret)
               {
                 case 0:
-                  SEND_TO_CLIENT ("<modify_report_response>"
-                                  "<status>200</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
+                                          "<status>200</status>");
                   break;
                 case -2: /* Parameter name error. */
-                  SEND_TO_CLIENT ("<modify_report_response>"
-                                  "<status>40x</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
+                                          "<status>40x</status>");
                   break;
                 case -3: /* Failed to write to disk. */
                 default:
-                  SEND_TO_CLIENT ("<modify_report_response>"
-                                  "<status>50x</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
+                                          "<status>50x</status>");
                   break;
               }
           }
@@ -1219,10 +1358,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&modify_task_parameter);
             free_string_var (&modify_task_value);
             free_string_var (&current_task_task_id);
-            SEND_TO_CLIENT ("<modify_report_response>"
-                            "<status>500</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
+                                    "<status>500</status>");
           }
-        SEND_TO_CLIENT ("</modify_report_response>");
+        SEND_TO_CLIENT_OR_FAIL ("</modify_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_REPORT_PARAMETER:
@@ -1239,48 +1378,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
-        {
-          unsigned int id;
-          assert (current_client_task == NULL);
-          if (sscanf (current_task_task_id, "%u", &id) == 1)
-            {
-              task_t* task = find_task (id);
-              if (task == NULL)
-                SEND_TO_CLIENT ("<modify_task_response>"
-                                "<status>407</status>"
-                                "</modify_task_response>");
-              else
-                {
-                  // FIX check if param,value else respond fail
-                  int fail = set_task_parameter (task,
-                                                 modify_task_parameter,
-                                                 modify_task_value);
-                  free (modify_task_parameter);
-                  modify_task_parameter = NULL;
-                  if (fail)
-                    {
-                      free (modify_task_value);
-                      modify_task_value = NULL;
-                      SEND_TO_CLIENT ("<modify_task_response>"
+        if (current_task_task_id)
+          {
+            unsigned int id;
+            assert (current_client_task == NULL);
+            if (sscanf (current_task_task_id, "%u", &id) == 1)
+              {
+                task_t* task = find_task (id);
+                if (task == NULL)
+                  SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                          "<status>407</status>"
+                                          "</modify_task_response>");
+                else
+                  {
+                    // FIX check if param,value else respond fail
+                    int fail = set_task_parameter (task,
+                                                   modify_task_parameter,
+                                                   modify_task_value);
+                    free (modify_task_parameter);
+                    if (fail)
+                      {
+                        free (modify_task_value);
+                        modify_task_value = NULL;
+                        SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                                "<status>40x</status>"
+                                                "</modify_task_response>");
+                      }
+                    else
+                      {
+                        modify_task_value = NULL;
+                        SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                                "<status>201</status>"
+                                                "</modify_task_response>");
+                      }
+                  }
+              }
+            else
+              SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
                                       "<status>40x</status>"
                                       "</modify_task_response>");
-                    }
-                  else
-                    {
-                      modify_task_value = NULL;
-                      SEND_TO_CLIENT ("<modify_task_response>"
-                                      "<status>201</status>"
-                                      "</modify_task_response>");
-                    }
-                }
-            }
-          else
-            SEND_TO_CLIENT ("<modify_task_response>"
-                            "<status>40x</status>"
-                            "</modify_task_response>");
-          free_string_var (&current_task_task_id);
-          set_client_state (CLIENT_AUTHENTIC);
-        }
+            free_string_var (&current_task_task_id);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
         assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
@@ -1299,7 +1440,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar* msg;
           assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
-          assert (current_client_task);
+          assert (current_client_task != NULL);
           // FIX if all rqrd fields given then ok, else respond fail
           // FIX only here should the task be added to tasks
           //       eg on err half task could be saved (or saved with base64 file)
@@ -1308,9 +1449,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<task_id>%u</task_id>"
                                  "</new_task_response>",
                                  current_client_task->id);
-          // FIX free msg if fail
-          SEND_TO_CLIENT (msg);
-          free (msg);
+          if (send_to_client (msg))
+            {
+              g_free (msg);
+              error_send_to_client (error);
+              return;
+            }
+          g_free (msg);
           current_client_task = NULL;
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -1339,35 +1484,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_START_TASK:
-        {
-          unsigned int id;
-          assert (current_client_task == NULL);
-          if (sscanf (current_task_task_id, "%u", &id) == 1)
-            {
-              task_t* task = find_task (id);
-              if (task == NULL)
-                SEND_TO_CLIENT ("<start_task_response>"
-                                "<status>407</status>"
-                                "</start_task_response>");
-              else if (start_task (task))
-                {
-                  /* to_server is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
-                  abort ();
-                }
-              else
-                SEND_TO_CLIENT ("<start_task_response>"
-                                "<status>201</status>"
-                                "</start_task_response>");
-            }
-          else
-            SEND_TO_CLIENT ("<start_task_response>"
-                            "<status>40x</status>"
-                            "</start_task_response>");
-          free_string_var (&current_task_task_id);
-          set_client_state (CLIENT_AUTHENTIC);
-        }
+        if (current_task_task_id)
+          {
+            unsigned int id;
+            assert (current_client_task == NULL);
+            if (sscanf (current_task_task_id, "%u", &id) == 1)
+              {
+                task_t* task = find_task (id);
+                if (task == NULL)
+                  SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
+                                          "<status>407</status>"
+                                          "</start_task_response>");
+                else if (start_task (task))
+                  {
+                    /* to_server is full. */
+                    // FIX revert parsing for retry
+                    // process_omp_client_input must return -2
+                    abort ();
+                  }
+                else
+                  SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
+                                          "<status>201</status>"
+                                          "</start_task_response>");
+              }
+            else
+              SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
+                                      "<status>40x</status>"
+                                      "</start_task_response>");
+            free_string_var (&current_task_task_id);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_START_TASK_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
@@ -1383,24 +1531,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 task_t* task = find_task (id);
                 if (task == NULL)
-                  SEND_TO_CLIENT ("<status_response>"
-                                  "<status>407</status>");
+                  SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+                                          "<status>407</status>");
                 else
                   {
                     gchar* response;
-                    SEND_TO_CLIENT ("<status_response><status>200</status>");
+                    SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
                     response = g_strdup_printf ("<report_count>%u</report_count>",
                                                 task->report_count);
-                    // FIX free if fail
-                    SEND_TO_CLIENT (response);
+                    if (send_to_client (response))
+                      {
+                        g_free (response);
+                        error_send_to_client (error);
+                        return;
+                      }
                     g_free (response);
                     // FIX need to handle err cases before send status
                     (void) send_reports (task);
                   }
               }
             else
-              SEND_TO_CLIENT ("<status_response>"
-                              "<status>40x</status>");
+              SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+                                      "<status>40x</status>");
             free_string_var (&current_task_task_id);
           }
         else
@@ -1408,11 +1560,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             gchar* response;
             task_t* index;
             task_t* end;
-            SEND_TO_CLIENT ("<status_response><status>200</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
             response = g_strdup_printf ("<task_count>%u</task_count>",
                                         num_tasks);
-            // FIX free response on fail
-            SEND_TO_CLIENT (response);
+            if (send_to_client (response))
+              {
+                g_free (response);
+                error_send_to_client (error);
+                return;
+              }
             g_free (response);
             // FIX this is the only place that accesses "tasks"  foreach_task?
             index = tasks;
@@ -1452,13 +1608,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             index->logs_size,
                                             index->notes_size);
                     // FIX free line if RESPOND fails
-                    SEND_TO_CLIENT (line);
+                    if (send_to_client (line))
+                      {
+                        g_free (line);
+                        error_send_to_client (error);
+                        return;
+                      }
                     g_free (line);
                   }
                 index++;
               }
           }
-        SEND_TO_CLIENT ("</status_response>");
+        SEND_TO_CLIENT_OR_FAIL ("</status_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_STATUS_TASK_ID:
@@ -1470,13 +1631,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (0);
         break;
     }
-
-  return;
-
- send_to_client_fail:
-  tracef ("   SEND_TO_CLIENT out of space in to_client\n");
-  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-               "Manager out of space for reply to client.\n");
 }
 
 /**
@@ -1579,13 +1733,13 @@ omp_xml_handle_error (/*@unused@*/ GMarkupParseContext* context,
 
 // FIX probably should pass to process_omp_client_input
 extern char from_client[];
-extern int from_client_start;
-extern int from_client_end;
+extern buffer_size_t from_client_start;
+extern buffer_size_t from_client_end;
 
 /**
  * @brief Initialise OMP library data.
  *
- * This must run once, before the first call to \ref process_omp_client_input.
+ * This should run once, before the first call to \ref process_omp_client_input.
  */
 void
 init_omp_data ()
@@ -1596,6 +1750,7 @@ init_omp_data ()
   xml_parser.text = omp_xml_handle_text;
   xml_parser.passthrough = NULL;
   xml_parser.error = omp_xml_handle_error;
+  if (xml_context) g_free (xml_context);
   xml_context = g_markup_parse_context_new (&xml_parser,
                                             0,
                                             NULL,
@@ -1611,7 +1766,7 @@ init_omp_data ()
  *
  * The callback functions will queue any resulting server commands in
  * \ref to_server (using \ref send_to_server) and any replies for
- * the client in \ref to_client (using \ref SEND_TO_CLIENT).
+ * the client in \ref to_client (using \ref send_to_client).
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or \ref to_server.
@@ -1621,6 +1776,9 @@ process_omp_client_input ()
 {
   gboolean success;
   GError* error = NULL;
+
+  if (xml_context == NULL) return -1;
+
   success = g_markup_parse_context_parse (xml_context,
                                           from_client + from_client_start,
                                           from_client_end - from_client_start,

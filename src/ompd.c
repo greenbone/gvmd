@@ -82,16 +82,16 @@ int socket(int domain, int type, int protocol);
 struct sockaddr_in server_address;
 
 // FIX Should probably be passed into serve_omp.
-extern int from_buffer_size;
+extern buffer_size_t from_buffer_size;
 
 // FIX mv these here when read_protocol sorted out in openvasmd.c
 // FIX how to share these buffers with otpd.c?
 extern char from_client[];
-extern int from_client_start;
-extern int from_client_end;
+extern buffer_size_t from_client_start;
+extern buffer_size_t from_client_end;
 extern char from_server[];
-extern int from_server_start;
-extern int from_server_end;
+extern buffer_size_t from_server_start;
+extern buffer_size_t from_server_end;
 
 /**
  * @brief Read as much from the client as the \ref from_client buffer will hold.
@@ -112,7 +112,6 @@ read_from_client (gnutls_session_t* client_session,
       count = gnutls_record_recv (*client_session,
                                   from_client + from_client_end,
                                   from_buffer_size - from_client_end);
-      tracef ("   c count: %i\n", count);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -172,7 +171,6 @@ read_from_server (gnutls_session_t* server_session,
       count = gnutls_record_recv (*server_session,
                                   from_server + from_server_end,
                                   from_buffer_size - from_server_end);
-      tracef ("   s count: %i\n", (int) count);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -200,12 +198,13 @@ read_from_server (gnutls_session_t* server_session,
                        alert_name);
             }
           fprintf (stderr, "Failed to read from server.\n");
-          gnutls_perror ((int) count);
+          gnutls_perror (count);
           return -1;
         }
       if (count == 0)
         /* End of file. */
         return -3;
+      assert (count > 0);
       from_server_end += count;
     }
 
@@ -389,7 +388,7 @@ serve_omp (gnutls_session_t* client_session,
            int client_socket, int* server_socket_addr)
 {
   int nfds;
-  unsigned char lastfds;
+  uint8_t lastfds;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
@@ -423,7 +422,8 @@ serve_omp (gnutls_session_t* client_session,
 #if TRACE_TEXT
   tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
 #else
-  tracef ("<= client  %i bytes\n", from_client_end - initial_start);
+  tracef ("<= client  %" BUFFER_SIZE_T_FORMAT " bytes\n",
+          from_client_end);
 #endif
 #endif /* TRACE || LOG */
   // FIX handle client_input_stalled
@@ -460,12 +460,12 @@ serve_omp (gnutls_session_t* client_session,
 
   nfds = 1 + (client_socket > server_socket
               ? client_socket : server_socket);
-  lastfds = '\0'; // FIX
+  lastfds = 0; // FIX
   while (1)
     {
       int ret;
       /* Setup for select. */
-      unsigned char fds = '0'; /* What `select' is going to watch. */
+      uint8_t fds = 0; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
@@ -476,12 +476,12 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
-          if ((lastfds & FD_CLIENT_READ) == (unsigned char) 0)
+          if ((lastfds & FD_CLIENT_READ) == 0)
             tracef ("   client read on\n");
         }
       else
         {
-          if ((lastfds & FD_CLIENT_READ) != (unsigned char) 0)
+          if ((lastfds & FD_CLIENT_READ) > 0)
             tracef ("   client read off\n");
         }
       if ((server_init_state == SERVER_INIT_DONE
@@ -492,12 +492,12 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (server_socket, &readfds);
           fds |= FD_SERVER_READ;
-          if ((lastfds & FD_SERVER_READ) == (unsigned char) 0)
+          if ((lastfds & FD_SERVER_READ) == 0)
             tracef ("   server read on\n");
         }
       else
         {
-          if ((lastfds & FD_SERVER_READ) != (unsigned char) 0)
+          if ((lastfds & FD_SERVER_READ) > 0)
             tracef ("   server read off\n");
         }
       if (to_client_start < to_client_end)
@@ -507,7 +507,7 @@ serve_omp (gnutls_session_t* client_session,
         }
       if (((server_init_state == SERVER_INIT_TOP
             || server_init_state == SERVER_INIT_DONE)
-           && to_server_buffer_space ())
+           && to_server_buffer_space () > 0)
           || server_init_state == SERVER_INIT_CONNECT_INTR
           || server_init_state == SERVER_INIT_CONNECTED
           || server_init_state == SERVER_INIT_GOT_PASSWORD
@@ -540,10 +540,11 @@ serve_omp (gnutls_session_t* client_session,
           return -1;
         }
 
-      if (fds & FD_CLIENT_READ && FD_ISSET (client_socket, &readfds))
+      if ((fds & FD_CLIENT_READ) == FD_CLIENT_READ
+          && FD_ISSET (client_socket, &readfds))
         {
 #if TRACE || LOG
-          int initial_start = from_client_end;
+          buffer_size_t initial_start = from_client_end;
 #endif
           tracef ("   FD_CLIENT_READ\n");
 
@@ -615,10 +616,11 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if (fds & FD_SERVER_READ && FD_ISSET (server_socket, &readfds))
+      if ((fds & FD_SERVER_READ) == FD_SERVER_READ
+          && FD_ISSET (server_socket, &readfds))
         {
 #if TRACE || LOG
-          int initial_start = from_server_end;
+          buffer_size_t initial_start = from_server_end;
 #endif
           tracef ("   FD_SERVER_READ\n");
 
@@ -708,7 +710,7 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if (fds & FD_SERVER_WRITE
+      if ((fds & FD_SERVER_WRITE) == FD_SERVER_WRITE
           && FD_ISSET (server_socket, &writefds))
         {
           /* Write as much as possible to the server. */
@@ -730,7 +732,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if (fds & FD_CLIENT_WRITE
+      if ((fds & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
           && FD_ISSET (client_socket, &writefds))
         {
           /* Write as much as possible to the client. */

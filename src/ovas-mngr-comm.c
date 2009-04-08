@@ -202,21 +202,39 @@ end_session (int server_socket,
 #if 1
   /* Turn on blocking. */
   // FIX get flags first
-  if (fcntl (server_socket, F_SETFL, 0) == -1)
+  if (fcntl (server_socket, F_SETFL, 0L) == -1)
     {
       perror ("Failed to set server socket flag (end_session)");
       return -1;
     }
 #endif
-  gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
+
+  while (1)
+    {
+      int ret = gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
+      if (ret == GNUTLS_E_AGAIN) continue;
+      if (ret == GNUTLS_E_INTERRUPTED) continue;
+      if (ret)
+        {
+          fprintf (stderr, "Failed to gnutls_bye.\n");
+          gnutls_perror ((int) ret);
+          /* Carry on successfully anyway, as this often fails, perhaps
+           * because the server is closing the connection first. */
+          break;
+        }
+    }
+
   gnutls_deinit (server_session);
+
   gnutls_certificate_free_credentials (server_credentials);
+
   if (shutdown (server_socket, SHUT_RDWR) == -1)
     {
       if (errno == ENOTCONN) return 0;
       perror ("Failed to shutdown server socket");
       return -1;
     }
+
 #if 0
   if (close (server_socket) == -1)
     {
@@ -224,6 +242,7 @@ end_session (int server_socket,
       return -1;
     }
 #endif
+
   return 0;
 }
 
@@ -235,7 +254,8 @@ end_session (int server_socket,
 unsigned int
 to_server_buffer_space ()
 {
-  return to_server_end - to_server_start;
+  if (to_server_end < to_server_start) abort ();
+  return (unsigned int) (to_server_end - to_server_start);
 }
 
 /**
@@ -288,7 +308,8 @@ connect_to_server (int server_socket,
       if (ret_len != (socklen_t) sizeof (ret))
         {
           fprintf (stderr, "Weird option length from getsockopt: %i.\n",
-                   ret_len);
+                   /* socklen_t is an int, according to getsockopt(2). */
+                   (int) ret_len);
           return -1;
         }
       if (ret)
@@ -363,11 +384,11 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
             /* \todo Rehandshake. */
             continue;
           fprintf (stderr, "Failed to write to server.\n");
-          gnutls_perror (count);
+          gnutls_perror ((int) count);
           return -1;
         }
       point += count;
-      tracef ("=> server  (string) %i bytes\n", count);
+      tracef ("=> server  (string) %zi bytes\n", count);
     }
   tracef ("=> server  (string) done\n");
   /* Wrote everything. */
@@ -404,11 +425,11 @@ write_to_server_buffer (gnutls_session_t* server_session)
             /* \todo Rehandshake. */
             continue;
           fprintf (stderr, "Failed to write to server.\n");
-          gnutls_perror (count);
+          gnutls_perror ((int) count);
           return -1;
         }
       to_server_start += count;
-      tracef ("=> server  %i bytes\n", count);
+      tracef ("=> server  %zi bytes\n", count);
     }
   tracef ("=> server  done\n");
   to_server_start = to_server_end = 0;

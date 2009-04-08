@@ -75,7 +75,7 @@ typedef enum
  */
 typedef struct
 {
-  int number;                ///< Port number.
+  unsigned int number;       ///< Port number.
   port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
 } port_t;
 
@@ -171,7 +171,9 @@ task_t*
 find_task (unsigned int id);
 
 int
-set_task_parameter (task_t*, /*@null@*/ const char*, /*@only@*/ char*);
+set_task_parameter (task_t*,
+                    /*@null@*/ const char*,
+                    /*@null@*/ /*@only@*/ char*);
 
 int
 start_task (task_t*);
@@ -207,12 +209,14 @@ append_task_open_port (task_t*, unsigned int, char*);
 char*
 make_report_id ();
 
+/*@-exportlocal@*/
 gchar*
 report_path_task_name (gchar*);
 
 /*@shared@*/ /*@null@*/
 task_t*
 report_task (const char*);
+/*@=exportlocal@*/
 
 int
 delete_report (const char*);

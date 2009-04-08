@@ -232,25 +232,26 @@ char from_server[FROM_BUFFER_SIZE];
 /**
  * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
  */
-size_t from_buffer_size = FROM_BUFFER_SIZE;
+buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 
 // FIX just make these pntrs?
 /**
  * @brief The start of the data in the \ref from_client buffer.
  */
-size_t from_client_start = 0;
+buffer_size_t from_client_start = 0;
 /**
  * @brief The start of the data in the \ref from_server buffer.
  */
-size_t from_server_start = 0;
+buffer_size_t from_server_start = 0;
 /**
  * @brief The end of the data in the \ref from_client buffer.
  */
-size_t from_client_end = 0;
+buffer_size_t from_client_end = 0;
+
 /**
  * @brief The end of the data in the \ref from_server buffer.
  */
-size_t from_server_end = 0;
+buffer_size_t from_server_end = 0;
 
 
 /* Checking protocol, forking, serving the client. */
@@ -268,7 +269,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 {
   /* Turn on blocking. */
   // FIX get flags first
-  if (fcntl (client_socket, F_SETFL, 0) == -1)
+  if (fcntl (client_socket, F_SETFL, 0L) == -1)
     {
       perror ("Failed to set client socket flag (read_protocol)");
       return PROTOCOL_FAIL;

@@ -1,3 +1,102 @@
+2009-04-01  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Cleanup and annotate more, from Splint.
+
+	* src/types.h: New file.
+
+	* src/splint.h (g_malloc, g_malloc0, g_ptr_array_add, g_slist_append,
+	g_hash_table_destroy): New headers.
+	(dirent_pointer_pointer): Remove "out" annotation.
+
+	* src/ompd.h: Turn off exportlocal around server_address.
+	(to_client_start, to_client_end): Change to buffer_size_t.
+
+	* src/ompd.c (from_buffer_size, from_client_start, from_client_end,
+	from_server_start, from_server_end): Change to buffer_size_t.
+	(read_from_server): Remove tracing.  Cast count for += and gnutls_perror.
+	Add count assertion.
+	(serve_omp): Use buffer_size_t format in tracefs.  Change lastfds and fds
+	to uint8_t.  Make fds checks explicitly boolean.  Change initial_start
+	to buffer_size_t.
+
+	* src/otp.h: Turn off exportlocal around server.
+
+	* src/otp.c (from_buffer_size): Change to buffer_size_t.
+	(tcp_string, udp_string, other_string, empty_string): New variables.
+	(port_protocol_name): Return refs to variables instead of strings.  Add
+	shared annotation.
+	(print_port): Update format specifier for type change.
+	(current_message): Add only annotation.
+	(make_message): Annotate.  Cast g_malloc return.
+	(message_data_t): Annotate members temp.
+	(append_debug_message, append_hole_message, append_info_message,
+	append_log_message, append_note_message): Annotate message arg keep.
+	(current_server_preference,	current_server_plugin_dependency_name,
+	current_server_plugin_dependency_dependencies): Annotate only.
+	(add_server_preference,
+	append_to_current_server_plugin_dependency): Annotate args keep.
+	(add_server_plugins_dependency): Annotate args keep.  Make assert
+	explicitly boolean.
+	(finish_current_server_plugin_dependency): Make assert explicitly
+	boolean.
+	(free_rule): Annotate rule arg.  Check rule before freeing.
+	(add_server_rule): Change arg annotation to keep.
+	(from_server_start, from_server_end): Change to buffer_size_t.
+	(parse_server_preference_value, parse_server_preference_value): Make
+	assert explicitly boolean. Cast char for memchr.
+	(parse_server_plugin_dependency_dependency, parse_server_server): Make
+	from_start and from_end	buffer_size_t.  Annotate dependent variables.
+	Correct <|> checks.
+	(sync_buffer): Use buffer_size_t format in tracef.
+	(process_otp_server_input): Make from_start and from_end size_t.
+	Annotate dependent variables.  Cast char for memchr.  Ensure pointer
+	comparisons are explicitly boolean.  Use g_malloc0 instead of g_newa.
+
+	* src/manage.h: Turn off exportlocal around report_path_task_name and
+	report_task.
+	(set_task_parameter): Add null annotation to arg.
+	(port_t): Add unsigned to type of number.
+
+	* src/manage.c (set_task_parameter): Fail if value is NULL.
+	(start_task): Send ntp_opt_show_end "no".
+	(grow_description): Remove tracing.
+	(append_task_open_port): Check task->open_ports before use.  Cast away
+	g_array_append_val return.
+
+	* src/ovas-mngr-comm.c (end_session): Pass fcntl a long zero.  Handle
+	gnutls_bye return.
+	(to_server_buffer_space): Check end and start before use.  Cast return.
+	(connect_to_server): Cast socklen_t for fprintf and size_t for
+	gnutls_perror.  Use z modifier for size_t tracef.
+
+	* src/omp.h (to_client_start, to_client_end): Change type to buffer_size_t.
+
+	* src/omp.c (to_client_start, to_client_end): Change type to buffer_size_t.
+	(current_client_task): Add dependent annotation.
+	(xml_context): Initialise.
+	(SEND_TO_CLIENT): Remove.
+	(send_to_client, error_send_to_client): New functions.
+	(SEND_TO_CLIENT_OR_FAIL): New macro.
+	(omp_xml_handle_start_element, send_requirement, send_dependency,
+	send_preference, send_rule, send_reports): Replace old SEND_TO_CLIENT macro
+	with new functions.
+	(omp_xml_handle_end_element): Use SEND_TO_CLIENT_OR_FAIL and new send
+	functions instead of SEND_TO_CLIENT.  Always check current_task_task_id
+	before use.  Change pointer comparisons to be explicitly boolean.
+	(from_client_start, from_client_end): Change to buffer_size_t.
+	(init_omp_data): Free xml_context before setting it.
+	(process_omp_client_input): Check xml_context before use.
+
+	* src/otpd.c (from_buffer_size, from_client_start, from_client_end,
+	from_server_start, from_server_end): Change to buffer_size_t.
+	(serve_otp): Use buffer_size_t format for tracef.  Make fds checks
+	explicitly boolean.  Change initial_start to buffer_size_t.  Cast count
+	for	gnutls_perror.
+
+	* src/openvasmd.c (from_buffer_size, from_client_start, from_client_end,
+	from_server_start, from_server_end): Change to buffer_size_t.
+	(read_protocol): Pass fcntl a long zero.
+
 2009-04-07  Jan-Oliver Wagner <jan-oliver.wagner@intevation.de>
 
 	* CMakeLists.txt, doc/CMakeLists.txt, doc/openvasmd.8.xml,

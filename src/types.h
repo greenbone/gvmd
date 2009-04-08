@@ -1,12 +1,12 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Headers for OpenVAS Manager: the OMP daemon.
+ * Description: Headers for OpenVAS Manager: types.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009 Intevation GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -23,24 +23,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_OMPD_H
-#define OPENVAS_MANAGER_OMPD_H
+#ifndef OPENVAS_MANAGER_TYPES_H
+#define OPENVAS_MANAGER_TYPES_H
 
-#include "types.h"
-#include <gnutls/gnutls.h>
+#define BUFFER_SIZE_T_FORMAT "u"
 
-int
-serve_omp (gnutls_session_t*, gnutls_session_t*,
-           gnutls_certificate_credentials_t*,
-           int, int*);
+typedef unsigned int buffer_size_t;
 
-/*@-exportlocal@*/
-extern struct sockaddr_in server_address;
-/*@=exportlocal@*/
-
-// FIX Temporarily, for omp.c SEND_TO_CLIENT.
-extern char to_client[];
-extern buffer_size_t to_client_start;
-extern buffer_size_t to_client_end;
-
-#endif
+#endif /* !OPENVAS_MANAGER_TYPES_H */

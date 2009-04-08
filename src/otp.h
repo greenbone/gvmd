@@ -75,6 +75,8 @@ typedef struct
 } server_t;
 
 // FIX for omp.c access to server info (rules, prefs, ...)
+/*@-exportlocal@*/
 extern server_t server;
+/*@=exportlocal@*/
 
 #endif

@@ -33,6 +33,14 @@
 
 /* GLib. */
 
+/*@only@*/
+gpointer
+g_malloc (gulong n_bytes);
+
+/*@only@*/
+gpointer
+g_malloc0 (gulong n_bytes);
+
 void
 g_free (/*@only@*/ /*@out@*/ /*@null@*/ gpointer mem);
 
@@ -46,6 +54,23 @@ g_array_free (/*@only@*/ /*@out@*/ /*@null@*/ GArray *array,
 gchar*
 g_ptr_array_free (/*@only@*/ /*@out@*/ /*@null@*/ GPtrArray *array,
                   gboolean free_segment);
+
+void
+g_ptr_array_add (/*@only@*/ GPtrArray *array,
+                 /*@keep@*/ gpointer data);
+
+/*@only@*/
+GSList*
+g_slist_append (/*@keep@*/ GSList* list, /*@keep@*/ gpointer data);
+
+// FIX these keeps depend on g_hash_table_new params
+void
+g_hash_table_insert (GHashTable *hash_table,
+                     /*@keep@*/ gpointer key,
+                     /*@keep@*/ gpointer value);
+
+void
+g_hash_table_destroy (/*@only@*/ GHashTable *hash_table);
 
 void
 g_ptr_array_foreach (GPtrArray *array,
@@ -101,7 +126,7 @@ gnutls_alert_get_name (gnutls_alert_description_t alert);
 /* Standard functions. */
 
 typedef /*@null@*/ struct dirent * dirent_pointer;
-typedef /*@out@*/ /*@null@*/ dirent_pointer* dirent_pointer_pointer;
+typedef /*@null@*/ dirent_pointer* dirent_pointer_pointer;
 
 int
 scandir (const char *dir, dirent_pointer_pointer *namelist,

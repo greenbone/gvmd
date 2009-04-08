@@ -39,6 +39,7 @@
 #include "manage.h"
 #include "string.h"
 #include "tracef.h"
+#include "types.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -59,7 +60,7 @@
 #endif
 
 // FIX Should probably be passed into process_otp_server_input.
-extern int from_buffer_size;
+extern buffer_size_t from_buffer_size;
 
 
 /* Helper functions. */
@@ -102,6 +103,11 @@ typedef struct
 } port_t;
 #endif
 
+/*@shared@*/ static char* tcp_string = "tcp";
+/*@shared@*/ static char* udp_string = "tcp";
+/*@shared@*/ static char* other_string = "???";
+/*@shared@*/ static char* empty_string = "";
+
 /**
  * @brief Get the name of the protocol of a port.
  *
@@ -109,15 +115,16 @@ typedef struct
  *
  * @return The name.
  */
-static char*
+/*@shared@*/
+static const char*
 port_protocol_name (port_t* port)
 {
   switch (port->protocol)
     {
-      case PORT_PROTOCOL_TCP: return "tcp";
-      case PORT_PROTOCOL_UDP: return "udp";
-      case PORT_PROTOCOL_OTHER: return "???";
-      default: assert (0); return "";
+      case PORT_PROTOCOL_TCP: return tcp_string;
+      case PORT_PROTOCOL_UDP: return udp_string;
+      case PORT_PROTOCOL_OTHER: return other_string;
+      default: assert (0); return empty_string;
     }
 }
 
@@ -130,7 +137,7 @@ port_protocol_name (port_t* port)
 static void
 print_port (FILE* stream, port_t* port)
 {
-  fprintf (stream, "FIX (%d/%s)", port->number, port_protocol_name (port));
+  fprintf (stream, "FIX (%u/%s)", port->number, port_protocol_name (port));
 }
 
 
@@ -152,7 +159,8 @@ typedef struct
 /**
  * @brief Current message during OTP SERVER message commands.
  */
-static /*@null@*/ message_t* current_message = NULL;
+/*@null@*/ /*@only@*/
+static message_t* current_message = NULL;
 
 /**
  * @brief Make a message.
@@ -162,13 +170,15 @@ static /*@null@*/ message_t* current_message = NULL;
  *
  * @return A pointer to the new message.
  */
+/*@only@*/
 static message_t*
 make_message (unsigned int number, const char* protocol)
+  /*@ensures isnull result->description, result->oid@*/
 {
   message_t* message;
   tracef ("   make_message %u %s\n", number, protocol);
 
-  message = g_malloc (sizeof (message_t));
+  message = (message_t*) g_malloc (sizeof (message_t));
 
   message->description = NULL;
   message->oid = NULL;
@@ -234,8 +244,8 @@ set_message_oid (message_t* message, /*@only@*/ char* oid)
  */
 typedef struct
 {
-  FILE* stream;  ///< Destination stream.
-  char* type;    ///< Type of message.
+  /*@temp@*/ FILE* stream;  ///< Destination stream.
+  /*@temp@*/ char* type;    ///< Type of message.
 } message_data_t;
 
 /**
@@ -433,7 +443,7 @@ save_report (task_t* task)
  * @param[in]  message      Message.
  */
 static void
-append_debug_message (task_t* task, message_t* message)
+append_debug_message (task_t* task, /*@keep@*/ message_t* message)
 {
   g_ptr_array_add (task->debugs, (gpointer) message);
   task->debugs_size++;
@@ -446,7 +456,7 @@ append_debug_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_hole_message (task_t* task, message_t* message)
+append_hole_message (task_t* task, /*@keep@*/ message_t* message)
 {
   g_ptr_array_add (task->holes, (gpointer) message);
   task->holes_size++;
@@ -459,7 +469,7 @@ append_hole_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_info_message (task_t* task, message_t* message)
+append_info_message (task_t* task, /*@keep@*/ message_t* message)
 {
   g_ptr_array_add (task->infos, (gpointer) message);
   task->infos_size++;
@@ -472,7 +482,7 @@ append_info_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_log_message (task_t* task, message_t* message)
+append_log_message (task_t* task, /*@keep@*/ message_t* message)
 {
   g_ptr_array_add (task->logs, (gpointer) message);
   task->logs_size++;
@@ -485,7 +495,7 @@ append_log_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_note_message (task_t* task, message_t* message)
+append_note_message (task_t* task, /*@keep@*/ message_t* message)
 {
   g_ptr_array_add (task->notes, (gpointer) message);
   task->notes_size++;
@@ -497,7 +507,8 @@ append_note_message (task_t* task, message_t* message)
 /**
  * @brief The current server preference, during reading of server preferences.
  */
-static /*@null@*/ char* current_server_preference = NULL;
+/*@null@*/ /*@only@*/
+static char* current_server_preference = NULL;
 
 /**
  * @brief Create the server preferences.
@@ -522,7 +533,7 @@ make_server_preferences ()
  * @param[in]  value       The value of the preference.
  */
 static void
-add_server_preference (/*@only@*/ char* preference, /*@only@*/ char* value)
+add_server_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
 {
   g_hash_table_insert (server.preferences, preference, value);
 }
@@ -533,11 +544,13 @@ add_server_preference (/*@only@*/ char* preference, /*@only@*/ char* value)
 /**
  * @brief The current server plugin, during reading of server plugin dependencies.
  */
+/*@only@*/
 static char* current_server_plugin_dependency_name = NULL;
 
 /**
  * @brief The plugins required by the current server plugin.
  */
+/*@only@*/
 static GSList* current_server_plugin_dependency_dependencies = NULL;
 
 /**
@@ -564,9 +577,10 @@ make_server_plugins_dependencies ()
  * @param[in]  requirements  The plugins required by the plugin.
  */
 static void
-add_server_plugins_dependency (char* name, GSList* requirements)
+add_server_plugins_dependency (/*@keep@*/ char* name,
+                               /*@keep@*/ GSList* requirements)
 {
-  assert (server.plugins_dependencies);
+  assert (server.plugins_dependencies != NULL);
   tracef ("   server new dependency name: %s\n", name);
   g_hash_table_insert (server.plugins_dependencies, name, requirements);
 }
@@ -594,7 +608,7 @@ make_current_server_plugin_dependency (/*@only@*/ char* name)
  *                          make_server_plugins_dependencies.
  */
 static void
-append_to_current_server_plugin_dependency (/*@only@*/ char* requirement)
+append_to_current_server_plugin_dependency (/*@keep@*/ char* requirement)
 {
   tracef ("   server appending plugin requirement: %s\n", requirement);
   current_server_plugin_dependency_dependencies
@@ -608,7 +622,7 @@ append_to_current_server_plugin_dependency (/*@only@*/ char* requirement)
 static void
 finish_current_server_plugin_dependency ()
 {
-  assert (current_server_plugin_dependency_name);
+  assert (current_server_plugin_dependency_name != NULL);
   add_server_plugins_dependency (current_server_plugin_dependency_name,
                                  current_server_plugin_dependency_dependencies);
   current_server_plugin_dependency_name = NULL;
@@ -625,9 +639,9 @@ finish_current_server_plugin_dependency ()
  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
  */
 static void
-free_rule (void* rule, /*@unused@*/ void* dummy)
+free_rule (/*@only@*/ /*@out@*/ void* rule, /*@unused@*/ void* dummy)
 {
-  free (rule);
+  if (rule) free (rule);
 }
 
 /**
@@ -662,7 +676,7 @@ make_server_rules ()
  * @param[in]  rule  The rule.
  */
 static void
-add_server_rule (/*@only@*/ char* rule)
+add_server_rule (/*@keep@*/ char* rule)
 {
   g_ptr_array_add (server.rules, rule);
   server.rules_size++;
@@ -779,8 +793,8 @@ set_server_init_state (server_init_state_t state)
 
 // FIX probably should pass to process_omp_client_input
 extern char from_server[];
-extern int from_server_start;
-extern int from_server_end;
+extern buffer_size_t from_server_start;
+extern buffer_size_t from_server_end;
 
 /**
  * @brief Parse the final SERVER field of an OTP message.
@@ -821,11 +835,13 @@ static int
 parse_server_preference_value (char** messages)
 {
   char *value, *end, *match;
-  assert (current_server_preference);
+  assert (current_server_preference != NULL);
   end = *messages + from_server_end - from_server_start;
   while (*messages < end && ((*messages)[0] == ' '))
     { (*messages)++; from_server_start++; }
-  if ((match = memchr (*messages, '\n', from_server_end - from_server_start)))
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
     {
       match[0] = '\0';
       value = g_strdup (*messages);
@@ -863,7 +879,9 @@ parse_server_rule (char** messages)
     /* The rules list ends with "<|> SERVER". */
     return -1;
   /* There may be a rule ending in a semicolon. */
-  if ((match = memchr (*messages, ';', from_server_end - from_server_start)))
+  if ((match = memchr (*messages,
+                       (int) ';',
+                       from_server_end - from_server_start)))
     {
       char* rule;
       match[0] = '\0';
@@ -889,7 +907,7 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
   /* Look for the end of dependency marker: a newline that comes before
    * the next <|>. */
   char *separator, *end, *match, *input;
-  int from_start, from_end;
+  buffer_size_t from_start, from_end;
   separator = NULL;
   /* Look for <|>. */
   input = *messages;
@@ -899,7 +917,8 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
          && (match = memchr (input, (int) '<', from_end - from_start))
             != NULL)
     {
-      if (((int) (match - input) - from_start + 1) < from_end
+      assert (match >= input);
+      if ((((match - input) + from_start + 1) < from_end)
           && (match[1] == '|')
           && (match[2] == '>'))
         {
@@ -929,7 +948,6 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
   return separator == NULL;
 }
 
-
 /**
  * @brief Parse the field following "SERVER <|>".
  *
@@ -950,9 +968,9 @@ parse_server_server (/*@dependent@*/ char** messages)
                        (int) '\n',
                        from_server_end - from_server_start)))
     {
-      char* newline;
-      char* input;
-      int from_start, from_end;
+      /*@dependent@*/ char* newline;
+      /*@dependent@*/ char* input;
+      buffer_size_t from_start, from_end;
       match[0] = '\0';
       // FIX is there ever whitespace before the newline?
       while (*messages < end && ((*messages)[0] == ' '))
@@ -973,12 +991,13 @@ parse_server_server (/*@dependent@*/ char** messages)
       from_start = from_server_start;
       from_end = from_server_end;
       while (from_start < from_end
-             && (match = memchr (input,
-                                 (int) '<',
-                                 from_end - from_start))
-                != NULL)
+             && ((match = memchr (input,
+                                  (int) '<',
+                                  from_end - from_start))
+                 != NULL))
         {
-          if ((((int) (match - input) - from_start + 1) < from_end)
+          assert (match >= input);
+          if ((((match - input) + from_start + 1) < from_end)
               && (match[1] == '|')
               && (match[2] == '>'))
             {
@@ -1040,8 +1059,10 @@ sync_buffer ()
 #if TRACE
       from_server[from_server_end] = '\0';
       //tracef ("   new from_server: %s\n", from_server);
-      tracef ("   new from_server_start: %i\n", from_server_start);
-      tracef ("   new from_server_end: %i\n", from_server_end);
+      tracef ("   new from_server_start: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_server_start);
+      tracef ("   new from_server_end: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_server_end);
 #endif
     }
   return 0;
@@ -1064,10 +1085,10 @@ sync_buffer ()
 int
 process_otp_server_input ()
 {
-  char* match = NULL;
-  /*@shared@*/ char* messages = from_server + from_server_start;
-  /*@shared@*/ char* input;
-  int from_start, from_end;
+  /*@dependent@*/ char* match = NULL;
+  /*@dependent@*/ char* messages = from_server + from_server_start;
+  /*@dependent@*/ char* input;
+  buffer_size_t from_start, from_end;
   //tracef ("   consider %.*s\n", from_server_end - from_server_start, messages);
 
   /* First, handle special server states where the input from the server
@@ -1205,9 +1226,13 @@ process_otp_server_input ()
   from_start = from_server_start;
   from_end = from_server_end;
   while (from_start < from_end
-         && (match = memchr (input, '<', from_end - from_start)))
+         && ((match = memchr (input,
+                              (int) '<',
+                              from_end - from_start))
+             != NULL))
     {
-      if (((int) (match - input) - from_start + 1) < from_end
+      assert (match >= input);
+      if ((((match - input) + from_start + 1) < from_end)
           && (match[1] == '|')
           && (match[2] == '>'))
         {
@@ -1432,7 +1457,7 @@ process_otp_server_input ()
                 }
               case SERVER_INFO_OID:
                 {
-                  if (current_message && current_server_task)
+                  if (current_message != NULL && current_server_task != NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1498,7 +1523,7 @@ process_otp_server_input ()
                 }
               case SERVER_LOG_OID:
                 {
-                  if (current_message && current_server_task)
+                  if (current_message != NULL && current_server_task != NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1564,7 +1589,7 @@ process_otp_server_input ()
                 }
               case SERVER_NOTE_OID:
                 {
-                  if (current_message && current_server_task)
+                  if (current_message != NULL && current_server_task != NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1651,8 +1676,8 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       int number;
-                      char *name = g_newa (char, strlen (field));
-                      char *protocol = g_newa (char, strlen (field));
+                      char *name = g_malloc0 (strlen (field));
+                      char *protocol = g_malloc0 (strlen (field));
 
                       if (sscanf (field, "%s (%i/%[^)])",
                                   name, &number, protocol)
@@ -1666,6 +1691,8 @@ process_otp_server_input ()
                       append_task_open_port (current_server_task,
                                              number,
                                              protocol);
+                      g_free (name);
+                      g_free (protocol);
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
