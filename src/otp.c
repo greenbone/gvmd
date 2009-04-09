@@ -193,23 +193,19 @@ make_message (unsigned int number, const char* protocol)
   return message;
 }
 
-#if 0
-// FIX currently in manage.c
 /**
  * @brief Free a message for g_ptr_array_foreach.
  *
  * @param[in]  message       Pointer to the message.
  * @param[in]  dummy         Dummy parameter.
  */
-void
-free_message (gpointer message, gpointer dummy)
+static void
+free_message (/*@out@*/ /*@only@*/ message_t* message)
 {
-  message_t* msg = (message_t*) message;
-  if (msg->description) free (msg->description);
-  if (msg->oid) free (msg->oid);
-  free (msg);
+  if (message->description) free (message->description);
+  if (message->oid) free (message->oid);
+  free (message);
 }
-#endif
 
 /**
  * @brief Set the description of a message.
@@ -255,28 +251,11 @@ typedef struct
  * @param[in]  message_data  The stream and message type.
  */
 static void
-write_message (gpointer message, gpointer message_data)
+write_message (message_t* message, FILE* stream, char* type)
 {
-  message_t* msg = (message_t*) message;
-  message_data_t* data = (message_data_t*) message_data;
-  fprintf (data->stream, "results|%s|%s|", "dik", "dik"); // FIX
-  print_port (data->stream, &msg->port);
-  fprintf (data->stream, "|%s|%s|%s|\n",
-           msg->oid, data->type, msg->description);
-}
-
-/**
- * @brief Write an array of messages to a stream.
- *
- * @param[in]  file       The stream.
- * @param[in]  messages   Array of messages.
- * @param[in]  type       Type of message.
- */
-static void
-write_messages (FILE* file, GPtrArray* messages, char* type)
-{
-  message_data_t data = { file, type };
-  g_ptr_array_foreach (messages, write_message, &data);
+  fprintf (stream, "results|%s|%s|", "dik", "dik"); // FIX
+  print_port (stream, &message->port);
+  fprintf (stream, "|%s|%s|%s|\n", message->oid, type, message->description);
 }
 
 /**
@@ -287,218 +266,140 @@ write_messages (FILE* file, GPtrArray* messages, char* type)
  * @param[in]  time       The time.
  */
 static void
-write_timestamp (FILE* file, char* type, char* time)
+write_timestamp (FILE* file, const char* host, const char* type,
+                 const char* time)
 {
-  fprintf (file, "timestamps|%s|%s|%s|%s|\n", "dik", "dik", type, time); // FIX
+  fprintf (file, "timestamps||%s|%s|%s|\n", host, type, time);
 }
 
 /**
- * @brief Save a report to a file.
+ * @brief Close the current report.
  *
- * @param[in]  task       The task.
+ * @param[in]  task  The task.
  *
- * @return 0 success, -1 failed to open file, -2 failed to close file,
- *         -3 failed to symlink file to task dir, -4 failed to create dir,
- *         -5 failed to generate ID.
+ * @return 0 success, -1 current_report NULL, -2 failed to close file.
  */
 static int
 save_report (task_t* task)
 {
-  const char* id;
-  char* report_id;
-  gchar* user_dir_name;
-  gchar* dir_name;
-  gchar* name;
-  gchar* symlink_name;
-  FILE* file;
-
-  if (current_credentials.username == NULL) return -1;
+  assert (task->current_report != NULL);
+  if (task->current_report == NULL) return -1;
 
   tracef ("   Saving report (%s) on task %u\n", task->start_time, task->id);
 
-  if (task_id_string (task, &id)) return -1;
-
-  user_dir_name = g_build_filename (PREFIX
-                                    "/var/lib/openvas/mgr/users/",
-                                    current_credentials.username,
-                                    "reports",
-                                    NULL);
-
-  /* Ensure user reports directory exists. */
-
-  if (g_mkdir_with_parents (user_dir_name, 33216 /* -rwx------ */) == -1)
+  if (fclose (task->current_report))
     {
-      fprintf (stderr, "Failed to create report dir %s: %s\n",
-               user_dir_name,
-               strerror (errno));
-      g_free (user_dir_name);
-      return -4;
-    }
-
-  /* Generate report directory name. */
-
-  report_id = make_report_id ();
-  if (report_id == NULL)
-    {
-      g_free (user_dir_name);
-      return -5;
-    }
-
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
-                               current_credentials.username,
-                               "tasks",
-                               id,
-                               "reports",
-                               report_id,
-                               NULL);
-
-  symlink_name = g_build_filename (user_dir_name, report_id, NULL);
-  free (report_id);
-  g_free (user_dir_name);
-
-  /* Ensure task report directory exists. */
-
-  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
-    {
-      fprintf (stderr, "Failed to create report dir %s: %s\n",
-               dir_name,
-               strerror (errno));
-      g_free (dir_name);
-      g_free (symlink_name);
-      return -4;
-    }
-
-  /* Link report directory into task directory. */
-
-  if (symlink (dir_name, symlink_name))
-    {
-      (void) rmdir (dir_name);
-      fprintf (stderr, "Failed to symlink %s to %s\n",
-               dir_name,
-               symlink_name);
-      g_free (dir_name);
-      g_free (symlink_name);
-      return -3;
-    }
-
-  /* Write report. */
-
-  name = g_build_filename (dir_name, "report.nbe", NULL);
-
-  file = fopen (name, "w");
-  if (file == NULL)
-    {
-      (void) rmdir (dir_name);
-      fprintf (stderr, "Failed to open report file %s: %s\n",
-               name,
-               strerror (errno));
-      g_free (dir_name);
-      g_free (name);
-      g_free (symlink_name);
-      return -1;
-    }
-
-  write_timestamp (file, "scan_start", task->start_time); // FIX
-  write_timestamp (file, "host_start", task->start_time);
-
-  //write_messages (file, task->open_ports, task->open_ports_size); FIX
-  write_messages (file, task->debugs, "Debug Message");
-  write_messages (file, task->holes, "Security Hole");
-  write_messages (file, task->infos, "Security Warning");
-  write_messages (file, task->logs, "Log Message");
-  write_messages (file, task->notes, "Security Note");
-
-  write_timestamp (file, "host_end", task->end_time);
-  write_timestamp (file, "scan_end", task->end_time); // FIX
-
-  if (fclose (file))
-    {
-      (void) unlink (name);
-      (void) rmdir (dir_name);
-      fprintf (stderr, "Failed to close report file %s: %s\n",
-               name,
-               strerror (errno));
-      g_free (dir_name);
-      g_free (name);
-      g_free (symlink_name);
+      perror ("Failed to close report stream");
       return -2;
     }
+  task->current_report = NULL;
 
-  task->report_count++;
+  // FIX save report.nbe.cnt or equiv (task->*_size)
 
-  g_free (dir_name);
-  g_free (name);
-  g_free (symlink_name);
   return 0;
 }
 
 
-/* Appending messages to tasks. */  // FIX ... to reports.
+/* Appending messages to reports. */
 
 /**
- * @brief Append a debug message to a task.
+ * @brief Append a timestamp to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_debug_message (task_t* task, /*@keep@*/ message_t* message)
+append_timestamp (task_t* task, const char* host, const char* type,
+                  const char* time)
 {
-  g_ptr_array_add (task->debugs, (gpointer) message);
-  task->debugs_size++;
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    write_timestamp (task->current_report, host, type, time);
 }
 
 /**
- * @brief Append a hole message to a task.
+ * @brief Append a debug message to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_hole_message (task_t* task, /*@keep@*/ message_t* message)
+append_debug_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->holes, (gpointer) message);
-  task->holes_size++;
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    {
+      write_message (message, task->current_report, "Debug Message");
+      task->debugs_size++;
+    }
 }
 
 /**
- * @brief Append an info message to a task.
+ * @brief Append a hole message to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_info_message (task_t* task, /*@keep@*/ message_t* message)
+append_hole_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->infos, (gpointer) message);
-  task->infos_size++;
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    {
+      write_message (message, task->current_report, "Security Hole");
+      task->holes_size++;
+    }
 }
 
 /**
- * @brief Append a log message to a task.
+ * @brief Append an info message to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_log_message (task_t* task, /*@keep@*/ message_t* message)
+append_info_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->logs, (gpointer) message);
-  task->logs_size++;
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    {
+      write_message (message, task->current_report, "Security Warning");
+      task->infos_size++;
+    }
 }
 
 /**
- * @brief Append a note message to a task.
+ * @brief Append a log message to a report.
  *
  * @param[in]  task         Task.
  * @param[in]  message      Message.
  */
 static void
-append_note_message (task_t* task, /*@keep@*/ message_t* message)
+append_log_message (task_t* task, message_t* message)
 {
-  g_ptr_array_add (task->notes, (gpointer) message);
-  task->notes_size++;
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    {
+      write_message (message, task->current_report, "Log Message");
+      task->logs_size++;
+    }
+}
+
+/**
+ * @brief Append a note message to a report.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  message      Message.
+ */
+static void
+append_note_message (task_t* task, message_t* message)
+{
+  assert (task->current_report != NULL);
+  if (task->current_report)
+    {
+      write_message (message, task->current_report, "Security Note");
+      task->notes_size++;
+    }
 }
 
 
@@ -1325,12 +1226,13 @@ process_otp_server_input ()
                 }
               case SERVER_DEBUG_OID:
                 {
-                  if (current_message)
+                  if (current_message != NULL && current_server_task != NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_debug_message (current_server_task, current_message);
+                      free_message (current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
@@ -1391,12 +1293,13 @@ process_otp_server_input ()
                 }
               case SERVER_HOLE_OID:
                 {
-                  if (current_message)
+                  if (current_message != NULL && current_server_task != NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
                       append_hole_message (current_server_task, current_message);
+                      free_message (current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
@@ -1463,6 +1366,7 @@ process_otp_server_input ()
                       set_message_oid (current_message, oid);
 
                       append_info_message (current_server_task, current_message);
+                      free_message (current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
@@ -1529,6 +1433,7 @@ process_otp_server_input ()
                       set_message_oid (current_message, oid);
 
                       append_log_message (current_server_task, current_message);
+                      free_message (current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
@@ -1595,6 +1500,7 @@ process_otp_server_input ()
                       set_message_oid (current_message, oid);
 
                       append_note_message (current_server_task, current_message);
+                      free_message (current_message);
                       current_message = NULL;
                     }
                   set_server_state (SERVER_DONE);
@@ -1857,7 +1763,7 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_HOST_START_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  // FIX pass to append_timestamp
                   set_server_state (SERVER_TIME_HOST_START_TIME);
                   break;
                 }
@@ -1870,6 +1776,11 @@ process_otp_server_input ()
                       if (current_server_task->start_time)
                         free (current_server_task->start_time);
                       current_server_task->start_time = time;
+
+                      append_timestamp (current_server_task,
+                                        "dik", // FIX
+                                        "host_start",
+                                        field);
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -1884,7 +1795,7 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_HOST_END_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  // FIX pass to append_timestamp
                   set_server_state (SERVER_TIME_HOST_END_TIME);
                   break;
                 }
@@ -1893,12 +1804,17 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       char* time = g_strdup (field);
+
                       tracef ("   server got end time: %s\n", time);
+
                       if (current_server_task->end_time)
                         free (current_server_task->end_time);
                       current_server_task->end_time = time;
 
-                      if (save_report (current_server_task)) return -1;
+                      append_timestamp (current_server_task,
+                                        "dik", // FIX
+                                        "host_end",
+                                        field);
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -1914,7 +1830,13 @@ process_otp_server_input ()
               case SERVER_TIME_SCAN_START:
                 {
                   if (current_server_task)
-                    current_server_task->run_status = TASK_STATUS_RUNNING;
+                    {
+                      current_server_task->run_status = TASK_STATUS_RUNNING;
+                      append_timestamp (current_server_task,
+                                        "",
+                                        "scan_start",
+                                        field);
+                    }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {
@@ -1929,7 +1851,14 @@ process_otp_server_input ()
               case SERVER_TIME_SCAN_END:
                 {
                   if (current_server_task)
-                    current_server_task->run_status = TASK_STATUS_DONE;
+                    {
+                      current_server_task->run_status = TASK_STATUS_DONE;
+                      append_timestamp (current_server_task,
+                                        "",
+                                        "scan_end",
+                                        field);
+                    }
+                  if (save_report (current_server_task)) return -1;
                   current_server_task = NULL;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))

@@ -26,6 +26,7 @@
 #ifndef OPENVAS_MANAGER_MANAGE_H
 #define OPENVAS_MANAGER_MANAGE_H
 
+#include <stdio.h>
 #include <glib.h>
 #include <ossp/uuid.h>
 
@@ -111,26 +112,23 @@ typedef struct
   char* description;          ///< Description.
   gsize description_length;   ///< Length of description.
   gsize description_size;     ///< Actual size allocated for description.
-  short run_status;           ///< Run status of task.
+  task_status_t run_status;   ///< Run status of task.
   char* start_time;           ///< Time the task last started.
   char* end_time;             ///< Time the task last ended.
   unsigned int report_count;  ///< The number of existing reports on the task.
   /* The rest are for the current scan. */
+  /*@null@*/
+  FILE* current_report;       ///< Report stream during the task.
   char* attack_state;         ///< Attack status.
   unsigned int current_port;  ///< Port currently under test.
   unsigned int max_port;      ///< Last port to test.
   /*@null@*/
   GArray *open_ports;         ///< Open ports that the server has found.
   int open_ports_size;        ///< Number of open ports.
-  GPtrArray *debugs;          ///< Identified messages of class "debug".
   int debugs_size;            ///< Number of debugs.
-  GPtrArray *holes;           ///< Identified messages of class "hole".
   int holes_size;             ///< Number of holes.
-  GPtrArray *infos;           ///< Identified messages of class "info".
   int infos_size;             ///< Number of infos.
-  GPtrArray *logs;            ///< Identified messages of class "log".
   int logs_size;              ///< Number of logs.
-  GPtrArray *notes;           ///< Identified messages of class "note".
   int notes_size;             ///< Number of notes.
 } task_t;
 
@@ -157,7 +155,7 @@ free_tasks ();
 /*@null@*/ /*@dependent@*/ /*@special@*/
 task_t*
 make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
-  /*@defines result->debugs, result->open_ports@*/
+  /*@defines result->open_ports@*/
   /*@ensures isnull result->description@*/;
 
 int
@@ -205,11 +203,11 @@ append_task_open_port (task_t*, unsigned int, char*);
 // FIX how is this doc'd?
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
+/*@-exportlocal@*/
 /*@only@*/ /*@null@*/
 char*
 make_report_id ();
 
-/*@-exportlocal@*/
 gchar*
 report_path_task_name (gchar*);
 

@@ -1,3 +1,32 @@
+2009-04-09  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Write OTP report messages directly to the report on disk, instead of
+	buffering the messages in memory.
+
+	* src/manage.h (task_t): Correct run_status type.  Add current_report.
+	Remove message arrays.
+	(make_task): Adjust annotation.
+	(make_report_id): Include in exportlocal annotation.
+
+	* src/manage.c (free_message): Remove.
+	(free_task, make_task): Handle current report.  Remove message array
+	handling.
+	(create_report_file): New function.  Body from src/otp.c save_report.
+	(start_task): Create report stream before starting
+
+	* src/otp.c (free_message): Enable.  Take only one arg.
+	(write_message): Take stream and type args directly.
+	(write_timestamp): Take host arg.
+	(save_report): Just close the report stream.
+	(append_timestamp): New function.
+	(append_debug_message, append_hole_message, append_info_message)
+	(append_log_message, append_note_message): Write the message to the report
+	stream.
+	(process_otp_server_input): Free current_message after appending it.
+	Append timestamps in time cases.  In SERVER_DEBUG_OID and SERVER_HOLE_OID
+	also check that the current_server_task exists.  Move report saving from
+	HOST_END to SCAN_END.
+
 2009-04-09  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* src/tests/common.c: Added connect_to_manager_host_port, a modification
@@ -5,7 +34,7 @@
 	ports. Made connect_to_manager a wrapper around
 	connect_to_manager_host_port using OPENVASMD_ADDRESS and OPENVASMD_PORT.
 
-2009-04-01  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Cleanup and annotate more, from Splint.
 

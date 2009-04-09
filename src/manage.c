@@ -538,23 +538,6 @@ grow_tasks ()
   return TRUE;
 }
 
-// FIX should be in otp.c
-/**
- * @brief Free a message for g_ptr_array_foreach.
- *
- * @param[in]  message       Pointer to the message.
- * @param[in]  dummy         Dummy parameter.
- */
-static void
-free_message (/*@only@*/ gpointer message,
-              /*@unused@*/ gpointer dummy)
-{
-  message_t* msg = (message_t*) message;
-  if (msg->description) free (msg->description);
-  if (msg->oid) free (msg->oid);
-  free (msg);
-}
-
 /**
  * @brief Free a task.
  *
@@ -565,8 +548,7 @@ free_message (/*@only@*/ gpointer message,
 static void
 free_task (/*@special@*/ /*@dependent@*/ task_t* task)
   /*@ensures isnull task->name@*/
-  /*@releases task->comment, task->open_ports, task->debugs, task->holes,
-              task->infos, task->logs, task->notes@*/
+  /*@releases task->comment, task->open_ports@*/
 {
   tracef ("   Freeing task %u: \"%s\" %s (%i) %.*s[...]\n\n",
           task->id,
@@ -581,32 +563,12 @@ free_task (/*@special@*/ /*@dependent@*/ task_t* task)
   if (task->description) free (task->description);
   if (task->start_time) free (task->start_time);
   if (task->end_time) free (task->end_time);
+  if (task->current_report)
+    {
+      (void) fclose (task->current_report); // FIX check for error
+      task->current_report = NULL;
+    }
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
-  if (task->debugs)
-    {
-      g_ptr_array_foreach (task->debugs, free_message, NULL);
-      (void) g_ptr_array_free (task->debugs, TRUE);
-    }
-  if (task->holes)
-    {
-      g_ptr_array_foreach (task->holes, free_message, NULL);
-      (void) g_ptr_array_free (task->holes, TRUE);
-    }
-  if (task->infos)
-    {
-      g_ptr_array_foreach (task->infos, free_message, NULL);
-      (void) g_ptr_array_free (task->infos, TRUE);
-    }
-  if (task->logs)
-    {
-      g_ptr_array_foreach (task->logs, free_message, NULL);
-      (void) g_ptr_array_free (task->logs, TRUE);
-    }
-  if (task->notes)
-    {
-      g_ptr_array_foreach (task->notes, free_message, NULL);
-      (void) g_ptr_array_free (task->notes, TRUE);
-    }
 }
 
 /**
@@ -679,17 +641,8 @@ make_task (char* name, unsigned int time, char* comment)
               index->description_size = 0;
               index->run_status = TASK_STATUS_NEW;
               index->report_count = 0;
+              index->current_report = NULL;
               index->open_ports = NULL;
-              index->debugs = g_ptr_array_new ();
-              index->debugs_size = 0;
-              index->holes = g_ptr_array_new ();
-              index->holes_size = 0;
-              index->infos = g_ptr_array_new ();
-              index->infos_size = 0;
-              index->logs = g_ptr_array_new ();
-              index->logs_size = 0;
-              index->notes = g_ptr_array_new ();
-              index->notes_size = 0;
               /*@=mustfreeonly@*/
               tracef ("   Made task %u at %p\n", index->id, index);
               num_tasks++;
@@ -1180,6 +1133,125 @@ set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
 }
 
 /**
+ * @brief Create the current report file for a task.
+ *
+ * @param[in]  task   The task.
+ *
+ * @return 0 success, -1 failed to open file, -2 ID or credentials error,
+ *         -3 failed to symlink file to task dir, -4 failed to create dir,
+ *         -5 failed to generate ID, -6 report file already exists.
+ */
+static int
+create_report_file (task_t* task)
+{
+  const char* id;
+  char* report_id;
+  gchar* user_dir_name;
+  gchar* dir_name;
+  gchar* name;
+  gchar* symlink_name;
+  FILE* file;
+
+  if (current_credentials.username == NULL) return -2;
+
+  assert (task->current_report == NULL);
+  if (task->current_report) return -6;
+
+  tracef ("   Saving report (%s) on task %u\n", task->start_time, task->id);
+
+  if (task_id_string (task, &id)) return -2;
+
+  user_dir_name = g_build_filename (PREFIX
+                                    "/var/lib/openvas/mgr/users/",
+                                    current_credentials.username,
+                                    "reports",
+                                    NULL);
+
+  /* Ensure user reports directory exists. */
+
+  if (g_mkdir_with_parents (user_dir_name, 33216 /* -rwx------ */) == -1)
+    {
+      fprintf (stderr, "Failed to create report dir %s: %s\n",
+               user_dir_name,
+               strerror (errno));
+      g_free (user_dir_name);
+      return -4;
+    }
+
+  /* Generate report directory name. */
+
+  report_id = make_report_id ();
+  if (report_id == NULL)
+    {
+      g_free (user_dir_name);
+      return -5;
+    }
+
+  dir_name = g_build_filename (PREFIX
+                               "/var/lib/openvas/mgr/users/",
+                               current_credentials.username,
+                               "tasks",
+                               id,
+                               "reports",
+                               report_id,
+                               NULL);
+
+  symlink_name = g_build_filename (user_dir_name, report_id, NULL);
+  free (report_id);
+  g_free (user_dir_name);
+
+  /* Ensure task report directory exists. */
+
+  if (g_mkdir_with_parents (dir_name, 33216 /* -rwx------ */) == -1)
+    {
+      fprintf (stderr, "Failed to create report dir %s: %s\n",
+               dir_name,
+               strerror (errno));
+      g_free (dir_name);
+      g_free (symlink_name);
+      return -4;
+    }
+
+  /* Link report directory into task directory. */
+
+  if (symlink (dir_name, symlink_name))
+    {
+      (void) rmdir (dir_name);
+      fprintf (stderr, "Failed to symlink %s to %s\n",
+               dir_name,
+               symlink_name);
+      g_free (dir_name);
+      g_free (symlink_name);
+      return -3;
+    }
+
+  /* Save report stream. */
+
+  name = g_build_filename (dir_name, "report.nbe", NULL);
+
+  file = fopen (name, "w");
+  if (file == NULL)
+    {
+      (void) rmdir (dir_name);
+      fprintf (stderr, "Failed to open report file %s: %s\n",
+               name,
+               strerror (errno));
+      g_free (dir_name);
+      g_free (name);
+      g_free (symlink_name);
+      return -1;
+    }
+
+  task->current_report = file;
+  task->report_count++;
+
+  g_free (dir_name);
+  g_free (name);
+  g_free (symlink_name);
+  return 0;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in \ref to_server.
@@ -1193,14 +1265,23 @@ start_task (task_t* task)
 {
   tracef ("   start task %u\n", task->id);
 
+  // FIX atomic
+
   if (task->run_status == TASK_STATUS_REQUESTED
       || task->run_status == TASK_STATUS_RUNNING)
     return 0;
+
+  /* Create the report file. */
+
+  if (create_report_file (task)) return -2;
+
+  /* Start the task. */
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n")) return -1;
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n")) return -1;
+  // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n")) return -1;
   //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
   if (send_to_server ("plugin_set <|> \n")) return -1;
@@ -1238,7 +1319,6 @@ start_task (task_t* task)
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, (guint) sizeof (port_t));
   task->open_ports_size = 0;
-  // FIX holes,...  reset_task_data (task);
 
   current_server_task = task;
 
