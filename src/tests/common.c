@@ -72,7 +72,7 @@
 /**
  * @brief Trace flag.
  */
-#define TRACE 1
+#define TRACE 0
 
 #include <assert.h>
 #include <arpa/inet.h>
@@ -100,14 +100,17 @@ struct sockaddr_in address;
 /* Low level manager communication. */
 
 /**
- * @brief Connect to the manager.
+ * @brief Connect to the manager using a given host and port.
  *
  * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  host     Host to connect to.
+ * @param[in]  port     Port to connect to.
  *
  * @return 0 on success, -1 on error.
  */
 int
-connect_to_manager (gnutls_session_t * session)
+connect_to_manager_host_port (gnutls_session_t * session,
+                              char *host, int port)
 {
   /* Initialize security library. */
 
@@ -127,17 +130,17 @@ connect_to_manager (gnutls_session_t * session)
     // FIX free servent?
     address.sin_port = servent->s_port;
   else
-    address.sin_port = htons (OPENVASMD_PORT);
+    address.sin_port = htons (port);
 
-  if (!inet_aton(OPENVASMD_ADDRESS, &address.sin_addr))
+  if (!inet_aton(host, &address.sin_addr))
     {
       fprintf (stderr, "Failed to create server address %s.\n",
-               OPENVASMD_ADDRESS);
+               host);
       return -1;
     }
 
   tracef ("   Set to connect to address %s port %i\n",
-          OPENVASMD_ADDRESS,
+          host,
           ntohs (address.sin_port));
 
   /* Make manager socket. */
@@ -233,6 +236,19 @@ connect_to_manager (gnutls_session_t * session)
   close (manager_socket);
 
   return -1;
+}
+
+/**
+ * @brief Connect to the manager.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+connect_to_manager (gnutls_session_t * session)
+{
+  return connect_to_manager_host_port (session, OPENVASMD_ADDRESS, OPENVASMD_PORT);
 }
 
 /**

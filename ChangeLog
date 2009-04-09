@@ -1,3 +1,10 @@
+2009-04-09  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* src/tests/common.c: Added connect_to_manager_host_port, a modification
+	of connect_to_manager which allows connections to arbitrary hosts and
+	ports. Made connect_to_manager a wrapper around
+	connect_to_manager_host_port using OPENVASMD_ADDRESS and OPENVASMD_PORT.
+
 2009-04-01  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Cleanup and annotate more, from Splint.

@@ -30,6 +30,9 @@
 /* Communication. */
 
 int
+connect_to_manager_host_port (gnutls_session_t *, char*, int);
+
+int
 connect_to_manager (gnutls_session_t *);
 
 int
