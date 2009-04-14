@@ -1450,7 +1450,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<status>201</status>"
                                  "<task_id>%u</task_id>"
                                  "</new_task_response>",
-                                 current_client_task->id);
+                                 task_id (current_client_task));
           if (send_to_client (msg))
             {
               g_free (msg);
@@ -1476,11 +1476,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             gsize out_len;
             guchar* out;
-            out = g_base64_decode (current_client_task->description, &out_len);
-            free (current_client_task->description);
-            current_client_task->description = (char*) out;
-            current_client_task->description_length = out_len;
-            current_client_task->description_size = out_len;
+            out = g_base64_decode (task_description (current_client_task),
+                                   &out_len);
+            set_task_description (current_client_task, (char*) out, out_len);
             set_client_state (CLIENT_NEW_TASK);
           }
         break;
@@ -1540,7 +1538,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar* response;
                     SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
                     response = g_strdup_printf ("<report_count>%u</report_count>",
-                                                task->report_count);
+                                                task_report_count (task));
                     if (send_to_client (response))
                       {
                         g_free (response);
@@ -1590,23 +1588,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<warning>%i</warning>"
                                         "</messages>"
                                         "</task>",
-                                        index->id,
-                                        index->name,
-                                        index->run_status
+                                        task_id (index),
+                                        task_name (index),
+                                        task_run_status (index)
                                         == TASK_STATUS_NEW
                                         ? "New"
-                                        : (index->run_status
+                                        : (task_run_status (index)
                                            == TASK_STATUS_REQUESTED
                                            ? "Requested"
-                                           : (index->run_status
+                                           : (task_run_status (index)
                                               == TASK_STATUS_RUNNING
                                               ? "Running"
                                               : "Done")),
-                                        index->debugs_size,
-                                        index->holes_size,
-                                        index->infos_size,
-                                        index->logs_size,
-                                        index->notes_size);
+                                        task_debugs_size (index),
+                                        task_holes_size (index),
+                                        task_infos_size (index),
+                                        task_logs_size (index),
+                                        task_notes_size (index));
                 // FIX free line if RESPOND fails
                 if (send_to_client (line))
                   {

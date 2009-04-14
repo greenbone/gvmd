@@ -118,7 +118,6 @@ typedef struct
   unsigned int report_count;  ///< The number of existing reports on the task.
   /* The rest are for the current scan. */
   /*@null@*/
-  FILE* current_report;       ///< Report stream during the task.
   char* attack_state;         ///< Attack status.
   unsigned int current_port;  ///< Port currently under test.
   unsigned int max_port;      ///< Last port to test.
@@ -132,7 +131,6 @@ typedef struct
   int notes_size;             ///< Number of notes.
 } fs_task_t;
 
-//typedef fs_task_t task_t;
 typedef fs_task_t* task_t;
 //typedef long long int task_t;
 
@@ -147,6 +145,8 @@ typedef struct
  */
 extern /*@null@*/ task_t current_server_task;
 
+extern /*@null@*/ FILE* current_report;
+
 unsigned int
 task_count ();
 
@@ -156,8 +156,77 @@ init_task_iterator (task_iterator_t*);
 gboolean
 next_task (task_iterator_t*, task_t*);
 
+unsigned int
+task_id (task_t);
+
 int
 task_id_string (task_t, /*@out@*/ const char **);
+
+char*
+task_name (task_t);
+
+char*
+task_description (task_t);
+
+void
+set_task_description (task_t, char*, gsize);
+
+task_status_t
+task_run_status (task_t);
+
+void
+set_task_run_status (task_t, task_status_t);
+
+char*
+task_start_time (task_t);
+
+void
+set_task_start_time (task_t task, char* time);
+
+char*
+task_end_time (task_t);
+
+void
+set_task_end_time (task_t task, char* time);
+
+unsigned int
+task_report_count (task_t);
+
+char*
+task_attack_state (task_t);
+
+void
+set_task_attack_state (task_t task, char* state);
+
+int
+task_debugs_size (task_t);
+
+void
+inc_task_debugs_size (task_t);
+
+int
+task_holes_size (task_t);
+
+void
+inc_task_holes_size (task_t);
+
+int
+task_infos_size (task_t);
+
+void
+inc_task_infos_size (task_t);
+
+int
+task_logs_size (task_t);
+
+void
+inc_task_logs_size (task_t);
+
+int
+task_notes_size (task_t);
+
+void
+inc_task_notes_size (task_t);
 
 void
 free_tasks ();

@@ -448,6 +448,11 @@ unsigned int num_tasks = 0;
 /*@null@*/ task_t current_server_task = NULL;
 
 /**
+ * @brief Report stream of the current task.
+ */
+FILE* current_report = NULL;
+
+/**
  * @brief Return the number of tasks associated with the current user.
  *
  * @return The number of tasks associated with the current user.
@@ -493,6 +498,19 @@ next_task (task_iterator_t* iterator, task_t* task)
 }
 
 /**
+ * @brief Return the identifier of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return ID of task.
+ */
+unsigned int
+task_id (task_t task)
+{
+  return task->id;
+}
+
+/**
  * @brief Return a string version of the ID of a task.
  *
  * @param[in]   task  Task.
@@ -515,6 +533,284 @@ task_id_string (task_t task, const char ** id)
     }
   *id = buffer;
   return 0;
+}
+
+/**
+ * @brief Return the name of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task name.
+ */
+char*
+task_name (task_t task)
+{
+  return task->name;
+}
+
+/**
+ * @brief Return the description of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Description of task.
+ */
+char*
+task_description (task_t task)
+{
+  return task->description;
+}
+
+/**
+ * @brief Set the description of a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  description  Description.  Used directly, freed by free_task.
+ */
+void
+set_task_description (task_t task, char* description, gsize length)
+{
+  if (task->description) free (task->description);
+  task->description = description;
+  task->description_length = length;
+  task->description_size = length;
+}
+
+/**
+ * @brief Return the run state of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task run status.
+ */
+task_status_t
+task_run_status (task_t task)
+{
+  return task->run_status;
+}
+
+/**
+ * @brief Set the run state of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  status  New run status.
+ *
+ */
+void
+set_task_run_status (task_t task, task_status_t status)
+{
+  task->run_status = status;
+}
+
+/**
+ * @brief Return the most recent start time of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task start time.
+ */
+char*
+task_start_time (task_t task)
+{
+  return task->start_time;
+}
+
+/**
+ * @brief Set the start time of a task.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  time  New time.  Used directly, freed by free_task.
+ */
+void
+set_task_start_time (task_t task, char* time)
+{
+  if (task->start_time) free (task->start_time);
+  task->start_time = time;
+}
+
+/**
+ * @brief Return the most recent end time of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task end time.
+ */
+char*
+task_end_time (task_t task)
+{
+  return task->end_time;
+}
+
+/**
+ * @brief Set the end time of a task.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  time  New time.  Used directly, freed by free_task.
+ */
+void
+set_task_end_time (task_t task, char* time)
+{
+  if (task->end_time) free (task->end_time);
+  task->end_time = time;
+}
+
+/**
+ * @brief Return the number of reports associated with a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of reports.
+ */
+unsigned int
+task_report_count (task_t task)
+{
+  return task->report_count;
+}
+
+/**
+ * @brief Return the attack state of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task attack state.
+ */
+char*
+task_attack_state (task_t task)
+{
+  return task->attack_state;
+}
+
+/**
+ * @brief Set the attack state of a task.
+ *
+ * @param[in]  task   Task.
+ * @param[in]  state  New state.
+ */
+void
+set_task_attack_state (task_t task, char* state)
+{
+  if (task->attack_state) free (task->attack_state);
+  task->attack_state = state;
+}
+
+/**
+ * @brief Return the number of debug messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of debug messages.
+ */
+int
+task_debugs_size (task_t task)
+{
+  return task->debugs_size;
+}
+
+/**
+ * @brief Increment number of debug messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+inc_task_debugs_size (task_t task)
+{
+  task->debugs_size++;
+}
+
+/**
+ * @brief Return the number of hole messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of hole messages.
+ */
+int
+task_holes_size (task_t task)
+{
+  return task->holes_size;
+}
+
+/**
+ * @brief Increment number of hole messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+inc_task_holes_size (task_t task)
+{
+  task->holes_size++;
+}
+
+/**
+ * @brief Return the number of info messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of info messages.
+ */
+int
+task_infos_size (task_t task)
+{
+  return task->infos_size;
+}
+
+/**
+ * @brief Increment number of info messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+inc_task_infos_size (task_t task)
+{
+  task->infos_size++;
+}
+
+/**
+ * @brief Return the number of log messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of log messages.
+ */
+int
+task_logs_size (task_t task)
+{
+  return task->logs_size;
+}
+
+/**
+ * @brief Increment number of log messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+inc_task_logs_size (task_t task)
+{
+  task->logs_size++;
+}
+
+/**
+ * @brief Return the number of note messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of note messages.
+ */
+int
+task_notes_size (task_t task)
+{
+  return task->notes_size;
+}
+
+/**
+ * @brief Increment number of note messages in the current report of a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+inc_task_notes_size (task_t task)
+{
+  task->notes_size++;
 }
 
 #if TRACE
@@ -608,10 +904,10 @@ free_task (/*@special@*/ /*@dependent@*/ task_t task)
   if (task->description) free (task->description);
   if (task->start_time) free (task->start_time);
   if (task->end_time) free (task->end_time);
-  if (task->current_report)
+  if (current_report)
     {
-      (void) fclose (task->current_report); // FIX check for error
-      task->current_report = NULL;
+      (void) fclose (current_report); // FIX check for error
+      current_report = NULL;
     }
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
 }
@@ -686,7 +982,6 @@ make_task (char* name, unsigned int time, char* comment)
               index->description_size = 0;
               index->run_status = TASK_STATUS_NEW;
               index->report_count = 0;
-              index->current_report = NULL;
               index->open_ports = NULL;
               /*@=mustfreeonly@*/
               tracef ("   Made task %u at %p\n", index->id, index);
@@ -1199,8 +1494,8 @@ create_report_file (task_t task)
 
   if (current_credentials.username == NULL) return -2;
 
-  assert (task->current_report == NULL);
-  if (task->current_report) return -6;
+  assert (current_report == NULL);
+  if (current_report) return -6;
 
   tracef ("   Saving report (%s) on task %u\n", task->start_time, task->id);
 
@@ -1287,7 +1582,7 @@ create_report_file (task_t task)
       return -1;
     }
 
-  task->current_report = file;
+  current_report = file;
   task->report_count++;
 
   g_free (dir_name);

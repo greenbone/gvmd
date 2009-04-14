@@ -282,19 +282,21 @@ write_timestamp (FILE* file, const char* host, const char* type,
 static int
 save_report (task_t task)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report == NULL) return -1;
+  assert (current_report != NULL);
+  if (current_report == NULL) return -1;
 
-  tracef ("   Saving report (%s) on task %u\n", task->start_time, task->id);
+  tracef ("   Saving report (%s) on task %u\n",
+          task_start_time (task),
+          task_id (task));
 
-  if (fclose (task->current_report))
+  if (fclose (current_report))
     {
       perror ("Failed to close report stream");
       return -2;
     }
-  task->current_report = NULL;
+  current_report = NULL;
 
-  // FIX save report.nbe.cnt or equiv (task->*_size)
+  // FIX save report.nbe.cnt or equiv (task_*_size)
 
   return 0;
 }
@@ -312,9 +314,9 @@ static void
 append_timestamp (task_t task, const char* host, const char* type,
                   const char* time)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
-    write_timestamp (task->current_report, host, type, time);
+  assert (current_report != NULL);
+  if (current_report)
+    write_timestamp (current_report, host, type, time);
 }
 
 /**
@@ -326,11 +328,11 @@ append_timestamp (task_t task, const char* host, const char* type,
 static void
 append_debug_message (task_t task, message_t* message)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
+  assert (current_report != NULL);
+  if (current_report)
     {
-      write_message (message, task->current_report, "Debug Message");
-      task->debugs_size++;
+      write_message (message, current_report, "Debug Message");
+      inc_task_debugs_size (task);
     }
 }
 
@@ -343,11 +345,11 @@ append_debug_message (task_t task, message_t* message)
 static void
 append_hole_message (task_t task, message_t* message)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
+  assert (current_report != NULL);
+  if (current_report)
     {
-      write_message (message, task->current_report, "Security Hole");
-      task->holes_size++;
+      write_message (message, current_report, "Security Hole");
+      inc_task_holes_size (task);
     }
 }
 
@@ -360,11 +362,11 @@ append_hole_message (task_t task, message_t* message)
 static void
 append_info_message (task_t task, message_t* message)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
+  assert (current_report != NULL);
+  if (current_report)
     {
-      write_message (message, task->current_report, "Security Warning");
-      task->infos_size++;
+      write_message (message, current_report, "Security Warning");
+      inc_task_infos_size (task);
     }
 }
 
@@ -377,11 +379,11 @@ append_info_message (task_t task, message_t* message)
 static void
 append_log_message (task_t task, message_t* message)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
+  assert (current_report != NULL);
+  if (current_report)
     {
-      write_message (message, task->current_report, "Log Message");
-      task->logs_size++;
+      write_message (message, current_report, "Log Message");
+      inc_task_logs_size (task);
     }
 }
 
@@ -394,11 +396,11 @@ append_log_message (task_t task, message_t* message)
 static void
 append_note_message (task_t task, message_t* message)
 {
-  assert (task->current_report != NULL);
-  if (task->current_report)
+  assert (current_report != NULL);
+  if (current_report)
     {
-      write_message (message, task->current_report, "Security Note");
-      task->notes_size++;
+      write_message (message, current_report, "Security Note");
+      inc_task_notes_size (task);
     }
 }
 
@@ -1714,9 +1716,7 @@ process_otp_server_input ()
                     {
                       char* state = g_strdup (field);
                       tracef ("   server got attack state: %s\n", state);
-                      if (current_server_task->attack_state)
-                        free (current_server_task->attack_state);
-                      current_server_task->attack_state = state;
+                      set_task_attack_state (current_server_task, state);
                     }
                   set_server_state (SERVER_STATUS_PORTS);
                   break;
@@ -1773,9 +1773,7 @@ process_otp_server_input ()
                     {
                       char* time = g_strdup (field);
                       tracef ("   server got start time: %s\n", time);
-                      if (current_server_task->start_time)
-                        free (current_server_task->start_time);
-                      current_server_task->start_time = time;
+                      set_task_start_time (current_server_task, time);
 
                       append_timestamp (current_server_task,
                                         "dik", // FIX
@@ -1807,9 +1805,7 @@ process_otp_server_input ()
 
                       tracef ("   server got end time: %s\n", time);
 
-                      if (current_server_task->end_time)
-                        free (current_server_task->end_time);
-                      current_server_task->end_time = time;
+                      set_task_end_time (current_server_task, time);
 
                       append_timestamp (current_server_task,
                                         "dik", // FIX
@@ -1831,7 +1827,8 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      current_server_task->run_status = TASK_STATUS_RUNNING;
+                      set_task_run_status (current_server_task,
+                                           TASK_STATUS_RUNNING);
                       append_timestamp (current_server_task,
                                         "",
                                         "scan_start",
@@ -1852,7 +1849,8 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      current_server_task->run_status = TASK_STATUS_DONE;
+                      set_task_run_status (current_server_task,
+                                           TASK_STATUS_DONE);
                       append_timestamp (current_server_task,
                                         "",
                                         "scan_end",

@@ -1,5 +1,29 @@
 2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Improve the task abstraction by accessing all task fields via functions
+	and storing the current report in a global variable instead of in the
+	task.
+
+	* src/manage.c (current_report): New variable.
+	(task_id, task_name, task_description, set_task_description)
+	(task_run_status, set_task_run_status, task_start_time)
+	(set_task_start_time, task_end_time, set_task_end_time)
+	(task_report_count, task_attack_state, set_task_attack_state)
+	(task_debugs_size, inc_task_debugs_size, task_holes_size)
+	(inc_task_holes_size, task_infos_size, inc_task_infos_size)
+	(task_logs_size, inc_task_logs_size, task_notes_size)
+	(inc_task_notes_size): New functions.
+	(free_task, make_task, create_report_file): Use new current_report
+	variable.
+
+	* src/manage.h: Add new headers.
+	(fs_task_t): Remove current_report.
+
+	* src/otp.c, src/omp.c: Use new task access functions and new global
+	current_report.
+
+2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Improve task abstraction by changing task_t to a pointer and adding a
 	task iterator.
 
