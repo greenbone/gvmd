@@ -76,7 +76,7 @@ buffer_size_t to_client_end = 0;
  * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
  */
 /*@null@*/ /*@dependent@*/
-static task_t* current_client_task = NULL;
+static task_t current_client_task = NULL;
 
 /**
  * @brief Task ID during OMP MODIFY_TASK and START_TASK.
@@ -807,7 +807,7 @@ send_rule (gpointer rule)
  *         failed to open task dir, -4 out of space in to_client.
  */
 static int
-send_reports (task_t* task)
+send_reports (task_t task)
 {
   // FIX Abstract report iterator and move it to manage.c.
 
@@ -952,7 +952,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == NULL);
             if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
-                task_t* task = find_task (id);
+                task_t task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
                                           "<status>407</status>"
@@ -1293,7 +1293,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == NULL);
             if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
-                task_t* task = find_task (id);
+                task_t task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
                                           "<status>407</status>"
@@ -1301,8 +1301,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else if (delete_task (&task))
                   {
                     /* to_server is full. */
+                    // FIX or some other error
                     // FIX revert parsing for retry
                     // process_omp_client_input must return -2
+                    tracef ("delete_task failed\n");
                     abort ();
                   }
                 else
@@ -1384,7 +1386,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == NULL);
             if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
-                task_t* task = find_task (id);
+                task_t task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
                                           "<status>407</status>"
@@ -1490,7 +1492,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == NULL);
             if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
-                task_t* task = find_task (id);
+                task_t task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
                                           "<status>407</status>"
@@ -1529,7 +1531,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             unsigned int id;
             if (sscanf (current_task_task_id, "%u", &id) == 1)
               {
-                task_t* task = find_task (id);
+                task_t task = find_task (id);
                 if (task == NULL)
                   SEND_TO_CLIENT_OR_FAIL ("<status_response>"
                                           "<status>407</status>");
@@ -1558,11 +1560,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             gchar* response;
-            task_t* index;
-            task_t* end;
+            task_iterator_t iterator;
+            task_t index;
+
             SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
             response = g_strdup_printf ("<task_count>%u</task_count>",
-                                        num_tasks);
+                                        task_count ());
             if (send_to_client (response))
               {
                 g_free (response);
@@ -1570,53 +1573,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 return;
               }
             g_free (response);
-            // FIX this is the only place that accesses "tasks"  foreach_task?
-            index = tasks;
-            end = tasks + tasks_size;
-            while (index < end)
+
+            init_task_iterator (&iterator);
+            while (next_task (&iterator, &index))
               {
-                if (index->name)
+                gchar* line;
+                line = g_strdup_printf ("<task>"
+                                        "<task_id>%u</task_id>"
+                                        "<identifier>%s</identifier>"
+                                        "<status>%s</status>"
+                                        "<messages>"
+                                        "<debug>%i</debug>"
+                                        "<hole>%i</hole>"
+                                        "<info>%i</info>"
+                                        "<log>%i</log>"
+                                        "<warning>%i</warning>"
+                                        "</messages>"
+                                        "</task>",
+                                        index->id,
+                                        index->name,
+                                        index->run_status
+                                        == TASK_STATUS_NEW
+                                        ? "New"
+                                        : (index->run_status
+                                           == TASK_STATUS_REQUESTED
+                                           ? "Requested"
+                                           : (index->run_status
+                                              == TASK_STATUS_RUNNING
+                                              ? "Running"
+                                              : "Done")),
+                                        index->debugs_size,
+                                        index->holes_size,
+                                        index->infos_size,
+                                        index->logs_size,
+                                        index->notes_size);
+                // FIX free line if RESPOND fails
+                if (send_to_client (line))
                   {
-                    gchar* line;
-                    line = g_strdup_printf ("<task>"
-                                            "<task_id>%u</task_id>"
-                                            "<identifier>%s</identifier>"
-                                            "<status>%s</status>"
-                                            "<messages>"
-                                            "<debug>%i</debug>"
-                                            "<hole>%i</hole>"
-                                            "<info>%i</info>"
-                                            "<log>%i</log>"
-                                            "<warning>%i</warning>"
-                                            "</messages>"
-                                            "</task>",
-                                            index->id,
-                                            index->name,
-                                            index->run_status
-                                            == TASK_STATUS_NEW
-                                            ? "New"
-                                            : (index->run_status
-                                               == TASK_STATUS_REQUESTED
-                                               ? "Requested"
-                                               : (index->run_status
-                                                  == TASK_STATUS_RUNNING
-                                                  ? "Running"
-                                                  : "Done")),
-                                            index->debugs_size,
-                                            index->holes_size,
-                                            index->infos_size,
-                                            index->logs_size,
-                                            index->notes_size);
-                    // FIX free line if RESPOND fails
-                    if (send_to_client (line))
-                      {
-                        g_free (line);
-                        error_send_to_client (error);
-                        return;
-                      }
                     g_free (line);
+                    error_send_to_client (error);
+                    return;
                   }
-                index++;
+                g_free (line);
               }
           }
         SEND_TO_CLIENT_OR_FAIL ("</status_response>");

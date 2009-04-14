@@ -252,7 +252,7 @@ report_path_task_name (gchar* path)
  *
  * @return Pointer to task on success, else NULL.
  */
-task_t*
+task_t
 report_task (const char* report_id)
 {
   if (current_credentials.username)
@@ -308,7 +308,7 @@ int
 delete_report (const char* report_id)
 {
   gchar* link_name;
-  task_t* task = report_task (report_id);
+  task_t task = report_task (report_id);
   if (task == NULL) return -1;
 
   if (current_credentials.username == NULL) return -5;
@@ -430,7 +430,7 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
 /**
  * @brief The array of all the tasks of the current user.
  */
-task_t* tasks = NULL;
+task_t tasks = NULL;
 
 /**
  * @brief The size of the \ref tasks array.
@@ -445,7 +445,52 @@ unsigned int num_tasks = 0;
 /**
  * @brief The task currently running on the server.
  */
-/*@null@*/ task_t* current_server_task = NULL;
+/*@null@*/ task_t current_server_task = NULL;
+
+/**
+ * @brief Return the number of tasks associated with the current user.
+ *
+ * @return The number of tasks associated with the current user.
+ */
+unsigned int
+task_count ()
+{
+  return num_tasks;
+}
+
+/**
+ * @brief Initialise a task iterator.
+ *
+ * @param[in]  iterator  Task iterator.
+ */
+void
+init_task_iterator (task_iterator_t* iterator)
+{
+  iterator->index = tasks;
+  iterator->end = tasks + tasks_size;
+}
+
+/**
+ * @brief Read the next task from an iterator.
+ *
+ * @param[in]   iterator  Task iterator.
+ * @param[out]  task      Task.
+ *
+ * @return TRUE if there was a next task, else FALSE.
+ */
+gboolean
+next_task (task_iterator_t* iterator, task_t* task)
+{
+  while (1)
+    {
+      if (iterator->index == iterator->end) return FALSE;
+      if (iterator->index->name) break;
+      iterator->index++;
+    }
+  if (task) *task = iterator->index;
+  iterator->index++;
+  return TRUE;
+}
 
 /**
  * @brief Return a string version of the ID of a task.
@@ -458,7 +503,7 @@ unsigned int num_tasks = 0;
  * @return 0 success, -1 error.
  */
 int
-task_id_string (task_t* task, const char ** id)
+task_id_string (task_t task, const char ** id)
 {
   static char buffer[11]; /* (expt 2 32) => 4294967296 */
   int length = snprintf (buffer, 11, "%010u", task->id);
@@ -479,7 +524,7 @@ task_id_string (task_t* task, const char ** id)
 static void
 print_tasks ()
 {
-  task_t *index = tasks;
+  task_t index = tasks;
 
   if (index == NULL)
     tracef ("   Task array still to be created.\n\n");
@@ -512,13 +557,13 @@ print_tasks ()
 static gboolean
 grow_tasks ()
 {
-  task_t* new;
-  tracef ("   task_t size: %i\n", (int) sizeof (task_t));
+  task_t new;
+  tracef ("   task_t size: %i\n", (int) sizeof (fs_task_t));
 /*@-compdestroy@*/
 /*@-sharedtrans@*/
   /* RATS: ignore *//* Memory cleared below. */
   new = realloc (tasks,
-                 (tasks_size + TASKS_INCREMENT) * sizeof (task_t));
+                 (tasks_size + TASKS_INCREMENT) * sizeof (fs_task_t));
 /*@=sharedtrans@*/
 /*@=compdestroy@*/
 /*@-globstate@*/
@@ -528,7 +573,7 @@ grow_tasks ()
 
   /* Clear the new part of the memory. */
   new = tasks + tasks_size;
-  memset (new, 0, TASKS_INCREMENT * sizeof (task_t));
+  memset (new, 0, TASKS_INCREMENT * sizeof (fs_task_t));
 
   tasks_size += TASKS_INCREMENT;
   tracef ("   tasks grown to %u\n", tasks_size);
@@ -546,7 +591,7 @@ grow_tasks ()
  * @param[in]  task  The task to free.
  */
 static void
-free_task (/*@special@*/ /*@dependent@*/ task_t* task)
+free_task (/*@special@*/ /*@dependent@*/ task_t task)
   /*@ensures isnull task->name@*/
   /*@releases task->comment, task->open_ports@*/
 {
@@ -580,8 +625,8 @@ free_tasks ()
   if (tasks == NULL) return;
 
   {
-    task_t* index = tasks;
-    task_t* end = tasks + tasks_size;
+    task_t index = tasks;
+    task_t end = tasks + tasks_size;
     while (index < end)
       {
         /* This indicates that the state of the task depends on which
@@ -610,11 +655,11 @@ free_tasks ()
  * @return A pointer to the new task or NULL when out of memory (in which
  *         case caller must free name and comment).
  */
-task_t*
+task_t
 make_task (char* name, unsigned int time, char* comment)
 {
-  task_t* index;
-  task_t* end;
+  task_t index;
+  task_t end;
   tracef ("   make_task %s %u %s\n", name, time, comment);
   if (tasks == NULL && grow_tasks () == FALSE)
     {
@@ -650,7 +695,7 @@ make_task (char* name, unsigned int time, char* comment)
             }
           index++;
         }
-      index = (task_t*) tasks_size;
+      index = (task_t) tasks_size;
       /* grow_tasks updates tasks_size. */
       if (grow_tasks ())
         {
@@ -724,7 +769,7 @@ load_tasks ()
       gchar *name, *comment, *description;
       unsigned int time;
       /*@dependent@*/ const char* task_name = names[index]->d_name;
-      task_t* task;
+      task_t task;
       gboolean success;
 
       if (task_name[0] == '.')
@@ -892,7 +937,7 @@ save_task_error (/*@only@*/ gchar* file_name, /*@only@*/ GError* error)
  * @return 0 success, -1 error.
  */
 static int
-save_task (task_t* task, gchar* dir_name)
+save_task (task_t task, gchar* dir_name)
 {
   gboolean success;
   gchar* file_name;
@@ -992,8 +1037,8 @@ int
 save_tasks ()
 {
   gchar* dir_name;
-  task_t* index;
-  task_t* end;
+  task_t index;
+  task_t end;
 
   if (tasks == NULL) return 0;
   if (current_credentials.username == NULL) return -1;
@@ -1052,13 +1097,13 @@ save_tasks ()
  *
  * @return A pointer to the task with the given ID.
  */
-task_t*
+task_t
 find_task (unsigned int id)
 {
   if (tasks)
     {
-      task_t* index = tasks;
-      task_t* end = tasks + tasks_size;
+      task_t index = tasks;
+      task_t end = tasks + tasks_size;
       while (index < end)
         {
           if (index->name) tracef ("   %u vs %u\n", index->id, id);
@@ -1090,7 +1135,7 @@ find_task (unsigned int id)
  *         -3 value error (NULL).
  */
 int
-set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
+set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 {
   tracef ("   set_task_parameter %u %s\n",
           task->id,
@@ -1142,7 +1187,7 @@ set_task_parameter (task_t* task, const char* parameter, /*@only@*/ char* value)
  *         -5 failed to generate ID, -6 report file already exists.
  */
 static int
-create_report_file (task_t* task)
+create_report_file (task_t task)
 {
   const char* id;
   char* report_id;
@@ -1261,7 +1306,7 @@ create_report_file (task_t* task)
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
 int
-start_task (task_t* task)
+start_task (task_t task)
 {
   tracef ("   start task %u\n", task->id);
 
@@ -1336,7 +1381,7 @@ start_task (task_t* task)
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
 int
-stop_task (task_t* task)
+stop_task (task_t task)
 {
   tracef ("   stop task %u\n", task->id);
   if (task->run_status == TASK_STATUS_REQUESTED
@@ -1359,7 +1404,7 @@ stop_task (task_t* task)
  * @return 0 on success, -1 on error.
  */
 static int
-delete_reports (task_t* task)
+delete_reports (task_t task)
 {
   const char* id;
   gchar* dir_name;
@@ -1427,13 +1472,13 @@ delete_reports (task_t* task)
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */
 int
-delete_task (task_t** task_pointer)
+delete_task (task_t* task_pointer)
 {
   gboolean success;
   const char* id;
   gchar* name;
   GError* error;
-  task_t* task = *task_pointer;
+  task_t task = *task_pointer;
 
   tracef ("   delete task %u\n", task->id);
 
@@ -1485,7 +1530,7 @@ delete_task (task_t** task_pointer)
  * @return 0 on success, -1 if out of memory.
  */
 int
-append_to_task_comment (task_t* task, const char* text, /*@unused@*/ int length)
+append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
 {
   char* new;
   if (task->comment)
@@ -1512,7 +1557,7 @@ append_to_task_comment (task_t* task, const char* text, /*@unused@*/ int length)
  * @return 0 on success, -1 if out of memory.
  */
 int
-append_to_task_identifier (task_t* task, const char* text,
+append_to_task_identifier (task_t task, const char* text,
                            /*@unused@*/ int length)
 {
   char* new;
@@ -1543,7 +1588,7 @@ append_to_task_identifier (task_t* task, const char* text,
  * @return 0 on success, -1 if out of memory.
  */
 static int
-grow_description (task_t* task, size_t increment)
+grow_description (task_t task, size_t increment)
 {
   size_t new_size = task->description_size
                     + (increment < DESCRIPTION_INCREMENT
@@ -1565,7 +1610,7 @@ grow_description (task_t* task, size_t increment)
  * @param[in]  line_length  The length of the line.
  */
 int
-add_task_description_line (task_t* task, const char* line, size_t line_length)
+add_task_description_line (task_t task, const char* line, size_t line_length)
 {
   char* description;
   if (task->description_size - task->description_length < line_length
@@ -1586,7 +1631,7 @@ add_task_description_line (task_t* task, const char* line, size_t line_length)
  * @param[in]  max      New value for last port to be scanned.
  */
 void
-set_task_ports (task_t *task, unsigned int current, unsigned int max)
+set_task_ports (task_t task, unsigned int current, unsigned int max)
 {
   task->current_port = current;
   task->max_port = max;
@@ -1600,7 +1645,7 @@ set_task_ports (task_t *task, unsigned int current, unsigned int max)
  * @param[in]  protocol   The port protocol.
  */
 void
-append_task_open_port (task_t *task, unsigned int number, char* protocol)
+append_task_open_port (task_t task, unsigned int number, char* protocol)
 {
   assert (task->open_ports != NULL);
   if (task->open_ports)

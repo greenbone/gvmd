@@ -280,7 +280,7 @@ write_timestamp (FILE* file, const char* host, const char* type,
  * @return 0 success, -1 current_report NULL, -2 failed to close file.
  */
 static int
-save_report (task_t* task)
+save_report (task_t task)
 {
   assert (task->current_report != NULL);
   if (task->current_report == NULL) return -1;
@@ -309,7 +309,7 @@ save_report (task_t* task)
  * @param[in]  message      Message.
  */
 static void
-append_timestamp (task_t* task, const char* host, const char* type,
+append_timestamp (task_t task, const char* host, const char* type,
                   const char* time)
 {
   assert (task->current_report != NULL);
@@ -324,7 +324,7 @@ append_timestamp (task_t* task, const char* host, const char* type,
  * @param[in]  message      Message.
  */
 static void
-append_debug_message (task_t* task, message_t* message)
+append_debug_message (task_t task, message_t* message)
 {
   assert (task->current_report != NULL);
   if (task->current_report)
@@ -341,7 +341,7 @@ append_debug_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_hole_message (task_t* task, message_t* message)
+append_hole_message (task_t task, message_t* message)
 {
   assert (task->current_report != NULL);
   if (task->current_report)
@@ -358,7 +358,7 @@ append_hole_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_info_message (task_t* task, message_t* message)
+append_info_message (task_t task, message_t* message)
 {
   assert (task->current_report != NULL);
   if (task->current_report)
@@ -375,7 +375,7 @@ append_info_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_log_message (task_t* task, message_t* message)
+append_log_message (task_t task, message_t* message)
 {
   assert (task->current_report != NULL);
   if (task->current_report)
@@ -392,7 +392,7 @@ append_log_message (task_t* task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_note_message (task_t* task, message_t* message)
+append_note_message (task_t task, message_t* message)
 {
   assert (task->current_report != NULL);
   if (task->current_report)

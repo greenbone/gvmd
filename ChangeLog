@@ -1,3 +1,23 @@
+2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Improve task abstraction by changing task_t to a pointer and adding a
+	task iterator.
+
+	* src/manage.h (fs_task_t): New name for task_t.
+	(task_t): Change to pointer to fs_task_t.  Update all users.
+	(task_iterator_t): New struct.
+	(task_count, init_task_iterator, next_task): New headers.
+	(tasks_size, tasks, num_tasks): Remove.
+
+	* src/manage.c (task_count, init_task_iterator, next_task): New functions.
+	Update all task_t users.
+
+	* src/otp.c: Update all task_t users.
+
+	* src/omp.c: Update all task_t users.
+	(omp_xml_handle_end_element): Add tracing and comment to
+	CLIENT_DELETE_TASK case.  In CLIENT_STATUS iterate with task iterator.
+
 2009-04-09  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Write OTP report messages directly to the report on disk, instead of

@@ -130,30 +130,40 @@ typedef struct
   int infos_size;             ///< Number of infos.
   int logs_size;              ///< Number of logs.
   int notes_size;             ///< Number of notes.
-} task_t;
+} fs_task_t;
 
-// FIX only for STATUS response in omp.c
-#if 1
-extern /*@null@*/ /*@owned@*/ task_t* tasks;
+//typedef fs_task_t task_t;
+typedef fs_task_t* task_t;
+//typedef long long int task_t;
 
-extern unsigned int num_tasks;
-
-extern unsigned int tasks_size;
-#endif
+typedef struct
+{
+  task_t index;
+  task_t end;
+} task_iterator_t;
 
 /**
  * @brief The task currently running on the server.
  */
-extern /*@null@*/ task_t* current_server_task;
+extern /*@null@*/ task_t current_server_task;
+
+unsigned int
+task_count ();
+
+void
+init_task_iterator (task_iterator_t*);
+
+gboolean
+next_task (task_iterator_t*, task_t*);
 
 int
-task_id_string (task_t*, /*@out@*/ const char **);
+task_id_string (task_t, /*@out@*/ const char **);
 
 void
 free_tasks ();
 
 /*@null@*/ /*@dependent@*/ /*@special@*/
-task_t*
+task_t
 make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
   /*@defines result->open_ports@*/
   /*@ensures isnull result->description@*/;
@@ -165,37 +175,37 @@ int
 save_tasks ();
 
 /*@dependent@*/
-task_t*
+task_t
 find_task (unsigned int id);
 
 int
-set_task_parameter (task_t*,
+set_task_parameter (task_t,
                     /*@null@*/ const char*,
                     /*@null@*/ /*@only@*/ char*);
 
 int
-start_task (task_t*);
+start_task (task_t);
 
 int
-stop_task (task_t*);
+stop_task (task_t);
 
 int
-delete_task (task_t**);
+delete_task (task_t*);
 
 int
-append_to_task_comment (task_t*, const char*, int);
+append_to_task_comment (task_t, const char*, int);
 
 int
-append_to_task_identifier (task_t*, const char*, int);
+append_to_task_identifier (task_t, const char*, int);
 
 int
-add_task_description_line (task_t*, const char*, size_t);
+add_task_description_line (task_t, const char*, size_t);
 
 void
-set_task_ports (task_t*, unsigned int, unsigned int);
+set_task_ports (task_t, unsigned int, unsigned int);
 
 void
-append_task_open_port (task_t*, unsigned int, char*);
+append_task_open_port (task_t, unsigned int, char*);
 
 
 /* Reports. */
@@ -212,7 +222,7 @@ gchar*
 report_path_task_name (gchar*);
 
 /*@shared@*/ /*@null@*/
-task_t*
+task_t
 report_task (const char*);
 /*@=exportlocal@*/
 
