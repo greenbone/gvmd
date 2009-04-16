@@ -948,30 +948,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_ABORT_TASK:
         if (current_task_task_id)
           {
-            unsigned int id;
             assert (current_client_task == NULL);
-            if (sscanf (current_task_task_id, "%u", &id) == 1)
+            task_t task;
+            if (find_task (current_task_task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
+                                      "<status>407</status>"
+                                      "</abort_task_response>");
+            else if (stop_task (task))
               {
-                task_t task = find_task (id);
-                if (task == NULL)
-                  SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                          "<status>407</status>"
-                                          "</abort_task_response>");
-                else if (stop_task (task))
-                  {
-                    /* to_server is full. */
-                    // FIX revert parsing for retry
-                    // process_omp_client_input must return -2
-                    abort ();
-                  }
-                else
-                  SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                          "<status>201</status>"
-                                          "</abort_task_response>");
+                /* to_server is full. */
+                // FIX revert parsing for retry
+                // process_omp_client_input must return -2
+                abort ();
               }
             else
               SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                      "<status>40x</status>"
+                                      "<status>201</status>"
                                       "</abort_task_response>");
             free_string_var (&current_task_task_id);
           }
@@ -1289,32 +1281,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK:
         if (current_task_task_id)
           {
-            unsigned int id;
             assert (current_client_task == NULL);
-            if (sscanf (current_task_task_id, "%u", &id) == 1)
+            task_t task;
+            if (find_task (current_task_task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
+                                      "<status>407</status>"
+                                      "</delete_task_response>");
+            else if (delete_task (&task))
               {
-                task_t task = find_task (id);
-                if (task == NULL)
-                  SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                          "<status>407</status>"
-                                          "</delete_task_response>");
-                else if (delete_task (&task))
-                  {
-                    /* to_server is full. */
-                    // FIX or some other error
-                    // FIX revert parsing for retry
-                    // process_omp_client_input must return -2
-                    tracef ("delete_task failed\n");
-                    abort ();
-                  }
-                else
-                  SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                          "<status>201</status>"
-                                          "</delete_task_response>");
+                /* to_server is full. */
+                // FIX or some other error
+                // FIX revert parsing for retry
+                // process_omp_client_input must return -2
+                tracef ("delete_task failed\n");
+                abort ();
               }
             else
               SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                      "<status>40x</status>"
+                                      "<status>201</status>"
                                       "</delete_task_response>");
             free_string_var (&current_task_task_id);
           }
@@ -1382,43 +1366,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK:
         if (current_task_task_id)
           {
-            unsigned int id;
             assert (current_client_task == NULL);
-            if (sscanf (current_task_task_id, "%u", &id) == 1)
+            task_t task;
+            if (find_task (current_task_task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                      "<status>407</status>"
+                                      "</modify_task_response>");
+            else
               {
-                task_t task = find_task (id);
-                if (task == NULL)
-                  SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                          "<status>407</status>"
-                                          "</modify_task_response>");
+                // FIX check if param,value else respond fail
+                int fail = set_task_parameter (task,
+                                               modify_task_parameter,
+                                               modify_task_value);
+                free (modify_task_parameter);
+                if (fail)
+                  {
+                    free (modify_task_value);
+                    modify_task_value = NULL;
+                    SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                            "<status>40x</status>"
+                                            "</modify_task_response>");
+                  }
                 else
                   {
-                    // FIX check if param,value else respond fail
-                    int fail = set_task_parameter (task,
-                                                   modify_task_parameter,
-                                                   modify_task_value);
-                    free (modify_task_parameter);
-                    if (fail)
-                      {
-                        free (modify_task_value);
-                        modify_task_value = NULL;
-                        SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                                "<status>40x</status>"
-                                                "</modify_task_response>");
-                      }
-                    else
-                      {
-                        modify_task_value = NULL;
-                        SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                                "<status>201</status>"
-                                                "</modify_task_response>");
-                      }
+                    modify_task_value = NULL;
+                    SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                            "<status>201</status>"
+                                            "</modify_task_response>");
                   }
               }
-            else
-              SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                      "<status>40x</status>"
-                                      "</modify_task_response>");
             free_string_var (&current_task_task_id);
           }
         else
@@ -1486,30 +1462,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (current_task_task_id)
           {
-            unsigned int id;
             assert (current_client_task == NULL);
-            if (sscanf (current_task_task_id, "%u", &id) == 1)
+            task_t task;
+            if (find_task (current_task_task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
+                                      "<status>407</status>"
+                                      "</start_task_response>");
+            else if (start_task (task))
               {
-                task_t task = find_task (id);
-                if (task == NULL)
-                  SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                          "<status>407</status>"
-                                          "</start_task_response>");
-                else if (start_task (task))
-                  {
-                    /* to_server is full. */
-                    // FIX revert parsing for retry
-                    // process_omp_client_input must return -2
-                    abort ();
-                  }
-                else
-                  SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                          "<status>201</status>"
-                                          "</start_task_response>");
+                /* to_server is full. */
+                // FIX revert parsing for retry
+                // process_omp_client_input must return -2
+                abort ();
               }
             else
               SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                      "<status>40x</status>"
+                                      "<status>201</status>"
                                       "</start_task_response>");
             free_string_var (&current_task_task_id);
           }
@@ -1526,33 +1494,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strncasecmp ("STATUS", element_name, 6) == 0);
         if (current_task_task_id)
           {
-            unsigned int id;
-            if (sscanf (current_task_task_id, "%u", &id) == 1)
-              {
-                task_t task = find_task (id);
-                if (task == NULL)
-                  SEND_TO_CLIENT_OR_FAIL ("<status_response>"
-                                          "<status>407</status>");
-                else
-                  {
-                    gchar* response;
-                    SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
-                    response = g_strdup_printf ("<report_count>%u</report_count>",
-                                                task_report_count (task));
-                    if (send_to_client (response))
-                      {
-                        g_free (response);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (response);
-                    // FIX need to handle err cases before send status
-                    (void) send_reports (task);
-                  }
-              }
-            else
+            task_t task;
+            if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<status_response>"
-                                      "<status>40x</status>");
+                                      "<status>407</status>");
+            else
+              {
+                gchar* response;
+                SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
+                response = g_strdup_printf ("<report_count>%u</report_count>",
+                                            task_report_count (task));
+                if (send_to_client (response))
+                  {
+                    g_free (response);
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_free (response);
+                // FIX need to handle err cases before send status
+                (void) send_reports (task);
+              }
             free_string_var (&current_task_task_id);
           }
         else

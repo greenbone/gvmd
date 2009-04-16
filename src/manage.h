@@ -57,7 +57,7 @@ int
 authenticate (credentials_t);
 
 
-/* Tasks. */
+/* Task structures. */
 
 // FIX should be in otp.c/h
 /**
@@ -140,12 +140,18 @@ typedef struct
   task_t end;
 } task_iterator_t;
 
+
+/* Task global variables. */
+
 /**
  * @brief The task currently running on the server.
  */
 extern /*@null@*/ task_t current_server_task;
 
 extern /*@null@*/ FILE* current_report;
+
+
+/* Task code specific to the representation of tasks. */
 
 unsigned int
 task_count ();
@@ -244,19 +250,13 @@ int
 save_tasks ();
 
 /*@dependent@*/
-task_t
-find_task (unsigned int id);
+gboolean
+find_task (const char* id, task_t*);
 
 int
 set_task_parameter (task_t,
                     /*@null@*/ const char*,
                     /*@null@*/ /*@only@*/ char*);
-
-int
-start_task (task_t);
-
-int
-stop_task (task_t);
 
 int
 delete_task (task_t*);
@@ -275,6 +275,15 @@ set_task_ports (task_t, unsigned int, unsigned int);
 
 void
 append_task_open_port (task_t, unsigned int, char*);
+
+
+/* General task facilities. */
+
+int
+start_task (task_t);
+
+int
+stop_task (task_t);
 
 
 /* Reports. */

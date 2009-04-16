@@ -280,14 +280,13 @@ report_task (const char* report_id)
               g_free (report_path);
               return NULL;
             }
-          {
-            unsigned int id;
-            gchar* task_name = report_path_task_name (report_path);
-            int ret = sscanf (task_name, "%u", &id);
-            g_free (report_path);
-            g_free (task_name);
-            if (ret == 1) return find_task (id);
-          }
+          gchar* task_name = report_path_task_name (report_path);
+          task_t task;
+          int err = find_task (task_name, &task);
+          g_free (report_path);
+          g_free (task_name);
+          if (err) return NULL;
+          return task;
         }
       else
         g_free (link_name);
@@ -420,7 +419,26 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
 }
 
 
-/* Tasks. */
+/* Task globals. */
+
+/**
+ * @brief The task currently running on the server.
+ */
+/*@null@*/ task_t current_server_task = NULL;
+
+/**
+ * @brief Report stream of the current task.
+ */
+FILE* current_report = NULL;
+
+
+/* Task code specific to the representation of tasks. */
+
+/* Headers of functions in the next page. */
+static int
+delete_reports (task_t);
+static void
+print_tasks ();
 
 /**
  * @brief Reallocation increment for the tasks array.
@@ -441,16 +459,6 @@ unsigned int tasks_size = 0;
  * @brief The number of defined tasks.
  */
 unsigned int num_tasks = 0;
-
-/**
- * @brief The task currently running on the server.
- */
-/*@null@*/ task_t current_server_task = NULL;
-
-/**
- * @brief Report stream of the current task.
- */
-FILE* current_report = NULL;
 
 /**
  * @brief Return the number of tasks associated with the current user.
@@ -546,6 +554,19 @@ char*
 task_name (task_t task)
 {
   return task->name;
+}
+
+/**
+ * @brief Return the comment of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Task comment.
+ */
+char*
+task_comment (task_t task)
+{
+  return task->comment;
 }
 
 /**
@@ -813,38 +834,6 @@ inc_task_notes_size (task_t task)
   task->notes_size++;
 }
 
-#if TRACE
-/**
- * @brief Print the server tasks.
- */
-static void
-print_tasks ()
-{
-  task_t index = tasks;
-
-  if (index == NULL)
-    tracef ("   Task array still to be created.\n\n");
-  else
-    {
-      tracef ("   tasks: %p\n", tasks);
-      tracef ("   tasks end: %p\n", tasks + tasks_size);
-      while (index < tasks + tasks_size)
-        {
-          //tracef ("   index: %p\n", index);
-          if (index->name)
-            {
-              tracef ("   Task %u: \"%s\" %s\n%s\n\n",
-                      index->id,
-                      index->name,
-                      index->comment ? index->comment : "",
-                      index->description ? index->description : "");
-            }
-          index++;
-        }
-    }
-}
-#endif
-
 /**
  * @brief Grow the array of tasks.
  *
@@ -904,6 +893,7 @@ free_task (/*@special@*/ /*@dependent@*/ task_t task)
   if (task->description) free (task->description);
   if (task->start_time) free (task->start_time);
   if (task->end_time) free (task->end_time);
+  if (task->attack_state) free (task->attack_state);
   if (current_report)
     {
       (void) fclose (current_report); // FIX check for error
@@ -981,7 +971,10 @@ make_task (char* name, unsigned int time, char* comment)
               index->description = NULL;
               index->description_size = 0;
               index->run_status = TASK_STATUS_NEW;
+              index->start_time = NULL;
+              index->end_time = NULL;
               index->report_count = 0;
+              index->attack_state = NULL;
               index->open_ports = NULL;
               /*@=mustfreeonly@*/
               tracef ("   Made task %u at %p\n", index->id, index);
@@ -1386,32 +1379,42 @@ save_tasks ()
 }
 
 /**
- * @brief Find a task given an identifier.
+ * @brief Find a task from a task identifier string.
  *
- * @param[in]  id  A task identifier.
+ * @param[in]   id_string  A task identifier string.
+ * @param[out]  task       The task, if found.
  *
- * @return A pointer to the task with the given ID.
+ * @return 0 if task found, else -1.
  */
-task_t
-find_task (unsigned int id)
+int
+find_task (const char* id_string, task_t* task)
 {
   if (tasks)
     {
-      task_t index = tasks;
-      task_t end = tasks + tasks_size;
-      while (index < end)
-        {
-          if (index->name) tracef ("   %u vs %u\n", index->id, id);
+      unsigned int id;
 
-          if (index->name == NULL)
-            index++;
-          else if (index->id == id)
-            return index;
-          else
-            index++;
+      if (sscanf (id_string, "%u", &id) == 1)
+        {
+          task_t index = tasks;
+          task_t end = tasks + tasks_size;
+          while (index < end)
+            {
+              if (index->name) tracef ("   %u vs %u\n", index->id, id);
+
+              if (index->name == NULL)
+                index++;
+              else if (index->id == id)
+                {
+                  tracef ("Found task %s at %p\n", id_string, index);
+                  *task = index;
+                  return 0;
+                }
+              else
+                index++;
+            }
         }
     }
-  return NULL;
+  return -1;
 }
 
 /**
@@ -1451,13 +1454,10 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       task->description = (char*) out;
       task->description_length = task->description_size = out_len;
     }
-  else if (strncasecmp ("IDENTIFIER", parameter, 10) == 0)
+  else if (strncasecmp ("NAME", parameter, 4) == 0)
     {
-      unsigned int id;
-      int ret = sscanf (value, "%u", &id);
-      free (value);
-      if (ret != 1) return -1;
-      task->id = id;
+      free (task->name);
+      task->name = value;
     }
   else if (strncasecmp ("COMMENT", parameter, 7) == 0)
     {
@@ -1471,6 +1471,242 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   return 0;
 }
+
+/**
+ * @brief Delete a task.
+ *
+ * Stop the task beforehand with \ref stop_task, if it is running.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+delete_task (task_t* task_pointer)
+{
+  gboolean success;
+  const char* id;
+  gchar* name;
+  GError* error;
+  task_t task = *task_pointer;
+
+  tracef ("   delete task %u\n", task->id);
+
+  if (task_id_string (task, &id)) return -1;
+
+  if (current_credentials.username == NULL) return -1;
+
+  if (stop_task (task) == -1) return -1;
+
+  // FIX may be atomic problems here
+
+  if (delete_reports (task)) return -1;
+
+  name = g_build_filename (PREFIX
+                           "/var/lib/openvas/mgr/users/",
+                           current_credentials.username,
+                           "tasks",
+                           id,
+                           NULL);
+  error = NULL;
+  success = rmdir_recursively (name, &error);
+  if (success == FALSE)
+    {
+      if (error)
+        {
+          fprintf (stderr, "Failed to remove task dir %s: %s\n",
+                   name,
+                   error->message);
+          g_error_free (error);
+        }
+      g_free (name);
+      return -1;
+    }
+  g_free (name);
+
+  free_task (task);
+  *task_pointer = NULL;
+
+  return 0;
+}
+
+/**
+ * @brief Append text to the comment associated with a task.
+ *
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
+int
+append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
+{
+  char* new;
+  if (task->comment)
+    {
+      // FIX
+      new = g_strconcat (task->comment, text, NULL);
+      free (task->comment);
+      task->comment = new;
+      return 0;
+    }
+  new = strdup (text);
+  if (new == NULL) return -1;
+  task->comment = new;
+  return 0;
+}
+
+/**
+ * @brief Append text to the identifier associated with a task.
+ *
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
+int
+append_to_task_identifier (task_t task, const char* text,
+                           /*@unused@*/ int length)
+{
+  char* new;
+  if (task->name)
+    {
+      new = g_strconcat (task->name, text, NULL);
+      g_free (task->name);
+      task->name = new;
+      return 0;
+    }
+  new = strdup (text);
+  if (new == NULL) return -1;
+  task->name = new;
+  return 0;
+}
+
+/**
+ * @brief Reallocation increment for a task description.
+ */
+#define DESCRIPTION_INCREMENT 4096
+
+/**
+ * @brief Increase the memory allocated for a task description.
+ *
+ * @param[in]  task       A pointer to the task.
+ * @param[in]  increment  Minimum number of bytes to increase memory.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
+static int
+grow_description (task_t task, size_t increment)
+{
+  size_t new_size = task->description_size
+                    + (increment < DESCRIPTION_INCREMENT
+                       ? DESCRIPTION_INCREMENT : increment);
+  /* RATS: ignore *//* Memory cleared below. */
+  char* new = realloc (task->description, new_size);
+  if (new == NULL) return -1;
+  memset (new, (int) '\0', new_size - task->description_size);
+  task->description = new;
+  task->description_size = new_size;
+  return 0;
+}
+
+/**
+ * @brief Add a line to a task description.
+ *
+ * @param[in]  task         A pointer to the task.
+ * @param[in]  line         The line.
+ * @param[in]  line_length  The length of the line.
+ */
+int
+add_task_description_line (task_t task, const char* line, size_t line_length)
+{
+  char* description;
+  if (task->description_size - task->description_length < line_length
+      && grow_description (task, line_length) < 0)
+    return -1;
+  description = task->description;
+  description += task->description_length;
+  strncpy (description, line, line_length);
+  task->description_length += line_length;
+  return 0;
+}
+
+/**
+ * @brief Set the ports of a task.
+ *
+ * @param[in]  task     The task.
+ * @param[in]  current  New value for port currently being scanned.
+ * @param[in]  max      New value for last port to be scanned.
+ */
+void
+set_task_ports (task_t task, unsigned int current, unsigned int max)
+{
+  task->current_port = current;
+  task->max_port = max;
+}
+
+/**
+ * @brief Add an open port to a task.
+ *
+ * @param[in]  task       The task.
+ * @param[in]  number     The port number.
+ * @param[in]  protocol   The port protocol.
+ */
+void
+append_task_open_port (task_t task, unsigned int number, char* protocol)
+{
+  assert (task->open_ports != NULL);
+  if (task->open_ports)
+    {
+      port_t port;
+
+      port.number = number;
+      if (strncasecmp ("udp", protocol, 3) == 0)
+        port.protocol = PORT_PROTOCOL_UDP;
+      else if (strncasecmp ("tcp", protocol, 3) == 0)
+        port.protocol = PORT_PROTOCOL_TCP;
+      else
+        port.protocol = PORT_PROTOCOL_OTHER;
+
+      (void) g_array_append_val (task->open_ports, port);
+      task->open_ports_size++;
+    }
+}
+
+
+/* General task facilities. */
+
+#if TRACE
+/**
+ * @brief Print the server tasks.
+ */
+static void
+print_tasks ()
+{
+  task_iterator_t iterator;
+  task_t index;
+
+  init_task_iterator (&iterator);
+  if (next_task (&iterator, &index))
+    {
+      do
+        {
+          char* comment = task_comment (index);
+          char* description = task_description (index);
+          tracef ("   Task %u: \"%s\" %s\n%s\n\n",
+                  task_id (index),
+                  task_name (index),
+                  comment ? comment : "",
+                  description ? description : "");
+        }
+      while (next_task (&iterator, &index));
+    }
+  else
+    tracef ("   Task array empty or still to be created.\n\n");
+}
+#endif
 
 /**
  * @brief Create the current report file for a task.
@@ -1755,207 +1991,4 @@ delete_reports (task_t task)
     }
   free (names);
   return 0;
-}
-
-/**
- * @brief Delete a task.
- *
- * Stop the task beforehand with \ref stop_task, if it is running.
- *
- * @param[in]  task  A pointer to the task.
- *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
- */
-int
-delete_task (task_t* task_pointer)
-{
-  gboolean success;
-  const char* id;
-  gchar* name;
-  GError* error;
-  task_t task = *task_pointer;
-
-  tracef ("   delete task %u\n", task->id);
-
-  if (task_id_string (task, &id)) return -1;
-
-  if (current_credentials.username == NULL) return -1;
-
-  if (stop_task (task) == -1) return -1;
-
-  // FIX may be atomic problems here
-
-  if (delete_reports (task)) return -1;
-
-  name = g_build_filename (PREFIX
-                           "/var/lib/openvas/mgr/users/",
-                           current_credentials.username,
-                           "tasks",
-                           id,
-                           NULL);
-  error = NULL;
-  success = rmdir_recursively (name, &error);
-  if (success == FALSE)
-    {
-      if (error)
-        {
-          fprintf (stderr, "Failed to remove task dir %s: %s\n",
-                   name,
-                   error->message);
-          g_error_free (error);
-        }
-      g_free (name);
-      return -1;
-    }
-  g_free (name);
-
-  free_task (task);
-  *task_pointer = NULL;
-
-  return 0;
-}
-
-/**
- * @brief Append text to the comment associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
- */
-int
-append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
-{
-  char* new;
-  if (task->comment)
-    {
-      // FIX
-      new = g_strconcat (task->comment, text, NULL);
-      free (task->comment);
-      task->comment = new;
-      return 0;
-    }
-  new = strdup (text);
-  if (new == NULL) return -1;
-  task->comment = new;
-  return 0;
-}
-
-/**
- * @brief Append text to the identifier associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
- */
-int
-append_to_task_identifier (task_t task, const char* text,
-                           /*@unused@*/ int length)
-{
-  char* new;
-  if (task->name)
-    {
-      new = g_strconcat (task->name, text, NULL);
-      g_free (task->name);
-      task->name = new;
-      return 0;
-    }
-  new = strdup (text);
-  if (new == NULL) return -1;
-  task->name = new;
-  return 0;
-}
-
-/**
- * @brief Reallocation increment for a task description.
- */
-#define DESCRIPTION_INCREMENT 4096
-
-/**
- * @brief Increase the memory allocated for a task description.
- *
- * @param[in]  task       A pointer to the task.
- * @param[in]  increment  Minimum number of bytes to increase memory.
- *
- * @return 0 on success, -1 if out of memory.
- */
-static int
-grow_description (task_t task, size_t increment)
-{
-  size_t new_size = task->description_size
-                    + (increment < DESCRIPTION_INCREMENT
-                       ? DESCRIPTION_INCREMENT : increment);
-  /* RATS: ignore *//* Memory cleared below. */
-  char* new = realloc (task->description, new_size);
-  if (new == NULL) return -1;
-  memset (new, (int) '\0', new_size - task->description_size);
-  task->description = new;
-  task->description_size = new_size;
-  return 0;
-}
-
-/**
- * @brief Add a line to a task description.
- *
- * @param[in]  task         A pointer to the task.
- * @param[in]  line         The line.
- * @param[in]  line_length  The length of the line.
- */
-int
-add_task_description_line (task_t task, const char* line, size_t line_length)
-{
-  char* description;
-  if (task->description_size - task->description_length < line_length
-      && grow_description (task, line_length) < 0)
-    return -1;
-  description = task->description;
-  description += task->description_length;
-  strncpy (description, line, line_length);
-  task->description_length += line_length;
-  return 0;
-}
-
-/**
- * @brief Set the ports of a task.
- *
- * @param[in]  task     The task.
- * @param[in]  current  New value for port currently being scanned.
- * @param[in]  max      New value for last port to be scanned.
- */
-void
-set_task_ports (task_t task, unsigned int current, unsigned int max)
-{
-  task->current_port = current;
-  task->max_port = max;
-}
-
-/**
- * @brief Add an open port to a task.
- *
- * @param[in]  task       The task.
- * @param[in]  number     The port number.
- * @param[in]  protocol   The port protocol.
- */
-void
-append_task_open_port (task_t task, unsigned int number, char* protocol)
-{
-  assert (task->open_ports != NULL);
-  if (task->open_ports)
-    {
-      port_t port;
-
-      port.number = number;
-      if (strncasecmp ("udp", protocol, 3) == 0)
-        port.protocol = PORT_PROTOCOL_UDP;
-      else if (strncasecmp ("tcp", protocol, 3) == 0)
-        port.protocol = PORT_PROTOCOL_TCP;
-      else
-        port.protocol = PORT_PROTOCOL_OTHER;
-
-      (void) g_array_append_val (task->open_ports, port);
-      task->open_ports_size++;
-    }
 }

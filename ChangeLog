@@ -1,3 +1,21 @@
+2009-04-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	Improve the task abstraction by moving parsing of the task ID into
+	find_task.  Separate out task code specific to the task representation.
+
+	* src/manage.c: Reorder code to separate out representation-specific
+	parts.
+	(task_comment): New function.
+	(free_task): Free attack_state.
+	(make_task): Init start_time and end_time.
+	(find_task): Update to take the ID as a string.
+	(set_task_parameter): Replace IDENTIFIER parameter with NAME.
+
+	* src/manage.h: Reorder headers.
+	(find_task): Adjust header.
+
+	* src/omp.c: Update find_task callers.
+
 2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Improve the task abstraction by accessing all task fields via functions
