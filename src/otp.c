@@ -1228,7 +1228,8 @@ process_otp_server_input ()
                 }
               case SERVER_DEBUG_OID:
                 {
-                  if (current_message != NULL && current_server_task != NULL)
+                  if (current_message != NULL
+                      && current_server_task != (task_t) NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1295,7 +1296,8 @@ process_otp_server_input ()
                 }
               case SERVER_HOLE_OID:
                 {
-                  if (current_message != NULL && current_server_task != NULL)
+                  if (current_message != NULL
+                      && current_server_task != (task_t) NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1362,7 +1364,8 @@ process_otp_server_input ()
                 }
               case SERVER_INFO_OID:
                 {
-                  if (current_message != NULL && current_server_task != NULL)
+                  if (current_message != NULL
+                      && current_server_task != (task_t) NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1429,7 +1432,8 @@ process_otp_server_input ()
                 }
               case SERVER_LOG_OID:
                 {
-                  if (current_message != NULL && current_server_task != NULL)
+                  if (current_message != NULL
+                      && current_server_task != (task_t) NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1496,7 +1500,8 @@ process_otp_server_input ()
                 }
               case SERVER_NOTE_OID:
                 {
-                  if (current_message != NULL && current_server_task != NULL)
+                  if (current_message != NULL
+                      && current_server_task != (task_t) NULL)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1857,7 +1862,7 @@ process_otp_server_input ()
                                         field);
                     }
                   if (save_report (current_server_task)) return -1;
-                  current_server_task = NULL;
+                  current_server_task = (task_t) NULL;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {

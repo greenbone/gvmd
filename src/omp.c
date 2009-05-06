@@ -76,7 +76,7 @@ buffer_size_t to_client_end = 0;
  * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
  */
 /*@null@*/ /*@dependent@*/
-static task_t current_client_task = NULL;
+static task_t current_client_task = (task_t) NULL;
 
 /**
  * @brief Task ID during OMP MODIFY_TASK and START_TASK.
@@ -299,9 +299,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TASK);
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
           {
-            assert (current_client_task == NULL);
+            assert (current_client_task == (task_t) NULL);
             current_client_task = make_task (NULL, 0, NULL);
-            if (current_client_task == NULL) abort (); // FIX
+            if (current_client_task == (task_t) NULL) abort (); // FIX
             set_client_state (CLIENT_NEW_TASK);
           }
         else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
@@ -948,7 +948,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_ABORT_TASK:
         if (current_task_task_id)
           {
-            assert (current_client_task == NULL);
+            assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
@@ -1281,7 +1281,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK:
         if (current_task_task_id)
           {
-            assert (current_client_task == NULL);
+            assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
@@ -1366,7 +1366,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK:
         if (current_task_task_id)
           {
-            assert (current_client_task == NULL);
+            assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
@@ -1418,7 +1418,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar* msg;
           assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
-          assert (current_client_task != NULL);
+          assert (current_client_task != (task_t) NULL);
           // FIX if all rqrd fields given then ok, else respond fail
           // FIX only here should the task be added to tasks
           //       eg on err half task could be saved (or saved with base64 file)
@@ -1434,7 +1434,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               return;
             }
           g_free (msg);
-          current_client_task = NULL;
+          current_client_task = (task_t) NULL;
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -1462,7 +1462,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (current_task_task_id)
           {
-            assert (current_client_task == NULL);
+            assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
@@ -1696,11 +1696,13 @@ extern buffer_size_t from_client_end;
 /**
  * @brief Initialise OMP library data.
  *
- * This should run once, before the first call to \ref process_omp_client_input.
+ * This should run once per process, before the first call to \ref
+ * process_omp_client_input.
  */
 void
 init_omp_data ()
 {
+  init_manage ();
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
   xml_parser.end_element = omp_xml_handle_end_element;

@@ -1,5 +1,41 @@
 2009-04-16  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Switch to an embedded database for task storage, keeping file
+	system based storage as an alternative.
+
+	* src/tasks_fs.h: New file.
+
+	* src/manage.c: Include tasks file according to TASKS_FS.  Move all
+	code specific to the task representation to tasks_fs.h
+	(report_task): Move the return to a parameter and return an error status.
+	Adjust all callers.
+	(print_tasks): Make comment and description const.
+	(create_report_file, start_task, stop_task): Use task functions for
+	accessing and incrementing values, instead of working with the task
+	member.
+
+	* src/tasks_sql.h: New file which implements database equivalents of
+	the code moved to tasks_fs.h.
+
+	* src/manage.h (init_manage, cleanup_manage, task_comment): New headers.
+	(task_t, task_iterator_t): Add defininitions for database tasks.
+	(report_task): Update header.
+	(task_name, task_description, task_start_time, task_end_time)
+	(task_attack_state): Make returns const.
+
+	* src/omp.c: Always cast the NULL task.
+	(init_omp_data): Call init_manage.
+
+	* src/otp.c: Always cast the NULL task.
+
+	* src/openvasmd.c (cleanup): Call cleanup_manage.
+
+	* src/CMakeLists.txt (TASKS_CFLAG, TASKS_LDFLAG): New variables for
+	controlling task backend.  Add to targets.
+	(C_FILES): Add task include files.
+
+2009-04-16  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Improve the task abstraction by moving parsing of the task ID into
 	find_task.  Separate out task code specific to the task representation.
 

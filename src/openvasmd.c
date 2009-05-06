@@ -538,6 +538,8 @@ void
 cleanup ()
 {
   tracef ("   Cleaning up.\n");
+  // FIX should be via omp, maybe cleanup_omp ();
+  cleanup_manage ();
   if (manager_socket > -1) close (manager_socket);
 #if LOG
   if (fclose (log_stream)) perror ("Failed to close log stream");

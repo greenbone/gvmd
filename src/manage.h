@@ -30,6 +30,12 @@
 #include <glib.h>
 #include <ossp/uuid.h>
 
+void
+init_manage ();
+
+void
+cleanup_manage ();
+
 
 /* Credentials. */
 
@@ -99,6 +105,7 @@ typedef enum
   TASK_STATUS_DONE
 } task_status_t;
 
+#ifdef TASKS_FS
 /**
  * @brief A task.
  */
@@ -132,13 +139,23 @@ typedef struct
 } fs_task_t;
 
 typedef fs_task_t* task_t;
-//typedef long long int task_t;
 
 typedef struct
 {
   task_t index;
   task_t end;
 } task_iterator_t;
+#else
+typedef long long int task_t;
+
+#include <sqlite3.h>
+
+typedef struct
+{
+  sqlite3_stmt* stmt;
+  gboolean done;
+} task_iterator_t;
+#endif
 
 
 /* Task global variables. */
@@ -168,10 +185,13 @@ task_id (task_t);
 int
 task_id_string (task_t, /*@out@*/ const char **);
 
-char*
+const char*
 task_name (task_t);
 
-char*
+const char*
+task_comment (task_t);
+
+const char*
 task_description (task_t);
 
 void
@@ -183,13 +203,13 @@ task_run_status (task_t);
 void
 set_task_run_status (task_t, task_status_t);
 
-char*
+const char*
 task_start_time (task_t);
 
 void
 set_task_start_time (task_t task, char* time);
 
-char*
+const char*
 task_end_time (task_t);
 
 void
@@ -198,7 +218,7 @@ set_task_end_time (task_t task, char* time);
 unsigned int
 task_report_count (task_t);
 
-char*
+const char*
 task_attack_state (task_t);
 
 void
@@ -299,9 +319,8 @@ make_report_id ();
 gchar*
 report_path_task_name (gchar*);
 
-/*@shared@*/ /*@null@*/
-task_t
-report_task (const char*);
+gboolean
+report_task (const char*, task_t* task);
 /*@=exportlocal@*/
 
 int

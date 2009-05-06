@@ -24,6 +24,10 @@
 
 ## Config
 
+#set (TASKS_CFLAG "-DTASKS_FS")
+set (TASKS_CFLAG "-DTASKS_SQL")
+set (TASKS_LDFLAG "-lsqlite3")
+
 exec_program (pkg-config
               ARGS --cflags glib-2.0
 			  OUTPUT_VARIABLE GLIB_CFLAGS)
@@ -45,13 +49,13 @@ add_library (ovas-mngr-comm ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (manage manage.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 add_library (omp omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 add_library (otp otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 ## Program
 
@@ -99,7 +103,7 @@ else (OPENVAS_LIB_INSTALL_DIR)
 endif (OPENVAS_LIB_INSTALL_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS}")
+                       "${TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
 
 if (OPENVAS_HEADER_INSTALL_DIR)
   set (TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
@@ -108,7 +112,7 @@ else (OPENVAS_HEADER_INSTALL_DIR)
 endif (OPENVAS_HEADER_INSTALL_DIR)
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+                       "${TASKS_CFLAG} ${TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 MARK_AS_ADVANCED (TEMP)
 
@@ -144,7 +148,8 @@ ADD_DEPENDENCIES (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
-             "manage.c" "ovas-mngr-comm.c" "string.c")
+             "manage.c" "ovas-mngr-comm.c" "string.c" "tasks_fs.h"
+			 "tasks_sql.h")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."
