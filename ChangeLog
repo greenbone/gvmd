@@ -1,4 +1,9 @@
-2009-04-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-07  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* CMakeLists.txt: Added initial support for creating source and binary
+	packages with CPack.
+
+2009-05-06  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	Switch to an embedded database for task storage, keeping file
 	system based storage as an alternative.
