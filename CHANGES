@@ -1,0 +1,24 @@
+openvas-manager 0.5.0 (2009-05-08)
+
+This is the first public release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS).
+
+The OpenVAS Manager aims to be a layer between OpenVAS-Client and
+the actual OpenVAS Server. Basically it should be responsible for
+any tasks where no high system privileges are required.
+
+This module is in an early development stage and not yet intended for
+production use.
+
+It is not mandatory to have OpenVAS Manager for using OpenVAS 1.0 or 2.0.
+
+Usage example:
+If openvasd is running on port 7772, the following command starts the manager
+on port 1241.  The client can then connect to port 1241 as though it was
+connecting to openvasd.
+
+# openvasmd --port 1241 --sport 7772
+
+More information about the command line arguments can be obtained using:
+
+# openvascd --help

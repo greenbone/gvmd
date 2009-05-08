@@ -1,3 +1,13 @@
+2009-05-08  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.5.0 release.
+
+	* CHANGES: New.
+
+	* VERSION: Set to 0.5.0.
+
+	* CMakeLists.txt: Adjusted version.
+
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* src/tests/CMakeLists.txt: Add SQLite linkage.  Move tests of support
