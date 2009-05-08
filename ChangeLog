@@ -1,5 +1,12 @@
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/manage.c (task_plugins): New function.
+	(start_task): Request plugins listed in RC file instead of always
+	requesting all plugins.
+	(task_preference): Correct parsing.
+
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	Ensure that the memory allocated in sql_string is always freed.
 
 	* src/manage.h (task_name, task_comment, task_description)

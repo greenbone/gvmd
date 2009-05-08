@@ -631,30 +631,31 @@ task_preference (task_t task, const char* name)
       if (eq)
         {
 #if 0
-          tracef ("found: %.*s\n",
+          tracef ("   1 found: %.*s\n",
                   seek ? seek - desc : strlen (seek),
                   desc);
 #endif
           if (strncmp (desc, name, eq - desc - 1) == 0)
             {
               free (orig_desc);
-              return g_strndup (eq + 1, seek ? seek - eq + 1 : strlen (seek));
+              return g_strndup (eq + 2,
+                                seek ? seek - (eq + 2) : strlen (seek));
             }
         }
       else if ((seek ? seek - desc > 7 : 1)
                && strncmp (desc, "begin(", 6) == 0)
         {
           /* Read over the section. */
-          desc = seek;
+          desc = seek + 1;
           while ((seek = strchr (desc, '\n')))
             {
               if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4))
+                  && strncmp (desc, "end(", 4) == 0)
                 {
                   break;
                 }
 #if 0
-              tracef ("skip: %.*s\n",
+              tracef ("   1 skip: %.*s\n",
                       seek ? seek - desc : strlen (seek),
                       desc);
 #endif
@@ -666,6 +667,86 @@ task_preference (task_t task, const char* name)
     }
   free (orig_desc);
   return NULL;
+}
+
+static char*
+task_plugins (task_t task)
+{
+  char* desc = task_description (task);
+  char* orig_desc = desc;
+  char* seek;
+  GString* plugins = g_string_new ("");
+  while ((seek = strchr (desc, '\n')))
+    {
+      char* eq = seek
+                 ? memchr (desc, '=', seek - desc)
+                 : strchr (desc, '=');
+      if (eq)
+        {
+#if 0
+          tracef ("   skip: %.*s\n",
+                  seek ? seek - desc : strlen (seek),
+                  desc);
+#endif
+        }
+      else if ((seek ? seek - desc >= 17 : 1)
+               && (strncmp (desc, "begin(PLUGIN_SET)", 17) == 0
+                   || strncmp (desc, "begin(SCANNER_SET)", 18) == 0))
+        {
+          /* Read in the plugins. */
+          desc = seek + 1;
+          while ((seek = strchr (desc, '\n')))
+            {
+              char* eq2;
+
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4) == 0)
+                {
+                  break;
+                }
+
+              eq2 = memchr (desc, '=', seek - desc);
+              if (eq2)
+                {
+                  if (strncasecmp (eq2 + 2, "yes", 3) == 0)
+                    {
+                      g_string_append_len (plugins, desc, eq2 - desc - 1);
+#if 0
+                      tracef ("   plugin: %.*s\n",
+                              eq2 - desc - 1,
+                              desc);
+#endif
+                    }
+                }
+
+              desc = seek + 1;
+            }
+        }
+      else if ((seek ? seek - desc > 7 : 1)
+               && strncmp (desc, "begin(", 6) == 0)
+        {
+          /* Read over the section. */
+          desc = seek + 1;
+          while ((seek = strchr (desc, '\n')))
+            {
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4) == 0)
+                {
+                  break;
+                }
+#if 0
+              tracef ("skip s: %.*s\n",
+                      seek ? seek - desc : strlen (seek),
+                      desc);
+#endif
+              desc = seek + 1;
+            }
+        }
+      if (seek == NULL) break;
+      desc = seek + 1;
+    }
+  free (orig_desc);
+  return g_string_free (plugins, FALSE);
 }
 
 /**
@@ -705,12 +786,9 @@ start_task (task_t task)
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n")) return -1;
   //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
-  if (send_to_server ("plugin_set <|> \n")) return -1;
+  if (sendf_to_server ("plugin_set <|> %s\n", task_plugins (task))) return -1;
   // FIX
   if (send_to_server ("port_range <|> 21\n")) return -1;
-#if 0
-  if (send_to_server (task_plugins (task))) return -1;
-#endif
   if (send_to_server ("\n")) return -1;
 #if 0
   queue_task_preferences (task);
