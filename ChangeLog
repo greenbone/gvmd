@@ -1,5 +1,9 @@
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/manage.c (start_task): Free task_plugins string after use.
+
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/manage.c (task_plugins): New function.
 	(start_task): Request plugins listed in RC file instead of always
 	requesting all plugins.

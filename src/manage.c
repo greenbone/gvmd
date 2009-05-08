@@ -762,6 +762,7 @@ int
 start_task (task_t task)
 {
   char* targets;
+  char* plugins;
   int fail;
 
   tracef ("   start task %u\n", task_id (task));
@@ -786,7 +787,12 @@ start_task (task_t task)
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n")) return -1;
   //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
-  if (sendf_to_server ("plugin_set <|> %s\n", task_plugins (task))) return -1;
+
+  plugins = task_plugins (task);
+  fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+  free (plugins);
+  if (fail) return -1;
+
   // FIX
   if (send_to_server ("port_range <|> 21\n")) return -1;
   if (send_to_server ("\n")) return -1;
