@@ -472,13 +472,17 @@ print_tasks ()
     {
       do
         {
-          const char* comment = task_comment (index);
-          const char* description = task_description (index);
+          char* comment = task_comment (index);
+          char* description = task_description (index);
+          char* name = task_name (index);
           tracef ("   Task %u: \"%s\" %s\n%s\n\n",
                   task_id (index),
-                  task_name (index),
+                  name,
                   comment ? comment : "",
                   description ? description : "");
+          free (name);
+          free (description);
+          free (comment);
         }
       while (next_task (&iterator, &index));
     }
@@ -512,8 +516,14 @@ create_report_file (task_t task)
   assert (current_report == NULL);
   if (current_report) return -6;
 
-  tracef ("   Saving report (%s) on task %u\n",
-          task_start_time (task), task_id (task));
+#if TRACE
+  {
+    char* start_time = task_start_time (task);
+    tracef ("   Saving report (%s) on task %u\n",
+            task_start_time (task), task_id (task));
+    free (start_time);
+  }
+#endif
 
   if (task_id_string (task, &id)) return -2;
 
@@ -610,8 +620,9 @@ create_report_file (task_t task)
 static char*
 task_preference (task_t task, const char* name)
 {
-  const char* desc = task_description (task);
-  const char* seek;
+  char* desc = task_description (task);
+  char* orig_desc = desc;
+  char* seek;
   while ((seek = strchr (desc, '\n')))
     {
       char* eq = seek
@@ -625,7 +636,10 @@ task_preference (task_t task, const char* name)
                   desc);
 #endif
           if (strncmp (desc, name, eq - desc - 1) == 0)
-            return g_strndup (eq + 1, seek ? seek - eq + 1 : strlen (seek));
+            {
+              free (orig_desc);
+              return g_strndup (eq + 1, seek ? seek - eq + 1 : strlen (seek));
+            }
         }
       else if ((seek ? seek - desc > 7 : 1)
                && strncmp (desc, "begin(", 6) == 0)
@@ -650,6 +664,7 @@ task_preference (task_t task, const char* name)
       if (seek == NULL) break;
       desc = seek + 1;
     }
+  free (orig_desc);
   return NULL;
 }
 

@@ -1452,8 +1452,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             gsize out_len;
             guchar* out;
-            out = g_base64_decode (task_description (current_client_task),
-                                   &out_len);
+            char* description = task_description (current_client_task);
+            out = g_base64_decode (description, &out_len);
+            free (description);
             set_task_description (current_client_task, (char*) out, out_len);
             set_client_state (CLIENT_NEW_TASK);
           }
@@ -1537,6 +1538,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             while (next_task (&iterator, &index))
               {
                 gchar* line;
+                char* name = task_name (index);
                 line = g_strdup_printf ("<task>"
                                         "<task_id>%u</task_id>"
                                         "<identifier>%s</identifier>"
@@ -1550,7 +1552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "</messages>"
                                         "</task>",
                                         task_id (index),
-                                        task_name (index),
+                                        name,
                                         task_run_status (index)
                                         == TASK_STATUS_NEW
                                         ? "New"
@@ -1566,7 +1568,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_infos_size (index),
                                         task_logs_size (index),
                                         task_notes_size (index));
-                // FIX free line if RESPOND fails
+                free (name);
                 if (send_to_client (line))
                   {
                     g_free (line);

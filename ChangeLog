@@ -1,5 +1,33 @@
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	Ensure that the memory allocated in sql_string is always freed.
+
+	* src/manage.h (task_name, task_comment, task_description)
+	(task_start_time, task_end_time, task_attack_state): Drop const from
+	return type.
+
+	* src/manage.c (task_name, task_comment, task_description)
+	(task_start_time, task_end_time, task_attack_state): Drop const from
+	return type.
+	(print_tasks, create_report_file, task_preference): Free task string
+	elements after use.
+
+	* src/tasks_fs.h (task_comment): New function.
+	(task_name, task_description, task_start_time, task_end_time)
+	(task_attack_state): Return duplicate of task element.
+
+	* src/tasks_sql.h (append_to_task_string): Free return from sql_string
+	after use.
+	(task_name, task_comment, task_description, task_start_time)
+	(task_end_time, task_attack_state): Drop const from return type.
+
+	* src/omp.c (omp_xml_handle_end_element): Free task string elements after
+	use.
+
+	* src/otp.c (save_report): Free task_start_time return after use.
+
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/ovas-mngr-comm.c (sendf_to_server): New function.
 
 	* src/ovas-mngr-comm.h (sendf_to_server): New header.

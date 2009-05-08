@@ -169,7 +169,7 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
   return ret;
 }
 
-const unsigned char*
+unsigned char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
@@ -178,8 +178,8 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   sql_x (col, row, sql, args, &stmt);
   va_end (args);
   const unsigned char* ret2 = sqlite3_column_text (stmt, col);
-  // FIX probably need to dup ret before finalize
-  // FIX leak
+  /* TODO: For efficiency, save this duplication by adjusting the task
+           interface. */
   const unsigned char* ret = g_strdup (ret2);
   sqlite3_finalize (stmt);
   return ret;
@@ -234,7 +234,7 @@ dec_task_int (task_t task, const char* field)
 void
 append_to_task_string (task_t task, const char* field, const char* value)
 {
-  const unsigned char* current;
+  unsigned char* current;
   current = sql_string (0, 0,
                         "SELECT %s FROM tasks_%s WHERE ROWID = %llu;",
                         field,
@@ -244,6 +244,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
   if (current)
     {
       gchar* new = g_strconcat ((const gchar*) current, value, NULL);
+      free (current);
       quote = sql_quote (new, strlen (new));
       g_free (new);
     }
@@ -426,6 +427,7 @@ task_id_string (task_t task, const char ** id)
                     "SELECT uuid FROM tasks_%s WHERE ROWID = %llu;",
                     current_credentials.username,
                     task);
+  // FIX caller must free
   *id = (const char*) str;
 #else
   *id = g_strdup_printf ("%llu", task);
@@ -440,7 +442,7 @@ task_id_string (task_t task, const char ** id)
  *
  * @return Task name.
  */
-const char*
+char*
 task_name (task_t task)
 {
   return sql_string (0, 0,
@@ -456,7 +458,7 @@ task_name (task_t task)
  *
  * @return Comment of task.
  */
-const char*
+char*
 task_comment (task_t task)
 {
   return sql_string (0, 0,
@@ -472,7 +474,7 @@ task_comment (task_t task)
  *
  * @return Description of task.
  */
-const char*
+char*
 task_description (task_t task)
 {
   return sql_string (0, 0,
@@ -537,7 +539,7 @@ set_task_run_status (task_t task, task_status_t status)
  *
  * @return Task start time.
  */
-const char*
+char*
 task_start_time (task_t task)
 {
   return sql_string (0, 0,
@@ -569,7 +571,7 @@ set_task_start_time (task_t task, char* time)
  *
  * @return Task end time.
  */
-const char*
+char*
 task_end_time (task_t task)
 {
   return sql_string (0, 0,
@@ -617,7 +619,7 @@ task_report_count (task_t task)
  *
  * @return Task attack state.
  */
-const char*
+char*
 task_attack_state (task_t task)
 {
   return sql_string (0, 0,

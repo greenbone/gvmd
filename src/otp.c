@@ -285,9 +285,13 @@ save_report (task_t task)
   assert (current_report != NULL);
   if (current_report == NULL) return -1;
 
-  tracef ("   Saving report (%s) on task %u\n",
-          task_start_time (task),
-          task_id (task));
+#if TRACE
+  {
+    char* start_time = task_start_time (task);
+    tracef ("   Saving report (%s) on task %u\n", start_time, task_id (task));
+    free (start_time);
+  }
+#endif
 
   if (fclose (current_report))
     {

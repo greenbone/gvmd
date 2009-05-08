@@ -171,10 +171,23 @@ task_id_string (task_t task, const char ** id)
  *
  * @return Task name.
  */
-const char*
+char*
 task_name (task_t task)
 {
-  return task->name;
+  return g_strdup (task->name);
+}
+
+/**
+ * @brief Return the comment of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Comment of task.
+ */
+char*
+task_comment (task_t task)
+{
+  return g_strdup (task->comment);
 }
 
 /**
@@ -187,7 +200,7 @@ task_name (task_t task)
 char*
 task_description (task_t task)
 {
-  return task->description;
+  return g_strdup (task->description);
 }
 
 /**
@@ -241,7 +254,7 @@ set_task_run_status (task_t task, task_status_t status)
 char*
 task_start_time (task_t task)
 {
-  return task->start_time;
+  return g_strdup (task->start_time);
 }
 
 /**
@@ -267,7 +280,7 @@ set_task_start_time (task_t task, char* time)
 char*
 task_end_time (task_t task)
 {
-  return task->end_time;
+  return g_strdup (task->end_time);
 }
 
 /**
@@ -306,7 +319,7 @@ task_report_count (task_t task)
 char*
 task_attack_state (task_t task)
 {
-  return task->attack_state;
+  return g_strdup (task->attack_state);
 }
 
 /**

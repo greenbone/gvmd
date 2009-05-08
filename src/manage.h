@@ -185,13 +185,13 @@ task_id (task_t);
 int
 task_id_string (task_t, /*@out@*/ const char **);
 
-const char*
+char*
 task_name (task_t);
 
-const char*
+char*
 task_comment (task_t);
 
-const char*
+char*
 task_description (task_t);
 
 void
@@ -203,13 +203,13 @@ task_run_status (task_t);
 void
 set_task_run_status (task_t, task_status_t);
 
-const char*
+char*
 task_start_time (task_t);
 
 void
 set_task_start_time (task_t task, char* time);
 
-const char*
+char*
 task_end_time (task_t);
 
 void
@@ -218,7 +218,7 @@ set_task_end_time (task_t task, char* time);
 unsigned int
 task_report_count (task_t);
 
-const char*
+char*
 task_attack_state (task_t);
 
 void
