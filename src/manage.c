@@ -607,6 +607,52 @@ create_report_file (task_t task)
   return 0;
 }
 
+static char*
+task_preference (task_t task, const char* name)
+{
+  const char* desc = task_description (task);
+  const char* seek;
+  while ((seek = strchr (desc, '\n')))
+    {
+      char* eq = seek
+                 ? memchr (desc, '=', seek - desc)
+                 : strchr (desc, '=');
+      if (eq)
+        {
+#if 0
+          tracef ("found: %.*s\n",
+                  seek ? seek - desc : strlen (seek),
+                  desc);
+#endif
+          if (strncmp (desc, name, eq - desc - 1) == 0)
+            return g_strndup (eq + 1, seek ? seek - eq + 1 : strlen (seek));
+        }
+      else if ((seek ? seek - desc > 7 : 1)
+               && strncmp (desc, "begin(", 6) == 0)
+        {
+          /* Read over the section. */
+          desc = seek;
+          while ((seek = strchr (desc, '\n')))
+            {
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4))
+                {
+                  break;
+                }
+#if 0
+              tracef ("skip: %.*s\n",
+                      seek ? seek - desc : strlen (seek),
+                      desc);
+#endif
+              desc = seek + 1;
+            }
+        }
+      if (seek == NULL) break;
+      desc = seek + 1;
+    }
+  return NULL;
+}
+
 /**
  * @brief Start a task.
  *
@@ -619,6 +665,9 @@ create_report_file (task_t task)
 int
 start_task (task_t task)
 {
+  char* targets;
+  int fail;
+
   tracef ("   start task %u\n", task_id (task));
 
   // FIX atomic
@@ -660,16 +709,12 @@ start_task (task_t task)
 #endif
   if (send_to_server ("<|> CLIENT\n")) return -1;
 
-#if 0
-  char* targets = task_preference (task, "targets");
-  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
-                      strlen (targets),
-                      targets))
-    return -1;
-#else
-  if (send_to_server ("CLIENT <|> LONG_ATTACK <|>\n3\ndik\n"))
-    return -1;
-#endif
+  targets = task_preference (task, "targets");
+  fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
+                          strlen (targets),
+                          targets);
+  free (targets);
+  if (fail) return -1;
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
@@ -704,8 +749,7 @@ stop_task (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      // FIX dik
-      if (send_to_server ("CLIENT <|> STOP_ATTACK <|> dik <|> CLIENT\n"))
+      if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
       // FIX TASK_STATUS_STOP_REQUESTED?
       set_task_run_status (task, TASK_STATUS_DONE);

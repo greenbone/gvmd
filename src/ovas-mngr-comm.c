@@ -263,7 +263,7 @@ to_server_buffer_space ()
  *
  * @param[in]  msg  The message, a string.
  *
- * @return 0 for success, for any other values a failure happened.
+ * @return 0 for success, any other value for failure.
  */
 int
 send_to_server (char * msg)
@@ -276,6 +276,25 @@ send_to_server (char * msg)
   to_server_end += strlen (msg);
 
   return 0;
+}
+
+/**
+ * @brief Format and send a message to the server.
+ *
+ * @param[in]  format  printf-style format string for message.
+ *
+ * @return 0 for success, any other value for failure.
+ */
+int
+sendf_to_server (const char* format, ...)
+{
+  va_list args;
+  va_start (args, format);
+  gchar* msg = g_strdup_vprintf (format, args);
+  int ret = send_to_server (msg);
+  g_free (msg);
+  va_end (args);
+  return ret;
 }
 
 /**

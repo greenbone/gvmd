@@ -1,3 +1,13 @@
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* src/ovas-mngr-comm.c (sendf_to_server): New function.
+
+	* src/ovas-mngr-comm.h (sendf_to_server): New header.
+
+	* src/manage.c (task_preference): New function.
+	(start_task): Use RC file targets instead of hardcoded target.
+	(stop_task): Send STOP_WHOLE_TEST instead of STOP_ATTACK.
+
 2009-05-07  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* CMakeLists.txt: Added initial support for creating source and binary
