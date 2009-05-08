@@ -28,6 +28,13 @@
 set (TASKS_CFLAG "-DTASKS_SQL")
 set (TASKS_LDFLAG "-lsqlite3")
 
+message (STATUS "Looking for sqlite3...")
+find_library (SQLITE3 sqlite3)
+message (STATUS "Looking for sqlite3... ${SQLITE3}")
+if (NOT SQLITE3)
+  message (FATAL_ERROR "The sqlite3 database library is required.")
+endif (NOT SQLITE3)
+
 exec_program (pkg-config
               ARGS --cflags glib-2.0
 			  OUTPUT_VARIABLE GLIB_CFLAGS)

@@ -1,5 +1,9 @@
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* CMakeLists.txt: Add check for SQLite3 library.
+
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* src/manage.c (start_task): Free task_plugins string after use.
 
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
