@@ -1,3 +1,7 @@
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* (README, INSTALL): Update requirements and descriptions.
+
 2009-05-08  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Preparing the openvas-manager 0.5.0 release.

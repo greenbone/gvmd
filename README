@@ -1,9 +1,8 @@
-The OpenVAS Manager aims to be a layer between OpenVAS-Client and
-the actual OpenVAS Server. Basically it should be responsible for
-any tasks where no high system privileges are required.
+The OpenVAS Manager aims to be a layer between OpenVAS-Client and the
+actual OpenVAS Server.  Basically it should be responsible for any tasks
+where no high system privileges are required.
 
-This module is in an early development stage.
-At the current state OpenVAS Manager is a protocol logger for OTP.
+This module is in an early stage of development.
 
 It is not mandatory to have OpenVAS Manager for using OpenVAS 1.0 or 2.0.
 
@@ -12,8 +11,7 @@ Howto use
 ---------
 
 For example, if openvasd is running on port 7772, the following command
-starts the manager on port 1241.  The client can then connect to port 1241
-as though it was connecting to openvasd.
+starts the manager on port 1241.
 
     openvasmd --port 1241 --sport 7772
 
@@ -31,4 +29,3 @@ The program usage message follows.
 	  -l, --slisten=<address>     Server (openvasd) address.
 	  -s, --sport=<number>        Server (openvasd) port number.
 	  -v, --version               Print version.
-
