@@ -1,3 +1,8 @@
+2009-05-08  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_start_element): Correct lengths in
+	CLIENT_TOP comparisons.
+
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
 	* (README, INSTALL): Update requirements and descriptions.

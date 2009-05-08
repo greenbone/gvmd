@@ -234,12 +234,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               /*@unused@*/ gpointer user_data,
                               GError **error)
 {
-  tracef ("   XML  start: %s\n", element_name);
+  tracef ("   XML  start: %s (%i)\n", element_name, client_state);
 
   switch (client_state)
     {
       case CLIENT_TOP:
-        if (strncasecmp ("AUTHENTICATE", element_name, 10) == 0)
+        if (strncasecmp ("AUTHENTICATE", element_name, 12) == 0)
           {
 // FIX
 #if 0
@@ -264,7 +264,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTIC:
-        if (strncasecmp ("AUTHENTICATE", element_name, 10) == 0)
+        if (strncasecmp ("AUTHENTICATE", element_name, 12) == 0)
           {
             // FIX Could check if reauthenticating current credentials, to
             // save the loading of the tasks.
