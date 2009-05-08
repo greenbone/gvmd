@@ -1,5 +1,10 @@
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
+	* src/tests/CMakeLists.txt: Add SQLite linkage.  Move tests of support
+	libraries before rest.  Order tests alphabetically.
+
+2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+
 	* CMakeLists.txt: Add check for SQLite3 library.
 
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
