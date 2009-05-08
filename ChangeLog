@@ -1,5 +1,9 @@
 2009-05-08  Matthew Mundell <mmundell@intevation.de>
 
+	* src/CMakeLists.txt (install): Create PREFIX/var/lib/openvas/mgr/.
+
+2009-05-08  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_start_element): Correct lengths in
 	CLIENT_TOP comparisons.
 

@@ -130,6 +130,8 @@ install (TARGETS openvasmd
          LIBRARY DESTINATION lib
          ARCHIVE DESTINATION lib/static)
 
+install (CODE "FILE (MAKE_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/var/lib/openvas/mgr/\")")
+
 ## Tests
 
 ENABLE_TESTING ()
