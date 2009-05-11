@@ -38,7 +38,9 @@
  */
 
 #include "types.h"
+#include "ovas-mngr-comm.h"
 #include "otpd.h"
+#include "ompd.h"  /* FIX for server_address */
 #include "logf.h"
 #include "tracef.h"
 
@@ -95,10 +97,10 @@ serve_otp (gnutls_session_t* client_session,
            gnutls_session_t* server_session,
            int client_socket, int server_socket)
 {
-  int nfds;
+  int nfds, interrupted = 0;
   fd_set readfds, exceptfds, writefds;
 
-  /* Handle the first client input, which was read by `read_protocol'. */
+  /* Log the first client input, which was read by `read_protocol'. */
 #if TRACE || LOG
   logf ("<= %.*s\n", from_client_end, from_client);
 #if TRACE_TEXT
@@ -108,6 +110,50 @@ serve_otp (gnutls_session_t* client_session,
           from_client_end);
 #endif
 #endif /* TRACE || LOG */
+
+  /* Connect to the server. */
+  nfds = 1 + server_socket;
+  while (1)
+    {
+      int ret;
+
+      /* Setup for select. */
+      FD_ZERO (&exceptfds);
+      FD_ZERO (&writefds);
+      FD_SET (server_socket, &exceptfds);
+      FD_SET (server_socket, &writefds);
+
+      /* Select, then handle result. */
+      ret = select (nfds, NULL, &writefds, &exceptfds, NULL);
+      if (ret < 0)
+        {
+          if (errno == EINTR) continue;
+          perror ("Child connect select failed");
+          return -1;
+        }
+      if (ret > 0)
+        {
+          if (FD_ISSET (server_socket, &exceptfds))
+            {
+              fprintf (stderr,
+                       "Exception on server in child connect select.\n");
+              return -1;
+            }
+          if (FD_ISSET (server_socket, &writefds))
+            {
+              ret = connect_to_server (server_socket,
+                                       &server_address,
+                                       server_session,
+                                       interrupted);
+              if (ret == 0)
+                break;
+              if (ret == -2)
+                interrupted = 1;
+              else
+                return -1;
+            }
+        }
+    }
 
   /* Loop handling input from the sockets. */
   nfds = 1 + (client_socket > server_socket

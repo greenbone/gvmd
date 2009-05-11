@@ -1,5 +1,9 @@
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otpd.c (serve_otp): Connect to server initially.
+
+2009-05-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (task_plugins): Separate plugins with semicolons.
 
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
