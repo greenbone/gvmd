@@ -374,10 +374,11 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
  * If compiled with logging (\ref LOG) then log all input and output
  * with \ref logf.
  *
- * @param[in]  client_session  The TLS session with the client.
- * @param[in]  server_session  The TLS session with the server.
- * @param[in]  client_socket   The socket connected to the client.
- * @param[in]  server_socket   The socket connected to the server.
+ * @param[in]  client_session      The TLS session with the client.
+ * @param[in]  server_session      The TLS session with the server.
+ * @param[in]  server_credentials  The TSL server credentials.
+ * @param[in]  client_socket       The socket connected to the client.
+ * @param[in]  server_socket_addr  The socket connected to the server.
  *
  * @return 0 on success, -1 on error.
  */

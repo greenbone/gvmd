@@ -35,6 +35,9 @@
  */
 #define TRACE 0
 
+/**
+ * @brief GLib log domain for the file library.
+ */
 #define G_LOG_DOMAIN "OpenVAS-File"
 
 #include "tracef.h"

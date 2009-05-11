@@ -69,9 +69,19 @@
 
 /* Functions defined in task_*.h and used before the include. */
 
+/**
+ * @brief Increment report count.
+ *
+ * @param[in]  task  Task.
+ */
 void
 inc_task_report_count (task_t task);
 
+/**
+ * @brief Decrement report count.
+ *
+ * @param[in]  task  Task.
+ */
 void
 dec_task_report_count (task_t task);
 
@@ -243,8 +253,8 @@ report_path_task_name (gchar* path)
 /**
  * @brief Get the task associated with a report.
  *
- * @param[in]   report_id  ID of report.
- * @param[out]  task       The task return.
+ * @param[in]   report_id    ID of report.
+ * @param[out]  task_return  The task return.
  *
  * @return TRUE on error, else FALSE.
  */
@@ -380,7 +390,7 @@ delete_report (const char* report_id)
 /**
  * @brief Set a report parameter.
  *
- * @param[in]  report     The ID of the report.
+ * @param[in]  report_id  The ID of the report.
  * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
  * @param[in]  value      The value of the parameter.
  *
@@ -617,6 +627,14 @@ create_report_file (task_t task)
   return 0;
 }
 
+/**
+ * @brief Return a task preference.
+ *
+ * @param[in]  task  The task.
+ * @param[in]  name  The name of the preference.
+ *
+ * @return The preference on success, else NULL.
+ */
 static char*
 task_preference (task_t task, const char* name)
 {
@@ -669,6 +687,14 @@ task_preference (task_t task, const char* name)
   return NULL;
 }
 
+/**
+ * @brief Return the plugins of a task, as a semicolon separated string.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return A string of semi-colon separated plugin IDS, or the empty string
+ *         if the task is to invoke all plugins.
+ */
 static char*
 task_plugins (task_t task)
 {

@@ -103,10 +103,33 @@ typedef struct
 } port_t;
 #endif
 
-/*@shared@*/ static char* tcp_string = "tcp";
-/*@shared@*/ static char* udp_string = "tcp";
-/*@shared@*/ static char* other_string = "???";
-/*@shared@*/ static char* empty_string = "";
+/**
+ * @brief String for TCP ports.
+ */
+/*@shared@*/
+static char*
+tcp_string = "tcp";
+
+/**
+ * @brief String for UDP ports.
+ */
+/*@shared@*/
+static char*
+udp_string = "udp";
+
+/**
+ * @brief String for other ports.
+ */
+/*@shared@*/
+static char*
+other_string = "???";
+
+/**
+ * @brief Empty string for ports.
+ */
+/*@shared@*/
+static char*
+empty_string = "";
 
 /**
  * @brief Get the name of the protocol of a port.
@@ -197,7 +220,6 @@ make_message (unsigned int number, const char* protocol)
  * @brief Free a message for g_ptr_array_foreach.
  *
  * @param[in]  message       Pointer to the message.
- * @param[in]  dummy         Dummy parameter.
  */
 static void
 free_message (/*@out@*/ /*@only@*/ message_t* message)
@@ -247,8 +269,9 @@ typedef struct
 /**
  * @brief Write a message for g_ptr_array_foreach.
  *
- * @param[in]  message       The message.
- * @param[in]  message_data  The stream and message type.
+ * @param[in]  message  The message.
+ * @param[in]  stream   The stream to write the message to.
+ * @param[in]  type     The message type (for example "Security Warning").
  */
 static void
 write_message (message_t* message, FILE* stream, char* type)
@@ -262,8 +285,9 @@ write_message (message_t* message, FILE* stream, char* type)
  * @brief Write a timestamp to a stream.
  *
  * @param[in]  file       The stream.
- * @param[in]  type       Type of timestamp.
- * @param[in]  time       The time.
+ * @param[in]  host       The host.
+ * @param[in]  type       The type of the timestamp (for example, "host_end").
+ * @param[in]  time       The time to stamp.
  */
 static void
 write_timestamp (FILE* file, const char* host, const char* type,
@@ -311,8 +335,10 @@ save_report (task_t task)
 /**
  * @brief Append a timestamp to a report.
  *
- * @param[in]  task         Task.
- * @param[in]  message      Message.
+ * @param[in]  task  Task.
+ * @param[in]  host  Host.
+ * @param[in]  type  Type of timestamp.
+ * @param[in]  time  Time.
  */
 static void
 append_timestamp (task_t task, const char* host, const char* type,

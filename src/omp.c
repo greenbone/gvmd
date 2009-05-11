@@ -198,6 +198,11 @@ send_to_client (char* msg)
   return FALSE;
 }
 
+/**
+ * @brief Set an out of space parse error on a GError.
+ *
+ * @param [out]  error  The error.
+ */
 static void
 error_send_to_client (GError** error)
 {
