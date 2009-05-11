@@ -11,7 +11,8 @@ Howto use
 ---------
 
 For example, if openvasd is running on port 7772, the following command
-starts the manager on port 1241.
+starts the manager on port 1241.  The client can then connect to port 1241
+as though it was connecting to openvasd.
 
     openvasmd --port 1241 --sport 7772
 
