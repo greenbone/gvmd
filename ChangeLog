@@ -1,5 +1,9 @@
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (task_plugins): Separate plugins with semicolons.
+
+2009-05-11  Matthew Mundell <mmundell@intevation.de>
+
 	* doc/Doxyfile (EXTRACT_STATIC): Enable.
 
 	* src/ompd.c (serve_omp): Doc missing params.

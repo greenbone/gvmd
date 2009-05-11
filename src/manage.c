@@ -702,6 +702,8 @@ task_plugins (task_t task)
   char* orig_desc = desc;
   char* seek;
   GString* plugins = g_string_new ("");
+  gboolean first = TRUE;
+
   while ((seek = strchr (desc, '\n')))
     {
       char* eq = seek
@@ -736,7 +738,13 @@ task_plugins (task_t task)
                 {
                   if (strncasecmp (eq2 + 2, "yes", 3) == 0)
                     {
-                      g_string_append_len (plugins, desc, eq2 - desc - 1);
+                      if (first)
+                        first = FALSE;
+                      else
+                        g_string_append_c (plugins, ';');
+                      /* FIX Rather skip all whitespace before and after
+                             name. */
+                      g_string_append_len (plugins, desc + 1, eq2 - desc - 2);
 #if 0
                       tracef ("   plugin: %.*s\n",
                               eq2 - desc - 1,
