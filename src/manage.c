@@ -455,8 +455,10 @@ FILE* current_report = NULL;
 /* Headers of functions in the next page. */
 static int
 delete_reports (task_t);
+#if 0
 static void
 print_tasks ();
+#endif
 
 #ifdef TASKS_FS
 #include "tasks_fs.h"
@@ -467,6 +469,7 @@ print_tasks ();
 
 /* General task facilities. */
 
+#if 0
 #if TRACE
 /**
  * @brief Print the server tasks.
@@ -499,6 +502,7 @@ print_tasks ()
   else
     tracef ("   Task array empty or still to be created.\n\n");
 }
+#endif
 #endif
 
 /**

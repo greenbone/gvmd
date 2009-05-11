@@ -169,18 +169,20 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
   return ret;
 }
 
-unsigned char*
+char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
+  const unsigned char* ret2;
+  char* ret;
   va_list args;
   va_start (args, sql);
   sql_x (col, row, sql, args, &stmt);
   va_end (args);
-  const unsigned char* ret2 = sqlite3_column_text (stmt, col);
+  ret2 = sqlite3_column_text (stmt, col);
   /* TODO: For efficiency, save this duplication by adjusting the task
            interface. */
-  const unsigned char* ret = g_strdup (ret2);
+  ret = g_strdup ((char*) ret2);
   sqlite3_finalize (stmt);
   return ret;
 }
@@ -234,7 +236,7 @@ dec_task_int (task_t task, const char* field)
 void
 append_to_task_string (task_t task, const char* field, const char* value)
 {
-  unsigned char* current;
+  char* current;
   current = sql_string (0, 0,
                         "SELECT %s FROM tasks_%s WHERE ROWID = %llu;",
                         field,
@@ -800,15 +802,6 @@ void
 dec_task_report_count (task_t task)
 {
   dec_task_int (task, "report_count");
-}
-
-/**
- * @brief Dummy function.
- */
-static void
-free_task (task_t task)
-{
-  /* Empty. */
 }
 
 /**

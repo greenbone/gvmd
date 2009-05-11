@@ -1,5 +1,15 @@
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
+	Address remaining warnings.
+
+	* src/tasks_sql.h (sql_string): Return signed char.  Cast away signs.
+	(append_to_task_string): Make "current" signed.
+	(free_task): Remove.
+
+	* src/manage.c (print_tasks): Direct out.
+
+2009-05-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otpd.c (serve_otp): Connect to server initially.
 
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
