@@ -61,7 +61,8 @@
  * The OTP library is defined in src/\ref otp.c.  The OMP library is defined
  * in src/\ref omp.c.  Both the OMP and OTP libraries use the Manage library
  * to manage credentials and tasks.  The manage
- * library is defined in src/\ref manage.c.
+ * library is defined in src/\ref manage.c, src/\ref tasks_sql.h and
+ * src/\ref tasks_fs.h.
  *
  * The OTP and Manage libraries both use the Comm library to communication
  * with the OTP server (src/\ref ovas-mngr-comm.c).  There are also two

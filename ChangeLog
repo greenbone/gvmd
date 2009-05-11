@@ -1,6 +1,12 @@
 2009-05-11  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	* (README): Revert sentence about connecting as though to server.
+	* doc/Doxyfile (INPUT): Add src/tasks_sql.h and src/tasks_fs.h.
+
+	* src/openvasmd.c (\mainpage): Note src/tasks_sql.h and src/tasks_fs.h.
+
+2009-05-11  Matthew Mundell <matt@mundell.ukfsn.org>
+
+	* README: Revert sentence about connecting as though to server.
 
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
