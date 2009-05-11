@@ -29,4 +29,5 @@ The program usage message follows.
 	  -p, --port=<number>         Use port number <number>.
 	  -l, --slisten=<address>     Server (openvasd) address.
 	  -s, --sport=<number>        Server (openvasd) port number.
-	  -v, --version               Print version.
+	  -v, --verbose               Print progress messages.
+	  --version                   Print version.

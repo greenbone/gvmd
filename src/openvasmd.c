@@ -599,7 +599,6 @@ int
 main (int argc, char** argv)
 {
   int server_port, manager_port;
-  tracef ("   OpenVAS Manager\n");
 
   /* Process options. */
 
@@ -616,7 +615,8 @@ main (int argc, char** argv)
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
-        { "version", 'v', 0, G_OPTION_ARG_NONE, &print_version, "Print version.", NULL },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
+        { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version.", NULL },
         { NULL }
       };
 
@@ -635,6 +635,8 @@ main (int argc, char** argv)
       printf ("Copyright (C) 2009 Greenbone Networks GmbH\n\n");
       exit (EXIT_SUCCESS);
     }
+
+  tracef ("   OpenVAS Manager\n");
 
   if (server_address_string == NULL)
     server_address_string = OPENVASD_ADDRESS;

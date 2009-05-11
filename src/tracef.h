@@ -49,6 +49,11 @@
  */
 #define TRACE_TEXT 1
 
+/**
+ * @brief Verbose output flag.
+ */
+extern int verbose;
+
 #if TRACE
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,11 +65,14 @@
  *
  * Print the printf style \a args to stderr, preceded by the process ID.
  */
-#define tracef(args...)                        \
-  do {                                         \
-    fprintf (stderr, "%7i  ", (int) getpid()); \
-    fprintf (stderr, args);                    \
-    if (fflush (stderr) == EOF) abort ();      \
+#define tracef(args...)                            \
+  do {                                             \
+    if (verbose)                                   \
+      {                                            \
+        fprintf (stderr, "%7i  ", (int) getpid()); \
+        fprintf (stderr, args);                    \
+        if (fflush (stderr) == EOF) abort ();      \
+      }                                            \
   } while (0)
 #else
 /**
