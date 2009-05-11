@@ -58,6 +58,28 @@
 #define PREFIX ""
 #endif
 
+static char* help_text = "\n"
+"    ABORT_TASK             Abort a running task.\n"
+"    AUTHENTICATE           Authenticate with the manager.\n"
+"    DELETE_REPORT          Delete an existing report.\n"
+"    DELETE_TASK            Delete an existing task.\n"
+"    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
+"    GET_NVT_FEED_ALL       * Get IDs and names of all available NVTs.\n"
+"    GET_NVT_FEED_CHECKSUM  * Get checksum for entire NVT collection.\n"
+"    GET_NVT_FEED_DETAILS   * Get all details for all available NVTs.\n"
+"    GET_PREFERENCES        Get preferences for all available NVTs.\n"
+"    GET_REPORT             Get a report identified by its unique ID.\n"
+"    GET_RULES              Get the rules for the authenticated user.\n"
+"    HELP                   Get this help text.\n"
+"    MODIFY_REPORT          Modify an existing report.\n"
+"    MODIFY_TASK            Update an existing task.\n"
+"    NEW_TASK               Create a new task.\n"
+"    OMP_VERSION            Get the OpenVAS Manager Protocol version.\n"
+"    START_TASK             Manually start an existing task.\n"
+"    STATUS                 Get task status information.\n"
+"\n"
+" * Dummy implementation.\n";
+
 /**
  * @brief Buffer of output to the client.
  */
@@ -139,6 +161,7 @@ typedef enum
   CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
+  CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_REPORT_ID,
   CLIENT_MODIFY_REPORT_PARAMETER,
@@ -298,6 +321,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_REPORT);
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
           set_client_state (CLIENT_GET_RULES);
+        else if (strncasecmp ("HELP", element_name, 4) == 0)
+          set_client_state (CLIENT_HELP);
         else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
           set_client_state (CLIENT_MODIFY_REPORT);
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
@@ -535,6 +560,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_HELP:
+        {
+          if (send_to_client ("<help_response>"
+                              "<status>402</status>"
+                              "</help_response>"))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                       "Error");
+        }
         break;
 
       case CLIENT_MODIFY_REPORT:
@@ -1314,6 +1356,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
         set_client_state (CLIENT_DELETE_TASK);
+        break;
+
+      case CLIENT_HELP:
+        SEND_TO_CLIENT_OR_FAIL ("<help_response>"
+                                "<status>200</status>");
+        SEND_TO_CLIENT_OR_FAIL (help_text);
+        SEND_TO_CLIENT_OR_FAIL ("</help_response>");
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_MODIFY_REPORT:

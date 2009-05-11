@@ -1,10 +1,23 @@
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
+	Add an OMP HELP command.
+
+	* src/omp.c (help_text): New variable.
+	(client_state_t): Add CLIENT_HELP.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add HELP
+	handling.
+
+	* src/tests/omp_help_0.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_help_0.
+
+2009-05-11  Matthew Mundell <mmundell@intevation.de>
+
 	Add a verbose flag.
 
 	* src/ovas-mngr-comm.c (verbose): New variable.
 
-	* src/verbose.c (verbose): New variable.
+	* src/tests/common.c (verbose): New variable.
 	(TRACE): Enable.
 
 	* src/openvasmd.c (main): Add verbose flag.
