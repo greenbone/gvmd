@@ -1,5 +1,15 @@
 2009-05-12  Matthew Mundell <mmundell@intevation.de>
 
+	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Revert to explicit file list.
+
+	* doc/CMakeLists.txt (DOC_FILES): New variable.
+	(.built-html, .built-html_full): Add back dependencies.
+
+	* src/openvasmd.c (manpage): Adjust include for updated Doxyfile
+	EXAMPLE_PATH.
+
+2009-05-12  Matthew Mundell <mmundell@intevation.de>
+
 	* doc/Doxyfile_full: Flush trailing whitespace.
 
 2009-05-12  Michael Wiegand <michael.wiegand@intevation.de>

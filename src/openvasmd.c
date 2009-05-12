@@ -76,7 +76,7 @@
 
 /**
  * \page manpage openvasmd
- * \htmlinclude openvasmd.html
+ * \htmlinclude doc/openvasmd.html
  */
 
 #ifndef S_SPLINT_S

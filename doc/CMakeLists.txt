@@ -76,6 +76,15 @@ if (NOT DOXYGEN_EXECUTABLE)
   message (FATAL_ERROR "Doxygen is required to build the HTML docs.")
 endif (NOT DOXYGEN_EXECUTABLE)
 
+set (DOC_FILES
+     ../src/openvasmd.c ../src/ovas-mngr-comm.c
+	 ../src/ompd.c ../src/otpd.c
+	 ../src/manage.c ../src/omp.c ../src/otp.c
+	 ../src/string.c ../src/file.c
+	 ../src/tasks_sql.h ../src/tasks_fs.h ../src/tracef.h
+	 ../src/logf.h ../src/tests/common.c
+	 ../README ../INSTALL)
+
 add_custom_target (doc COMMENT "Building documentation..."
                    DEPENDS openvasmd.8 Doxyfile .built-html)
 
@@ -108,11 +117,13 @@ endif (XMLMANTOHTML_EXECUTABLE)
 
 add_custom_command (OUTPUT .built-html
                     COMMAND sh
-					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\")
+					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\"
+					DEPENDS openvasmd.html Doxyfile ${DOC_FILES})
 
 add_custom_command (OUTPUT .built-html_full
                     COMMAND sh
-					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile_full && touch doc/.built-html_full\;\")
+					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile_full && touch doc/.built-html_full\;\"
+					DEPENDS openvasmd.html Doxyfile_full ${DOC_FILES})
 
 # if (GROFF_DOES_HTML)
 #   add_custom_command (OUTPUT openvasmd.html
