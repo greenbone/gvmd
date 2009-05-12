@@ -1,3 +1,7 @@
+2009-05-12  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* CMakeLists.txt: Added doc/generated to CPACK_SOURCE_IGNORE_FILES.
+
 2009-05-12  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/common.c (DO_CHILDREN): Add back (accidentally removed

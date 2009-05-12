@@ -58,6 +58,7 @@ SET(CPACK_SOURCE_IGNORE_FILES
 ".tar.gz"
 "install_manifest.txt"
 "Makefile"
+"/doc/generated/"
 )
 
 INCLUDE(CPack)
