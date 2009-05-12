@@ -79,6 +79,9 @@ endif (NOT DOXYGEN_EXECUTABLE)
 add_custom_target (doc COMMENT "Building documentation..."
                    DEPENDS openvasmd.8 Doxyfile .built-html)
 
+add_custom_target (doc-full COMMENT "Building documentation..."
+                   DEPENDS openvasmd.8 Doxyfile_full .built-html_full)
+
 if (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT openvasmd.8
 					  COMMAND sh
@@ -105,14 +108,11 @@ endif (XMLMANTOHTML_EXECUTABLE)
 
 add_custom_command (OUTPUT .built-html
                     COMMAND sh
-					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\"
-					DEPENDS openvasmd.html Doxyfile footer.html
-					        ../src/openvasmd.c ../src/ovas-mngr-comm.c
-							../src/ompd.c ../src/otpd.c
-							../src/manage.c ../src/omp.c ../src/otp.c
-							../src/string.c ../src/file.c ../src/tracef.h
-							../src/logf.h ../src/tests/common.c
-							../README ../INSTALL)
+					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile && touch doc/.built-html\;\")
+
+add_custom_command (OUTPUT .built-html_full
+                    COMMAND sh
+					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile_full && touch doc/.built-html_full\;\")
 
 # if (GROFF_DOES_HTML)
 #   add_custom_command (OUTPUT openvasmd.html
@@ -141,11 +141,11 @@ add_custom_command (OUTPUT .built-html
 
 ## Install
 
-file (MAKE_DIRECTORY html/)
+# file (MAKE_DIRECTORY html/)
 
-install (DIRECTORY html/
-         DESTINATION share/doc/openvas-manager/html/
-         COMPONENT doc)
+# install (DIRECTORY html/
+#         DESTINATION share/doc/openvas-manager/html/
+#         COMPONENT doc)
 
 if (XMLTOMAN_EXECUTABLE)
   install (FILES openvasmd.8

@@ -1,3 +1,16 @@
+2009-05-12  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Made generated source code documentation more consistent with the
+	documentation generated for other modules.
+
+	* doc/Doxyfile: Adjusted a few settings to be consistent.
+
+	* doc/Doxyfile_full: New. Provides a more complete documentation with
+	call graphs and the like.
+
+	* doc/CMakeLists.txt: Adjusted to provide the make doc and doc-full
+	targets consistent with the other modules.
+
 2009-05-11  Matthew Mundell <mmundell@intevation.de>
 
 	Add an OMP HELP command.
