@@ -543,7 +543,7 @@ cleanup ()
   cleanup_manage ();
   if (manager_socket > -1) close (manager_socket);
 #if LOG
-  if (fclose (log_stream)) perror ("Failed to close log stream");
+  if (log_stream && fclose (log_stream)) perror ("Failed to close log stream");
 #endif
   ovas_server_context_free (server_context);
 }
