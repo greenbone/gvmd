@@ -1,5 +1,10 @@
 2009-05-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (DO_CHILDREN): Add back (accidentally removed
+	yesterday).
+
+2009-05-12  Matthew Mundell <mmundell@intevation.de>
+
 	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Revert to explicit file list.
 
 	* doc/CMakeLists.txt (DOC_FILES): New variable.
