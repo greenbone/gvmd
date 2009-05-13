@@ -1,5 +1,11 @@
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (DO_CHILDREN): Move to header.
+
+	* src/tests/common.h (DO_CHILDREN): New macro, from common.c.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_status_3.c: Remove tracing.
 
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
