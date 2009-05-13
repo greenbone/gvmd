@@ -1,3 +1,9 @@
+2009-05-13  Michael Wiegand <michael.wiegand@intevation.de>
+
+	More post release version bumps for documentation and packaging.
+
+	* doc/Doxyfile, doc/Doxyfile_full, CMakeLists.txt: Set to 0.5.1.SVN.
+
 2009-05-12  Matthew Mundell <mmundell@intevation.de>
 
 	* src/openvasmd.c (cleanup): Check log_stream before closing.
