@@ -1,5 +1,13 @@
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_modify_task_1.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_modify_task_1.
+
+	* src/tests/common.h (id_string): New header.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (DO_CHILDREN): Move to header.
 
 	* src/tests/common.h (DO_CHILDREN): New macro, from common.c.

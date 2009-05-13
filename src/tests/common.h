@@ -121,6 +121,10 @@ read_entity (gnutls_session_t*, entity_t*);
        ,@body)))
 #endif
 
+// FIX temp export
+int
+id_string (int, const char **);
+
 int
 authenticate (gnutls_session_t* session,
               const char* username,
