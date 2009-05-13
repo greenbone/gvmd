@@ -1,4 +1,4 @@
-/* Test 3 of OMP STATUS.
+/* Test 4 of OMP STATUS.
  * $Id$
  * Description: Test OMP STATUS with a task id, waiting for the task to end.
  *

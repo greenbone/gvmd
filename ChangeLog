@@ -1,5 +1,9 @@
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_status_4.c: Correct test number in comment.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_start_task_2.c: New file.
 
 	* src/tests/CMakeLists.txt: Add omp_start_task_2.
