@@ -2,6 +2,12 @@
 
 	* src/tests/omp_modify_task_0.c: Improve task name.
 
+	* ChangeLog: Correct last log.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/omp_status_4.c: Remove tracing.
+
 2009-05-13  Michael Wiegand <michael.wiegand@intevation.de>
 
 	More post release version bumps for documentation and packaging.

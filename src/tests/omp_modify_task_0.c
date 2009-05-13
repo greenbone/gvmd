@@ -56,7 +56,7 @@ main ()
   if (create_task (&session,
                    CONFIG,
                    strlen (CONFIG),
-                   "Test for omp_modify_task",
+                   "Test for omp_modify_task_0",
                    "Comment.",
                    &id))
     {
