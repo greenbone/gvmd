@@ -1,5 +1,9 @@
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_modify_task_1.c: Turn off verbosity.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_modify_task_1.c: New file.
 
 	* src/tests/CMakeLists.txt: Add omp_modify_task_1.

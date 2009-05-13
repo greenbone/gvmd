@@ -42,8 +42,6 @@ main ()
   unsigned int id;
   const char* id_str = NULL;
 
-  verbose = 1;
-
   socket1 = connect_to_manager (&session1);
   if (socket1 == -1) return EXIT_FAILURE;
 
