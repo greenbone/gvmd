@@ -62,7 +62,6 @@ main ()
 
   if (wait_for_task_end (&session, id))
     {
-      tracef ("wait fail\n");
       goto delete_fail;
     }
 
