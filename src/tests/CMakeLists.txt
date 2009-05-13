@@ -283,6 +283,13 @@ set_target_properties (omp_start_task_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${
 target_link_libraries (omp_start_task_1 common)
 ADD_TEST (omp_start_task_1 omp_start_task_1)
 
+add_executable (omp_start_task_2 omp_start_task_2.c)
+target_link_libraries (omp_start_task_2 string)
+set_target_properties (omp_start_task_2 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_start_task_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_start_task_2 common)
+ADD_TEST (omp_start_task_2 omp_start_task_2)
+
 add_executable (omp_status_0 omp_status_0.c)
 target_link_libraries (omp_status_0 string)
 set_target_properties (omp_status_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
