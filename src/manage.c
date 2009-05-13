@@ -440,6 +440,16 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
 /* Task globals. */
 
 /**
+ * @brief Server active flag.
+ *
+ * This indicates whether the server is doing something that the manager
+ * must wait for.  Set, for example, by \ref start_task.  If this variable
+ * is true then the manager keeps the management process alive until the
+ * server closes its connection, even if the client closes its connection.
+ */
+short server_active = 0;
+
+/**
  * @brief The task currently running on the server.
  */
 /*@null@*/ task_t current_server_task = (task_t) NULL;
@@ -852,6 +862,7 @@ start_task (task_t task)
                           targets);
   free (targets);
   if (fail) return -1;
+  server_active = 1;
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 

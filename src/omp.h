@@ -40,6 +40,9 @@ init_omp_data ();
 int
 process_omp_client_input ();
 
+short
+server_is_active ();
+
 // FIX probably should be passed to process_omp_client_input/init_omp_data
 //     and defined in caller
 extern char to_client[];

@@ -1,5 +1,22 @@
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
+	Ensure that the manager process continues handling server messages if
+	the client exits before the server has finished a running task.
+
+	* src/manage.h (server_active): New header.
+
+	* src/manage.c (server_active): New variable.
+	(start_task): Mark server as active after starting task.
+
+	* src/omp.h (server_is_active): New header.
+
+	* src/omp.c (server_is_active): New function.
+
+	* src/ompd.c (serve_omp): If the server is active when the client
+	connection closes then only exit after the server is done.
+
+2009-05-13  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_modify_task_1.c: Turn off verbosity.
 
 2009-05-13  Matthew Mundell <mmundell@intevation.de>

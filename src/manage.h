@@ -65,6 +65,8 @@ authenticate (credentials_t);
 
 /* Task structures. */
 
+short server_active;
+
 // FIX should be in otp.c/h
 /**
  * @brief Possible port types.

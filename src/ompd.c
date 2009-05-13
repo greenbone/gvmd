@@ -398,6 +398,9 @@ serve_omp (gnutls_session_t* client_session,
   /* True if processing of the server input is waiting for space in the
    * to_client buffer. */
   gboolean server_input_stalled = FALSE;
+  /* Client status flag.  Set to 0 when the client closes the connection
+   * while the server is active. */
+  short client_active = 1;
 
   tracef ("   Serving OMP.\n");
 
@@ -473,7 +476,7 @@ serve_omp (gnutls_session_t* client_session,
       FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
       // FIX shutdown if any eg read fails
-      if (from_client_end < from_buffer_size)
+      if (client_active && from_client_end < from_buffer_size)
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
@@ -560,9 +563,11 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
-                // FIX exit if reached server EOF, otherwise
-                // shutdown client_socket.
-                return 0;
+                if (server_is_active ())
+                  client_active = 0;
+                else
+                  return 0;
+                break;
               default:       /* Programming error. */
                 assert (0);
             }
@@ -639,7 +644,9 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -3:       /* End of file. */
                 set_server_init_state (SERVER_INIT_TOP);
-                // FIX if client EOF then exit.
+                if (client_active == 0)
+                  /* The client has closed the connection, so exit. */
+                  return 0;
                 break;
               default:       /* Programming error. */
                 assert (0);
@@ -670,7 +677,10 @@ serve_omp (gnutls_session_t* client_session,
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE, so recreate the server session. */
+              /* Received server BYE.  If the client is still connected then
+               * recreate the server session, else exit. */
+              if (client_active == 0)
+                return 0;
               if (end_session (server_socket,
                                *server_session,
                                *server_credentials))
@@ -791,7 +801,10 @@ serve_omp (gnutls_session_t* client_session,
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE, so recreate the server session. */
+              /* Received server BYE.  If the client is still connected then
+               * recreate the server session, else exit. */
+              if (client_active == 0)
+                return 0;
               if (end_session (server_socket,
                                *server_session,
                                *server_credentials))

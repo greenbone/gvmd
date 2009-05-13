@@ -1826,3 +1826,15 @@ process_omp_client_input ()
   from_client_end = from_client_start = 0;
   return 0;
 }
+
+/**
+ * @brief Return whether the server is active.
+ *
+ * @return 1 if the server is doing something that the manager
+ *         must wait for, else 0.
+ */
+short
+server_is_active ()
+{
+  return server_active;
+}
