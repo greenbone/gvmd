@@ -711,6 +711,14 @@ main (int argc, char** argv)
 #if LOG
   /* Open the log file. */
 
+  if (g_mkdir_with_parents (OPENVAS_LOG_DIR,
+                            0755) /* "rwxr-xr-x" */
+      == -1)
+    {
+      perror ("Failed to create log directory");
+      exit (EXIT_FAILURE);
+    }
+
   log_stream = fopen (LOG_FILE, "w");
   if (log_stream == NULL)
     {

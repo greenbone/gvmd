@@ -1,5 +1,14 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/logf.h (LOG_FILE): Change extension to comm, as this file is only
+	a log of communication.
+
+	* src/openvasmd.c (main): Create log directory if required.
+
+	* src/CMakeLists.txt: Remove making of log directory from install.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_fs.h, src/tasks_sql.h: Update doc params.
 
 	* src/manage.c (task_run_status_name): Add missing doc.
