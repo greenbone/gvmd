@@ -1,5 +1,12 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_delete_task_2.c: New file.  Tests removing a running
+	task.
+
+	* src/tests/CMakeLists.txt: Add omp_delete_task_2.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (process_otp_server_input): Clear server_active in
 	SERVER_BYE.  (Missing file from 2009-05-13 client exit commit.)
 
