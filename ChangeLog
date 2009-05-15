@@ -1,5 +1,14 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (task_status): New function.
+
+	* src/tests/common.h (task_status): New header.
+
+	* src/tests/omp_delete_task_0.c: Add check of whether removal has been
+	requested.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Extend the ID version of OMP
 	STATUS to return more task information.
 

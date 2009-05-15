@@ -788,6 +788,22 @@ compare_entities (entity_t entity1, entity_t entity2)
 /* OMP. */
 
 /**
+ * @brief Get the task status from an OMP STATUS response.
+ *
+ * @param[in]  response   STATUS response.
+ *
+ * @return The entity_text of the status entity if the entity is found, else
+ *         NULL.
+ */
+const char*
+task_status (entity_t response)
+{
+  entity_t status = entity_child (response, "status");
+  if (status) return entity_text (status);
+  return NULL;
+}
+
+/**
  * @brief Authenticate with the manager.
  *
  * @param[in]  session   Pointer to GNUTLS session.

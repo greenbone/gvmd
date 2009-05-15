@@ -121,10 +121,23 @@ main ()
 
   if (compare_entities (entity, expected))
     {
+      const char* status = task_status (entity);
+
       free_entity (expected);
-      free_entity (entity);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+
+      /* It may be that the server is still busy stopping the task. */
+      if (status && strcmp (status, "Delete requested"))
+        {
+          free_entity (entity);
+          close_manager_connection (socket, session);
+          return EXIT_SUCCESS;
+        }
+      else
+        {
+          free_entity (entity);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (expected);

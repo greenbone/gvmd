@@ -125,6 +125,9 @@ read_entity (gnutls_session_t*, entity_t*);
 int
 id_string (int, const char **);
 
+const char*
+task_status (entity_t status_response);
+
 int
 authenticate (gnutls_session_t* session,
               const char* username,
