@@ -104,6 +104,8 @@ typedef enum
   TASK_STATUS_NEW,
   TASK_STATUS_REQUESTED,
   TASK_STATUS_RUNNING,
+  TASK_STATUS_STOP_REQUESTED,
+  TASK_STATUS_STOPPED,
   TASK_STATUS_DONE
 } task_status_t;
 
@@ -300,6 +302,9 @@ append_task_open_port (task_t, unsigned int, char*);
 
 
 /* General task facilities. */
+
+const char*
+task_run_status_name (task_t task);
 
 int
 start_task (task_t);

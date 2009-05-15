@@ -1608,16 +1608,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "</task>",
                                         task_id (index),
                                         name,
-                                        task_run_status (index)
-                                        == TASK_STATUS_NEW
-                                        ? "New"
-                                        : (task_run_status (index)
-                                           == TASK_STATUS_REQUESTED
-                                           ? "Requested"
-                                           : (task_run_status (index)
-                                              == TASK_STATUS_RUNNING
-                                              ? "Running"
-                                              : "Done")),
+                                        task_run_status_name (index),
                                         task_debugs_size (index),
                                         task_holes_size (index),
                                         task_infos_size (index),

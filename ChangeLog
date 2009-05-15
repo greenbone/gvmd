@@ -1,3 +1,23 @@
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
+	Add an intermediate "stop requested" task state, and set the task
+	to "done" or "stopped" only when receiving the SCAN_END message
+	from the server.
+
+	* src/manage.h (task_status_t): Add TASK_STATUS_STOP_REQUESTED and
+	TASK_STATUS_STOPPED.
+	(task_run_status_name): New header.
+
+	* src/manage.c (stop_task): Replace TASK_STATUS_DONE with
+	TASK_STATUS_STOP_REQUESTED.
+	(task_run_status_name): New function.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_STATUS use
+	task_run_status_name.
+
+	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END set
+	task status to TASK_STATUS_STOPPED if a stop was requested.
+
 2009-05-15  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Initial set of changes to make Debian packaging work.

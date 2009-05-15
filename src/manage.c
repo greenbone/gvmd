@@ -479,6 +479,20 @@ print_tasks ();
 
 /* General task facilities. */
 
+const char*
+task_run_status_name (task_t task)
+{
+  switch (task_run_status (task))
+    {
+      case TASK_STATUS_DONE:           return "Done";
+      case TASK_STATUS_NEW:            return "New";
+      case TASK_STATUS_REQUESTED:      return "Requested";
+      case TASK_STATUS_RUNNING:        return "Running";
+      case TASK_STATUS_STOP_REQUESTED: return "Stop Requested";
+      default:                         return "Internal Error";
+    }
+}
+
 #if 0
 #if TRACE
 /**
@@ -1043,7 +1057,7 @@ start_task (task_t task)
 }
 
 /**
- * @brief Stop a task.
+ * @brief Initiate stopping a task.
  *
  * Use \ref send_to_server to queue the task stop sequence in
  * \ref to_server.
@@ -1055,15 +1069,14 @@ start_task (task_t task)
 int
 stop_task (task_t task)
 {
-  tracef ("   stop task %u\n", task_id (task));
+  tracef ("   request task stop %u\n", task_id (task));
   task_status_t run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
       if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
-      // FIX TASK_STATUS_STOP_REQUESTED?
-      set_task_run_status (task, TASK_STATUS_DONE);
+      set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
     }
   return 0;
 }
