@@ -1556,17 +1556,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "<status>407</status>");
             else
               {
+                int ret;
                 gchar* response;
+                char* name = task_name (task);
                 SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
-                response = g_strdup_printf ("<report_count>%u</report_count>",
+                response = g_strdup_printf ("<task_id>%u</task_id>"
+                                            "<identifier>%s</identifier>"
+                                            "<status>%s</status>"
+                                            "<messages>"
+                                            "<debug>%i</debug>"
+                                            "<hole>%i</hole>"
+                                            "<info>%i</info>"
+                                            "<log>%i</log>"
+                                            "<warning>%i</warning>"
+                                            "</messages>"
+                                            "<report_count>%u</report_count>",
+                                            task_id (task),
+                                            name,
+                                            task_run_status_name (task),
+                                            task_debugs_size (task),
+                                            task_holes_size (task),
+                                            task_infos_size (task),
+                                            task_logs_size (task),
+                                            task_notes_size (task),
                                             task_report_count (task));
-                if (send_to_client (response))
+                ret = send_to_client (response);
+                g_free (response);
+                g_free (name);
+                if (ret)
                   {
-                    g_free (response);
                     error_send_to_client (error);
                     return;
                   }
-                g_free (response);
                 // FIX need to handle err cases before send status
                 (void) send_reports (task);
               }

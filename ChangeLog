@@ -1,5 +1,10 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Extend the ID version of OMP
+	STATUS to return more task information.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	Add an intermediate "delete requested" task state, and delete the task
 	only after receiving the SCAN_END message from the server.
 
