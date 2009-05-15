@@ -208,6 +208,7 @@ task_description (task_t task)
  *
  * @param[in]  task         Task.
  * @param[in]  description  Description.  Used directly, freed by free_task.
+ * @param[in]  length       Length of description.
  */
 void
 set_task_description (task_t task, char* description, gsize length)
@@ -1111,7 +1112,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
  */

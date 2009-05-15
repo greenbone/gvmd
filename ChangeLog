@@ -1,5 +1,11 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_fs.h, src/tasks_sql.h: Update doc params.
+
+	* src/manage.c (task_run_status_name): Add missing doc.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (task_status): New function.
 
 	* src/tests/common.h (task_status): New header.

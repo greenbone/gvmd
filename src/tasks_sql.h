@@ -490,6 +490,7 @@ task_description (task_t task)
  *
  * @param[in]  task         Task.
  * @param[in]  description  Description.  Used directly, freed by free_task.
+ * @param[in]  length       Length of description.
  */
 void
 set_task_description (task_t task, char* description, gsize length)
@@ -927,7 +928,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 on success, -1 if error.
  */
@@ -1084,9 +1085,10 @@ append_task_open_port (task_t task, unsigned int number, char* protocol)
 /**
  * @brief Find a task given an identifier.
  *
- * @param[in]  id  A task identifier.
+ * @param[in]   uuid  A task identifier.
+ * @param[out]  task  Task return.
  *
- * @return A pointer to the task with the given ID.
+ * @return TRUE on success, FALSE on error.
  */
 gboolean
 find_task (const char* uuid, task_t* task)

@@ -479,6 +479,14 @@ print_tasks ();
 
 /* General task facilities. */
 
+/**
+ * @brief Get the name of the status of a task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return The name of the status of the given task (for example, "Done" or
+ *         "Running").
+ */
 const char*
 task_run_status_name (task_t task)
 {
