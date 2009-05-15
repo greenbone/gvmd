@@ -1,5 +1,10 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (process_otp_server_input): Clear server_active in
+	SERVER_BYE.  (Missing file from 2009-05-13 client exit commit.)
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (sendn_to_server): New function.
 	(send_to_server): Use sendn_to_server.
 

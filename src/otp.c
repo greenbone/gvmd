@@ -1203,6 +1203,7 @@ process_otp_server_input ()
                   {
                     case  0:
                       if (sync_buffer ()) return -1;
+                      server_active = 0;
                       return 1;
                     case -1: return -1;
                     case -2:
