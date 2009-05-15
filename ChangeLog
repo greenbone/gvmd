@@ -1,3 +1,14 @@
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
+	* src/ovas-mngr-comm.c (sendn_to_server): New function.
+	(send_to_server): Use sendn_to_server.
+
+	* src/ovas-mngr-comm.h (sendn_to_server): New header.
+
+	* src/manage.c (send_task_preferences): New function.
+	(start_task): Send 0 if plugin set is empty.  Send server and plugin
+	preferences.
+
 2009-05-13  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/omp_status_4.c: Correct test number in comment.

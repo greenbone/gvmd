@@ -56,6 +56,9 @@ int
 sendf_to_server (const char*, ...);
 
 int
+sendn_to_server (char *, size_t);
+
+int
 connect_to_server (int, struct sockaddr_in*, gnutls_session_t*, gboolean);
 
 int

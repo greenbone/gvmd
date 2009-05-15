@@ -798,6 +798,94 @@ task_plugins (task_t task)
 }
 
 /**
+ * @brief Send the task preferences (SERVER_PREFS) to the server.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_task_preferences (task_t task, char* name)
+{
+  char* desc = task_description (task);
+  char* orig_desc = desc;
+  char* seek;
+
+  while (1)
+    {
+      char* eq;
+      seek = strchr (desc, '\n');
+      eq = seek
+           ? memchr (desc, '=', seek - desc)
+           : strchr (desc, '=');
+      if (eq)
+        {
+#if 0
+          tracef ("   skip: %.*s\n",
+                  seek ? seek - desc : strlen (seek),
+                  desc);
+#endif
+        }
+      else if ((seek ? seek - desc >= 7 + strlen (name) : 1)
+               && (strncmp (desc, "begin(", 6) == 0)
+               && (strncmp (desc + 6, name, strlen (name)) == 0)
+               && (desc[6 + strlen (name)] == ')'))
+        {
+          /* Send the preferences. */
+          desc = seek + 1;
+          while ((seek = strchr (desc, '\n')))
+            {
+              char* eq2;
+
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4) == 0)
+                {
+                  break;
+                }
+
+              eq2 = memchr (desc, '=', seek - desc);
+              if (eq2)
+                {
+                  if (sendn_to_server (desc, eq2 - desc)) return -1;
+                  if (sendn_to_server (" <|> ", 5)) return -1;
+                  if (sendn_to_server (eq2 + 2,
+                                       seek ? seek - (eq2 + 2)
+                                            : strlen (eq2 + 2)))
+                    return -1;
+                  if (sendn_to_server ("\n", 1)) return -1;
+                }
+
+              desc = seek + 1;
+            }
+        }
+      else if ((seek ? seek - desc > 7 : 1)
+               && strncmp (desc, "begin(", 6) == 0)
+        {
+          /* Read over the section. */
+          desc = seek + 1;
+          while ((seek = strchr (desc, '\n')))
+            {
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4) == 0)
+                {
+                  break;
+                }
+#if 0
+              tracef ("skip s: %.*s\n",
+                      seek ? seek - desc : strlen (seek),
+                      desc);
+#endif
+              desc = seek + 1;
+            }
+        }
+      if (seek == NULL) break;
+      desc = seek + 1;
+    }
+  free (orig_desc);
+  return 0;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in \ref to_server.
@@ -837,22 +925,21 @@ start_task (task_t task)
   //if (send_to_server ("ntp_short_status <|> yes\n")) return -1;
 
   plugins = task_plugins (task);
-  fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+  if (strlen (plugins))
+    fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+  else
+    fail = sendf_to_server ("plugin_set <|> 0\n");
   free (plugins);
   if (fail) return -1;
 
-  // FIX
-  if (send_to_server ("port_range <|> 21\n")) return -1;
-  if (send_to_server ("\n")) return -1;
-#if 0
-  queue_task_preferences (task);
-  queue_task_plugin_preferences (task);
-#endif
+  if (send_task_preferences (task, "SERVER_PREFS")) return -1;
+  if (send_task_preferences (task, "PLUGINS_PREFS")) return -1;
+
   if (send_to_server ("<|> CLIENT\n")) return -1;
 
   if (send_to_server ("CLIENT <|> RULES <|>\n")) return -1;
 #if 0
-  queue_task_rules (task);
+  send_task_rules (task);
 #endif
   if (send_to_server ("<|> CLIENT\n")) return -1;
 

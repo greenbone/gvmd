@@ -267,6 +267,27 @@ to_server_buffer_space ()
 }
 
 /**
+ * @brief Send a number of bytes to the server.
+ *
+ * @param[in]  msg  The message, a string.
+ * @param[in]  n    The number of bytes from msg to send.
+ *
+ * @return 0 for success, any other value for failure.
+ */
+int
+sendn_to_server (char * msg, size_t n)
+{
+  if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
+    return 1;
+
+  memmove (to_server + to_server_end, msg, n);
+  tracef ("-> server: %.*s\n", n, msg);
+  to_server_end += n;
+
+  return 0;
+}
+
+/**
  * @brief Send a message to the server.
  *
  * @param[in]  msg  The message, a string.
@@ -276,14 +297,7 @@ to_server_buffer_space ()
 int
 send_to_server (char * msg)
 {
-  if (TO_SERVER_BUFFER_SIZE - to_server_end < strlen (msg))
-    return 1;
-
-  memmove (to_server + to_server_end, msg, strlen (msg));
-  tracef ("-> server: %s\n", msg);
-  to_server_end += strlen (msg);
-
-  return 0;
+  return sendn_to_server (msg, strlen (msg));
 }
 
 /**
