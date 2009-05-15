@@ -68,6 +68,8 @@ begin(SERVER_PREFS)
 end(SERVER_PREFS)
 
 begin(CLIENTSIDE_USERRULES)
+ 0 = accept 127.0.0.1
+ 1 = accept 127.0.0.1
 end(CLIENTSIDE_USERRULES)
 
 begin(PLUGINS_PREFS)
