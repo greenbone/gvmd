@@ -103,6 +103,10 @@ if (OPENVAS_CA_CERTIFICATE)
   add_definitions (-DCACERT=\\\"${OPENVAS_CA_CERTIFICATE}\\\")
 endif (OPENVAS_CA_CERTIFICATE)
 
+if (OPENVAS_LOG_DIR)
+  add_definitions (-DOPENVAS_LOG_DIR=\\\"${OPENVAS_LOG_DIR}\\\")
+endif (OPENVAS_LOG_DIR)
+
 if (OPENVAS_LIB_INSTALL_DIR)
   set (TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
 else (OPENVAS_LIB_INSTALL_DIR)
@@ -126,11 +130,11 @@ MARK_AS_ADVANCED (TEMP)
 ## Install
 
 install (TARGETS openvasmd
-         RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib
-         ARCHIVE DESTINATION lib/static)
+         RUNTIME DESTINATION ${BINDIR}
+         LIBRARY DESTINATION ${LIBDIR}
+         ARCHIVE DESTINATION ${LIBDIR}/static)
 
-install (CODE "FILE (MAKE_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/var/lib/openvas/mgr/\")")
+#install (CODE "FILE (MAKE_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/var/lib/openvas/mgr/\")")
 
 ## Tests
 

@@ -45,16 +45,9 @@
 #define LOG 1
 
 /**
- * @brief Installation prefix.
- */
-#ifndef PREFIX
-#define PREFIX ""
-#endif
-
-/**
  * @brief Name of log file.
  */
-#define LOG_FILE PREFIX "/var/log/openvas/openvasmd.log"
+#define LOG_FILE OPENVAS_LOG_DIR "/openvasmd.log"
 
 #if LOG
 extern FILE* log_stream;

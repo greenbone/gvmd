@@ -1,3 +1,36 @@
+2009-05-15  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Initial set of changes to make Debian packaging work.
+
+	* packaging/debian/compat: New. Sets debhelper compatibility level to
+	5.
+
+	* packaging/debian/control: Set dependencies for package.
+
+	* packaging/debian/openvas-manager.dirs: New. Request creation of
+	var/lib/openvas/mgr.
+
+	* packaging/debian/openvas-manager.install: New. Request installation of
+	the created binary.
+
+	* packaging/debian/rules: Adjusted calls to cmake and make to make the
+	package build as expected.
+
+	* src/logf.h: Changed to honour OPENVAS_LOG_DIR because PREFIX might be
+	in a different hierarchy than the appropriate place for the log file.
+
+	* src/CMakeLists.txt: Define OPENVAS_LOG_DIR when compiling. Temporarily
+	disabled directory creation since it broke Debian packaging; the mkdir
+	should use DESTDIR, not CMAKE_INSTALL_PREFIX directly. Changed install
+	to honour LIBDIR and BINDIR.
+
+	* CMakeLists.txt: Make it possible to set different prefixes for
+	individual directories; this is expected by Debian.
+
+	* src/openvasmd.c: (cleanup) Better NULL guard for fclose since it
+	seemed to somehow trigger a segfault in the packaged Debian binary when
+	compiled on Lenny.
+
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/new_task_empty_rc, src/tests/new_task_medium_rc: Remove old

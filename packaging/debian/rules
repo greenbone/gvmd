@@ -15,7 +15,7 @@ config-stamp:
 	dh_testdir
 
 	# Add here commands to configure the package.
-	cmake -DCMAKE_INSTALL_PREFIX=/usr .
+	cmake -DCMAKE_INSTALL_PREFIX=/usr -DSYSCONFDIR=/etc -DLOCALSTATEDIR=/var .
 
 	touch $@
 
@@ -36,7 +36,6 @@ clean:
 	rm -f build-stamp config.stamp
 
 	# Add here commands to clean up after the build process.
-	$(MAKE) clean
 
 	dh_clean
 
@@ -47,7 +46,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp
-	$(MAKE) install
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 
 # Build architecture-independent files here.
 binary-indep: build install

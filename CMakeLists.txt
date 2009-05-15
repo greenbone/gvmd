@@ -65,14 +65,49 @@ INCLUDE(CPack)
 
 ## Variables
 
-set (OPENVAS_LIB_INSTALL_DIR    "${CMAKE_INSTALL_PREFIX}/lib/")
-set (OPENVAS_HEADER_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/")
-set (OPENVAS_SERVER_CERTIFICATE "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/CA/servercert.pem")
-set (OPENVAS_SERVER_KEY         "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/private/CA/serverkey.pem")
-set (OPENVAS_CA_CERTIFICATE     "${CMAKE_INSTALL_PREFIX}/var/lib/openvas/CA/cacert.pem")
-
 set (CMAKE_BUILD                Debug)
 set (CMAKE_VERBOSE_MAKEFILE     ON)
+
+if (NOT SYSCONFDIR)
+  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
+endif (NOT SYSCONFDIR)
+
+if (NOT EXEC_PREFIX)
+  set (EXEC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+endif (NOT EXEC_PREFIX)
+
+if (NOT BINDIR)
+  set (BINDIR "${EXEC_PREFIX}/bin")
+endif (NOT BINDIR)
+
+if (NOT SBINDIR)
+  set (SBINDIR "${EXEC_PREFIX}/sbin")
+endif (NOT SBINDIR)
+
+if (NOT LIBDIR)
+  set (LIBDIR "${EXEC_PREFIX}/lib")
+endif (NOT LIBDIR)
+
+if (NOT LOCALSTATEDIR)
+  set (LOCALSTATEDIR "${CMAKE_INSTALL_PREFIX}/var")
+endif (NOT LOCALSTATEDIR)
+
+if (NOT INCLUDEDIR)
+  set (INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/include")
+endif (NOT INCLUDEDIR)
+
+#if (NOT SYSCONFDIR)
+#  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
+#endif (NOT SYSCONFDIR)
+
+set (OPENVAS_STATE_DIR "${LOCALSTATEDIR}/lib/openvas")
+set (OPENVAS_LOG_DIR   "${LOCALSTATEDIR}/log/openvas")
+
+set (OPENVAS_LIB_INSTALL_DIR    "${LIBDIR}")
+set (OPENVAS_HEADER_INSTALL_DIR "${INCLUDEDIR}")
+set (OPENVAS_SERVER_CERTIFICATE "${OPENVAS_STATE_DIR}/CA/servercert.pem")
+set (OPENVAS_SERVER_KEY         "${OPENVAS_STATE_DIR}/private/CA/serverkey.pem")
+set (OPENVAS_CA_CERTIFICATE     "${OPENVAS_STATE_DIR}/CA/cacert.pem")
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
@@ -84,8 +119,8 @@ STRING (REPLACE "
 
 ## Program
 
-set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Wall")
-set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall")
+set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Wall -O2")
+set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -O2")
 
 add_subdirectory (src)
 
