@@ -484,12 +484,13 @@ task_run_status_name (task_t task)
 {
   switch (task_run_status (task))
     {
-      case TASK_STATUS_DONE:           return "Done";
-      case TASK_STATUS_NEW:            return "New";
-      case TASK_STATUS_REQUESTED:      return "Requested";
-      case TASK_STATUS_RUNNING:        return "Running";
-      case TASK_STATUS_STOP_REQUESTED: return "Stop Requested";
-      default:                         return "Internal Error";
+      case TASK_STATUS_DELETE_REQUESTED: return "Delete requested";
+      case TASK_STATUS_DONE:             return "Done";
+      case TASK_STATUS_NEW:              return "New";
+      case TASK_STATUS_REQUESTED:        return "Requested";
+      case TASK_STATUS_RUNNING:          return "Running";
+      case TASK_STATUS_STOP_REQUESTED:   return "Stop requested";
+      default:                           return "Internal Error";
     }
 }
 
@@ -1070,6 +1071,7 @@ int
 stop_task (task_t task)
 {
   tracef ("   request task stop %u\n", task_id (task));
+  // FIX something should check safety credential before this
   task_status_t run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)

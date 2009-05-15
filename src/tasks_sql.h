@@ -923,30 +923,50 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 }
 
 /**
- * @brief Delete a task.
+ * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if error.
  */
 int
-delete_task (task_t* task_pointer)
+request_delete_task (task_t* task_pointer)
+{
+  task_t task = *task_pointer;
+
+  tracef ("   request delete task %u\n", task_id (task));
+
+  if (current_credentials.username == NULL) return -1;
+
+  if (stop_task (task) == -1) return -1;
+
+  set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+
+  return 0;
+}
+
+/**
+ * @brief Complete deletion of a task.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+delete_task (task_t task)
 {
   gboolean success;
   const char* id;
   gchar* name;
   GError* error;
-  task_t task = *task_pointer;
 
   tracef ("   delete task %u\n", task_id (task));
 
-  if (task_id_string (task, &id)) return -1;
-
   if (current_credentials.username == NULL) return -1;
 
-  if (stop_task (task) == -1) return -1;
+  if (task_id_string (task, &id)) return -1;
 
   // FIX may be atomic problems here
 

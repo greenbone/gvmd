@@ -1885,13 +1885,19 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      if (task_run_status (current_server_task)
-                          == TASK_STATUS_STOP_REQUESTED)
-                        set_task_run_status (current_server_task,
-                                             TASK_STATUS_STOPPED);
-                      else
-                        set_task_run_status (current_server_task,
-                                             TASK_STATUS_DONE);
+                      switch (task_run_status (current_server_task))
+                        {
+                          case TASK_STATUS_STOP_REQUESTED:
+                            set_task_run_status (current_server_task,
+                                                 TASK_STATUS_STOPPED);
+                            break;
+                          case TASK_STATUS_DELETE_REQUESTED:
+                            delete_task (current_server_task);
+                            break;
+                          default:
+                            set_task_run_status (current_server_task,
+                                                 TASK_STATUS_DONE);
+                        }
                       append_timestamp (current_server_task,
                                         "",
                                         "scan_end",

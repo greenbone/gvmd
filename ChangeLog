@@ -1,5 +1,25 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	Add an intermediate "delete requested" task state, and delete the task
+	only after receiving the SCAN_END message from the server.
+
+	* src/manage.h (task_status_t): Add TASK_STATUS_DELETE_REQUESTED.
+	(request_delete_task): New header.
+	(delete_task): Update header.
+
+	* src/manage.c (task_run_status_name): Add TASK_STATUS_DELETE_REQUESTED.
+
+	* src/tasks_sql.c (request_delete_task): New function.
+	(delete_task): Move request parts to request_delete_task.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_TASK call
+	request_delete_task instead of delete_task.
+
+	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END call
+	delete_task if a delete was requested.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	Add an intermediate "stop requested" task state, and set the task
 	to "done" or "stopped" only when receiving the SCAN_END message
 	from the server.

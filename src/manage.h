@@ -101,12 +101,13 @@ typedef struct
 
 typedef enum
 {
+  TASK_STATUS_DELETE_REQUESTED,
+  TASK_STATUS_DONE,
   TASK_STATUS_NEW,
   TASK_STATUS_REQUESTED,
   TASK_STATUS_RUNNING,
   TASK_STATUS_STOP_REQUESTED,
-  TASK_STATUS_STOPPED,
-  TASK_STATUS_DONE
+  TASK_STATUS_STOPPED
 } task_status_t;
 
 #ifdef TASKS_FS
@@ -283,7 +284,10 @@ set_task_parameter (task_t,
                     /*@null@*/ /*@only@*/ char*);
 
 int
-delete_task (task_t*);
+request_delete_task (task_t*);
+
+int
+delete_task (task_t);
 
 int
 append_to_task_comment (task_t, const char*, int);
