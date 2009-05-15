@@ -1,4 +1,4 @@
-<new_task><task_file># This file was automagically created by OpenVAS-Client
+# This file was automagically created by OpenVAS-Client
 trusted_ca = cacert.pem
 hide_toolbar = no
 hide_msglog = yes
@@ -6008,5 +6008,3 @@ begin(SERVER_INFO)
  server_info_os = Linux
  server_info_os_version = 2.6.18-6-486
 end(SERVER_INFO)
-
-</task_file><identifier>Simple scan</identifier><comment>Simple scan, for tests.</comment></new_task>

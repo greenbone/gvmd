@@ -1,5 +1,10 @@
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/new_task_empty_rc, src/tests/new_task_medium_rc: Remove old
+	XML wrapper tags.
+
+2009-05-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/new_task_small_rc (CLIENTSIDE_USERRULES): Add two rules.
 
 	* src/manage.c (send_task_rules): New function.
