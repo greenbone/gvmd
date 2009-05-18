@@ -1,5 +1,11 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END close
+	current report after removing report and check if the current report
+	still exists before writing to it.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	Bring FS base tasks up to date.
 
 	* src/tasks_sql.h (init_manage_process): New function, was init_manage.

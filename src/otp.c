@@ -1893,18 +1893,27 @@ process_otp_server_input ()
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                             delete_task (current_server_task);
+                            if (fclose (current_report))
+                              {
+                                perror ("Failed to close report stream");
+                                return -1;
+                              }
+                            current_report = NULL;
                             break;
                           default:
                             set_task_run_status (current_server_task,
                                                  TASK_STATUS_DONE);
                         }
-                      append_timestamp (current_server_task,
-                                        "",
-                                        "scan_end",
-                                        field);
+                      if (current_report)
+                        {
+                          append_timestamp (current_server_task,
+                                            "",
+                                            "scan_end",
+                                            field);
+                          if (save_report (current_server_task)) return -1;
+                          current_server_task = (task_t) NULL;
+                        }
                     }
-                  if (save_report (current_server_task)) return -1;
-                  current_server_task = (task_t) NULL;
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {
