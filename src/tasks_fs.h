@@ -50,19 +50,36 @@ unsigned int num_tasks = 0;
 /* Functions. */
 
 /**
- * @brief Initialize the manage library.
+ * @brief Initialize the manage library for a process.
+ *
+ * Simply open the SQL database.
  */
 void
-init_manage ()
+init_manage_process ()
 {
   /* Empty. */
+}
+
+/**
+ * @brief Initialize the manage library.
+ *
+ * @return 0 on success, else -1.
+ */
+int
+init_manage ()
+{
+  /* Set requested and running tasks to stopped. */
+
+  // TODO: Implement.
+
+  return 0;
 }
 
 /**
  * @brief Cleanup the manage library.
  */
 void
-cleanup_manage ()
+cleanup_manage_process ()
 {
   /* Empty. */
 }
@@ -540,8 +557,10 @@ grow_tasks ()
 
   tasks_size += TASKS_INCREMENT;
   tracef ("   tasks grown to %u\n", tasks_size);
+#if 0
 #if TRACE
   print_tasks ();
+#endif
 #endif
   return TRUE;
 }
@@ -1108,30 +1127,50 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 }
 
 /**
- * @brief Delete a task.
+ * @brief Request deletion of a task.
  *
  * Stop the task beforehand with \ref stop_task, if it is running.
  *
  * @param[in]  task_pointer  A pointer to the task.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 on error.
  */
 int
-delete_task (task_t* task_pointer)
+request_delete_task (task_t* task_pointer)
+{
+  task_t task = *task_pointer;
+
+  tracef ("   request delete task %u\n", task_id (task));
+
+  if (current_credentials.username == NULL) return -1;
+
+  if (stop_task (task) == -1) return -1;
+
+  set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+
+  return 0;
+}
+
+/**
+ * @brief Complete deletion of a task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+delete_task (task_t task)
 {
   gboolean success;
   const char* id;
   gchar* name;
   GError* error;
-  task_t task = *task_pointer;
 
   tracef ("   delete task %u\n", task->id);
 
-  if (task_id_string (task, &id)) return -1;
-
   if (current_credentials.username == NULL) return -1;
 
-  if (stop_task (task) == -1) return -1;
+  if (task_id_string (task, &id)) return -1;
 
   // FIX may be atomic problems here
 
@@ -1160,7 +1199,6 @@ delete_task (task_t* task_pointer)
   g_free (name);
 
   free_task (task);
-  *task_pointer = NULL;
 
   return 0;
 }

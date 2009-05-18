@@ -1,5 +1,18 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	Bring FS base tasks up to date.
+
+	* src/tasks_sql.h (init_manage_process): New function, was init_manage.
+	(init_manage): Move body to init_manage_process.  Replace with placeholder
+	function.
+	(cleanup_manage_process): New function, was cleanup_manage.  Turn off task
+	printing.
+	(cleanup_manage): Rename cleanup_manage_process.
+	(request_delete_task): New function.
+	(delete_task): Move some of body to request_delete_task.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_modify_task_1.c: Declare name.  Correct init of name.
 
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
