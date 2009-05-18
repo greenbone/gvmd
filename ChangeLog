@@ -1,5 +1,9 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (create_report_file): Use stored start time.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END close
 	current report after removing report and check if the current report
 	still exists before writing to it.

@@ -567,7 +567,7 @@ create_report_file (task_t task)
   {
     char* start_time = task_start_time (task);
     tracef ("   Saving report (%s) on task %u\n",
-            task_start_time (task), task_id (task));
+            start_time, task_id (task));
     free (start_time);
   }
 #endif
