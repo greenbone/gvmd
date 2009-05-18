@@ -362,7 +362,7 @@ init_manage_process ()
  * Beware that calling this function while tasks are running may lead to
  * problems.
  *
- * @return 0.
+ * @return 0 on success, else -1.
  */
 int
 init_manage ()
@@ -382,7 +382,7 @@ init_manage ()
     {
       fprintf (stderr, "sqlite3_prepare 1 failed: %s\n",
                sqlite3_errmsg (task_db));
-      abort ();
+      return -1;
     }
   while (1)
     {
@@ -396,7 +396,7 @@ init_manage ()
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
           fprintf (stderr, "sqlite3_step 1 failed: %s\n",
                    sqlite3_errmsg (task_db));
-          abort ();
+          return -1;
         }
       name = sqlite3_column_text (stmt, 0);
       tracef ("   table %s\n", name);
@@ -428,9 +428,11 @@ init_manage ()
           current_credentials.username = NULL;
         }
     }
-  sqlite3_finalize (stmt);
-
-  return 0;
+  switch (sqlite3_finalize (stmt))
+    {
+      case SQLITE_OK: return 0;
+      default: return -1;
+    }
 }
 
 /**

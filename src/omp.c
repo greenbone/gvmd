@@ -1767,6 +1767,8 @@ extern buffer_size_t from_client_end;
 
 /**
  * @brief Initialise OMP library.
+ *
+ * @return 0 on success, else -1.
  */
 int
 init_omp ()

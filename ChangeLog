@@ -1,5 +1,16 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (init_omp): Doc return.
+
+	* src/tasks_sql.h (init_manage): Return -1 on error instead of
+	aborting.
+
+	* ChangeLog: Add heading to last log.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
+	Ensure that task statuses are consistent on startup.
+
 	* src/openvasmd.c (main): Call init_ompd.
 
 	* src/tasks_sql.h (init_manage_process): New function, was init_manage.
