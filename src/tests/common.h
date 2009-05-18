@@ -85,46 +85,6 @@ read_entity (gnutls_session_t*, entity_t*);
 
 /* OMP. */
 
-// FIX temp export
-/**
- * @brief Do something for each child of an entity.
- *
- * Calling "break" during body exits the loop.
- *
- * @param[in]  entity  The entity.
- * @param[in]  child   Name to use for child variable.
- * @param[in]  temp    Name to use for internal variable.
- * @param[in]  body    The code to run for each child.
- */
-#define DO_CHILDREN(entity, child, temp, body)      \
-  do                                                \
-    {                                               \
-      GSList* temp = entity->entities;              \
-      while (temp)                                  \
-        {                                           \
-          entity_t child = temp->data;              \
-          {                                         \
-            body;                                   \
-          }                                         \
-          temp = g_slist_next (temp);               \
-        }                                           \
-    }                                               \
-  while (0)
-
-#if 0
-/* Lisp version of DO_CHILDREN. */
-(defmacro do-children ((entity child) &body body)
-  "Do something for each child of an entity."
-  (let ((temp (gensym)))
-    `(while ((,temp (entity-entities ,entity) (rest ,temp)))
-            (,temp)
-       ,@body)))
-#endif
-
-// FIX temp export
-int
-id_string (int, const char **);
-
 const char*
 task_status (entity_t status_response);
 

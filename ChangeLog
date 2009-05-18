@@ -1,3 +1,19 @@
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/common.h (DO_CHILDREN, id_string): Move back to common.c.
+
+	* src/tests/common.c (DO_CHILDREN, id_string): Move back from common.h.
+
+	* src/tests/omp_modify_task_1.c: Use new ID STATUS return instead of
+	searching in STATUS return.
+
+	* ChangeLog: Log last commit.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
+	* doc/Doxyfile (EXTRACT_ALL): Turn off, to enable warnings about
+	missing function docs.
+
 2009-05-15  Matthew Mundell <mmundell@intevation.de>
 
 	* src/logf.h (LOG_FILE): Change extension to comm, as this file is only

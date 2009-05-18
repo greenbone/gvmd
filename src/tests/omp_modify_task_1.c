@@ -40,7 +40,6 @@ main ()
   gnutls_session_t session1;
   gnutls_session_t session2;
   unsigned int id;
-  const char* id_str = NULL;
 
   socket1 = connect_to_manager (&session1);
   if (socket1 == -1) return EXIT_FAILURE;
@@ -61,12 +60,6 @@ main ()
                    "Test for omp_modify_task_1",
                    "Comment.",
                    &id))
-    {
-      close_manager_connection (socket1, session1);
-      return EXIT_FAILURE;
-    }
-
-  if (id_string (id, &id_str))
     {
       close_manager_connection (socket1, session1);
       return EXIT_FAILURE;
@@ -127,7 +120,10 @@ main ()
   /* Check that process 1 registered the change. */
 
   if (sendf_to_manager (&session1,
-                        "<status/>")
+                        "<status>"
+                        "<task_id>%u</task_id>"
+                        "</status>",
+                        id)
       == -1)
     {
       delete_task (&session1, id);
@@ -144,30 +140,11 @@ main ()
       return EXIT_FAILURE;
     }
 
-  ret = EXIT_FAILURE;
-  DO_CHILDREN (entity, child, temp,
-               if (strcasecmp (entity_name (child), "task") == 0)
-                 {
-                   entity_t task_id = entity_child (child, "task_id");
-                   if (task_id == NULL) break;
-                   if (strcasecmp (entity_text (task_id), id_str) == 0)
-                     {
-                       entity_t task_name = entity_child (child, "identifier");
-                       if (task_name)
-                         {
-                           if (strcmp (entity_text (task_name),
-                                      "Modified name"))
-                             {
-                               fprintf (stderr,
-                                        "Name comparison failed: %s\n",
-                                        entity_text (task_name));
-                             }
-                           else
-                             ret = EXIT_SUCCESS;
-                         }
-                       break;
-                     }
-                 });
+  name = entity_child (response, "name");
+  if (name && strcmp (entity_text (name), "Modified name") == 0)
+    ret = EXIT_SUCCESS;
+  else
+    ret = EXIT_FAILURE;
 
   /* Cleanup. */
 
