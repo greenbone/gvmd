@@ -31,8 +31,9 @@
  * Manager, a daemon that is layered between the real OpenVAS Server
  * (openvasd) and a client (such as OpenVAS-Client).
  *
- * The library provides a single function, \ref serve_omp.
- * This function serves OMP to a single client socket until end of file is
+ * The library provides two functions: \ref init_ompd and \ref serve_omp.
+ * \ref init_ompd initialises the daemon.
+ * \ref serve_omp serves OMP to a single client socket until end of file is
  * reached on the socket.
  */
 
@@ -92,6 +93,15 @@ extern buffer_size_t from_client_end;
 extern char from_server[];
 extern buffer_size_t from_server_start;
 extern buffer_size_t from_server_end;
+
+/**
+ * @brief Initialise the OMP library for the OMP daemon.
+ */
+int
+init_ompd ()
+{
+  return init_omp ();
+}
 
 /**
  * @brief Read as much from the client as the \ref from_client buffer will hold.
@@ -407,8 +417,8 @@ serve_omp (gnutls_session_t* client_session,
   /* Initialise server information. */
   init_otp_data ();
 
-  /* Initialise the XML parser. */
-  init_omp_data ();
+  /* Initialise the XML parser and the manage library. */
+  init_omp_process ();
 #if 0
   // FIX consider free_omp_data (); on return
   if (tasks) free_tasks ();

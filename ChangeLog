@@ -1,5 +1,23 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (main): Call init_ompd.
+
+	* src/tasks_sql.h (init_manage_process): New function, was init_manage.
+	(init_manage): Move body to init_manage_process.  Replace with function
+	that makes database consistent.  Adjust callers.
+	(cleanup_manage_process): New function, was cleanup_manage.
+	(cleanup_manage): Rename cleanup_manage_process.  Adjust callers.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (init_omp, init_omp_process): New functions.
+	(init_omp_data): Rename init_omp_process.  Adjust callers.
+	* src/omp.h: Update headers.
+
+	* src/ompd.c (init_ompd): New function.
+	* src/ompd.h: Update headers.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.h (DO_CHILDREN, id_string): Move back to common.c.
 
 	* src/tests/common.c (DO_CHILDREN, id_string): Move back from common.h.

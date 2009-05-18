@@ -30,6 +30,9 @@
 #include <gnutls/gnutls.h>
 
 int
+init_ompd ();
+
+int
 serve_omp (gnutls_session_t*, gnutls_session_t*,
            gnutls_certificate_credentials_t*,
            int, int*);

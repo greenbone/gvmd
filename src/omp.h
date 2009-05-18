@@ -34,8 +34,11 @@
  */
 #define TO_CLIENT_BUFFER_SIZE 1048576
 
+int
+init_omp ();
+
 void
-init_omp_data ();
+init_omp_process ();
 
 int
 process_omp_client_input ();

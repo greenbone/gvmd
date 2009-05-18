@@ -30,11 +30,14 @@
 #include <glib.h>
 #include <ossp/uuid.h>
 
-void
+int
 init_manage ();
 
 void
-cleanup_manage ();
+init_manage_process ();
+
+void
+cleanup_manage_process ();
 
 
 /* Credentials. */

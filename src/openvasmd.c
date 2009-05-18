@@ -540,7 +540,7 @@ cleanup ()
 {
   tracef ("   Cleaning up.\n");
   // FIX should be via omp, maybe cleanup_omp ();
-  cleanup_manage ();
+  cleanup_manage_process ();
   if (manager_socket > -1) close (manager_socket);
 #if LOG
   if (log_stream != NULL)
@@ -690,6 +690,14 @@ main (int argc, char** argv)
   server.preferences = NULL;
   server.rules = NULL;
 #endif
+
+  /* Initialise OMP daemon. */
+
+  if (init_ompd ())
+    {
+      fprintf (stderr, "Failed to initialise OMP daemon.\n");
+      exit (EXIT_FAILURE);
+    }
 
   /* Register the `cleanup' function. */
 

@@ -1254,6 +1254,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     if (content_error)
                       g_error_free (content_error);
+                    // FIX This can happen if task was removed (due to otp
+                    //     SCAN_END) after g_file_test above, so should be
+                    //     4xx.
                     SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
                                             "<status>50x</status>");
                   }
@@ -1763,15 +1766,24 @@ extern buffer_size_t from_client_start;
 extern buffer_size_t from_client_end;
 
 /**
- * @brief Initialise OMP library data.
+ * @brief Initialise OMP library.
+ */
+int
+init_omp ()
+{
+  return init_manage ();
+}
+
+/**
+ * @brief Initialise OMP library data for a process.
  *
  * This should run once per process, before the first call to \ref
  * process_omp_client_input.
  */
 void
-init_omp_data ()
+init_omp_process ()
 {
-  init_manage ();
+  init_manage_process ();
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
   xml_parser.end_element = omp_xml_handle_end_element;

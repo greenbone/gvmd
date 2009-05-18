@@ -260,69 +260,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
-
-
-/**
- * @brief Initialize the manage library.
- */
-void
-init_manage ()
-{
-  /* Open the database. */
-  int ret = sqlite3_open (PREFIX "/var/lib/openvas/mgr/tasks.db", &task_db);
-  if (ret)
-    {
-      fprintf (stderr, "sqlite3_open failed: %s\n",
-               sqlite3_errmsg (task_db));
-      abort ();
-    }
-}
-
-/**
- * @brief Cleanup the manage library.
- */
-void
-cleanup_manage ()
-{
-  if (task_db)
-    {
-      sqlite3_close (task_db);
-      task_db = NULL;
-    }
-}
-
-/**
- * @brief Authenticate credentials.
- *
- * @param[in]  credentials  Credentials.
- *
- * @return 1 if credentials are authentic, else 0.
- */
-int
-authenticate (credentials_t credentials)
-{
-  if (credentials.username)
-    {
-      sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size)",
-           current_credentials.username);
-      return 1;
-    }
-  return 0;
-}
-
-/**
- * @brief Return the number of tasks associated with the current user.
- *
- * @return The number of tasks associated with the current user.
- */
-unsigned int
-task_count ()
-{
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM tasks_%s;",
-                                 current_credentials.username);
-}
-
 /**
  * @brief Initialise a task iterator.
  *
@@ -396,6 +333,154 @@ next_task (task_iterator_t* iterator, task_t* task)
   *task = sqlite3_column_int64 (iterator->stmt, 0);
   tracef ("  ret %llu", *task);
   return TRUE;
+}
+
+/**
+ * @brief Initialize the manage library for a process.
+ *
+ * Simply open the SQL database.
+ */
+void
+init_manage_process ()
+{
+  if (task_db) return;
+  /* Open the database. */
+  int ret = sqlite3_open (PREFIX "/var/lib/openvas/mgr/tasks.db", &task_db);
+  if (ret)
+    {
+      fprintf (stderr, "sqlite3_open failed: %s\n",
+               sqlite3_errmsg (task_db));
+      abort (); // FIX
+    }
+}
+
+/**
+ * @brief Initialize the manage library.
+ *
+ * Ensure all tasks are in a clean initial state.
+ *
+ * Beware that calling this function while tasks are running may lead to
+ * problems.
+ *
+ * @return 0.
+ */
+int
+init_manage ()
+{
+  const char* tail;
+  int ret;
+  sqlite3_stmt* stmt;
+
+  init_manage_process ();
+
+  /* Set requested and running tasks to stopped. */
+
+  ret = sqlite3_prepare (task_db,
+                         "SELECT name from sqlite_master WHERE type='table';",
+                         -1, &stmt, &tail);
+  if (ret != SQLITE_OK || stmt == NULL)
+    {
+      fprintf (stderr, "sqlite3_prepare 1 failed: %s\n",
+               sqlite3_errmsg (task_db));
+      abort ();
+    }
+  while (1)
+    {
+      const unsigned char* name;
+
+      ret = sqlite3_step (stmt);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_DONE) break;
+      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+        {
+          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+          fprintf (stderr, "sqlite3_step 1 failed: %s\n",
+                   sqlite3_errmsg (task_db));
+          abort ();
+        }
+      name = sqlite3_column_text (stmt, 0);
+      tracef ("   table %s\n", name);
+
+      if (strlen ((const char*) name) > strlen ("tasks_"))
+        {
+          task_t index;
+          task_iterator_t iterator;
+
+          current_credentials.username = g_strdup ((const char*) name
+                                                   + strlen ("tasks_"));
+          init_task_iterator (&iterator);
+          while (next_task (&iterator, &index))
+            {
+              switch (task_run_status (index))
+                {
+                  case TASK_STATUS_DELETE_REQUESTED:
+                  case TASK_STATUS_REQUESTED:
+                  case TASK_STATUS_RUNNING:
+                  case TASK_STATUS_STOP_REQUESTED:
+                    set_task_run_status (index, TASK_STATUS_STOPPED);
+                    break;
+                  default:
+                    break;
+                }
+            }
+          cleanup_task_iterator (&iterator);
+          g_free (current_credentials.username);
+          current_credentials.username = NULL;
+        }
+    }
+  sqlite3_finalize (stmt);
+
+  return 0;
+}
+
+/**
+ * @brief Cleanup the manage library.
+ */
+void
+cleanup_manage_process ()
+{
+  if (task_db)
+    {
+      if (current_server_task)
+        {
+          if (task_run_status (current_server_task) == TASK_STATUS_REQUESTED)
+            set_task_run_status (current_server_task, TASK_STATUS_STOPPED);
+        }
+      sqlite3_close (task_db);
+      task_db = NULL;
+    }
+}
+
+/**
+ * @brief Authenticate credentials.
+ *
+ * @param[in]  credentials  Credentials.
+ *
+ * @return 1 if credentials are authentic, else 0.
+ */
+int
+authenticate (credentials_t credentials)
+{
+  if (credentials.username)
+    {
+      sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size)",
+           current_credentials.username);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Return the number of tasks associated with the current user.
+ *
+ * @return The number of tasks associated with the current user.
+ */
+unsigned int
+task_count ()
+{
+  return (unsigned int) sql_int (0, 0,
+                                 "SELECT count(*) FROM tasks_%s;",
+                                 current_credentials.username);
 }
 
 /**
