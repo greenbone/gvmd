@@ -40,6 +40,7 @@ main ()
   gnutls_session_t session1;
   gnutls_session_t session2;
   unsigned int id;
+  entity_t entity, name;
 
   socket1 = connect_to_manager (&session1);
   if (socket1 == -1) return EXIT_FAILURE;
@@ -98,7 +99,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  entity_t entity = NULL;
+  entity = NULL;
   read_entity (&session2, &entity);
 
   entity_t expected = add_entity (NULL, "modify_task_response", NULL);
@@ -140,7 +141,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  name = entity_child (response, "name");
+  name = entity_child (entity, "identifier");
   if (name && strcmp (entity_text (name), "Modified name") == 0)
     ret = EXIT_SUCCESS;
   else

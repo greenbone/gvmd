@@ -1,5 +1,9 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_modify_task_1.c: Declare name.  Correct init of name.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (init_omp): Doc return.
 
 	* src/tasks_sql.h (init_manage): Return -1 on error instead of
