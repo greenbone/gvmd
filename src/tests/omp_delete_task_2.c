@@ -120,12 +120,29 @@ main ()
 
   status = entity_child (entity, "status");
   if (status == NULL
-      || strcmp (entity_name (entity), "status_response")
-      || strcmp (entity_text (status), "407"))
+      || strcmp (entity_name (entity), "status_response"))
     {
       free_entity (entity);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
+    }
+  if (strcmp (entity_text (status), "407"))
+    {
+      const char* status_text = task_status (entity);
+
+      /* It may be that the server is still busy stopping the task. */
+      if (status_text && strcmp (status_text, "Delete requested"))
+        {
+          free_entity (entity);
+          close_manager_connection (socket, session);
+          return EXIT_SUCCESS;
+        }
+      else
+        {
+          free_entity (entity);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (entity);

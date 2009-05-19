@@ -1,5 +1,10 @@
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_delete_task_2.c: Add check of whether removal has been
+	requested.
+
+2009-05-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (create_report_file): Use stored start time.
 
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
@@ -10,7 +15,7 @@
 
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
-	Bring FS base tasks up to date.
+	Bring FS based tasks up to date.
 
 	* src/tasks_sql.h (init_manage_process): New function, was init_manage.
 	(init_manage): Move body to init_manage_process.  Replace with placeholder
