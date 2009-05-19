@@ -63,7 +63,7 @@ void
 append_to_credentials_password (credentials_t*, const char*, gsize);
 
 int
-authenticate (credentials_t);
+authenticate (credentials_t*);
 
 
 /* Task structures. */

@@ -1,3 +1,23 @@
+2009-05-19  Matthew Mundell <mmundell@intevation.de>
+
+	Add real authentication.
+
+	* src/manage.c: Include openvas/openvas_auth.h.
+
+	* src/tasks_sql.h (authenticate): Call openvas_authenticate to check
+	credentials.
+
+	* src/tasks_fs.h (authenticate): Call openvas_authenticate to check
+	credentials.
+
+	* src/manage.h (authenticate): Ajust parameter type.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_AUTHENTICATE respond
+	with error code on error.
+
+	* src/CMakeLists.txt (TEMP): Split into LIB_TEMP and HEADER_TEMP.
+	(manage): Pass openvas headers.
+
 2009-05-18  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/omp_delete_task_2.c: Add check of whether removal has been

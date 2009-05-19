@@ -55,6 +55,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include <openvas/openvas_auth.h>
+
 #ifdef S_SPLINT_S
 #include "splint.h"
 #endif

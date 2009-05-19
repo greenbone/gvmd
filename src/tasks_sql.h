@@ -458,18 +458,19 @@ cleanup_manage_process ()
  *
  * @param[in]  credentials  Credentials.
  *
- * @return 1 if credentials are authentic, else 0.
+ * @return 0 if credentials are authentic, -1 on error, else 0.
  */
 int
-authenticate (credentials_t credentials)
+authenticate (credentials_t* credentials)
 {
-  if (credentials.username)
+  if (credentials->username && credentials->password)
     {
       sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size)",
-           current_credentials.username);
-      return 1;
+           credentials->username);
+      return openvas_authenticate (credentials->username,
+                                   credentials->password);
     }
-  return 0;
+  return 1;
 }
 
 /**

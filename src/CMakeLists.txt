@@ -25,6 +25,7 @@
 ## Config
 
 #set (TASKS_CFLAG "-DTASKS_FS")
+#set (TASKS_LDFLAG "")
 set (TASKS_CFLAG "-DTASKS_SQL")
 set (TASKS_LDFLAG "-lsqlite3")
 
@@ -42,6 +43,22 @@ exec_program (pkg-config
               ARGS --libs glib-2.0
 			  OUTPUT_VARIABLE GLIB_LDFLAGS)
 
+if (OPENVAS_HEADER_INSTALL_DIR)
+  set (HEADER_TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
+else (OPENVAS_HEADER_INSTALL_DIR)
+  set (HEADER_TEMP "")
+endif (OPENVAS_HEADER_INSTALL_DIR)
+
+if (OPENVAS_LIB_INSTALL_DIR)
+  set (LIB_TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
+else (OPENVAS_LIB_INSTALL_DIR)
+  set (LIB_TEMP "")
+endif (OPENVAS_LIB_INSTALL_DIR)
+
+if (OPENVAS_USERS_DIR)
+  add_definitions (-DOPENVAS_USERS_DIR=\\\"${OPENVAS_USERS_DIR}\\\")
+endif (OPENVAS_USERS_DIR)
+
 ## Libraries
 
 # file and string are just in libraries to aid testing.
@@ -56,7 +73,7 @@ add_library (ovas-mngr-comm ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (manage manage.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 add_library (omp omp.c)
 set_target_properties (omp PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
@@ -107,25 +124,14 @@ if (OPENVAS_LOG_DIR)
   add_definitions (-DOPENVAS_LOG_DIR=\\\"${OPENVAS_LOG_DIR}\\\")
 endif (OPENVAS_LOG_DIR)
 
-if (OPENVAS_LIB_INSTALL_DIR)
-  set (TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
-else (OPENVAS_LIB_INSTALL_DIR)
-  set (TEMP "")
-endif (OPENVAS_LIB_INSTALL_DIR)
-
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
-
-if (OPENVAS_HEADER_INSTALL_DIR)
-  set (TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
-else (OPENVAS_HEADER_INSTALL_DIR)
-  set (TEMP "")
-endif (OPENVAS_HEADER_INSTALL_DIR)
+                       "${LIB_TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${TASKS_CFLAG} ${TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+                       "${TASKS_CFLAG} ${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
-MARK_AS_ADVANCED (TEMP)
+MARK_AS_ADVANCED (LIB_TEMP)
+MARK_AS_ADVANCED (HEADER_TEMP)
 
 ## Install
 

@@ -89,13 +89,14 @@ cleanup_manage_process ()
  *
  * @param[in]  credentials  Credentials.
  *
- * @return 1 if credentials are authentic, else 0.
+ * @return 0 if credentials are authentic, -1 on error, else 0.
  */
 int
-authenticate (credentials_t credentials)
+authenticate (credentials_t* credentials)
 {
-  if (credentials.username) return 1;
-  return 0;
+  if (credentials->username && credentials->password)
+    return openvas_authenticate (credentials->username, credentials->password);
+  return 1;
 }
 
 /**

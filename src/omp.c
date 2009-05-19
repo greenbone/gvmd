@@ -1035,26 +1035,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
 
       case CLIENT_AUTHENTICATE:
-        if (authenticate (current_credentials))
+        switch (authenticate (&current_credentials))
           {
-            if (load_tasks ())
-              {
-                fprintf (stderr, "Failed to load tasks.\n");
-                g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
-                             "Manager failed to load tasks.");
-                free_credentials (&current_credentials);
-                set_client_state (CLIENT_TOP);
-              }
-            else
-              set_client_state (CLIENT_AUTHENTIC);
-          }
-        else
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
-                                    "<status>403</status>"
-                                    "</authenticate_response>");
-            free_credentials (&current_credentials);
-            set_client_state (CLIENT_TOP);
+            case 0:
+              if (load_tasks ())
+                {
+                  fprintf (stderr, "Failed to load tasks.\n");
+                  g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
+                               "Manager failed to load tasks.");
+                  free_credentials (&current_credentials);
+                  set_client_state (CLIENT_TOP);
+                }
+              else
+                set_client_state (CLIENT_AUTHENTIC);
+              break;
+            case 1:
+              SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
+                                      "<status>403</status>"
+                                      "</authenticate_response>");
+              free_credentials (&current_credentials);
+              set_client_state (CLIENT_TOP);
+              break;
+            case -1:
+            default:
+              SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
+                                      "<status>500</status>"
+                                      "</authenticate_response>");
+              free_credentials (&current_credentials);
+              set_client_state (CLIENT_TOP);
+              break;
           }
         break;
 
