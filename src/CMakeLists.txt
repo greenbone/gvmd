@@ -55,10 +55,6 @@ else (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "")
 endif (OPENVAS_LIB_INSTALL_DIR)
 
-if (OPENVAS_USERS_DIR)
-  add_definitions (-DOPENVAS_USERS_DIR=\\\"${OPENVAS_USERS_DIR}\\\")
-endif (OPENVAS_USERS_DIR)
-
 ## Libraries
 
 # file and string are just in libraries to aid testing.

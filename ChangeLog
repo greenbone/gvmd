@@ -1,5 +1,10 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/CMakeLists.txt: Remove OPENVAS_USERS_DIR definition added too
+	eagerly.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd.c (\mainpage): Add License Information section.
 
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
