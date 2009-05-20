@@ -72,6 +72,9 @@
  * The Manager tests share the code in src/tests/\ref common.c.  This code
  * enables a client to communicate with the manager, and may become a
  * general interface for programming manager clients.
+ *
+ * \section copying License Information
+ * \verbinclude COPYING
  */
 
 /**

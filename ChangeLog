@@ -1,5 +1,9 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (\mainpage): Add License Information section.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	Add task UUIDs.
 
 	* src/tasks_fs.h (task_uuid): New function.
@@ -15,6 +19,7 @@
 	* src/manage.c (make_task_uuid): New function.
 	(create_report_file, delete_reports): Use task_uuid instead of
 	task_id_string.
+
 	* src/manage.h: Update headers.
 
 	* src/omp.c: Use task_uuid instead of task_id_string.
