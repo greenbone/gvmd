@@ -850,7 +850,7 @@ send_rule (gpointer rule)
  *
  * @param[in]  task  The task.
  *
- * @return 0 success, -1 task name error, -2 credentials missing,
+ * @return 0 success, -1 task ID error, -2 credentials missing,
  *         failed to open task dir, -4 out of space in to_client.
  */
 static int
@@ -859,24 +859,27 @@ send_reports (task_t task)
   // FIX Abstract report iterator and move it to manage.c.
 
   gchar* dir_name;
-  const char* id;
+  char* tsk_uuid;
   struct dirent ** names;
   int count, index;
   gchar* msg;
 
-  // FIX return error code?
-  if (task_id_string (task, &id)) return -1;
+  if (task_uuid (task, &tsk_uuid)) return -1;
 
-  // FIX return error code
-  if (current_credentials.username == NULL) return -2;
+  if (current_credentials.username == NULL)
+    {
+      free (tsk_uuid);
+      return -2;
+    }
 
   dir_name = g_build_filename (PREFIX
                                "/var/lib/openvas/mgr/users/",
                                current_credentials.username,
                                "tasks",
-                               id,
+                               tsk_uuid,
                                "reports",
                                NULL);
+  free (tsk_uuid);
 
   count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)
@@ -995,8 +998,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_ABORT_TASK:
         if (current_task_task_id)
           {
-            assert (current_client_task == (task_t) NULL);
             task_t task;
+
+            assert (current_client_task == (task_t) NULL);
+
             if (find_task (current_task_task_id, &task))
               SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
                                       "<status>407</status>"
@@ -1201,6 +1206,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
         SEND_TO_CLIENT_OR_FAIL ("<delete_report_response>");
+        // FIX current_uuid
         if (current_task_task_id)
           {
             int ret = delete_report (current_task_task_id);
@@ -1483,24 +1489,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_NEW_TASK:
         {
-          gchar* msg;
+          char* tsk_uuid;
+
           assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
           assert (current_client_task != (task_t) NULL);
+
           // FIX if all rqrd fields given then ok, else respond fail
           // FIX only here should the task be added to tasks
           //       eg on err half task could be saved (or saved with base64 file)
-          msg = g_strdup_printf ("<new_task_response>"
-                                 "<status>201</status>"
-                                 "<task_id>%u</task_id>"
-                                 "</new_task_response>",
-                                 task_id (current_client_task));
-          if (send_to_client (msg))
+
+          if (task_uuid (current_client_task, &tsk_uuid))
+            SEND_TO_CLIENT_OR_FAIL ("<new_task_response>"
+                                    "<status>400</status>"
+                                    "</new_task_response>");
+          else
             {
+              gchar* msg;
+              msg = g_strdup_printf ("<new_task_response>"
+                                     "<status>201</status>"
+                                     "<task_id>%s</task_id>"
+                                     "</new_task_response>",
+                                     tsk_uuid);
+              free (tsk_uuid);
+              if (send_to_client (msg))
+                {
+                  g_free (msg);
+                  error_send_to_client (error);
+                  return;
+                }
               g_free (msg);
-              error_send_to_client (error);
-              return;
             }
-          g_free (msg);
           current_client_task = (task_t) NULL;
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -1568,40 +1586,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "<status>407</status>");
             else
               {
-                int ret;
-                gchar* response;
-                char* name = task_name (task);
-                SEND_TO_CLIENT_OR_FAIL ("<status_response><status>200</status>");
-                response = g_strdup_printf ("<task_id>%u</task_id>"
-                                            "<identifier>%s</identifier>"
-                                            "<status>%s</status>"
-                                            "<messages>"
-                                            "<debug>%i</debug>"
-                                            "<hole>%i</hole>"
-                                            "<info>%i</info>"
-                                            "<log>%i</log>"
-                                            "<warning>%i</warning>"
-                                            "</messages>"
-                                            "<report_count>%u</report_count>",
-                                            task_id (task),
-                                            name,
-                                            task_run_status_name (task),
-                                            task_debugs_size (task),
-                                            task_holes_size (task),
-                                            task_infos_size (task),
-                                            task_logs_size (task),
-                                            task_notes_size (task),
-                                            task_report_count (task));
-                ret = send_to_client (response);
-                g_free (response);
-                g_free (name);
-                if (ret)
+                char* tsk_uuid;
+
+                if (task_uuid (task, &tsk_uuid))
+                  SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+                                          "<status>400</status>"
+                                          "</status_response>");
+                else
                   {
-                    error_send_to_client (error);
-                    return;
+                    int ret;
+                    gchar* response;
+                    char* name;
+
+                    name = task_name (task);
+                    response = g_strdup_printf ("<status_response>"
+                                                "<status>200</status>"
+                                                "<task_id>%s</task_id>"
+                                                "<identifier>%s</identifier>"
+                                                "<status>%s</status>"
+                                                "<messages>"
+                                                "<debug>%i</debug>"
+                                                "<hole>%i</hole>"
+                                                "<info>%i</info>"
+                                                "<log>%i</log>"
+                                                "<warning>%i</warning>"
+                                                "</messages>"
+                                                "<report_count>%u</report_count>",
+                                                tsk_uuid,
+                                                name,
+                                                task_run_status_name (task),
+                                                task_debugs_size (task),
+                                                task_holes_size (task),
+                                                task_infos_size (task),
+                                                task_logs_size (task),
+                                                task_notes_size (task),
+                                                task_report_count (task));
+                    ret = send_to_client (response);
+                    g_free (response);
+                    g_free (name);
+                    g_free (tsk_uuid);
+                    if (ret)
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    // FIX need to handle err cases before send status
+                    (void) send_reports (task);
                   }
-                // FIX need to handle err cases before send status
-                (void) send_reports (task);
               }
             free_string_var (&current_task_task_id);
           }
@@ -1627,8 +1658,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 gchar* line;
                 char* name = task_name (index);
+                char* tsk_uuid;
+
+                // FIX buffer entire response so this can respond on err
+                if (task_uuid (index, &tsk_uuid)) abort ();
+
                 line = g_strdup_printf ("<task>"
-                                        "<task_id>%u</task_id>"
+                                        "<task_id>%s</task_id>"
                                         "<identifier>%s</identifier>"
                                         "<status>%s</status>"
                                         "<messages>"
@@ -1639,7 +1675,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<warning>%i</warning>"
                                         "</messages>"
                                         "</task>",
-                                        task_id (index),
+                                        tsk_uuid,
                                         name,
                                         task_run_status_name (index),
                                         task_debugs_size (index),
@@ -1648,6 +1684,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_logs_size (index),
                                         task_notes_size (index));
                 free (name);
+                free (tsk_uuid);
                 if (send_to_client (line))
                   {
                     g_free (line);

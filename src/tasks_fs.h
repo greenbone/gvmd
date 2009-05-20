@@ -63,14 +63,14 @@ init_manage_process ()
 /**
  * @brief Initialize the manage library.
  *
+ * \todo TODO: Implement.
+ *
  * @return 0 on success, else -1.
  */
 int
 init_manage ()
 {
   /* Set requested and running tasks to stopped. */
-
-  // TODO: Implement.
 
   return 0;
 }
@@ -158,27 +158,21 @@ task_id (task_t task)
 }
 
 /**
- * @brief Return a string version of the ID of a task.
+ * @brief Return the UUID of a task.
+ *
+ * \todo TODO: Implement FS task UUIDs.
  *
  * @param[in]   task  Task.
  * @param[out]  id    Pointer to a string.  On successful return contains a
- *                    pointer to a static buffer with the task ID as a string.
- *                    The static buffer is overwritten across successive calls.
+ *                    pointer to a newly allocated buffer with the task ID
+ *                    as a string.
  *
  * @return 0 success, -1 error.
  */
 int
-task_id_string (task_t task, const char ** id)
+task_uuid (task_t task, char ** id)
 {
-  static char buffer[11]; /* (expt 2 32) => 4294967296 */
-  int length = snprintf (buffer, 11, "%010u", task->id);
-  assert (length < 11);
-  if (length < 1 || length > 10)
-    {
-      *id = NULL;
-      return -1;
-    }
-  *id = buffer;
+  *id = g_strdup_printf ("%010u", task->id);
   return 0;
 }
 
@@ -1043,19 +1037,20 @@ save_tasks ()
     {
       if (index->name)
         {
-          const char* id;
+          char* tsk_uuid;
           gchar* file_name;
           tracef ("     %u\n", index->id);
 
-          if (task_id_string (index, &id))
+          if (task_uuid (index, &tsk_uuid))
             {
               g_free (dir_name);
               return -1;
             }
 
           file_name = g_build_filename (dir_name,
-                                        id,
+                                        tsk_uuid,
                                         NULL);
+          free (tsk_uuid);
           if (save_task (index, file_name))
             {
               g_free (dir_name);
@@ -1163,26 +1158,31 @@ int
 delete_task (task_t task)
 {
   gboolean success;
-  const char* id;
+  char* tsk_uuid;
   gchar* name;
   GError* error;
 
-  tracef ("   delete task %u\n", task->id);
+  tracef ("   delete task %u\n", task_id (task));
 
   if (current_credentials.username == NULL) return -1;
 
-  if (task_id_string (task, &id)) return -1;
+  if (task_uuid (task, &tsk_uuid)) return -1;
 
   // FIX may be atomic problems here
 
-  if (delete_reports (task)) return -1;
+  if (delete_reports (task))
+    {
+      free (tsk_uuid);
+      return -1;
+    }
 
   name = g_build_filename (PREFIX
                            "/var/lib/openvas/mgr/users/",
                            current_credentials.username,
                            "tasks",
-                           id,
+                           tsk_uuid,
                            NULL);
+  free (tsk_uuid);
   error = NULL;
   success = rmdir_recursively (name, &error);
   if (success == FALSE)

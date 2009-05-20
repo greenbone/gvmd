@@ -191,7 +191,7 @@ unsigned int
 task_id (task_t);
 
 int
-task_id_string (task_t, /*@out@*/ const char **);
+task_uuid (task_t, /*@out@*/ char **);
 
 char*
 task_name (task_t);
@@ -309,6 +309,9 @@ append_task_open_port (task_t, unsigned int, char*);
 
 
 /* General task facilities. */
+
+char*
+make_task_uuid ();
 
 const char*
 task_run_status_name (task_t task);

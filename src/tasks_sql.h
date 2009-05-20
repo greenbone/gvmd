@@ -501,27 +501,20 @@ task_id (task_t task)
 }
 
 /**
- * @brief Return a string version of the ID of a task.
+ * @brief Return the UUID of a task.
  *
  * @param[in]   task  Task.
- * @param[out]  id    Pointer to a string.
+ * @param[out]  id    Pointer to a newly allocated string.
  *
  * @return 0.
  */
 int
-task_id_string (task_t task, const char ** id)
+task_uuid (task_t task, char ** id)
 {
-#if 0
-  const unsigned char* str;
-  str = sql_string (0, 0,
+  *id = sql_string (0, 0,
                     "SELECT uuid FROM tasks_%s WHERE ROWID = %llu;",
                     current_credentials.username,
                     task);
-  // FIX caller must free
-  *id = (const char*) str;
-#else
-  *id = g_strdup_printf ("%llu", task);
-#endif
   return 0;
 }
 
@@ -912,14 +905,18 @@ free_tasks ()
  * @param[in]  time     The period of the task, in seconds.
  * @param[in]  comment  A comment associated the task.
  *
- * @return A pointer to the new task or NULL when out of memory (in which
- *         case caller must free name and comment).
+ * @return A pointer to the new task or the NULL task on error (in which
+ *         case the caller must free name and comment).
  */
 task_t
 make_task (char* name, unsigned int time, char* comment)
 {
-  sql ("INSERT into tasks_%s (name, time, comment) VALUES (%s, %u, %s);",
-       current_credentials.username, name, time, comment);
+  char* uuid = make_task_uuid ();
+  if (uuid == NULL) return (task_t) NULL;
+  // TODO: Escape name and comment.
+  sql ("INSERT into tasks_%s (uuid, name, time, comment) VALUES (%s, %s, %u, %s);",
+       uuid, current_credentials.username, name, time, comment);
+  free (uuid);
   free (name);
   free (comment);
   return sqlite3_last_insert_rowid (task_db);
@@ -1047,7 +1044,7 @@ int
 delete_task (task_t task)
 {
   gboolean success;
-  const char* id;
+  char* tsk_uuid;
   gchar* name;
   GError* error;
 
@@ -1055,7 +1052,7 @@ delete_task (task_t task)
 
   if (current_credentials.username == NULL) return -1;
 
-  if (task_id_string (task, &id)) return -1;
+  if (task_uuid (task, &tsk_uuid)) return -1;
 
   // FIX may be atomic problems here
 
@@ -1067,8 +1064,9 @@ delete_task (task_t task)
                            "/var/lib/openvas/mgr/users/",
                            current_credentials.username,
                            "tasks",
-                           id,
+                           tsk_uuid,
                            NULL);
+  free (tsk_uuid);
   error = NULL;
   success = rmdir_recursively (name, &error);
   if (success == FALSE)
@@ -1181,28 +1179,9 @@ append_task_open_port (task_t task, unsigned int number, char* protocol)
 gboolean
 find_task (const char* uuid, task_t* task)
 {
-#if 0
   *task = sql_int64 (0, 0,
-                     "SELECT ROWID FROM tasks_%s WHERE uuid = %llu;",
+                     "SELECT ROWID FROM tasks_%s WHERE uuid = %s;",
                      current_credentials.username,
                      uuid);
   return TRUE;
-#else
-  int count;
-  unsigned long long int result;
-  errno = 0;
-  result = strtoull (uuid, NULL, 10);
-  if (errno) return TRUE;
-
-  count = sql_int (0, 0,
-                   "SELECT count(*) FROM tasks_%s where ROWID = %llu",
-                   current_credentials.username,
-                   result);
-  if (count == 1)
-    {
-      *task = result;
-      return FALSE;
-    }
-  return TRUE;
-#endif
 }

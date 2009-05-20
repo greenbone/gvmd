@@ -168,7 +168,7 @@ make_report_id ()
   if (ret)
     {
       fprintf (stderr,
-               "Failed create UUID structure: %s.\n",
+               "Failed to create UUID structure: %s.\n",
                uuid_error (ret));
       return NULL;
     }
@@ -482,6 +482,18 @@ print_tasks ();
 /* General task facilities. */
 
 /**
+ * @brief Make a new universal identifier for a task.
+ *
+ * @return A newly allocated string holding the identifier on success, or NULL
+ *         on failure.
+ */
+char*
+make_task_uuid ()
+{
+  return make_report_id ();
+}
+
+/**
  * @brief Get the name of the status of a task.
  *
  * @param[in]  task  The task.
@@ -552,7 +564,7 @@ print_tasks ()
 static int
 create_report_file (task_t task)
 {
-  const char* id;
+  char* tsk_uuid;
   char* report_id;
   gchar* user_dir_name;
   gchar* dir_name;
@@ -574,7 +586,7 @@ create_report_file (task_t task)
   }
 #endif
 
-  if (task_id_string (task, &id)) return -2;
+  if (task_uuid (task, &tsk_uuid)) return -2;
 
   user_dir_name = g_build_filename (PREFIX
                                     "/var/lib/openvas/mgr/users/",
@@ -606,10 +618,11 @@ create_report_file (task_t task)
                                "/var/lib/openvas/mgr/users/",
                                current_credentials.username,
                                "tasks",
-                               id,
+                               tsk_uuid,
                                "reports",
                                report_id,
                                NULL);
+  free (tsk_uuid);
 
   symlink_name = g_build_filename (user_dir_name, report_id, NULL);
   free (report_id);
@@ -1103,12 +1116,12 @@ stop_task (task_t task)
 static int
 delete_reports (task_t task)
 {
-  const char* id;
+  char* tsk_uuid;
   gchar* dir_name;
   struct dirent ** names = NULL;
   int count, index;
 
-  if (task_id_string (task, &id)) return -1;
+  if (task_uuid (task, &tsk_uuid)) return -1;
 
   if (current_credentials.username == NULL) return -1;
 
@@ -1116,9 +1129,10 @@ delete_reports (task_t task)
                                "/var/lib/openvas/mgr/users/",
                                current_credentials.username,
                                "tasks",
-                               id,
+                               tsk_uuid,
                                "reports",
                                NULL);
+  free (tsk_uuid);
 
   count = scandir (dir_name, &names, NULL, alphasort);
   if (count < 0)

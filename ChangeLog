@@ -1,3 +1,24 @@
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
+	Add task UUIDs.
+
+	* src/tasks_fs.h (task_uuid): New function.
+	(task_id_string): Remove.
+	(save_tasks, delete_task): Use task_uuid instead of task_id_string.
+
+	* src/tasks_sql.h (task_uuid): New function.
+	(task_id_string): Switch to UUID alternative.  Rename task_uuid.
+	(make_task): Also insert UUID.
+	(save_tasks, delete_task): Use task_uuid instead of task_id_string.
+	(find_task): Switch to UUID alternative.
+
+	* src/manage.c (make_task_uuid): New function.
+	(create_report_file, delete_reports): Use task_uuid instead of
+	task_id_string.
+	* src/manage.h: Update headers.
+
+	* src/omp.c: Use task_uuid instead of task_id_string.
+
 2009-05-19  Matthew Mundell <mmundell@intevation.de>
 
 	Add real authentication.
