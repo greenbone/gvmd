@@ -157,7 +157,7 @@ append_to_credentials_password (credentials_t* credentials,
  *         caller must free, or NULL on failure.
  */
 char*
-make_report_id ()
+make_report_uuid ()
 {
   char* id;
   uuid_rc_t ret;
@@ -214,17 +214,17 @@ make_report_id ()
  *
  * @param[in]  path  Absolute path of report in task directory.
  *
- * @return The name of the task as a newly allocated string, which the
- *         caller must free.
+ * @return The UUID of the task as a newly allocated string.
  */
 gchar*
-report_path_task_name (gchar* path)
+report_path_task_uuid (gchar* path)
 {
 #if 0
   gchar* task_dir = g_build_filename (path, "..", "..", NULL);
   // FIX how to do this (expand .. (and resolve links))?
   gchar* task_actual_dir = g_truename (task_dir);
   gchar* basename = g_path_get_basename (task_actual_dir);
+  g_free (task_dir);
   g_free (task_actual_dir);
   return basename;
 #else
@@ -289,9 +289,9 @@ report_task (const char* report_id, task_t* task_return)
               return TRUE;
             }
           {
-            gchar* task_name = report_path_task_name (report_path);
+            gchar* task_uuid = report_path_task_uuid (report_path);
             task_t task;
-            int err = find_task (task_name, &task);
+            int err = find_task (task_uuid, &task);
             g_free (report_path);
             g_free (task_name);
             if (err)
@@ -490,7 +490,7 @@ print_tasks ();
 char*
 make_task_uuid ()
 {
-  return make_report_id ();
+  return make_report_uuid ();
 }
 
 /**
@@ -607,7 +607,7 @@ create_report_file (task_t task)
 
   /* Generate report directory name. */
 
-  report_id = make_report_id ();
+  report_id = make_report_uuid ();
   if (report_id == NULL)
     {
       g_free (user_dir_name);

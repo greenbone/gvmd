@@ -1,5 +1,23 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	Rename make_report_id to make_report_uuid, and report_path_task_name to
+	report_path_task_uuid.
+
+	* src/manage.c (make_report_id): Rename to make_report_uuid.  Update
+	callers.
+	(report_path_task_name): Free task_dir in alternate version.  Rename to
+	report_path_task_uuid.  Update callers.
+	(make_report_uuid, report_path_task_uuid): New functions.
+	* src/manage.h: Update headers.
+
+	* src/tests/report_path_task_name_0.c,
+	src/tests/report_path_task_name_1.c, src/tests/report_path_task_name_2.c:
+	Update to report_path_task_uuid.
+
+	* src/tests/make_report_id_0.c: Update to make_report_uuid.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/CMakeLists.txt: Remove OPENVAS_USERS_DIR definition added too
 	eagerly.
 

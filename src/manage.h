@@ -331,10 +331,10 @@ stop_task (task_t);
 /*@-exportlocal@*/
 /*@only@*/ /*@null@*/
 char*
-make_report_id ();
+make_report_uuid ();
 
 gchar*
-report_path_task_name (gchar*);
+report_path_task_uuid (gchar*);
 
 gboolean
 report_task (const char*, task_t* task);

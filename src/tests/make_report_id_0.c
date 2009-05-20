@@ -32,8 +32,8 @@
 int
 main ()
 {
-  char* id1 = make_report_id ();
-  char* id2 = make_report_id ();
+  char* id1 = make_report_uuid ();
+  char* id2 = make_report_uuid ();
   int ret = strcmp (id1, id2);
   free (id1);
   free (id2);
