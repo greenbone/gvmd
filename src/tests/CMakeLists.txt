@@ -24,8 +24,16 @@
 
 ## Config
 
-#set (OVAS_LDFLAG "-lgnutls")
-set (OVAS_LDFLAG "-lsqlite3 -lgnutls")
+if (OPENVAS_LIB_INSTALL_DIR)
+  set (LIB_TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
+else (OPENVAS_LIB_INSTALL_DIR)
+  set (LIB_TEMP "")
+endif (OPENVAS_LIB_INSTALL_DIR)
+
+#set (OVAS_LDFLAG "${LIB_TEMP} -lgnutls")
+set (OVAS_LDFLAG "${LIB_TEMP} -lsqlite3 -lgnutls -lopenvas")
+
+MARK_AS_ADVANCED (LIB_TEMP)
 
 exec_program (pkg-config
               ARGS --cflags glib-2.0

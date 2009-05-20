@@ -1,5 +1,9 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/CMakeLists.txt (OVAS_LDFLAG): Add libopenvas.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	Rename make_report_id to make_report_uuid, and report_path_task_name to
 	report_path_task_uuid.
 
