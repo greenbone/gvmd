@@ -293,12 +293,13 @@ report_task (const char* report_id, task_t* task_return)
             task_t task;
             int err = find_task (task_uuid, &task);
             g_free (report_path);
-            g_free (task_name);
             if (err)
               {
-                fprintf (stderr, "Failed to find task %s.\n", task_name);
+                fprintf (stderr, "Failed to find task %s.\n", task_uuid);
+                g_free (task_uuid);
                 return TRUE;
               }
+            g_free (task_uuid);
             *task_return = task;
             return FALSE;
           }

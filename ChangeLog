@@ -1,5 +1,10 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (report_task): Correct variable name.  Move free to after
+	last use.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	Better match HTTP response codes in response statuses.
 
 	* src/omp.c (STATUS_ERROR_SYNTAX, STATUS_ERROR_MUST_AUTH)
