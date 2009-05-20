@@ -1,5 +1,14 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	Better match HTTP response codes in response statuses.
+
+	* src/omp.c (STATUS_ERROR_SYNTAX, STATUS_ERROR_MUST_AUTH)
+	(STATUS_ERROR_MISSING, STATUS_ERROR_AUTH_FAILED, STATUS_OK)
+	(STATUS_OK_CREATED, STATUS_OK_REQUESTED, STATUS_INTERNAL_ERROR): New
+	defines.  Use instead of codes in all XML status entities.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (current_task_task_id): Rename current_uuid.  Update callers.
 
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
