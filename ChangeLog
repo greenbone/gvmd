@@ -1,5 +1,9 @@
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (current_task_task_id): Rename current_uuid.  Update callers.
+
+2009-05-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/CMakeLists.txt (OVAS_LDFLAG): Add libopenvas.
 
 2009-05-20  Matthew Mundell <mmundell@intevation.de>

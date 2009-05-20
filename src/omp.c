@@ -101,10 +101,10 @@ buffer_size_t to_client_end = 0;
 static task_t current_client_task = (task_t) NULL;
 
 /**
- * @brief Task ID during OMP MODIFY_TASK and START_TASK.
+ * @brief Current report or task UUID, during a few operations.
  */
 static /*@null@*/ /*@only@*/ char*
-current_task_task_id = NULL;
+current_uuid = NULL;
 
 /**
  * @brief Parameter name during OMP MODIFY_TASK.
@@ -996,13 +996,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK:
-        if (current_task_task_id)
+        if (current_uuid)
           {
             task_t task;
 
             assert (current_client_task == (task_t) NULL);
 
-            if (find_task (current_task_task_id, &task))
+            if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
                                       "<status>407</status>"
                                       "</abort_task_response>");
@@ -1017,7 +1017,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
                                       "<status>201</status>"
                                       "</abort_task_response>");
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
@@ -1206,11 +1206,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
         SEND_TO_CLIENT_OR_FAIL ("<delete_report_response>");
-        // FIX current_uuid
-        if (current_task_task_id)
+        if (current_uuid)
           {
-            int ret = delete_report (current_task_task_id);
-            free_string_var (&current_task_task_id);
+            int ret = delete_report (current_uuid);
+            free_string_var (&current_uuid);
             switch (ret)
               {
                 case 0:
@@ -1223,7 +1222,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
-                  free_string_var (&current_task_task_id);
+                  free_string_var (&current_uuid);
                   SEND_TO_CLIENT_OR_FAIL ("<status>500</status>");
                   break;
               }
@@ -1242,17 +1241,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_task_task_id != NULL
+        if (current_uuid != NULL
             && current_credentials.username != NULL)
           {
             gchar* name = g_build_filename (PREFIX
                                             "/var/lib/openvas/mgr/users/",
                                             current_credentials.username,
                                             "reports",
-                                            current_task_task_id,
+                                            current_uuid,
                                             "report.nbe",
                                             NULL);
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
             // FIX glib access setuid note
             if (g_file_test (name, G_FILE_TEST_EXISTS))
               {
@@ -1303,7 +1302,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
             SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
                                     "<status>500</status>");
           }
@@ -1344,11 +1343,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TASK:
-        if (current_task_task_id)
+        if (current_uuid)
           {
             assert (current_client_task == (task_t) NULL);
             task_t task;
-            if (find_task (current_task_task_id, &task))
+            if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
                                       "<status>407</status>"
                                       "</delete_task_response>");
@@ -1365,7 +1364,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
                                       "<status>201</status>"
                                       "</delete_task_response>");
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
@@ -1385,16 +1384,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (current_task_task_id != NULL
+        if (current_uuid != NULL
             && modify_task_parameter != NULL
             && modify_task_value != NULL)
           {
-            int ret = set_report_parameter (current_task_task_id,
+            int ret = set_report_parameter (current_uuid,
                                             modify_task_parameter,
                                             modify_task_value);
             free_string_var (&modify_task_parameter);
             free_string_var (&modify_task_value);
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
             switch (ret)
               {
                 case 0:
@@ -1416,7 +1415,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             free_string_var (&modify_task_parameter);
             free_string_var (&modify_task_value);
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
             SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
                                     "<status>500</status>");
           }
@@ -1437,11 +1436,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
-        if (current_task_task_id)
+        if (current_uuid)
           {
             assert (current_client_task == (task_t) NULL);
             task_t task;
-            if (find_task (current_task_task_id, &task))
+            if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
                                       "<status>407</status>"
                                       "</modify_task_response>");
@@ -1468,7 +1467,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "</modify_task_response>");
                   }
               }
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
@@ -1546,11 +1545,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_START_TASK:
-        if (current_task_task_id)
+        if (current_uuid)
           {
             assert (current_client_task == (task_t) NULL);
             task_t task;
-            if (find_task (current_task_task_id, &task))
+            if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
                                       "<status>407</status>"
                                       "</start_task_response>");
@@ -1565,7 +1564,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
                                       "<status>201</status>"
                                       "</start_task_response>");
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<status>50x</status>");
@@ -1578,10 +1577,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_STATUS:
         assert (strncasecmp ("STATUS", element_name, 6) == 0);
-        if (current_task_task_id)
+        if (current_uuid)
           {
             task_t task;
-            if (find_task (current_task_task_id, &task))
+            if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL ("<status_response>"
                                       "<status>407</status>");
             else
@@ -1634,7 +1633,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     (void) send_reports (task);
                   }
               }
-            free_string_var (&current_task_task_id);
+            free_string_var (&current_uuid);
           }
         else
           {
@@ -1777,7 +1776,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_STATUS_TASK_ID:
-        append_text (&current_task_task_id, text, text_len);
+        append_text (&current_uuid, text, text_len);
         break;
 
       default:
