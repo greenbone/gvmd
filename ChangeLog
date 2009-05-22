@@ -1,3 +1,13 @@
+2009-05-23  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (STATUS_SERVICE_DOWN): New status code.
+	(omp_xml_handle_start_element): Initialise current_uuid in operations that
+	use it.
+	(omp_xml_handle_end_element): Use STATUS_SERVICE_DOWN instead of
+	STATUS_INTERNAL_ERROR in CLIENT_GET_PREFERENCES, CLIENT_GET_DEPENDENCIES
+	and CLIENT_GET_NVT_FEED_CHECKSUM.  In CLIENT_STATUS adjust the
+	current_uuid check to account for the new initial value of current_uuid.
+
 2009-05-22  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/make_report_id_0.c: Rename make_report_uuid_0.c.

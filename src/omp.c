@@ -106,6 +106,7 @@ static char* help_text = "\n"
 #define STATUS_OK_REQUESTED       "202"
 
 #define STATUS_INTERNAL_ERROR     "500"
+#define STATUS_SERVICE_DOWN       "503"
 
 
 /* Global variables. */
@@ -333,11 +334,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_AUTHENTICATE);
           }
         else if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
-          set_client_state (CLIENT_ABORT_TASK);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_ABORT_TASK);
+          }
         else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
-          set_client_state (CLIENT_DELETE_REPORT);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_DELETE_REPORT);
+          }
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
-          set_client_state (CLIENT_DELETE_TASK);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_DELETE_TASK);
+          }
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strncasecmp ("GET_NVT_FEED_ALL", element_name, 16) == 0)
@@ -349,15 +359,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
-          set_client_state (CLIENT_GET_REPORT);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_GET_REPORT);
+          }
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
           set_client_state (CLIENT_GET_RULES);
         else if (strncasecmp ("HELP", element_name, 4) == 0)
           set_client_state (CLIENT_HELP);
         else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_MODIFY_REPORT);
+          }
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
-          set_client_state (CLIENT_MODIFY_TASK);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_MODIFY_TASK);
+          }
         else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
           {
             assert (current_client_task == (task_t) NULL);
@@ -368,7 +387,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
           set_client_state (CLIENT_VERSION);
         else if (strncasecmp ("START_TASK", element_name, 10) == 0)
-          set_client_state (CLIENT_START_TASK);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_START_TASK);
+          }
         else if (strncasecmp ("STATUS", element_name, 6) == 0)
           set_client_state (CLIENT_STATUS);
         else
@@ -1138,7 +1160,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "<status>" STATUS_SERVICE_DOWN "</status>"
                                   "</get_preferences_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -1159,7 +1181,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "<status>" STATUS_SERVICE_DOWN "</status>"
                                   "</get_dependencies_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -1206,7 +1228,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "<status>" STATUS_SERVICE_DOWN "</status>"
                                   "</get_nvt_feed_checksum_response>");
 #else
         SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
@@ -1270,8 +1292,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          // FIX could be a client error
-          //        init to "" at ele start, then always server err
           SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
         SEND_TO_CLIENT_OR_FAIL ("</delete_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
@@ -1646,7 +1666,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_STATUS:
         assert (strncasecmp ("STATUS", element_name, 6) == 0);
-        if (current_uuid)
+        if (current_uuid && strlen (current_uuid))
           {
             task_t task;
             if (find_task (current_uuid, &task))
@@ -1708,11 +1728,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             free_string_var (&current_uuid);
           }
-        else
+        else if (current_uuid)
           {
             gchar* response;
             task_iterator_t iterator;
             task_t index;
+
+            free_string_var (&current_uuid);
 
             SEND_TO_CLIENT_OR_FAIL ("<status_response>"
                                     "<status>" STATUS_OK "</status>");
@@ -1767,6 +1789,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_free (line);
               }
           }
+        else
+          SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+                                  "<status>"
+                                  STATUS_INTERNAL_ERROR
+                                  "</status>");
         SEND_TO_CLIENT_OR_FAIL ("</status_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
