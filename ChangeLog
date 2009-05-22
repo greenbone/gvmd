@@ -1,3 +1,17 @@
+2009-05-22  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/make_report_id_0.c: Rename make_report_uuid_0.c.
+	* src/tests/report_path_task_name_0.c: Rename report_path_task_uuid_0.c.
+	* src/tests/report_path_task_name_1.c: Rename report_path_task_uuid_1.c.
+	* src/tests/report_path_task_name_2.c: Rename report_path_task_uuid_2.c.
+
+	* src/tests/make_report_uuid_0.c, src/tests/report_path_task_uuid_0.c,
+	src/tests/report_path_task_uuid_1.c,
+	src/tests/report_path_task_uuid_2.c: Update function names in header
+	comments.
+
+	* src/tests/CMakeLists.txt: Update file names.  Remove duplicate entries.
+
 2009-05-20  Matthew Mundell <mmundell@intevation.de>
 
 	* src/manage.c (report_task): Correct variable name.  Move free to after
