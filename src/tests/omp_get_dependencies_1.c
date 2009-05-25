@@ -39,7 +39,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -67,6 +67,7 @@ main ()
   if (start_task (&session, id))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -76,25 +77,30 @@ main ()
   if (wait_for_task_start (&session, id))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   /* Request the task status. */
 
+#if 0
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
+#endif
 
   if (sendf_to_manager (&session,
-                        "<status><task_id>%u</task_id></status>",
+                        "<status><task_id>%s</task_id></status>",
                         id)
       == -1)
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -103,6 +109,7 @@ main ()
   if (read_entity (&session, &entity))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -114,6 +121,7 @@ main ()
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -122,6 +130,7 @@ main ()
   if (send_to_manager (&session, "<get_dependencies/>") == -1)
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -142,6 +151,7 @@ main ()
       free_entity (entity);
       free_entity (expected);
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -150,6 +160,7 @@ main ()
 #endif
   free_entity (entity);
   delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

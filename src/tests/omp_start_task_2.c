@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -82,11 +82,13 @@ main ()
   if (wait_for_task_end (&session, id)) goto delete_fail;
 
   delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 
  delete_fail:
   delete_task (&session, id);
+  free (id);
  fail:
   close_manager_connection (socket, session);
   return EXIT_FAILURE;

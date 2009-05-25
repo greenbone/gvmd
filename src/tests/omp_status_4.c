@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -69,7 +69,7 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
@@ -105,6 +105,7 @@ main ()
       free_entity (expected);
  delete_fail:
       delete_task (&session, id);
+      free (id);
  fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -113,6 +114,7 @@ main ()
   free_entity (entity);
   free_entity (expected);
   delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

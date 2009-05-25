@@ -56,6 +56,12 @@ typedef struct
   entities_t entities;
 } * entity_t;
 
+entities_t
+next_entities (entities_t);
+
+entity_t
+first_entity (entities_t);
+
 entity_t
 add_entity (entities_t*, const char*, const char*);
 
@@ -63,7 +69,7 @@ int
 compare_entities (entity_t, entity_t);
 
 entity_t
-entity_child (entity_t entity, char* name);
+entity_child (entity_t, char*);
 
 char*
 entity_name (entity_t entity);
@@ -97,21 +103,19 @@ int
 env_authenticate (gnutls_session_t* session);
 
 int
-create_task (gnutls_session_t*, char*, unsigned int, char*, char*,
-             unsigned int*);
+create_task (gnutls_session_t*, char*, unsigned int, char*, char*, char**);
 
 int
-create_task_from_rc_file (gnutls_session_t*, char*, char*, char*,
-                          unsigned int*);
+create_task_from_rc_file (gnutls_session_t*, char*, char*, char*, char**);
 
 int
-delete_task (gnutls_session_t*, unsigned int);
+delete_task (gnutls_session_t*, char*);
 
 int
-start_task (gnutls_session_t* , unsigned int);
+start_task (gnutls_session_t* , char*);
 
 int
-wait_for_task_end (gnutls_session_t*, unsigned int);
+wait_for_task_end (gnutls_session_t*, char*);
 
 int
-wait_for_task_start (gnutls_session_t*, unsigned int);
+wait_for_task_start (gnutls_session_t*, char*);

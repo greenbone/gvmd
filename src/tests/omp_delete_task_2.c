@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
   entity_t entity, status;
 
   verbose = 1;
@@ -69,6 +69,7 @@ main ()
   if (start_task (&session, id))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -77,10 +78,11 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<delete_task>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</delete_task>",
                         id))
     {
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -89,6 +91,7 @@ main ()
   if (read_entity (&session, &entity))
     {
       fprintf (stderr, "Failed to read response.\n");
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -97,11 +100,12 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
     {
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -112,6 +116,7 @@ main ()
   if (read_entity (&session, &entity))
     {
       fprintf (stderr, "Failed to read response.\n");
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -123,10 +128,11 @@ main ()
       || strcmp (entity_name (entity), "status_response"))
     {
       free_entity (entity);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-  if (strcmp (entity_text (status), "407"))
+  if (strcmp (entity_text (status), "404"))
     {
       const char* status_text = task_status (entity);
 
@@ -134,18 +140,21 @@ main ()
       if (status_text && strcmp (status_text, "Delete requested"))
         {
           free_entity (entity);
+          free (id);
           close_manager_connection (socket, session);
           return EXIT_SUCCESS;
         }
       else
         {
           free_entity (entity);
+          free (id);
           close_manager_connection (socket, session);
           return EXIT_FAILURE;
         }
     }
 
   free_entity (entity);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

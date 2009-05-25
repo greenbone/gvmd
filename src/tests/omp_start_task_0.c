@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -57,17 +57,17 @@ main ()
   /* Start the task. */
 
 #if 0
-  if (env_authenticate (&session)) goto fail;
+  if (env_authenticate (&session)) goto delete_fail;
 #endif
 
   gchar* msg = g_strdup_printf ("<start_task>"
-                                "<task_id>%u</task_id>"
+                                "<task_id>%s</task_id>"
                                 "</start_task>",
                                 id);
   int ret = send_to_manager (&session, msg);
   g_free (msg);
   if (ret == -1)
-    goto fail;
+    goto delete_fail;
 
   /* Read the response. */
 
@@ -77,13 +77,15 @@ main ()
   /* Compare response to expected response. */
 
   entity_t expected = add_entity (NULL, "start_task_response", NULL);
-  add_entity (&expected->entities, "status", "201");
+  add_entity (&expected->entities, "status", "202");
 
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
       free_entity (entity);
+ delete_fail:
       delete_task (&session, id);
+      free (id);
  fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -92,6 +94,7 @@ main ()
   free_entity (expected);
   free_entity (entity);
   delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

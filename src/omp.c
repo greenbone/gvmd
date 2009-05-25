@@ -392,7 +392,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_START_TASK);
           }
         else if (strncasecmp ("STATUS", element_name, 6) == 0)
-          set_client_state (CLIENT_STATUS);
+          {
+            append_text (&current_uuid, "", 0);
+            set_client_state (CLIENT_STATUS);
+          }
         else
           {
             if (send_to_client ("<omp_response>"
@@ -1075,7 +1078,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
+          SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
+                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "</abort_task_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_ABORT_TASK_TASK_ID:
@@ -1268,6 +1273,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SEND_TO_CLIENT_OR_FAIL ("<delete_report_response>");
         if (current_uuid)
           {
+            // FIX check syntax of current_uuid  STATUS_ERROR_SYNTAX
             int ret = delete_report (current_uuid);
             free_string_var (&current_uuid);
             switch (ret)
@@ -1435,7 +1441,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
+          SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
+                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "</delete_task_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_TASK_TASK_ID:
@@ -1557,7 +1565,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
+          SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
+                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "</modify_task_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
@@ -1656,7 +1666,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
+          SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
+                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
+                                  "<start_task_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_START_TASK_TASK_ID:

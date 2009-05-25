@@ -39,7 +39,7 @@ main ()
   int socket1, socket2, ret;
   gnutls_session_t session1;
   gnutls_session_t session2;
-  unsigned int id;
+  char* id;
   entity_t entity, name;
 
   socket1 = connect_to_manager (&session1);
@@ -73,6 +73,7 @@ main ()
     {
       close_manager_connection (socket1, session1);
       close_manager_connection (socket2, session2);
+      free (id);
       return EXIT_FAILURE;
     }
 
@@ -81,12 +82,13 @@ main ()
       delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       close_manager_connection (socket2, session2);
+      free (id);
       return EXIT_FAILURE;
     }
 
   if (sendf_to_manager (&session2,
                         "<modify_task>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "<parameter>name</parameter>"
                         "<value>Modified name</value>"
                         "</modify_task>",
@@ -96,6 +98,7 @@ main ()
       delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       close_manager_connection (socket2, session2);
+      free (id);
       return EXIT_FAILURE;
     }
 
@@ -113,6 +116,7 @@ main ()
       close_manager_connection (socket1, session1);
       free_entity (entity);
       free_entity (expected);
+      free (id);
       return EXIT_FAILURE;
     }
   free_entity (entity);
@@ -122,13 +126,14 @@ main ()
 
   if (sendf_to_manager (&session1,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
     {
       delete_task (&session1, id);
       close_manager_connection (socket1, session1);
+      free (id);
       return EXIT_FAILURE;
     }
 
@@ -138,6 +143,7 @@ main ()
       fprintf (stderr, "Failed to read response.\n");
       delete_task (&session1, id);
       close_manager_connection (socket1, session1);
+      free (id);
       return EXIT_FAILURE;
     }
 
@@ -153,6 +159,7 @@ main ()
   close_manager_connection (socket1, session1);
   close_manager_connection (socket2, session2);
   free_entity (entity);
+  free (id);
 
   return ret;
 }

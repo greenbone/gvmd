@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -64,13 +64,14 @@ main ()
   /* Remove the task. */
 
   gchar* msg = g_strdup_printf ("<delete_task>"
-                                "<task_id>%u</task_id>"
+                                "<task_id>%s</task_id>"
                                 "</delete_task>",
                                 id);
   int ret = send_to_manager (&session, msg);
   g_free (msg);
   if (ret == -1)
     {
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -83,12 +84,13 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "delete_task_response", NULL);
-  add_entity (&expected->entities, "status", "201");
+  add_entity (&expected->entities, "status", "202");
 
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
       free_entity (entity);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -100,14 +102,16 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
     {
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
+  free (id);
 
   entity = NULL;
   if (read_entity (&session, &entity))
@@ -117,7 +121,7 @@ main ()
     }
 
   expected = add_entity (NULL, "status_response", NULL);
-  add_entity (&expected->entities, "status", "407");
+  add_entity (&expected->entities, "status", "404");
 
   if (compare_entities (entity, expected))
     {

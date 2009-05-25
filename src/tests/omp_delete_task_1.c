@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -73,7 +73,7 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
@@ -104,7 +104,7 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<delete_task>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</delete_task>",
                         id))
     goto delete_fail;
@@ -119,7 +119,7 @@ main ()
   /* Try get the report. */
 
   if (sendf_to_manager (&session,
-                        "<get_report><report_id>%u</report_id></get_report>",
+                        "<get_report><report_id>%s</report_id></get_report>",
                         report_id)
       == -1)
     goto delete_fail;
@@ -132,7 +132,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_report_response", NULL);
-  add_entity (&expected->entities, "status", "40x");
+  add_entity (&expected->entities, "status", "404");
 
   if (compare_entities (entity, expected))
     {
@@ -141,12 +141,14 @@ main ()
       free_entity (entity);
  delete_fail:
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   free_entity (expected);
   free_entity (entity);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

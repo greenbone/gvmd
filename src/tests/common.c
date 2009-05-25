@@ -259,7 +259,7 @@ connect_to_manager (gnutls_session_t * session)
 }
 
 /**
- * @brief Connect to the manager.
+ * @brief Close the connection to the manager.
  *
  * @param[in]  socket   Socket connected to manager (from \ref connect_to_manager).
  * @param[in]  session  GNUTLS session with manager.
@@ -370,6 +370,18 @@ make_entity (const char* name, const char* text)
   entity->text = g_strdup (text ?: "");
   entity->entities = NULL;
   return entity;
+}
+
+entities_t
+next_entities (entities_t entities)
+{
+  return (entities_t) entities->next;
+}
+
+entity_t
+first_entity (entities_t entities)
+{
+  return (entity_t) entities->data;
 }
 
 /**
@@ -916,7 +928,8 @@ env_authenticate (gnutls_session_t* session)
  * @param[in]   config_len  Length of config.
  * @param[in]   identifier  Task identifier.
  * @param[in]   comment     Task comment.
- * @param[out]  id          ID of new task.
+ * @param[out]  id          Pointer for newly allocated ID of new task.  Only
+ *                          set on successful return.
  *
  * @return 0 on success, -1 on error.
  */
@@ -926,7 +939,7 @@ create_task (gnutls_session_t* session,
              unsigned int config_len,
              char* identifier,
              char* comment,
-             unsigned int* id)
+             char** id)
 {
   /* Convert the file contents to base64. */
 
@@ -965,11 +978,8 @@ create_task (gnutls_session_t* session,
       free_entity (entity);
       return -1;
     }
-  ret = sscanf (entity_text (id_entity), "%u", id);
-  free_entity (entity);
-  if (ret == 1)
-    return 0;
-  return -1;
+  *id = g_strdup (entity_text (id_entity));
+  return 0;
 }
 
 /**
@@ -988,7 +998,7 @@ create_task_from_rc_file (gnutls_session_t* session,
                           char* file_name,
                           char* identifier,
                           char* comment,
-                          unsigned int* id)
+                          char** id)
 {
   gchar* new_task_rc = NULL;
   gsize new_task_rc_len;
@@ -1026,10 +1036,10 @@ create_task_from_rc_file (gnutls_session_t* session,
  */
 int
 start_task (gnutls_session_t* session,
-            unsigned int id)
+            char* id)
 {
   if (sendf_to_manager (session,
-                        "<start_task><task_id>%u</task_id></start_task>",
+                        "<start_task><task_id>%s</task_id></start_task>",
                         id)
       == -1)
     return -1;
@@ -1060,28 +1070,6 @@ start_task (gnutls_session_t* session,
 }
 
 /**
- * @brief Return a string version of an ID.
- *
- * @param[in]   id      ID.
- * @param[out]  string  Pointer to a string.  On successful return contains a
- *                      pointer to a static buffer with the task ID as a string.
- *                      The static buffer is overwritten across successive
- *                      calls.
- *
- * @return 0 success, -1 error.
- */
-int
-id_string (int id, const char ** string)
-{
-  static char buffer[11]; /* (expt 2 32) => 4294967296 */
-  int length = sprintf (buffer, "%u", id);
-  assert (length < 11);
-  if (length < 1) return -1;
-  *string = buffer;
-  return 0;
-}
-
-/**
  * @brief Wait for a task to start running on the server.
  *
  * @param[in]  session  Pointer to GNUTLS session.
@@ -1091,7 +1079,7 @@ id_string (int id, const char ** string)
  */
 int
 wait_for_task_start (gnutls_session_t* session,
-                     unsigned int id)
+                     char* id)
 {
   while (1)
     {
@@ -1122,12 +1110,6 @@ wait_for_task_start (gnutls_session_t* session,
           /* Check the running status of the given task. */
 
           char* run_state = NULL;
-          const char* string_id;
-          if (id_string (id, &string_id))
-            {
-              free_entity (entity);
-              return -1;
-            }
 
 #if 0
           /* Lisp version. */
@@ -1137,7 +1119,7 @@ wait_for_task_start (gnutls_session_t* session,
                 (fi* task-id
                   (free-entity entity)
                   (return-from wait-for-task-start -1))
-                (when (string= (entity-text task-id) string-id)
+                (when (string= (entity-text task-id) id)
                   (let ((status (entity-child child "status")))
                     (fi* status
                       (free-entity entity)
@@ -1155,7 +1137,7 @@ wait_for_task_start (gnutls_session_t* session,
                                free_entity (entity);
                                return -1;
                              }
-                           if (strcasecmp (entity_text (task_id), string_id)
+                           if (strcasecmp (entity_text (task_id), id)
                                == 0)
                              {
                                entity_t status = entity_child (child, "status");
@@ -1198,7 +1180,7 @@ wait_for_task_start (gnutls_session_t* session,
  */
 int
 wait_for_task_end (gnutls_session_t* session,
-                   unsigned int id)
+                   char* id)
 {
   tracef ("wait_for_task_end\n");
   while (1)
@@ -1230,12 +1212,6 @@ wait_for_task_end (gnutls_session_t* session,
           /* Check the running status of the given task. */
 
           char* run_state = NULL;
-          const char* string_id;
-          if (id_string (id, &string_id))
-            {
-              free_entity (entity);
-              return -1;
-            }
 
 #if 0
           /* Lisp version. */
@@ -1245,7 +1221,7 @@ wait_for_task_end (gnutls_session_t* session,
                 (fi* task-id
                   (free-entity entity)
                   (return-from wait-for-task-start -1))
-                (when (string= (entity-text task-id) string-id)
+                (when (string= (entity-text task-id) id)
                   (let ((status (entity-child child "status")))
                     (fi* status
                       (free-entity entity)
@@ -1263,7 +1239,7 @@ wait_for_task_end (gnutls_session_t* session,
                                free_entity (entity);
                                return -1;
                              }
-                           if (strcasecmp (entity_text (task_id), string_id)
+                           if (strcasecmp (entity_text (task_id), id)
                                == 0)
                              {
                                entity_t status = entity_child (child, "status");
@@ -1304,10 +1280,10 @@ wait_for_task_end (gnutls_session_t* session,
  * @return 0 on success, -1 on error.
  */
 int
-delete_task (gnutls_session_t* session, unsigned int id)
+delete_task (gnutls_session_t* session, char* id)
 {
   if (sendf_to_manager (session,
-                        "<delete_task><task_id>%u</task_id></delete_task>",
+                        "<delete_task><task_id>%s</task_id></delete_task>",
                         id)
       == -1)
     return -1;

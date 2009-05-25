@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -66,7 +66,7 @@ main ()
 
   if (sendf_to_manager (&session,
                         "<status>"
-                        "<task_id>%u</task_id>"
+                        "<task_id>%s</task_id>"
                         "</status>",
                         id)
       == -1)
@@ -84,13 +84,13 @@ main ()
   if (report == NULL)
     {
       fprintf (stderr, "Failed to find report.\n");
-      goto delete_fail;
+      goto free_fail;
     }
   entity_t report_id = entity_child (report, "id");
   if (report_id == NULL)
     {
       fprintf (stderr, "Failed to find report id.\n");
-      goto delete_fail;
+      goto free_fail;
     }
 
 
@@ -120,10 +120,12 @@ main ()
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
+ free_fail:
       free_entity (entity);
  delete_fail:
       // FIX
       //delete_task (&session, id);
+      free (id);
  fail:
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -133,6 +135,7 @@ main ()
   free_entity (expected);
   // FIX
   //delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

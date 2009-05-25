@@ -38,7 +38,7 @@ main ()
 {
   int socket;
   gnutls_session_t session;
-  unsigned int id;
+  char* id;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -66,6 +66,7 @@ main ()
   if (start_task (&session, id))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -75,6 +76,7 @@ main ()
   if (wait_for_task_start (&session, id))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -85,17 +87,19 @@ main ()
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 #endif
 
   if (sendf_to_manager (&session,
-                        "<abort_task><task_id>%i</task_id></abort_task>",
+                        "<abort_task><task_id>%s</task_id></abort_task>",
                         id)
       == -1)
     {
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -108,13 +112,14 @@ main ()
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "abort_task_response", NULL);
-  add_entity (&expected->entities, "status", "201");
+  add_entity (&expected->entities, "status", "202");
 
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
       free_entity (entity);
       delete_task (&session, id);
+      free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
@@ -122,6 +127,7 @@ main ()
   free_entity (expected);
   free_entity (entity);
   delete_task (&session, id);
+  free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 }

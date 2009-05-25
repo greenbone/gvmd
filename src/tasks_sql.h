@@ -914,8 +914,8 @@ make_task (char* name, unsigned int time, char* comment)
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) NULL;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks_%s (uuid, name, time, comment) VALUES (%s, %s, %u, %s);",
-       uuid, current_credentials.username, name, time, comment);
+  sql ("INSERT into tasks_%s (uuid, name, time, comment) VALUES ('%s', %s, %u, %s);",
+       current_credentials.username, uuid, name, time, comment);
   free (uuid);
   free (name);
   free (comment);
@@ -1174,14 +1174,14 @@ append_task_open_port (task_t task, unsigned int number, char* protocol)
  * @param[in]   uuid  A task identifier.
  * @param[out]  task  Task return.
  *
- * @return TRUE on success, FALSE on error.
+ * @return FALSE on success, TRUE on error.
  */
 gboolean
 find_task (const char* uuid, task_t* task)
 {
   *task = sql_int64 (0, 0,
-                     "SELECT ROWID FROM tasks_%s WHERE uuid = %s;",
+                     "SELECT ROWID FROM tasks_%s WHERE uuid = '%s';",
                      current_credentials.username,
                      uuid);
-  return TRUE;
+  return FALSE;
 }

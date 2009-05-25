@@ -1,4 +1,33 @@
-2009-05-23  Matthew Mundell <mmundell@intevation.de>
+2009-05-25  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_start_element): Add enclosing tags that were
+	missing from certain responses.  Initialise current_uuid in STATUS.
+
+	* src/tasks_sql.h (make_task): Quote uuid in SQL.
+	(find_task): Quote uuid in SQL.  Invert return.
+
+	* src/tests/common.c (next_entities, first_entity): New functions.
+	(create_task, create_task_from_rc_file, wait_for_task_start)
+	(wait_for_task_end, delete_task): Change task ID param to a string.
+	(id_string): Remove.
+	* src/tests/common.h: Update headers.
+
+	* src/tests/omp_get_report_0.c, src/tests/omp_delete_report_0.c,
+	src/tests/omp_start_task_2.c, src/tests/omp_get_preferences_1.c,
+	src/tests/omp_modify_task_1.c, src/tests/omp_abort_task_0.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_get_rules_1.c,
+	src/tests/omp_start_task_1.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_get_nvt_feed_details_1.c, src/tests/omp_status_2.c,
+	src/tests/omp_delete_task_2.c, src/tests/omp_get_dependencies_1.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c, src/tests/omp_status_4.c,
+	src/tests/omp_start_task_0.c, src/tests/omp_modify_task_0.c,
+	src/tests/omp_status_1.c, src/tests/omp_status_0.c,
+	src/tests/omp_status_3.c, src/tests/omp_delete_report_1.c,
+	src/tests/omp_modify_report_0.c,
+	src/tests/omp_get_nvt_feed_all_1.c: Switch to string task IDs.  Match
+	response statuses to manager.
+
+2009-05-25  Matthew Mundell <mmundell@intevation.de>
 
 	* src/openvasmd.c (main): Fork into background on start, or stay in
 	foreground if -f switch given.
