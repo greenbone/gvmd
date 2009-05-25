@@ -1,5 +1,10 @@
 2009-05-23  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (main): Fork into background on start, or stay in
+	foreground if -f switch given.
+
+2009-05-23  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (STATUS_SERVICE_DOWN): New status code.
 	(omp_xml_handle_start_element): Initialise current_uuid in operations that
 	use it.

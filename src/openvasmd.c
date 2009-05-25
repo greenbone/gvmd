@@ -608,6 +608,7 @@ main (int argc, char** argv)
 
   /* Process options. */
 
+  static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
   static gchar *manager_port_string = NULL;
@@ -617,12 +618,13 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in the foreground, instead of forking into the background.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
-        { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version.", NULL },
+        { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
       };
 
@@ -693,6 +695,27 @@ main (int argc, char** argv)
   server.preferences = NULL;
   server.rules = NULL;
 #endif
+
+  if (foreground == FALSE)
+    {
+      /* Fork into the background. */
+      pid_t pid = fork ();
+      switch (pid)
+        {
+          case 0:
+            /* Child. */
+            break;
+          case -1:
+            /* Parent when error. */
+            perror ("Failed to fork into background");
+            exit (EXIT_FAILURE);
+            break;
+          default:
+            /* Parent. */
+            exit (EXIT_SUCCESS);
+            break;
+        }
+    }
 
   /* Initialise OMP daemon. */
 
