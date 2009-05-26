@@ -161,7 +161,9 @@ main ()
   if (entity == NULL
       || strcmp (entity_name (entity), "get_nvt_feed_all_response")
       || (status = entity_child (entity, "status")) == NULL
-      || strcmp (entity_text (status), "200"))
+      || (strcmp (entity_text (status), "200")
+
+          && strcmp (entity_text (status), "503")))
     {
       free_entity (entity);
       delete_task (&session, id);

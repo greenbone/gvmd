@@ -1,6 +1,6 @@
 /* Test 1 of OMP GET_NVT_FEED_DETAILS.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_DETAILS command on a running task.
+ * Description: Test the OMP GET_NVT_FEED_DETAILS command after a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -40,17 +40,33 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  entity_t entity, status;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
-
-  /* Create a task. */
 
   if (env_authenticate (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
+
+  /* Request feed information once, so manager requests it from server. */
+
+  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+  entity = NULL;
+  if (read_entity (&session, &entity))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+  free_entity (entity);
+
+  /* Create a task. */
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
@@ -95,7 +111,7 @@ main ()
 #endif
 
   if (sendf_to_manager (&session,
-                        "<status><task_id>%i</task_id></status>",
+                        "<status><task_id>%s</task_id></status>",
                         id)
       == -1)
     {
@@ -105,7 +121,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  entity_t entity = NULL;
+  entity = NULL;
   if (read_entity (&session, &entity))
     {
       delete_task (&session, id);
@@ -115,7 +131,7 @@ main ()
     }
   free_entity (entity);
 
-  /* Get the preferences. */
+  /* Get the feed details. */
 
 #if 0
   if (env_authenticate (&session))
@@ -141,23 +157,21 @@ main ()
   read_entity (&session, &entity);
   if (entity) print_entity (stdout, entity);
 
-#if 0
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_nvt_feed_details_response", FIX);
-
-  if (compare_entities (entity, expected))
+  if (entity == NULL
+      || strcmp (entity_name (entity), "get_nvt_feed_details_response")
+      || (status = entity_child (entity, "status")) == NULL
+      || (strcmp (entity_text (status), "200")
+          && strcmp (entity_text (status), "503")))
     {
       free_entity (entity);
-      free_entity (expected);
       delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
     }
 
-  free_entity (expected);
-#endif
   free_entity (entity);
   delete_task (&session, id);
   close_manager_connection (socket, session);

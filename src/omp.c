@@ -855,25 +855,87 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_plugin (gpointer oid_gp, gpointer plugin_gp, /*@unused@*/ gpointer dummy)
+send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
 {
   plugin_t* plugin = (plugin_t*) plugin_gp;
   char* oid = (char*) oid_gp;
   char* name = plugin_name (plugin);
+  int details = (int) details_gp;
+  gchar* msg;
 
   gchar* name_text = g_markup_escape_text (name, strlen (name));
-  gchar* msg = g_strdup_printf ("<nvt>"
-                                "<oid>%s</oid>"
-                                "<name>%s</name>"
+  if (details)
+    {
+
+#define DEF(x)                                               \
+      char* x = plugin_ ## x (plugin);                       \
+      gchar* x ## _text = g_markup_escape_text (x,           \
+                                               strlen (x))
+
+      DEF (copyright);
+      DEF (description);
+      DEF (summary);
+      DEF (family);
+      DEF (version);
+      DEF (tags);
+
+      msg = g_strdup_printf ("<nvt>"
+                             "<oid>%s</oid>"
+                             "<name>%s</name>"
+                             "<category>%s</category>"
+                             "<copyright>%s</copyright>"
+                             "<description>%s</description>"
+                             "<summary>%s</summary>"
+                             "<family>%s</family>"
+                             "<version>%s</version>"
+                             // FIX spec has multiple <cve_id>s
+                             "<cve_id>%s</cvs_id>"
+                             "<bugtraq_id>%s</bugtraq_id>"
+                             "<xrefs>%s</xrefs>"
+                             "<fingerprints>%s</fingerprints>"
+                             "<tags>%s</tags>"
 #if 0
-                                "<checksum>"
-                                "<algorithm>md5</algorithm>"
-                                "%s"
-                                "</checksum>"
+                             // FIX implement
+                             "<checksum>"
+                             "<algorithm>md5</algorithm>"
+                             "%s"
+                             "</checksum>"
 #endif
-                                "</nvt>",
-                                oid,
-                                name_text);
+                             "</nvt>",
+                             oid,
+                             name_text,
+                             plugin_category (plugin),
+                             copyright_text,
+                             description_text,
+                             summary_text,
+                             family_text,
+                             version_text,
+                             plugin_cve_id (plugin),
+                             plugin_bugtraq_id (plugin),
+                             plugin_xrefs (plugin),
+                             plugin_fingerprints (plugin),
+                             tags_text);
+      g_free (copyright);
+      g_free (description);
+      g_free (summary);
+      g_free (family);
+      g_free (version);
+      g_free (tags);
+    }
+  else
+    msg = g_strdup_printf ("<nvt>"
+                           "<oid>%s</oid>"
+                           "<name>%s</name>"
+#if 0
+                           // FIX implement
+                           "<checksum>"
+                           "<algorithm>md5</algorithm>"
+                           "%s"
+                           "</checksum>"
+#endif
+                           "</nvt>",
+                           oid,
+                           name_text);
   g_free (name_text);
   if (send_to_client (msg))
     {
@@ -1266,7 +1328,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
                 SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
               }
-            if (plugins_find (server.plugins, send_plugin, NULL))
+            if (plugins_find (server.plugins, send_plugin, (gpointer) 0))
               {
                 error_send_to_client (error);
                 return;
@@ -1307,25 +1369,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
-        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>"
-                                "<status>" STATUS_OK "</status>");
-        // FIX
-        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
-                                "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                                "<cve>CVE-2008-4877</cve>"
-                                "<cve>CVE-2008-4881</cve>"
-                                "<bugtraq_id>12345</bugtraq_id>"
-                                "<filename>foobar_15_detect.nasl</filename>"
-                                "<description>This script detects whether FooBar 1.5 is installed.</description>"
-                                "</nvt>");
-        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
-                                "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                                "<cve>CVE-2008-5142</cve>"
-                                "<bugtraq_id>12478</bugtraq_id>"
-                                "<filename>foobar_21_xss.nasl</filename>"
-                                "<description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>"
-                                "</nvt>");
-        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_details_response>");
+        if (server.plugins)
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>"
+                                    "<status>" STATUS_OK "</status>");
+            SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                                     plugins_size (server.plugins));
+            if (server.plugins_md5)
+              {
+                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
+                                        "<algorithm>md5</algorithm>");
+                SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
+                SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+              }
+            if (plugins_find (server.plugins, send_plugin, (gpointer) 1))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_details_response>");
+          }
+        else
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>"
+                                    "<status>" STATUS_SERVICE_DOWN "</status>"
+                                    "</get_nvt_feed_details_response>");
+            /* \todo TODO Sort out a cache for this. */
+            if (request_plugin_list ())
+              {
+                /* to_server is full. */
+                // FIX ~ revert parsing for retry
+                // process_omp_client_input must return -2
+                abort ();
+              }
+          }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

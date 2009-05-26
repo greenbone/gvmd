@@ -1,6 +1,6 @@
-/* Test 1 of OMP GET_NVT_FEED_DETAILS.
+/* Test 0 of OMP GET_NVT_FEED_DETAILS.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_DETAILS command on a running task.
+ * Description: Test the OMP GET_NVT_FEED_DETAILS command before a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -43,7 +43,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* Get the preferences. */
+  /* Request the feed details. */
 
   if (env_authenticate (&session))
     {
@@ -65,7 +65,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_nvt_feed_details_response", NULL);
-  add_entity (&expected->entities, "status", "500");
+  add_entity (&expected->entities, "status", "503");
 
   if (compare_entities (entity, expected))
     {

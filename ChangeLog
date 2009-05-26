@@ -1,5 +1,21 @@
 2009-05-26  Matthew Mundell <mmundell@intevation.de>
 
+	Implement OMP GET_NVT_FEED_DETAILS when called to return all NVTs.
+
+	* src/omp.c (send_plugin): Add a details option.
+	(omp_xml_handle_end_element): Add real CLIENT_GET_NVT_FEED_DETAILS
+	handling.
+
+	* src/tests/omp_get_nvt_feed_details_0.c: Improve comments.  Use new status
+	code.
+
+	* src/tests/omp_get_nvt_feed_details_1.c: Get feed initially.  Check
+	response.
+
+	* src/tests/omp_get_nvt_feed_all_1.c: Also check for response status 503.
+
+2009-05-26  Matthew Mundell <mmundell@intevation.de>
+
 	Implement OMP GET_NVT_FEED_ALL.
 
 	* src/manage.c (plugin_t, plugins_t): New types.
