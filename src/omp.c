@@ -1221,8 +1221,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
-// FIX
-#if 0
         if (server.plugins_md5)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
@@ -1235,13 +1233,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
                                   "<status>" STATUS_SERVICE_DOWN "</status>"
                                   "</get_nvt_feed_checksum_response>");
-#else
-        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
-                                "<status>" STATUS_OK "</status>"
-                                "<algorithm>md5</algorithm>");
-        SEND_TO_CLIENT_OR_FAIL ("111");
-        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_checksum_response>");
-#endif
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

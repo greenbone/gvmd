@@ -1,6 +1,6 @@
 /* Test 1 of OMP GET_NVT_FEED_CHECKSUM.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_CHECKSUM command on a running task.
+ * Description: Test the OMP GET_NVT_FEED_CHECKSUM before running a task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -65,7 +65,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_nvt_feed_checksum_response", NULL);
-  add_entity (&expected->entities, "status", "500");
+  add_entity (&expected->entities, "status", "503");
 
   if (compare_entities (entity, expected))
     {

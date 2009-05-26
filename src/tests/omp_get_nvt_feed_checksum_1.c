@@ -1,6 +1,6 @@
 /* Test 1 of OMP GET_NVT_FEED_CHECKSUM.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_CHECKSUM command on a running task.
+ * Description: Test the OMP GET_NVT_FEED_CHECKSUM after starting a task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -25,6 +25,7 @@
 
 #define TRACE 1
 
+#include <ctype.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,12 +35,26 @@
 #include "common.h"
 #include "../tracef.h"
 
+/**
+ * @brief Check whether a string contains only alphanumeric characters.
+ *
+ * @return 1 if all characters are alphanumeric, else 0.
+ */
+int
+isalnumstr (const char* string)
+{
+  while (*string) if (isalnum (*string)) string++; else return 0;
+  return 1;
+}
+
 int
 main ()
 {
   int socket;
   gnutls_session_t session;
   char* id;
+  char* md5;
+  entity_t status, entity, algorithm;
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
@@ -105,7 +120,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  entity_t entity = NULL;
+  entity = NULL;
   if (read_entity (&session, &entity))
     {
       delete_task (&session, id);
@@ -115,7 +130,7 @@ main ()
     }
   free_entity (entity);
 
-  /* Get the preferences. */
+  /* Get the feed checksum. */
 
 #if 0
   if (env_authenticate (&session))
@@ -139,25 +154,24 @@ main ()
 
   entity = NULL;
   read_entity (&session, &entity);
-  if (entity) print_entity (stdout, entity);
 
-#if 0
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_nvt_feed_checksum_response", FIX);
-
-  if (compare_entities (entity, expected))
+  if (entity == NULL
+      || (status = entity_child (entity, "status")) == NULL
+      || strcmp (entity_text (status), "200")
+      || (algorithm = entity_child (entity, "algorithm")) == NULL
+      || strcmp (entity_text (algorithm), "md5")
+      || (md5 = entity_text (entity)) == NULL
+      || !isalnumstr (md5))
     {
       free_entity (entity);
-      free_entity (expected);
       delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
     }
 
-  free_entity (expected);
-#endif
   free_entity (entity);
   delete_task (&session, id);
   close_manager_connection (socket, session);

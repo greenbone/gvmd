@@ -1,3 +1,13 @@
+2009-05-26  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): Enable real
+	CLIENT_GET_NVT_FEED_CHECKSUM implementation.
+
+	* src/tests/omp_get_nvt_feed_checksum_0.c: Use new status code.
+
+	* src/tests/omp_get_nvt_feed_checksum_1.c: Add comparison to expected
+	response.
+
 2009-05-25  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): Add enclosing tags that were
