@@ -346,4 +346,127 @@ delete_report (const char*);
 int
 set_report_parameter (char*, const char*, char*);
 
+
+/* Plugins. */
+
+typedef struct
+{
+  char* oid;
+  char* name;
+  char* category;
+  char* copyright;
+  char* description;
+  char* summary;
+  char* family;
+  char* version;
+  char* cve_id;
+  char* bugtraq_id;
+  char* xrefs;
+  char* fingerprints;
+  char* tags;
+} plugin_t;
+
+typedef GHashTable plugins_t;
+
+plugin_t*
+make_plugin ();
+
+void
+free_plugin (plugin_t*);
+
+plugins_t*
+make_plugins ();
+
+void
+free_plugins (plugins_t*);
+
+int
+request_plugin_list ();
+
+unsigned int
+plugins_size (plugins_t*);
+
+void
+add_plugin (plugins_t*, plugin_t*);
+
+#define plugins_find g_hash_table_find
+
+char*
+plugin_oid (plugin_t*);
+
+char*
+plugin_name (plugin_t*);
+
+char*
+plugin_category (plugin_t*);
+
+char*
+plugin_copyright (plugin_t*);
+
+char*
+plugin_description (plugin_t*);
+
+char*
+plugin_summary (plugin_t*);
+
+char*
+plugin_family (plugin_t*);
+
+char*
+plugin_version (plugin_t*);
+
+char*
+plugin_cve_id (plugin_t*);
+
+char*
+plugin_bugtraq_id (plugin_t*);
+
+char*
+plugin_xrefs (plugin_t*);
+
+char*
+plugin_fingerprints (plugin_t*);
+
+char*
+plugin_tags (plugin_t*);
+
+void
+set_plugin_oid (plugin_t*, const char*);
+
+void
+set_plugin_name (plugin_t*, const char*);
+
+void
+set_plugin_category (plugin_t*, const char*);
+
+void
+set_plugin_copyright (plugin_t*, const char*);
+
+void
+set_plugin_description (plugin_t*, const char*);
+
+void
+set_plugin_summary (plugin_t*, const char*);
+
+void
+set_plugin_family (plugin_t*, const char*);
+
+void
+set_plugin_version (plugin_t*, const char*);
+
+void
+set_plugin_cve_id (plugin_t*, const char*);
+
+void
+set_plugin_bugtraq_id (plugin_t*, const char*);
+
+void
+set_plugin_xrefs (plugin_t*, const char*);
+
+void
+set_plugin_fingerprints (plugin_t*, const char*);
+
+void
+set_plugin_tags (plugin_t*, const char*);
+
 #endif

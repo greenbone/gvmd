@@ -472,6 +472,21 @@ add_server_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
 }
 
 
+/* Server plugins. */
+
+/**
+ * @brief The current plugins, during reading of server plugin list.
+ */
+/*@only@*/
+static plugins_t* current_plugins = NULL;
+
+/**
+ * @brief The current plugin, during reading of server plugin list.
+ */
+/*@only@*/
+static plugin_t* current_plugin = NULL;
+
+
 /* Server plugin dependencies. */
 
 /**
@@ -633,6 +648,7 @@ init_otp_data ()
 {
   server.preferences = NULL;
   server.rules = NULL;
+  server.plugins = NULL;
   server.plugins_md5 = NULL;
 }
 
@@ -664,6 +680,19 @@ typedef enum
   SERVER_NOTE_NUMBER,
   SERVER_NOTE_OID,
   SERVER_PLUGINS_MD5,
+  SERVER_PLUGIN_LIST_BUGTRAQ_ID,
+  SERVER_PLUGIN_LIST_CATEGORY,
+  SERVER_PLUGIN_LIST_COPYRIGHT,
+  SERVER_PLUGIN_LIST_CVE_ID,
+  SERVER_PLUGIN_LIST_DESCRIPTION,
+  SERVER_PLUGIN_LIST_FAMILY,
+  SERVER_PLUGIN_LIST_FPRS,
+  SERVER_PLUGIN_LIST_NAME,
+  SERVER_PLUGIN_LIST_OID,
+  SERVER_PLUGIN_LIST_PLUGIN_VERSION,
+  SERVER_PLUGIN_LIST_SUMMARY,
+  SERVER_PLUGIN_LIST_TAGS,
+  SERVER_PLUGIN_LIST_XREFS,
   SERVER_PLUGIN_DEPENDENCY_NAME,
   SERVER_PLUGIN_DEPENDENCY_DEPENDENCY,
   SERVER_PORT_HOST,
@@ -758,7 +787,7 @@ parse_server_done (char** messages)
 }
 
 /**
- * @brief Parse the final SERVER field of an OTP message.
+ * @brief FIX Parse the final SERVER field of an OTP message.
  *
  * @param  messages  A pointer into the OTP input buffer.
  *
@@ -780,6 +809,41 @@ parse_server_preference_value (char** messages)
       value = g_strdup (*messages);
       add_server_preference (current_server_preference, value);
       set_server_state (SERVER_PREFERENCE_NAME);
+      from_server_start += match + 1 - *messages;
+      *messages = match + 1;
+      return 0;
+    }
+  return -2;
+}
+
+/**
+ * @brief Parse the final field of a plugin in a plugin list.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 success, -2 too few characters (need more input).
+ */
+static int
+parse_server_plugin_list_tags (char** messages)
+{
+  char *value, *end, *match;
+  assert (current_plugin != NULL);
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
+    {
+      match[0] = '\0';
+      value = g_strdup (*messages);
+      if (current_plugins && current_plugin)
+        {
+          set_plugin_tags (current_plugin, value);
+          add_plugin (current_plugins, current_plugin);
+          current_plugin = NULL;
+        }
+      set_server_state (SERVER_PLUGIN_LIST_OID);
       from_server_start += match + 1 - *messages;
       *messages = match + 1;
       return 0;
@@ -1103,6 +1167,14 @@ process_otp_server_input ()
           switch (parse_server_done (&messages))
             {
               case -1: return -1;
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return 0;
+            }
+        else if (server_state == SERVER_PLUGIN_LIST_TAGS)
+          switch (parse_server_plugin_list_tags (&messages))
+            {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
@@ -1592,6 +1664,104 @@ process_otp_server_input ()
                     }
                   break;
                 }
+              case SERVER_PLUGIN_LIST_OID:
+                {
+                  if (strlen (field) == 0)
+                    {
+                      free_plugins (server.plugins);
+                      server.plugins = current_plugins;
+                      current_plugins = NULL;
+                      set_server_state (SERVER_DONE);
+                      switch (parse_server_done (&messages))
+                        {
+                          case -1: return -1;
+                          case -2:
+                            /* Need more input. */
+                            if (sync_buffer ()) return -1;
+                            return 0;
+                        }
+                      break;
+                    }
+                  assert (current_plugin == NULL);
+                  current_plugin = make_plugin ();
+                  if (current_plugin == NULL) abort (); // FIX
+                  set_plugin_oid (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_NAME);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_NAME:
+                {
+                  set_plugin_name (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_CATEGORY);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_CATEGORY:
+                {
+                  set_plugin_category (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_COPYRIGHT);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_COPYRIGHT:
+                {
+                  set_plugin_copyright (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_DESCRIPTION);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_DESCRIPTION:
+                {
+                  set_plugin_description (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_SUMMARY);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_SUMMARY:
+                {
+                  set_plugin_summary (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_FAMILY);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_FAMILY:
+                {
+                  set_plugin_family (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_PLUGIN_VERSION);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_PLUGIN_VERSION:
+                {
+                  set_plugin_version (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_CVE_ID);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_CVE_ID:
+                {
+                  set_plugin_cve_id (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_BUGTRAQ_ID);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_BUGTRAQ_ID:
+                {
+                  set_plugin_bugtraq_id (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_XREFS);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_XREFS:
+                {
+                  set_plugin_xrefs (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_FPRS);
+                  break;
+                }
+              case SERVER_PLUGIN_LIST_FPRS:
+                {
+                  set_plugin_fingerprints (current_plugin, field);
+                  set_server_state (SERVER_PLUGIN_LIST_TAGS);
+                  switch (parse_server_plugin_list_tags (&messages))
+                    {
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
+                }
               case SERVER_PLUGINS_MD5:
                 {
                   char* md5 = g_strdup (field);
@@ -1704,6 +1874,17 @@ process_otp_server_input ()
                   set_server_state (SERVER_NOTE_HOST);
                 else if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
                   set_server_state (SERVER_PLUGINS_MD5);
+                else if (strncasecmp ("PLUGIN_LIST", field, 11) == 0)
+                  {
+                    /* current_plugins may be allocated already due to a
+                     * request for the list before the end of the previous
+                     * request.  In this case just let the responses mix.
+                     * FIX depends what server does on multiple requests
+                     */
+                    if (current_plugins == NULL)
+                      current_plugins = make_plugins ();
+                    set_server_state (SERVER_PLUGIN_LIST_OID);
+                  }
                 else if (strncasecmp ("PORT", field, 4) == 0)
                   set_server_state (SERVER_PORT_HOST);
                 else if (strncasecmp ("PREFERENCES", field, 11) == 0)

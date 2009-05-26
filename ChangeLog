@@ -1,5 +1,45 @@
 2009-05-26  Matthew Mundell <mmundell@intevation.de>
 
+	Implement OMP GET_NVT_FEED_ALL.
+
+	* src/manage.c (plugin_t, plugins_t): New types.
+	(plugins_find): New definition.
+	(make_plugin, free_plugin, make_plugins, free_plugin, make_plugins)
+	(free_plugins, request_plugin_list, plugins_size, add_plugin): New
+	functions.
+	(plugin_oid, plugin_name, plugin_category, plugin_copyright)
+	(plugin_description, plugin_summary, plugin_family, plugin_version)
+	(plugin_cve_id, plugin_bugtraq_id, plugin_xrefs, plugin_fingerprints)
+	(plugin_tags): New access functions.
+	(set_plugin_oid, set_plugin_name, set_plugin_category)
+	(set_plugin_copyright, set_plugin_description, set_plugin_summary)
+	(set_plugin_family, set_plugin_version, set_plugin_cve_id)
+	(set_plugin_bugtraq_id, set_plugin_xrefs, set_plugin_fingerprints)
+	(set_plugin_tags): New set functions.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (send_plugin): New function
+	(SENDF_TO_CLIENT_OR_FAIL): New macro.
+	(omp_xml_handle_end_element): Add real CLIENT_GET_NVT_FEED_ALL handling.
+
+	* src/otp.h (server_t): Add plugins.
+
+	* src/otp.c (current_plugin, current_plugins): New variables.
+	(init_otp_data): Init plugins.
+	(server_state_t): Add PLUGIN_LIST states.
+	(parse_server_plugin_list_tags): New function.
+	(process_otp_server_input): Add PLUGIN_LIST handling.
+
+	* src/tests/src/tests/omp_get_preferences_0.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c,
+	src/tests/omp_get_dependencies_0.c:  Correct test numbers in headings.
+
+	* src/tests/omp_get_nvt_feed_all_0.c: Match new response code.
+
+	* src/tests/omp_get_nvt_feed_all_1.c: Get feed initially.  Check response.
+
+2009-05-26  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Enable real
 	CLIENT_GET_NVT_FEED_CHECKSUM implementation.
 

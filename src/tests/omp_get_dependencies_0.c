@@ -1,4 +1,4 @@
-/* Test 1 of OMP GET_DEPENDENCIES.
+/* Test 0 of OMP GET_DEPENDENCIES.
  * $Id$
  * Description: Test the OMP GET_DEPENDENCIES command on a running task.
  *

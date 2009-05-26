@@ -26,6 +26,7 @@
 #ifndef OPENVAS_MANAGER_OTP_H
 #define OPENVAS_MANAGER_OTP_H
 
+#include "manage.h"
 #include <glib.h>
 
 void
@@ -69,6 +70,7 @@ typedef struct
 {
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
+  plugins_t* plugins;                ///< Plugin meta-information.
   GHashTable* preferences;           ///< Server preference.
   GPtrArray* rules;                  ///< Server rules.
   int rules_size;                    ///< Number of rules.

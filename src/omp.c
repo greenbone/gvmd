@@ -67,8 +67,8 @@ static char* help_text = "\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_NVT_FEED_ALL       * Get IDs and names of all available NVTs.\n"
-"    GET_NVT_FEED_CHECKSUM  * Get checksum for entire NVT collection.\n"
+"    GET_NVT_FEED_ALL       Get IDs and names of all available NVTs.\n"
+"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_NVT_FEED_DETAILS   * Get all details for all available NVTs.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
@@ -846,6 +846,45 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 }
 
 /**
+ * @brief Send XML for a plugin.
+ *
+ * @param[in]  key    The plugin OID.
+ * @param[in]  value  The plugin.
+ * @param[in]  dummy  Dummy variable, for plugins_find.
+ *
+ * @return TRUE if out of space in to_client buffer, else FALSE.
+ */
+static gboolean
+send_plugin (gpointer oid_gp, gpointer plugin_gp, /*@unused@*/ gpointer dummy)
+{
+  plugin_t* plugin = (plugin_t*) plugin_gp;
+  char* oid = (char*) oid_gp;
+  char* name = plugin_name (plugin);
+
+  gchar* name_text = g_markup_escape_text (name, strlen (name));
+  gchar* msg = g_strdup_printf ("<nvt>"
+                                "<oid>%s</oid>"
+                                "<name>%s</name>"
+#if 0
+                                "<checksum>"
+                                "<algorithm>md5</algorithm>"
+                                "%s"
+                                "</checksum>"
+#endif
+                                "</nvt>",
+                                oid,
+                                name_text);
+  g_free (name_text);
+  if (send_to_client (msg))
+    {
+      g_free (msg);
+      return TRUE;
+    }
+  g_free (msg);
+  return FALSE;
+}
+
+/**
  * @brief Send XML for a preference.
  *
  * @param[in]  key    The preferences hashtable key.
@@ -1022,6 +1061,28 @@ send_reports (task_t task)
   while (0)
 
 /**
+ * @brief Send response message to client, returning on fail.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   msg    The message, a string.
+ */
+#define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
+  do                                                                         \
+    {                                                                        \
+      gchar* msg = g_strdup_printf (format , ## args);                       \
+      if (send_to_client (msg))                                              \
+        {                                                                    \
+          g_free (msg);                                                      \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+      g_free (msg);                                                          \
+    }                                                                        \
+  while (0)
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -1192,31 +1253,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FEED_ALL:
-        SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
-                                "<status>" STATUS_OK "</status>");
-        // FIX
-        SEND_TO_CLIENT_OR_FAIL ("<nvt_count>2</nvt_count>");
-        SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
-                                "<algorithm>md5</algorithm>"
-                                "333"
-                                "</feed_checksum>");
-        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
-                                "<oid>1.3.6.1.4.1.25623.1.7.13005</oid>"
-                                "<name>FooBar 1.5 installed</name>"
-                                "<checksum>"
-                                "<algorithm>md5</algorithm>"
-                                "222"
-                                "</checksum>"
-                                "</nvt>");
-        SEND_TO_CLIENT_OR_FAIL ("<nvt>"
-                                "<oid>1.3.6.1.4.1.25623.1.7.13006</oid>"
-                                "<name>FooBar 2.1 XSS vulnerability</name>"
-                                "<checksum>"
-                                "<algorithm>md5</algorithm>"
-                                "223"
-                                "</checksum>"
-                                "</nvt>");
-        SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_all_response>");
+        if (server.plugins)
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
+                                    "<status>" STATUS_OK "</status>");
+            SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                                     plugins_size (server.plugins));
+            if (server.plugins_md5)
+              {
+                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
+                                        "<algorithm>md5</algorithm>");
+                SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
+                SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+              }
+            if (plugins_find (server.plugins, send_plugin, NULL))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_all_response>");
+          }
+        else
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
+                                    "<status>" STATUS_SERVICE_DOWN "</status>"
+                                    "</get_nvt_feed_all_response>");
+            /* \todo TODO Sort out a cache for this. */
+            if (request_plugin_list ())
+              {
+                /* to_server is full. */
+                // FIX ~ revert parsing for retry
+                // process_omp_client_input must return -2
+                abort ();
+              }
+          }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

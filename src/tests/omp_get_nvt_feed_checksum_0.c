@@ -1,4 +1,4 @@
-/* Test 1 of OMP GET_NVT_FEED_CHECKSUM.
+/* Test 0 of OMP GET_NVT_FEED_CHECKSUM.
  * $Id$
  * Description: Test the OMP GET_NVT_FEED_CHECKSUM before running a task.
  *
