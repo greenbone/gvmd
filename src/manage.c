@@ -1239,6 +1239,12 @@ add_plugin (plugins_t* plugins, plugin_t* plugin)
     g_hash_table_insert (plugins, (gpointer) plugin->oid, (gpointer) plugin);
 }
 
+plugin_t*
+find_plugin (plugins_t* plugins, const char* oid)
+{
+  return g_hash_table_lookup (plugins, oid);
+}
+
 /**
  * @brief Request the list of plugins from the server.
  *

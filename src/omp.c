@@ -69,7 +69,7 @@ static char* help_text = "\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_NVT_FEED_ALL       Get IDs and names of all available NVTs.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
-"    GET_NVT_FEED_DETAILS   * Get all details for all available NVTs.\n"
+"    GET_NVT_FEED_DETAILS   Get all details for all available NVTs.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
@@ -188,6 +188,7 @@ typedef enum
   CLIENT_GET_NVT_FEED_ALL,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_NVT_FEED_DETAILS,
+  CLIENT_GET_NVT_FEED_DETAILS_OID,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_ID,
@@ -548,6 +549,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FEED_DETAILS:
+        if (strncasecmp ("OID", element_name, 3) == 0)
+          set_client_state (CLIENT_GET_NVT_FEED_DETAILS_OID);
+        else
           {
             if (send_to_client ("<get_nvt_feed_details>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
@@ -866,11 +870,19 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
+      gsize dummy;
 
-#define DEF(x)                                               \
-      char* x = plugin_ ## x (plugin);                       \
-      gchar* x ## _text = g_markup_escape_text (x,           \
-                                               strlen (x))
+#define DEF(x)                                                    \
+      char* x = plugin_ ## x (plugin);                            \
+      /* FIX Temp hack. */                                        \
+      gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
+                                         "utf-8", "iso_8895-1",   \
+                                         NULL, &dummy, NULL)      \
+                            : NULL;                               \
+      gchar* x ## _text = x ## _utf8                              \
+                          ? g_markup_escape_text (x ## _utf8, -1) \
+                          : g_strdup ("");                        \
+      g_free (x ## _utf8);
 
       DEF (copyright);
       DEF (description);
@@ -889,7 +901,7 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
                              "<family>%s</family>"
                              "<version>%s</version>"
                              // FIX spec has multiple <cve_id>s
-                             "<cve_id>%s</cvs_id>"
+                             "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
                              "<xrefs>%s</xrefs>"
                              "<fingerprints>%s</fingerprints>"
@@ -915,12 +927,12 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
                              plugin_xrefs (plugin),
                              plugin_fingerprints (plugin),
                              tags_text);
-      g_free (copyright);
-      g_free (description);
-      g_free (summary);
-      g_free (family);
-      g_free (version);
-      g_free (tags);
+      g_free (copyright_text);
+      g_free (description_text);
+      g_free (summary_text);
+      g_free (family_text);
+      g_free (version_text);
+      g_free (tags_text);
     }
   else
     msg = g_strdup_printf ("<nvt>"
@@ -1371,21 +1383,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FEED_DETAILS:
         if (server.plugins)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>"
-                                    "<status>" STATUS_OK "</status>");
-            SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                     plugins_size (server.plugins));
-            if (server.plugins_md5)
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>");
+            if (current_uuid)
               {
-                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
-                                        "<algorithm>md5</algorithm>");
-                SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
-                SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+                plugin_t* plugin = find_plugin (server.plugins, current_uuid);
+                if (plugin)
+                  {
+                    SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_OK "</status>");
+                    send_plugin (plugin->oid, plugin, (gpointer) 1);
+                  }
+                else
+                  {
+                    SEND_TO_CLIENT_OR_FAIL ("<status>"
+                                            STATUS_ERROR_MISSING
+                                            "</status>");
+                  }
               }
-            if (plugins_find (server.plugins, send_plugin, (gpointer) 1))
+            else
               {
-                error_send_to_client (error);
-                return;
+                SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                                         plugins_size (server.plugins));
+                if (server.plugins_md5)
+                  {
+                    SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
+                                            "<algorithm>md5</algorithm>");
+                    SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
+                    SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+                  }
+                if (plugins_find (server.plugins, send_plugin, (gpointer) 1))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
               }
             SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_details_response>");
           }
@@ -1404,6 +1433,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_GET_NVT_FEED_DETAILS_OID:
+        assert (strncasecmp ("OID", element_name, 3) == 0);
+        set_client_state (CLIENT_GET_NVT_FEED_DETAILS);
         break;
 
       case CLIENT_DELETE_REPORT:
@@ -2023,6 +2056,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_REPORT_ID:
       case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_GET_REPORT_ID:
+      case CLIENT_GET_NVT_FEED_DETAILS_OID:
       case CLIENT_MODIFY_REPORT_REPORT_ID:
       case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:

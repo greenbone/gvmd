@@ -1,3 +1,24 @@
+2009-05-27  Matthew Mundell <mmundell@intevation.de>
+
+	Implement OMP GET_NVT_FEED_DETAILS when called to return a specific NVT.
+
+	* src/manage.c (find_plugin): New function.
+	* src/manage.h (find_plugin): New header.
+
+	* src/omp.c (client_state_t): Add CLIENT_GET_NVT_FEED_DETAILS_OID.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add GET_NVT_FEED_DETAILS ID handling.
+	(send_plugin): Convert strings to UTF-8 for g_markup_escape_text.  Free
+	the correct strings.  Correct XML tag.
+
+    * src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase.
+
+	* src/tests/omp_get_nvt_feed_details_2.c,
+	src/tests/omp_get_nvt_feed_details_3.c,
+	src/tests/omp_get_nvt_feed_details_4.c: New files.
+
+	* src/tests/CMakeLists.txt: Add new tests.
+
 2009-05-26  Matthew Mundell <mmundell@intevation.de>
 
 	Implement OMP GET_NVT_FEED_DETAILS when called to return all NVTs.

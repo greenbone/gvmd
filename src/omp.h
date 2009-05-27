@@ -32,7 +32,7 @@
 /**
  * @brief The size of the \ref to_client data buffer, in bytes.
  */
-#define TO_CLIENT_BUFFER_SIZE 1048576
+#define TO_CLIENT_BUFFER_SIZE 5242880
 
 int
 init_omp ();

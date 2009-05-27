@@ -389,6 +389,9 @@ plugins_size (plugins_t*);
 void
 add_plugin (plugins_t*, plugin_t*);
 
+plugin_t*
+find_plugin (plugins_t*, const char*);
+
 #define plugins_find g_hash_table_find
 
 char*

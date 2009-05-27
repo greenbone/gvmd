@@ -214,6 +214,27 @@ set_target_properties (omp_get_nvt_feed_details_1 PROPERTIES LINK_FLAGS "${OVAS_
 target_link_libraries (omp_get_nvt_feed_details_1 common)
 ADD_TEST (omp_get_nvt_feed_details_1 omp_get_nvt_feed_details_1)
 
+add_executable (omp_get_nvt_feed_details_2 omp_get_nvt_feed_details_2.c)
+target_link_libraries (omp_get_nvt_feed_details_2 string)
+set_target_properties (omp_get_nvt_feed_details_2 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_nvt_feed_details_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_nvt_feed_details_2 common)
+ADD_TEST (omp_get_nvt_feed_details_2 omp_get_nvt_feed_details_2)
+
+add_executable (omp_get_nvt_feed_details_3 omp_get_nvt_feed_details_3.c)
+target_link_libraries (omp_get_nvt_feed_details_3 string)
+set_target_properties (omp_get_nvt_feed_details_3 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_nvt_feed_details_3 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_nvt_feed_details_3 common)
+ADD_TEST (omp_get_nvt_feed_details_3 omp_get_nvt_feed_details_3)
+
+add_executable (omp_get_nvt_feed_details_4 omp_get_nvt_feed_details_4.c)
+target_link_libraries (omp_get_nvt_feed_details_4 string)
+set_target_properties (omp_get_nvt_feed_details_4 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_nvt_feed_details_4 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_nvt_feed_details_4 common)
+ADD_TEST (omp_get_nvt_feed_details_4 omp_get_nvt_feed_details_4)
+
 add_executable (omp_get_preferences_0 omp_get_preferences_0.c)
 target_link_libraries (omp_get_preferences_0 string)
 set_target_properties (omp_get_preferences_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
