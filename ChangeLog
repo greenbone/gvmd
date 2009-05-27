@@ -1,5 +1,9 @@
 2009-05-27  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (send_plugin): Correct g_convert charset names.
+
+2009-05-27  Matthew Mundell <mmundell@intevation.de>
+
 	Switch to libopenvas nvtis for plugin information.
 
 	* src/manage.c (find_plugin, free_plugin_for_hash_table)

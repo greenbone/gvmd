@@ -874,11 +874,13 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
     {
       gsize dummy;
 
+#define stringify (x) #x
+
 #define DEF(x)                                                    \
       char* x = nvti_ ## x (plugin);                              \
-      /* FIX Temp hack. */                                        \
+      /* FIX The g_convert is a temp hack. */                     \
       gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
-                                         "utf-8", "iso_8895-1",   \
+                                         "UTF-8", "ISO_8859-1",   \
                                          NULL, &dummy, NULL)      \
                             : NULL;                               \
       gchar* x ## _text = x ## _utf8                              \
@@ -892,6 +894,8 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       DEF (family);
       DEF (version);
       DEF (tag);
+
+#undef DEF
 
       msg = g_strdup_printf ("<nvt>"
                              "<oid>%s</oid>"
