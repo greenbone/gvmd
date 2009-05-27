@@ -72,10 +72,10 @@ add_library (manage manage.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 add_library (omp omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 add_library (otp otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${TASKS_CFLAG} ${GLIB_CFLAGS}")
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
 
 ## Program
 

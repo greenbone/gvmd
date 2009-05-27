@@ -478,13 +478,13 @@ add_server_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
  * @brief The current plugins, during reading of server plugin list.
  */
 /*@only@*/
-static plugins_t* current_plugins = NULL;
+static nvtis_t* current_plugins = NULL;
 
 /**
  * @brief The current plugin, during reading of server plugin list.
  */
 /*@only@*/
-static plugin_t* current_plugin = NULL;
+static nvti_t* current_plugin = NULL;
 
 
 /* Server plugin dependencies. */
@@ -839,8 +839,8 @@ parse_server_plugin_list_tags (char** messages)
       value = g_strdup (*messages);
       if (current_plugins && current_plugin)
         {
-          set_plugin_tags (current_plugin, value);
-          add_plugin (current_plugins, current_plugin);
+          nvti_set_tag (current_plugin, value);
+          add_nvti (current_plugins, current_plugin);
           current_plugin = NULL;
         }
       set_server_state (SERVER_PLUGIN_LIST_OID);
@@ -1668,7 +1668,7 @@ process_otp_server_input ()
                 {
                   if (strlen (field) == 0)
                     {
-                      free_plugins (server.plugins);
+                      free_nvtis (server.plugins);
                       server.plugins = current_plugins;
                       current_plugins = NULL;
                       set_server_state (SERVER_DONE);
@@ -1683,75 +1683,76 @@ process_otp_server_input ()
                       break;
                     }
                   assert (current_plugin == NULL);
-                  current_plugin = make_plugin ();
+                  current_plugin = nvti_new ();
                   if (current_plugin == NULL) abort (); // FIX
-                  set_plugin_oid (current_plugin, field);
+                  nvti_set_oid (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_NAME);
                   break;
                 }
               case SERVER_PLUGIN_LIST_NAME:
                 {
-                  set_plugin_name (current_plugin, field);
+                  nvti_set_name (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_CATEGORY);
                   break;
                 }
               case SERVER_PLUGIN_LIST_CATEGORY:
                 {
-                  set_plugin_category (current_plugin, field);
+                  // FIX parse category number from field
+                  nvti_set_category (current_plugin, 0);
                   set_server_state (SERVER_PLUGIN_LIST_COPYRIGHT);
                   break;
                 }
               case SERVER_PLUGIN_LIST_COPYRIGHT:
                 {
-                  set_plugin_copyright (current_plugin, field);
+                  nvti_set_copyright (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_DESCRIPTION);
                   break;
                 }
               case SERVER_PLUGIN_LIST_DESCRIPTION:
                 {
-                  set_plugin_description (current_plugin, field);
+                  nvti_set_description (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_SUMMARY);
                   break;
                 }
               case SERVER_PLUGIN_LIST_SUMMARY:
                 {
-                  set_plugin_summary (current_plugin, field);
+                  nvti_set_summary (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_FAMILY);
                   break;
                 }
               case SERVER_PLUGIN_LIST_FAMILY:
                 {
-                  set_plugin_family (current_plugin, field);
+                  nvti_set_family (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_PLUGIN_VERSION);
                   break;
                 }
               case SERVER_PLUGIN_LIST_PLUGIN_VERSION:
                 {
-                  set_plugin_version (current_plugin, field);
+                  nvti_set_version (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_CVE_ID);
                   break;
                 }
               case SERVER_PLUGIN_LIST_CVE_ID:
                 {
-                  set_plugin_cve_id (current_plugin, field);
+                  nvti_set_cve (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_BUGTRAQ_ID);
                   break;
                 }
               case SERVER_PLUGIN_LIST_BUGTRAQ_ID:
                 {
-                  set_plugin_bugtraq_id (current_plugin, field);
+                  nvti_set_bid (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_XREFS);
                   break;
                 }
               case SERVER_PLUGIN_LIST_XREFS:
                 {
-                  set_plugin_xrefs (current_plugin, field);
+                  nvti_set_xref (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_FPRS);
                   break;
                 }
               case SERVER_PLUGIN_LIST_FPRS:
                 {
-                  set_plugin_fingerprints (current_plugin, field);
+                  nvti_set_sign_key_ids (current_plugin, field);
                   set_server_state (SERVER_PLUGIN_LIST_TAGS);
                   switch (parse_server_plugin_list_tags (&messages))
                     {
@@ -1882,7 +1883,7 @@ process_otp_server_input ()
                      * FIX depends what server does on multiple requests
                      */
                     if (current_plugins == NULL)
-                      current_plugins = make_plugins ();
+                      current_plugins = make_nvtis ();
                     set_server_state (SERVER_PLUGIN_LIST_OID);
                   }
                 else if (strncasecmp ("PORT", field, 4) == 0)

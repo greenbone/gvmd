@@ -29,6 +29,8 @@
 #include "manage.h"
 #include <glib.h>
 
+#include <openvas/nvti.h>
+
 void
 init_otp_data ();
 
@@ -70,7 +72,7 @@ typedef struct
 {
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
-  plugins_t* plugins;                ///< Plugin meta-information.
+  nvtis_t* plugins;                  ///< Plugin meta-information.
   GHashTable* preferences;           ///< Server preference.
   GPtrArray* rules;                  ///< Server rules.
   int rules_size;                    ///< Number of rules.

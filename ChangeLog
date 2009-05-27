@@ -1,5 +1,31 @@
 2009-05-27  Matthew Mundell <mmundell@intevation.de>
 
+	Switch to libopenvas nvtis for plugin information.
+
+	* src/manage.c (find_plugin, free_plugin_for_hash_table)
+	(make_plugin, free_plugin, make_plugins, free_plugin, make_plugins)
+	(free_plugins, plugin_tags, plugins_size, add_plugin)
+	(plugin_oid, plugin_name, plugin_category, plugin_copyright)
+	(plugin_description, plugin_summary, plugin_family, plugin_version)
+	(plugin_cve_id, plugin_bugtraq_id, plugin_xrefs, plugin_fingerprints)
+	(set_plugin_oid, set_plugin_name, set_plugin_category)
+	(set_plugin_copyright, set_plugin_description, set_plugin_summary)
+	(set_plugin_family, set_plugin_version, set_plugin_cve_id)
+	(set_plugin_bugtraq_id, set_plugin_xrefs, set_plugin_fingerprints)
+	(set_plugin_tags): Remove.
+	* src/manage.h: Update headers.
+
+	* src/omp.c: Convert plugin-related calls into nvti equivalents.
+
+	* src/otp.h (server_t): Make plugins an nvtis_t.
+
+	* src/otp.c: Convert plugin-related calls into nvti equivalents.
+	(current_plugins, current_plugin): Convert types to nvti equivalents.
+
+	* src/CMakeLists.txt (omp, otp): Add openvas headers dir to compile flags.
+
+2009-05-27  Matthew Mundell <mmundell@intevation.de>
+
 	Implement OMP GET_NVT_FEED_DETAILS when called to return a specific NVT.
 
 	* src/manage.c (find_plugin): New function.

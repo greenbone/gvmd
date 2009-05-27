@@ -47,6 +47,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <openvas/nvti.h>
+
 #ifdef S_SPLINT_S
 #include "splint.h"
 #endif
@@ -854,16 +856,16 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
  *
  * @param[in]  key    The plugin OID.
  * @param[in]  value  The plugin.
- * @param[in]  dummy  Dummy variable, for plugins_find.
+ * @param[in]  dummy  Dummy variable, for nvtis_find.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
 send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
 {
-  plugin_t* plugin = (plugin_t*) plugin_gp;
+  nvti_t* plugin = (nvti_t*) plugin_gp;
   char* oid = (char*) oid_gp;
-  char* name = plugin_name (plugin);
+  char* name = nvti_name (plugin);
   int details = (int) details_gp;
   gchar* msg;
 
@@ -873,7 +875,7 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       gsize dummy;
 
 #define DEF(x)                                                    \
-      char* x = plugin_ ## x (plugin);                            \
+      char* x = nvti_ ## x (plugin);                              \
       /* FIX Temp hack. */                                        \
       gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
                                          "utf-8", "iso_8895-1",   \
@@ -889,12 +891,12 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       DEF (summary);
       DEF (family);
       DEF (version);
-      DEF (tags);
+      DEF (tag);
 
       msg = g_strdup_printf ("<nvt>"
                              "<oid>%s</oid>"
                              "<name>%s</name>"
-                             "<category>%s</category>"
+                             "<category>%i</category>"
                              "<copyright>%s</copyright>"
                              "<description>%s</description>"
                              "<summary>%s</summary>"
@@ -916,23 +918,23 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
                              "</nvt>",
                              oid,
                              name_text,
-                             plugin_category (plugin),
+                             nvti_category (plugin),
                              copyright_text,
                              description_text,
                              summary_text,
                              family_text,
                              version_text,
-                             plugin_cve_id (plugin),
-                             plugin_bugtraq_id (plugin),
-                             plugin_xrefs (plugin),
-                             plugin_fingerprints (plugin),
-                             tags_text);
+                             nvti_cve (plugin),
+                             nvti_bid (plugin),
+                             nvti_xref (plugin),
+                             nvti_sign_key_ids (plugin),
+                             tag_text);
       g_free (copyright_text);
       g_free (description_text);
       g_free (summary_text);
       g_free (family_text);
       g_free (version_text);
-      g_free (tags_text);
+      g_free (tag_text);
     }
   else
     msg = g_strdup_printf ("<nvt>"
@@ -1332,7 +1334,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
                                     "<status>" STATUS_OK "</status>");
             SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                     plugins_size (server.plugins));
+                                     nvtis_size (server.plugins));
             if (server.plugins_md5)
               {
                 SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
@@ -1340,7 +1342,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
                 SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
               }
-            if (plugins_find (server.plugins, send_plugin, (gpointer) 0))
+            if (nvtis_find (server.plugins, send_plugin, (gpointer) 0))
               {
                 error_send_to_client (error);
                 return;
@@ -1386,7 +1388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>");
             if (current_uuid)
               {
-                plugin_t* plugin = find_plugin (server.plugins, current_uuid);
+                nvti_t* plugin = find_nvti (server.plugins, current_uuid);
                 if (plugin)
                   {
                     SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_OK "</status>");
@@ -1402,7 +1404,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else
               {
                 SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                         plugins_size (server.plugins));
+                                         nvtis_size (server.plugins));
                 if (server.plugins_md5)
                   {
                     SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
@@ -1410,7 +1412,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
                     SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
                   }
-                if (plugins_find (server.plugins, send_plugin, (gpointer) 1))
+                if (nvtis_find (server.plugins, send_plugin, (gpointer) 1))
                   {
                     error_send_to_client (error);
                     return;
