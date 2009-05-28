@@ -136,9 +136,9 @@ main ()
   delete_task (&session, id);
   free (id);
 
-  /* Get all feed details, to get details of one NVT. */
+  /* Get summary of all NVTs, to get details of one NVT. */
 
-  if (send_to_manager (&session, "<get_nvt_feed_details/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -180,7 +180,6 @@ main ()
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-  if (entity) print_entity (stdout, entity);
 
   /* Compare to expected response. */
 
