@@ -181,6 +181,13 @@
  */
 #define MAX_CONNECTIONS 512
 
+/**
+ * @brief Maximum number of seconds spent trying to read the protocol.
+ */
+#ifndef READ_PROTOCOL_TIMEOUT
+#define READ_PROTOCOL_TIMEOUT 20
+#endif
+
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for `read'
 #endif
@@ -215,7 +222,8 @@ typedef enum
   PROTOCOL_OTP,
   PROTOCOL_OMP,
   PROTOCOL_CLOSE,
-  PROTOCOL_FAIL
+  PROTOCOL_FAIL,
+  PROTOCOL_TIMEOUT
 } protocol_read_t;
 
 /**
@@ -266,11 +274,16 @@ buffer_size_t from_server_end = 0;
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  client_socket   The socket connected to the client.
  *
- * @return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP or PROTOCOL_OMP.
+ * @return PROTOCOL_FAIL, PROTOCOL_CLOSE, PROTOCOL_OTP, PROTOCOL_OMP or
+ *         PROTOCOL_TIMEOUT.
  */
 protocol_read_t
 read_protocol (gnutls_session_t* client_session, int client_socket)
 {
+  protocol_read_t ret;
+  char* from_client_current;
+  time_t start_time;
+
   /* Turn on blocking. */
   // FIX get flags first
   if (fcntl (client_socket, F_SETFL, 0L) == -1)
@@ -280,76 +293,125 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
     }
 
   /* Read from the client, checking the protocol when a newline or return
-   * is read. */
-  protocol_read_t ret = PROTOCOL_FAIL;
-  char* from_client_current = from_client + from_client_end;
+   * is read.  Fail if reading the protocol takes too long. */
+  if (time (&start_time) == -1)
+    {
+      perror ("Failed to get current time");
+      return PROTOCOL_FAIL;
+    }
+  ret = PROTOCOL_FAIL;
+  from_client_current = from_client + from_client_end;
   while (from_client_end < FROM_BUFFER_SIZE)
     {
-      ssize_t count;
+      int select_ret;
+      int nfds;
+      fd_set readfds, exceptfds;
+      struct timeval timeout;
 
-      while (1)
+      FD_ZERO (&readfds);
+      FD_SET (manager_socket, &readfds);
+      FD_ZERO (&exceptfds);
+      FD_SET (manager_socket, &exceptfds);
+      nfds = manager_socket + 1;
+
+      timeout.tv_usec = 0;
+      timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (time (NULL) - start_time);
+      if (timeout.tv_sec <= 0)
         {
-          count = gnutls_record_recv (*client_session,
-                                      from_client + from_client_end,
-                                      FROM_BUFFER_SIZE
-                                      - from_client_end);
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try read again. */
-            continue;
-          if (count == GNUTLS_E_REHANDSHAKE)
-            /* Try again. TODO Rehandshake. */
-            continue;
+          ret = PROTOCOL_TIMEOUT;
           break;
         }
 
-      if (count < 0)
+      select_ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
+
+      if (select_ret == -1)
         {
-          if (gnutls_error_is_fatal (count) == 0
-              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
-                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+          perror ("Select (read_protocol) failed");
+          break;
+        }
+      if (select_ret > 0)
+        {
+          if (FD_ISSET (manager_socket, &exceptfds))
             {
-              int alert = gnutls_alert_get (*client_session);
-              fprintf (stderr, "TLS Alert %d: %s.\n",
-                       alert,
-                       gnutls_alert_get_name (alert));
+              fprintf (stderr, "Exception in select.\n");
+              break;
             }
-          fprintf (stderr, "Failed to read from client (read_protocol).\n");
-          gnutls_perror (count);
-          break;
-        }
-      if (count == 0)
-        {
-          /* End of file. */
-          ret = PROTOCOL_CLOSE;
-          break;
-        }
-      from_client_end += count;
+          if (FD_ISSET (manager_socket, &readfds))
+            {
+              ssize_t count;
+
+              while (1)
+                {
+
+                  count = gnutls_record_recv (*client_session,
+                                              from_client + from_client_end,
+                                              FROM_BUFFER_SIZE
+                                              - from_client_end);
+                  if (count == GNUTLS_E_INTERRUPTED)
+                    /* Interrupted, try read again. */
+                    continue;
+                  if (count == GNUTLS_E_REHANDSHAKE)
+                    /* Try again. TODO Rehandshake. */
+                    continue;
+                  break;
+                }
+
+              if (count < 0)
+                {
+                  if (gnutls_error_is_fatal (count) == 0
+                      && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                          || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+                    {
+                      int alert = gnutls_alert_get (*client_session);
+                      fprintf (stderr, "TLS Alert %d: %s.\n",
+                               alert,
+                               gnutls_alert_get_name (alert));
+                    }
+                  fprintf (stderr, "Failed to read from client (read_protocol).\n");
+                  gnutls_perror (count);
+                  break;
+                }
+              if (count == 0)
+                {
+                  /* End of file. */
+                  ret = PROTOCOL_CLOSE;
+                  break;
+                }
+              from_client_end += count;
 
 #if 0
-      /* Check for newline or return. */
-      from_client[from_client_end] = '\0';
-      if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
-        {
-          if (strstr (from_client, "< OTP/1.0 >"))
-            ret = PROTOCOL_OTP;
-          else
-            ret = PROTOCOL_OMP;
-          break;
-        }
+              /* Check for newline or return. */
+              from_client[from_client_end] = '\0';
+              if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
+                {
+                  if (strstr (from_client, "< OTP/1.0 >"))
+                    ret = PROTOCOL_OTP;
+                  else
+                    ret = PROTOCOL_OMP;
+                  break;
+                }
 #else
-      /* Check for ">".  FIX need a better check */
-      from_client[from_client_end] = '\0';
-      if (strchr (from_client_current, '>'))
-        {
-          if (strstr (from_client, "< OTP/1.0 >"))
-            ret = PROTOCOL_OTP;
-          else
-            ret = PROTOCOL_OMP;
-          break;
-        }
+              /* Check for ">".  FIX need a better check */
+              from_client[from_client_end] = '\0';
+              if (strchr (from_client_current, '>'))
+                {
+                  if (strstr (from_client, "< OTP/1.0 >"))
+                    ret = PROTOCOL_OTP;
+                  else
+                    ret = PROTOCOL_OMP;
+                  break;
+                }
 #endif
 
-      from_client_current += count;
+              from_client_current += count;
+            }
+        }
+
+      if ((time (NULL) - start_time) >= READ_PROTOCOL_TIMEOUT)
+        {
+          ret = PROTOCOL_TIMEOUT;
+          break;
+        }
     }
 
   // FIX use orig value
@@ -439,6 +501,8 @@ serve_client (int client_socket)
       case PROTOCOL_CLOSE:
         fprintf (stderr, "EOF while trying to read protocol.\n");
         goto fail;
+      case PROTOCOL_TIMEOUT:
+        break;
       default:
         fprintf (stderr, "Failed to determine protocol.\n");
     }

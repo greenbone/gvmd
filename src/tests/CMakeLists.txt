@@ -114,6 +114,15 @@ set_target_properties (strip_space_3 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLA
 set_target_properties (strip_space_3 PROPERTIES LINK_FLAGS "${GLIB_LDFLAGS}")
 ADD_TEST (strip_space_3 strip_space_3)
 
+## Tests of the manager
+
+add_executable (read_protocol_0 read_protocol_0.c)
+target_link_libraries (read_protocol_0 string)
+set_target_properties (read_protocol_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (read_protocol_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (read_protocol_0 common)
+ADD_TEST (read_protocol_0 read_protocol_0)
+
 ## Tests of OMP
 
 add_executable (omp_abort_task_0 omp_abort_task_0.c)

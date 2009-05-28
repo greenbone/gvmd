@@ -1,3 +1,19 @@
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
+	Timeout if reading the protocol takes too long.
+
+	* src/openvasmd.c (READ_PROTOCOL_TIMEOUT): New define.
+	(protocol_read_t): Add PROTOCOL_TIMEOUT.
+	(read_protocol): Timeout if reading takes PROTOCOL_TIMEOUT or longer.
+	(serve_client): Handle read_protocol timeout.
+
+	* src/tests/common.c (setup_test): New function.
+	* src/tests/common.h (setup_test): New header.
+
+	* src/tests/CMakeLists.txt: Add read_protocol_0.c.
+
+	* src/tests/read_protocol_0.c: New file.
+
 2009-05-27  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (send_plugin): Correct g_convert charset names.

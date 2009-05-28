@@ -87,6 +87,7 @@ int verbose = 0;
 #include <glib.h>             /* For XML parsing. */
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -283,7 +284,7 @@ close_manager_connection (int socket, gnutls_session_t session)
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  string   String to send.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 if manager closed connection, -1 on error.
  */
 int
 send_to_manager (gnutls_session_t* session, const char* string)
@@ -294,6 +295,7 @@ send_to_manager (gnutls_session_t* session, const char* string)
       ssize_t count;
       tracef ("send %i from %.*s[...]\n", left, left < 30 ? left : 30, string);
       count = gnutls_record_send (*session, string, left);
+      tracef ("   count: %i\n", count);
       if (count < 0)
         {
           if (count == GNUTLS_E_INTERRUPTED)
@@ -308,6 +310,12 @@ send_to_manager (gnutls_session_t* session, const char* string)
           fprintf (stderr, "Failed to write to manager.\n");
           gnutls_perror (count);
           return -1;
+        }
+      if (count == 0)
+        {
+          /* Manager closed connection. */
+          tracef ("=  manager closed\n");
+          return 1;
         }
       tracef ("=> %.*s\n", count, string);
       string += count;
@@ -324,7 +332,7 @@ send_to_manager (gnutls_session_t* session, const char* string)
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  format   printf-style format string for message.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 if manager closed connection, -1 on error.
  */
 int
 sendf_to_manager (gnutls_session_t* session, const char* format, ...)
@@ -857,7 +865,7 @@ task_status (entity_t response)
  * @param[in]  username  Username.
  * @param[in]  password  Password.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 if manager closed connection, -1 on error.
  */
 int
 authenticate (gnutls_session_t* session,
@@ -872,7 +880,7 @@ authenticate (gnutls_session_t* session,
                                 password);
   int ret = send_to_manager (session, msg);
   g_free (msg);
-  if (ret) return -1;
+  if (ret) return ret;
 
 #if 1
   return 0;
@@ -902,7 +910,7 @@ authenticate (gnutls_session_t* session,
  *
  * @param[in]  session   Pointer to GNUTLS session.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 if manager closed connection, -1 on error.
  */
 int
 env_authenticate (gnutls_session_t* session)
@@ -1311,4 +1319,15 @@ delete_task (gnutls_session_t* session, char* id)
   free_entity (entity);
   if (first == '2') return 0;
   return -1;
+}
+
+
+/* Setup. */
+
+void
+setup_test ()
+{
+  char* env_verbose = getenv ("OPENVAS_TEST_VERBOSE");
+  if (env_verbose) verbose = strcmp (env_verbose, "0");
+  signal (SIGPIPE, SIG_IGN);
 }
