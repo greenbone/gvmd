@@ -1,6 +1,6 @@
-/* Test 0 of OMP OMP_VERSION.
+/* Test 0 of OMP GET_VERSION.
  * $Id$
- * Description: Test the OMP OMP_VERSION command.
+ * Description: Test the OMP GET_VERSION command.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -50,7 +50,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<omp_version/>\n") == -1)
+  if (send_to_manager (&session, "<get_version/>\n") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -68,7 +68,7 @@ main ()
 
   /* Compare. */
 
-  entity_t expected = add_entity (NULL, "omp_version_response", NULL);
+  entity_t expected = add_entity (NULL, "get_version_response", NULL);
   add_entity (&expected->entities, "status", "200");
   entity_t version = add_entity (&expected->entities, "version", "1.0");
   add_entity (&version->entities, "preferred", NULL);

@@ -79,7 +79,7 @@ static char* help_text = "\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    NEW_TASK               Create a new task.\n"
-"    OMP_VERSION            Get the OpenVAS Manager Protocol version.\n"
+"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    START_TASK             Manually start an existing task.\n"
 "    STATUS                 Get task status information.\n"
 "\n"
@@ -387,7 +387,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (current_client_task == (task_t) NULL) abort (); // FIX
             set_client_state (CLIENT_NEW_TASK);
           }
-        else if (strncasecmp ("OMP_VERSION", element_name, 11) == 0)
+        else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
           set_client_state (CLIENT_VERSION);
         else if (strncasecmp ("START_TASK", element_name, 10) == 0)
           {
@@ -1584,10 +1584,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_VERSION:
-        SEND_TO_CLIENT_OR_FAIL ("<omp_version_response>"
+        SEND_TO_CLIENT_OR_FAIL ("<get_version_response>"
                                 "<status>" STATUS_OK "</status>"
                                 "<version><preferred/>1.0</version>"
-                                "</omp_version_response>");
+                                "</get_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

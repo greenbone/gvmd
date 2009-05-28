@@ -1,5 +1,18 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	Rename OMP OMP_VERSION to GET_VERSION.
+
+	* src/omp.c (help_text, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Rename OMP_VERSION to GET_VERSION.
+
+	* src/tests/CMakeLists.txt: Rename omp_version_0 to omp_get_version_0.
+
+	* src/tests/omp_version_0.c: Remove.  Rename to omp_get_version.c.
+	* src/tests/omp_get_version.c: New file.  Was omp_version.c.  Adjust for
+	new name.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase, for now.
 
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
