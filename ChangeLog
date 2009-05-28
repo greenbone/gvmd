@@ -1,5 +1,11 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (create_task): Rename NEW_TASK call to CREATE_TASK.
+	(wait_for_task_start, wait_for_task_end): Rename STATUS call to
+	GET_STATUS.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	Rename OMP STATUS to GET_STATUS.
 
 	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)

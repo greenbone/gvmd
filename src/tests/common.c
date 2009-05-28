@@ -957,11 +957,11 @@ create_task (gnutls_session_t* session,
   /* Create the OMP request. */
 
   gchar* new_task_request;
-  new_task_request = g_strdup_printf ("<new_task>"
+  new_task_request = g_strdup_printf ("<create_task>"
                                       "<task_file>%s</task_file>"
                                       "<identifier>%s</identifier>"
                                       "<comment>%s</comment>"
-                                      "</new_task>",
+                                      "</create_task>",
                                       new_task_file,
                                       identifier,
                                       comment);
@@ -1091,7 +1091,7 @@ wait_for_task_start (gnutls_session_t* session,
 {
   while (1)
     {
-      if (sendf_to_manager (session, "<status/>") == -1)
+      if (sendf_to_manager (session, "<get_status/>") == -1)
         return -1;
 
       /* Read the response. */
@@ -1193,7 +1193,7 @@ wait_for_task_end (gnutls_session_t* session,
   tracef ("wait_for_task_end\n");
   while (1)
     {
-      if (sendf_to_manager (session, "<status/>") == -1)
+      if (sendf_to_manager (session, "<get_status/>") == -1)
         return -1;
 
       /* Read the response. */
