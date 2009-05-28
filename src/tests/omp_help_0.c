@@ -35,24 +35,22 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    CREATE_TASK            Create a new task.\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_NVT_FEED_ALL       * Get IDs and names of all available NVTs.\n"
-"    GET_NVT_FEED_CHECKSUM  * Get checksum for entire NVT collection.\n"
-"    GET_NVT_FEED_DETAILS   * Get all details for all available NVTs.\n"
+"    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
+"    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
+"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
+"    GET_STATUS             Get task status information.\n"
+"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
-"    NEW_TASK               Create a new task.\n"
-"    OMP_VERSION            Get the OpenVAS Manager Protocol version.\n"
-"    START_TASK             Manually start an existing task.\n"
-"    STATUS                 Get task status information.\n"
-"\n"
-" * Dummy implementation.\n";
+"    START_TASK             Manually start an existing task.\n";
 
 int
 main ()

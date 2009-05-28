@@ -66,22 +66,22 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    CREATE_TASK            Create a new task.\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
-"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
+"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
+"    GET_STATUS             Get task status information.\n"
+"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
-"    CREATE_TASK            Create a new task.\n"
-"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
-"    START_TASK             Manually start an existing task.\n"
-"    GET_STATUS             Get task status information.\n";
+"    START_TASK             Manually start an existing task.\n";
 
 
 /* Status codes. */
@@ -177,39 +177,39 @@ typedef enum
   CLIENT_ABORT_TASK_CRITERION,
 #endif
   CLIENT_AUTHENTICATE,
+  CLIENT_CREATE_TASK,
+  CLIENT_CREATE_TASK_COMMENT,
+  CLIENT_CREATE_TASK_IDENTIFIER,
+  CLIENT_CREATE_TASK_TASK_FILE,
   CLIENT_CREDENTIALS,
-  CLIENT_CREDENTIALS_USERNAME,
   CLIENT_CREDENTIALS_PASSWORD,
+  CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_ID,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
-  CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_DETAILS_OID,
+  CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
-  CLIENT_HELP,
-  CLIENT_MODIFY_REPORT,
-  CLIENT_MODIFY_REPORT_REPORT_ID,
-  CLIENT_MODIFY_REPORT_PARAMETER,
-  CLIENT_MODIFY_REPORT_VALUE,
-  CLIENT_MODIFY_TASK,
-  CLIENT_MODIFY_TASK_TASK_ID,
-  CLIENT_MODIFY_TASK_PARAMETER,
-  CLIENT_MODIFY_TASK_VALUE,
-  CLIENT_CREATE_TASK,
-  CLIENT_CREATE_TASK_COMMENT,
-  CLIENT_CREATE_TASK_IDENTIFIER,
-  CLIENT_CREATE_TASK_TASK_FILE,
-  CLIENT_START_TASK,
-  CLIENT_START_TASK_TASK_ID,
   CLIENT_GET_STATUS,
   CLIENT_GET_STATUS_TASK_ID,
+  CLIENT_HELP,
+  CLIENT_MODIFY_REPORT,
+  CLIENT_MODIFY_REPORT_PARAMETER,
+  CLIENT_MODIFY_REPORT_REPORT_ID,
+  CLIENT_MODIFY_REPORT_VALUE,
+  CLIENT_MODIFY_TASK,
+  CLIENT_MODIFY_TASK_PARAMETER,
+  CLIENT_MODIFY_TASK_TASK_ID,
+  CLIENT_MODIFY_TASK_VALUE,
+  CLIENT_START_TASK,
+  CLIENT_START_TASK_TASK_ID,
   CLIENT_VERSION
 } client_state_t;
 
