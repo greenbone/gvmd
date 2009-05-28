@@ -1,5 +1,9 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase, for now.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_nvt_feed_details_4.c: Get ID via get_nvt_feed_all
 	instead of get_nvt_feed_details.  Remove printing.
 
