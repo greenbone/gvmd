@@ -1,6 +1,6 @@
-/* Test 4 of OMP GET_NVT_FEED_DETAILS.
+/* Test 4 of OMP GET_NVT_DETAILS.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_DETAILS with a known ID.
+ * Description: Test the OMP GET_NVT_DETAILS with a known ID.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -55,7 +55,7 @@ main ()
 
   /* Request feed information once, so manager requests it from server. */
 
-  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -72,8 +72,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_get_nvt_feed_details_1",
-                                "Test omp_get_nvt_feed_details_1 task.",
+                                "Task for omp_get_nvt_details_1",
+                                "Test omp_get_nvt_details_1 task.",
                                 &id))
     {
       close_manager_connection (socket, session);
@@ -138,7 +138,7 @@ main ()
 
   /* Get summary of all NVTs, to get details of one NVT. */
 
-  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -161,9 +161,9 @@ main ()
   /* Request details of the NVT. */
 
   if (sendf_to_manager (&session,
-                        "<get_nvt_feed_details>"
+                        "<get_nvt_details>"
                         "<oid>%s</oid>"
-                        "</get_nvt_feed_details>",
+                        "</get_nvt_details>",
                         entity_text (nvt_id))
       == -1)
     {
@@ -184,7 +184,7 @@ main ()
   /* Compare to expected response. */
 
   if (entity2 == NULL
-      || strcmp (entity_name (entity2), "get_nvt_feed_details_response")
+      || strcmp (entity_name (entity2), "get_nvt_details_response")
       || (status = entity_child (entity2, "status")) == NULL
       || strcmp (entity_text (status), "200")
       || compare_entities (entity_child (entity, "nvt"), nvt))

@@ -71,7 +71,7 @@ static char* help_text = "\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
-"    GET_NVT_FEED_DETAILS   Get all details for all available NVTs.\n"
+"    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
@@ -187,8 +187,8 @@ typedef enum
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_FEED_CHECKSUM,
-  CLIENT_GET_NVT_FEED_DETAILS,
-  CLIENT_GET_NVT_FEED_DETAILS_OID,
+  CLIENT_GET_NVT_DETAILS,
+  CLIENT_GET_NVT_DETAILS_OID,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_ID,
@@ -355,8 +355,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strncasecmp ("GET_NVT_FEED_CHECKSUM", element_name, 21) == 0)
           set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
-        else if (strncasecmp ("GET_NVT_FEED_DETAILS", element_name, 20) == 0)
-          set_client_state (CLIENT_GET_NVT_FEED_DETAILS);
+        else if (strncasecmp ("GET_NVT_DETAILS", element_name, 20) == 0)
+          set_client_state (CLIENT_GET_NVT_DETAILS);
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
@@ -548,14 +548,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_GET_NVT_FEED_DETAILS:
+      case CLIENT_GET_NVT_DETAILS:
         if (strncasecmp ("OID", element_name, 3) == 0)
-          set_client_state (CLIENT_GET_NVT_FEED_DETAILS_OID);
+          set_client_state (CLIENT_GET_NVT_DETAILS_OID);
         else
           {
-            if (send_to_client ("<get_nvt_feed_details>"
+            if (send_to_client ("<get_nvt_details>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_nvt_feed_details>"))
+                                "</get_nvt_details>"))
               {
                 error_send_to_client (error);
                 return;
@@ -1384,10 +1384,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_NVT_FEED_DETAILS:
+      case CLIENT_GET_NVT_DETAILS:
         if (server.plugins)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response>");
             if (current_uuid)
               {
                 nvti_t* plugin = find_nvti (server.plugins, current_uuid);
@@ -1420,13 +1420,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_details_response>");
+            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_details_response>"
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response>"
                                     "<status>" STATUS_SERVICE_DOWN "</status>"
-                                    "</get_nvt_feed_details_response>");
+                                    "</get_nvt_details_response>");
             /* \todo TODO Sort out a cache for this. */
             if (request_plugin_list ())
               {
@@ -1438,9 +1438,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_GET_NVT_FEED_DETAILS_OID:
+      case CLIENT_GET_NVT_DETAILS_OID:
         assert (strncasecmp ("OID", element_name, 3) == 0);
-        set_client_state (CLIENT_GET_NVT_FEED_DETAILS);
+        set_client_state (CLIENT_GET_NVT_DETAILS);
         break;
 
       case CLIENT_DELETE_REPORT:
@@ -2060,7 +2060,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_REPORT_ID:
       case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_GET_REPORT_ID:
-      case CLIENT_GET_NVT_FEED_DETAILS_OID:
+      case CLIENT_GET_NVT_DETAILS_OID:
       case CLIENT_MODIFY_REPORT_REPORT_ID:
       case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:

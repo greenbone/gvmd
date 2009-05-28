@@ -1,6 +1,6 @@
-/* Test 3 of OMP GET_NVT_FEED_DETAILS.
+/* Test 0 of OMP GET_NVT_DETAILS.
  * $Id$
- * Description: Test OMP GET_NVT_FEED_DETAILS with a bogus ID.
+ * Description: Test the OMP GET_NVT_DETAILS command before a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -51,11 +51,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session,
-                       "<get_nvt_feed_details>"
-                       "<oid>-*_*-</oid>"
-                       "</get_nvt_feed_details>")
-      == -1)
+  if (send_to_manager (&session, "<get_nvt_details/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -68,8 +64,8 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_nvt_feed_details_response", NULL);
-  add_entity (&expected->entities, "status", "404");
+  entity_t expected = add_entity (NULL, "get_nvt_details_response", NULL);
+  add_entity (&expected->entities, "status", "503");
 
   if (compare_entities (entity, expected))
     {

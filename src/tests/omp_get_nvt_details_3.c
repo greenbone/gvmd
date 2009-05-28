@@ -1,6 +1,6 @@
-/* Test 2 of OMP GET_NVT_FEED_DETAILS.
+/* Test 3 of OMP GET_NVT_DETAILS.
  * $Id$
- * Description: Test OMP GET_NVT_FEED_DETAILS with a missing ID.
+ * Description: Test OMP GET_NVT_DETAILS with a bogus ID.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -40,8 +40,6 @@ main ()
   int socket;
   gnutls_session_t session;
 
-  verbose = 1;
-
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
@@ -54,9 +52,9 @@ main ()
     }
 
   if (send_to_manager (&session,
-                       "<get_nvt_feed_details>"
-                       "<oid>0.0.0.0.0.0.0.0.0.0</oid>"
-                       "</get_nvt_feed_details>")
+                       "<get_nvt_details>"
+                       "<oid>-*_*-</oid>"
+                       "</get_nvt_details>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -70,7 +68,7 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_nvt_feed_details_response", NULL);
+  entity_t expected = add_entity (NULL, "get_nvt_details_response", NULL);
   add_entity (&expected->entities, "status", "404");
 
   if (compare_entities (entity, expected))
