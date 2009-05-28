@@ -307,12 +307,12 @@ set_target_properties (omp_modify_task_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} $
 target_link_libraries (omp_modify_task_1 common)
 ADD_TEST (omp_modify_task_1 omp_modify_task_1)
 
-add_executable (omp_new_task_0 omp_new_task_0.c)
-target_link_libraries (omp_new_task_0 string)
-set_target_properties (omp_new_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
-set_target_properties (omp_new_task_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
-target_link_libraries (omp_new_task_0 common)
-ADD_TEST (omp_new_task_0 omp_new_task_0)
+add_executable (omp_create_task_0 omp_create_task_0.c)
+target_link_libraries (omp_create_task_0 string)
+set_target_properties (omp_create_task_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_create_task_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_create_task_0 common)
+ADD_TEST (omp_create_task_0 omp_create_task_0)
 
 add_executable (omp_start_task_0 omp_start_task_0.c)
 target_link_libraries (omp_start_task_0 string)

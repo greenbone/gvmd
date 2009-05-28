@@ -1,6 +1,6 @@
-/* Test 0 of OMP NEW_TASK.
+/* Test 0 of OMP CREATE_TASK.
  * $Id$
- * Description: Test the OMP NEW_TASK command.
+ * Description: Test the OMP CREATE_TASK command.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -50,11 +50,11 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<new_task>"
+  if (send_to_manager (&session, "<create_task>"
                                  "<task_file>YmFzZTY0IHRleHQ=</task_file>"
-                                 "<identifier>omp_new_task_0 task</identifier>"
-                                 "<comment>Task for omp_new_task_0.</comment>"
-                                 "</new_task>")
+                                 "<identifier>omp_create_task_0 task</identifier>"
+                                 "<comment>Task for omp_create_task_0.</comment>"
+                                 "</create_task>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -80,7 +80,7 @@ main ()
 
   /* Compare. */
 
-  entity_t expected = add_entity (NULL, "new_task_response", NULL);
+  entity_t expected = add_entity (NULL, "create_task_response", NULL);
   add_entity (&expected->entities, "status", "201");
   add_entity (&expected->entities, "task_id", entity_text (id_entity));
 

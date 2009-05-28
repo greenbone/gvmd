@@ -78,7 +78,7 @@ static char* help_text = "\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
-"    NEW_TASK               Create a new task.\n"
+"    CREATE_TASK            Create a new task.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    START_TASK             Manually start an existing task.\n"
 "    STATUS                 Get task status information.\n";
@@ -126,7 +126,7 @@ buffer_size_t to_client_start = 0;
 buffer_size_t to_client_end = 0;
 
 /**
- * @brief Current client task during OMP commands like NEW_TASK and MODIFY_TASK.
+ * @brief Current client task during commands like CREATE_TASK and MODIFY_TASK.
  */
 /*@null@*/ /*@dependent@*/
 static task_t current_client_task = (task_t) NULL;
@@ -202,10 +202,10 @@ typedef enum
   CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_VALUE,
-  CLIENT_NEW_TASK,
-  CLIENT_NEW_TASK_COMMENT,
-  CLIENT_NEW_TASK_IDENTIFIER,
-  CLIENT_NEW_TASK_TASK_FILE,
+  CLIENT_CREATE_TASK,
+  CLIENT_CREATE_TASK_COMMENT,
+  CLIENT_CREATE_TASK_IDENTIFIER,
+  CLIENT_CREATE_TASK_TASK_FILE,
   CLIENT_START_TASK,
   CLIENT_START_TASK_TASK_ID,
   CLIENT_STATUS,
@@ -378,12 +378,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_text (&current_uuid, "", 0);
             set_client_state (CLIENT_MODIFY_TASK);
           }
-        else if (strncasecmp ("NEW_TASK", element_name, 8) == 0)
+        else if (strncasecmp ("CREATE_TASK", element_name, 11) == 0)
           {
             assert (current_client_task == (task_t) NULL);
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == (task_t) NULL) abort (); // FIX
-            set_client_state (CLIENT_NEW_TASK);
+            set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
           set_client_state (CLIENT_VERSION);
@@ -711,18 +711,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_NEW_TASK:
+      case CLIENT_CREATE_TASK:
         if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
-          set_client_state (CLIENT_NEW_TASK_TASK_FILE);
+          set_client_state (CLIENT_CREATE_TASK_TASK_FILE);
         else if (strncasecmp ("IDENTIFIER", element_name, 10) == 0)
-          set_client_state (CLIENT_NEW_TASK_IDENTIFIER);
+          set_client_state (CLIENT_CREATE_TASK_IDENTIFIER);
         else if (strncasecmp ("COMMENT", element_name, 7) == 0)
-          set_client_state (CLIENT_NEW_TASK_COMMENT);
+          set_client_state (CLIENT_CREATE_TASK_COMMENT);
         else
           {
-            if (send_to_client ("<new_task_response>"
+            if (send_to_client ("<create_task_response>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</new_task_response>"))
+                                "</create_task_response>"))
               {
                 error_send_to_client (error);
                 return;
@@ -1758,11 +1758,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_TASK);
         break;
 
-      case CLIENT_NEW_TASK:
+      case CLIENT_CREATE_TASK:
         {
           char* tsk_uuid;
 
-          assert (strncasecmp ("NEW_TASK", element_name, 7) == 0);
+          assert (strncasecmp ("CREATE_TASK", element_name, 11) == 0);
           assert (current_client_task != (task_t) NULL);
 
           // FIX if all rqrd fields given then ok, else respond fail
@@ -1770,16 +1770,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           //       eg on err half task could be saved (or saved with base64 file)
 
           if (task_uuid (current_client_task, &tsk_uuid))
-            SEND_TO_CLIENT_OR_FAIL ("<new_task_response>"
+            SEND_TO_CLIENT_OR_FAIL ("<create_task_response>"
                                     "<status>" STATUS_ERROR_MISSING "</status>"
-                                    "</new_task_response>");
+                                    "</create_task_response>");
           else
             {
               gchar* msg;
-              msg = g_strdup_printf ("<new_task_response>"
+              msg = g_strdup_printf ("<create_task_response>"
                                      "<status>" STATUS_OK_CREATED "</status>"
                                      "<task_id>%s</task_id>"
-                                     "</new_task_response>",
+                                     "</create_task_response>",
                                      tsk_uuid);
               free (tsk_uuid);
               if (send_to_client (msg))
@@ -1794,15 +1794,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_NEW_TASK_COMMENT:
+      case CLIENT_CREATE_TASK_COMMENT:
         assert (strncasecmp ("COMMENT", element_name, 12) == 0);
-        set_client_state (CLIENT_NEW_TASK);
+        set_client_state (CLIENT_CREATE_TASK);
         break;
-      case CLIENT_NEW_TASK_IDENTIFIER:
+      case CLIENT_CREATE_TASK_IDENTIFIER:
         assert (strncasecmp ("IDENTIFIER", element_name, 10) == 0);
-        set_client_state (CLIENT_NEW_TASK);
+        set_client_state (CLIENT_CREATE_TASK);
         break;
-      case CLIENT_NEW_TASK_TASK_FILE:
+      case CLIENT_CREATE_TASK_TASK_FILE:
         assert (strncasecmp ("TASK_FILE", element_name, 9) == 0);
         if (current_client_task)
           {
@@ -1812,7 +1812,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             out = g_base64_decode (description, &out_len);
             free (description);
             set_task_description (current_client_task, (char*) out, out_len);
-            set_client_state (CLIENT_NEW_TASK);
+            set_client_state (CLIENT_CREATE_TASK);
           }
         break;
 
@@ -2042,13 +2042,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
-      case CLIENT_NEW_TASK_COMMENT:
+      case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (current_client_task, text, text_len);
         break;
-      case CLIENT_NEW_TASK_IDENTIFIER:
+      case CLIENT_CREATE_TASK_IDENTIFIER:
         append_to_task_identifier (current_client_task, text, text_len);
         break;
-      case CLIENT_NEW_TASK_TASK_FILE:
+      case CLIENT_CREATE_TASK_TASK_FILE:
         /* Append the text to the task description. */
         if (add_task_description_line (current_client_task,
                                        text,
