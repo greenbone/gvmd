@@ -81,9 +81,7 @@ static char* help_text = "\n"
 "    NEW_TASK               Create a new task.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    START_TASK             Manually start an existing task.\n"
-"    STATUS                 Get task status information.\n"
-"\n"
-" * Dummy implementation.\n";
+"    STATUS                 Get task status information.\n";
 
 
 /* Status codes. */

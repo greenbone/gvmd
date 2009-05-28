@@ -1,5 +1,9 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (help_text): Remove dummy implementation key.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	Rename OMP OMP_VERSION to GET_VERSION.
 
 	* src/omp.c (help_text, omp_xml_handle_start_element)
