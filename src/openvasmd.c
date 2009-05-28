@@ -309,10 +309,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       struct timeval timeout;
 
       FD_ZERO (&readfds);
-      FD_SET (manager_socket, &readfds);
+      FD_SET (client_socket, &readfds);
       FD_ZERO (&exceptfds);
-      FD_SET (manager_socket, &exceptfds);
-      nfds = manager_socket + 1;
+      FD_SET (client_socket, &exceptfds);
+      nfds = client_socket + 1;
 
       timeout.tv_usec = 0;
       timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (time (NULL) - start_time);
@@ -331,12 +331,12 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
         }
       if (select_ret > 0)
         {
-          if (FD_ISSET (manager_socket, &exceptfds))
+          if (FD_ISSET (client_socket, &exceptfds))
             {
               fprintf (stderr, "Exception in select.\n");
               break;
             }
-          if (FD_ISSET (manager_socket, &readfds))
+          if (FD_ISSET (client_socket, &readfds))
             {
               ssize_t count;
 
