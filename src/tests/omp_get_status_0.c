@@ -1,6 +1,6 @@
-/* Test 0 of OMP STATUS.
+/* Test 0 of OMP GET_STATUS.
  * $Id$
- * Description: Test the OMP <status/> command.
+ * Description: Test the OMP <get_status/> command.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -49,8 +49,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_empty_rc",
-                                "Test omp_status_0 task",
-                                "Task for manager test omp_status_0.",
+                                "Test omp_get_status_0 task",
+                                "Task for manager test omp_get_status_0.",
                                 &id))
     goto fail;
 
@@ -64,7 +64,7 @@ main ()
   if (env_authenticate (&session)) goto delete_fail;
 #endif
 
-  if (send_to_manager (&session, "<status/>") == -1)
+  if (send_to_manager (&session, "<get_status/>") == -1)
     goto delete_fail;
 
   /* Read the response. */
@@ -74,7 +74,7 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "status_response", NULL);
+  entity_t expected = add_entity (NULL, "get_status_response", NULL);
   add_entity (&expected->entities, "status", "200");
   add_entity (&expected->entities, "task_count", "1");
   entity_t task = add_entity (&expected->entities, "task", NULL);

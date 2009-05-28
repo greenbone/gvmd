@@ -101,9 +101,9 @@ main ()
   /* Check the status of the task. */
 
   if (sendf_to_manager (&session,
-                        "<status>"
+                        "<get_status>"
                         "<task_id>%s</task_id>"
-                        "</status>",
+                        "</get_status>",
                         id)
       == -1)
     {

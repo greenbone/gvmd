@@ -1,6 +1,6 @@
-/* Test 3 of OMP STATUS.
+/* Test 1 of OMP GET_STATUS.
  * $Id$
- * Description: Test OMP <status/>, waiting for the task to start.
+ * Description: Test the OMP GET_STATUS command on a running task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -25,6 +25,7 @@
 
 #define TRACE 1
 
+#include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,72 +46,90 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session)) goto fail;
+  if (env_authenticate (&session))
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Task for omp_status_3",
-                                "Test omp_status_3 task.",
+                                "new_task_empty_rc",
+                                "Task for omp_get_status_1",
+                                "Test omp_get_status_1 task.",
                                 &id))
-    goto fail;
+    {
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
 
   /* Start the task. */
 
-  if (start_task (&session, id)) goto delete_fail;
+  if (start_task (&session, id))
+    {
+      delete_task (&session, id);
+      close_manager_connection (socket, session);
+      free (id);
+      return EXIT_FAILURE;
+    }
 
   /* Wait for the task to start on the server. */
 
   if (wait_for_task_start (&session, id))
     {
-      goto delete_fail;
+      delete_task (&session, id);
+      close_manager_connection (socket, session);
+      free (id);
+      return EXIT_FAILURE;
     }
 
-  /* Request the status. */
+  /* Request the task status. */
 
-  if (send_to_manager (&session, "<status/>") == -1) goto delete_fail;
+#if 0
+  if (env_authenticate (&session))
+    {
+      delete_task (&session, id);
+      close_manager_connection (socket, session);
+      free (id);
+      return EXIT_FAILURE;
+    }
+#endif
+
+  if (sendf_to_manager (&session,
+                        "<get_status><task_id>%s</task_id></get_status>",
+                        id)
+      == -1)
+    {
+      delete_task (&session, id);
+      close_manager_connection (socket, session);
+      free (id);
+      return EXIT_FAILURE;
+    }
 
   /* Read the response. */
 
   entity_t entity = NULL;
-  if (read_entity (&session, &entity))
-    {
-      fprintf (stderr, "Failed to read response.\n");
-      goto delete_fail;
-    }
-  if (entity) print_entity (stdout, entity);
+  read_entity (&session, &entity);
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "status_response", NULL);
+  entity_t expected = add_entity (NULL, "get_status_response", NULL);
   add_entity (&expected->entities, "status", "200");
-  add_entity (&expected->entities, "task_count", "1");
-  entity_t task = add_entity (&expected->entities, "task", NULL);
-  add_entity (&task->entities, "task_id", "0");
-  add_entity (&task->entities, "identifier", "Simple scan");
-  add_entity (&task->entities, "status", "Running");
-  entity_t messages = add_entity (&task->entities, "messages", "");
-  add_entity (&messages->entities, "debug", "0");
-  add_entity (&messages->entities, "hole", "0");
-  add_entity (&messages->entities, "info", "0");
-  add_entity (&messages->entities, "log", "0");
-  add_entity (&messages->entities, "warning", "0");
+  add_entity (&expected->entities, "report_count", "0");
 
   if (compare_entities (entity, expected))
     {
       free_entity (entity);
       free_entity (expected);
- delete_fail:
       delete_task (&session, id);
-      free (id);
- fail:
       close_manager_connection (socket, session);
+      free (id);
       return EXIT_FAILURE;
     }
 
   free_entity (entity);
   free_entity (expected);
   delete_task (&session, id);
-  free (id);
   close_manager_connection (socket, session);
+  free (id);
   return EXIT_SUCCESS;
 }

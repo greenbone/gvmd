@@ -1,5 +1,44 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	Rename OMP STATUS to GET_STATUS.
+
+	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Rename STATUS to
+	GET_STATUS.
+
+	* src/tests/CMakeLists.txt: Rename tests to match new command name.
+
+	* src/tests/omp_status_0.c: Remove.  Rename to omp_get_status_0.c.
+	* src/tests/omp_get_status_0.c: New file.  Was omp_status_0.c.  Adjust for
+	new name.
+
+	* src/tests/omp_status_1.c: Remove.  Rename to omp_get_status_0.c.
+	* src/tests/omp_get_status_1.c: New file.  Was omp_status_0.c.  Adjust for
+	new name.
+
+	* src/tests/omp_status_2.c: Remove.  Rename to omp_get_status_2.c.
+	* src/tests/omp_get_status_2.c: New file.  Was omp_status_2.c.  Adjust for
+	new name.
+
+	* src/tests/omp_status_3.c: Remove.  Rename to omp_get_status_3.c.
+	* src/tests/omp_get_status_3.c: New file.  Was omp_status_3.c.  Adjust for
+	new name.
+
+	* src/tests/omp_status_4.c: Remove.  Rename to omp_get_status_4.c.
+	* src/tests/omp_get_status_4.c: New file.  Was omp_status_4.c.  Adjust for
+	new name.
+
+	* src/tests/omp_get_report_0.c, src/tests/omp_delete_report_0.c,
+	src/tests/omp_get_preferences_1.c, src/tests/omp_modify_task_1.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_get_nvt_details_4.c,
+	src/tests/omp_get_rules_1.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_delete_task_2.c, src/tests/omp_get_dependencies_1.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_details_1.c, src/tests/omp_get_nvt_all_1.c,
+	src/tests/omp_modify_report_0.c: Rename all STATUS calls to GET_STATUS.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	Rename OMP GET_NVT_FEED_DETAILS to GET_NVT_DETAILS.
 
 	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)

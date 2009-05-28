@@ -1,6 +1,6 @@
-/* Test 1 of OMP STATUS.
+/* Test 2 of OMP GET_STATUS.
  * $Id$
- * Description: Test the OMP STATUS command on a running task.
+ * Description: Test the OMP GET_STATUS command on a running task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -53,9 +53,9 @@ main ()
     }
 
   if (create_task_from_rc_file (&session,
-                                "new_task_empty_rc",
-                                "Task for omp_status_1",
-                                "Test omp_status_1 task.",
+                                "new_task_small_rc",
+                                "Task for omp_get_status_2",
+                                "Test omp_get_status_2 task.",
                                 &id))
     {
       close_manager_connection (socket, session);
@@ -95,7 +95,7 @@ main ()
 #endif
 
   if (sendf_to_manager (&session,
-                        "<status><task_id>%s</task_id></status>",
+                        "<get_status><task_id>%s</task_id></get_status>",
                         id)
       == -1)
     {
@@ -109,10 +109,11 @@ main ()
 
   entity_t entity = NULL;
   read_entity (&session, &entity);
+  print_entity (stdout, entity);
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "status_response", NULL);
+  entity_t expected = add_entity (NULL, "get_status_response", NULL);
   add_entity (&expected->entities, "status", "200");
   add_entity (&expected->entities, "report_count", "0");
 

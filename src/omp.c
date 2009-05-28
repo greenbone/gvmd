@@ -81,7 +81,7 @@ static char* help_text = "\n"
 "    CREATE_TASK            Create a new task.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    START_TASK             Manually start an existing task.\n"
-"    STATUS                 Get task status information.\n";
+"    GET_STATUS             Get task status information.\n";
 
 
 /* Status codes. */
@@ -208,8 +208,8 @@ typedef enum
   CLIENT_CREATE_TASK_TASK_FILE,
   CLIENT_START_TASK,
   CLIENT_START_TASK_TASK_ID,
-  CLIENT_STATUS,
-  CLIENT_STATUS_TASK_ID,
+  CLIENT_GET_STATUS,
+  CLIENT_GET_STATUS_TASK_ID,
   CLIENT_VERSION
 } client_state_t;
 
@@ -392,10 +392,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_text (&current_uuid, "", 0);
             set_client_state (CLIENT_START_TASK);
           }
-        else if (strncasecmp ("STATUS", element_name, 6) == 0)
+        else if (strncasecmp ("GET_STATUS", element_name, 10) == 0)
           {
             append_text (&current_uuid, "", 0);
-            set_client_state (CLIENT_STATUS);
+            set_client_state (CLIENT_GET_STATUS);
           }
         else
           {
@@ -755,14 +755,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_STATUS:
+      case CLIENT_GET_STATUS:
         if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_STATUS_TASK_ID);
+          set_client_state (CLIENT_GET_STATUS_TASK_ID);
         else
           {
-            if (send_to_client ("<status_response>"
+            if (send_to_client ("<get_status_response>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</status_response>"))
+                                "</get_status_response>"))
               {
                 error_send_to_client (error);
                 return;
@@ -1851,13 +1851,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_START_TASK);
         break;
 
-      case CLIENT_STATUS:
-        assert (strncasecmp ("STATUS", element_name, 6) == 0);
+      case CLIENT_GET_STATUS:
+        assert (strncasecmp ("GET_STATUS", element_name, 10) == 0);
         if (current_uuid && strlen (current_uuid))
           {
             task_t task;
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+              SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
                                       "<status>"
                                       STATUS_ERROR_MISSING
                                       "</status>");
@@ -1866,11 +1866,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char* tsk_uuid;
 
                 if (task_uuid (task, &tsk_uuid))
-                  SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+                  SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
                                           "<status>"
                                           STATUS_INTERNAL_ERROR
                                           "</status>"
-                                          "</status_response>");
+                                          "</get_status_response>");
                 else
                   {
                     int ret;
@@ -1878,7 +1878,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char* name;
 
                     name = task_name (task);
-                    response = g_strdup_printf ("<status_response>"
+                    response = g_strdup_printf ("<get_status_response>"
                                                 "<status>" STATUS_OK "</status>"
                                                 "<task_id>%s</task_id>"
                                                 "<identifier>%s</identifier>"
@@ -1923,7 +1923,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             free_string_var (&current_uuid);
 
-            SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+            SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
                                     "<status>" STATUS_OK "</status>");
             response = g_strdup_printf ("<task_count>%u</task_count>",
                                         task_count ());
@@ -1977,16 +1977,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status_response>"
+          SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
                                   "<status>"
                                   STATUS_INTERNAL_ERROR
                                   "</status>");
-        SEND_TO_CLIENT_OR_FAIL ("</status_response>");
+        SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_STATUS_TASK_ID:
+      case CLIENT_GET_STATUS_TASK_ID:
         assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
-        set_client_state (CLIENT_STATUS);
+        set_client_state (CLIENT_GET_STATUS);
         break;
 
       default:
@@ -2064,7 +2064,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_REPORT_ID:
       case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
-      case CLIENT_STATUS_TASK_ID:
+      case CLIENT_GET_STATUS_TASK_ID:
         append_text (&current_uuid, text, text_len);
         break;
 

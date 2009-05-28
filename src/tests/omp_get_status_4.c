@@ -1,6 +1,6 @@
-/* Test 4 of OMP STATUS.
+/* Test 4 of OMP GET_STATUS.
  * $Id$
- * Description: Test OMP STATUS with a task id, waiting for the task to end.
+ * Description: Test OMP GET_STATUS with a task id, waiting for the task to end.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -49,8 +49,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_status_3",
-                                "Test omp_status_3 task.",
+                                "Task for omp_get_status_3",
+                                "Test omp_get_status_3 task.",
                                 &id))
     goto fail;
 
@@ -68,9 +68,9 @@ main ()
   /* Request the status. */
 
   if (sendf_to_manager (&session,
-                        "<status>"
+                        "<get_status>"
                         "<task_id>%s</task_id>"
-                        "</status>",
+                        "</get_status>",
                         id)
       == -1)
     goto delete_fail;
@@ -87,7 +87,7 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "status_response", NULL);
+  entity_t expected = add_entity (NULL, "get_status_response", NULL);
   add_entity (&expected->entities, "status", "200");
   add_entity (&expected->entities, "report_count", "1");
   entity_t report = add_entity (&expected->entities, "report", "");

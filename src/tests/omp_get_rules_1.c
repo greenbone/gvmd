@@ -94,7 +94,7 @@ main ()
 #endif
 
   if (sendf_to_manager (&session,
-                        "<status><task_id>%s</task_id></status>",
+                        "<get_status><task_id>%s</task_id></get_status>",
                         id)
       == -1)
     {
