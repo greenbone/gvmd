@@ -1,6 +1,6 @@
-/* Test 0 of OMP GET_NVT_FEED_ALL.
+/* Test 0 of OMP GET_NVT_ALL.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_ALL command before a task runs.
+ * Description: Test the OMP GET_NVT_ALL command before a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -51,7 +51,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -64,7 +64,7 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_nvt_feed_all_response", NULL);
+  entity_t expected = add_entity (NULL, "get_nvt_all_response", NULL);
   add_entity (&expected->entities, "status", "503");
 
   if (compare_entities (entity, expected))

@@ -1,6 +1,6 @@
-/* Test 1 of OMP GET_NVT_FEED_ALL.
+/* Test 1 of OMP GET_NVT_ALL.
  * $Id$
- * Description: Test the OMP GET_NVT_FEED_ALL command after a task runs.
+ * Description: Test the OMP GET_NVT_ALL command after a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -53,7 +53,7 @@ main ()
 
   /* Request feed information once, so manager requests it from server. */
 
-  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -70,8 +70,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_get_nvt_feed_all_1",
-                                "Test omp_get_nvt_feed_all_1 task.",
+                                "Task for omp_get_nvt_all_1",
+                                "Test omp_get_nvt_all_1 task.",
                                 &id))
     {
       close_manager_connection (socket, session);
@@ -143,7 +143,7 @@ main ()
     }
 #endif
 
-  if (send_to_manager (&session, "<get_nvt_feed_all/>") == -1)
+  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
     {
       delete_task (&session, id);
       close_manager_connection (socket, session);
@@ -159,10 +159,9 @@ main ()
   /* Compare to expected response. */
 
   if (entity == NULL
-      || strcmp (entity_name (entity), "get_nvt_feed_all_response")
+      || strcmp (entity_name (entity), "get_nvt_all_response")
       || (status = entity_child (entity, "status")) == NULL
       || (strcmp (entity_text (status), "200")
-
           && strcmp (entity_text (status), "503")))
     {
       free_entity (entity);

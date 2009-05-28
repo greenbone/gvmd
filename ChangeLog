@@ -1,5 +1,23 @@
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
+	Rename OMP GET_NVT_FEED_ALL to GET_NVT_ALL.
+
+	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Rename GET_NVT_FEED_ALL to GET_NVT_ALL.
+
+	* src/tests/CMakeLists.txt: Rename omp_get_nvt_feed_all_0 to omp_get_nvt_all_0
+	and omp_get_nvt_feed_all_1 to omp_get_nvt_all_1.
+
+	* src/tests/omp_get_nvt_feed_all_0.c: Remove.  Rename to omp_get_nvt_all_0.c.
+	* src/tests/omp_get_nvt_all_0.c: New file.  Was omp_get_nvt_feed_all_0.c.  Adjust
+	for new name.
+
+	* src/tests/omp_get_nvt_feed_all_1.c: Remove.  Rename to omp_get_nvt_all_1.c.
+	* src/tests/omp_get_nvt_all_1.c: New file.  Was omp_get_nvt_feed_all_1.c.  Adjust
+	for new name.
+
+2009-05-28  Matthew Mundell <mmundell@intevation.de>
+
 	Rename OMP NEW_TASK to CREATE_TASK.
 
 	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)

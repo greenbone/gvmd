@@ -69,7 +69,7 @@ static char* help_text = "\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_NVT_FEED_ALL       Get IDs and names of all available NVTs.\n"
+"    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_NVT_FEED_DETAILS   Get all details for all available NVTs.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
@@ -185,7 +185,7 @@ typedef enum
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_GET_DEPENDENCIES,
-  CLIENT_GET_NVT_FEED_ALL,
+  CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_NVT_FEED_DETAILS,
   CLIENT_GET_NVT_FEED_DETAILS_OID,
@@ -351,8 +351,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
-        else if (strncasecmp ("GET_NVT_FEED_ALL", element_name, 16) == 0)
-          set_client_state (CLIENT_GET_NVT_FEED_ALL);
+        else if (strncasecmp ("GET_NVT_ALL", element_name, 11) == 0)
+          set_client_state (CLIENT_GET_NVT_ALL);
         else if (strncasecmp ("GET_NVT_FEED_CHECKSUM", element_name, 21) == 0)
           set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
         else if (strncasecmp ("GET_NVT_FEED_DETAILS", element_name, 20) == 0)
@@ -514,11 +514,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_GET_NVT_FEED_ALL:
+      case CLIENT_GET_NVT_ALL:
           {
-            if (send_to_client ("<get_nvt_feed_all>"
+            if (send_to_client ("<get_nvt_all>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_nvt_feed_all>"))
+                                "</get_nvt_all>"))
               {
                 error_send_to_client (error);
                 return;
@@ -1330,10 +1330,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_NVT_FEED_ALL:
+      case CLIENT_GET_NVT_ALL:
         if (server.plugins)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response>"
                                     "<status>" STATUS_OK "</status>");
             SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
                                      nvtis_size (server.plugins));
@@ -1349,13 +1349,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
                 return;
               }
-            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_all_response>");
+            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_all_response>"
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response>"
                                     "<status>" STATUS_SERVICE_DOWN "</status>"
-                                    "</get_nvt_feed_all_response>");
+                                    "</get_nvt_all_response>");
             /* \todo TODO Sort out a cache for this. */
             if (request_plugin_list ())
               {
