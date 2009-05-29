@@ -1,6 +1,6 @@
-/* Test 0 of OMP HELP.
+/* Test 0 of OMP GET_CERTIFICATES.
  * $Id$
- * Description: Test the OMP HELP command.
+ * Description: Test the OMP GET_CERTIFICATES command before a task runs.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define TRACE 1
+
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,37 +34,18 @@
 #include "common.h"
 #include "../tracef.h"
 
-static char* help_text = "\n"
-"    ABORT_TASK             Abort a running task.\n"
-"    AUTHENTICATE           Authenticate with the manager.\n"
-"    CREATE_TASK            Create a new task.\n"
-"    DELETE_REPORT          Delete an existing report.\n"
-"    DELETE_TASK            Delete an existing task.\n"
-"    GET_CERTIFICATES       Get all available certificates.\n"
-"    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
-"    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
-"    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
-"    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
-"    GET_PREFERENCES        Get preferences for all available NVTs.\n"
-"    GET_REPORT             Get a report identified by its unique ID.\n"
-"    GET_RULES              Get the rules for the authenticated user.\n"
-"    GET_STATUS             Get task status information.\n"
-"    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
-"    HELP                   Get this help text.\n"
-"    MODIFY_REPORT          Modify an existing report.\n"
-"    MODIFY_TASK            Update an existing task.\n"
-"    START_TASK             Manually start an existing task.\n";
-
 int
 main ()
 {
   int socket;
   gnutls_session_t session;
 
+  setup_test ();
+
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* Request the help text. */
+  /* Request the certificates. */
 
   if (env_authenticate (&session))
     {
@@ -70,7 +53,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<help/>") == -1)
+  if (send_to_manager (&session, "<get_certificates/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -83,8 +66,8 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "help_response", help_text);
-  add_entity (&expected->entities, "status", "200");
+  entity_t expected = add_entity (NULL, "get_certificates_response", NULL);
+  add_entity (&expected->entities, "status", "503");
 
   if (compare_entities (entity, expected))
     {

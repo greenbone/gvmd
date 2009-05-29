@@ -646,6 +646,7 @@ server_t server;
 void
 init_otp_data ()
 {
+  server.certificates = NULL;
   server.preferences = NULL;
   server.rules = NULL;
   server.plugins = NULL;
@@ -658,6 +659,11 @@ init_otp_data ()
 typedef enum
 {
   SERVER_BYE,
+  SERVER_CERTIFICATE_FINGERPRINT,
+  SERVER_CERTIFICATE_LENGTH,
+  SERVER_CERTIFICATE_OWNER,
+  SERVER_CERTIFICATE_PUBLIC_KEY,
+  SERVER_CERTIFICATE_TRUST_LEVEL,
   SERVER_DONE,
   SERVER_DEBUG_DESCRIPTION,
   SERVER_DEBUG_HOST,
@@ -751,12 +757,62 @@ set_server_init_state (server_init_state_t state)
 }
 
 
+/* Server certificates. */
+
+/**
+ * @brief The current certificates, during reading of server certificates.
+ */
+/*@only@*/
+static certificates_t* current_certificates = NULL;
+
+/**
+ * @brief The current certificate, during reading of server certificates.
+ */
+/*@only@*/
+static certificate_t* current_certificate = NULL;
+
+
 /* OTP input processor. */
 
 // FIX probably should pass to process_omp_client_input
 extern char from_server[];
 extern buffer_size_t from_server_start;
 extern buffer_size_t from_server_end;
+
+/**
+ * @brief Parse the final field of a certificate in a certificate list.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 success, -2 too few characters (need more input).
+ */
+static int
+parse_server_certificate_public_key (char** messages)
+{
+  char *value, *end, *match;
+  assert (current_certificate != NULL);
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
+    {
+      match[0] = '\0';
+      value = g_strdup (*messages);
+      if (current_certificates && current_certificate)
+        {
+          certificate_set_public_key (current_certificate, value);
+          certificates_add (current_certificates, current_certificate);
+          current_certificate = NULL;
+        }
+      set_server_state (SERVER_CERTIFICATE_FINGERPRINT);
+      from_server_start += match + 1 - *messages;
+      *messages = match + 1;
+      return 0;
+    }
+  return -2;
+}
 
 /**
  * @brief Parse the final SERVER field of an OTP message.
@@ -981,6 +1037,24 @@ parse_server_server (/*@dependent@*/ char** messages)
           set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
           return 0;
         }
+      // FIX 12 available?
+      if (strncasecmp ("CERTIFICATES", *messages, 12) == 0)
+        {
+          from_server_start += match + 1 - *messages;
+          *messages = match + 1;
+          /* current_certificates may be allocated already due to a
+           * request for the list before the end of the previous
+           * request.  In this case just let the responses mix.
+           * FIX depends what server does on multiple requests
+           */
+          if (current_certificates == NULL)
+            {
+              current_certificates = certificates_create ();
+              if (current_certificates == NULL) abort (); // FIX
+            }
+          set_server_state (SERVER_CERTIFICATE_FINGERPRINT);
+          return 0;
+        }
       newline = match;
       newline[0] = '\n';
       /* Check for a <|>. */
@@ -1163,7 +1237,15 @@ process_otp_server_input ()
         return -1;
       case SERVER_INIT_DONE:
       case SERVER_INIT_TOP:
-        if (server_state == SERVER_DONE)
+        if (server_state == SERVER_CERTIFICATE_PUBLIC_KEY)
+          switch (parse_server_certificate_public_key (&messages))
+            {
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return 0;
+            }
+        else if (server_state == SERVER_DONE)
           switch (parse_server_done (&messages))
             {
               case -1: return -1;
@@ -1284,6 +1366,59 @@ process_otp_server_input ()
                       return 0;
                   }
                 break;
+              case SERVER_CERTIFICATE_FINGERPRINT:
+                {
+                  if (strlen (field) == 0)
+                    {
+                      certificates_free (server.certificates);
+                      server.certificates = current_certificates;
+                      current_certificates = NULL;
+                      set_server_state (SERVER_DONE);
+                      switch (parse_server_done (&messages))
+                        {
+                          case -1: return -1;
+                          case -2:
+                            /* Need more input. */
+                            if (sync_buffer ()) return -1;
+                            return 0;
+                        }
+                      break;
+                    }
+                  current_certificate = certificate_create ();
+                  if (current_certificate == NULL) abort (); // FIX
+                  if (certificate_set_fingerprint (current_certificate, field))
+                    abort (); // FIX
+                  set_server_state (SERVER_CERTIFICATE_OWNER);
+                  break;
+                }
+              case SERVER_CERTIFICATE_LENGTH:
+                {
+                  /* Read over the length. */
+                  // \todo TODO consider using this to read next field
+                  set_server_state (SERVER_CERTIFICATE_PUBLIC_KEY);
+                  switch (parse_server_certificate_public_key (&messages))
+                    {
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
+                }
+              case SERVER_CERTIFICATE_OWNER:
+                {
+                  if (certificate_set_owner (current_certificate, field))
+                    abort ();
+                  set_server_state (SERVER_CERTIFICATE_TRUST_LEVEL);
+                  break;
+                }
+              case SERVER_CERTIFICATE_TRUST_LEVEL:
+                {
+                  certificate_set_trusted (current_certificate,
+                                           strcasecmp (field, "trusted") == 0);
+                  set_server_state (SERVER_CERTIFICATE_LENGTH);
+                  break;
+                }
               case SERVER_DEBUG_DESCRIPTION:
                 {
                   if (current_message)

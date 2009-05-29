@@ -347,9 +347,12 @@ int
 set_report_parameter (char*, const char*, char*);
 
 
-/* Plugins. */
+/* Server requests. */
 
 int
 request_plugin_list ();
+
+int
+request_certificates ();
 
 #endif

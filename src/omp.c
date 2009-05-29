@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <openvas/certificate.h>
 #include <openvas/nvti.h>
 
 #ifdef S_SPLINT_S
@@ -69,6 +70,7 @@ static char* help_text = "\n"
 "    CREATE_TASK            Create a new task.\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TASK            Delete an existing task.\n"
+"    GET_CERTIFICATES       Get all available certificates.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
@@ -188,6 +190,7 @@ typedef enum
   CLIENT_DELETE_REPORT_ID,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TASK_TASK_ID,
+  CLIENT_GET_CERTIFICATES,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
@@ -349,6 +352,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_text (&current_uuid, "", 0);
             set_client_state (CLIENT_DELETE_TASK);
           }
+        else if (strncasecmp ("GET_CERTIFICATES", element_name, 16) == 0)
+          set_client_state (CLIENT_GET_CERTIFICATES);
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strncasecmp ("GET_NVT_ALL", element_name, 11) == 0)
@@ -485,6 +490,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (send_to_client ("<delete_task_response>"
                                 "<status>" STATUS_ERROR_SYNTAX "</status>"
                                 "</delete_task_response>"))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_CERTIFICATES:
+          {
+            if (send_to_client ("<get_certificates_response>"
+                                "<status>" STATUS_ERROR_SYNTAX "</status>"
+                                "</get_certificates_response>"))
               {
                 error_send_to_client (error);
                 return;
@@ -786,6 +808,55 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
     }
 
   return;
+}
+
+/**
+ * @brief Send XML for a certificate.
+ *
+ * @param[in]  cert_gp  The certificate.
+ * @param[in]  dummy    Dummy variable, for certificate_find.
+ *
+ * @return 0 if out of space in to_client buffer, else 1.
+ */
+static gint
+send_certificate (gpointer cert_gp, gpointer dummy)
+{
+  certificate_t* cert = (certificate_t*) cert_gp;
+  gchar* msg;
+  gsize size_dummy;
+
+  const char* public_key = certificate_public_key (cert);
+  const char* owner = certificate_owner (cert);
+  /* FIX The g_convert is a temp hack. */
+  gchar* owner_utf8 = owner ? g_convert (owner, strlen (owner),
+                                         "UTF-8", "ISO_8859-1",
+                                         NULL, &size_dummy, NULL)
+                            : NULL;
+  gchar* owner_text = owner_utf8
+                      ? g_markup_escape_text (owner_utf8, -1)
+                      : g_strdup ("");
+  g_free (owner_utf8);
+
+  msg = g_strdup_printf ("<certificate>"
+                         "<fingerprint>%s</fingerprint>"
+                         "<owner>%s</owner>"
+                         "<trust_level>%s</trust_level>"
+                         "<length>%u</length>"
+                         "<public_key>%s</public_key>"
+                         "</certificate>",
+                         certificate_fingerprint (cert),
+                         owner_utf8,
+                         certificate_trusted (cert) ? "trusted" : "notrust",
+                         strlen (public_key),
+                         public_key);
+  g_free (owner_text);
+  if (send_to_client (msg))
+    {
+      g_free (msg);
+      return 0;
+    }
+  g_free (msg);
+  return 1;
 }
 
 /**
@@ -1306,6 +1377,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
                                   "<status>" STATUS_SERVICE_DOWN "</status>"
                                   "</get_preferences_response>");
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_GET_CERTIFICATES:
+        if (server.certificates)
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response>"
+                                    "<status>" STATUS_OK "</status>");
+            if (certificates_find (server.certificates,
+                                   send_certificate,
+                                   NULL))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            SEND_TO_CLIENT_OR_FAIL ("</get_certificates_response>");
+          }
+        else
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response>"
+                                    "<status>" STATUS_SERVICE_DOWN "</status>"
+                                    "</get_certificates_response>");
+            /* \todo TODO Sort out a proactive mechanism for this. */
+            if (request_certificates ())
+              {
+                /* to_server is full. */
+                // FIX ~ revert parsing for retry
+                // process_omp_client_input must return -2
+                abort ();
+              }
+          }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

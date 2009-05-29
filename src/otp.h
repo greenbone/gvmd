@@ -29,6 +29,7 @@
 #include "manage.h"
 #include <glib.h>
 
+#include <openvas/certificate.h>
 #include <openvas/nvti.h>
 
 void
@@ -70,6 +71,7 @@ extern int server_init_offset;
  */
 typedef struct
 {
+  certificates_t* certificates;      ///< List of certificates.
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
   nvtis_t* plugins;                  ///< Plugin meta-information.

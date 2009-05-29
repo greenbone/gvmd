@@ -174,6 +174,20 @@ set_target_properties (omp_delete_task_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} $
 target_link_libraries (omp_delete_task_2 common)
 ADD_TEST (omp_delete_task_2 omp_delete_task_2)
 
+add_executable (omp_get_certificates_0 omp_get_certificates_0.c)
+target_link_libraries (omp_get_certificates_0 string)
+set_target_properties (omp_get_certificates_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_certificates_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_certificates_0 common)
+ADD_TEST (omp_get_certificates_0 omp_get_certificates_0)
+
+add_executable (omp_get_certificates_1 omp_get_certificates_1.c)
+target_link_libraries (omp_get_certificates_1 string)
+set_target_properties (omp_get_certificates_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_certificates_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_certificates_1 common)
+ADD_TEST (omp_get_certificates_1 omp_get_certificates_1)
+
 add_executable (omp_get_dependencies_0 omp_get_dependencies_0.c)
 target_link_libraries (omp_get_dependencies_0 string)
 set_target_properties (omp_get_dependencies_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")

@@ -1,3 +1,32 @@
+2009-05-29  Matthew Mundell <mmundell@intevation.de>
+
+	Add OTP CERTIFICATES handling and OMP GET_CERTIFICATES.
+
+	* src/manage.c (request_certificates): New function.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (help_text, client_state_t): Add GET_CERTIFICATES entries.
+	(send_certificate): New function.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_CERTIFICATES handling.
+
+	* src/otp.h (server_t): Add certificates.
+
+	* src/otp.c (init_otp_data): Init server certificates.
+	(server_state_t): Add CERTIFICATES states.
+	(current_certificates, current_certificate): New variables.
+	(parse_server_certificate_public_key): New function.
+	(parse_server_server, process_otp_server_input): Add CERTIFICATES
+	handling.
+
+	* src/tests/omp_help_0.c (help_text): Add GET_CERTIFICATES entry.
+
+	* src/tests/omp_get_certificates_0.c,
+	src/tests/omp_get_certificates_1.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_get_certificates_0 and
+	omp_get_certificates_1.
+
 2009-05-28  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/CMakeLists.txt: Sort rules.
