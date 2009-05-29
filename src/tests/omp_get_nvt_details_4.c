@@ -42,7 +42,7 @@ main ()
   char* id;
   entity_t entity, entity2, status, nvt, nvt_id;
 
-  verbose = 1;
+  setup_test ();
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;

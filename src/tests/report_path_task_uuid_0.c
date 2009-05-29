@@ -32,8 +32,11 @@
 int
 main ()
 {
-  gchar* name = report_path_task_uuid ("/var/lib/openvas/mgr/users/user/tasks/01-abc-02001020/reports/report-id");
-  int ret = strcmp (name, "01-abc-02001020");
+  gchar* name;
+  int ret
+  setup_test ();
+  name = report_path_task_uuid ("/var/lib/openvas/mgr/users/user/tasks/01-abc-02001020/reports/report-id");
+  ret = strcmp (name, "01-abc-02001020");
   g_free (name);
   if (ret) return EXIT_FAILURE;
   return EXIT_SUCCESS;

@@ -39,6 +39,8 @@ main ()
   int socket;
   gnutls_session_t session;
 
+  setup_test ();
+
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 

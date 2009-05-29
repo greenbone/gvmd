@@ -56,6 +56,8 @@ main ()
   char* md5;
   entity_t status, entity, algorithm;
 
+  setup_test ();
+
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 

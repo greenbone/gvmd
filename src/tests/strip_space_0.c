@@ -35,6 +35,8 @@ main ()
   char string[5];
   char *expect = "abcd";
 
+  setup_test ();
+
   strncpy (string, "abcd", 5);
 
   char* result = strip_space (string, string + 4);

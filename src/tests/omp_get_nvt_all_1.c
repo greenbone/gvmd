@@ -42,6 +42,8 @@ main ()
   char* id;
   entity_t entity, status;
 
+  setup_test ();
+
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 

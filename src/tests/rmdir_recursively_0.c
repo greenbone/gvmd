@@ -37,6 +37,8 @@ main ()
 {
   char dir[] = "rmdir_recursively_0_XXXXXX";
 
+  setup_test ();
+
   if (mkdtemp (dir) == NULL)
     {
       perror ("Failed to make temp dir");
