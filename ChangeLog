@@ -1,5 +1,28 @@
 2009-05-29  Matthew Mundell <mmundell@intevation.de>
 
+	Make the tests compile and run again.
+
+	* src/tests/report_path_task_uuid_1.c,
+	src/tests/report_path_task_uuid_0.c,
+	src/tests/report_path_task_uuid_2.c: Comment out setup_test and common.h
+	include.
+
+	* src/tests/strip_space_0.c, src/tests/strip_space_2.c,
+	src/tests/strip_space_3.c, src/tests/strip_space_1.c,
+	src/tests/rmdir_recursively_0.c, src/tests/rmdir_recursively_1.c: Include
+	common.h.
+
+	* src/tests/omp_start_task_2.c, src/tests/omp_abort_task_0.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_start_task_1.c,
+	src/tests/omp_delete_task_1.c, src/tests/omp_start_task_0.c: Turn on
+	TRACE.
+
+	* src/tests/CMakeLists.txt (rmdir_recursively_0, rmdir_recursively_1)
+	strip_space_0, strip_space_1, strip_space_2, strip_space_3): Link to
+	common and requirement of common.
+
+2009-05-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_abort_task_0.c, src/tests/omp_create_task_0.c,
 	src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
 	src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,

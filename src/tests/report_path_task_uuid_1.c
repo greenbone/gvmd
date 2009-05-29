@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+//#include "common.h"
 #include "../manage.h"
 
 int
@@ -34,7 +35,7 @@ main ()
 {
   gchar* name;
   int ret;
-  setup_test ();
+  //setup_test ();
   name = report_path_task_uuid ("/var/lib/openvas/mgr/users/user/tasks/01-abc-02001020/reports/report-id/");
   ret = strcmp (name, "01-abc-02001020");
   g_free (name);
