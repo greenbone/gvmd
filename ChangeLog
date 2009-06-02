@@ -1,5 +1,10 @@
 2009-06-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS correct
+	opening tag and add closing tag.
+
+2009-06-02  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_bogus_0.c, src/tests/omp_bogus_1.c: New files, which
 	test the manager with a bogus command.
 

@@ -1851,7 +1851,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char* name;
 
                     name = task_name (task);
-                    response = g_strdup_printf ("<get_status_response>"
+                    response = g_strdup_printf ("<get_status_response"
                                                 " status=\"" STATUS_OK "\">"
                                                 "<task_id>%s</task_id>"
                                                 "<identifier>%s</identifier>"
@@ -1884,6 +1884,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     // FIX need to handle err cases before send status
                     (void) send_reports (task);
+                    SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
                   }
               }
             free_string_var (&current_uuid);
