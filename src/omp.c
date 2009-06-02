@@ -272,6 +272,16 @@ error_send_to_client (GError** error)
 
 /* XML parser handlers. */
 
+#define XML_ERROR_SYNTAX(tag) "<" tag "_response status=\"" STATUS_ERROR_SYNTAX "\"/>"
+#define XML_ERROR_MISSING(tag) "<" tag "_response status=\"" STATUS_ERROR_MISSING "\"/>"
+#define XML_ERROR_AUTH_FAILED(tag) "<" tag "_response status=\"" STATUS_ERROR_AUTH_FAILED "\"/>"
+
+#define XML_OK(tag) "<" tag "_response status=\"" STATUS_OK "\"/>"
+#define XML_OK_REQUESTED(tag) "<" tag "_response status=\"" STATUS_OK_REQUESTED "\"/>"
+
+#define XML_INTERNAL_ERROR(tag) "<" tag "_response status=\"" STATUS_INTERNAL_ERROR "\"/>"
+#define XML_SERVICE_DOWN(tag) "<" tag "_response status=\"" STATUS_SERVICE_DOWN "\"/>"
+
 /**
  * @brief Handle the start of an OMP XML element.
  *
@@ -315,9 +325,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             // TODO: If one of other commands, STATUS_ERROR_AUTHENTICATE
-            if (send_to_client ("<omp_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</omp_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("omp")))
               {
                 error_send_to_client (error);
                 return;
@@ -404,9 +412,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_to_client ("<omp_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</omp_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("omp")))
               {
                 error_send_to_client (error);
                 return;
@@ -423,9 +429,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS);
         else
           {
-            if (send_to_client ("<authenticate_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</authenticate_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("authenticate")))
               {
                 error_send_to_client (error);
                 return;
@@ -446,9 +450,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREDENTIALS_PASSWORD);
         else
           {
-            if (send_to_client ("<authenticate_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</authenticate_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("authenticate")))
               {
                 error_send_to_client (error);
                 return;
@@ -467,9 +469,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_REPORT_ID);
         else
           {
-            if (send_to_client ("<delete_report_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</delete_report_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("delete_report")))
               {
                 error_send_to_client (error);
                 return;
@@ -487,9 +487,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_DELETE_TASK_TASK_ID);
         else
           {
-            if (send_to_client ("<delete_task_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</delete_task_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("delete_task")))
               {
                 error_send_to_client (error);
                 return;
@@ -504,9 +502,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_CERTIFICATES:
           {
-            if (send_to_client ("<get_certificates_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_certificates_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_certificates")))
               {
                 error_send_to_client (error);
                 return;
@@ -521,9 +517,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_DEPENDENCIES:
           {
-            if (send_to_client ("<get_dependencies_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_dependencies_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_dependencies")))
               {
                 error_send_to_client (error);
                 return;
@@ -538,9 +532,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_ALL:
           {
-            if (send_to_client ("<get_nvt_all>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_nvt_all>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_nvt_all")))
               {
                 error_send_to_client (error);
                 return;
@@ -555,9 +547,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
           {
-            if (send_to_client ("<get_nvt_feed_checksum>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_nvt_feed_checksum>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_nvt_feed_checksum")))
               {
                 error_send_to_client (error);
                 return;
@@ -575,9 +565,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_NVT_DETAILS_OID);
         else
           {
-            if (send_to_client ("<get_nvt_details>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_nvt_details>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_nvt_details")))
               {
                 error_send_to_client (error);
                 return;
@@ -592,9 +580,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_PREFERENCES:
           {
-            if (send_to_client ("<get_preferences_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_preferences_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_preferences")))
               {
                 error_send_to_client (error);
                 return;
@@ -612,9 +598,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_REPORT_ID);
         else
           {
-            if (send_to_client ("<get_report_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_report_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_report_response")))
               {
                 error_send_to_client (error);
                 return;
@@ -629,9 +613,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_RULES:
           {
-            if (send_to_client ("<get_rules_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_rules_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_rules")))
               {
                 error_send_to_client (error);
                 return;
@@ -646,9 +628,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_HELP:
         {
-          if (send_to_client ("<help_response>"
-                              "<status>" STATUS_ERROR_SYNTAX "</status>"
-                              "</help_response>"))
+          if (send_to_client (XML_ERROR_SYNTAX ("help")))
             {
               error_send_to_client (error);
               return;
@@ -670,9 +650,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_VALUE);
         else
           {
-            if (send_to_client ("<modify_report_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</modify_report_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("modify_report")))
               {
                 error_send_to_client (error);
                 return;
@@ -694,9 +672,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TASK_VALUE);
         else
           {
-            if (send_to_client ("<modify_task_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</modify_task_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("modify_task")))
               {
                 error_send_to_client (error);
                 return;
@@ -718,9 +694,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
         else
           {
-            if (send_to_client ("<abort_task_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</abort_task_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("abort_task")))
               {
                 error_send_to_client (error);
                 return;
@@ -742,9 +716,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
         else
           {
-            if (send_to_client ("<create_task_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</create_task_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("create_task")))
               {
                 error_send_to_client (error);
                 return;
@@ -762,9 +734,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_START_TASK_TASK_ID);
         else
           {
-            if (send_to_client ("<start_task_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</start_task_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("start_task")))
               {
                 error_send_to_client (error);
                 return;
@@ -782,9 +752,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_STATUS_TASK_ID);
         else
           {
-            if (send_to_client ("<get_status_response>"
-                                "<status>" STATUS_ERROR_SYNTAX "</status>"
-                                "</get_status_response>"))
+            if (send_to_client (XML_ERROR_SYNTAX ("get_status")))
               {
                 error_send_to_client (error);
                 return;
@@ -1269,11 +1237,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
 
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                      "<status>"
-                                      STATUS_ERROR_MISSING
-                                      "</status>"
-                                      "</abort_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("abort_task"));
             else if (stop_task (task))
               {
                 /* to_server is full. */
@@ -1282,15 +1246,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 abort ();
               }
             else
-              SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                      "<status>" STATUS_OK_REQUESTED "</status>"
-                                      "</abort_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("abort_task"));
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<abort_task_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
-                                  "</abort_task_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("abort_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_ABORT_TASK_TASK_ID:
@@ -1325,21 +1285,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 set_client_state (CLIENT_AUTHENTIC);
               break;
             case 1:
-              SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
-                                      "<status>"
-                                      STATUS_ERROR_AUTH_FAILED
-                                      "</status>"
-                                      "</authenticate_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               free_credentials (&current_credentials);
               set_client_state (CLIENT_TOP);
               break;
             case -1:
             default:
-              SEND_TO_CLIENT_OR_FAIL ("<authenticate_response>"
-                                      "<status>"
-                                      STATUS_INTERNAL_ERROR
-                                      "</status>"
-                                      "</authenticate_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
               free_credentials (&current_credentials);
               set_client_state (CLIENT_TOP);
               break;
@@ -1364,8 +1316,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_PREFERENCES:
         if (server.preferences)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
+                                    " status=\"" STATUS_OK "\">");
             if (g_hash_table_find (server.preferences, send_preference, NULL))
               {
                 error_send_to_client (error);
@@ -1374,17 +1326,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response>"
-                                  "<status>" STATUS_SERVICE_DOWN "</status>"
-                                  "</get_preferences_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_preferences"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_CERTIFICATES:
         if (server.certificates)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response"
+                                    " status=\"" STATUS_OK "\">");
             if (certificates_find (server.certificates,
                                    send_certificate,
                                    NULL))
@@ -1396,9 +1346,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response>"
-                                    "<status>" STATUS_SERVICE_DOWN "</status>"
-                                    "</get_certificates_response>");
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_certificates"));
             /* \todo TODO Sort out a proactive mechanism for this. */
             if (request_certificates ())
               {
@@ -1414,8 +1362,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_DEPENDENCIES:
         if (server.plugins_dependencies)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
+                                    " status=\"" STATUS_OK "\">");
             if (g_hash_table_find (server.plugins_dependencies,
                                    send_dependency,
                                    NULL))
@@ -1426,17 +1374,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_dependencies_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response>"
-                                  "<status>" STATUS_SERVICE_DOWN "</status>"
-                                  "</get_dependencies_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_dependencies"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_ALL:
         if (server.plugins)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response"
+                                    " status=\"" STATUS_OK "\">");
             SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
                                      nvtis_size (server.plugins));
             if (server.plugins_md5)
@@ -1455,9 +1401,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response>"
-                                    "<status>" STATUS_SERVICE_DOWN "</status>"
-                                    "</get_nvt_all_response>");
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
             /* \todo TODO Sort out a cache for this. */
             if (request_plugin_list ())
               {
@@ -1473,41 +1417,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         if (server.plugins_md5)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
-                                    "<status>" STATUS_OK "</status>"
+            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
+                                    " status=\"" STATUS_OK "\">"
                                     "<algorithm>md5</algorithm>");
             SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
             SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_checksum_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response>"
-                                  "<status>" STATUS_SERVICE_DOWN "</status>"
-                                  "</get_nvt_feed_checksum_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_DETAILS:
         if (server.plugins)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response>");
             if (current_uuid)
               {
                 nvti_t* plugin = find_nvti (server.plugins, current_uuid);
                 if (plugin)
-                  {
-                    SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_OK "</status>");
+                 {
+                    SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response"
+                                            " status=\"" STATUS_OK "\">");
                     send_plugin (plugin->oid, plugin, (gpointer) 1);
+                    SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                   }
                 else
-                  {
-                    SEND_TO_CLIENT_OR_FAIL ("<status>"
-                                            STATUS_ERROR_MISSING
-                                            "</status>");
-                  }
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_MISSING ("get_nvt_details"));
               }
             else
               {
-                SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                SENDF_TO_CLIENT_OR_FAIL ("<get_nvt_details_response"
+                                         " status=\"" STATUS_OK "\">"
+                                         "<nvt_count>%u</nvt_count>",
                                          nvtis_size (server.plugins));
                 if (server.plugins_md5)
                   {
@@ -1521,14 +1463,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
+                SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
               }
-            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response>"
-                                    "<status>" STATUS_SERVICE_DOWN "</status>"
-                                    "</get_nvt_details_response>");
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
             /* \todo TODO Sort out a cache for this. */
             if (request_plugin_list ())
               {
@@ -1547,7 +1487,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
-        SEND_TO_CLIENT_OR_FAIL ("<delete_report_response>");
+        SEND_TO_CLIENT_OR_FAIL ("<delete_report_response status=\"");
         if (current_uuid)
           {
             // FIX check syntax of current_uuid  STATUS_ERROR_SYNTAX
@@ -1556,27 +1496,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             switch (ret)
               {
                 case 0:
-                  SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_OK "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (STATUS_OK);
                   break;
                 case -1: /* Failed to find associated task. */
                 case -2: /* Report file missing. */
-                  SEND_TO_CLIENT_OR_FAIL ("<status>"
-                                          STATUS_ERROR_MISSING
-                                          "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (STATUS_ERROR_MISSING);
                   break;
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
                   free_string_var (&current_uuid);
-                  SEND_TO_CLIENT_OR_FAIL ("<status>"
-                                          STATUS_INTERNAL_ERROR
-                                          "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
                   break;
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<status>" STATUS_INTERNAL_ERROR "</status>");
-        SEND_TO_CLIENT_OR_FAIL ("</delete_report_response>");
+          SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
+        SEND_TO_CLIENT_OR_FAIL ("\"/>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_REPORT_ID:
@@ -1613,16 +1549,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     if (content_error)
                       g_error_free (content_error);
-                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
-                                            "<status>"
-                                            STATUS_ERROR_MISSING
-                                            "</status>");
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
                   }
                 else
                   {
                     gchar* base64_content;
-                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
-                                            "<status>" STATUS_OK "</status>"
+                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                            " status=\"" STATUS_OK "\">"
                                             "<report>");
                     base64_content = g_base64_encode ((guchar*) content,
                                                       content_length);
@@ -1634,27 +1567,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     g_free (base64_content);
-                    SEND_TO_CLIENT_OR_FAIL ("</report>");
+                    SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                            "</get_report_response>");
                   }
               }
             else
               {
                 g_free (name);
-                SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
-                                        "<status>"
-                                        STATUS_ERROR_MISSING
-                                        "</status>");
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
               }
           }
         else
           {
             free_string_var (&current_uuid);
-            SEND_TO_CLIENT_OR_FAIL ("<get_report_response>"
-                                    "<status>"
-                                    STATUS_INTERNAL_ERROR
-                                    "</status>");
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
           }
-        SEND_TO_CLIENT_OR_FAIL ("</get_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_GET_REPORT_ID:
@@ -1666,8 +1593,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (server.rules)
           {
             int index;
-            SEND_TO_CLIENT_OR_FAIL ("<get_rules_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_rules_response"
+                                    " status=\"" STATUS_OK "\">");
             for (index = 0; index < server.rules_size; index++)
               if (send_rule (g_ptr_array_index (server.rules, index)))
                 {
@@ -1677,15 +1604,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_rules_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<get_rules_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
-                                  "</get_rules_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_rules"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_VERSION:
-        SEND_TO_CLIENT_OR_FAIL ("<get_version_response>"
-                                "<status>" STATUS_OK "</status>"
+        SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
+                                " status=\"" STATUS_OK "\">"
                                 "<version><preferred/>1.0</version>"
                                 "</get_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
@@ -1697,11 +1622,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                      "<status>"
-                                      STATUS_ERROR_MISSING
-                                      "</status>"
-                                      "</delete_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("delete_task"));
             else if (request_delete_task (&task))
               {
                 /* to_server is full. */
@@ -1712,15 +1633,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 abort ();
               }
             else
-              SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                      "<status>" STATUS_OK_REQUESTED "</status>"
-                                      "</delete_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<delete_task_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
-                                  "</delete_task_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_DELETE_TASK_TASK_ID:
@@ -1729,8 +1646,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_HELP:
-        SEND_TO_CLIENT_OR_FAIL ("<help_response>"
-                                "<status>" STATUS_OK "</status>");
+        SEND_TO_CLIENT_OR_FAIL ("<help_response status=\"" STATUS_OK "\">");
         SEND_TO_CLIENT_OR_FAIL (help_text);
         SEND_TO_CLIENT_OR_FAIL ("</help_response>");
         set_client_state (CLIENT_AUTHENTIC);
@@ -1750,21 +1666,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             switch (ret)
               {
                 case 0:
-                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
-                                          "<status>" STATUS_OK "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
                   break;
                 case -2: /* Parameter name error. */
-                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
-                                          "<status>"
-                                          STATUS_ERROR_SYNTAX
-                                          "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
                   break;
                 case -3: /* Failed to write to disk. */
                 default:
-                  SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
-                                          "<status>"
-                                          STATUS_INTERNAL_ERROR
-                                          "</status>");
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
                   break;
               }
           }
@@ -1773,12 +1682,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&modify_task_parameter);
             free_string_var (&modify_task_value);
             free_string_var (&current_uuid);
-            SEND_TO_CLIENT_OR_FAIL ("<modify_report_response>"
-                                    "<status>"
-                                    STATUS_INTERNAL_ERROR
-                                    "</status>");
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
           }
-        SEND_TO_CLIENT_OR_FAIL ("</modify_report_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_REPORT_PARAMETER:
@@ -1800,11 +1705,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                      "<status>"
-                                      STATUS_ERROR_MISSING
-                                      "</status>"
-                                      "</modify_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_task"));
             else
               {
                 // FIX check if param,value else respond fail
@@ -1817,34 +1718,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (modify_task_value);
                     modify_task_value = NULL;
                     if (fail == -4)
-                      SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                              "<status>"
-                                              STATUS_INTERNAL_ERROR
-                                              "</status>"
-                                              "</modify_task_response>");
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
                     else
-                      SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                              "<status>"
-                                              STATUS_ERROR_SYNTAX
-                                              "</status>"
-                                              "</modify_task_response>");
+                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_task"));
                   }
                 else
                   {
                     modify_task_value = NULL;
-                    SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                            "<status>"
-                                            STATUS_OK_REQUESTED
-                                            "</status>"
-                                            "</modify_task_response>");
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("modify_task"));
                   }
               }
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<modify_task_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
-                                  "</modify_task_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
@@ -1872,14 +1760,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           //       eg on err half task could be saved (or saved with base64 file)
 
           if (task_uuid (current_client_task, &tsk_uuid))
-            SEND_TO_CLIENT_OR_FAIL ("<create_task_response>"
-                                    "<status>" STATUS_ERROR_MISSING "</status>"
-                                    "</create_task_response>");
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("create_task"));
           else
             {
               gchar* msg;
-              msg = g_strdup_printf ("<create_task_response>"
-                                     "<status>" STATUS_OK_CREATED "</status>"
+              msg = g_strdup_printf ("<create_task_response"
+                                     " status=\"" STATUS_OK_CREATED "\">"
                                      "<task_id>%s</task_id>"
                                      "</create_task_response>",
                                      tsk_uuid);
@@ -1924,11 +1810,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                      "<status>"
-                                      STATUS_ERROR_MISSING
-                                      "</status>"
-                                      "</start_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
             else if (start_task (task))
               {
                 /* to_server is full. */
@@ -1937,15 +1819,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 abort ();
               }
             else
-              SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                      "<status>" STATUS_OK_REQUESTED "</status>"
-                                      "</start_task_response>");
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<start_task_response>"
-                                  "<status>" STATUS_INTERNAL_ERROR "</status>"
-                                  "<start_task_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_START_TASK_TASK_ID:
@@ -1959,20 +1837,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             task_t task;
             if (find_task (current_uuid, &task))
-              SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
-                                      "<status>"
-                                      STATUS_ERROR_MISSING
-                                      "</status>");
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_status"));
             else
               {
                 char* tsk_uuid;
 
                 if (task_uuid (task, &tsk_uuid))
-                  SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
-                                          "<status>"
-                                          STATUS_INTERNAL_ERROR
-                                          "</status>"
-                                          "</get_status_response>");
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
                 else
                   {
                     int ret;
@@ -1981,10 +1852,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     name = task_name (task);
                     response = g_strdup_printf ("<get_status_response>"
-                                                "<status>" STATUS_OK "</status>"
+                                                " status=\"" STATUS_OK "\">"
                                                 "<task_id>%s</task_id>"
                                                 "<identifier>%s</identifier>"
-                                                "<status>%s</status>" // FIX again!
+                                                "<status>%s</status>"
                                                 "<messages>"
                                                 "<debug>%i</debug>"
                                                 "<hole>%i</hole>"
@@ -2025,8 +1896,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             free_string_var (&current_uuid);
 
-            SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
-                                    "<status>" STATUS_OK "</status>");
+            SEND_TO_CLIENT_OR_FAIL ("<get_status_response"
+                                    " status=\"" STATUS_OK "\">");
             response = g_strdup_printf ("<task_count>%u</task_count>",
                                         task_count ());
             if (send_to_client (response))
@@ -2077,13 +1948,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
                 g_free (line);
               }
+            SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL ("<get_status_response>"
-                                  "<status>"
-                                  STATUS_INTERNAL_ERROR
-                                  "</status>");
-        SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_GET_STATUS_TASK_ID:
@@ -2247,7 +2115,7 @@ init_omp_process ()
  * the client in \ref to_client (using \ref send_to_client).
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or \ref to_server.
+ *         or \ref to_server (respectively), -4 XML syntax error.
  */
 int
 process_omp_client_input ()
@@ -2263,8 +2131,10 @@ process_omp_client_input ()
                                           &error);
   if (success == FALSE)
     {
+      int err;
       if (error)
         {
+          err = -4;
           if (g_error_matches (error,
                                G_MARKUP_ERROR,
                                G_MARKUP_ERROR_UNKNOWN_ELEMENT))
@@ -2277,13 +2147,17 @@ process_omp_client_input ()
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
             tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
+          else
+            err = -1;
           fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
           g_error_free (error);
         }
-      /* In all error cases return -1 to close the connection, because it
-         would be too hard, if possible at all, to figure out where the
-         next command starts. */
-      return -1;
+      else
+        err = -1;
+      /* In all error cases the caller must cease to call this function as it
+       * would be too hard, if possible at all, to figure out the position of
+       * start of the next command. */
+      return err;
     }
   from_client_end = from_client_start = 0;
   return 0;

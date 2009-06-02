@@ -398,13 +398,13 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* server_credentials,
            int client_socket, int* server_socket_addr)
 {
-  int nfds;
+  int nfds, ret;
   uint8_t lastfds;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
    * to_server buffer. */
-  short client_input_stalled = 0;
+  short client_input_stalled;
   /* True if processing of the server input is waiting for space in the
    * to_client buffer. */
   gboolean server_input_stalled = FALSE;
@@ -440,8 +440,36 @@ serve_omp (gnutls_session_t* client_session,
           from_client_end);
 #endif
 #endif /* TRACE || LOG */
-  // FIX handle client_input_stalled
-  if (process_omp_client_input ()) return -1;
+  ret = process_omp_client_input ();
+  if (ret == 0)
+    /* Processed all input. */
+    client_input_stalled = 0;
+  else if (ret == -1 || ret == -4)
+    {
+      /* Error.  Write rest of to_client to client, so that the
+       * client gets any buffered output and the response to the
+       * error. */
+      write_to_client (client_session);
+      return -1;
+    }
+  else if (ret == -2)
+    {
+      /* to_server buffer full. */
+      tracef ("   client input stalled 0\n");
+      client_input_stalled = 1;
+    }
+  else if (ret == -3)
+    {
+      /* to_client buffer full. */
+      tracef ("   client input stalled 0\n");
+      client_input_stalled = 2;
+    }
+  else
+    {
+      /* Programming error. */
+      assert (0);
+      client_input_stalled = 0;
+    }
 
   /* Loop handling input from the sockets.
    *
@@ -605,12 +633,14 @@ serve_omp (gnutls_session_t* client_session,
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
-          else if (ret == -1)
-            /* Error. */
-            // FIX might be nice to write rest of to_client to client, so
-            // that the client gets any buffered output and the response to
-            // the error
-            return -1;
+          else if (ret == -1 || ret == -4)
+            {
+              /* Error.  Write rest of to_client to client, so that the
+               * client gets any buffered output and the response to the
+               * error. */
+              write_to_client (client_session);
+              return -1;
+            }
           else if (ret == -2)
             {
               /* to_server buffer full. */
@@ -781,8 +811,13 @@ serve_omp (gnutls_session_t* client_session,
             /* Processed all input. */
             client_input_stalled = 0;
           else if (ret == -1)
-            /* Error. */
-            return -1;
+            {
+              /* Error.  Write rest of to_client to client, so that the
+               * client gets any buffered output and the response to the
+               * error. */
+              write_to_client (client_session);
+              return -1;
+            }
           else if (ret == -2)
             {
               /* to_server buffer full. */

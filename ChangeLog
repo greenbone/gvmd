@@ -1,3 +1,18 @@
+2009-06-02  Matthew Mundell <mmundell@intevation.de>
+
+	Move response statuses into attributes.
+
+	* src/ompd.c (serve_omp): On process_omp_client_input error, write out
+	the rest of the to_client buffer before exiting.  Handle the response
+	from the very first process_omp_client_input.
+
+	* src/omp.c (XML_ERROR_SYNTAX, XML_ERROR_MISSING, XML_ERROR_AUTH_FAILED)
+	(XML_OK, XML_OK_REQUESTED, XML_INTERNAL_ERROR, XML_SERVICE_DOWN): New
+	macros.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Convert all
+	status tags to attributes.
+	(process_omp_client_input): Return -4 on XML syntax error.
+
 2009-05-29  Matthew Mundell <mmundell@intevation.de>
 
 	Make the tests compile and run again.
