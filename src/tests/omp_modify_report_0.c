@@ -117,7 +117,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "modify_report_response", NULL);
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
 
   if (compare_entities (entity, expected))
     {

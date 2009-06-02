@@ -67,7 +67,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_preferences_response", NULL);
-  add_entity (&expected->entities, "status", "500");
+  add_attribute (expected, "status", "500");
 
   if (compare_entities (entity, expected))
     {

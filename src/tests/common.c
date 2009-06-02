@@ -377,6 +377,7 @@ make_entity (const char* name, const char* text)
   entity->name = g_strdup (name ?: "");
   entity->text = g_strdup (text ?: "");
   entity->entities = NULL;
+  entity->attributes = NULL;
   return entity;
 }
 
@@ -413,6 +414,26 @@ add_entity (entities_t* entities, const char* name, const char* text)
 }
 
 /**
+ * @brief Add an attribute to an XML entity.
+ *
+ * @param[in]  entity  The entity.
+ * @param[in]  name    Name of the attribute.  Copied, copy is freed by
+ *                     free_entity.
+ * @param[in]  text    Text of the attribute.  Copied, copy is freed by
+ *                     free_entity.
+ *
+ * @return The new entity.
+ */
+void
+add_attribute (entity_t entity, const char* name, const char* value)
+{
+  if (entity->attributes == NULL)
+    entity->attributes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, g_free);
+  g_hash_table_insert (entity->attributes, g_strdup (name), g_strdup (value));
+}
+
+/**
  * @brief Free an entity, recursively.
  *
  * @param[in]  entity  The entity.
@@ -424,7 +445,7 @@ free_entity (entity_t entity)
     {
       free (entity->name);
       free (entity->text);
-      // FIX props
+      if (entity->attributes) g_hash_table_destroy (entity->attributes);
       if (entity->entities)
         {
           GSList* list = entity->entities;
@@ -488,7 +509,7 @@ compare_entity_with_name (gconstpointer entity, gconstpointer name)
  * @return Entity if found, else NULL.
  */
 entity_t
-entity_child (entity_t entity, char* name)
+entity_child (entity_t entity, const char* name)
 {
   if (entity->entities)
     {
@@ -497,6 +518,22 @@ entity_child (entity_t entity, char* name)
                                               compare_entity_with_name);
       return match ? (entity_t) match->data : NULL;
     }
+  return NULL;
+}
+
+/**
+ * @brief Get an attribute of an entity.
+ *
+ * @param  entity  Entity.
+ * @param  name    Name of the attribute.
+ *
+ * @return Attribute if found, else NULL.
+ */
+const char*
+entity_attribute (entity_t entity, const char* name)
+{
+  if (entity->attributes)
+    return (const char*) g_hash_table_lookup (entity->attributes, name);
   return NULL;
 }
 
@@ -514,6 +551,26 @@ char* buffer_point = buffer_start;
  * @brief End of the manager reading buffer.
  */
 char* buffer_end = buffer_start + BUFFER_SIZE;
+
+void
+add_attributes (entity_t entity, const gchar **names, const gchar **values)
+{
+  if (*names && *values)
+    {
+      if (entity->attributes == NULL)
+        entity->attributes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, g_free);
+      while (*names && *values)
+        {
+          if (*values)
+            g_hash_table_insert (entity->attributes,
+                                 g_strdup (*names),
+                                 g_strdup (*values));
+          names++;
+          values++;
+        }
+    }
+}
 
 /**
  * @brief Handle the start of an OMP XML element.
@@ -543,6 +600,8 @@ handle_start_element (GMarkupParseContext* context,
     }
   else
      entity = add_entity (NULL, element_name, NULL);
+
+  add_attributes (entity, attribute_names, attribute_values);
 
   /* "Push" the element. */
   if (data->first == NULL)
@@ -764,6 +823,23 @@ print_entities (FILE* stream, entities_t entities)
 }
 
 /**
+ * @brief Look for a key-value pair in a hashtable.
+ *
+ * @param[in]  key    Key.
+ * @param[in]  value  Value.
+ *
+ * @return FALSE if found, TRUE otherwise.
+ */
+gboolean
+compare_find_attribute (gpointer key, gpointer value, gpointer attributes2)
+{
+  gchar* value2 = g_hash_table_lookup (attributes2, key);
+  if (value2 && strcmp (value, value2) == 0) return FALSE;
+  tracef ("  compare failed attribute: %s\n", (char*) value);
+  return TRUE;
+}
+
+/**
  * @brief Compare two XML entity.
  *
  * @param[in]  entity1  First entity.
@@ -774,8 +850,12 @@ print_entities (FILE* stream, entities_t entities)
 int
 compare_entities (entity_t entity1, entity_t entity2)
 {
-  if (entity1 == NULL) return entity2 == NULL;
+  //tracef ("  compare %p vs %p\n", entity1, entity2);
+  if (entity1 == NULL) return entity2 == NULL ? 0 : 1;
   if (entity2 == NULL) return 1;
+  //tracef ("    attribs %p vs %p\n", entity1->attributes, entity2->attributes);
+  if (entity1->attributes == NULL) return entity2->attributes == NULL ? 0 : 1;
+  if (entity2->attributes == NULL) return 1;
 
   if (strcmp (entity1->name, entity2->name))
     {
@@ -788,13 +868,25 @@ compare_entities (entity_t entity1, entity_t entity2)
               entity1->text, entity2->text, entity1->name);
       return 1;
     }
-  // FIX props
+
+  if (g_hash_table_find (entity1->attributes,
+                         compare_find_attribute,
+                         (gpointer) entity2->attributes))
+    {
+      tracef ("  compare failed attributes\n");
+      return 1;
+    }
+
   // FIX entities can be in any order
   GSList* list1 = entity1->entities;
   GSList* list2 = entity2->entities;
   while (list1 && list2)
     {
-      if (compare_entities (list1->data, list2->data)) return 1;
+      if (compare_entities (list1->data, list2->data))
+        {
+          tracef ("  compare failed subentity\n");
+          return 1;
+        }
       list1 = g_slist_next (list1);
       list2 = g_slist_next (list2);
     }
@@ -853,9 +945,7 @@ compare_entities (entity_t entity1, entity_t entity2)
 const char*
 task_status (entity_t response)
 {
-  entity_t status = entity_child (response, "status");
-  if (status) return entity_text (status);
-  return NULL;
+  return entity_attribute (response, "status");
 }
 
 /**
@@ -885,13 +975,13 @@ authenticate (gnutls_session_t* session,
 #if 1
   return 0;
 #else
-  /* What to do if OMP authenticate is changed to always respond. */
+  /* What to do if OMP authenticate is changed to respond always. */
 
   entity_t entity = NULL;
   if (read_entity (session, &entity)) return -1;
 
   entity_t expected = add_entity (NULL, "authenticate_response", NULL);
-  add_entity (&expected->entities, "status", "201");
+  add_attribute (expected, "status", "201");
 
   ret = compare_entities (entity, expected);
 
@@ -1059,19 +1149,18 @@ start_task (gnutls_session_t* session,
 
   /* Check the response. */
 
-  entity_t status = entity_child (entity, "status");
+  const char* status = entity_attribute (entity, "status");
   if (status == NULL)
     {
       free_entity (entity);
       return -1;
     }
-  const char* status_text = entity_text (status);
-  if (strlen (status_text) == 0)
+  if (strlen (status) == 0)
     {
       free_entity (entity);
       return -1;
     }
-  char first = status_text[0];
+  char first = status[0];
   free_entity (entity);
   if (first == '2') return 0;
   return -1;
@@ -1101,19 +1190,18 @@ wait_for_task_start (gnutls_session_t* session,
 
       /* Check the response. */
 
-      entity_t status = entity_child (entity, "status");
+      const char* status = entity_attribute (entity, "status");
       if (status == NULL)
         {
           free_entity (entity);
           return -1;
         }
-      const char* status_text = entity_text (status);
-      if (strlen (status_text) == 0)
+      if (strlen (status) == 0)
         {
           free_entity (entity);
           return -1;
         }
-      if (status_text[0] == '2')
+      if (status[0] == '2')
         {
           /* Check the running status of the given task. */
 
@@ -1203,19 +1291,18 @@ wait_for_task_end (gnutls_session_t* session,
 
       /* Check the response. */
 
-      entity_t status = entity_child (entity, "status");
+      const char* status = entity_attribute (entity, "status");
       if (status == NULL)
         {
           free_entity (entity);
           return -1;
         }
-      const char* status_text = entity_text (status);
-      if (strlen (status_text) == 0)
+      if (strlen (status) == 0)
         {
           free_entity (entity);
           return -1;
         }
-      if (status_text[0] == '2')
+      if (status[0] == '2')
         {
           /* Check the running status of the given task. */
 
@@ -1303,19 +1390,18 @@ delete_task (gnutls_session_t* session, char* id)
 
   /* Check the response. */
 
-  entity_t status = entity_child (entity, "status");
+  const char* status = entity_attribute (entity, "status");
   if (status == NULL)
     {
       free_entity (entity);
       return -1;
     }
-  const char* status_text = entity_text (status);
-  if (strlen (status_text) == 0)
+  if (strlen (status) == 0)
     {
       free_entity (entity);
       return -1;
     }
-  char first = status_text[0];
+  char first = status[0];
   free_entity (entity);
   if (first == '2') return 0;
   return -1;

@@ -108,10 +108,10 @@ main ()
       fprintf (stderr, "Failed to read response.\n");
       goto delete_fail;
     }
-  entity_t status = entity_child (entity, "status");
+  const char* status = entity_attribute (entity, "status");
   if (status)
     {
-      if (strcmp (entity_text (status), "200")) goto free_fail;
+      if (strcmp (status, "200")) goto free_fail;
     }
   else
     goto free_fail;
@@ -133,7 +133,7 @@ main ()
       goto delete_fail;
     }
   entity_t expected = add_entity (NULL, "delete_report_response", NULL);
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
   if (compare_entities (entity, expected)) goto compare_fail;
   free_entity (expected);
   free_entity (entity);
@@ -155,7 +155,7 @@ main ()
   /* Compare to expected response. */
 
   expected = add_entity (NULL, "get_report_response", NULL);
-  add_entity (&expected->entities, "status", "404");
+  add_attribute (expected, "status", "404");
 
   if (compare_entities (entity, expected))
     {

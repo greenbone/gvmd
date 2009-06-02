@@ -118,7 +118,7 @@ main ()
   entity_t expected = add_entity (NULL,
                                   "get_report_response",
                                   "FIX report text in base64");
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
 
   if (compare_entities (entity, expected))
     {

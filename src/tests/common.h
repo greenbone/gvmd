@@ -52,7 +52,7 @@ typedef struct
 {
   char* name;
   char* text;
-  //void* attributes;
+  GHashTable* attributes;
   entities_t entities;
 } * entity_t;
 
@@ -65,11 +65,17 @@ first_entity (entities_t);
 entity_t
 add_entity (entities_t*, const char*, const char*);
 
+void
+add_attribute (entity_t, const char*, const char*);
+
 int
 compare_entities (entity_t, entity_t);
 
 entity_t
-entity_child (entity_t, char*);
+entity_child (entity_t, const char*);
+
+const char*
+entity_attribute (entity_t, const char*);
 
 char*
 entity_name (entity_t entity);

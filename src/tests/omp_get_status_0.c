@@ -77,7 +77,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_status_response", NULL);
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
   add_entity (&expected->entities, "task_count", "1");
   entity_t task = add_entity (&expected->entities, "task", NULL);
   add_entity (&task->entities, "task_id", "0");

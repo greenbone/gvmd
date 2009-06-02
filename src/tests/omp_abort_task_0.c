@@ -114,7 +114,7 @@ main ()
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "abort_task_response", NULL);
-  add_entity (&expected->entities, "status", "202");
+  add_attribute (expected, "status", "202");
 
   if (compare_entities (entity, expected))
     {

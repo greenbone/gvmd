@@ -79,7 +79,7 @@ main ()
   /* Compare response to expected response. */
 
   entity_t expected = add_entity (NULL, "start_task_response", NULL);
-  add_entity (&expected->entities, "status", "202");
+  add_attribute (expected, "status", "202");
 
   if (compare_entities (entity, expected))
     {

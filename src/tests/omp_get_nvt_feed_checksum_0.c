@@ -67,7 +67,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_nvt_feed_checksum_response", NULL);
-  add_entity (&expected->entities, "status", "503");
+  add_attribute (expected, "status", "503");
 
   if (compare_entities (entity, expected))
     {

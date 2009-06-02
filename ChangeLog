@@ -1,5 +1,38 @@
 2009-06-02  Matthew Mundell <mmundell@intevation.de>
 
+	Move response statuses into attributes, in tests.
+
+	* src/tests/omp_abort_task_0.c, src/tests/omp_create_task_0.c,
+	src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_get_certificates_0.c, src/tests/omp_get_dependencies_0.c,
+	src/tests/omp_get_nvt_all_0.c, src/tests/omp_get_nvt_details_0.c,
+	src/tests/omp_get_nvt_details_2.c, src/tests/omp_get_nvt_details_3.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c, src/tests/omp_get_preferences_0.c,
+	src/tests/omp_get_preferences_1.c, src/tests/omp_get_report_0.c,
+	src/tests/omp_get_rules_0.c, src/tests/omp_get_rules_1.c,
+	src/tests/omp_get_status_0.c, src/tests/omp_get_status_1.c,
+	src/tests/omp_get_status_2.c, src/tests/omp_get_status_3.c,
+	src/tests/omp_get_status_4.c, src/tests/omp_get_version_0.c,
+	src/tests/omp_help_0.c, src/tests/omp_modify_report_0.c,
+	src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c,
+	src/tests/omp_start_task_0.c: Adjust for attribute statuses.
+
+	* src/tests/common.h (entity_t): Add attributes.
+	(add_attribute, entity_child, entity_attribute): New headers.
+
+	* src/tests/common.c (make_entity): Init attributes.
+	(add_attribute, entity_attribute, add_attributes)
+	(compare_find_attribute): New functions.
+	(free_entity): Free attributes.
+	(entity_child): Make name param const.
+	(handle_start_element): Add attributes.
+	(compare_entities): Compare attributes.  Correct NULL check.
+	(task_status, authenticate, start_task, wait_for_task_start)
+	(wait_for_task_end, delete_task): Adjust for attribute statuses.
+
+2009-06-02  Matthew Mundell <mmundell@intevation.de>
+
 	Move response statuses into attributes.
 
 	* src/ompd.c (serve_omp): On process_omp_client_input error, write out

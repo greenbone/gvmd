@@ -71,7 +71,7 @@ main ()
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "get_version_response", NULL);
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
   entity_t version = add_entity (&expected->entities, "version", "1.0");
   add_entity (&version->entities, "preferred", NULL);
 

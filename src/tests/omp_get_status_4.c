@@ -90,7 +90,7 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_status_response", NULL);
-  add_entity (&expected->entities, "status", "200");
+  add_attribute (expected, "status", "200");
   add_entity (&expected->entities, "report_count", "1");
   entity_t report = add_entity (&expected->entities, "report", "");
   add_entity (&report->entities, "id", "0");
