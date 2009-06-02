@@ -1,5 +1,12 @@
 2009-06-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_bogus_0.c, src/tests/omp_bogus_1.c: New files, which
+	test the manager with a bogus command.
+
+	* src/tests/CMakeLists.txt: Add omp_bogus_0 and omp_bogus_1.
+
+2009-06-02  Matthew Mundell <mmundell@intevation.de>
+
 	Move response statuses into attributes, in tests.
 
 	* src/tests/omp_abort_task_0.c, src/tests/omp_create_task_0.c,
