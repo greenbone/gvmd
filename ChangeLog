@@ -1,5 +1,9 @@
 2009-06-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (task_status): Revert to correct implementation.
+
+2009-06-03  Matthew Mundell <mmundell@intevation.de>
+
 	When stopping tasks, account for the case where the task is stopped
 	already.
 

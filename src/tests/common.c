@@ -945,7 +945,9 @@ compare_entities (entity_t entity1, entity_t entity2)
 const char*
 task_status (entity_t response)
 {
-  return entity_attribute (response, "status");
+  entity_t status = entity_child (response, "status");
+  if (status) return entity_text (status);
+  return NULL;
 }
 
 /**
