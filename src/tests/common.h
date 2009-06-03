@@ -126,6 +126,9 @@ wait_for_task_end (gnutls_session_t*, char*);
 int
 wait_for_task_start (gnutls_session_t*, char*);
 
+int
+wait_for_task_delete (gnutls_session_t*, const char*);
+
 /* Setup. */
 
 void

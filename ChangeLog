@@ -1,5 +1,10 @@
 2009-06-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (wait_for_task_delete): New function.
+	* src/tests/common.h (wait_for_task_delete): New header.
+
+2009-06-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (task_status): Revert to correct implementation.
 
 2009-06-03  Matthew Mundell <mmundell@intevation.de>

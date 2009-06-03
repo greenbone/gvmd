@@ -1369,6 +1369,43 @@ wait_for_task_end (gnutls_session_t* session,
 }
 
 /**
+ * @brief Wait for the manager to actually remove a task.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+wait_for_task_delete (gnutls_session_t* session,
+                      const char* id)
+{
+  while (1)
+    {
+      entity_t entity;
+      const char* status;
+
+      if (sendf_to_manager (session,
+                            "<get_status>"
+                            "<task_id>%s</task_id>"
+                            "</get_status>",
+                            id)
+          == -1)
+        return -1;
+
+      entity = NULL;
+      if (read_entity (session, &entity)) return -1;
+
+      status = task_status (entity);
+      free_entity (entity);
+      if (status == NULL) break;
+
+      sleep (1);
+    }
+  return 0;
+}
+
+/**
  * @brief Delete a task and read the manager response.
  *
  * @param[in]  session  Pointer to GNUTLS session.
