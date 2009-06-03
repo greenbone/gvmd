@@ -39,6 +39,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  const char* omp_status;
   entity_t entity, status;
 
   setup_test ();
@@ -125,19 +126,22 @@ main ()
 
   status = entity_child (entity, "status");
   if (status == NULL
-      || strcmp (entity_name (entity), "status_response"))
+      || strcmp (entity_name (entity), "get_status_response"))
     {
       free_entity (entity);
       free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-  if (strcmp (entity_text (status), "404"))
+  omp_status = entity_attribute (entity, "status");
+  tracef ("omp_status: %s\n", omp_status);
+  if (strcmp (omp_status, "404"))
     {
       const char* status_text = task_status (entity);
+      tracef ("status_text: %s\n", status_text);
 
       /* It may be that the server is still busy stopping the task. */
-      if (status_text && strcmp (status_text, "Delete requested"))
+      if (status_text && strcmp (status_text, "Delete requested") == 0)
         {
           free_entity (entity);
           free (id);

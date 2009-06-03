@@ -1,5 +1,11 @@
 2009-06-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_delete_task_2.c: Correct expected tag name and string
+	comparison.  Compare the response status instead of the task status, to
+	the response code.
+
+2009-06-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_delete_task_0.c: Add check of whether delete request
 	succeeded immediately.  Correct expected tag name and string comparison.
 
