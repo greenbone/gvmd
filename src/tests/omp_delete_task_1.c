@@ -111,20 +111,26 @@ main ()
                         id))
     goto delete_fail;
 
-  entity = NULL;
-  if (read_entity (&session, &entity))
+  entity_t entity2 = NULL;
+  if (read_entity (&session, &entity2))
     {
       fprintf (stderr, "Failed to read response.\n");
-      goto delete_fail;
+      goto free_fail;
     }
+  free_entity (entity2);
+
+  /* Wait for the server to stop the task. */
+
+  if (wait_for_task_delete (&session, id)) goto free_fail;
 
   /* Try get the report. */
 
   if (sendf_to_manager (&session,
                         "<get_report><report_id>%s</report_id></get_report>",
-                        report_id)
+                        entity_text (report_id))
       == -1)
-    goto delete_fail;
+    goto free_fail;
+  free_entity (entity);
 
   /* Read the response. */
 
