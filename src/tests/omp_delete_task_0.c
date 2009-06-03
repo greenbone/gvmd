@@ -36,7 +36,7 @@
 int
 main ()
 {
-  int socket;
+  int socket, running = 1;
   gnutls_session_t session;
   char* id;
 
@@ -90,11 +90,23 @@ main ()
 
   if (compare_entities (entity, expected))
     {
-      free_entity (expected);
-      free_entity (entity);
-      free (id);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      entity_t expected2 = add_entity (NULL, "delete_task_response", NULL);
+      add_attribute (expected, "status", "200");
+
+      if (compare_entities (entity, expected2))
+        {
+          free_entity (expected2);
+          running = 0;
+        }
+      else
+        {
+          free_entity (expected2);
+          free_entity (expected);
+          free_entity (entity);
+          free (id);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (expected);
@@ -122,7 +134,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  expected = add_entity (NULL, "status_response", NULL);
+  expected = add_entity (NULL, "get_status_response", NULL);
   add_attribute (expected, "status", "404");
 
   if (compare_entities (entity, expected))
@@ -132,7 +144,7 @@ main ()
       free_entity (expected);
 
       /* It may be that the server is still busy stopping the task. */
-      if (status && strcmp (status, "Delete requested"))
+      if (running && status && strcmp (status, "Delete requested") == 0)
         {
           free_entity (entity);
           close_manager_connection (socket, session);
