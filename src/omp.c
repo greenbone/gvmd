@@ -1237,16 +1237,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
 
             if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
+            else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("abort_task"));
-            else if (stop_task (task))
+            else switch (stop_task (task))
               {
-                /* to_server is full. */
-                // FIX revert parsing for retry
-                // process_omp_client_input must return -2
-                abort ();
+                case 0:   /* Stopped. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("abort_task"));
+                  break;
+                case 1:   /* Stop requested. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("abort_task"));
+                  break;
+                default:  /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_server is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
               }
-            else
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("abort_task"));
             free_string_var (&current_uuid);
           }
         else
@@ -1622,18 +1631,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
+            else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("delete_task"));
-            else if (request_delete_task (&task))
+            else switch (request_delete_task (&task))
               {
-                /* to_server is full. */
-                // FIX or some other error
-                // FIX revert parsing for retry
-                // process_omp_client_input must return -2
-                tracef ("delete_task failed\n");
-                abort ();
+                case 0:    /* Deleted. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_task"));
+                  break;
+                case 1:    /* Delete requested. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
+                  break;
+                default:   /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_server is full. */
+                  // FIX or some other error
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  tracef ("delete_task failed\n");
+                  abort ();
+                  break;
               }
-            else
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
             free_string_var (&current_uuid);
           }
         else
@@ -1705,6 +1724,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
+            else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_task"));
             else
               {
@@ -1810,6 +1831,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_client_task == (task_t) NULL);
             task_t task;
             if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+            else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
             else if (start_task (task))
               {
@@ -1837,6 +1860,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             task_t task;
             if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
+            else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_status"));
             else
               {

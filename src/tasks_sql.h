@@ -108,7 +108,18 @@ sql (char* sql, ...)
   sqlite3_finalize (stmt);
 }
 
-void
+/**
+ * @brief Get a particular cell from a SQL query.
+ *
+ * @param  col          Column.
+ * @param  row          Row.
+ * @param  sql          Format string for SQL query.
+ * @param  args         Arguments for format string.
+ * @param  stmt_return  Return from statement.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
 sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
        sqlite3_stmt** stmt_return)
 {
@@ -130,7 +141,7 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
     {
       fprintf (stderr, "sqlite3_prepare failed: %s\n",
                sqlite3_errmsg (task_db));
-      abort ();
+      return -1;
     }
   while (1)
     {
@@ -139,14 +150,14 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
       if (ret == SQLITE_DONE)
         {
           fprintf (stderr, "sqlite3_step finished too soon\n");
-          abort ();
+          return 1;
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
           fprintf (stderr, "sqlite3_step failed: %s\n",
                    sqlite3_errmsg (task_db));
-          abort ();
+          return -1;
         }
       if (row == 0) break;
       row--;
@@ -154,6 +165,7 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
     }
 
   tracef ("   sql_x end\n");
+  return 0;
 }
 
 int
@@ -187,17 +199,42 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   return ret;
 }
 
-long long int
-sql_int64 (unsigned int col, unsigned int row, char* sql, ...)
+/**
+ * @brief Get a particular cell from a SQL query, as an int64.
+ *
+ * @param  ret    Return value.
+ * @param  sql    Format string for SQL query.
+ * @param  args   Arguments for format string.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
+sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
   va_list args;
   va_start (args, sql);
-  sql_x (col, row, sql, args, &stmt);
+  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
-  long long int ret = sqlite3_column_int64 (stmt, col);
+  switch (sql_x_ret)
+    {
+      case  0:
+        break;
+      case  1:
+        sqlite3_finalize (stmt);
+        return 1;
+        break;
+      default:
+        assert (0);
+        /* Fall through. */
+      case -1:
+        sqlite3_finalize (stmt);
+        return -1;
+        break;
+    }
+  *ret = sqlite3_column_int64 (stmt, col);
   sqlite3_finalize (stmt);
-  return ret;
+  return 0;
 }
 
 
@@ -1015,7 +1052,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  *
  * @param[in]  task_pointer  A pointer to the task.
  *
- * @return 0 on success, -1 if error.
+ * @return 0 if deleted, 1 if delete requested, -1 if error.
  */
 int
 request_delete_task (task_t* task_pointer)
@@ -1026,9 +1063,20 @@ request_delete_task (task_t* task_pointer)
 
   if (current_credentials.username == NULL) return -1;
 
-  if (stop_task (task) == -1) return -1;
-
-  set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+  switch (stop_task (task))
+    {
+      case 0:    /* Stopped. */
+        delete_task (task);
+        return 0;
+      case 1:    /* Stop requested. */
+        set_task_run_status (task, TASK_STATUS_DELETE_REQUESTED);
+        return 1;
+      default:   /* Programming error. */
+        assert (0);
+      case -1:   /* Error. */
+        return -1;
+        break;
+    }
 
   return 0;
 }
@@ -1172,16 +1220,29 @@ append_task_open_port (task_t task, unsigned int number, char* protocol)
  * @brief Find a task given an identifier.
  *
  * @param[in]   uuid  A task identifier.
- * @param[out]  task  Task return.
+ * @param[out]  task  Task return, 0 if succesfully failed to find task.
  *
- * @return FALSE on success, TRUE on error.
+ * @return FALSE on success (including if failed to find task), TRUE on error.
  */
 gboolean
 find_task (const char* uuid, task_t* task)
 {
-  *task = sql_int64 (0, 0,
+  switch (sql_int64 (task, 0, 0,
                      "SELECT ROWID FROM tasks_%s WHERE uuid = '%s';",
                      current_credentials.username,
-                     uuid);
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *task = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
   return FALSE;
 }

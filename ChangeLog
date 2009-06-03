@@ -1,3 +1,22 @@
+2009-06-03  Matthew Mundell <mmundell@intevation.de>
+
+	When stopping tasks, account for the case where the task is stopped
+	already.
+
+	* src/manage.c (stop_task): Return 1 instead of 0 if stop is requested.
+
+	* src/tasks_sql.h (sql_int64, sql_x): Add return values to indicate when
+	there are fewer rows than requested.
+	(request_delete_task): Return 1 instead of 0 if delete requested.  If
+	task is already stopped, then do the delete.
+	(find_task): Return FALSE only on error and return with task 0 to indicate
+	failure to find the task.  Update caller.
+
+	* src/omp.c (omp_xml_handle_end_element): When stopping and deleting a
+	task respond with OK if the operation is already done, instead of always
+	with OK_REQUESTED.  Add INTERNAL_ERROR cases to the return checks
+	of all find_task calls.
+
 2009-06-02  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS correct

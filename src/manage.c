@@ -293,7 +293,7 @@ report_task (const char* report_id, task_t* task_return)
             task_t task;
             int err = find_task (task_uuid, &task);
             g_free (report_path);
-            if (err)
+            if (err && task == 0)
               {
                 fprintf (stderr, "Failed to find task %s.\n", task_uuid);
                 g_free (task_uuid);
@@ -1089,7 +1089,8 @@ start_task (task_t task)
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, 1 if stop requested, -1 if out of space in \ref
+ *         to_server buffer.
  */
 int
 stop_task (task_t task)
@@ -1103,6 +1104,7 @@ stop_task (task_t task)
       if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+      return 1;
     }
   return 0;
 }
