@@ -54,7 +54,7 @@ main ()
   gnutls_session_t session;
   char* id;
   char* md5;
-  entity_t status, entity, algorithm;
+  entity_t entity, checksum;
 
   setup_test ();
 
@@ -160,11 +160,12 @@ main ()
   /* Compare to expected response. */
 
   if (entity == NULL
-      || (status = entity_child (entity, "status")) == NULL
-      || strcmp (entity_text (status), "200")
-      || (algorithm = entity_child (entity, "algorithm")) == NULL
-      || strcmp (entity_text (algorithm), "md5")
-      || (md5 = entity_text (entity)) == NULL
+      || entity_attribute (entity, "status") == NULL
+      || strcmp (entity_attribute (entity, "status"), "200")
+      || (checksum = entity_child (entity, "checksum")) == NULL
+      || entity_attribute (checksum, "algorithm") == NULL
+      || strcmp (entity_attribute (checksum, "algorithm"), "md5")
+      || (md5 = entity_text (checksum)) == NULL
       || !isalnumstr (md5))
     {
       free_entity (entity);

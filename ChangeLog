@@ -1,5 +1,12 @@
 2009-06-04  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In
+	CLIENT_GET_NVT_FEED_CHECKSUM add checksum entity with algorithm.
+
+	* src/tests/omp_get_nvt_feed_checksum_1.c: Match updated OMP.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_VERSION move
 	preferred entity to attribute.
 

@@ -1428,9 +1428,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
                                     " status=\"" STATUS_OK "\">"
-                                    "<algorithm>md5</algorithm>");
+                                    "<checksum algorithm=\"md5\">");
             SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
-            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_feed_checksum_response>");
+            SEND_TO_CLIENT_OR_FAIL ("</checksum>"
+                                    "</get_nvt_feed_checksum_response>");
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
