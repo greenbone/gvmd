@@ -1,5 +1,21 @@
 2009-06-04  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (find_attribute): New function.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
+	GET_NVT_FEED_CHECKSUM "algorithm" attribute.
+
+	* src/tests/omp_get_nvt_feed_checksum_2.c,
+	src/tests/omp_get_nvt_feed_checksum_3.c,
+	src/tests/omp_get_nvt_feed_checksum_4.c,
+	src/tests/omp_get_nvt_feed_checksum_5.c: New files which test
+	GET_NVT_FEED_CHECKSUM "algorithm" attribute.
+
+	* src/tests/CMakeLists.txt: Add omp_get_nvt_feed_checksum_2,
+	omp_get_nvt_feed_checksum_3, omp_get_nvt_feed_checksum_4 and
+	omp_get_nvt_feed_checksum_5.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_ALL change
 	algorithm entity to a feed_checksum attribute.
 

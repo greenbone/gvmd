@@ -283,6 +283,33 @@ error_send_to_client (GError** error)
 #define XML_SERVICE_DOWN(tag) "<" tag "_response status=\"" STATUS_SERVICE_DOWN "\"/>"
 
 /**
+ * @brief Find an attribute in a parser callback list of attributes.
+ *
+ * @param[in]   attribute_names   List of names.
+ * @param[in]   attribute_values  List of values.
+ * @param[in]   attribute_name    Name of sought attribute.
+ * @param[out]  attribute_value   Attribute value return.
+ *
+ * @return 1 if found, else 0.
+ */
+int
+find_attribute (const gchar **attribute_names,
+                const gchar **attribute_values,
+                const char *attribute_name,
+                const gchar **attribute_value)
+{
+  while (*attribute_names && *attribute_values)
+    if (strcmp (*attribute_names, attribute_name))
+      attribute_names++, attribute_values++;
+    else
+      {
+        *attribute_value = *attribute_values;
+        return 1;
+      }
+  return 0;
+}
+
+/**
  * @brief Handle the start of an OMP XML element.
  *
  * React to the start of an XML element according to the current value
@@ -302,8 +329,8 @@ error_send_to_client (GError** error)
 static void
 omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               const gchar *element_name,
-                              /*@unused@*/ const gchar **attribute_names,
-                              /*@unused@*/ const gchar **attribute_values,
+                              const gchar **attribute_names,
+                              const gchar **attribute_values,
                               /*@unused@*/ gpointer user_data,
                               GError **error)
 {
@@ -367,7 +394,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strncasecmp ("GET_NVT_ALL", element_name, 11) == 0)
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strncasecmp ("GET_NVT_FEED_CHECKSUM", element_name, 21) == 0)
-          set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "algorithm", &attribute))
+              append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
+          }
         else if (strncasecmp ("GET_NVT_DETAILS", element_name, 20) == 0)
           set_client_state (CLIENT_GET_NVT_DETAILS);
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
@@ -1423,7 +1456,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
-        if (server.plugins_md5)
+        if (current_uuid && strcasecmp (current_uuid, "md5"))
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_nvt_feed_checksum"));
+        else if (server.plugins_md5)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
                                     " status=\"" STATUS_OK "\">"
@@ -1434,6 +1469,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
+        free_string_var (&current_uuid);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
