@@ -33,6 +33,7 @@
 
 #include "common.h"
 #include "../tracef.h"
+#include "../string.h"
 
 int
 main ()
@@ -40,7 +41,8 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
-  entity_t entity, status;
+  const char* status = NULL;
+  entity_t entity, checksum;
 
   setup_test ();
 
@@ -162,15 +164,24 @@ main ()
 
   if (entity == NULL
       || strcmp (entity_name (entity), "get_nvt_all_response")
-      || (status = entity_child (entity, "status")) == NULL
-      || (strcmp (entity_text (status), "200")
-          && strcmp (entity_text (status), "503")))
+      || (status = entity_attribute (entity, "status")) == NULL
+      /* Succeed if manager still waiting for checksum from server. */
+      || (strcmp (status, "503")))
     {
-      free_entity (entity);
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
+      const char* md5;
+      if (strcmp (status, "200")
+          || (checksum = entity_child (entity, "feed_checksum")) == NULL
+          || entity_attribute (checksum, "algorithm") == NULL
+          || strcmp (entity_attribute (checksum, "algorithm"), "md5")
+          || (md5 = entity_text (checksum)) == NULL
+          || !isalnumstr (md5))
+        {
+          free_entity (entity);
+          delete_task (&session, id);
+          close_manager_connection (socket, session);
+          free (id);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (entity);

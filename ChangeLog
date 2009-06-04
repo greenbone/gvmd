@@ -1,5 +1,21 @@
 2009-06-04  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_ALL change
+	algorithm entity to a feed_checksum attribute.
+
+	* src/tests/omp_get_nvt_all_1.c: Match updated GET_NVT_ALL.  Add
+	algorithm and checksum checks.
+
+	* ChangeLog: Add entry for last commit.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
+	* src/string.h (isalnumstr): New header.
+	* src/string.c (isalnumstr): New function.
+	* src/tests/omp_get_nvt_feed_checksum_1.c (isalnumstr): Remove.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In
 	CLIENT_GET_NVT_FEED_CHECKSUM add checksum entity with algorithm.
 

@@ -1396,8 +1396,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      nvtis_size (server.plugins));
             if (server.plugins_md5)
               {
-                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
-                                        "<algorithm>md5</algorithm>");
+                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
                 SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
                 SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
               }
