@@ -73,7 +73,7 @@ main ()
   entity_t expected = add_entity (NULL, "get_version_response", NULL);
   add_attribute (expected, "status", "200");
   entity_t version = add_entity (&expected->entities, "version", "1.0");
-  add_entity (&version->entities, "preferred", NULL);
+  add_attribute (version, "preferred", "yes");
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

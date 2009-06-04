@@ -1,3 +1,11 @@
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_VERSION move
+	preferred entity to attribute.
+
+	* src/tests/omp_get_version_0.c: Move expected preferred entity to
+	attribute.
+
 2009-06-03  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/omp_delete_task_2.c: Correct expected tag name and string

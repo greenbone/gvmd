@@ -1620,7 +1620,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_VERSION:
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\">"
-                                "<version><preferred/>1.0</version>"
+                                "<version preferred=\"yes\">1.0</version>"
                                 "</get_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
