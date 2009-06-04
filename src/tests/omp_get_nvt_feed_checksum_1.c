@@ -35,18 +35,6 @@
 #include "common.h"
 #include "../tracef.h"
 
-/**
- * @brief Check whether a string contains only alphanumeric characters.
- *
- * @return 1 if all characters are alphanumeric, else 0.
- */
-int
-isalnumstr (const char* string)
-{
-  while (*string) if (isalnum (*string)) string++; else return 0;
-  return 1;
-}
-
 int
 main ()
 {

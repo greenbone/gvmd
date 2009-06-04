@@ -43,4 +43,7 @@ free_string_var (string*);
 /*@shared@*/ char*
 strip_space (/*@shared@*/ char*, /*@shared@*/ char*);
 
+int
+isalnumstr (const char*);
+
 #endif

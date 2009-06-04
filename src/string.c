@@ -36,6 +36,7 @@
 #define TRACE 0
 
 #include <assert.h>
+#include <ctype.h>
 #include <glib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -154,4 +155,16 @@ strip_space (char* string, char* end)
       end[1] = '\0';
     }
   return string;
+}
+
+/**
+ * @brief Check whether a string contains only alphanumeric characters.
+ *
+ * @return 1 if all characters are alphanumeric, else 0.
+ */
+int
+isalnumstr (const char* string)
+{
+  while (*string) if (isalnum (*string)) string++; else return 0;
+  return 1;
 }
