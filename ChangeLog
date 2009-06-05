@@ -1,5 +1,12 @@
 2009-06-04  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (parse_server_plugin_list_tags, process_otp_server_input): Use
+	new nvtis function names.
+
+	* src/omp.c (omp_xml_handle_end_element): Use new nvtis function names.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (find_attribute): New function.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
 	GET_NVT_FEED_CHECKSUM "algorithm" attribute.

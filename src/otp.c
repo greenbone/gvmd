@@ -896,7 +896,7 @@ parse_server_plugin_list_tags (char** messages)
       if (current_plugins && current_plugin)
         {
           nvti_set_tag (current_plugin, value);
-          add_nvti (current_plugins, current_plugin);
+          nvtis_add (current_plugins, current_plugin);
           current_plugin = NULL;
         }
       set_server_state (SERVER_PLUGIN_LIST_OID);
@@ -1803,7 +1803,7 @@ process_otp_server_input ()
                 {
                   if (strlen (field) == 0)
                     {
-                      free_nvtis (server.plugins);
+                      nvtis_free (server.plugins);
                       server.plugins = current_plugins;
                       current_plugins = NULL;
                       set_server_state (SERVER_DONE);
@@ -2018,7 +2018,7 @@ process_otp_server_input ()
                      * FIX depends what server does on multiple requests
                      */
                     if (current_plugins == NULL)
-                      current_plugins = make_nvtis ();
+                      current_plugins = nvtis_new ();
                     set_server_state (SERVER_PLUGIN_LIST_OID);
                   }
                 else if (strncasecmp ("PORT", field, 4) == 0)

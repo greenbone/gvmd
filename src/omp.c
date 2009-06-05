@@ -1478,7 +1478,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             if (current_uuid)
               {
-                nvti_t* plugin = find_nvti (server.plugins, current_uuid);
+                nvti_t* plugin = nvtis_lookup (server.plugins, current_uuid);
                 if (plugin)
                  {
                     SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response"
