@@ -1,5 +1,9 @@
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (make_task): Initialise task run state.
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_create_task_0.c: Add check that task run status is
 	initialised correctly.
 

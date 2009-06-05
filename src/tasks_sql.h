@@ -948,15 +948,19 @@ free_tasks ()
 task_t
 make_task (char* name, unsigned int time, char* comment)
 {
+  task_t task;
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) NULL;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks_%s (uuid, name, time, comment) VALUES ('%s', %s, %u, %s);",
+  sql ("INSERT into tasks_%s (uuid, name, time, comment)"
+       " VALUES ('%s', %s, %u, %s);",
        current_credentials.username, uuid, name, time, comment);
+  task = sqlite3_last_insert_rowid (task_db);
+  set_task_run_status (task, TASK_STATUS_NEW);
   free (uuid);
   free (name);
   free (comment);
-  return sqlite3_last_insert_rowid (task_db);
+  return task;
 }
 
 typedef /*@only@*/ struct dirent * only_dirent_pointer;
