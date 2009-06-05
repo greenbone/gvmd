@@ -83,6 +83,7 @@ int verbose = 0;
 
 #include <assert.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <glib.h>             /* For XML parsing. */
 #include <netdb.h>
@@ -1444,6 +1445,53 @@ delete_task (gnutls_session_t* session, char* id)
   free_entity (entity);
   if (first == '2') return 0;
   return -1;
+}
+
+/**
+ * @brief Get the status of a task.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
+{
+  const char* status_code;
+  int ret;
+
+  if (sendf_to_manager (session,
+                        "<get_status>"
+                        "<task_id>%s</task_id>"
+                        "</get_status>",
+                        id)
+      == -1)
+    return -1;
+
+  /* Read the response. */
+
+  *status = NULL;
+  if (read_entity (session, status)) return -1;
+
+  /* Check the response. */
+
+  status_code = entity_attribute (*status, "status");
+  if (status_code == NULL)
+    {
+      free_entity (*status);
+      return -1;
+    }
+  if (strlen (status_code) == 0)
+    {
+      free_entity (*status);
+      return -1;
+    }
+  if (status_code[0] == '2') return 0;
+  ret = (int) strtol (status_code, NULL, 10);
+  free_entity (*status);
+  if (errno == ERANGE) return -1;
+  return ret;
 }
 
 

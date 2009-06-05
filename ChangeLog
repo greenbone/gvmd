@@ -1,5 +1,10 @@
 2009-06-04  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (omp_get_status): New function.
+	* src/tests/common.h (omp_get_status): New header.
+
+2009-06-04  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (parse_server_plugin_list_tags, process_otp_server_input): Use
 	new nvtis function names.
 

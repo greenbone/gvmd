@@ -129,6 +129,9 @@ wait_for_task_start (gnutls_session_t*, char*);
 int
 wait_for_task_delete (gnutls_session_t*, const char*);
 
+int
+omp_get_status (gnutls_session_t*, const char*, entity_t*);
+
 /* Setup. */
 
 void
