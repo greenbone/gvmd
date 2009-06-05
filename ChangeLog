@@ -1,5 +1,9 @@
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (stringify): Remove.
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
 	Bring comment docs up to date.
 
 	* src/string.c (isalnumstr): Doc param.

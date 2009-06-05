@@ -1033,8 +1033,6 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
     {
       gsize dummy;
 
-#define stringify (x) #x
-
       DEF (copyright);
       DEF (description);
       DEF (summary);
