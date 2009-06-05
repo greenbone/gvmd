@@ -382,12 +382,26 @@ make_entity (const char* name, const char* text)
   return entity;
 }
 
+/**
+ * @brief Return all the entities from an entities_t after the first.
+ *
+ * @param[in]  entities  The list of entities.
+ *
+ * @return All the entities that follow the first.
+ */
 entities_t
 next_entities (entities_t entities)
 {
   return (entities_t) entities->next;
 }
 
+/**
+ * @brief Return the first entity from an entities_t.
+ *
+ * @param[in]  entities  The list of entities.
+ *
+ * @return The first entity.
+ */
 entity_t
 first_entity (entities_t entities)
 {
@@ -420,7 +434,7 @@ add_entity (entities_t* entities, const char* name, const char* text)
  * @param[in]  entity  The entity.
  * @param[in]  name    Name of the attribute.  Copied, copy is freed by
  *                     free_entity.
- * @param[in]  text    Text of the attribute.  Copied, copy is freed by
+ * @param[in]  value   Text of the attribute.  Copied, copy is freed by
  *                     free_entity.
  *
  * @return The new entity.
@@ -463,7 +477,7 @@ free_entity (entity_t entity)
 /**
  * @brief Get the text an entity.
  *
- * @param  entity  Entity.
+ * @param[in]  entity  Entity.
  *
  * @return Entity text, which is freed by free_entity.
  */
@@ -476,7 +490,7 @@ entity_text (entity_t entity)
 /**
  * @brief Get the name an entity.
  *
- * @param  entity  Entity.
+ * @param[in]  entity  Entity.
  *
  * @return Entity name, which is freed by free_entity.
  */
@@ -489,8 +503,8 @@ entity_name (entity_t entity)
 /**
  * @brief Compare a given name with the name of a given entity.
  *
- * @param  entity  Entity.
- * @param  name    Name.
+ * @param[in]  entity  Entity.
+ * @param[in]  name    Name.
  *
  * @return Zero if entity name matches name, otherwise a positive or negative
  *         number as from strcmp.
@@ -504,8 +518,8 @@ compare_entity_with_name (gconstpointer entity, gconstpointer name)
 /**
  * @brief Get a child of an entity.
  *
- * @param  entity  Entity.
- * @param  name    Name of the child.
+ * @param[in]  entity  Entity.
+ * @param[in]  name    Name of the child.
  *
  * @return Entity if found, else NULL.
  */
@@ -525,8 +539,8 @@ entity_child (entity_t entity, const char* name)
 /**
  * @brief Get an attribute of an entity.
  *
- * @param  entity  Entity.
- * @param  name    Name of the attribute.
+ * @param[in]  entity  Entity.
+ * @param[in]  name    Name of the attribute.
  *
  * @return Attribute if found, else NULL.
  */
@@ -553,6 +567,13 @@ char* buffer_point = buffer_start;
  */
 char* buffer_end = buffer_start + BUFFER_SIZE;
 
+/**
+ * @brief Add attributes from an XML callback to an entity.
+ *
+ * @param[in]  entity  The entity.
+ * @param[in]  names   List of attribute names.
+ * @param[in]  values  List of attribute values.
+ */
 void
 add_attributes (entity_t entity, const gchar **names, const gchar **values)
 {
@@ -824,10 +845,11 @@ print_entities (FILE* stream, entities_t entities)
 }
 
 /**
- * @brief Look for a key-value pair in a hashtable.
+ * @brief Look for a key-value pair in a hash table.
  *
- * @param[in]  key    Key.
- * @param[in]  value  Value.
+ * @param[in]  key          Key.
+ * @param[in]  value        Value.
+ * @param[in]  attributes2  The hash table.
  *
  * @return FALSE if found, TRUE otherwise.
  */
@@ -1452,6 +1474,7 @@ delete_task (gnutls_session_t* session, char* id)
  *
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  id       ID of task.
+ * @param[out] status   Status return.
  *
  * @return 0 on success, -1 or OMP response code on error.
  */
@@ -1497,6 +1520,14 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
 
 /* Setup. */
 
+/**
+ * @brief Setup a test.
+ *
+ * Set up the verbosity flag according the the OPENVAS_TEST_VERBOSE
+ * environment variable and prepare signal handling.
+ *
+ * Each test should call this at the very beginning of the test.
+ */
 void
 setup_test ()
 {

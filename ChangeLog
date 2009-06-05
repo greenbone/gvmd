@@ -1,5 +1,20 @@
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
+	Bring comment docs up to date.
+
+	* src/string.c (isalnumstr): Doc param.
+
+	* src/omp.c: Add docs to new defines.  Move DEF out of send_plugin.
+	(SENDF_TO_CLIENT_OR_FAIL): Doc params properly.
+
+	* src/tests/common.c (next_entities, first_entity): New functions.
+	(add_attribute): Correct param name in doc.
+	(add_attributes, setup_test): Add doc.
+	(compare_find_attribute): Doc attributes2 param.
+	(omp_get_status): Doc status param.
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (make_task): Initialise task run state.
 
 2009-06-05  Matthew Mundell <mmundell@intevation.de>

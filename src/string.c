@@ -160,6 +160,8 @@ strip_space (char* string, char* end)
 /**
  * @brief Check whether a string contains only alphanumeric characters.
  *
+ * @param  string  String to check.
+ *
  * @return 1 if all characters are alphanumeric, else 0.
  */
 int

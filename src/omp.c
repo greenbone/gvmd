@@ -98,16 +98,49 @@ static char* help_text = "\n"
  *     404 Missing
  */
 
+/**
+ * @brief Response code for a syntax error.
+ */
 #define STATUS_ERROR_SYNTAX       "400"
+
+/**
+ * @brief Response code when authorisation is required.
+ */
 #define STATUS_ERROR_MUST_AUTH    "401"
+
+/**
+ * @brief Response code for a missing resource.
+ */
 #define STATUS_ERROR_MISSING      "404"
+
+/**
+ * @brief Response code when authorisation failed.
+ */
 #define STATUS_ERROR_AUTH_FAILED  "400"
 
+/**
+ * @brief Response code on success.
+ */
 #define STATUS_OK                 "200"
+
+/**
+ * @brief Response code on success, when a resource is created.
+ */
 #define STATUS_OK_CREATED         "201"
+
+/**
+ * @brief Response code on success, when the operation will finish later.
+ */
 #define STATUS_OK_REQUESTED       "202"
 
+/**
+ * @brief Response code for an internal error.
+ */
 #define STATUS_INTERNAL_ERROR     "500"
+
+/**
+ * @brief Response code when a service is down.
+ */
 #define STATUS_SERVICE_DOWN       "503"
 
 
@@ -272,14 +305,53 @@ error_send_to_client (GError** error)
 
 /* XML parser handlers. */
 
+/**
+ * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_ERROR_SYNTAX(tag) "<" tag "_response status=\"" STATUS_ERROR_SYNTAX "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_ERROR_MISSING response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_ERROR_MISSING(tag) "<" tag "_response status=\"" STATUS_ERROR_MISSING "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_ERROR_AUTH_FAILED response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_ERROR_AUTH_FAILED(tag) "<" tag "_response status=\"" STATUS_ERROR_AUTH_FAILED "\"/>"
 
+/**
+ * @brief Expand to XML for a STATUS_OK response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_OK(tag) "<" tag "_response status=\"" STATUS_OK "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_OK_REQUESTED response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_OK_REQUESTED(tag) "<" tag "_response status=\"" STATUS_OK_REQUESTED "\"/>"
 
+/**
+ * @brief Expand to XML for a STATUS_INTERNAL_ERROR response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_INTERNAL_ERROR(tag) "<" tag "_response status=\"" STATUS_INTERNAL_ERROR "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_SERVICE_DOWN response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
 #define XML_SERVICE_DOWN(tag) "<" tag "_response status=\"" STATUS_SERVICE_DOWN "\"/>"
 
 /**
@@ -922,6 +994,23 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 }
 
 /**
+ * @brief Define a code snippet for send_plugin.
+ *
+ * @param  x  Prefix for names in snippet.
+ */
+#define DEF(x)                                                    \
+      char* x = nvti_ ## x (plugin);                              \
+      /* FIX The g_convert is a temp hack. */                     \
+      gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
+                                         "UTF-8", "ISO_8859-1",   \
+                                         NULL, &dummy, NULL)      \
+                            : NULL;                               \
+      gchar* x ## _text = x ## _utf8                              \
+                          ? g_markup_escape_text (x ## _utf8, -1) \
+                          : g_strdup ("");                        \
+      g_free (x ## _utf8);
+
+/**
  * @brief Send XML for a plugin.
  *
  * @param[in]  key    The plugin OID.
@@ -945,18 +1034,6 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       gsize dummy;
 
 #define stringify (x) #x
-
-#define DEF(x)                                                    \
-      char* x = nvti_ ## x (plugin);                              \
-      /* FIX The g_convert is a temp hack. */                     \
-      gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
-                                         "UTF-8", "ISO_8859-1",   \
-                                         NULL, &dummy, NULL)      \
-                            : NULL;                               \
-      gchar* x ## _text = x ## _utf8                              \
-                          ? g_markup_escape_text (x ## _utf8, -1) \
-                          : g_strdup ("");                        \
-      g_free (x ## _utf8);
 
       DEF (copyright);
       DEF (description);
@@ -1216,7 +1293,8 @@ send_reports (task_t task)
  * Queue a message in \ref to_client with \ref send_to_client.  On failure
  * call \ref error_send_to_client on a GError* called "error" and do a return.
  *
- * @param[in]   msg    The message, a string.
+ * @param[in]   format    Format string for message.
+ * @param[in]   args      Arguments for format string.
  */
 #define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
   do                                                                         \
