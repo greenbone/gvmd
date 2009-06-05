@@ -1,4 +1,9 @@
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/omp_create_task_0.c: Add check that task run status is
+	initialised correctly.
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/common.c (omp_get_status): New function.
 	* src/tests/common.h (omp_get_status): New header.

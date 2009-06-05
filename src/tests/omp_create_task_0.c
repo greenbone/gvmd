@@ -38,6 +38,7 @@ main ()
 {
   int socket, ret;
   gnutls_session_t session;
+  entity_t entity, id_entity, expected, status;
 
   setup_test ();
 
@@ -65,14 +66,14 @@ main ()
 
   /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   if (read_entity (&session, &entity))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  entity_t id_entity = entity_child (entity, "task_id");
+  id_entity = entity_child (entity, "task_id");
   if (id_entity == NULL)
     {
       free_entity (entity);
@@ -82,7 +83,7 @@ main ()
 
   /* Compare. */
 
-  entity_t expected = add_entity (NULL, "create_task_response", NULL);
+  expected = add_entity (NULL, "create_task_response", NULL);
   add_attribute (expected, "status", "201");
   add_entity (&expected->entities, "task_id", entity_text (id_entity));
 
@@ -90,6 +91,16 @@ main ()
     ret = EXIT_FAILURE;
   else
     ret = EXIT_SUCCESS;
+
+  if (omp_get_status (&session, entity_text (id_entity), &status))
+    ret = EXIT_FAILURE;
+  else
+    {
+      if (task_status (status) == NULL
+          || strcmp (task_status (status), "New"))
+        ret = EXIT_FAILURE;
+      free_entity (status);
+    }
 
   /* Cleanup. */
 
