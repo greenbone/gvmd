@@ -587,9 +587,11 @@ accept_and_maybe_fork ()
       case -1:
         /* Parent when error, return to select. */
         perror ("Failed to fork child");
+        close (client_socket);
         break;
       default:
         /* Parent.  Return to select. */
+        close (client_socket);
         break;
     }
 }
