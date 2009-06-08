@@ -1368,7 +1368,7 @@ process_otp_server_input ()
                 break;
               case SERVER_CERTIFICATE_FINGERPRINT:
                 {
-                  if (strlen (field) == 0)
+                  if (strlen (field) == 0 && field[1] == '|')
                     {
                       certificates_free (server.certificates);
                       server.certificates = current_certificates;
@@ -1761,7 +1761,7 @@ process_otp_server_input ()
                 }
               case SERVER_PLUGIN_DEPENDENCY_NAME:
                 {
-                  if (strlen (field) == 0)
+                  if (strlen (field) == 0 && field[1] == '|')
                     {
                       set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))
@@ -1801,7 +1801,7 @@ process_otp_server_input ()
                 }
               case SERVER_PLUGIN_LIST_OID:
                 {
-                  if (strlen (field) == 0)
+                  if (strlen (field) == 0 && field[1] == '|')
                     {
                       nvtis_free (server.plugins);
                       server.plugins = current_plugins;
@@ -1957,7 +1957,7 @@ process_otp_server_input ()
                 }
               case SERVER_PREFERENCE_NAME:
                 {
-                  if (strlen (field) == 0)
+                  if (strlen (field) == 0 && field[1] == '|')
                     {
                       set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))

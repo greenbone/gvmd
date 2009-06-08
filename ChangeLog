@@ -1,5 +1,12 @@
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (process_otp_server_input): In the cases where the OTP that
+	follows is either a field or "<|> SERVER", check for the '|' in
+	addition to checking if the length of "field" is zero, as "field" may
+	legitimately be an empty field (" <|> field2 ...").
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (stringify): Remove.
 
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
