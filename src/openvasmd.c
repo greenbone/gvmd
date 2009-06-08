@@ -315,9 +315,11 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       nfds = client_socket + 1;
 
       timeout.tv_usec = 0;
+      // FIX time check error
       timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (time (NULL) - start_time);
       if (timeout.tv_sec <= 0)
         {
+          tracef ("protocol timeout (1)\n");
           ret = PROTOCOL_TIMEOUT;
           break;
         }
@@ -407,8 +409,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
             }
         }
 
+      // FIX time check error
       if ((time (NULL) - start_time) >= READ_PROTOCOL_TIMEOUT)
         {
+          tracef ("protocol timeout (2)\n");
           ret = PROTOCOL_TIMEOUT;
           break;
         }
@@ -432,6 +436,8 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
  * serve_omp to serve the protocol, depending on the first message that
  * the client sends.  Read the first message with \ref read_protocol.
  *
+ * In all cases, close client_socket before returning.
+ *
  * @param[in]  client_socket  The socket connected to the client.
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
@@ -448,11 +454,15 @@ serve_client (int client_socket)
   if (server_socket == -1)
     {
       perror ("Failed to create server socket");
+      close_stream_connection (client_socket);
       return EXIT_FAILURE;
     }
 
   if (make_session (server_socket, &server_session, &server_credentials))
-    return EXIT_FAILURE;
+    {
+      close_stream_connection (client_socket);
+      return EXIT_FAILURE;
+    }
 
   /* Get client socket and session from libopenvas. */
 
@@ -489,19 +499,23 @@ serve_client (int client_socket)
   switch (read_protocol (client_session, client_socket))
     {
       case PROTOCOL_OTP:
+        /* It's up to serve_otp to close_stream_connection client_socket. */
         if (serve_otp (client_session, &server_session,
                        client_socket, server_socket))
           goto fail;
         break;
       case PROTOCOL_OMP:
+        /* It's up to serve_omp to close_stream_connection on client_socket. */
         if (serve_omp (client_session, &server_session, &server_credentials,
                        client_socket, &server_socket))
           goto fail;
         break;
       case PROTOCOL_CLOSE:
+        close_stream_connection (client_socket);
         fprintf (stderr, "EOF while trying to read protocol.\n");
         goto fail;
       case PROTOCOL_TIMEOUT:
+        close_stream_connection (client_socket);
         break;
       default:
         fprintf (stderr, "Failed to determine protocol.\n");
@@ -516,6 +530,7 @@ serve_client (int client_socket)
   return EXIT_SUCCESS;
 
  fail:
+  close_stream_connection (client_socket);
   end_session (server_socket, server_session, server_credentials);
   close (server_socket);
   return EXIT_FAILURE;
@@ -579,8 +594,9 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
           tracef ("   Server context attached.\n");
+          /* It's up to serve_client to close_stream_connection on
+           * secure_client_socket. */
           int ret = serve_client (secure_client_socket);
-          close_stream_connection (secure_client_socket);
           save_tasks ();
           exit (ret);
         }

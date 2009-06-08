@@ -1,5 +1,21 @@
 2009-06-05  Matthew Mundell <mmundell@intevation.de>
 
+	Close client connections that are idle for longer than a fixed limit.
+
+	* src/openvasmd.c (serve_client): Close client socket on return.
+	(accept_and_maybe_fork): Leave it to serve_client to close the client
+	socket.
+
+	* src/ompd.c (CLIENT_TIMEOUT): New definition.
+	(serve_omp): Close client_socket on return.  Timeout if the client
+	connection is idle for CLIENT_TIMEOUT or more seconds.
+
+	* src/tests/timeout_0.c: New file, tests client timeout.
+
+	* src/tests/CMakeLists.txt: Add timeout_0.  Move timeout tests to end.
+
+2009-06-05  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd.c (accept_and_maybe_fork): Close client socket in
 	parent process.
 

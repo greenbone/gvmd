@@ -53,12 +53,19 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <network.h>
+
 #ifdef S_SPLINT_S
 /* FIX Weird that these are missing. */
 /*@-exportheader@*/
 int socket(int domain, int type, int protocol);
 /*@=exportheader@*/
 #endif
+
+/**
+ * @brief Seconds of client idleness before manager closes client connection.
+ */
+#define CLIENT_TIMEOUT 900
 
 /**
  * @brief File descriptor set mask: selecting on client read.
@@ -399,6 +406,7 @@ serve_omp (gnutls_session_t* client_session,
            int client_socket, int* server_socket_addr)
 {
   int nfds, ret;
+  time_t last_client_activity_time;
   uint8_t lastfds;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
@@ -450,6 +458,7 @@ serve_omp (gnutls_session_t* client_session,
        * client gets any buffered output and the response to the
        * error. */
       write_to_client (client_session);
+      close_stream_connection (client_socket);
       return -1;
     }
   else if (ret == -2)
@@ -469,6 +478,14 @@ serve_omp (gnutls_session_t* client_session,
       /* Programming error. */
       assert (0);
       client_input_stalled = 0;
+    }
+
+  /* Record the start time. */
+  if (time (&last_client_activity_time) == -1)
+    {
+      perror ("Failed to get current time");
+      close_stream_connection (client_socket);
+      return -1;
     }
 
   /* Loop handling input from the sockets.
@@ -506,6 +523,7 @@ serve_omp (gnutls_session_t* client_session,
   while (1)
     {
       int ret;
+      struct timeval timeout;
       /* Setup for select. */
       uint8_t fds = 0; /* What `select' is going to watch. */
       FD_ZERO (&exceptfds);
@@ -560,12 +578,27 @@ serve_omp (gnutls_session_t* client_session,
         }
       lastfds = fds;
 
+      timeout.tv_usec = 0;
+      // FIX time check error
+      timeout.tv_sec = CLIENT_TIMEOUT
+                       - (time (NULL) - last_client_activity_time);
+      if (timeout.tv_sec <= 0)
+        {
+          tracef ("client timeout (1)\n");
+          close_stream_connection (client_socket);
+          if (server_is_active ())
+            client_active = 0;
+          else
+            return 0;
+        }
+
       /* Select, then handle result. */
-      ret = select (nfds, &readfds, &writefds, &exceptfds, NULL);
+      ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
       if (ret < 0)
         {
           if (errno == EINTR) continue;
           perror ("Child select failed");
+          close_stream_connection (client_socket);
           return -1;
         }
       if (ret == 0) continue;
@@ -573,12 +606,14 @@ serve_omp (gnutls_session_t* client_session,
       if (FD_ISSET (client_socket, &exceptfds))
         {
           fprintf (stderr, "Exception on client in child select.\n");
+          close_stream_connection (client_socket);
           return -1;
         }
 
       if (FD_ISSET (server_socket, &exceptfds))
         {
           fprintf (stderr, "Exception on server in child select.\n");
+          close_stream_connection (client_socket);
           return -1;
         }
 
@@ -595,12 +630,14 @@ serve_omp (gnutls_session_t* client_session,
               case  0:       /* Read everything. */
                 break;
               case -1:       /* Error. */
+                close_stream_connection (client_socket);
                 return -1;
               case -2:       /* from_client buffer full. */
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
+                close_stream_connection (client_socket);
                 if (server_is_active ())
                   client_active = 0;
                 else
@@ -608,6 +645,13 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               default:       /* Programming error. */
                 assert (0);
+            }
+
+          if (time (&last_client_activity_time) == -1)
+            {
+              perror ("Failed to get current time (1)");
+              close_stream_connection (client_socket);
+              return -1;
             }
 
 #if TRACE || LOG
@@ -639,6 +683,7 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
+              close_stream_connection (client_socket);
               return -1;
             }
           else if (ret == -2)
@@ -725,11 +770,13 @@ serve_omp (gnutls_session_t* client_session,
                                *server_session,
                                *server_credentials))
                 {
+                  close_stream_connection (client_socket);
                   return -1;
                 }
               if (close (server_socket) == -1)
                 {
                   perror ("Failed to close server socket.");
+                  close_stream_connection (client_socket);
                   return -1;
                 }
               /* Make the server socket. */
@@ -737,17 +784,24 @@ serve_omp (gnutls_session_t* client_session,
               if (server_socket == -1)
                 {
                   perror ("Failed to create server socket");
+                  close_stream_connection (client_socket);
                   return -1;
                 }
               *server_socket_addr = server_socket;
               if (make_session (server_socket,
                                 server_session,
                                 server_credentials))
-                return -1;
+                {
+                  close_stream_connection (client_socket);
+                  return -1;
+                }
             }
           else if (ret == -1)
-            /* Error. */
-            return -1;
+           {
+             /* Error. */
+             close_stream_connection (client_socket);
+             return -1;
+           }
           else if (ret == -3)
             {
               /* to_server buffer full. */
@@ -773,6 +827,8 @@ serve_omp (gnutls_session_t* client_session,
               case -1:      /* Error. */
                 /* FIX This may be because the server closed the connection
                  * at the end of a command? */
+                if (client_active)
+                  close_stream_connection (client_socket);
                 return -1;
               case -2:      /* Wrote as much as server was willing to accept. */
                 break;
@@ -793,11 +849,19 @@ serve_omp (gnutls_session_t* client_session,
               case  0:      /* Wrote everything in to_client. */
                 break;
               case -1:      /* Error. */
+                close_stream_connection (client_socket);
                 return -1;
               case -2:      /* Wrote as much as client was willing to accept. */
                 break;
               default:      /* Programming error. */
                 assert (0);
+            }
+
+          if (time (&last_client_activity_time) == -1)
+            {
+              perror ("Failed to get current time (2)");
+              close_stream_connection (client_socket);
+              return -1;
             }
         }
 
@@ -816,6 +880,7 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
+              close_stream_connection (client_socket);
               return -1;
             }
           else if (ret == -2)
@@ -854,11 +919,14 @@ serve_omp (gnutls_session_t* client_session,
                                *server_session,
                                *server_credentials))
                 {
+                  close_stream_connection (client_socket);
                   return -1;
                 }
+              // FIX shutdown?
               if (close (server_socket) == -1)
                 {
                   perror ("Failed to close server socket.");
+                  close_stream_connection (client_socket);
                   return -1;
                 }
               /* Make the server socket. */
@@ -866,17 +934,25 @@ serve_omp (gnutls_session_t* client_session,
               if (server_socket == -1)
                 {
                   perror ("Failed to create server socket");
+                  close_stream_connection (client_socket);
                   return -1;
                 }
               *server_socket_addr = server_socket;
               if (make_session (server_socket,
                                 server_session,
                                 server_credentials))
-                return -1;
+                {
+                  close_stream_connection (client_socket);
+                  return -1;
+                }
             }
           else if (ret == -1)
-            /* Error. */
-            return -1;
+            {
+              /* Error. */
+              if (client_active)
+                close_stream_connection (client_socket);
+              return -1;
+            }
           else if (ret == -3)
             /* to_server buffer still full. */
             tracef ("   server input stalled\n");
@@ -885,7 +961,28 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
+      /* Check if client connection is out of time. */
+      {
+        time_t current_time;
+        if (time (&current_time) == -1)
+          {
+            perror ("Failed to get current time (3)");
+            close_stream_connection (client_socket);
+            return -1;
+          }
+        if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
+          {
+            tracef ("client timeout (1)\n");
+            close_stream_connection (client_socket);
+            if (server_is_active ())
+              client_active = 0;
+            else
+              return 0;
+          }
+      }
+
     } /* while (1) */
 
+  close_stream_connection (client_socket);
   return 0;
 }
