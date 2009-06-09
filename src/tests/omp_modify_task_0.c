@@ -81,8 +81,9 @@ main ()
   if (sendf_to_manager (&session,
                         "<modify_task>"
                         "<task_id>%s</task_id>"
-                        "<parameter>comment</parameter>"
-                        "<value>Modified comment.</value>"
+                        "<parameter id=\"comment\">"
+                        "Modified comment."
+                        "</parameter>"
                         "</modify_task>",
                         id)
       == -1)
