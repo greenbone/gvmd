@@ -179,6 +179,24 @@ static /*@null@*/ /*@only@*/ char*
 modify_task_parameter = NULL;
 
 /**
+ * @brief Comment during OMP MODIFY_TASK.
+ */
+static /*@null@*/ /*@only@*/ char*
+modify_task_comment = NULL;
+
+/**
+ * @brief Name during OMP MODIFY_TASK.
+ */
+static /*@null@*/ /*@only@*/ char*
+modify_task_name = NULL;
+
+/**
+ * @brief RC file during OMP MODIFY_TASK.
+ */
+static /*@null@*/ /*@only@*/ char*
+modify_task_rcfile = NULL;
+
+/**
  * @brief Parameter value during OMP MODIFY_TASK.
  */
 static /*@null@*/ /*@only@*/ char*
@@ -241,7 +259,10 @@ typedef enum
   CLIENT_MODIFY_REPORT_REPORT_ID,
   CLIENT_MODIFY_REPORT_VALUE,
   CLIENT_MODIFY_TASK,
+  CLIENT_MODIFY_TASK_COMMENT,
+  CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
+  CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_MODIFY_TASK_VALUE,
   CLIENT_START_TASK,
@@ -771,8 +792,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK:
         if (strncasecmp ("TASK_ID", element_name, 7) == 0)
           set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
+        else if (strncasecmp ("COMMENT", element_name, 7) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_COMMENT);
+        else if (strncasecmp ("NAME", element_name, 4) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_NAME);
         else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
           set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
+        else if (strncasecmp ("RCFILE", element_name, 6) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else if (strncasecmp ("VALUE", element_name, 5) == 0)
           set_client_state (CLIENT_MODIFY_TASK_VALUE);
         else
@@ -1841,25 +1868,85 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_task"));
             else
               {
-                // FIX check if param,value else respond fail
-                int fail = set_task_parameter (task,
+                int fail = 0;
+
+                if (modify_task_rcfile && strlen (modify_task_rcfile))
+                  {
+                    fail = set_task_parameter (task,
+                                               "RCFILE",
+                                               modify_task_rcfile);
+                    modify_task_rcfile = NULL;
+                    if (fail)
+                      {
+                        if (fail == -4)
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_INTERNAL_ERROR ("modify_task"));
+                        else
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_ERROR_SYNTAX ("modify_task"));
+                      }
+                  }
+
+                if (fail == 0
+                    && modify_task_name
+                    && strlen (modify_task_name))
+                  {
+                    fail = set_task_parameter (task,
+                                               "NAME",
+                                               modify_task_name);
+                    modify_task_name = NULL;
+                    if (fail)
+                      {
+                        if (fail == -4)
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_INTERNAL_ERROR ("modify_task"));
+                        else
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_ERROR_SYNTAX ("modify_task"));
+                      }
+                  }
+
+                if (fail == 0
+                    && modify_task_comment
+                    && strlen (modify_task_comment))
+                  {
+                    fail = set_task_parameter (task,
+                                               "COMMENT",
+                                               modify_task_comment);
+                    modify_task_comment = NULL;
+                    if (fail)
+                      {
+                        if (fail == -4)
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_INTERNAL_ERROR ("modify_task"));
+                        else
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_ERROR_SYNTAX ("modify_task"));
+                      }
+                  }
+
+                if (fail == 0)
+                  {
+                    // FIX check if param,value else respond fail
+                    fail = set_task_parameter (task,
                                                modify_task_parameter,
                                                modify_task_value);
-                free (modify_task_parameter);
-                if (fail)
-                  {
-                    free (modify_task_value);
-                    modify_task_value = NULL;
-                    if (fail == -4)
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
+                    free (modify_task_parameter);
+                    if (fail)
+                      {
+                        free (modify_task_value);
+                        modify_task_value = NULL;
+                        if (fail == -4)
+                          SEND_TO_CLIENT_OR_FAIL
+                           (XML_INTERNAL_ERROR ("modify_task"));
+                        else
+                          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_task"));
+                      }
                     else
-                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_task"));
-                  }
-                else
-                  {
-                    modify_task_value = NULL;
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("modify_task"));
+                      {
+                        modify_task_value = NULL;
+                        SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("modify_task"));
+                      }
                   }
               }
             free_string_var (&current_uuid);
@@ -1870,6 +1957,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
         assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_RCFILE:
+        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_TASK_ID:
@@ -2136,8 +2227,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_text (&modify_task_value, text, text_len);
         break;
 
+      case CLIENT_MODIFY_TASK_COMMENT:
+        append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_MODIFY_TASK_NAME:
+        append_text (&modify_task_name, text, text_len);
+        break;
       case CLIENT_MODIFY_TASK_PARAMETER:
         append_text (&modify_task_parameter, text, text_len);
+        break;
+      case CLIENT_MODIFY_TASK_RCFILE:
+        append_text (&modify_task_rcfile, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_VALUE:
         append_text (&modify_task_value, text, text_len);

@@ -1,5 +1,15 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	Add RCFILE, NAME and COMMENT elements to OMP MODIFY_TASK.
+
+	* src/omp.c (modify_task_comment, modify_task_name)
+	(modify_task_rcfile): New variables.
+	(client_state_t): Add new MODIFY_TASK states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new MODIFY_TASK elements.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* ChangeLog: Convert space indentation to tabs.
 
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
