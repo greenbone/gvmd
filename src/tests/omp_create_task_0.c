@@ -55,7 +55,7 @@ main ()
 
   if (send_to_manager (&session, "<create_task>"
                                  "<task_file>YmFzZTY0IHRleHQ=</task_file>"
-                                 "<identifier>omp_create_task_0 task</identifier>"
+                                 "<name>omp_create_task_0 task</name>"
                                  "<comment>Task for omp_create_task_0.</comment>"
                                  "</create_task>")
       == -1)

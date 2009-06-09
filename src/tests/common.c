@@ -1074,7 +1074,7 @@ create_task (gnutls_session_t* session,
   gchar* new_task_request;
   new_task_request = g_strdup_printf ("<create_task>"
                                       "<task_file>%s</task_file>"
-                                      "<identifier>%s</identifier>"
+                                      "<name>%s</name>"
                                       "<comment>%s</comment>"
                                       "</create_task>",
                                       new_task_file,

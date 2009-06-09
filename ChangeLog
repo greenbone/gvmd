@@ -1,5 +1,22 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	Rename IDENTIFIER to NAME in OMP commands CREATE_TASK and GET_STATUS.
+
+	* src/omp.c (omp_xml_handle_start_element): Rename IDENTIFIER to NAME.
+
+	* src/tests/omp_get_status_5.c: New file, tests GET_STATUS with an ID
+	before running the task.
+
+	* src/tests/CMakeLists.txt: Add omp_get_status_5.
+
+	* src/tests/common.c (create_task): Rename IDENTIFIER to NAME.
+
+	* src/tests/omp_create_task_0.c: Rename IDENTIFIER to NAME.
+
+	* src/tests/omp_get_status_2.c: Improve expected response.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd.c (serve_client): Improve comment slightly.
 
 2009-06-09  Matthew Mundell <mmundell@intevation.de>

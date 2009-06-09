@@ -1,6 +1,6 @@
-/* Test 2 of OMP GET_STATUS.
+/* Test 5 of OMP GET_STATUS.
  * $Id$
- * Description: Test the OMP GET_STATUS command on a running task.
+ * Description: Test the OMP GET_STATUS command on a created task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -56,45 +56,15 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_get_status_2",
-                                "Test omp_get_status_2 task.",
+                                "Task for omp_get_status_5",
+                                "Test omp_get_status_5 task.",
                                 &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  /* Start the task. */
-
-  if (start_task (&session, id))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-
-  /* Wait for the task to start on the server. */
-
-  if (wait_for_task_start (&session, id))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-
   /* Request the task status. */
-
-#if 0
-  if (env_authenticate (&session))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-#endif
 
   if (sendf_to_manager (&session,
                         "<get_status><task_id>%s</task_id></get_status>",
@@ -117,7 +87,8 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_status_response", NULL);
   add_attribute (expected, "status", "200");
-  add_entity (&expected->entities, "name", "Task for omp_get_status_2");
+  add_entity (&expected->entities, "task_id", id);
+  add_entity (&expected->entities, "name", "Task for omp_get_status_5");
   add_entity (&expected->entities, "status", "Running");
   entity_t messages = add_entity (&expected->entities, "messages", NULL);
   add_entity (&messages->entities, "debug", "0");

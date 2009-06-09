@@ -815,7 +815,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK:
         if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
           set_client_state (CLIENT_CREATE_TASK_TASK_FILE);
-        else if (strncasecmp ("IDENTIFIER", element_name, 10) == 0)
+        else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_CREATE_TASK_IDENTIFIER);
         else if (strncasecmp ("COMMENT", element_name, 7) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
@@ -1920,7 +1920,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_IDENTIFIER:
-        assert (strncasecmp ("IDENTIFIER", element_name, 10) == 0);
+        assert (strncasecmp ("NAME", element_name, 4) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_TASK_FILE:
@@ -1991,7 +1991,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     response = g_strdup_printf ("<get_status_response"
                                                 " status=\"" STATUS_OK "\">"
                                                 "<task_id>%s</task_id>"
-                                                "<identifier>%s</identifier>"
+                                                "<name>%s</name>"
                                                 "<status>%s</status>"
                                                 "<messages>"
                                                 "<debug>%i</debug>"
@@ -2058,7 +2058,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 line = g_strdup_printf ("<task>"
                                         "<task_id>%s</task_id>"
-                                        "<identifier>%s</identifier>"
+                                        "<name>%s</name>"
                                         "<status>%s</status>"
                                         "<messages>"
                                         "<debug>%i</debug>"
