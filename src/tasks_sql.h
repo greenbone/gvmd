@@ -995,7 +995,7 @@ save_tasks ()
  *
  * @param[in]  task       A pointer to a task.
  * @param[in]  parameter  The name of the parameter (in any case): TASK_FILE,
- *                        IDENTIFIER or COMMENT.
+ *                        NAME or COMMENT.
  * @param[in]  value      The value of the parameter, in base64 if parameter
  *                        is "TASK_FILE".
  *
