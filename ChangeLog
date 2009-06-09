@@ -1,5 +1,9 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	* ChangeLog: Convert space indentation to tabs.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	Rename TASK_FILE to RCFILE in the OMP command CREATE_TASK.
 
 	* src/omp.c (client_state_t): Rename CLIENT_CREATE_TASK_TASK_FILE to
@@ -581,7 +585,7 @@
 	(send_plugin): Convert strings to UTF-8 for g_markup_escape_text.  Free
 	the correct strings.  Correct XML tag.
 
-    * src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase.
+	* src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase.
 
 	* src/tests/omp_get_nvt_feed_details_2.c,
 	src/tests/omp_get_nvt_feed_details_3.c,
@@ -1746,7 +1750,7 @@
 	tasks.  Cast for id.  Turn off checks around assignments.  Correct tracef
 	directive.
 	(load_tasks): Init names and comment.  Free names[index] for hidden files.
-    Check g_file_get_contents return directly.  Check error before use.
+	Check g_file_get_contents return directly.  Check error before use.
 	Remove freeing of name and comment on failure, as now done in make_task.
 	(save_task): Check g_file_get_contents return directly.  Check error before
 	use.  Use snprintf instead of sprintf.
@@ -2139,7 +2143,7 @@
 	of jumping.  Return immediately instead of jumping to fail code.  Use
 	g_strdup instead of strdup.  Drop make_message return checks.
 
-    * src/manage.c (load_tasks, save_task): Move fail destinations to ends
+	* src/manage.c (load_tasks, save_task): Move fail destinations to ends
 	of functions.
 
 2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
@@ -2191,7 +2195,7 @@
 
 	* src/CMakeLists.txt: Build new libraries.
 
-    * src/tests/CMakeLists.txt: Add GLIB path to strip_space LDFLAGS.
+	* src/tests/CMakeLists.txt: Add GLIB path to strip_space LDFLAGS.
 
 	* doc/CMakeLists.txt (.build-html): Add new files.
 
