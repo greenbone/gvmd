@@ -47,6 +47,8 @@
 #include <errno.h>
 #include <gnutls/gnutls.h>
 
+#include <network.h>
+
 /**
  * @brief File descriptor set mask: selecting on client read.
  */
@@ -129,6 +131,7 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (errno == EINTR) continue;
           perror ("Child connect select failed");
+          close_stream_connection (client_socket);
           return -1;
         }
       if (ret > 0)
@@ -137,6 +140,7 @@ serve_otp (gnutls_session_t* client_session,
             {
               fprintf (stderr,
                        "Exception on server in child connect select.\n");
+              close_stream_connection (client_socket);
               return -1;
             }
           if (FD_ISSET (server_socket, &writefds))
@@ -150,7 +154,10 @@ serve_otp (gnutls_session_t* client_session,
               if (ret == -2)
                 interrupted = 1;
               else
-                return -1;
+                {
+                  close_stream_connection (client_socket);
+                  return -1;
+                }
             }
         }
     }
@@ -196,6 +203,7 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (errno == EINTR) continue;
           perror ("Child select failed");
+          close_stream_connection (client_socket);
           return -1;
         }
       if (ret > 0)
@@ -203,12 +211,14 @@ serve_otp (gnutls_session_t* client_session,
           if (FD_ISSET (client_socket, &exceptfds))
             {
               fprintf (stderr, "Exception on client in child select.\n");
+              close_stream_connection (client_socket);
               return -1;
             }
 
           if (FD_ISSET (server_socket, &exceptfds))
             {
               fprintf (stderr, "Exception on server in child select.\n");
+              close_stream_connection (client_socket);
               return -1;
             }
 
@@ -239,11 +249,15 @@ serve_otp (gnutls_session_t* client_session,
                         break;
                       fprintf (stderr, "Failed to read from client.\n");
                       gnutls_perror ((int) count);
+                      close_stream_connection (client_socket);
                       return -1;
                     }
                   if (count == 0)
-                    /* End of file. */
-                    return 0;
+                    {
+                      /* End of file. */
+                      close_stream_connection (client_socket);
+                      return 0;
+                    }
                   from_client_end += count;
                 }
 #if TRACE || LOG
@@ -294,6 +308,7 @@ serve_otp (gnutls_session_t* client_session,
                         break;
                       fprintf (stderr, "Failed to write to server.\n");
                       gnutls_perror ((int) count);
+                      close_stream_connection (client_socket);
                       return -1;
                     }
                   from_client_start += count;
@@ -342,11 +357,15 @@ serve_otp (gnutls_session_t* client_session,
                         }
                       fprintf (stderr, "Failed to read from server.\n");
                       gnutls_perror ((int) count);
+                      close_stream_connection (client_socket);
                       return -1;
                     }
                   if (count == 0)
-                    /* End of file. */
-                    return 0;
+                    {
+                      /* End of file. */
+                      close_stream_connection (client_socket);
+                      return 0;
+                    }
                   from_server_end += count;
                 }
 #if TRACE
@@ -394,6 +413,7 @@ serve_otp (gnutls_session_t* client_session,
                         break;
                       fprintf (stderr, "Failed to write to client.\n");
                       gnutls_perror ((int) count);
+                      close_stream_connection (client_socket);
                       return -1;
                     }
                   logf ("=> %.*s\n",
