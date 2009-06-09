@@ -81,7 +81,7 @@ main ()
   add_entity (&expected->entities, "task_count", "1");
   entity_t task = add_entity (&expected->entities, "task", NULL);
   add_entity (&task->entities, "task_id", "0");
-  add_entity (&task->entities, "identifier", "omp_start_task_0");
+  add_entity (&task->entities, "name", "omp_start_task_0");
   add_entity (&task->entities, "status", "Running");
   entity_t messages = add_entity (&task->entities, "messages", "");
   add_entity (&messages->entities, "debug", "0");

@@ -1,5 +1,15 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_status_0.c: Change "identifier" to "name" in
+	expected response.
+
+	* src/tests/omp_modify_task_1.c: Expect "name" instead of "identifier".
+	Use new response code.
+
+	* src/tests/omp_modify_task_0.c: Use new response code.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c: Rename task name symbols to use "name" instead of
 	"identifier".
 

@@ -108,7 +108,7 @@ main ()
   read_entity (&session2, &entity);
 
   entity_t expected = add_entity (NULL, "modify_task_response", NULL);
-  add_attribute (expected, "status", "201");
+  add_attribute (expected, "status", "202");
 
   close_manager_connection (socket2, session2);
 
@@ -149,7 +149,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  name = entity_child (entity, "identifier");
+  name = entity_child (entity, "name");
   if (name && strcmp (entity_text (name), "Modified name") == 0)
     ret = EXIT_SUCCESS;
   else
