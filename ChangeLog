@@ -1,4 +1,10 @@
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
+	* src/openvasmd.c (read_protocol): Check return from time for error.
+
+	* ChangeLog: Correct entry dates for yesterday.
+
+2009-06-08  Matthew Mundell <mmundell@intevation.de>
 
 	Close client connections that are idle for longer than a fixed limit.
 
@@ -14,19 +20,19 @@
 
 	* src/tests/CMakeLists.txt: Add timeout_0.  Move timeout tests to end.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <mmundell@intevation.de>
 
 	* src/openvasmd.c (accept_and_maybe_fork): Close client socket in
 	parent process.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <mmundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): In the cases where the OTP that
 	follows is either a field or "<|> SERVER", check for the '|' in
 	addition to checking if the length of "field" is zero, as "field" may
 	legitimately be an empty field (" <|> field2 ...").
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (stringify): Remove.
 

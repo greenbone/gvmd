@@ -307,6 +307,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       int nfds;
       fd_set readfds, exceptfds;
       struct timeval timeout;
+      time_t now;
 
       FD_ZERO (&readfds);
       FD_SET (client_socket, &readfds);
@@ -314,9 +315,13 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       FD_SET (client_socket, &exceptfds);
       nfds = client_socket + 1;
 
+      if (time (&now) == -1)
+        {
+          perror ("Failed to get now (0)");
+          return PROTOCOL_FAIL;
+        }
       timeout.tv_usec = 0;
-      // FIX time check error
-      timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (time (NULL) - start_time);
+      timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (now - start_time);
       if (timeout.tv_sec <= 0)
         {
           tracef ("protocol timeout (1)\n");
@@ -409,8 +414,12 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
             }
         }
 
-      // FIX time check error
-      if ((time (NULL) - start_time) >= READ_PROTOCOL_TIMEOUT)
+      if (time (&now) == -1)
+        {
+          perror ("Failed to get now (0)");
+          return PROTOCOL_FAIL;
+        }
+      if ((now - start_time) >= READ_PROTOCOL_TIMEOUT)
         {
           tracef ("protocol timeout (2)\n");
           ret = PROTOCOL_TIMEOUT;
