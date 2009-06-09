@@ -1,5 +1,9 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/read_protocol_0.c: Correct task name.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	Rename IDENTIFIER to NAME in OMP commands CREATE_TASK and GET_STATUS.
 
 	* src/omp.c (omp_xml_handle_start_element): Rename IDENTIFIER to NAME.

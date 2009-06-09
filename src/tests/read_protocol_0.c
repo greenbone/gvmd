@@ -61,7 +61,7 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Test for omp_delete_task_0",
+                                "Test for read_protocol_0",
                                 "Simple test scan.",
                                 &id))
     {
