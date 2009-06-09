@@ -508,7 +508,7 @@ serve_client (int client_socket)
   switch (read_protocol (client_session, client_socket))
     {
       case PROTOCOL_OTP:
-        /* It's up to serve_otp to close_stream_connection client_socket. */
+        /* It's up to serve_otp to close_stream_connection on client_socket. */
         if (serve_otp (client_session, &server_session,
                        client_socket, server_socket))
           goto fail;

@@ -1,5 +1,9 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (serve_client): Improve comment slightly.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otpd.c (serve_otp): Close client socket on return.
 
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
