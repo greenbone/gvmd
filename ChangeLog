@@ -1,5 +1,18 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	Rename task name symbols to use "name" instead of "identifier".
+
+	* src/omp.c (client_state_t): Rename CLIENT_CREATE_TASK_IDENTIFIER to
+	CLIENT_CREATE_TASK_NAME.  Adjust all users.
+
+	* src/tasks_sql.h (append_to_task_identifier): Rename append_to_task_name.
+	(append_to_task_name): New function, renamed from append_to_task_identifier.
+	* src/tasks_fs.h (append_to_task_identifier): Rename append_to_task_name.
+	(append_to_task_name): New function, renamed from append_to_task_identifier.
+	* src/manage.h: Update header.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_nvt_feed_checksum_1.c: Include ../string.h.
 
 2009-06-09  Matthew Mundell <mmundell@intevation.de>

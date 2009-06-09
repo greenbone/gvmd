@@ -296,7 +296,7 @@ int
 append_to_task_comment (task_t, const char*, int);
 
 int
-append_to_task_identifier (task_t, const char*, int);
+append_to_task_name (task_t, const char*, int);
 
 int
 add_task_description_line (task_t, const char*, size_t);

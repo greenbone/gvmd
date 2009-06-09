@@ -1232,7 +1232,7 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
 }
 
 /**
- * @brief Append text to the identifier associated with a task.
+ * @brief Append text to the name associated with a task.
  *
  * @param[in]  task    A pointer to the task.
  * @param[in]  text    The text to append.
@@ -1241,7 +1241,7 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
  * @return 0 on success, -1 if out of memory.
  */
 int
-append_to_task_identifier (task_t task, const char* text,
+append_to_task_name (task_t task, const char* text,
                            /*@unused@*/ int length)
 {
   char* new;
