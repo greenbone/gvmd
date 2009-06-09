@@ -1,5 +1,10 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c: Rename task name symbols to use "name" instead of
+	"identifier".
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	Add RCFILE, NAME and COMMENT elements to OMP MODIFY_TASK.
 
 	* src/omp.c (modify_task_comment, modify_task_name)

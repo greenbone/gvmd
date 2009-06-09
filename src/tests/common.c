@@ -1049,7 +1049,7 @@ env_authenticate (gnutls_session_t* session)
  * @param[in]   session     Pointer to GNUTLS session.
  * @param[in]   config      Task configuration.
  * @param[in]   config_len  Length of config.
- * @param[in]   identifier  Task identifier.
+ * @param[in]   name        Task name.
  * @param[in]   comment     Task comment.
  * @param[out]  id          Pointer for newly allocated ID of new task.  Only
  *                          set on successful return.
@@ -1060,7 +1060,7 @@ int
 create_task (gnutls_session_t* session,
              char* config,
              unsigned int config_len,
-             char* identifier,
+             char* name,
              char* comment,
              char** id)
 {
@@ -1078,7 +1078,7 @@ create_task (gnutls_session_t* session,
                                       "<comment>%s</comment>"
                                       "</create_task>",
                                       new_task_file,
-                                      identifier,
+                                      name,
                                       comment);
   g_free (new_task_file);
 
@@ -1110,7 +1110,7 @@ create_task (gnutls_session_t* session,
  *
  * @param[in]   session     Pointer to GNUTLS session.
  * @param[in]   file_name   Name of the RC file.
- * @param[in]   identifier  Task identifier.
+ * @param[in]   name        Task name.
  * @param[in]   comment     Task comment.
  * @param[out]  id          ID of new task.
  *
@@ -1119,7 +1119,7 @@ create_task (gnutls_session_t* session,
 int
 create_task_from_rc_file (gnutls_session_t* session,
                           char* file_name,
-                          char* identifier,
+                          char* name,
                           char* comment,
                           char** id)
 {
@@ -1142,7 +1142,7 @@ create_task_from_rc_file (gnutls_session_t* session,
   int ret = create_task (session,
                          new_task_rc,
                          new_task_rc_len,
-                         identifier,
+                         name,
                          comment,
                          id);
   g_free (new_task_rc);
