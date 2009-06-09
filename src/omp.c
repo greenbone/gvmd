@@ -215,7 +215,7 @@ typedef enum
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_NAME,
-  CLIENT_CREATE_TASK_TASK_FILE,
+  CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
@@ -813,8 +813,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_TASK:
-        if (strncasecmp ("TASK_FILE", element_name, 9) == 0)
-          set_client_state (CLIENT_CREATE_TASK_TASK_FILE);
+        if (strncasecmp ("RCFILE", element_name, 6) == 0)
+          set_client_state (CLIENT_CREATE_TASK_RCFILE);
         else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strncasecmp ("COMMENT", element_name, 7) == 0)
@@ -1923,8 +1923,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strncasecmp ("NAME", element_name, 4) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
-      case CLIENT_CREATE_TASK_TASK_FILE:
-        assert (strncasecmp ("TASK_FILE", element_name, 9) == 0);
+      case CLIENT_CREATE_TASK_RCFILE:
+        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
         if (current_client_task)
           {
             gsize out_len;
@@ -2156,7 +2156,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (current_client_task, text, text_len);
         break;
-      case CLIENT_CREATE_TASK_TASK_FILE:
+      case CLIENT_CREATE_TASK_RCFILE:
         /* Append the text to the task description. */
         if (add_task_description_line (current_client_task,
                                        text,

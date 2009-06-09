@@ -1,5 +1,21 @@
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
+	Rename TASK_FILE to RCFILE in the OMP command CREATE_TASK.
+
+	* src/omp.c (client_state_t): Rename CLIENT_CREATE_TASK_TASK_FILE to
+	CLIENT_CREATE_TASK_RCFILE.  Ajust all users.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Parse
+	RCFILE instead of TASK_FILE.
+
+	* src/tasks_fs.h (set_task_parameter): Parse RCFILE instead of TASK_FILE.
+	* src/tasks_sql.h (set_task_parameter): Parse RCFILE instead of TASK_FILE.
+
+	* src/tests/common.c (create_task): Send RCFILE instead of TASK_FILE.
+
+	* src/tests/omp_create_task_0.c: Send RCFILE instead of TASK_FILE.
+
+2009-06-09  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (set_task_parameter): Correct doc parameter description.
 
 2009-06-09  Matthew Mundell <mmundell@intevation.de>

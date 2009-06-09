@@ -1074,10 +1074,10 @@ save_tasks ()
  * when the task is freed or when the parameter is next updated.
  *
  * @param[in]  task       A pointer to a task.
- * @param[in]  parameter  The name of the parameter (in any case): TASK_FILE,
+ * @param[in]  parameter  The name of the parameter (in any case): RCFILE,
  *                        NAME or COMMENT.
  * @param[in]  value      The value of the parameter, in base64 if parameter
- *                        is "TASK_FILE".
+ *                        is "RCFILE".
  *
  * @return 0 on success, -1 when out of memory, -2 if parameter name error,
  *         -3 value error (NULL).
@@ -1094,7 +1094,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       free (value);
       return -2;
     }
-  if (strncasecmp ("TASK_FILE", parameter, 9) == 0)
+  if (strncasecmp ("RCFILE", parameter, 6) == 0)
     {
       gsize out_len;
       guchar* out;
