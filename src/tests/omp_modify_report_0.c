@@ -94,7 +94,7 @@ main ()
       fprintf (stderr, "Failed to find report.\n");
       goto free_fail;
     }
-  entity_t report_id = entity_child (report, "id");
+  const char* report_id = entity_attribute (report, "id");
   if (report_id == NULL)
     {
       fprintf (stderr, "Failed to find report id.\n");
@@ -111,7 +111,7 @@ main ()
                         "Test comment for omp_modify_report_0."
                         "</parameter>"
                         "</modify_report>",
-                        entity_text (report_id))
+                        report_id)
       == -1)
     goto delete_fail;
   entity = NULL;

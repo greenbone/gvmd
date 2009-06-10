@@ -1,5 +1,11 @@
 2009-06-10  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_task_1.c
+	src/tests/omp_get_report_0.c, src/tests/omp_modify_report_0.c: Adjust
+	for move of GET_STATUS REPORT ID to an attribute.
+
+2009-06-10  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (send_reports): Move ID of GET_STATUS REPORT to an attribute.
 
 2009-06-10  Matthew Mundell <mmundell@intevation.de>
