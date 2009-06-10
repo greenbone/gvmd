@@ -1268,8 +1268,8 @@ send_reports (task_t task)
 
           tracef ("     %s\n", report_name);
 
-          msg = g_strdup_printf ("<report>"
-                                 "<id>%s</id>"
+          msg = g_strdup_printf ("<report"
+                                 " id=\"%s\">"
                                  "<timestamp>FIX</timestamp>"
                                  "<messages>"
                                  // FIX
