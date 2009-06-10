@@ -1,5 +1,21 @@
 2009-06-10  Matthew Mundell <mmundell@intevation.de>
 
+	Move GET_STATUS response TASK_ID to an attribute of the task.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add the
+	enclosing TASK entity to the ID case and in both cases move the TASK_ID
+	to an attribute.
+
+	* src/common.c (wait_for_task_start, wait_for_task_end): Expect task ID
+	in attribute.
+
+	* src/tests/omp_get_status_0.c, src/tests/omp_get_status_1.c,
+	src/tests/omp_get_status_1.c, src/tests/omp_get_status_3.c,
+	src/tests/omp_get_status_4.c, src/tests/omp_get_status_5.c: Improve checks
+	and match updated OMP.
+
+2009-06-10  Matthew Mundell <mmundell@intevation.de>
+
 	Merge the OMP MODIFY_REPORT command's VALUE and PARAMETER entities.
 
 	* src/omp.c (client_state_t): Remove CLIENT_MODIFY_REPORT_VALUE.

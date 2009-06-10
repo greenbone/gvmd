@@ -39,6 +39,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  entity_t entity, task;
 
   setup_test ();
 
@@ -51,8 +52,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_get_status_3",
-                                "Test omp_get_status_3 task.",
+                                "Task for omp_get_status_4",
+                                "Test omp_get_status_4 task.",
                                 &id))
     goto fail;
 
@@ -60,7 +61,7 @@ main ()
 
   if (start_task (&session, id)) goto delete_fail;
 
-  /* Wait for the task to start on the server. */
+  /* Wait for the task to end on the server. */
 
   if (wait_for_task_end (&session, id))
     {
@@ -79,7 +80,7 @@ main ()
 
   /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   if (read_entity (&session, &entity))
     {
       fprintf (stderr, "Failed to read response.\n");
@@ -89,34 +90,33 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_status_response", NULL);
-  add_attribute (expected, "status", "200");
-  add_entity (&expected->entities, "report_count", "1");
-  entity_t report = add_entity (&expected->entities, "report", "");
-  add_entity (&report->entities, "id", "0");
-  entity_t messages = add_entity (&report->entities, "messages", "");
-  add_entity (&messages->entities, "debug", "0");
-  add_entity (&messages->entities, "hole", "0");
-  add_entity (&messages->entities, "info", "0");
-  add_entity (&messages->entities, "log", "0");
-  add_entity (&messages->entities, "warning", "0");
-
-  if (compare_entities (entity, expected))
+  if (entity
+      && entity_attribute (entity, "status")
+      && (strcmp (entity_attribute (entity, "status"), "200") == 0)
+      && (task = entity_child (entity, "task"))
+      && entity_attribute (task, "id")
+      && (strcmp (entity_attribute (task, "id"), id) == 0)
+      && entity_child (task, "name")
+      && (strcmp (entity_text (entity_child (task, "name")),
+                 "Task for omp_get_status_4")
+          == 0)
+      && entity_child (task, "status")
+      && (strcmp (entity_text (entity_child (task, "status")), "Done") == 0)
+      && entity_child (task, "report_count")
+      && (strcmp (entity_text (entity_child (task, "report_count")), "1") == 0))
     {
       free_entity (entity);
-      free_entity (expected);
- delete_fail:
       delete_task (&session, id);
       free (id);
- fail:
       close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   free_entity (entity);
-  free_entity (expected);
+ delete_fail:
   delete_task (&session, id);
   free (id);
+ fail:
   close_manager_connection (socket, session);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

@@ -1,6 +1,6 @@
 /* Test 1 of OMP GET_STATUS.
  * $Id$
- * Description: Test the OMP GET_STATUS command on a running task.
+ * Description: Test the OMP GET_STATUS command on a started task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -40,6 +40,8 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  entity_t entity, task;
+  const char* status;
 
   setup_test ();
 
@@ -74,16 +76,6 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Wait for the task to start on the server. */
-
-  if (wait_for_task_start (&session, id))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-
   /* Request the task status. */
 
 #if 0
@@ -109,29 +101,37 @@ main ()
 
   /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_status_response", NULL);
-  add_attribute (expected, "status", "200");
-  add_entity (&expected->entities, "report_count", "0");
-
-  if (compare_entities (entity, expected))
+  if (entity
+      && entity_attribute (entity, "status")
+      && (strcmp (entity_attribute (entity, "status"), "200") == 0)
+      && (task = entity_child (entity, "task"))
+      && entity_attribute (task, "id")
+      && (strcmp (entity_attribute (task, "id"), id) == 0)
+      && entity_child (task, "name")
+      && (strcmp (entity_text (entity_child (task, "name")),
+                 "Task for omp_get_status_1")
+          == 0)
+      && entity_child (task, "status")
+      && (status = entity_text (entity_child (task, "status")))
+      && ((strcmp (status, "Requested") == 0)
+          || (strcmp (status, "Running") == 0)
+          || (strcmp (status, "Done") == 0)))
     {
       free_entity (entity);
-      free_entity (expected);
       delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
-      return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
   free_entity (entity);
-  free_entity (expected);
   delete_task (&session, id);
   close_manager_connection (socket, session);
   free (id);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

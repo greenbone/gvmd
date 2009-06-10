@@ -39,6 +39,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  entity_t entity;
 
   setup_test ();
 
@@ -71,41 +72,49 @@ main ()
 
   /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   read_entity (&session, &entity);
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_status_response", NULL);
-  add_attribute (expected, "status", "200");
-  add_entity (&expected->entities, "task_count", "1");
-  entity_t task = add_entity (&expected->entities, "task", NULL);
-  add_entity (&task->entities, "task_id", "0");
-  add_entity (&task->entities, "name", "omp_start_task_0");
-  add_entity (&task->entities, "status", "Running");
-  entity_t messages = add_entity (&task->entities, "messages", "");
-  add_entity (&messages->entities, "debug", "0");
-  add_entity (&messages->entities, "hole", "0");
-  add_entity (&messages->entities, "info", "0");
-  add_entity (&messages->entities, "log", "0");
-  add_entity (&messages->entities, "warning", "0");
-
-  if (compare_entities (entity, expected))
+  if (entity
+      && entity_attribute (entity, "status")
+      && (strcmp (entity_attribute (entity, "status"), "200") == 0))
     {
-      free_entity (entity);
-      free_entity (expected);
- delete_fail:
-      delete_task (&session, id);
-      free (id);
- fail:
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      entity_t task;
+      const char* status;
+      entities_t tasks = entity->entities;
+
+      while ((task = first_entity (tasks)))
+        {
+          if (entity_attribute (task, "id")
+              && strcmp (entity_attribute (task, "id"), id) == 0)
+            {
+              if (entity_child (task, "name")
+                  && (strcmp (entity_text (entity_child (task, "name")),
+                              "Task for omp_get_status_3")
+                      == 0)
+                  && entity_child (task, "status")
+                  && (status = entity_text (entity_child (task, "status")))
+                  && (strcmp (status, "New") == 0))
+                {
+                  free_entity (entity);
+                  delete_task (&session, id);
+                  free (id);
+                  close_manager_connection (socket, session);
+                  return EXIT_SUCCESS;
+                }
+              break;
+            }
+          tasks = next_entities (tasks);
+        }
     }
 
   free_entity (entity);
-  free_entity (expected);
+ delete_fail:
   delete_task (&session, id);
   free (id);
+ fail:
   close_manager_connection (socket, session);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

@@ -40,6 +40,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  entity_t entity, expected, task, messages;
 
   setup_test ();
 
@@ -79,24 +80,25 @@ main ()
 
   /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   read_entity (&session, &entity);
   print_entity (stdout, entity);
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_status_response", NULL);
+  expected = add_entity (NULL, "get_status_response", NULL);
   add_attribute (expected, "status", "200");
-  add_entity (&expected->entities, "task_id", id);
-  add_entity (&expected->entities, "name", "Task for omp_get_status_5");
-  add_entity (&expected->entities, "status", "Running");
-  entity_t messages = add_entity (&expected->entities, "messages", NULL);
+  task = add_entity (&expected->entities, "task", NULL);
+  add_attribute (task, "id", id);
+  add_entity (&task->entities, "name", "Task for omp_get_status_5");
+  add_entity (&task->entities, "status", "New");
+  messages = add_entity (&task->entities, "messages", NULL);
   add_entity (&messages->entities, "debug", "0");
   add_entity (&messages->entities, "hole", "0");
   add_entity (&messages->entities, "info", "0");
   add_entity (&messages->entities, "log", "0");
   add_entity (&messages->entities, "warning", "0");
-  add_entity (&expected->entities, "report_count", "0");
+  add_entity (&task->entities, "report_count", "0");
 
   if (compare_entities (entity, expected))
     {

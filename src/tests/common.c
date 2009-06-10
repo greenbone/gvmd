@@ -1236,11 +1236,11 @@ wait_for_task_start (gnutls_session_t* session,
           /* Lisp version. */
           (do-children (entity child)
             (when (string= (entity-type child) "task")
-              (let ((task-id (entity-child child "task_id")))
+              (let ((task-id (entity-attribute child "task_id")))
                 (fi* task-id
                   (free-entity entity)
                   (return-from wait-for-task-start -1))
-                (when (string= (entity-text task-id) id)
+                (when (string= task-id id)
                   (let ((status (entity-child child "status")))
                     (fi* status
                       (free-entity entity)
@@ -1252,14 +1252,13 @@ wait_for_task_start (gnutls_session_t* session,
           DO_CHILDREN (entity, child, temp,
                        if (strcasecmp (entity_name (child), "task") == 0)
                          {
-                           entity_t task_id = entity_child (child, "task_id");
+                           const char* task_id = entity_attribute (child, "id");
                            if (task_id == NULL)
                              {
                                free_entity (entity);
                                return -1;
                              }
-                           if (strcasecmp (entity_text (task_id), id)
-                               == 0)
+                           if (strcasecmp (task_id, id) == 0)
                              {
                                entity_t status = entity_child (child, "status");
                                if (status == NULL)
@@ -1337,11 +1336,11 @@ wait_for_task_end (gnutls_session_t* session,
           /* Lisp version. */
           (do-children (entity child)
             (when (string= (entity-type child) "task")
-              (let ((task-id (entity-child child "task_id")))
+              (let ((task-id (entity-attribute child "task_id")))
                 (fi* task-id
                   (free-entity entity)
                   (return-from wait-for-task-start -1))
-                (when (string= (entity-text task-id) id)
+                (when (string= task-id id)
                   (let ((status (entity-child child "status")))
                     (fi* status
                       (free-entity entity)
@@ -1353,14 +1352,13 @@ wait_for_task_end (gnutls_session_t* session,
           DO_CHILDREN (entity, child, temp,
                        if (strcasecmp (entity_name (child), "task") == 0)
                          {
-                           entity_t task_id = entity_child (child, "task_id");
+                           const char* task_id = entity_attribute (child, "id");
                            if (task_id == NULL)
                              {
                                free_entity (entity);
                                return -1;
                              }
-                           if (strcasecmp (entity_text (task_id), id)
-                               == 0)
+                           if (strcasecmp (task_id, id) == 0)
                              {
                                entity_t status = entity_child (child, "status");
                                if (status == NULL)
