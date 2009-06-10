@@ -40,7 +40,7 @@ main ()
   gnutls_session_t session1;
   gnutls_session_t session2;
   char* id;
-  entity_t entity, name;
+  entity_t entity, task;
 
   setup_test ();
 
@@ -148,9 +148,15 @@ main ()
       return EXIT_FAILURE;
     }
 
-  name = entity_child (entity, "name");
-  if (name && strcmp (entity_text (name), "Modified name") == 0)
-    ret = EXIT_SUCCESS;
+  task = entity_child (entity, "task");
+  if (task)
+    {
+      entity_t name = entity_child (task, "name");
+      if (name && strcmp (entity_text (name), "Modified name") == 0)
+        ret = EXIT_SUCCESS;
+      else
+        ret = EXIT_FAILURE;
+    }
   else
     ret = EXIT_FAILURE;
 

@@ -958,9 +958,9 @@ compare_entities (entity_t entity1, entity_t entity2)
 /* OMP. */
 
 /**
- * @brief Get the task status from an OMP STATUS response.
+ * @brief Get the task status from an OMP GET_STATUS response.
  *
- * @param[in]  response   STATUS response.
+ * @param[in]  response   GET_STATUS response.
  *
  * @return The entity_text of the status entity if the entity is found, else
  *         NULL.
@@ -968,8 +968,12 @@ compare_entities (entity_t entity1, entity_t entity2)
 const char*
 task_status (entity_t response)
 {
-  entity_t status = entity_child (response, "status");
-  if (status) return entity_text (status);
+  entity_t task = entity_child (response, "task");
+  if (task)
+    {
+      entity_t status = entity_child (task, "status");
+      if (status) return entity_text (status);
+    }
   return NULL;
 }
 
@@ -1472,7 +1476,7 @@ delete_task (gnutls_session_t* session, char* id)
  *
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  id       ID of task.
- * @param[out] status   Status return.
+ * @param[out] status   Status return.  On success contains GET_STATUS response.
  *
  * @return 0 on success, -1 or OMP response code on error.
  */

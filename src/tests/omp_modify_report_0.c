@@ -82,7 +82,13 @@ main ()
       fprintf (stderr, "Failed to read response.\n");
       goto delete_fail;
     }
-  entity_t report = entity_child (entity, "report");
+  entity_t task = entity_child (entity, "task");
+  if (task == NULL)
+    {
+      fprintf (stderr, "Failed to find task.\n");
+      goto free_fail;
+    }
+  entity_t report = entity_child (task, "report");
   if (report == NULL)
     {
       fprintf (stderr, "Failed to find report.\n");
