@@ -101,8 +101,9 @@ main ()
   if (sendf_to_manager (&session,
                         "<modify_report>"
                         "<report_id>%s</report_id>"
-                        "<parameter>comment</parameter>"
-                        "<value>Test comment for omp_modify_report_0.</value>"
+                        "<parameter id=\"comment\">"
+                        "Test comment for omp_modify_report_0."
+                        "</parameter>"
                         "</modify_report>",
                         entity_text (report_id))
       == -1)

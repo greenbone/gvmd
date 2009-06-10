@@ -257,7 +257,6 @@ typedef enum
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
   CLIENT_MODIFY_REPORT_REPORT_ID,
-  CLIENT_MODIFY_REPORT_VALUE,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_NAME,
@@ -770,9 +769,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_REPORT_ID);
         else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
-        else if (strncasecmp ("VALUE", element_name, 5) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_VALUE);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              append_string (&modify_task_parameter, attribute);
+            set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
+          }
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("modify_report")))
@@ -1855,10 +1858,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
         break;
-      case CLIENT_MODIFY_REPORT_VALUE:
-        assert (strncasecmp ("VALUE", element_name, 5) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT);
-        break;
 
       case CLIENT_MODIFY_TASK:
         if (current_uuid)
@@ -2262,9 +2261,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_MODIFY_REPORT_PARAMETER:
-        append_text (&modify_task_parameter, text, text_len);
-        break;
-      case CLIENT_MODIFY_REPORT_VALUE:
         append_text (&modify_task_value, text, text_len);
         break;
 

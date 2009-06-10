@@ -1,5 +1,15 @@
 2009-06-10  Matthew Mundell <mmundell@intevation.de>
 
+	Merge the OMP MODIFY_REPORT command's VALUE and PARAMETER entities.
+
+	* src/omp.c (client_state_t): Remove CLIENT_MODIFY_REPORT_VALUE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Merge MODIFY_REPORT VALUE and PARAMETER.
+
+	* src/tests/omp_modify_report_0.c: Match updated OMP.
+
+2009-06-10  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_start_element): Reorder CLIENT_MODIFY_TASK
 	conditions.
 
