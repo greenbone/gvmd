@@ -708,9 +708,11 @@ task_preference (task_t task, const char* name)
 #endif
           if (strncmp (desc, name, eq - desc - 1) == 0)
             {
+              gchar* ret;
+              ret = g_strndup (eq + 2,
+                               seek ? seek - (eq + 2) : strlen (seek));
               free (orig_desc);
-              return g_strndup (eq + 2,
-                                seek ? seek - (eq + 2) : strlen (seek));
+              return ret;
             }
         }
       else if ((seek ? seek - desc > 7 : 1)
@@ -847,6 +849,7 @@ static int
 send_task_preferences (task_t task, char* name)
 {
   char* desc = task_description (task);
+  // FIX returns must free this
   char* orig_desc = desc;
   char* seek;
 

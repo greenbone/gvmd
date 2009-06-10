@@ -1,5 +1,10 @@
 2009-06-10  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (task_preference): Free orig_desc after last use,
+	instead of before.
+
+2009-06-10  Matthew Mundell <mmundell@intevation.de>
+
 	Account for the move of GET_STATUS TASK_ID to an attribute in all
 	remaining tests.
 
