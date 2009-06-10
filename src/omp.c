@@ -789,9 +789,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
-        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
-        else if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        if (strncasecmp ("COMMENT", element_name, 7) == 0)
           set_client_state (CLIENT_MODIFY_TASK_COMMENT);
         else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
@@ -805,6 +803,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("RCFILE", element_name, 6) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
+        else if (strncasecmp ("TASK_ID", element_name, 7) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("modify_task")))

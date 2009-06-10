@@ -1,3 +1,8 @@
+2009-06-10  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_start_element): Reorder CLIENT_MODIFY_TASK
+	conditions.
+
 2009-06-09  Matthew Mundell <mmundell@intevation.de>
 
 	Merge the OMP MODIFY_TASK command's VALUE and PARAMETER entities.
