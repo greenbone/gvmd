@@ -32,6 +32,7 @@
 
 #include "common.h"
 #include "../tracef.h"
+#include "../string.h"
 
 int
 main ()
@@ -119,30 +120,25 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL,
-                                  "get_report_response",
-                                  "FIX report text in base64");
-  add_attribute (expected, "status", "200");
-
-  if (compare_entities (entity, expected))
+  if (entity
+      && entity_attribute (entity, "status")
+      && (strcmp (entity_attribute (entity, "status"), "200") == 0)
+      && (report = entity_child (entity, "report"))
+      && isalnumstr (entity_text (report)))
     {
-      free_entity (expected);
- free_fail:
       free_entity (entity);
- delete_fail:
-      // FIX
-      //delete_task (&session, id);
+      delete_task (&session, id);
       free (id);
- fail:
       close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
+ free_fail:
   free_entity (entity);
-  free_entity (expected);
-  // FIX
-  //delete_task (&session, id);
+ delete_fail:
+  delete_task (&session, id);
   free (id);
+ fail:
   close_manager_connection (socket, session);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

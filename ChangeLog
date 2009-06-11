@@ -1,5 +1,15 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_report_0.c: Improve check of expected response.
+
+	* src/tests/omp_get_report_1.c, src/tests/omp_get_report_2.c,
+	src/tests/omp_get_report_3.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_get_report_1, omp_get_report_2 and
+	omp_get_report_3.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_task_0.c,
 	src/tests/omp_delete_task_1.c, src/tests/omp_delete_task_2.c,
 	src/tests/omp_get_dependencies_1.c, src/tests/omp_get_nvt_all_1.c,
