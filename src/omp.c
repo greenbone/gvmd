@@ -262,7 +262,6 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
-  CLIENT_MODIFY_TASK_TASK_ID,
   CLIENT_START_TASK,
   CLIENT_START_TASK_TASK_ID,
   CLIENT_VERSION
@@ -512,7 +511,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strncasecmp ("CREATE_TASK", element_name, 11) == 0)
@@ -806,8 +808,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("RCFILE", element_name, 6) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
-        else if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_MODIFY_TASK_TASK_ID);
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("modify_task")))
@@ -1996,7 +1996,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
@@ -2005,10 +2005,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strncasecmp ("RCFILE", element_name, 6) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_TASK_ID:
-        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
 
@@ -2305,7 +2301,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_ID:
       case CLIENT_GET_NVT_DETAILS_OID:
       case CLIENT_MODIFY_REPORT_REPORT_ID:
-      case CLIENT_MODIFY_TASK_TASK_ID:
       case CLIENT_START_TASK_TASK_ID:
       case CLIENT_GET_STATUS_TASK_ID:
         append_text (&current_uuid, text, text_len);

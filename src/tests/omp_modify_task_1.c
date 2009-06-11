@@ -89,8 +89,8 @@ main ()
     }
 
   if (sendf_to_manager (&session2,
-                        "<modify_task>"
-                        "<task_id>%s</task_id>"
+                        "<modify_task"
+                        " task_id=\"%s\">"
                         "<parameter id=\"name\">Modified name</parameter>"
                         "</modify_task>",
                         id)

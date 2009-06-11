@@ -79,8 +79,8 @@ main ()
 #endif
 
   if (sendf_to_manager (&session,
-                        "<modify_task>"
-                        "<task_id>%s</task_id>"
+                        "<modify_task"
+                        " task_id=\"%s\">"
                         "<parameter id=\"comment\">"
                         "Modified comment."
                         "</parameter>"
