@@ -1,5 +1,17 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	Move TASK_ID entity of OMP ABORT_TASK to an attribute.
+
+	* src/omp.c (client_state_t): Remove CLIENT_ABORT_TASK_TASK_ID.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Move ABORT_TASK TASK_ID to an attribute.
+
+	* src/tests/omp_abort_task_0.c: Pass TASK_ID in an attribute.
+
+	* ChangeLog: Correct function names in last three entries.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_abort_task_0.c: Expect that the operation may also
 	succeed completely.
 
@@ -8,7 +20,7 @@
 	Move TASK_ID entity of OMP START_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_START_TASK_TASK_ID.
-	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Move START_TASK TASK_ID to an attribute.
 
 	* src/tests/common.c (start_task): Pass TASK_ID in an attribute.
@@ -22,7 +34,7 @@
 	Move TASK_ID entity of OMP DELETE_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_DELETE_TASK_TASK_ID.
-	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Move DELETE_TASK TASK_ID to an attribute.
 
 	* src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
@@ -33,7 +45,7 @@
 	Move TASK_ID entity of OMP MODIFY_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_MODIFY_TASK_TASK_ID.
-	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Move MODIFY_TASK TASK_ID to an attribute.
 
 	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Pass

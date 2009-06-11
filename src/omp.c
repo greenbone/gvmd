@@ -225,7 +225,7 @@ typedef enum
   CLIENT_AUTHENTIC,
 
   CLIENT_ABORT_TASK,
-  CLIENT_ABORT_TASK_TASK_ID,
+  // FIX
 #if 0
   CLIENT_ABORT_TASK_CRITERION,
 #endif
@@ -462,7 +462,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_ABORT_TASK);
           }
         else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
@@ -823,11 +826,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK:
-        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_ABORT_TASK_TASK_ID);
 #if 0
-        else if (strncasecmp ("CRITERION", element_name, 9) == 0)
+        if (strncasecmp ("CRITERION", element_name, 9) == 0)
           set_client_state (CLIENT_ABORT_TASK_CRITERION);
+#else
+        if (0)
+          ;
 #endif
         else
           {
@@ -1397,10 +1401,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("abort_task"));
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_ABORT_TASK_TASK_ID:
-        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
-        set_client_state (CLIENT_ABORT_TASK);
         break;
 
 #if 0
@@ -2281,7 +2281,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
 
-      case CLIENT_ABORT_TASK_TASK_ID:
       case CLIENT_DELETE_REPORT_ID:
       case CLIENT_GET_REPORT_ID:
       case CLIENT_GET_NVT_DETAILS_OID:

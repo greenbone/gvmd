@@ -96,7 +96,7 @@ main ()
 #endif
 
   if (sendf_to_manager (&session,
-                        "<abort_task><task_id>%s</task_id></abort_task>",
+                        "<abort_task task_id=\"%s\"/>",
                         id)
       == -1)
     {
