@@ -1,5 +1,10 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_abort_task_0.c: Expect that the operation may also
+	succeed completely.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Move TASK_ID entity of OMP START_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_START_TASK_TASK_ID.

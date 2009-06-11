@@ -114,16 +114,24 @@ main ()
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "abort_task_response", NULL);
-  add_attribute (expected, "status", "202");
+  add_attribute (expected, "status", "200");
 
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
-      free_entity (entity);
-      delete_task (&session, id);
-      free (id);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      /* The server may still be busy stopping the task. */
+      expected = add_entity (NULL, "abort_task_response", NULL);
+      add_attribute (expected, "status", "202");
+
+      if (compare_entities (entity, expected))
+        {
+          free_entity (expected);
+          free_entity (entity);
+          delete_task (&session, id);
+          free (id);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (expected);
