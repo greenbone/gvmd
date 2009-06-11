@@ -92,11 +92,13 @@ main ()
             {
               if (entity_child (task, "name")
                   && (strcmp (entity_text (entity_child (task, "name")),
-                              "Task for omp_get_status_3")
+                              "Test omp_get_status_0 task")
                       == 0)
                   && entity_child (task, "status")
                   && (status = entity_text (entity_child (task, "status")))
-                  && (strcmp (status, "New") == 0))
+                  && (strcmp (status, "Requested") == 0
+                      || strcmp (status, "Running") == 0
+                      || strcmp (status, "Done") == 0))
                 {
                   free_entity (entity);
                   delete_task (&session, id);

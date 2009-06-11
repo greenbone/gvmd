@@ -1,5 +1,9 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_status_0.c: Correct expectations.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Move TASK_ID entity of OMP ABORT_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_ABORT_TASK_TASK_ID.
