@@ -251,7 +251,6 @@ typedef enum
   CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
   CLIENT_GET_STATUS,
-  CLIENT_GET_STATUS_TASK_ID,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
@@ -540,7 +539,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("GET_STATUS", element_name, 10) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_STATUS);
           }
         else
@@ -884,21 +886,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_STATUS:
-        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_GET_STATUS_TASK_ID);
-        else
+        if (send_to_client (XML_ERROR_SYNTAX ("get_status")))
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("get_status")))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       default:
@@ -2141,6 +2138,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else if (current_uuid)
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_status"));
+        else
           {
             gchar* response;
             task_iterator_t iterator;
@@ -2202,13 +2201,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
           }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_GET_STATUS_TASK_ID:
-        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
-        set_client_state (CLIENT_GET_STATUS);
         break;
 
       default:
@@ -2285,7 +2278,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_ID:
       case CLIENT_GET_NVT_DETAILS_OID:
       case CLIENT_MODIFY_REPORT_REPORT_ID:
-      case CLIENT_GET_STATUS_TASK_ID:
         append_text (&current_uuid, text, text_len);
         break;
 
