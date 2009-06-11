@@ -1,5 +1,9 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (delete_task): Pass TASK_ID as attribute.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Move REPORT_ID entities of OMP DELETE_REPORT, GET_REPORT and
 	MODIFY_REPORT commands to attributes.
 
