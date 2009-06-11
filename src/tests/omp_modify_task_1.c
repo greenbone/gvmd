@@ -126,9 +126,7 @@ main ()
   /* Check that process 1 registered the change. */
 
   if (sendf_to_manager (&session1,
-                        "<get_status>"
-                        "<task_id>%s</task_id>"
-                        "</get_status>",
+                        "<get_status task_id=\"%s\"/>",
                         id)
       == -1)
     {

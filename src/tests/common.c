@@ -1411,9 +1411,7 @@ wait_for_task_delete (gnutls_session_t* session,
       const char* status;
 
       if (sendf_to_manager (session,
-                            "<get_status>"
-                            "<task_id>%s</task_id>"
-                            "</get_status>",
+                            "<get_status task_id=\"%s\"/>",
                             id)
           == -1)
         return -1;
@@ -1487,9 +1485,7 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
   int ret;
 
   if (sendf_to_manager (session,
-                        "<get_status>"
-                        "<task_id>%s</task_id>"
-                        "</get_status>",
+                        "<get_status task_id=\"%s\"/>",
                         id)
       == -1)
     return -1;

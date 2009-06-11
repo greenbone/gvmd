@@ -1,5 +1,33 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_task_0.c,
+	src/tests/omp_delete_task_1.c, src/tests/omp_delete_task_2.c,
+	src/tests/omp_get_dependencies_1.c, src/tests/omp_get_nvt_all_1.c,
+	src/tests/omp_get_nvt_details_1.c, src/tests/omp_get_nvt_details_4.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_feed_checksum_4.c,
+	src/tests/omp_get_nvt_feed_checksum_5.c, src/tests/omp_get_preferences_1.c,
+	src/tests/omp_get_report_0.c, src/tests/omp_get_rules_1.c,
+	src/tests/omp_modify_report_0.c, src/tests/omp_modify_task_1.c: Pass
+	GET_STATUS TASK_ID as an attribute.
+
+	* src/tests/common.c (wait_for_task_delete, omp_get_status): Pass
+	GET_STATUS TASK_ID as an attribute.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
+	Move TASK_ID entity of OMP GET_STATUS to an attribute.
+
+	* src/omp.c (client_state_t): Remove CLIENT_GET_STATUS_TASK_ID.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Move GET_STATUS TASK_ID to an attribute.
+
+	* src/tests/omp_get_status_1.c, src/tests/omp_get_status_2.c,
+	src/tests/omp_get_status_4.c, src/tests/omp_get_status_5.c: Pass TASK_ID
+	in an attribute.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_status_0.c: Correct expectations.
 
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
