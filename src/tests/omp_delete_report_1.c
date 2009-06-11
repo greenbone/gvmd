@@ -53,9 +53,7 @@ main ()
     }
 
   if (send_to_manager (&session,
-                       "<delete_report>"
-                       "<report_id></report_id>"
-                       "</delete_report>")
+                       "<delete_report report_id=\"\"/>")
       == -1)
     {
       close_manager_connection (socket, session);

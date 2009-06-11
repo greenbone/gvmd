@@ -102,7 +102,7 @@ main ()
   /* Get the report. */
 
   if (sendf_to_manager (&session,
-                        "<get_report><report_id>%s</report_id></get_report>",
+                        "<get_report report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto delete_fail;
@@ -124,9 +124,7 @@ main ()
   /* Remove the report. */
 
   if (sendf_to_manager (&session,
-                        "<delete_report>"
-                        "<report_id>%s</report_id>"
-                        "</delete_report>",
+                        "<delete_report report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto delete_fail;
@@ -145,7 +143,7 @@ main ()
   /* Try get the report again. */
 
   if (sendf_to_manager (&session,
-                        "<get_report><report_id>%s</report_id></get_report>",
+                        "<get_report report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto delete_fail;

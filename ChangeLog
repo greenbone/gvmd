@@ -1,5 +1,21 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	Move REPORT_ID entities of OMP DELETE_REPORT, GET_REPORT and
+	MODIFY_REPORT commands to attributes.
+
+	* src/omp.c (client_state_t): Remove CLIENT_GET_REPORT_ID,
+	CLIENT_DELETE_REPORT_ID and CLIENT_MODIFY_REPORT_REPORT_ID.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Move REPORT_ID to an attribute.
+
+	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
+	src/tests/omp_delete_task_1.c, src/tests/omp_get_report_0.c,
+	src/tests/omp_get_report_1.c, src/tests/omp_get_report_2.c,
+	src/tests/omp_get_report_3.c, src/tests/omp_modify_report_0.c: Adjust for
+	updated OMP.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_report_0.c: Improve check of expected response.
 
 	* src/tests/omp_get_report_1.c, src/tests/omp_get_report_2.c,

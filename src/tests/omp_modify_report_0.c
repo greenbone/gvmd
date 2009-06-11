@@ -103,8 +103,8 @@ main ()
   /* Set the comment. */
 
   if (sendf_to_manager (&session,
-                        "<modify_report>"
-                        "<report_id>%s</report_id>"
+                        "<modify_report"
+                        " report_id=\"%s\">"
                         "<parameter id=\"comment\">"
                         "Test comment for omp_modify_report_0."
                         "</parameter>"
@@ -130,8 +130,7 @@ main ()
  free_fail:
       free_entity (entity);
  delete_fail:
-      // FIX
-      //delete_task (&session, id);
+      delete_task (&session, id);
       free (id);
  fail:
       close_manager_connection (socket, session);
@@ -140,8 +139,7 @@ main ()
 
   free_entity (entity);
   free_entity (expected);
-  // FIX
-  //delete_task (&session, id);
+  delete_task (&session, id);
   free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;

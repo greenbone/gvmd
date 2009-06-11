@@ -103,7 +103,7 @@ main ()
   /* Get the report. */
 
   if (sendf_to_manager (&session,
-                        "<get_report><report_id>%s</report_id></get_report>",
+                        "<get_report report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto delete_fail;

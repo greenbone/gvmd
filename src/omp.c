@@ -238,7 +238,6 @@ typedef enum
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_REPORT,
-  CLIENT_DELETE_REPORT_ID,
   CLIENT_DELETE_TASK,
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_DEPENDENCIES,
@@ -248,13 +247,11 @@ typedef enum
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
-  CLIENT_GET_REPORT_ID,
   CLIENT_GET_RULES,
   CLIENT_GET_STATUS,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
-  CLIENT_MODIFY_REPORT_REPORT_ID,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_NAME,
@@ -469,7 +466,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "report_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
           }
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
@@ -500,7 +500,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "report_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_REPORT);
           }
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
@@ -509,7 +512,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_HELP);
         else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "report_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
         else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
@@ -600,21 +606,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_REPORT:
-        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
-          set_client_state (CLIENT_DELETE_REPORT_ID);
-        else
+        if (send_to_client (XML_ERROR_SYNTAX ("delete_report")))
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("delete_report")))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_TASK:
@@ -724,21 +725,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_REPORT:
-        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
-          set_client_state (CLIENT_GET_REPORT_ID);
-        else
+        if (send_to_client (XML_ERROR_SYNTAX ("get_report_response")))
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("get_report_response")))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_GET_RULES:
@@ -772,9 +768,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (strncasecmp ("REPORT_ID", element_name, 9) == 0)
-          set_client_state (CLIENT_MODIFY_REPORT_REPORT_ID);
-        else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+        if (strncasecmp ("PARAMETER", element_name, 9) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -1650,76 +1644,76 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case -3: /* Failed to read link. */
                 case -4: /* Failed to remove report. */
                 default:
-                  free_string_var (&current_uuid);
                   SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
                   break;
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
+          SEND_TO_CLIENT_OR_FAIL (STATUS_ERROR_SYNTAX);
         SEND_TO_CLIENT_OR_FAIL ("\"/>");
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_DELETE_REPORT_ID:
-        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
-        set_client_state (CLIENT_DELETE_REPORT);
         break;
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_uuid != NULL
-            && current_credentials.username != NULL)
+        if (current_credentials.username != NULL)
           {
-            gchar* name = g_build_filename (PREFIX
-                                            "/var/lib/openvas/mgr/users/",
-                                            current_credentials.username,
-                                            "reports",
-                                            current_uuid,
-                                            "report.nbe",
-                                            NULL);
-            free_string_var (&current_uuid);
-            // FIX glib access setuid note
-            if (g_file_test (name, G_FILE_TEST_EXISTS))
+            if (current_uuid == NULL)
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));
+            else
               {
-                gboolean success;
-                gchar* content;
-                gsize content_length = 0;
-                GError* content_error = NULL;
-                success = g_file_get_contents (name,
-                                               &content,
-                                               &content_length,
-                                               &content_error);
-                g_free (name);
-                if (success == FALSE)
+                gchar* name = g_build_filename (PREFIX
+                                                "/var/lib/openvas/mgr/users/",
+                                                current_credentials.username,
+                                                "reports",
+                                                current_uuid,
+                                                "report.nbe",
+                                                NULL);
+                free_string_var (&current_uuid);
+                // FIX glib access setuid note
+                if (g_file_test (name, G_FILE_TEST_EXISTS))
                   {
-                    if (content_error)
-                      g_error_free (content_error);
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                    gboolean success;
+                    gchar* content;
+                    gsize content_length = 0;
+                    GError* content_error = NULL;
+                    success = g_file_get_contents (name,
+                                                   &content,
+                                                   &content_length,
+                                                   &content_error);
+                    g_free (name);
+                    if (success == FALSE)
+                      {
+                        if (content_error)
+                          g_error_free (content_error);
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_MISSING ("get_report"));
+                      }
+                    else
+                      {
+                        gchar* base64_content;
+                        SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                                " status=\"" STATUS_OK "\">"
+                                                "<report>");
+                        base64_content = g_base64_encode ((guchar*) content,
+                                                          content_length);
+                        g_free (content);
+                        if (send_to_client (base64_content))
+                          {
+                            g_free (base64_content);
+                            error_send_to_client (error);
+                            return;
+                          }
+                        g_free (base64_content);
+                        SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                                "</get_report_response>");
+                      }
                   }
                 else
                   {
-                    gchar* base64_content;
-                    SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
-                                            " status=\"" STATUS_OK "\">"
-                                            "<report>");
-                    base64_content = g_base64_encode ((guchar*) content,
-                                                      content_length);
-                    g_free (content);
-                    if (send_to_client (base64_content))
-                      {
-                        g_free (base64_content);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64_content);
-                    SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                            "</get_report_response>");
+                    g_free (name);
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
                   }
-              }
-            else
-              {
-                g_free (name);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
               }
           }
         else
@@ -1728,10 +1722,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
           }
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_GET_REPORT_ID:
-        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
-        set_client_state (CLIENT_GET_REPORT);
         break;
 
       case CLIENT_GET_RULES:
@@ -1804,28 +1794,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (current_uuid != NULL
-            && modify_task_parameter != NULL
+        if (modify_task_parameter != NULL
             && modify_task_value != NULL)
           {
-            int ret = set_report_parameter (current_uuid,
-                                            modify_task_parameter,
-                                            modify_task_value);
-            free_string_var (&modify_task_parameter);
-            free_string_var (&modify_task_value);
-            free_string_var (&current_uuid);
-            switch (ret)
+            if (current_uuid == NULL)
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
+            else
               {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-                  break;
-                case -2: /* Parameter name error. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
-                  break;
-                case -3: /* Failed to write to disk. */
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-                  break;
+                int ret = set_report_parameter (current_uuid,
+                                                modify_task_parameter,
+                                                modify_task_value);
+                free_string_var (&modify_task_parameter);
+                free_string_var (&modify_task_value);
+                free_string_var (&current_uuid);
+                switch (ret)
+                  {
+                    case 0:
+                      SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+                      break;
+                    case -2: /* Parameter name error. */
+                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
+                      break;
+                    case -3: /* Failed to write to disk. */
+                    default:
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+                      break;
+                  }
               }
           }
         else
@@ -1839,10 +1833,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_REPORT_PARAMETER:
         assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
-        set_client_state (CLIENT_MODIFY_REPORT);
-        break;
-      case CLIENT_MODIFY_REPORT_REPORT_ID:
-        assert (strncasecmp ("REPORT_ID", element_name, 9) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
         break;
 
@@ -2274,10 +2264,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
 
-      case CLIENT_DELETE_REPORT_ID:
-      case CLIENT_GET_REPORT_ID:
       case CLIENT_GET_NVT_DETAILS_OID:
-      case CLIENT_MODIFY_REPORT_REPORT_ID:
         append_text (&current_uuid, text, text_len);
         break;
 
