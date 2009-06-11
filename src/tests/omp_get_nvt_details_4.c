@@ -41,7 +41,8 @@ main ()
   gnutls_session_t session;
   char* id;
   const char* status;
-  entity_t entity, entity2, nvt, nvt_id;
+  const char* nvt_id;
+  entity_t entity, entity2, nvt;
 
   setup_test ();
 
@@ -152,7 +153,7 @@ main ()
     }
   nvt = entity_child (entity, "nvt");
   if (nvt == NULL
-      || (nvt_id = entity_child (nvt, "oid")) == NULL)
+      || (nvt_id = entity_attribute (nvt, "oid")) == NULL)
     {
       free_entity (entity);
       close_manager_connection (socket, session);
@@ -165,7 +166,7 @@ main ()
                         "<get_nvt_details>"
                         "<oid>%s</oid>"
                         "</get_nvt_details>",
-                        entity_text (nvt_id))
+                        nvt_id)
       == -1)
     {
       free_entity (entity);

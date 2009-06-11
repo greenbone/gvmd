@@ -1075,8 +1075,8 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
 
 #undef DEF
 
-      msg = g_strdup_printf ("<nvt>"
-                             "<oid>%s</oid>"
+      msg = g_strdup_printf ("<nvt"
+                             " oid=\"%s\">"
                              "<name>%s</name>"
                              "<category>%i</category>"
                              "<copyright>%s</copyright>"
@@ -1119,8 +1119,8 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       g_free (tag_text);
     }
   else
-    msg = g_strdup_printf ("<nvt>"
-                           "<oid>%s</oid>"
+    msg = g_strdup_printf ("<nvt"
+                           " oid=\"%s\">"
                            "<name>%s</name>"
 #if 0
                            // FIX implement

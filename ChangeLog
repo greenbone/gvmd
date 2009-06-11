@@ -1,5 +1,13 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	Move OID entity of OMP GET_NVT_ALL and GET_NVT_DETAILS to an attribute.
+
+	* src/omp.c (send_plugin): Move OID to an attribute.
+
+	* src/tests/omp_get_nvt_details_4.c: Expect OID in an attribute.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Get the GET_NVT_DETAILS tests passing.
 
 	* src/tests/omp_get_nvt_details_3.c,
