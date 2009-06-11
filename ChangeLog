@@ -1,5 +1,19 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	Move TASK_ID entity of OMP START_TASK to an attribute.
+
+	* src/omp.c (client_state_t): Remove CLIENT_START_TASK_TASK_ID.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Move START_TASK TASK_ID to an attribute.
+
+	* src/tests/common.c (start_task): Pass TASK_ID in an attribute.
+
+	* src/tests/omp_start_task_0.c: Pass TASK_ID in an attribute.
+
+	* ChangeLog: Correct descriptions in last two entries.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Move TASK_ID entity of OMP DELETE_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_DELETE_TASK_TASK_ID.
@@ -7,7 +21,7 @@
 	(omp_xml_handle_text): Move DELETE_TASK TASK_ID to an attribute.
 
 	* src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
-	src/tests/omp_delete_task_1.c: Expect TASK_ID in an attribute.
+	src/tests/omp_delete_task_1.c: Pass TASK_ID in an attribute.
 
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
@@ -17,7 +31,7 @@
 	(omp_xml_handle_start_element, omp_xml_handle_start_element)
 	(omp_xml_handle_text): Move MODIFY_TASK TASK_ID to an attribute.
 
-	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Expect
+	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Pass
 	TASK_ID in an attribute.
 
 2009-06-11  Matthew Mundell <mmundell@intevation.de>

@@ -1166,7 +1166,7 @@ start_task (gnutls_session_t* session,
             char* id)
 {
   if (sendf_to_manager (session,
-                        "<start_task><task_id>%s</task_id></start_task>",
+                        "<start_task task_id=\"%s\"/>",
                         id)
       == -1)
     return -1;

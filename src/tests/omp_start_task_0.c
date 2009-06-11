@@ -62,10 +62,7 @@ main ()
   if (env_authenticate (&session)) goto delete_fail;
 #endif
 
-  gchar* msg = g_strdup_printf ("<start_task>"
-                                "<task_id>%s</task_id>"
-                                "</start_task>",
-                                id);
+  gchar* msg = g_strdup_printf ("<start_task task_id=\"%s\"/>", id);
   int ret = send_to_manager (&session, msg);
   g_free (msg);
   if (ret == -1)
