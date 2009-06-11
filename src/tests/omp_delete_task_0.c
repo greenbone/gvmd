@@ -65,8 +65,8 @@ main ()
 
   /* Remove the task. */
 
-  gchar* msg = g_strdup_printf ("<delete_task>"
-                                "<task_id>%s</task_id>"
+  gchar* msg = g_strdup_printf ("<delete_task"
+                                " task_id=\"%s\">"
                                 "</delete_task>",
                                 id);
   int ret = send_to_manager (&session, msg);

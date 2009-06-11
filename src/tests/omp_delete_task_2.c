@@ -78,8 +78,8 @@ main ()
   /* Remove the task. */
 
   if (sendf_to_manager (&session,
-                        "<delete_task>"
-                        "<task_id>%s</task_id>"
+                        "<delete_task"
+                        " task_id=\"%s\">"
                         "</delete_task>",
                         id))
     {

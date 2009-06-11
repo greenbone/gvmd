@@ -240,7 +240,6 @@ typedef enum
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_ID,
   CLIENT_DELETE_TASK,
-  CLIENT_DELETE_TASK_TASK_ID,
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
@@ -474,7 +473,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           {
-            append_text (&current_uuid, "", 0);
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_TASK);
           }
         else if (strncasecmp ("GET_CERTIFICATES", element_name, 16) == 0)
@@ -609,21 +611,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TASK:
-        if (strncasecmp ("TASK_ID", element_name, 7) == 0)
-          set_client_state (CLIENT_DELETE_TASK_TASK_ID);
-        else
+        if (send_to_client (XML_ERROR_SYNTAX ("delete_task")))
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("delete_task")))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_GET_CERTIFICATES:
@@ -1801,12 +1798,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free_string_var (&current_uuid);
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_task"));
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_DELETE_TASK_TASK_ID:
-        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
-        set_client_state (CLIENT_DELETE_TASK);
         break;
 
       case CLIENT_HELP:
@@ -2297,7 +2290,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_ABORT_TASK_TASK_ID:
       case CLIENT_DELETE_REPORT_ID:
-      case CLIENT_DELETE_TASK_TASK_ID:
       case CLIENT_GET_REPORT_ID:
       case CLIENT_GET_NVT_DETAILS_OID:
       case CLIENT_MODIFY_REPORT_REPORT_ID:

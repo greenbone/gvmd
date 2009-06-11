@@ -1,5 +1,16 @@
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
+	Move TASK_ID entity of OMP DELETE_TASK to an attribute.
+
+	* src/omp.c (client_state_t): Remove CLIENT_DELETE_TASK_TASK_ID.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Move DELETE_TASK TASK_ID to an attribute.
+
+	* src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_delete_task_1.c: Expect TASK_ID in an attribute.
+
+2009-06-11  Matthew Mundell <mmundell@intevation.de>
+
 	Move TASK_ID entity of OMP MODIFY_TASK to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_MODIFY_TASK_TASK_ID.
