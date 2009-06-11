@@ -39,13 +39,14 @@ main ()
 {
   int socket;
   gnutls_session_t session;
+  entity_t entity;
 
   setup_test ();
 
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* Request the feed details. */
+  /* Repeatedly request the feed details until they are available. */
 
   if (env_authenticate (&session))
     {
@@ -53,20 +54,43 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session,
-                       "<get_nvt_details>"
-                       "<oid>0.0.0.0.0.0.0.0.0.0</oid>"
-                       "</get_nvt_details>")
-      == -1)
+  while (1)
     {
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+
+      if (send_to_manager (&session,
+                           "<get_nvt_details>"
+                           "<oid>0.0.0.0.0.0.0.0.0.0</oid>"
+                           "</get_nvt_details>")
+          == -1)
+        {
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
+
+      /* Read the response. */
+
+      entity = NULL;
+      read_entity (&session, &entity);
+      if (entity == NULL)
+        {
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
+
+      if (entity_attribute (entity, "status"))
+        {
+          if (strcmp (entity_attribute (entity, "status"), "503"))
+            break;
+        }
+      else
+        {
+          free_entity (entity);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
+
+      free_entity (entity);
     }
-
-  /* Read the response. */
-
-  entity_t entity = NULL;
-  read_entity (&session, &entity);
 
   /* Compare to expected response. */
 

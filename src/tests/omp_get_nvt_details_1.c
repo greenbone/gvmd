@@ -40,7 +40,8 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
-  entity_t entity, status;
+  const char* status;
+  entity_t entity;
 
   setup_test ();
 
@@ -163,9 +164,8 @@ main ()
 
   if (entity == NULL
       || strcmp (entity_name (entity), "get_nvt_details_response")
-      || (status = entity_child (entity, "status")) == NULL
-      || (strcmp (entity_text (status), "200")
-          && strcmp (entity_text (status), "503")))
+      || (status = entity_attribute (entity, "status")) == NULL
+      || (strcmp (status, "200") && strcmp (status, "503")))
     {
       free_entity (entity);
       delete_task (&session, id);

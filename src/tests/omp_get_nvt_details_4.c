@@ -40,7 +40,8 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
-  entity_t entity, entity2, status, nvt, nvt_id;
+  const char* status;
+  entity_t entity, entity2, nvt, nvt_id;
 
   setup_test ();
 
@@ -185,8 +186,8 @@ main ()
 
   if (entity2 == NULL
       || strcmp (entity_name (entity2), "get_nvt_details_response")
-      || (status = entity_child (entity2, "status")) == NULL
-      || strcmp (entity_text (status), "200")
+      || (status = entity_attribute (entity2, "status")) == NULL
+      || strcmp (status, "200")
       || compare_entities (entity_child (entity, "nvt"), nvt))
     {
       free_entity (entity);
