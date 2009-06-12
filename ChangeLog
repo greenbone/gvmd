@@ -1,5 +1,9 @@
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_preferences_1.c: Enable test for expected value.
+
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_preferences_0.c: Correct expected status code.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>

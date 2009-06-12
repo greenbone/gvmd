@@ -123,7 +123,6 @@ main ()
   read_entity (&session, &entity);
   if (entity) print_entity (stdout, entity);
 
-#if 0
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_preferences_response", NULL);
@@ -140,7 +139,6 @@ main ()
     }
 
   free_entity (expected);
-#endif
   free_entity (entity);
   delete_task (&session, id);
   close_manager_connection (socket, session);
