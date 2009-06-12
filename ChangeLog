@@ -1,3 +1,14 @@
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
+
+	Move OID entity of OMP GET_NVT_DETAILS to an attribute.
+
+	* src/omp.c (client_state_t): Remove CLIENT_GET_NVT_DETAILS_OID.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Move GET_NVT_DETAILS OID to an attribute.
+
+	* src/tests/omp_get_nvt_details_2.c, src/tests/omp_get_nvt_details_3.c,
+	src/tests/omp_get_nvt_details_4.c: Pass OID in an attribute.
+
 2009-06-11  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/common.c (delete_task): Pass TASK_ID as attribute.

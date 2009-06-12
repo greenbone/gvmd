@@ -57,10 +57,7 @@ main ()
   while (1)
     {
 
-      if (send_to_manager (&session,
-                           "<get_nvt_details>"
-                           "<oid>-*_*-</oid>"
-                           "</get_nvt_details>")
+      if (send_to_manager (&session, "<get_nvt_details oid=\"-*_*-\"/>")
           == -1)
         {
           close_manager_connection (socket, session);

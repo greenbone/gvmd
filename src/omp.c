@@ -243,7 +243,6 @@ typedef enum
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
-  CLIENT_GET_NVT_DETAILS_OID,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
@@ -495,7 +494,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
         else if (strncasecmp ("GET_NVT_DETAILS", element_name, 20) == 0)
-          set_client_state (CLIENT_GET_NVT_DETAILS);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "oid", &attribute))
+              append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_GET_NVT_DETAILS);
+          }
         else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
@@ -692,21 +697,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_DETAILS:
-        if (strncasecmp ("OID", element_name, 3) == 0)
-          set_client_state (CLIENT_GET_NVT_DETAILS_OID);
-        else
+        if (send_to_client (XML_ERROR_SYNTAX ("get_nvt_details")))
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("get_nvt_details")))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_GET_PREFERENCES:
@@ -1619,10 +1619,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_GET_NVT_DETAILS_OID:
-        assert (strncasecmp ("OID", element_name, 3) == 0);
-        set_client_state (CLIENT_GET_NVT_DETAILS);
-        break;
 
       case CLIENT_DELETE_REPORT:
         assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
@@ -2262,10 +2258,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
-        break;
-
-      case CLIENT_GET_NVT_DETAILS_OID:
-        append_text (&current_uuid, text, text_len);
         break;
 
       default:

@@ -163,9 +163,7 @@ main ()
   /* Request details of the NVT. */
 
   if (sendf_to_manager (&session,
-                        "<get_nvt_details>"
-                        "<oid>%s</oid>"
-                        "</get_nvt_details>",
+                        "<get_nvt_details oid=\"%s\"/>",
                         nvt_id)
       == -1)
     {

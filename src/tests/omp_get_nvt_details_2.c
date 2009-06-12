@@ -58,9 +58,7 @@ main ()
     {
 
       if (send_to_manager (&session,
-                           "<get_nvt_details>"
-                           "<oid>0.0.0.0.0.0.0.0.0.0</oid>"
-                           "</get_nvt_details>")
+                           "<get_nvt_details oid=\"0.0.0.0.0.0.0.0.0.0\"/>")
           == -1)
         {
           close_manager_connection (socket, session);
