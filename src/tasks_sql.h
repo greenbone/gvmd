@@ -174,8 +174,13 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
   sqlite3_stmt* stmt;
   va_list args;
   va_start (args, sql);
-  sql_x (col, row, sql, args, &stmt);
+  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
+  if (sql_x_ret)
+    {
+      sqlite3_finalize (stmt);
+      abort ();
+    }
   int ret = sqlite3_column_int (stmt, col);
   sqlite3_finalize (stmt);
   return ret;
@@ -189,8 +194,13 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   char* ret;
   va_list args;
   va_start (args, sql);
-  sql_x (col, row, sql, args, &stmt);
+  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
+  if (sql_x_ret)
+    {
+      sqlite3_finalize (stmt);
+      abort ();
+    }
   ret2 = sqlite3_column_text (stmt, col);
   /* TODO: For efficiency, save this duplication by adjusting the task
            interface. */
