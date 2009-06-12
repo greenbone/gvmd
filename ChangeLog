@@ -1,5 +1,9 @@
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_preferences_0.c: Correct expected status code.
+
+2009-06-12  Matthew Mundell <mmundell@intevation.de>
+
 	Move OID entity of OMP GET_NVT_DETAILS to an attribute.
 
 	* src/omp.c (client_state_t): Remove CLIENT_GET_NVT_DETAILS_OID.
