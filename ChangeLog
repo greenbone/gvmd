@@ -1,5 +1,9 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* src/oxpd.c: Enable FROM_BUFFER_SIZE check.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	* src/oxpd.c (DOC_FILES): Add oxpd.c.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>

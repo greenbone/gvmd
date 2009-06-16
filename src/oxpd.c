@@ -30,11 +30,8 @@
 
 #include "oxpd.h"
 
-#if 0
-#include <sys/types.h>
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for `read'
-#endif
 #endif
 
 /**
