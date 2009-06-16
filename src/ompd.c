@@ -762,8 +762,11 @@ serve_omp (gnutls_session_t* client_session,
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE.  If the client is still connected then
-               * recreate the server session, else exit. */
+              /* Received server BYE.  Write out the rest of to_server (the
+               * BYE ACK).  If the client is still connected then recreate the
+               * server session, else exit. */
+              write_to_server (server_socket, server_session);
+              set_server_init_state (SERVER_INIT_TOP);
               if (client_active == 0)
                 return 0;
               if (end_session (server_socket,
@@ -911,8 +914,11 @@ serve_omp (gnutls_session_t* client_session,
             server_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE.  If the client is still connected then
-               * recreate the server session, else exit. */
+              /* Received server BYE.  Write out the rest of to_server (the
+               * BYE ACK).  If the client is still connected then recreate the
+               * server session, else exit. */
+              write_to_server (server_socket, server_session);
+              set_server_init_state (SERVER_INIT_TOP);
               if (client_active == 0)
                 return 0;
               if (end_session (server_socket,

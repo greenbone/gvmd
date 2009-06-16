@@ -1180,7 +1180,7 @@ delete_reports (task_t task)
 }
 
 
-/* Server requests. */
+/* Server messaging. */
 
 /**
  * @brief Request the list of plugins from the server.
@@ -1204,6 +1204,19 @@ int
 request_certificates ()
 {
   if (send_to_server ("CLIENT <|> CERTIFICATES <|> CLIENT\n"))
+    return -1;
+  return 0;
+}
+
+/**
+ * @brief Acknowledge a server BYE.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+acknowledge_bye ()
+{
+  if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
     return -1;
   return 0;
 }

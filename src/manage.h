@@ -347,12 +347,15 @@ int
 set_report_parameter (char*, const char*, char*);
 
 
-/* Server requests. */
+/* Server messaging. */
 
 int
 request_plugin_list ();
 
 int
 request_certificates ();
+
+int
+acknowledge_bye ();
 
 #endif

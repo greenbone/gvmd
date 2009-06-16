@@ -207,7 +207,9 @@ end_session (int server_socket,
              gnutls_session_t server_session,
              gnutls_certificate_credentials_t server_credentials)
 {
-#if 1
+  int count;
+
+#if 0
   /* Turn on blocking. */
   // FIX get flags first
   if (fcntl (server_socket, F_SETFL, 0L) == -1)
@@ -216,8 +218,18 @@ end_session (int server_socket,
       return -1;
     }
 #endif
+#if 1
+  /* Turn off blocking. */
+  // FIX get flags first
+  if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      perror ("Failed to set server socket flag (end_session)");
+      return -1;
+    }
+#endif
 
-  while (1)
+  count = 100;
+  while (count--)
     {
       int ret = gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
       if (ret == GNUTLS_E_AGAIN) continue;

@@ -1351,13 +1351,15 @@ process_otp_server_input ()
               case SERVER_BYE:
                 if (strncasecmp ("BYE", field, 3))
                   return -1;
-                set_server_init_state (SERVER_INIT_TOP);
+                /* It's up to the caller to set the init state, as the
+                 * caller must flush the ACK. */
                 set_server_state (SERVER_DONE);
                 switch (parse_server_done (&messages))
                   {
                     case  0:
                       if (sync_buffer ()) return -1;
                       server_active = 0;
+                      if (acknowledge_bye ()) return -1;
                       return 1;
                     case -1: return -1;
                     case -2:

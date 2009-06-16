@@ -1,3 +1,19 @@
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
+	Acknowledge OTP server BYE messages.
+
+	* src/otp.c (process_otp_server_input): In SERVER_BYE leave setting of the
+	init state to the caller and queue the BYE ACK in to_server.
+
+	* src/ompd.c (serve_omp): On receiving server BYE flush the to_server
+	buffer and set the server init state.
+
+	* src/ovas-mngr-comm.c (end_session): Turn off blocking before the
+	gnutls_bye, and limit the number of gnutls_bye attempts.
+
+	* src/manage.c (acknowledge_bye): New function.
+	* src/manage.h (acknowledge_bye): New header.
+
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	* TODO: New file.
