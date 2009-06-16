@@ -1,5 +1,9 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* src/oxpd.c (DOC_FILES): Add oxpd.c.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	Separate the common ompd and otpd globals into a new file.
 
 	* src/oxpd.c, src/oxpd.h: New files.

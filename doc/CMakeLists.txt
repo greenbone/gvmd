@@ -78,7 +78,7 @@ endif (NOT DOXYGEN_EXECUTABLE)
 
 set (DOC_FILES
      ../src/openvasmd.c ../src/ovas-mngr-comm.c
-	 ../src/ompd.c ../src/otpd.c
+	 ../src/oxpd.c ../src/ompd.c ../src/otpd.c
 	 ../src/manage.c ../src/omp.c ../src/otp.c
 	 ../src/string.c ../src/file.c
 	 ../src/tasks_sql.h ../src/tasks_fs.h ../src/tracef.h
