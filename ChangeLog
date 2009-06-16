@@ -1,3 +1,8 @@
+2009-06-16  Michael Wiegand <michael.wiegand@intevation.de>
+
+	* CMakeLists.txt: Make source archive filenames consistent with other
+	modules and Debians expectations.
+
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
 	* CMakeLists.txt: Turn off optimisation for now, as it results in a
