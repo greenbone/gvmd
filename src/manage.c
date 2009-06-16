@@ -36,10 +36,6 @@
  * tasks.
  */
 
-// FIX might be cleaner to separate server funcs like start_task
-//     from storage and manip funcs like make_task and
-//     add_task_description_line
-
 #include "manage.h"
 #include "file.h"
 #include "ovas-mngr-comm.h"

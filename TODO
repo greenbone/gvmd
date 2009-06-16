@@ -151,3 +151,12 @@
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/common.c (print_entity): Add attribute printing.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
+	In libmanage (src/manage.c), consider separating functions that
+	communicate with the server (start_task, stop_task, request_*,
+	acknowlegde_bye) from data storage and manipulation functions (like
+	make_task, next_task, task_name and delete report).
+
+	This could make it easier to use the library outside the manager.

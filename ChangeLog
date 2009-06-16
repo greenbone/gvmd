@@ -1,5 +1,9 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c, TODO: Move note about communication functions to TODO.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (serve_omp): Remove lastfds tracing.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
