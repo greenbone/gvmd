@@ -1,5 +1,9 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* TODO: Add missing paren.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	Acknowledge OTP server BYE messages.
 
 	* src/otp.c (process_otp_server_input): In SERVER_BYE leave setting of the

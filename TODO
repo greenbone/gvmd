@@ -114,7 +114,7 @@
 	Match authentication response.  At present if AUTHENTICATE fails
 	then the manager responds to the AUTHENTICATE with
 	<authenticate_response status="400"/>.  The following command will then
-	get <omp_response status="404"/> syntax error).
+	get <omp_response status="404"/> (syntax error).
 
 	Name checksum entities consistently.  get_nvt_feed_checksum_response
 	has checksum, while get_nvt_all_response has feed_checksum.
