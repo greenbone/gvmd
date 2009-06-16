@@ -85,7 +85,7 @@ include_directories (${FILE_SOURCE_DIRECTORY}/file)
 link_directories (${STRING_BINARY_DIRECTORY}/string)
 link_directories (${FILE_BINARY_DIRECTORY}/file)
 
-add_executable (openvasmd openvasmd.c ompd.c otpd.c)
+add_executable (openvasmd openvasmd.c oxpd.c ompd.c otpd.c)
 target_link_libraries (openvasmd ovas-mngr-comm omp otp manage string file)
 
 exec_program (libopenvas-config
@@ -160,7 +160,7 @@ ADD_DEPENDENCIES (check splint rats flawfinder)
 
 ## Tag files
 
-set (C_FILES "openvasmd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
+set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
              "manage.c" "ovas-mngr-comm.c" "string.c" "tasks_fs.h"
 			 "tasks_sql.h")
 add_custom_target (etags COMMENT "Building TAGS..."

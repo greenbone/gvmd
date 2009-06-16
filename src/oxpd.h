@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Headers for OpenVAS Manager: the OMP daemon.
+ * Description: Headers for OpenVAS Manager: common OMP and OTP code.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -23,23 +23,28 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OPENVAS_MANAGER_OMPD_H
-#define OPENVAS_MANAGER_OMPD_H
+#ifndef OPENVAS_MANAGER_OXPD_H
+#define OPENVAS_MANAGER_OXPD_H
 
 #include "types.h"
-#include <gnutls/gnutls.h>
+#include <netinet/in.h>
 
-int
-init_ompd ();
+/**
+ * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
+ */
+#define FROM_BUFFER_SIZE 1048576
 
-int
-serve_omp (gnutls_session_t*, gnutls_session_t*,
-           gnutls_certificate_credentials_t*,
-           int, int*);
+buffer_size_t from_buffer_size;
 
-// FIX Temporarily, for omp.c SEND_TO_CLIENT.
-extern char to_client[];
-extern buffer_size_t to_client_start;
-extern buffer_size_t to_client_end;
+extern char from_client[];
+extern buffer_size_t from_client_start;
+extern buffer_size_t from_client_end;
+extern char from_server[];
+extern buffer_size_t from_server_start;
+extern buffer_size_t from_server_end;
+
+/*@-exportlocal@*/
+extern struct sockaddr_in server_address;
+/*@=exportlocal@*/
 
 #endif

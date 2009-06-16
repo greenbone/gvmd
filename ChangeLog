@@ -1,5 +1,30 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	Separate the common ompd and otpd globals into a new file.
+
+	* src/oxpd.c, src/oxpd.h: New files.
+
+	* src/ompd.c: Include oxpd.h.
+	(server_address): Move to oxpd.c.
+	(from_buffer_size, from_client, from_client_start, from_client_end)
+	(from_server, from_server_start, from_server_end): Remove.
+	* src/ompd.h (server_address): Remove.
+
+	* src/otpd.c: Include oxpd.h instead of ompd.h.
+	(from_buffer_size, from_client, from_client_start, from_client_end)
+	(from_server, from_server_start, from_server_end): Remove.
+
+	* src/openvasmd.c: Include oxpd.h.
+	(FROM_BUFFER_SIZE, from_buffer_size, from_client, from_client_start)
+	(from_client_end, from_server, from_server_start, from_server_end): Move
+	to src/oxpd.c.
+
+	* src/CMakeLists.txt (openvasmd, C_FILES): Add oxpd.c.
+
+	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Add src/oxpd.c.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	* src/file.c (rmdir_recursively): Add descriptive comments.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>

@@ -470,6 +470,7 @@ INPUT                  = src/string.c \
                          src/ovas-mngr-comm.c \
                          src/otp.c \
                          src/omp.c \
+                         src/oxpd.c \
                          src/ompd.c \
                          src/otpd.c \
                          src/openvasmd.c

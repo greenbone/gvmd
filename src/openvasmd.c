@@ -110,6 +110,7 @@
 
 #include "logf.h"
 #include "manage.h"
+#include "oxpd.h"  // FIX for server_address and vars for read_protocol
 #include "ompd.h"
 #include "otpd.h"
 #include "ovas-mngr-comm.h"
@@ -188,10 +189,6 @@
 #define READ_PROTOCOL_TIMEOUT 20
 #endif
 
-#if FROM_BUFFER_SIZE > SSIZE_MAX
-#error FROM_BUFFER_SIZE too big for `read'
-#endif
-
 /**
  * @brief The socket accepting OMP connections from clients.
  */
@@ -225,45 +222,6 @@ typedef enum
   PROTOCOL_FAIL,
   PROTOCOL_TIMEOUT
 } protocol_read_t;
-
-/**
- * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
- */
-#define FROM_BUFFER_SIZE 1048576
-
-/**
- * @brief Buffer of input from the client.
- */
-char from_client[FROM_BUFFER_SIZE];
-/**
- * @brief Buffer of input from the server.
- */
-char from_server[FROM_BUFFER_SIZE];
-
-// FIX for passing to otp[d].c,omp[d].c
-/**
- * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
- */
-buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
-
-// FIX just make these pntrs?
-/**
- * @brief The start of the data in the \ref from_client buffer.
- */
-buffer_size_t from_client_start = 0;
-/**
- * @brief The start of the data in the \ref from_server buffer.
- */
-buffer_size_t from_server_start = 0;
-/**
- * @brief The end of the data in the \ref from_client buffer.
- */
-buffer_size_t from_client_end = 0;
-
-/**
- * @brief The end of the data in the \ref from_server buffer.
- */
-buffer_size_t from_server_end = 0;
 
 
 /* Checking protocol, forking, serving the client. */

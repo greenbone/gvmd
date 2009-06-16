@@ -38,6 +38,7 @@
  */
 
 #include "ompd.h"
+#include "oxpd.h"
 #include "logf.h"
 #include "omp.h"
 #include "otp.h" // FIX for server_init_state
@@ -83,23 +84,6 @@ int socket(int domain, int type, int protocol);
  * @brief File descriptor set mask: selecting on server write.
  */
 #define FD_SERVER_WRITE 8
-
-/**
- * @brief The IP address of openvasd, "the server".
- */
-struct sockaddr_in server_address;
-
-// FIX Should probably be passed into serve_omp.
-extern buffer_size_t from_buffer_size;
-
-// FIX mv these here when read_protocol sorted out in openvasmd.c
-// FIX how to share these buffers with otpd.c?
-extern char from_client[];
-extern buffer_size_t from_client_start;
-extern buffer_size_t from_client_end;
-extern char from_server[];
-extern buffer_size_t from_server_start;
-extern buffer_size_t from_server_end;
 
 /**
  * @brief Initialise the OMP library for the OMP daemon.
