@@ -119,8 +119,8 @@ STRING (REPLACE "
 
 ## Program
 
-set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Wall -O2")
-set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -O2")
+set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Wall")
+set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall")
 
 add_subdirectory (src)
 

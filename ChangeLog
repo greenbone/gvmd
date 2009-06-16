@@ -1,5 +1,10 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* CMakeLists.txt: Turn off optimisation for now, as it results in a
+	warning about the uuid_export call in make_report_uuid.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	* TODO: Add missing paren.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
