@@ -1,3 +1,7 @@
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
+	* src/manage.c (send_task_preferences): Free orig_desc in error cases.
+
 2009-06-16  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* CMakeLists.txt: Make source archive filenames consistent with other
