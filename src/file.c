@@ -83,11 +83,11 @@ rmdir_recursively (const gchar* dir_name, GError** error)
   const gchar* file_name;
   GError* temp_error = NULL;
 
-  // FIX Comment this function.
-
 /*@-noeffect@*/
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 /*@=noeffect@*/
+
+  /* Open the given directory. */
 
   dir = g_dir_open (dir_name, 0, &temp_error);
   if (dir == NULL)
@@ -104,6 +104,8 @@ rmdir_recursively (const gchar* dir_name, GError** error)
       return FALSE;
     }
 
+  /* Save the present working directory. */
+
   pwd = open (".", O_RDONLY);
   if (pwd == -1)
     {
@@ -115,6 +117,8 @@ rmdir_recursively (const gchar* dir_name, GError** error)
       return FALSE;
     }
 
+  /* Change into the given directory. */
+
   if (g_chdir (dir_name))
     {
       g_set_error (error,
@@ -125,11 +129,14 @@ rmdir_recursively (const gchar* dir_name, GError** error)
       return FALSE;
     }
 
+  /* Iterate over the entries in the directory, removing them. */
+
   file_name = g_dir_read_name (dir);
   while (file_name)
     {
       if (g_file_test (file_name, G_FILE_TEST_IS_DIR))
         {
+          /* The entry is a directory.  Remove it recursively. */
           (void) rmdir_recursively (file_name, &temp_error);
           if (temp_error)
             {
@@ -139,26 +146,37 @@ rmdir_recursively (const gchar* dir_name, GError** error)
               return FALSE;
             }
         }
-      else if (g_unlink (file_name))
+      else
         {
-          g_set_error (error,
-                       G_FILE_ERROR,
-                       g_file_error_from_errno (errno),
-                       (gchar*) strerror (errno));
-          g_dir_close (dir);
-          (void) fchdir (pwd);
-          return FALSE;
+          /* The entry is a file.  Remove it. */
+          if (g_unlink (file_name))
+            {
+              g_set_error (error,
+                           G_FILE_ERROR,
+                           g_file_error_from_errno (errno),
+                           (gchar*) strerror (errno));
+              g_dir_close (dir);
+              (void) fchdir (pwd);
+              return FALSE;
+            }
         }
+      /* Read the next entry in the directory. */
       file_name = g_dir_read_name (dir);
     }
 
+  /* Close the given directory. */
+
   g_dir_close (dir);
+
+  /* Change back to the previous working directory. */
 
   if (fchdir (pwd))
     g_set_error (error,
                  G_FILE_ERROR,
                  g_file_error_from_errno (errno),
                  (gchar*) strerror (errno));
+
+  /* Remove the given directory. */
 
   if (g_rmdir (dir_name))
     {
