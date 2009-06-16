@@ -1,5 +1,9 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Remove lastfds tracing.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	Move read_protocol from the main manager daemon into oxpd.
 
 	* src/openvasmd.c (READ_PROTOCOL_TIMEOUT, protocol_read_t)

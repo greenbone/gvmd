@@ -391,7 +391,6 @@ serve_omp (gnutls_session_t* client_session,
 {
   int nfds, ret;
   time_t last_client_activity_time;
-  uint8_t lastfds;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
@@ -503,7 +502,6 @@ serve_omp (gnutls_session_t* client_session,
 
   nfds = 1 + (client_socket > server_socket
               ? client_socket : server_socket);
-  lastfds = 0; // FIX
   while (1)
     {
       int ret;
@@ -520,13 +518,6 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
-          if ((lastfds & FD_CLIENT_READ) == 0)
-            tracef ("   client read on\n");
-        }
-      else
-        {
-          if ((lastfds & FD_CLIENT_READ) > 0)
-            tracef ("   client read off\n");
         }
       if ((server_init_state == SERVER_INIT_DONE
            || server_init_state == SERVER_INIT_GOT_VERSION
@@ -536,13 +527,6 @@ serve_omp (gnutls_session_t* client_session,
         {
           FD_SET (server_socket, &readfds);
           fds |= FD_SERVER_READ;
-          if ((lastfds & FD_SERVER_READ) == 0)
-            tracef ("   server read on\n");
-        }
-      else
-        {
-          if ((lastfds & FD_SERVER_READ) > 0)
-            tracef ("   server read off\n");
         }
       if (to_client_start < to_client_end)
         {
@@ -560,7 +544,6 @@ serve_omp (gnutls_session_t* client_session,
           FD_SET (server_socket, &writefds);
           fds |= FD_SERVER_WRITE;
         }
-      lastfds = fds;
 
       timeout.tv_usec = 0;
       // FIX time check error
