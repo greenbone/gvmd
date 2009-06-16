@@ -1,10 +1,23 @@
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
+	Move read_protocol from the main manager daemon into oxpd.
+
+	* src/openvasmd.c (READ_PROTOCOL_TIMEOUT, protocol_read_t)
+	(read_protocol): Move to oxpd.h and oxpd.c.
+
+	* src/oxpd.c (read_protocol): New function, from src/openvasmd.c.
+
+	* src/oxpd.h (READ_PROTOCOL_TIMEOUT): New define from src/openvasmd.c.
+	(protocol_read_t): New type, from src/openvasmd.c.
+	(read_protocol): New header.
+
+2009-06-16  Matthew Mundell <mmundell@intevation.de>
+
 	* src/oxpd.c: Enable FROM_BUFFER_SIZE check.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
-	* src/oxpd.c (DOC_FILES): Add oxpd.c.
+	* doc/CMakeLists.txt (DOC_FILES): Add oxpd.c.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 

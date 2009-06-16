@@ -28,6 +28,14 @@
 
 #include "types.h"
 #include <netinet/in.h>
+#include <gnutls/gnutls.h>
+
+/**
+ * @brief Maximum number of seconds spent trying to read the protocol.
+ */
+#ifndef READ_PROTOCOL_TIMEOUT
+#define READ_PROTOCOL_TIMEOUT 20
+#endif
 
 /**
  * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
@@ -46,5 +54,20 @@ extern buffer_size_t from_server_end;
 /*@-exportlocal@*/
 extern struct sockaddr_in server_address;
 /*@=exportlocal@*/
+
+/**
+ * @brief The type of the return value from \ref read_protocol.
+ */
+typedef enum
+{
+  PROTOCOL_OTP,
+  PROTOCOL_OMP,
+  PROTOCOL_CLOSE,
+  PROTOCOL_FAIL,
+  PROTOCOL_TIMEOUT
+} protocol_read_t;
+
+protocol_read_t
+read_protocol (gnutls_session_t*, int);
 
 #endif
