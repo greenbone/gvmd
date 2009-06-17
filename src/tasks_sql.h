@@ -392,7 +392,7 @@ init_manage_process ()
 {
   if (task_db) return;
   /* Open the database. */
-  int ret = sqlite3_open (PREFIX "/var/lib/openvas/mgr/tasks.db", &task_db);
+  int ret = sqlite3_open (OPENVAS_STATE_DIR "/mgr/tasks.db", &task_db);
   if (ret)
     {
       fprintf (stderr, "sqlite3_open failed: %s\n",
@@ -1122,8 +1122,8 @@ delete_task (task_t task)
 
   /* Remove the task directory, which contained the reports. */
 
-  name = g_build_filename (PREFIX
-                           "/var/lib/openvas/mgr/users/",
+  name = g_build_filename (OPENVAS_STATE_DIR
+                           "/mgr/users/",
                            current_credentials.username,
                            "tasks",
                            tsk_uuid,

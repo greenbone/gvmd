@@ -1,5 +1,12 @@
 2009-06-17  Michael Wiegand <michael.wiegand@intevation.de>
 
+	* src/tasks_sql.h (init_manage_process, delete_task): Use
+	OPENVAS_STATE_DIR instead of PREFIX "/var/lib/openvas/".
+
+	* src/CMakeLists.txt: Expose OPENVAS_STATE_DIR.
+
+2009-06-17  Michael Wiegand <michael.wiegand@intevation.de>
+
 	Post release version bump.
 
 	* VERSION: Set to 0.6.1.SVN.

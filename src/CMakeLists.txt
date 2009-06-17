@@ -120,6 +120,10 @@ if (OPENVAS_LOG_DIR)
   add_definitions (-DOPENVAS_LOG_DIR=\\\"${OPENVAS_LOG_DIR}\\\")
 endif (OPENVAS_LOG_DIR)
 
+if (OPENVAS_STATE_DIR)
+  add_definitions (-DOPENVAS_STATE_DIR=\\\"${OPENVAS_STATE_DIR}\\\")
+endif (OPENVAS_STATE_DIR)
+
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
 
