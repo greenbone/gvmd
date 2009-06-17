@@ -1,3 +1,21 @@
+openvas-manager 0.6.0 (2009-06-18)
+
+This is the second public release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS).
+
+It offers improved support for the new OpenVAS Management Protocol (OMP) and
+new and improved functionality.
+The following areas have been added or significantly improved:
+- User authentication
+- Task ID assigment (UUIDs)
+- Retrieving checksums of the NVT collection
+- NVT information retrieval
+- Certificate handling
+
+In addition, the protocol implementation has been updated to match
+specification more closely.
+
+
 openvas-manager 0.5.0 (2009-05-08)
 
 This is the first public release of the openvas-manager module for the Open
@@ -21,4 +39,4 @@ connecting to openvasd.
 
 More information about the command line arguments can be obtained using:
 
-# openvascd --help
+# openvasmd --help
