@@ -52,13 +52,6 @@
 #include "splint.h"
 #endif
 
-/**
- * @brief Installation prefix.
- */
-#ifndef PREFIX
-#define PREFIX ""
-#endif
-
 // FIX Should probably be passed into process_otp_server_input.
 extern buffer_size_t from_buffer_size;
 

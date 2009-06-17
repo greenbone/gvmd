@@ -717,8 +717,8 @@ load_tasks ()
   tracef ("   Loading tasks...\n");
 
   error = NULL;
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+  dir_name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "tasks",
                                NULL);
@@ -1023,8 +1023,8 @@ save_tasks ()
 
   // FIX Could check if up to date already.
 
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+  dir_name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "tasks",
                                NULL);
@@ -1176,8 +1176,8 @@ delete_task (task_t task)
       return -1;
     }
 
-  name = g_build_filename (PREFIX
-                           "/var/lib/openvas/mgr/users/",
+  name = g_build_filename (OPENVAS_STATE_DIR
+                           "/mgr/users/",
                            current_credentials.username,
                            "tasks",
                            tsk_uuid,

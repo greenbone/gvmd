@@ -57,13 +57,6 @@
 #include "splint.h"
 #endif
 
-/**
- * @brief Installation prefix.
- */
-#ifndef PREFIX
-#define PREFIX ""
-#endif
-
 
 /* Functions defined in task_*.h and used before the include. */
 
@@ -262,8 +255,8 @@ report_task (const char* report_id, task_t* task_return)
   if (current_credentials.username)
     {
       gchar* link_name;
-      link_name = g_build_filename (PREFIX
-                                    "/var/lib/openvas/mgr/users/",
+      link_name = g_build_filename (OPENVAS_STATE_DIR
+                                    "/mgr/users/",
                                     current_credentials.username,
                                     "reports",
                                     report_id,
@@ -328,8 +321,8 @@ delete_report (const char* report_id)
 
   if (current_credentials.username == NULL) return -5;
 
-  link_name = g_build_filename (PREFIX
-                                "/var/lib/openvas/mgr/users/",
+  link_name = g_build_filename (OPENVAS_STATE_DIR
+                                "/mgr/users/",
                                 current_credentials.username,
                                 "reports",
                                 report_id,
@@ -409,8 +402,8 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
 
       if (current_credentials.username == NULL) return -4;
 
-      name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+      name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "reports",
                                report_id,
@@ -585,8 +578,8 @@ create_report_file (task_t task)
 
   if (task_uuid (task, &tsk_uuid)) return -2;
 
-  user_dir_name = g_build_filename (PREFIX
-                                    "/var/lib/openvas/mgr/users/",
+  user_dir_name = g_build_filename (OPENVAS_STATE_DIR
+                                    "/mgr/users/",
                                     current_credentials.username,
                                     "reports",
                                     NULL);
@@ -611,8 +604,8 @@ create_report_file (task_t task)
       return -5;
     }
 
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+  dir_name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "tasks",
                                tsk_uuid,
@@ -1141,8 +1134,8 @@ delete_reports (task_t task)
 
   if (current_credentials.username == NULL) return -1;
 
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+  dir_name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "tasks",
                                tsk_uuid,

@@ -54,13 +54,6 @@
 #include "splint.h"
 #endif
 
-/**
- * @brief Installation prefix.
- */
-#ifndef PREFIX
-#define PREFIX ""
-#endif
-
 
 /* Help message. */
 
@@ -1214,8 +1207,8 @@ send_reports (task_t task)
       return -2;
     }
 
-  dir_name = g_build_filename (PREFIX
-                               "/var/lib/openvas/mgr/users/",
+  dir_name = g_build_filename (OPENVAS_STATE_DIR
+                               "/mgr/users/",
                                current_credentials.username,
                                "tasks",
                                tsk_uuid,
@@ -1658,8 +1651,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));
             else
               {
-                gchar* name = g_build_filename (PREFIX
-                                                "/var/lib/openvas/mgr/users/",
+                gchar* name = g_build_filename (OPENVAS_STATE_DIR
+                                                "/mgr/users/",
                                                 current_credentials.username,
                                                 "reports",
                                                 current_uuid,

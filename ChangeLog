@@ -1,3 +1,19 @@
+2009-06-17  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (send_reports, omp_xml_handle_end_element): Use
+	OPENVAS_STATE_DIR instead of PREFIX "/var/lib/openvas/".
+	(PREFIX): Remove.
+
+	* src/otp.c (PREFIX): Remove.
+
+	* src/manage.c (report_task, delete_report, set_report_parameter)
+	(create_report_file, delete_reports): Use OPENVAS_STATE_DIR instead of
+	 PREFIX "/var/lib/openvas/".
+	(PREFIX): Remove.
+
+	* src/tasks_fs.h (load_tasks, save_tasks, delete_task): Use
+	OPENVAS_STATE_DIR instead of PREFIX "/var/lib/openvas/".
+
 2009-06-17  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* src/tasks_sql.h (init_manage_process, delete_task): Use
