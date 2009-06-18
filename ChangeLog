@@ -1,5 +1,13 @@
 2009-06-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (parse_server_bad_login): New function.
+	(process_otp_server_input): Check for bad login response from server.
+
+	* src/ompd.c (serve_omp): Handle "bad login" return from
+	process_otp_server_input.
+
+2009-06-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (recreate_session): New function.
 	(serve_omp): Move session creation to recreate_session.
 

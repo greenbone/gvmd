@@ -784,6 +784,14 @@ serve_omp (gnutls_session_t* client_session,
                 }
               *server_socket_addr = server_socket;
             }
+          else if (ret == 2)
+            {
+              /* Bad login to server. */
+              if (client_active == 0)
+                return 0;
+              close_stream_connection (client_socket);
+              return -1;
+            }
           else if (ret == -1)
            {
              /* Error. */
@@ -915,6 +923,14 @@ serve_omp (gnutls_session_t* client_session,
                   return -1;
                 }
               *server_socket_addr = server_socket;
+            }
+          else if (ret == 2)
+            {
+              /* Bad login to server. */
+              if (client_active == 0)
+                return 0;
+              close_stream_connection (client_socket);
+              return -1;
             }
           else if (ret == -1)
             {

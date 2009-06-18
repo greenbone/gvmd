@@ -836,6 +836,37 @@ parse_server_done (char** messages)
 }
 
 /**
+ * @brief Check for a bad login response from the server.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 if there is a bad login response, else 1.
+ */
+static int
+parse_server_bad_login (char** messages)
+{
+  /*@dependent@*/ char *end, *match;
+  end = *messages + from_server_end - from_server_start;
+  while (*messages < end && ((*messages)[0] == ' '))
+    { (*messages)++; from_server_start++; }
+  if ((match = memchr (*messages,
+                       (int) '\n',
+                       from_server_end - from_server_start)))
+    {
+      // FIX 19 available?
+      if (strncasecmp ("Bad login attempt !", *messages, 19) == 0)
+        {
+          tracef ("match bad login\n");
+          from_server_start += match + 1 - *messages;
+          *messages = match + 1;
+          set_server_init_state (SERVER_INIT_TOP);
+          return 0;
+        }
+    }
+  return 1;
+}
+
+/**
  * @brief FIX Parse the final SERVER field of an OTP message.
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -1144,7 +1175,7 @@ sync_buffer ()
  * or client is always done via \ref process_omp_client_input in reaction to
  * client requests.
  *
- * @return 0 success, 1 received server BYE, -1 error.
+ * @return 0 success, 1 received server BYE, 2 bad login, -1 error.
  */
 int
 process_otp_server_input ()
@@ -1230,7 +1261,13 @@ process_otp_server_input ()
         return -1;
       case SERVER_INIT_DONE:
       case SERVER_INIT_TOP:
-        if (server_state == SERVER_CERTIFICATE_PUBLIC_KEY)
+        if (server_state == SERVER_TOP)
+          switch (parse_server_bad_login (&messages))
+            {
+              case 0: return 2;    /* Found bad login response. */
+              case 1: break;
+            }
+        else if (server_state == SERVER_CERTIFICATE_PUBLIC_KEY)
           switch (parse_server_certificate_public_key (&messages))
             {
               case -2:
