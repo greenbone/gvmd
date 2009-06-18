@@ -721,11 +721,11 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-  /* Set our pidfile */
+  /* Set our pidfile. */
 
   gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
   FILE *pidfile = g_fopen (pidfile_name, "w");
-  if ( pidfile == NULL)
+  if (pidfile == NULL)
     {
       perror ("Failed to open pidfile");
       exit (EXIT_FAILURE);
