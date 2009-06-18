@@ -1201,7 +1201,7 @@ start_task (gnutls_session_t* session,
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  id       ID of task.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 on internal error in task, -1 on error.
  */
 int
 wait_for_task_start (gnutls_session_t* session,
@@ -1287,6 +1287,11 @@ wait_for_task_start (gnutls_session_t* session,
               free_entity (entity);
               return 0;
             }
+          if (strcmp (run_state, "Internal Error") == 0)
+            {
+              free_entity (entity);
+              return 1;
+            }
           free_entity (entity);
         }
 
@@ -1300,7 +1305,7 @@ wait_for_task_start (gnutls_session_t* session,
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  id       ID of task.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 on internal error in task, -1 on error.
  */
 int
 wait_for_task_end (gnutls_session_t* session,
@@ -1385,6 +1390,11 @@ wait_for_task_end (gnutls_session_t* session,
             {
               free_entity (entity);
               return 0;
+            }
+          if (strcmp (run_state, "Internal Error") == 0)
+            {
+              free_entity (entity);
+              return 1;
             }
           free_entity (entity);
         }

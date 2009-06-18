@@ -1,5 +1,10 @@
 2009-06-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (wait_for_task_start, wait_for_task_end): Return
+	if task state becomes "Internal Error".
+
+2009-06-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (parse_server_bad_login): New function.
 	(process_otp_server_input): Check for bad login response from server.
 
