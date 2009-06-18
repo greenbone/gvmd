@@ -1,3 +1,15 @@
+2009-06-18  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Adding support for creating a process ID file.
+
+	* CMakeLists.txt: Set OPENVAS_PID_DIR to the appropriate directory.
+
+	* src/CMakeLists.txt: Expose OPENVAS_PID_DIR.
+
+	* src/openvasmd.c: Added pidfile handling.
+	(main): Write the PID to the pidfile once the server is running.
+	(cleanup): Remove the pidfile on exit.
+
 2009-06-17  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (send_reports, omp_xml_handle_end_element): Use

@@ -90,6 +90,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gnutls/gnutls.h>
 #include <netdb.h>
 #ifndef S_SPLINT_S
@@ -412,6 +413,10 @@ cleanup ()
     }
 #endif
   ovas_server_context_free (server_context);
+  // Delete pidfile
+  gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
+  g_unlink (pidfile_name);
+  g_free (pidfile_name);
 }
 
 /**
@@ -714,6 +719,22 @@ main (int argc, char** argv)
       perror ("Failed to listen on manager socket");
       close (manager_socket);
       exit (EXIT_FAILURE);
+    }
+
+  /* Set our pidfile */
+
+  gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
+  FILE *pidfile = g_fopen (pidfile_name, "w");
+  if ( pidfile == NULL)
+    {
+      perror ("Failed to open pidfile");
+      exit (EXIT_FAILURE);
+    }
+  else
+    {
+      g_fprintf (pidfile, "%d\n", getpid());
+      fclose (pidfile);
+      g_free (pidfile_name);
     }
 
   /* Loop waiting for connections and passing the work to
