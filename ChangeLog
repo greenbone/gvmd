@@ -1,5 +1,10 @@
 2009-06-18  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (recreate_session): New function.
+	(serve_omp): Move session creation to recreate_session.
+
+2009-06-18  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (write_to_server): Change OTP username and password.
 
 2009-06-18  Michael Wiegand <michael.wiegand@intevation.de>

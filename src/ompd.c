@@ -361,6 +361,44 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
 }
 
 /**
+ * @brief Recreate the server session.
+ *
+ * @param  server_socket       Server socket.
+ * @param  server_session      Server session.
+ * @param  server_credentials  Server credentials.
+ *
+ * @return New server socket, or -1 on error.
+ */
+int
+recreate_session (int server_socket,
+                  gnutls_session_t* server_session,
+                  gnutls_certificate_credentials_t* server_credentials)
+{
+  if (end_session (server_socket,
+                   *server_session,
+                   *server_credentials))
+    return -1;
+  // FIX shutdown?
+  if (close (server_socket) == -1)
+    {
+      perror ("Failed to close server socket.");
+      return -1;
+    }
+  /* Make the server socket. */
+  server_socket = socket (PF_INET, SOCK_STREAM, 0);
+  if (server_socket == -1)
+    {
+      perror ("Failed to create server socket");
+      return -1;
+    }
+  if (make_session (server_socket,
+                    server_session,
+                    server_credentials))
+    return -1;
+  return server_socket;
+}
+
+/**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
  * Loop reading input from the sockets, processing
@@ -736,35 +774,15 @@ serve_omp (gnutls_session_t* client_session,
               set_server_init_state (SERVER_INIT_TOP);
               if (client_active == 0)
                 return 0;
-              if (end_session (server_socket,
-                               *server_session,
-                               *server_credentials))
-                {
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
-              if (close (server_socket) == -1)
-                {
-                  perror ("Failed to close server socket.");
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
-              /* Make the server socket. */
-              server_socket = socket (PF_INET, SOCK_STREAM, 0);
+              server_socket = recreate_session (server_socket,
+                                                server_session,
+                                                server_credentials);
               if (server_socket == -1)
                 {
-                  perror ("Failed to create server socket");
                   close_stream_connection (client_socket);
                   return -1;
                 }
               *server_socket_addr = server_socket;
-              if (make_session (server_socket,
-                                server_session,
-                                server_credentials))
-                {
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
             }
           else if (ret == -1)
            {
@@ -888,36 +906,15 @@ serve_omp (gnutls_session_t* client_session,
               set_server_init_state (SERVER_INIT_TOP);
               if (client_active == 0)
                 return 0;
-              if (end_session (server_socket,
-                               *server_session,
-                               *server_credentials))
-                {
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
-              // FIX shutdown?
-              if (close (server_socket) == -1)
-                {
-                  perror ("Failed to close server socket.");
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
-              /* Make the server socket. */
-              server_socket = socket (PF_INET, SOCK_STREAM, 0);
+              server_socket = recreate_session (server_socket,
+                                                server_session,
+                                                server_credentials);
               if (server_socket == -1)
                 {
-                  perror ("Failed to create server socket");
                   close_stream_connection (client_socket);
                   return -1;
                 }
               *server_socket_addr = server_socket;
-              if (make_session (server_socket,
-                                server_session,
-                                server_credentials))
-                {
-                  close_stream_connection (client_socket);
-                  return -1;
-                }
             }
           else if (ret == -1)
             {
