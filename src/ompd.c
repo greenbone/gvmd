@@ -315,7 +315,7 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
         break;
       case SERVER_INIT_GOT_USER:
         {
-          char* user = "mattm\n"; // FIX (string must stay same across init)
+          char* const user = "om\n";
           server_init_offset = write_string_to_server (server_session,
                                                        user + server_init_offset);
           if (server_init_offset == 0)
@@ -332,7 +332,7 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
         break;
       case SERVER_INIT_GOT_PASSWORD:
         {
-          char* password = "mattm\n"; // FIX (string must stay same across init)
+          char* const password = "om\n";
           server_init_offset = write_string_to_server (server_session,
                                                        password + server_init_offset);
           if (server_init_offset == 0)
