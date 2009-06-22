@@ -1525,6 +1525,29 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
   return ret;
 }
 
+/**
+ * @brief Get a report.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  id        ID of report.
+ * @param[out] response  Report.  On success contains GET_REPORT response.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_get_report (gnutls_session_t* session, const char* id, entity_t* response)
+{
+  if (sendf_to_manager (session, "<get_report report_id=\"%s\"/>", id))
+    return -1;
+
+  *response = NULL;
+  if (read_entity (session, response)) return -1;
+
+  // FIX check status
+
+  return 0;
+}
+
 
 /* Setup. */
 

@@ -1,5 +1,10 @@
 2009-06-22  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (omp_get_report): New function.
+	* src/tests/common.h (omp_get_report): New header.
+
+2009-06-22  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.h: Add multiple-include guard.
 
 2009-06-18  Matthew Mundell <mmundell@intevation.de>
