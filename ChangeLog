@@ -1,5 +1,10 @@
 2009-06-22  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (omp_get_status): Return statuses of all tasks if
+	ID is NULL.
+
+2009-06-22  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (foreach_print_attribute): New function.
 	(print_entity): Add attribute printing.
 

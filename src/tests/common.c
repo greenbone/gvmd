@@ -1501,7 +1501,7 @@ delete_task (gnutls_session_t* session, char* id)
  * @brief Get the status of a task.
  *
  * @param[in]  session  Pointer to GNUTLS session.
- * @param[in]  id       ID of task.
+ * @param[in]  id       ID of task or NULL for all tasks.
  * @param[out] status   Status return.  On success contains GET_STATUS response.
  *
  * @return 0 on success, -1 or OMP response code on error.
@@ -1512,11 +1512,19 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
   const char* status_code;
   int ret;
 
-  if (sendf_to_manager (session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
-      == -1)
-    return -1;
+  if (id == NULL)
+    {
+      if (send_to_manager (session, "<get_status/>") == -1)
+        return -1;
+    }
+  else
+    {
+      if (sendf_to_manager (session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
+          == -1)
+        return -1;
+    }
 
   /* Read the response. */
 
