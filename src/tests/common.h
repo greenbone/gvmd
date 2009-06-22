@@ -23,6 +23,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifndef COMMON_H
+#define COMMON_H
+
 #include <glib.h>
 #include <gnutls/gnutls.h>
 #include <stdio.h>
@@ -136,3 +139,5 @@ omp_get_status (gnutls_session_t*, const char*, entity_t*);
 
 void
 setup_test ();
+
+#endif /* not COMMON_H */

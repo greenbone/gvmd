@@ -1,3 +1,7 @@
+2009-06-22  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/common.h: Add multiple-include guard.
+
 2009-06-18  Matthew Mundell <mmundell@intevation.de>
 
 	* src/openvasmd.c (main): Neaten formatting.
