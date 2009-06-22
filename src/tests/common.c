@@ -817,6 +817,19 @@ foreach_print_entity (gpointer entity, gpointer stream)
 }
 
 /**
+ * @brief Print an XML attribute for g_hash_table_foreach.
+ *
+ * @param[in]  name    The attribute name.
+ * @param[in]  value   The attribute value.
+ * @param[in]  stream  The stream to which to print.
+ */
+void
+foreach_print_attribute (gpointer name, gpointer value, gpointer stream)
+{
+  fprintf ((FILE*) stream, " %s=\"%s\"", (char*) name, (char*) value);
+}
+
+/**
  * @brief Print an XML entity.
  *
  * @param[in]  entity  The entity.
@@ -825,7 +838,12 @@ foreach_print_entity (gpointer entity, gpointer stream)
 void
 print_entity (FILE* stream, entity_t entity)
 {
-  fprintf (stream, "<%s>", entity->name);
+  fprintf (stream, "<%s", entity->name);
+  if (entity->attributes && g_hash_table_size (entity->attributes))
+    g_hash_table_foreach (entity->attributes,
+                          foreach_print_attribute,
+                          stream);
+  fprintf (stream, ">");
   fprintf (stream, "%s", entity->text);
   g_slist_foreach (entity->entities, foreach_print_entity, stream);
   fprintf (stream, "</%s>", entity->name);

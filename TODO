@@ -123,6 +123,8 @@
 
 	Implement OIDs for GET_PREFERENCES and GET_DEPENDENCIES.
 
+	Implement GET_REPORT FORMAT.
+
 	Ajust the MODIFY_TASK and MODIFY_REPORT implementations to expect at
 	least one parameter.
 
@@ -147,10 +149,6 @@
 
 	Make the test style uniform, especially the exit style (some tests goto,
 	others duplicate code).
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	* src/tests/common.c (print_entity): Add attribute printing.
 
 2009-06-16  Matthew Mundell <mmundell@intevation.de>
 
