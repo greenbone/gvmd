@@ -1,3 +1,18 @@
+2009-06-23  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.6.1 release.
+
+	* VERSION: Set to 0.6.1.
+
+	* src/CMakeLists.txt: Updated CPACK_PACKAGE_VERSION_PATCH.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* packaging/debian/control: Updated version requirements for Debian
+	package.
+
+	* CHANGES: Updated, fixed typos in change notes for the last release.
+
 2009-06-22  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/common.c (omp_get_status): Return statuses of all tasks if
