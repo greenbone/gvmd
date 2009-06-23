@@ -1,10 +1,22 @@
 2009-06-23  Michael Wiegand <michael.wiegand@intevation.de>
 
+	Post release version bump.
+
+	* VERSION: Set to 0.6.2.SVN.
+
+	* CMakeLists.txt: Updated CPACK_PACKAGE_VERSION_PATCH.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* ChangeLog: Corrected path in last entry.
+
+2009-06-23  Michael Wiegand <michael.wiegand@intevation.de>
+
 	Preparing the openvas-manager 0.6.1 release.
 
 	* VERSION: Set to 0.6.1.
 
-	* src/CMakeLists.txt: Updated CPACK_PACKAGE_VERSION_PATCH.
+	* CMakeLists.txt: Updated CPACK_PACKAGE_VERSION_PATCH.
 
 	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
 
