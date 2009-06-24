@@ -1,3 +1,8 @@
+2009-06-24  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tasks_sql.h (init_manage): Close the database before returning,
+	so that forked processes open their own connections.
+
 2009-06-23  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Post release version bump.

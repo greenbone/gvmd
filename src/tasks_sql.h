@@ -429,6 +429,8 @@ init_manage ()
     {
       fprintf (stderr, "sqlite3_prepare 1 failed: %s\n",
                sqlite3_errmsg (task_db));
+      sqlite3_close (task_db);
+      task_db = NULL;
       return -1;
     }
   while (1)
@@ -443,6 +445,8 @@ init_manage ()
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
           fprintf (stderr, "sqlite3_step 1 failed: %s\n",
                    sqlite3_errmsg (task_db));
+          sqlite3_close (task_db);
+          task_db = NULL;
           return -1;
         }
       name = sqlite3_column_text (stmt, 0);
@@ -475,7 +479,10 @@ init_manage ()
           current_credentials.username = NULL;
         }
     }
-  switch (sqlite3_finalize (stmt))
+  ret = sqlite3_finalize (stmt);
+  sqlite3_close (task_db);
+  task_db = NULL;
+  switch (ret)
     {
       case SQLITE_OK: return 0;
       default: return -1;
