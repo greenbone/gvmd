@@ -390,10 +390,23 @@ next_task (task_iterator_t* iterator, task_t* task)
 void
 init_manage_process ()
 {
+  gchar *mgr_dir;
+  int ret;
+
   if (task_db) return;
+
+  /* Ensure the mgr directory exists. */
+  mgr_dir = g_build_filename (OPENVAS_STATE_DIR "/mgr/", NULL);
+  ret = g_mkdir_with_parents (mgr_dir, 0755 /* "rwxr-xr-x" */);
+  g_free (mgr_dir);
+  if (ret == -1)
+    {
+      perror ("Failed to create mgr directory");
+      abort (); // FIX
+    }
+
   /* Open the database. */
-  int ret = sqlite3_open (OPENVAS_STATE_DIR "/mgr/tasks.db", &task_db);
-  if (ret)
+  if (sqlite3_open (OPENVAS_STATE_DIR "/mgr/tasks.db", &task_db))
     {
       fprintf (stderr, "sqlite3_open failed: %s\n",
                sqlite3_errmsg (task_db));

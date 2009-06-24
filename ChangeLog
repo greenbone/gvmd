@@ -1,5 +1,10 @@
 2009-06-24  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage_process): Ensure that the
+	OPENVAS_PID_DIR mgr directory exists.
+
+2009-06-24  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Close the database before returning,
 	so that forked processes open their own connections.
 
