@@ -459,6 +459,9 @@ serve_omp (gnutls_session_t* client_session,
   maybe_free_server_plugins_dependencies (); // old
 #endif
 
+  /* Initiate connection (to_server is empty so this will just init). */
+  write_to_server (server_socket, server_session);
+
   /* It is safe to select before handling the input that was read by
    * read_protocol.  This is because read_protocol only reads up to the
    * first '>'.  As an OMP command is an XML entity, there is always more

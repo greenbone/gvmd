@@ -1,5 +1,9 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Eagerly initiate the OTP server connection.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (serve_omp): Let the select loop handle the first input, as
 	read_protocol now only reads up to the first '>'.
 
