@@ -1,5 +1,9 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ovas-mngr-comm.c (sendn_to_server): Trace when out of space.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (TO_SERVER_BUFFER_SIZE): Increase.
 
 2009-06-24  Matthew Mundell <mmundell@intevation.de>
