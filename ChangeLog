@@ -1,5 +1,11 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove attempts at initiating
+	connections in XML_SERVICE_DOWN cases, now that serve_omp connects
+	eargerly.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK respond
 	with XML_OK instead of XML_OK_REQUESTED.
 

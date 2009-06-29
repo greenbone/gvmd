@@ -1480,17 +1480,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_certificates_response>");
           }
         else
-          {
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_certificates"));
-            /* \todo TODO Sort out a proactive mechanism for this. */
-            if (request_certificates ())
-              {
-                /* to_server is full. */
-                // FIX ~ revert parsing for retry
-                // process_omp_client_input must return -2
-                abort ();
-              }
-          }
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_certificates"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -1534,17 +1524,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
           }
         else
-          {
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
-            /* \todo TODO Sort out a cache for this. */
-            if (request_plugin_list ())
-              {
-                /* to_server is full. */
-                // FIX ~ revert parsing for retry
-                // process_omp_client_input must return -2
-                abort ();
-              }
-          }
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -1605,17 +1585,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          {
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
-            /* \todo TODO Sort out a cache for this. */
-            if (request_plugin_list ())
-              {
-                /* to_server is full. */
-                // FIX ~ revert parsing for retry
-                // process_omp_client_input must return -2
-                abort ();
-              }
-          }
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
