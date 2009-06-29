@@ -119,7 +119,7 @@ struct sockaddr_in address;
  */
 int
 connect_to_manager_host_port (gnutls_session_t * session,
-                              char *host, int port)
+                              const char *host, int port)
 {
   /* Initialize security library. */
 
@@ -1080,10 +1080,10 @@ env_authenticate (gnutls_session_t* session)
  */
 int
 create_task (gnutls_session_t* session,
-             char* config,
+             const char* config,
              unsigned int config_len,
-             char* name,
-             char* comment,
+             const char* name,
+             const char* comment,
              char** id)
 {
   /* Convert the file contents to base64. */
@@ -1140,9 +1140,9 @@ create_task (gnutls_session_t* session,
  */
 int
 create_task_from_rc_file (gnutls_session_t* session,
-                          char* file_name,
-                          char* name,
-                          char* comment,
+                          const char* file_name,
+                          const char* name,
+                          const char* comment,
                           char** id)
 {
   gchar* new_task_rc = NULL;
@@ -1180,8 +1180,7 @@ create_task_from_rc_file (gnutls_session_t* session,
  * @return 0 on success, -1 on error.
  */
 int
-start_task (gnutls_session_t* session,
-            char* id)
+start_task (gnutls_session_t* session, const char* id)
 {
   if (sendf_to_manager (session,
                         "<start_task task_id=\"%s\"/>",
@@ -1223,7 +1222,7 @@ start_task (gnutls_session_t* session,
  */
 int
 wait_for_task_start (gnutls_session_t* session,
-                     char* id)
+                     const char* id)
 {
   while (1)
     {
@@ -1326,8 +1325,7 @@ wait_for_task_start (gnutls_session_t* session,
  * @return 0 on success, 1 on internal error in task, -1 on error.
  */
 int
-wait_for_task_end (gnutls_session_t* session,
-                   char* id)
+wait_for_task_end (gnutls_session_t* session, const char* id)
 {
   tracef ("wait_for_task_end\n");
   while (1)
@@ -1465,7 +1463,7 @@ wait_for_task_delete (gnutls_session_t* session,
  * @return 0 on success, -1 on error.
  */
 int
-delete_task (gnutls_session_t* session, char* id)
+delete_task (gnutls_session_t* session, const char* id)
 {
   if (sendf_to_manager (session,
                         "<delete_task task_id=\"%s\"/>",
@@ -1572,6 +1570,180 @@ omp_get_report (gnutls_session_t* session, const char* id, entity_t* response)
   // FIX check status
 
   return 0;
+}
+
+/**
+ * @brief Remove a report.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  id        ID of report.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_delete_report (gnutls_session_t* session, const char* id)
+{
+  entity_t response;
+
+  if (sendf_to_manager (session, "<delete_report report_id=\"%s\"/>", id))
+    return -1;
+
+  response = NULL;
+  if (read_entity (session, &response)) return -1;
+
+  // FIX check status
+
+  free_entity (response);
+  return 0;
+}
+
+/**
+ * @brief Remove a task.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  id        ID of task.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_delete_task (gnutls_session_t* session, const char* id)
+{
+  entity_t response;
+
+  if (sendf_to_manager (session, "<delete_task task_id=\"%s\"/>", id))
+    return -1;
+
+  response = NULL;
+  if (read_entity (session, &response)) return -1;
+
+  // FIX check status
+
+  free_entity (response);
+  return 0;
+}
+
+/**
+ * @brief Modify a task.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[in]  id        ID of task.
+ * @param[in]  rcfile    NULL or new RC file (as plain text).
+ * @param[in]  name      NULL or new name.
+ * @param[in]  comment   NULL or new comment.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_modify_task (gnutls_session_t* session, const char* id,
+                 const char* rcfile, const char* name, const char* comment)
+{
+  entity_t response;
+
+  if (sendf_to_manager (session, "<modify_task task_id=\"%s\">", id))
+    return -1;
+
+  if (rcfile
+      && sendf_to_manager (session,
+                           "<rcfile>%s</rcfile>",
+                           g_base64_encode ((guchar*) rcfile, strlen (rcfile))))
+    return -1;
+
+  if (name && sendf_to_manager (session, "<name>%s</name>", name))
+    return -1;
+
+  if (comment && sendf_to_manager (session, "<comment>%s</comment>", comment))
+    return -1;
+
+  if (send_to_manager (session, "</modify_task>"))
+    return -1;
+
+  response = NULL;
+  if (read_entity (session, &response)) return -1;
+
+  // FIX check status
+
+  free_entity (response);
+  return 0;
+}
+
+/**
+ * @brief Get the manager preferences.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[out] response  On success contains GET_PREFERENCES response.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_get_preferences (gnutls_session_t* session, entity_t* response)
+{
+  if (send_to_manager (session, "<get_preferences/>"))
+    return -1;
+
+  *response = NULL;
+  if (read_entity (session, response)) return -1;
+
+  // FIX check status
+
+  return 0;
+}
+
+/**
+ * @brief Get the manager certificates.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[out] response  On success contains GET_CERTIFICATES response.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_get_certificates (gnutls_session_t* session, entity_t* response)
+{
+  const char* status_code;
+  int ret;
+
+  if (send_to_manager (session, "<get_preferences/>"))
+    return -1;
+
+  *response = NULL;
+  if (read_entity (session, response)) return -1;
+
+  /* Check the response. */
+
+  status_code = entity_attribute (*response, "status");
+  if (status_code == NULL)
+    {
+      free_entity (*response);
+      return -1;
+    }
+  if (strlen (status_code) == 0)
+    {
+      free_entity (*response);
+      return -1;
+    }
+  if (status_code[0] == '2') return 0;
+  ret = (int) strtol (status_code, NULL, 10);
+  free_entity (*response);
+  if (errno == ERANGE) return -1;
+  return ret;
+}
+
+/**
+ * @brief Get the manager certificates.
+ *
+ * @param[in]  session   Pointer to GNUTLS session.
+ * @param[out] response  On success contains GET_CERTIFICATES response.
+ *
+ * @return 0 on success, -1 or OMP response code on error.
+ */
+int
+omp_until_up (int (*function) (gnutls_session_t*, entity_t*),
+              gnutls_session_t* session,
+              entity_t* response)
+{
+  int ret;
+  while ((ret = function (session, response)) == 503);
+  return ret;
 }
 
 

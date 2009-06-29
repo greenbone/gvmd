@@ -1,5 +1,14 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/common.c (connect_to_manager_host_port, create_task)
+	(create_task_from_rc_file, start_task, wait_for_task_end)
+	(delete_task): Add const to string parameters.
+	(omp_delete_report, omp_delete_task, omp_modify_task, omp_get_preferences)
+	(omp_get_certificates, omp_until_up): New functions.
+	* src/tests/common.h: Update headers.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (end_session): Break out of the gnutls_bye loop
 	if the bye succeeds.  Enable close code.  Move gnutls_deinit and
 	gnutls_certificate_free_credentials after shutdown and close.

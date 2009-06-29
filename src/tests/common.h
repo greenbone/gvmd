@@ -33,7 +33,7 @@
 /* Communication. */
 
 int
-connect_to_manager_host_port (gnutls_session_t *, char*, int);
+connect_to_manager_host_port (gnutls_session_t *, const char*, int);
 
 int
 connect_to_manager (gnutls_session_t *);
@@ -112,22 +112,24 @@ int
 env_authenticate (gnutls_session_t* session);
 
 int
-create_task (gnutls_session_t*, char*, unsigned int, char*, char*, char**);
+create_task (gnutls_session_t*, const char*, unsigned int,
+             const char*, const char*, char**);
 
 int
-create_task_from_rc_file (gnutls_session_t*, char*, char*, char*, char**);
+create_task_from_rc_file (gnutls_session_t*, const char*, const char*,
+                          const char*, char**);
 
 int
-delete_task (gnutls_session_t*, char*);
+delete_task (gnutls_session_t*, const char*);
 
 int
-start_task (gnutls_session_t* , char*);
+start_task (gnutls_session_t* , const char*);
 
 int
-wait_for_task_end (gnutls_session_t*, char*);
+wait_for_task_end (gnutls_session_t*, const char*);
 
 int
-wait_for_task_start (gnutls_session_t*, char*);
+wait_for_task_start (gnutls_session_t*, const char*);
 
 int
 wait_for_task_delete (gnutls_session_t*, const char*);
@@ -137,6 +139,27 @@ omp_get_status (gnutls_session_t*, const char*, entity_t*);
 
 int
 omp_get_report (gnutls_session_t*, const char*, entity_t*);
+
+int
+omp_delete_report (gnutls_session_t*, const char*);
+
+int
+omp_delete_task (gnutls_session_t*, const char*);
+
+int
+omp_modify_task (gnutls_session_t*, const char*,
+                 const char*, const char*, const char*);
+
+int
+omp_get_preferences (gnutls_session_t*, entity_t*);
+
+int
+omp_get_certificates (gnutls_session_t*, entity_t*);
+
+int
+omp_until_up (int (*) (gnutls_session_t*, entity_t*),
+              gnutls_session_t*,
+              entity_t*);
 
 /* Setup. */
 
