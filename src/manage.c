@@ -1044,7 +1044,7 @@ start_task (task_t task)
   if (strlen (plugins))
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
-    fail = sendf_to_server ("plugin_set <|> 0\n");
+    fail = send_to_server ("plugin_set <|> 0\n");
   free (plugins);
   if (fail) return -1;
 

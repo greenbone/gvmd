@@ -1,5 +1,10 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	(start_task): Use send_to_server instead of sendf_to_server for constant
+	string.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (request_plugin_list): Remove.
 	(acknowledge_md5sum_sums, acknowledge_md5sum_info)
 	(acknowledge_md5sum): New functions.
