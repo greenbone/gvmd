@@ -301,17 +301,11 @@ serve_client (int client_socket)
     }
 
   end_session (server_socket, server_session, server_credentials);
-  if (close (server_socket) == -1)
-    {
-      perror ("Failed to close server socket.");
-      return EXIT_FAILURE;
-    }
   return EXIT_SUCCESS;
 
  fail:
   close_stream_connection (client_socket);
   end_session (server_socket, server_session, server_credentials);
-  close (server_socket);
   return EXIT_FAILURE;
 }
 
