@@ -1,5 +1,10 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Let the select loop handle the first input, as
+	read_protocol now only reads up to the first '>'.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/oxpd.c (read_protocol): Read at most up to the first '>', so that
 	the caller can select on the socket after the call and be sure that the
 	select will return within the first command.

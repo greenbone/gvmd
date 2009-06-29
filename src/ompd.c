@@ -427,7 +427,7 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* server_credentials,
            int client_socket, int* server_socket_addr)
 {
-  int nfds, ret;
+  int nfds;
   time_t last_client_activity_time;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
@@ -459,47 +459,13 @@ serve_omp (gnutls_session_t* client_session,
   maybe_free_server_plugins_dependencies (); // old
 #endif
 
-  /* Handle the first client input, which was read by `read_protocol'. */
-#if TRACE || LOG
-  logf ("<= %.*s\n", from_client_end, from_client);
-#if TRACE_TEXT
-  tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
-#else
-  tracef ("<= client  %" BUFFER_SIZE_T_FORMAT " bytes\n",
-          from_client_end);
-#endif
-#endif /* TRACE || LOG */
-  ret = process_omp_client_input ();
-  if (ret == 0)
-    /* Processed all input. */
-    client_input_stalled = 0;
-  else if (ret == -1 || ret == -4)
-    {
-      /* Error.  Write rest of to_client to client, so that the
-       * client gets any buffered output and the response to the
-       * error. */
-      write_to_client (client_session);
-      close_stream_connection (client_socket);
-      return -1;
-    }
-  else if (ret == -2)
-    {
-      /* to_server buffer full. */
-      tracef ("   client input stalled 0\n");
-      client_input_stalled = 1;
-    }
-  else if (ret == -3)
-    {
-      /* to_client buffer full. */
-      tracef ("   client input stalled 0\n");
-      client_input_stalled = 2;
-    }
-  else
-    {
-      /* Programming error. */
-      assert (0);
-      client_input_stalled = 0;
-    }
+  /* It is safe to select before handling the input that was read by
+   * read_protocol.  This is because read_protocol only reads up to the
+   * first '>'.  As an OMP command is an XML entity, there is always more
+   * of the first OMP command to read.  So this first select will always
+   * return (assuming the client sends a full command) and the resulting
+   * process_omp_client_input below will always happen.
+   */
 
   /* Record the start time. */
   if (time (&last_client_activity_time) == -1)
