@@ -31,6 +31,7 @@
 #include "oxpd.h"
 #include "tracef.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -82,6 +83,8 @@ buffer_size_t from_server_end = 0;
  */
 struct sockaddr_in server_address;
 
+#define OTP_INIT_STRING "< OTP/1.0 >"
+
 /**
  * @brief Read and return the type of protocol from the client.
  *
@@ -106,8 +109,15 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       return PROTOCOL_FAIL;
     }
 
-  /* Read from the client, checking the protocol when a newline or return
-   * is read.  Fail if reading the protocol takes too long. */
+  /* Read from the client, checking for the OTP initialisation string.
+   * Fail if reading the protocol takes too long.
+   *
+   * Read only one byte at a time, so that reading will stop as soon as
+   * the first '>' is reached.  This ensures that there is more of the
+   * first OMP command waiting on the socket (or there will be if the
+   * client is still to send the rest).  This enables the caller to safely
+   * select on the socket before handling the input.
+   */
   if (time (&start_time) == -1)
     {
       perror ("Failed to get current time");
@@ -163,11 +173,15 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
               while (1)
                 {
+                  if (from_client_end == FROM_BUFFER_SIZE)
+                    {
+                      tracef ("read_protocol out of space in from_client\n");
+                      return PROTOCOL_FAIL;
+                    }
 
                   count = gnutls_record_recv (*client_session,
                                               from_client + from_client_end,
-                                              FROM_BUFFER_SIZE
-                                              - from_client_end);
+                                              1);
                   if (count == GNUTLS_E_INTERRUPTED)
                     /* Interrupted, try read again. */
                     continue;
@@ -198,31 +212,23 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                   ret = PROTOCOL_CLOSE;
                   break;
                 }
+              assert (count == 1);
               from_client_end += count;
 
-#if 0
-              /* Check for newline or return. */
-              from_client[from_client_end] = '\0';
-              if (strchr (from_client_current, 10) || strchr (from_client_current, 13))
+              /* Check for the OTP string. */
+              if (*from_client_current == '>')
                 {
-                  if (strstr (from_client, "< OTP/1.0 >"))
+                  if (strstr (from_client, OTP_INIT_STRING))
                     ret = PROTOCOL_OTP;
                   else
                     ret = PROTOCOL_OMP;
                   break;
                 }
-#else
-              /* Check for ">".  FIX need a better check */
-              from_client[from_client_end] = '\0';
-              if (strchr (from_client_current, '>'))
+              else if (from_client_current - from_client == strlen (OTP_INIT_STRING))
                 {
-                  if (strstr (from_client, "< OTP/1.0 >"))
-                    ret = PROTOCOL_OTP;
-                  else
-                    ret = PROTOCOL_OMP;
+                  ret = PROTOCOL_OMP;
                   break;
                 }
-#endif
 
               from_client_current += count;
             }
