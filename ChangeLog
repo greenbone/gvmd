@@ -1,5 +1,12 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_create_task_1.c: New file.  Tests OMP CREATE_TASK with
+	empty RC file.
+
+	* src/tests/CMakeLists.txt: Add omp_create_task_1.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (connect_to_manager_host_port, create_task)
 	(create_task_from_rc_file, start_task, wait_for_task_end)
 	(delete_task): Add const to string parameters.
