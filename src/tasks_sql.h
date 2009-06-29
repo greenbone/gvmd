@@ -1046,7 +1046,12 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   if (strncasecmp ("RCFILE", parameter, 6) == 0)
     {
-      gchar* quote = sql_quote (value, strlen (value));
+      gsize out_len;
+      guchar* out;
+      gchar* quote;
+      out = g_base64_decode (value, &out_len);
+      quote = sql_quote ((gchar*) out, out_len);
+      g_free (out);
       sql ("UPDATE tasks_%s SET description = '%s' WHERE ROWID = %llu;",
            current_credentials.username,
            quote,
