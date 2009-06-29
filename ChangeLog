@@ -1,5 +1,12 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (omp_xml_handle_start_element): In CLIENT_CREATE_TASK
+	initialise the task description.
+	(omp_xml_handle_end_element): In CLIENT_CREATE_TASK_RCFILE check the
+	return from g_base64_decode.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (serve_omp): Eagerly initiate the OTP server connection.
 
 2009-06-29  Matthew Mundell <mmundell@intevation.de>

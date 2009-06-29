@@ -839,7 +839,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TASK:
         if (strncasecmp ("RCFILE", element_name, 6) == 0)
-          set_client_state (CLIENT_CREATE_TASK_RCFILE);
+          {
+            /* Initialise the task description. */
+            if (current_client_task
+                && add_task_description_line (current_client_task, "", 0))
+              abort (); // FIX out of mem
+            set_client_state (CLIENT_CREATE_TASK_RCFILE);
+          }
         else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strncasecmp ("COMMENT", element_name, 7) == 0)
@@ -1714,6 +1720,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_RULES:
+        // FIX XML_SERVICE_DOWN?
         if (server.rules)
           {
             int index;
@@ -2024,6 +2031,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             guchar* out;
             char* description = task_description (current_client_task);
             out = g_base64_decode (description, &out_len);
+            /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
+             * when description is zero length. */
+            if (out == NULL)
+              {
+                out = (guchar*) g_strdup ("");
+                out_len = 0;
+              }
             free (description);
             set_task_description (current_client_task, (char*) out, out_len);
             set_client_state (CLIENT_CREATE_TASK);
@@ -2042,6 +2056,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (start_task (task))
               {
                 /* to_server is full. */
+                // FIX or other error
                 // FIX revert parsing for retry
                 // process_omp_client_input must return -2
                 abort ();
