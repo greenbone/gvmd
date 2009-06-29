@@ -1,5 +1,11 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ovas-mngr-comm.c (end_session): Break out of the gnutls_bye loop
+	if the bye succeeds.  Enable close code.  Move gnutls_deinit and
+	gnutls_certificate_free_credentials after shutdown and close.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (sendn_to_server): Trace when out of space.
 
 2009-06-29  Matthew Mundell <mmundell@intevation.de>

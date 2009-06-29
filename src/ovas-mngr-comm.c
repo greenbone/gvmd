@@ -229,11 +229,14 @@ end_session (int server_socket,
 #endif
 
   count = 100;
-  while (count--)
+  while (count)
     {
       int ret = gnutls_bye (server_session, GNUTLS_SHUT_RDWR);
-      if (ret == GNUTLS_E_AGAIN) continue;
-      if (ret == GNUTLS_E_INTERRUPTED) continue;
+      if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
+        {
+          count--;
+          continue;
+        }
       if (ret)
         {
           fprintf (stderr, "Failed to gnutls_bye.\n");
@@ -242,11 +245,9 @@ end_session (int server_socket,
            * because the server is closing the connection first. */
           break;
         }
+      break;
     }
-
-  gnutls_deinit (server_session);
-
-  gnutls_certificate_free_credentials (server_credentials);
+  if (count == 0) fprintf (stderr, "Gave up trying to gnutls_bye.\n");
 
   if (shutdown (server_socket, SHUT_RDWR) == -1)
     {
@@ -255,13 +256,15 @@ end_session (int server_socket,
       return -1;
     }
 
-#if 0
   if (close (server_socket) == -1)
     {
       perror ("Failed to close server socket.");
       return -1;
     }
-#endif
+
+  gnutls_deinit (server_session);
+
+  gnutls_certificate_free_credentials (server_credentials);
 
   return 0;
 }
