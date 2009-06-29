@@ -1938,7 +1938,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else
                           SEND_TO_CLIENT_OR_FAIL
-                           (XML_OK_REQUESTED ("modify_task"));
+                           (XML_OK ("modify_task"));
                       }
                     else if (first)
                       {
@@ -1961,8 +1961,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         free_string_var (&modify_task_parameter);
                         free_string_var (&modify_task_value);
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_OK_REQUESTED ("modify_task"));
+                        SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                       }
                   }
               }
