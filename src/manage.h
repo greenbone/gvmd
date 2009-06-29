@@ -350,12 +350,18 @@ set_report_parameter (char*, const char*, char*);
 /* Server messaging. */
 
 int
-request_plugin_list ();
-
-int
 request_certificates ();
 
 int
 acknowledge_bye ();
 
-#endif
+int
+acknowledge_md5sum ();
+
+int
+acknowledge_md5sum_sums ();
+
+int
+acknowledge_md5sum_info ();
+
+#endif /* not OPENVAS_MANAGER_MANAGE_H */

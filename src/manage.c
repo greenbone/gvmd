@@ -1065,6 +1065,7 @@ start_task (task_t task)
   if (send_to_server ("<|> CLIENT\n")) return -1;
 
   targets = task_preference (task, "targets");
+  // FIX check if targets, before any server comm
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
                           strlen (targets),
                           targets);
@@ -1186,19 +1187,6 @@ delete_reports (task_t task)
 /* Server messaging. */
 
 /**
- * @brief Request the list of plugins from the server.
- *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
- */
-int
-request_plugin_list ()
-{
-  if (send_to_server ("CLIENT <|> COMPLETE_LIST <|> CLIENT\n"))
-    return -1;
-  return 0;
-}
-
-/**
  * @brief Request the list of certificates from the server.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer.
@@ -1220,6 +1208,45 @@ int
 acknowledge_bye ()
 {
   if (send_to_server ("CLIENT <|> BYE <|> ACK\n"))
+    return -1;
+  return 0;
+}
+
+/**
+ * @brief Acknowledge the server PLUGINS_MD5 message.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+acknowledge_md5sum ()
+{
+  if (send_to_server ("CLIENT <|> GO ON <|> CLIENT\n"))
+    return -1;
+  return 0;
+}
+
+/**
+ * @brief Acknowledge server PLUGINS_MD5 message, requesting plugin md5sums.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+acknowledge_md5sum_sums ()
+{
+  if (send_to_server ("CLIENT <|> SEND_PLUGINS_MD5 <|> CLIENT\n"))
+    return -1;
+  return 0;
+}
+
+/**
+ * @brief Acknowledge server PLUGINS_MD5 message, requesting all plugin info.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ */
+int
+acknowledge_md5sum_info ()
+{
+  if (send_to_server ("CLIENT <|> COMPLETE_LIST <|> CLIENT\n"))
     return -1;
   return 0;
 }

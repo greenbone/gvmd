@@ -1,8 +1,19 @@
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (request_plugin_list): Remove.
+	(acknowledge_md5sum_sums, acknowledge_md5sum_info)
+	(acknowledge_md5sum): New functions.
+	* src/manage.h: Update headers.
+
+	* src/otp.c (process_otp_server_input): Request the plugin list on
+	getting the feed md5.  Acknowledge the md5sum (GO ON) after receiving the
+	plugin list.
+
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove attempts at initiating
 	connections in XML_SERVICE_DOWN cases, now that serve_omp connects
-	eargerly.
+	eagerly.
 
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 

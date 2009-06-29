@@ -1841,6 +1841,9 @@ process_otp_server_input ()
                       set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))
                         {
+                          case  0:
+                            if (acknowledge_md5sum ()) return -1;
+                            break;
                           case -1: return -1;
                           case -2:
                             /* Need more input. */
@@ -1939,6 +1942,12 @@ process_otp_server_input ()
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
                     {
+                      case  0:
+                        // FIX introduce plugin cache
+                        //if (acknowledge_md5sum ()) return -1;
+                        //if (acknowledge_md5sum_sums ()) return -1;
+                        if (acknowledge_md5sum_info ()) return -1;
+                        break;
                       case -1: return -1;
                       case -2:
                         /* Need more input. */
