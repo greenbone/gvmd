@@ -58,7 +58,7 @@
 /**
  * @brief The size of the \ref to_server data buffer.
  */
-#define TO_SERVER_BUFFER_SIZE 8192
+#define TO_SERVER_BUFFER_SIZE 26214400
 
 // FIX This is the definition for the entire module.
 /**

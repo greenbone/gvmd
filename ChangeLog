@@ -1,7 +1,11 @@
+2009-06-29  Matthew Mundell <mmundell@intevation.de>
+
+	* src/ovas-mngr-comm.c (TO_SERVER_BUFFER_SIZE): Increase.
+
 2009-06-24  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage_process): Ensure that the
-	OPENVAS_PID_DIR mgr directory exists.
+	OPENVAS_STATE_DIR "mgr/" directory exists.
 
 2009-06-24  Matthew Mundell <mmundell@intevation.de>
 
