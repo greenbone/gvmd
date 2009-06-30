@@ -1,3 +1,8 @@
+2009-06-30  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): Add report_count to
+	the plural GET_STATUS response.
+
 2009-06-29  Matthew Mundell <mmundell@intevation.de>
 
 	(start_task): Use send_to_server instead of sendf_to_server for constant

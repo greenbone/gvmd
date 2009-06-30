@@ -2143,6 +2143,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<log>%i</log>"
                                         "<warning>%i</warning>"
                                         "</messages>"
+                                        "<report_count>%u</report_count>"
                                         "</task>",
                                         tsk_uuid,
                                         name,
@@ -2151,7 +2152,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_holes_size (index),
                                         task_infos_size (index),
                                         task_logs_size (index),
-                                        task_notes_size (index));
+                                        task_notes_size (index),
+                                        task_report_count (index));
                 free (name);
                 free (tsk_uuid);
                 if (send_to_client (line))
