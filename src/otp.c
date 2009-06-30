@@ -294,11 +294,15 @@ write_timestamp (FILE* file, const char* host, const char* type,
  *
  * @param[in]  task  The task.
  *
- * @return 0 success, -1 current_report NULL, -2 failed to close file.
+ * @return 0 success, -1 current_report NULL, -2 failed to close file,
+ *         -3 failed to remove last report, -4 failed to symlink last report,
+ *         -5 failed to change dir.
  */
 static int
 save_report (task_t task)
 {
+  gchar *reports_dir, *report_dir, *report_name, *current_dir;
+
   assert (current_report != NULL);
   if (current_report == NULL) return -1;
 
@@ -318,6 +322,50 @@ save_report (task_t task)
   current_report = NULL;
 
   // FIX save report.nbe.cnt or equiv (task_*_size)
+
+  /* Update the symlink to the last report. */
+
+  report_dir = g_path_get_dirname (current_report_name);
+  report_name = g_path_get_basename (report_dir);
+  reports_dir = g_path_get_dirname (report_dir);
+  g_free (report_dir);
+  current_dir = g_get_current_dir ();
+  if (chdir (reports_dir))
+    {
+      g_free (current_dir);
+      g_free (report_name);
+      g_free (reports_dir);
+      perror ("Failed to change dir");
+      return -5;
+    }
+  if (unlink ("last"))
+    {
+      if (errno != ENOENT)
+        {
+          g_free (current_dir);
+          g_free (report_name);
+          g_free (reports_dir);
+          perror ("Failed to remove last report");
+          return -3;
+        }
+    }
+  if (symlink (report_name, "last"))
+    {
+      g_free (current_dir);
+      g_free (report_name);
+      g_free (reports_dir);
+      perror ("Failed to symlink last report");
+      return -4;
+    }
+  g_free (report_name);
+  g_free (reports_dir);
+  if (chdir (current_dir))
+    {
+      g_free (current_dir);
+      perror ("Failed to change dir");
+      return -5;
+    }
+  g_free (current_dir);
 
   return 0;
 }
@@ -2268,7 +2316,11 @@ process_otp_server_input ()
                                             "",
                                             "scan_end",
                                             field);
-                          if (save_report (current_server_task)) return -1;
+                          if (save_report (current_server_task))
+                            {
+                              g_free (current_report_name);
+                              return -1;
+                            }
                           current_server_task = (task_t) NULL;
                         }
                     }

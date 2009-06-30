@@ -2064,6 +2064,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret;
                     gchar* response;
                     char* name;
+                    gchar* last_report_id;
+
+                    last_report_id = task_last_report_id (tsk_uuid);
+                    if (last_report_id == NULL)
+                      {
+                        free (tsk_uuid);
+                        error_send_to_client (error);
+                        return;
+                      }
 
                     name = task_name (task);
                     response = g_strdup_printf ("<get_status_response"
@@ -2078,7 +2087,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 "<log>%i</log>"
                                                 "<warning>%i</warning>"
                                                 "</messages>"
-                                                "<report_count>%u</report_count>",
+                                                "<report_count>%u</report_count>"
+                                                "<last_report>"
+                                                "<report id=\"%s\">"
+                                                "<timestamp>FIX</timestamp>"
+                                                "<messages>"
+                                                "<hole>0</hole>"
+                                                "<info>0</info>"
+                                                "<log>0</log>"
+                                                "<debug>0</debug>"
+                                                "</messages>"
+                                                "</report>"
+                                                "</last_report>",
                                                 tsk_uuid,
                                                 name,
                                                 task_run_status_name (task),
@@ -2087,7 +2107,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 task_infos_size (task),
                                                 task_logs_size (task),
                                                 task_notes_size (task),
-                                                task_report_count (task));
+                                                task_report_count (task),
+                                                last_report_id);
+                    g_free (last_report_id);
                     ret = send_to_client (response);
                     g_free (response);
                     g_free (name);
@@ -2133,9 +2155,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar* line;
                 char* name = task_name (index);
                 char* tsk_uuid;
+                gchar* last_report_id;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
+
+                last_report_id = task_last_report_id (tsk_uuid);
+                if (last_report_id == NULL)
+                  {
+                    free (tsk_uuid);
+                    error_send_to_client (error);
+                    return;
+                  }
 
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
@@ -2149,6 +2180,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<warning>%i</warning>"
                                         "</messages>"
                                         "<report_count>%u</report_count>"
+                                        "<last_report>"
+                                        "<report id=\"%s\">"
+                                        "<timestamp>FIX</timestamp>"
+                                        "<messages>"
+                                        "<hole>0</hole>"
+                                        "<info>0</info>"
+                                        "<log>0</log>"
+                                        "<debug>0</debug>"
+                                        "</messages>"
+                                        "</report>"
+                                        "</last_report>"
                                         "</task>",
                                         tsk_uuid,
                                         name,
@@ -2158,7 +2200,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_infos_size (index),
                                         task_logs_size (index),
                                         task_notes_size (index),
-                                        task_report_count (index));
+                                        task_report_count (index),
+                                        last_report_id);
+                g_free (last_report_id);
                 free (name);
                 free (tsk_uuid);
                 if (send_to_client (line))

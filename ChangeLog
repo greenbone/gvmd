@@ -1,5 +1,19 @@
 2009-06-30  Matthew Mundell <mmundell@intevation.de>
 
+	Add a LAST_REPORT element to the GET_STATUS response.
+
+	* src/manage.c (task_last_report_id): New function.
+	(current_report_name): New variable.
+	(create_report_file): Store report name in current_report_name.
+	* src/manage.h: Update headers.
+
+	* src/otp.c (save_report): Adjust or create symlink to the current report.
+	(process_otp_server_input): Free current_report_name if save_report fails.
+
+	* src/omp.c (omp_xml_handle_end_element): Add LAST_REPORT to GET_STATUS.
+
+2009-06-30  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (send_to_client): Trace when out of space.
 
 2009-06-30  Matthew Mundell <mmundell@intevation.de>

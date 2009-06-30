@@ -175,6 +175,8 @@ extern /*@null@*/ task_t current_server_task;
 
 extern /*@null@*/ FILE* current_report;
 
+extern /*@null@*/ gchar* current_report_name;
+
 
 /* Task code specific to the representation of tasks. */
 
@@ -332,6 +334,9 @@ stop_task (task_t);
 /*@only@*/ /*@null@*/
 char*
 make_report_uuid ();
+
+gchar*
+task_last_report_id (const char*);
 
 gchar*
 report_path_task_uuid (gchar*);

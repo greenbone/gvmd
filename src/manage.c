@@ -199,6 +199,42 @@ make_report_uuid ()
 }
 
 /**
+ * @brief Get the report ID from the most recently completed invocation of task.
+ *
+ * @param[in]  path  Absolute path of report in task directory.
+ *
+ * @return The UUID of the task as a newly allocated string.
+ */
+gchar*
+task_last_report_id (const char* task_uuid)
+{
+  GError* link_error;
+  gchar *link, *report, *last_report_id;
+
+  // FIX same as above, mv to manage
+  link = g_build_filename (OPENVAS_STATE_DIR
+                           "/mgr/users/",
+                           current_credentials.username,
+                           "tasks",
+                           task_uuid,
+                           "reports",
+                           "last",
+                           NULL);
+  link_error = NULL;
+  report = g_file_read_link (link, &link_error);
+  g_free (link);
+  if (link_error)
+    {
+      g_error_free (link_error);
+      return NULL;
+    }
+  last_report_id = g_path_get_basename (report);
+  g_free (report);
+
+  return last_report_id;
+}
+
+/**
  * @brief Get the name of the task from the pathname of a report.
  *
  * @param[in]  path  Absolute path of report in task directory.
@@ -451,6 +487,11 @@ short server_active = 0;
  */
 FILE* current_report = NULL;
 
+/**
+ * @brief Report file name of the current task.
+ */
+gchar* current_report_name = NULL;
+
 
 /* Task code specific to the representation of tasks. */
 
@@ -558,7 +599,6 @@ create_report_file (task_t task)
   char* report_id;
   gchar* user_dir_name;
   gchar* dir_name;
-  gchar* name;
   gchar* symlink_name;
   FILE* file;
 
@@ -645,17 +685,17 @@ create_report_file (task_t task)
 
   /* Save report stream. */
 
-  name = g_build_filename (dir_name, "report.nbe", NULL);
+  current_report_name = g_build_filename (dir_name, "report.nbe", NULL);
 
-  file = fopen (name, "w");
+  file = fopen (current_report_name, "w");
   if (file == NULL)
     {
       (void) rmdir (dir_name);
       fprintf (stderr, "Failed to open report file %s: %s\n",
-               name,
+               current_report_name,
                strerror (errno));
       g_free (dir_name);
-      g_free (name);
+      g_free (current_report_name);
       g_free (symlink_name);
       return -1;
     }
@@ -664,7 +704,6 @@ create_report_file (task_t task)
   inc_task_report_count (task);
 
   g_free (dir_name);
-  g_free (name);
   g_free (symlink_name);
   return 0;
 }
