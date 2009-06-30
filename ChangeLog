@@ -1,5 +1,9 @@
 2009-06-30  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (send_to_client): Trace when out of space.
+
+2009-06-30  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Add report_count to
 	the plural GET_STATUS response.
 

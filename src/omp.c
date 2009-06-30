@@ -286,7 +286,12 @@ send_to_client (char* msg)
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
   if (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
       < strlen (msg))
-    return TRUE;
+    {
+      tracef ("   send_to_client out of space (%i < %i)\n",
+              ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
+              strlen (msg));
+      return TRUE;
+    }
   memmove (to_client + to_client_end, msg, strlen (msg));
   tracef ("-> client: %s\n", msg);
   to_client_end += strlen (msg);
