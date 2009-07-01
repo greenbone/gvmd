@@ -1226,6 +1226,38 @@ add_task_description_line (task_t task, const char* line,
 }
 
 /**
+ * @brief Return the current port of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Current port.
+ */
+unsigned int
+task_current_port (task_t task)
+{
+  return (unsigned int) sql_int (0, 0,
+                                 "SELECT current_port FROM tasks_%s WHERE ROWID = %llu;",
+                                 current_credentials.username,
+                                 task);
+}
+
+/**
+ * @brief Return the max port of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Max port.
+ */
+unsigned int
+task_max_port (task_t task)
+{
+  return (unsigned int) sql_int (0, 0,
+                                 "SELECT max_port FROM tasks_%s WHERE ROWID = %llu;",
+                                 current_credentials.username,
+                                 task);
+}
+
+/**
  * @brief Set the ports of a task.
  *
  * @param[in]  task     The task.

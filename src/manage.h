@@ -303,6 +303,12 @@ append_to_task_name (task_t, const char*, int);
 int
 add_task_description_line (task_t, const char*, size_t);
 
+unsigned int
+task_current_port (task_t);
+
+unsigned int
+task_max_port (task_t);
+
 void
 set_task_ports (task_t, unsigned int, unsigned int);
 

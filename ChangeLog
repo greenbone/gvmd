@@ -1,5 +1,15 @@
 2009-07-01  Matthew Mundell <mmundell@intevation.de>
 
+	Add a PROGRESS element to the GET_STATUS response.
+
+	* src/manage.c (task_last_report_id): Remove old comment.
+	* src/tasks_sql.h (task_current_port, task_max_port): New functions.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_end_element): Add PROGRESS to GET_STATUS.
+
+2009-07-01  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_STATUS only print a
 	LAST_REPORT if there is a last report.
 

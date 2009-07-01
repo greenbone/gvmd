@@ -211,7 +211,6 @@ task_last_report_id (const char* task_uuid)
   GError* link_error;
   gchar *link, *report, *last_report_id;
 
-  // FIX same as above, mv to manage
   link = g_build_filename (OPENVAS_STATE_DIR
                            "/mgr/users/",
                            current_credentials.username,
