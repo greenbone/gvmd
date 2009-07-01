@@ -2066,7 +2066,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char* name;
                     gchar *last_report_id, *last_report;
                     long progress;
-                    unsigned int max_port;
+                    unsigned int max_port, current_port;
 
                     last_report_id = task_last_report_id (tsk_uuid);
                     if (last_report_id)
@@ -2091,14 +2091,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       last_report = g_strdup ("");
 
                     max_port = task_max_port (task);
+                    current_port = task_current_port (task);
                     if (max_port)
                       {
-                        progress = (task_current_port (task) * 100) / max_port;
+                        progress = (current_port * 100) / max_port;
                         if (progress < 0) progress = 0;
                         else if (progress > 100) progress = 100;
                       }
                     else
-                      progress = 100;
+                      progress = current_port ? 100 : 0;
 
                     name = task_name (task);
                     response = g_strdup_printf ("<get_status_response"
@@ -2175,17 +2176,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char* tsk_uuid;
                 gchar *last_report_id, *last_report;
                 long progress;
-                unsigned int max_port;
+                unsigned int max_port, current_port;
 
                 max_port = task_max_port (index);
+                current_port = task_current_port (index);
                 if (max_port)
                   {
-                    progress = (task_current_port (index) * 100) / max_port;
+                    progress = (current_port * 100) / max_port;
                     if (progress < 0) progress = 0;
                     else if (progress > 100) progress = 100;
                   }
                 else
-                  progress = 100;
+                  progress = current_port ? 100 : 0;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
