@@ -83,7 +83,7 @@ buffer_size_t from_server_end = 0;
  */
 struct sockaddr_in server_address;
 
-#define OTP_INIT_STRING "< OTP/1.0 >"
+#define OTP_INIT_STRING "< OTP/1.0 >\n"
 
 /**
  * @brief Read and return the type of protocol from the client.
@@ -98,8 +98,8 @@ protocol_read_t
 read_protocol (gnutls_session_t* client_session, int client_socket)
 {
   protocol_read_t ret;
-  char* from_client_current;
   time_t start_time;
+  int left;
 
   /* Turn on blocking. */
   // FIX get flags first
@@ -124,7 +124,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       return PROTOCOL_FAIL;
     }
   ret = PROTOCOL_FAIL;
-  from_client_current = from_client + from_client_end;
+  left = strlen (OTP_INIT_STRING);
   while (from_client_end < FROM_BUFFER_SIZE)
     {
       int select_ret;
@@ -181,7 +181,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
                   count = gnutls_record_recv (*client_session,
                                               from_client + from_client_end,
-                                              1);
+                                              left);
                   if (count == GNUTLS_E_INTERRUPTED)
                     /* Interrupted, try read again. */
                     continue;
@@ -212,11 +212,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                   ret = PROTOCOL_CLOSE;
                   break;
                 }
-              assert (count == 1);
               from_client_end += count;
+              left -= count;
 
-              /* Check for the OTP string. */
-              if (*from_client_current == '>')
+              if (left == 0)
                 {
                   if (strstr (from_client, OTP_INIT_STRING))
                     ret = PROTOCOL_OTP;
@@ -224,13 +223,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                     ret = PROTOCOL_OMP;
                   break;
                 }
-              else if (from_client_current - from_client == strlen (OTP_INIT_STRING))
-                {
-                  ret = PROTOCOL_OMP;
-                  break;
-                }
-
-              from_client_current += count;
+              else if (memchr (from_client,
+                               '>',
+                               strlen (OTP_INIT_STRING) - left))
+                ret = PROTOCOL_OMP;
             }
         }
 
