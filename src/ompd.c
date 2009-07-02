@@ -519,13 +519,16 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
-      FD_SET (client_socket, &exceptfds);
       FD_SET (server_socket, &exceptfds);
       // FIX shutdown if any eg read fails
-      if (client_active && from_client_end < from_buffer_size)
+      if (client_active)
         {
-          FD_SET (client_socket, &readfds);
-          fds |= FD_CLIENT_READ;
+          FD_SET (client_socket, &exceptfds);
+          if (from_client_end < from_buffer_size)
+            {
+              FD_SET (client_socket, &readfds);
+              fds |= FD_CLIENT_READ;
+            }
         }
       if ((server_init_state == SERVER_INIT_DONE
            || server_init_state == SERVER_INIT_GOT_VERSION
@@ -578,7 +581,7 @@ serve_omp (gnutls_session_t* client_session,
         }
       if (ret == 0) continue;
 
-      if (FD_ISSET (client_socket, &exceptfds))
+      if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
           fprintf (stderr, "Exception on client in child select.\n");
           close_stream_connection (client_socket);

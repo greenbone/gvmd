@@ -1,5 +1,10 @@
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Only select on client for exceptions when
+	client is active.
+
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (serve_omp): Improve the "safe to select" comment a bit.
 
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
