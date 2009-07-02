@@ -30,6 +30,7 @@
 
 #include "oxpd.h"
 #include "tracef.h"
+#include "logf.h"
 
 #include <assert.h>
 #include <fcntl.h>
@@ -212,6 +213,18 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                   ret = PROTOCOL_CLOSE;
                   break;
                 }
+
+#if TRACE || LOG
+              logf ("<= %.*s\n", count, from_client + from_client_end);
+#if TRACE_TEXT
+              tracef ("<= client  \"%.*s\"\n",
+                      count,
+                      from_client + from_client_end);
+#else
+              tracef ("<= client  %i bytes\n", count);
+#endif
+#endif /* TRACE || LOG */
+
               from_client_end += count;
               left -= count;
 

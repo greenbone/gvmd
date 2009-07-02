@@ -1,5 +1,9 @@
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/oxpd.c (read_protocol): Log what is read.
+
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (send_plugin): Send a dummy checksum.
 
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
