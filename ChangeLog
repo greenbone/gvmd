@@ -1,4 +1,18 @@
-2009-07-01  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
+
+	Before starting a task, check that the task has targets.
+
+	* src/manage.c (start_task): Check for targets in the task definition.
+
+	* src/omp.c (omp_xml_handle_end_element): Send ERROR_MISSING if the task
+	is missing targets.
+
+	* src/tests/omp_start_task_3.c,
+	src/tests/new_task_small__missing_targets_rc: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_start_task_3.
+
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
 	* src/oxpd.c (read_protocol): Read as much as possible at a time up to
 	the length of the OTP protocol string, in case the client presumes that

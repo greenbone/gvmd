@@ -1052,7 +1052,8 @@ send_task_rules (task_t task)
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in \ref to_server buffer, -2 if the
+ *         task definition is missing targets.
  */
 int
 start_task (task_t task)
@@ -1069,6 +1070,9 @@ start_task (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     return 0;
+
+  targets = task_preference (task, "targets");
+  if (targets == NULL) return -2;
 
   /* Create the report file. */
 
@@ -1102,8 +1106,6 @@ start_task (task_t task)
   if (send_task_rules (task)) return -1;
   if (send_to_server ("<|> CLIENT\n")) return -1;
 
-  targets = task_preference (task, "targets");
-  // FIX check if targets, before any server comm
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
                           strlen (targets),
                           targets);

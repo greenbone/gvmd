@@ -2027,16 +2027,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
             else if (task == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
-            else if (start_task (task))
-              {
-                /* to_server is full. */
-                // FIX or other error
-                // FIX revert parsing for retry
-                // process_omp_client_input must return -2
-                abort ();
-              }
             else
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
+              switch (start_task (task))
+                {
+                  case -1:
+                    /* to_server is full. */
+                    // FIX or other error
+                    // FIX revert parsing for retry
+                    // process_omp_client_input must return -2
+                    abort ();
+                    break;
+                  case -2:
+                    /* Task definition lacks targets. */
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
+                    break;
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
+                    break;
+                }
             free_string_var (&current_uuid);
           }
         else
