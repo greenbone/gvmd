@@ -1083,13 +1083,11 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
                              "<xrefs>%s</xrefs>"
                              "<fingerprints>%s</fingerprints>"
                              "<tags>%s</tags>"
-#if 0
-                             // FIX implement
                              "<checksum>"
                              "<algorithm>md5</algorithm>"
-                             "%s"
+                             // FIX implement
+                             "2397586ea5cd3a69f953836f7be9ef7b"
                              "</checksum>"
-#endif
                              "</nvt>",
                              oid,
                              name_text,
@@ -1115,13 +1113,11 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
     msg = g_strdup_printf ("<nvt"
                            " oid=\"%s\">"
                            "<name>%s</name>"
-#if 0
-                           // FIX implement
                            "<checksum>"
                            "<algorithm>md5</algorithm>"
-                           "%s"
+                           // FIX implement
+                           "2397586ea5cd3a69f953836f7be9ef7b"
                            "</checksum>"
-#endif
                            "</nvt>",
                            oid,
                            name_text);

@@ -1,5 +1,9 @@
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (send_plugin): Send a dummy checksum.
+
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
+
 	Before starting a task, check that the task has targets.
 
 	* src/manage.c (start_task): Check for targets in the task definition.
