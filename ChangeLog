@@ -1,5 +1,9 @@
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Improve the "safe to select" comment a bit.
+
+2009-07-02  Matthew Mundell <mmundell@intevation.de>
+
 	* src/oxpd.c (read_protocol): Log what is read.
 
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
