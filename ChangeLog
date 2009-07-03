@@ -1,5 +1,14 @@
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Only setup the client in the fd sets when the
+	client is active.  As a result move the first timeout check to precede
+	the setup of the client socket in the fd sets, in case the timeout check
+	closes the client socket.  Also, only pass select a timeout when the
+	client is active, and only do the second timeout check when the client is
+	active.
+
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
 	* CMakeLists.txt (CMAKE_BUILD_TYPE): Set to debug.
 
 2009-07-03  Matthew Mundell <mmundell@intevation.de>

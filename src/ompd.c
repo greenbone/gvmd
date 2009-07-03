@@ -514,22 +514,51 @@ serve_omp (gnutls_session_t* client_session,
     {
       int ret;
       struct timeval timeout;
+      uint8_t fds;  /* What `select' is going to watch. */
+
       /* Setup for select. */
-      uint8_t fds = 0; /* What `select' is going to watch. */
+
+      fds = 0;
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
       FD_SET (server_socket, &exceptfds);
+
       // FIX shutdown if any eg read fails
+
       if (client_active)
         {
-          FD_SET (client_socket, &exceptfds);
-          if (from_client_end < from_buffer_size)
+          timeout.tv_usec = 0;
+          // FIX time check error
+          timeout.tv_sec = CLIENT_TIMEOUT
+                           - (time (NULL) - last_client_activity_time);
+          if (timeout.tv_sec <= 0)
             {
-              FD_SET (client_socket, &readfds);
-              fds |= FD_CLIENT_READ;
+              tracef ("client timeout (1)\n");
+              close_stream_connection (client_socket);
+              if (server_is_active ())
+                {
+                  client_active = 0;
+                }
+              else
+                return 0;
+            }
+          else
+            {
+              FD_SET (client_socket, &exceptfds);
+              if (from_client_end < from_buffer_size)
+                {
+                  FD_SET (client_socket, &readfds);
+                  fds |= FD_CLIENT_READ;
+                }
+              if (to_client_start < to_client_end)
+                {
+                  FD_SET (client_socket, &writefds);
+                  fds |= FD_CLIENT_WRITE;
+                }
             }
         }
+
       if ((server_init_state == SERVER_INIT_DONE
            || server_init_state == SERVER_INIT_GOT_VERSION
            || server_init_state == SERVER_INIT_SENT_USER
@@ -539,11 +568,7 @@ serve_omp (gnutls_session_t* client_session,
           FD_SET (server_socket, &readfds);
           fds |= FD_SERVER_READ;
         }
-      if (to_client_start < to_client_end)
-        {
-          FD_SET (client_socket, &writefds);
-          fds |= FD_CLIENT_WRITE;
-        }
+
       if (((server_init_state == SERVER_INIT_TOP
             || server_init_state == SERVER_INIT_DONE)
            && to_server_buffer_space () > 0)
@@ -556,22 +581,10 @@ serve_omp (gnutls_session_t* client_session,
           fds |= FD_SERVER_WRITE;
         }
 
-      timeout.tv_usec = 0;
-      // FIX time check error
-      timeout.tv_sec = CLIENT_TIMEOUT
-                       - (time (NULL) - last_client_activity_time);
-      if (timeout.tv_sec <= 0)
-        {
-          tracef ("client timeout (1)\n");
-          close_stream_connection (client_socket);
-          if (server_is_active ())
-            client_active = 0;
-          else
-            return 0;
-        }
-
       /* Select, then handle result. */
-      ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
+
+      ret = select (nfds, &readfds, &writefds, &exceptfds,
+                    client_active ? &timeout : NULL);
       if (ret < 0)
         {
           if (errno == EINTR) continue;
@@ -920,25 +933,26 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      /* Check if client connection is out of time. */
-      {
-        time_t current_time;
-        if (time (&current_time) == -1)
-          {
-            perror ("Failed to get current time (3)");
-            close_stream_connection (client_socket);
-            return -1;
-          }
-        if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
-          {
-            tracef ("client timeout (1)\n");
-            close_stream_connection (client_socket);
-            if (server_is_active ())
-              client_active = 0;
-            else
-              return 0;
-          }
-      }
+      if (client_active)
+        {
+          /* Check if client connection is out of time. */
+          time_t current_time;
+          if (time (&current_time) == -1)
+            {
+              perror ("Failed to get current time (3)");
+              close_stream_connection (client_socket);
+              return -1;
+            }
+          if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
+            {
+              tracef ("client timeout (1)\n");
+              close_stream_connection (client_socket);
+              if (server_is_active ())
+                client_active = 0;
+              else
+                return 0;
+            }
+        }
 
     } /* while (1) */
 
