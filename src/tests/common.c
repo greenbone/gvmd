@@ -233,6 +233,13 @@ connect_to_manager_host_port (gnutls_session_t * session,
     }
   tracef ("   Shook hands with manager.\n");
 
+  if (getenv ("OPENVAS_TEST_WAIT")
+      && strcmp (getenv ("OPENVAS_TEST_WAIT"), "0"))
+    {
+      fprintf (stdout, "Connected, press a key when ready.\n");
+      getchar ();
+    }
+
   return manager_socket;
 
  manager_fail:
