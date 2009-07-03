@@ -28,6 +28,8 @@ project (openvas-manager)
 
 cmake_minimum_required (VERSION 2.4)
 
+SET (CMAKE_BUILD_TYPE debug)
+
 ## CPack configuration
 
 SET(CPACK_CMAKE_GENERATOR "Unix Makefiles")

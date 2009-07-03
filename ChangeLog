@@ -1,5 +1,9 @@
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
 
+	* CMakeLists.txt (CMAKE_BUILD_TYPE): Set to debug.
+
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/oxpd.h (READ_PROTOCOL_TIMEOUT): Increase.
 
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
