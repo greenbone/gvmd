@@ -1,5 +1,9 @@
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/oxpd.h (READ_PROTOCOL_TIMEOUT): Increase.
+
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (connect_to_manager_host_port): After connecting,
 	if the environment variable OPENVAS_TEST_WAIT is true, then read a char
 	before continuing.

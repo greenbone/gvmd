@@ -34,7 +34,7 @@
  * @brief Maximum number of seconds spent trying to read the protocol.
  */
 #ifndef READ_PROTOCOL_TIMEOUT
-#define READ_PROTOCOL_TIMEOUT 20
+#define READ_PROTOCOL_TIMEOUT 300
 #endif
 
 /**
