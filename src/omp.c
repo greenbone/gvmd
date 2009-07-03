@@ -2000,10 +2000,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             gsize out_len;
             guchar* out;
             char* description = task_description (current_client_task);
-            out = g_base64_decode (description, &out_len);
-            /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
-             * when description is zero length. */
-            if (out == NULL)
+            if (description)
+              {
+                out = g_base64_decode (description, &out_len);
+                /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
+                 * when description is zero length. */
+                if (out == NULL)
+                  {
+                    out = (guchar*) g_strdup ("");
+                    out_len = 0;
+                  }
+              }
+            else
               {
                 out = (guchar*) g_strdup ("");
                 out_len = 0;
@@ -2034,7 +2042,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     abort ();
                     break;
                   case -2:
-                    /* Task definition lacks targets. */
+                    /* Task definition missing or lacks targets. */
                     SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
                     break;
                   default:

@@ -721,6 +721,9 @@ task_preference (task_t task, const char* name)
   char* desc = task_description (task);
   char* orig_desc = desc;
   char* seek;
+
+  if (desc == NULL) return NULL;
+
   while ((seek = strchr (desc, '\n')))
     {
       char* eq = seek
@@ -775,7 +778,8 @@ task_preference (task_t task, const char* name)
  * @param[in]  task  Task.
  *
  * @return A string of semi-colon separated plugin IDS, or the empty string
- *         if the task is to invoke all plugins.
+ *         if the task is to invoke all plugins, or NULL if the task
+ *         is yet to be defined.
  */
 static char*
 task_plugins (task_t task)
@@ -783,9 +787,12 @@ task_plugins (task_t task)
   char* desc = task_description (task);
   char* orig_desc = desc;
   char* seek;
-  GString* plugins = g_string_new ("");
+  GString* plugins;
   gboolean first = TRUE;
 
+  if (desc == NULL) return NULL;
+
+  plugins = g_string_new ("");
   while ((seek = strchr (desc, '\n')))
     {
       char* eq = seek
@@ -878,6 +885,8 @@ send_task_preferences (task_t task, char* name)
   char* desc = task_description (task);
   char* orig_desc = desc;
   char* seek;
+
+  if (desc == NULL) return -1;
 
   while (1)
     {
@@ -982,6 +991,8 @@ send_task_rules (task_t task)
   char* orig_desc = desc;
   char* seek;
 
+  if (desc == NULL) return -1;
+
   while (1)
     {
       char* eq;
@@ -1053,7 +1064,7 @@ send_task_rules (task_t task)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer, -2 if the
- *         task definition is missing targets.
+ *         task definition is missing or is missing targets.
  */
 int
 start_task (task_t task)

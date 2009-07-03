@@ -1,3 +1,10 @@
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): Check task_description return.
+
+	* src/manage.c (task_preference, task_plugins, send_task_preferences)
+	(send_task_rules): Check task_description return.
+
 2009-07-02  Matthew Mundell <mmundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Only select on client for exceptions when
