@@ -36,6 +36,17 @@ begin(SCANNER_SET)
 end(SCANNER_SET)
 
 begin(SERVER_PREFS)
+ quote_test_0 = a'b
+ quote_test_1 = 'abc
+ quote_test_2 = abc'
+ quote_test_3 = abc''def
+ quote_test_4 = ''abcdef
+ quote_test_5 = abcdef''
+ quote_test_6 = 'ab'c''def'
+ quote_test_7 = '
+ quote_test_8 = ''
+ quote_test_9 = '''
+ quote_test_10 = a'''b
  max_hosts = 20
  max_checks = 4
  cgi_path = /cgi-bin:/scripts

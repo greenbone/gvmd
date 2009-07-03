@@ -43,7 +43,7 @@ sql_quote (const char* string, size_t length)
   /* Count number of apostrophes. */
 
   start = string;
-  while ((start = strchr (start, '\''))) count++;
+  while ((start = strchr (start, '\''))) start++, count++;
 
   /* Allocate new string. */
 

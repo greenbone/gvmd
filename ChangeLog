@@ -1,5 +1,11 @@
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (sql_quote): Increment start in quote counting loop.
+
+	* src/tests/new_task_small_rc (SERVER_PREFS): Add some fields with quotes.
+
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_start_task_4.c: New file.  Tests START_TASK with missing
 	rcfile.
 
