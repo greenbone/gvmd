@@ -1,5 +1,12 @@
 2009-07-03  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_start_task_4.c: New file.  Tests START_TASK with missing
+	rcfile.
+
+	* src/tests/CMakeLists.txt: Add omp_start_task_4.
+
+2009-07-03  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Check task_description return.
 
 	* src/manage.c (task_preference, task_plugins, send_task_preferences)
