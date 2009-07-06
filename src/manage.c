@@ -1089,6 +1089,10 @@ start_task (task_t task)
 
   if (create_report_file (task)) return -2;
 
+  /* Reset any running information. */
+
+  reset_task (task);
+
   /* Start the task. */
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;

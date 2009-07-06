@@ -283,6 +283,9 @@ save_tasks ();
 gboolean
 find_task (const char* id, task_t*);
 
+void
+reset_task (task_t);
+
 int
 set_task_parameter (task_t,
                     /*@null@*/ const char*,

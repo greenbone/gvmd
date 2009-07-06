@@ -1317,3 +1317,27 @@ find_task (const char* uuid, task_t* task)
 
   return FALSE;
 }
+
+/**
+ * @brief Reset all running information for a task.
+ *
+ * @param[in]  task  Task.
+ */
+void
+reset_task (task_t task)
+{
+  sql ("UPDATE tasks_%s SET"
+       " start_time = '',"
+       " end_time = '',"
+       " attack_state = '',"
+       " current_port = '',"
+       " max_port = '',"
+       " debugs_size = '0',"
+       " holes_size = '0',"
+       " infos_size = '0',"
+       " logs_size = '0',"
+       " notes_size = '0'"
+       " WHERE ROWID = %llu;",
+       current_credentials.username,
+       task);
+}
