@@ -723,7 +723,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_REPORT:
-        if (send_to_client (XML_ERROR_SYNTAX ("get_report_response")))
+        if (send_to_client (XML_ERROR_SYNTAX ("get_report")))
           {
             error_send_to_client (error);
             return;
