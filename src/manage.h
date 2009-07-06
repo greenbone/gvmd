@@ -355,6 +355,9 @@ report_task (const char*, task_t* task);
 /*@=exportlocal@*/
 
 int
+report_counts (const char*, int*, int*, int*, int*, int*);
+
+int
 delete_report (const char*);
 
 int

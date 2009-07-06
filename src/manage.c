@@ -338,6 +338,58 @@ report_task (const char* report_id, task_t* task_return)
 }
 
 /**
+ * @brief Get the message counts from a report cache.
+ *
+ * @param[in]   report_id    ID of report.
+ * @param[out]  debugs       Number of debug messages.
+ * @param[out]  holes        Number of hole messages.
+ * @param[out]  infos        Number of info messages.
+ * @param[out]  logs         Number of log messages.
+ * @param[out]  warnings     Number of warning messages.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_counts (const char* report_id, int* debugs, int* holes, int* infos,
+               int* logs, int* warnings)
+{
+  gchar *cache_name, *cache;
+  gsize cache_len;
+  GError *error;
+  int ret;
+
+  cache_name = g_build_filename (OPENVAS_STATE_DIR
+                                 "/mgr/users/",
+                                 current_credentials.username,
+                                 "reports",
+                                 report_id,
+                                 "report.nbe.cnt",
+                                 NULL);
+  error = NULL;
+  g_file_get_contents (cache_name, &cache, &cache_len, &error);
+  if (error)
+    {
+      fprintf (stderr,
+               "Failed to read report cache from %s: %s.\n",
+               cache_name,
+               error->message);
+      g_error_free (error);
+      g_free (cache_name);
+      return -1;
+    }
+  g_free (cache_name);
+
+  ret = sscanf (cache, "%i %i %i %i %i\n",
+                debugs, holes, infos, logs, warnings);
+  g_free (cache);
+  if (ret == 5) return 0;
+  fprintf (stderr,
+           "Failed to scan report cache (%s).\n",
+           cache_name);
+  return -1;
+}
+
+/**
  * @brief Delete a report.
  *
  * @param[in]  report_id  ID of report.

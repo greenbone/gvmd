@@ -1193,7 +1193,8 @@ send_rule (gpointer rule)
  * @param[in]  task  The task.
  *
  * @return 0 success, -1 task ID error, -2 credentials missing,
- *         failed to open task dir, -4 out of space in to_client.
+ *         failed to open task dir, -4 out of space in to_client,
+ *         -5 failed to get report counts.
  */
 static int
 send_reports (task_t task)
@@ -1251,6 +1252,13 @@ send_reports (task_t task)
 
       if (strlen (report_name) == OVAS_MANAGE_REPORT_ID_LENGTH)
         {
+          int debugs, holes, infos, logs, warnings;
+
+          if (report_counts (report_name,
+                             &debugs, &holes, &infos, &logs,
+                             &warnings))
+            return -5;
+
 #if 0
           report_dir_name = g_build_filename (dir_name, report_name, NULL);
 #endif
@@ -1261,15 +1269,19 @@ send_reports (task_t task)
                                  " id=\"%s\">"
                                  "<timestamp>FIX</timestamp>"
                                  "<messages>"
-                                 // FIX
-                                 "<debug>0</debug>"
-                                 "<hole>0</hole>"
-                                 "<info>0</info>"
-                                 "<log>0</log>"
-                                 "<warning>0</warning>"
+                                 "<debug>%i</debug>"
+                                 "<hole>%i</hole>"
+                                 "<info>%i</info>"
+                                 "<log>%i</log>"
+                                 "<warning>%i</warning>"
                                  "</messages>"
                                  "</report>",
-                                 report_name);
+                                 report_name,
+                                 debugs,
+                                 holes,
+                                 infos,
+                                 logs,
+                                 warnings);
           if (send_to_client (msg))
             {
               g_free (msg);
@@ -2084,21 +2096,33 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     last_report_id = task_last_report_id (tsk_uuid);
                     if (last_report_id)
                       {
+                        int debugs, holes, infos, logs, warnings;
+
+                        if (report_counts (last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings))
+                          abort (); // FIX fail better
+
                         last_report = g_strdup_printf ("<last_report>"
                                                        "<report id=\"%s\">"
                                                        "<timestamp>"
                                                        "FIX"
                                                        "</timestamp>"
                                                        "<messages>"
-                                                       "<debug>0</debug>"
-                                                       "<hole>0</hole>"
-                                                       "<info>0</info>"
-                                                       "<log>0</log>"
-                                                       "<warning>0</warning>"
+                                                       "<debug>%i</debug>"
+                                                       "<hole>%i</hole>"
+                                                       "<info>%i</info>"
+                                                       "<log>%i</log>"
+                                                       "<warning>%i</warning>"
                                                        "</messages>"
                                                        "</report>"
                                                        "</last_report>",
-                                                       last_report_id);
+                                                       last_report_id,
+                                                       debugs,
+                                                       holes,
+                                                       infos,
+                                                       logs,
+                                                       warnings);
                         g_free (last_report_id);
                       }
                     else
@@ -2209,19 +2233,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 last_report_id = task_last_report_id (tsk_uuid);
                 if (last_report_id)
                   {
+                    int debugs, holes, infos, logs, warnings;
+
+                    if (report_counts (last_report_id,
+                                       &debugs, &holes, &infos, &logs,
+                                       &warnings))
+                      abort (); // FIX fail better
+
                     last_report = g_strdup_printf ("<last_report>"
                                                    "<report id=\"%s\">"
                                                    "<timestamp>FIX</timestamp>"
                                                    "<messages>"
-                                                   "<debug>0</debug>"
-                                                   "<hole>0</hole>"
-                                                   "<info>0</info>"
-                                                   "<log>0</log>"
-                                                   "<warning>0</warning>"
+                                                   "<debug>%i</debug>"
+                                                   "<hole>%i</hole>"
+                                                   "<info>%i</info>"
+                                                   "<log>%i</log>"
+                                                   "<warning>%i</warning>"
                                                    "</messages>"
                                                    "</report>"
                                                    "</last_report>",
-                                                   last_report_id);
+                                                   last_report_id,
+                                                   debugs,
+                                                   holes,
+                                                   infos,
+                                                   logs,
+                                                   warnings);
                     g_free (last_report_id);
                   }
                 else

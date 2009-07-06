@@ -296,12 +296,14 @@ write_timestamp (FILE* file, const char* host, const char* type,
  *
  * @return 0 success, -1 current_report NULL, -2 failed to close file,
  *         -3 failed to remove last report, -4 failed to symlink last report,
- *         -5 failed to change dir.
+ *         -5 failed to change dir, -6 failed to write cache.
  */
 static int
 save_report (task_t task)
 {
-  gchar *reports_dir, *report_dir, *report_name, *current_dir;
+  gchar *reports_dir, *report_dir, *report_name, *current_dir, *cache_name;
+  gchar *cache;
+  GError *error;
 
   assert (current_report != NULL);
   if (current_report == NULL) return -1;
@@ -321,11 +323,34 @@ save_report (task_t task)
     }
   current_report = NULL;
 
-  // FIX save report.nbe.cnt or equiv (task_*_size)
+  /* Save counts to cache. */
+
+  report_dir = g_path_get_dirname (current_report_name);
+  cache_name = g_build_filename (report_dir, "rebort.nbe.cnt", NULL);
+  cache = g_strdup_printf ("%i %i %i %i %i\n",
+                           task_debugs_size (task),
+                           task_holes_size (task),
+                           task_infos_size (task),
+                           task_logs_size (task),
+                           task_notes_size (task));
+  error = NULL;
+  g_file_set_contents (cache_name, cache, strlen (cache), &error);
+  g_free (cache);
+  if (error)
+    {
+      fprintf (stderr,
+               "Failed to write report cache to %s: %s.\n",
+               cache_name,
+               error->message);
+      g_error_free (error);
+      g_free (cache_name);
+      g_free (report_dir);
+      return -6;
+    }
+  g_free (cache_name);
 
   /* Update the symlink to the last report. */
 
-  report_dir = g_path_get_dirname (current_report_name);
   report_name = g_path_get_basename (report_dir);
   reports_dir = g_path_get_dirname (report_dir);
   g_free (report_dir);
