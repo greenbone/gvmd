@@ -1262,10 +1262,11 @@ send_reports (task_t task)
                                  "<timestamp>FIX</timestamp>"
                                  "<messages>"
                                  // FIX
+                                 "<debug>0</debug>"
                                  "<hole>0</hole>"
                                  "<info>0</info>"
                                  "<log>0</log>"
-                                 "<debug>0</debug>"
+                                 "<warning>0</warning>"
                                  "</messages>"
                                  "</report>",
                                  report_name);
@@ -2089,10 +2090,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        "FIX"
                                                        "</timestamp>"
                                                        "<messages>"
+                                                       "<debug>0</debug>"
                                                        "<hole>0</hole>"
                                                        "<info>0</info>"
                                                        "<log>0</log>"
-                                                       "<debug>0</debug>"
+                                                       "<warning>0</warning>"
                                                        "</messages>"
                                                        "</report>"
                                                        "</last_report>",
@@ -2211,10 +2213,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    "<report id=\"%s\">"
                                                    "<timestamp>FIX</timestamp>"
                                                    "<messages>"
+                                                   "<debug>0</debug>"
                                                    "<hole>0</hole>"
                                                    "<info>0</info>"
                                                    "<log>0</log>"
-                                                   "<debug>0</debug>"
+                                                   "<warning>0</warning>"
                                                    "</messages>"
                                                    "</report>"
                                                    "</last_report>",

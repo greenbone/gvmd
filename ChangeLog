@@ -1,5 +1,10 @@
 2009-07-06  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (send_reports, omp_xml_handle_end_element): Ensure all
+	GET_STATUS cases include <warning> in <messages>.
+
+2009-07-06  Matthew Mundell <mmundell@intevation.de>
+
 	Reset task running information before starting the task.
 
 	* src/task_sql.h (reset_task): New function.
