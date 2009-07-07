@@ -97,6 +97,8 @@ typedef struct
  */
 typedef struct
 {
+  char* subnet;         ///< Subnet message describes.
+  char* host;           ///< Host message describes.
   port_t port;          ///< The port.
   char* description;    ///< Description of the message.
   char* oid;            ///< NVT identifier.

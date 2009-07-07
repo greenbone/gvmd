@@ -1,5 +1,18 @@
 2009-07-07  Matthew Mundell <mmundell@intevation.de>
 
+	Use the actual host name for results in reports.
+
+	* src/manage.h (message_t): Add subnet and host.
+
+	* src/otp.c (message_t): Add subnet and host.
+	(make_message): Take host instead of port info.
+	(free_message): Free host and subnet.
+	(set_message_port_number, set_message_port_protocol): New functions.
+	(write_message): Write host and subnet from message structure.
+	(process_otp_server_input): Add message host handling.
+
+2009-07-07  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (current_host): New variable.
 	(process_otp_server_input): Use the actual host name for host timestamps.
 

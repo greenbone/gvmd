@@ -166,6 +166,8 @@ print_port (FILE* stream, port_t* port)
  */
 typedef struct
 {
+  char* subnet;         ///< Subnet message describes.
+  char* host;           ///< Host message describes.
   port_t port;          ///< The port.
   char* description;    ///< Description of the message.
   char* oid;            ///< NVT identifier.
@@ -186,30 +188,26 @@ static gchar* current_host = NULL;
 /**
  * @brief Make a message.
  *
- * @param[in]  number    Port number.
- * @param[in]  protocol  Port protocol.
+ * @param[in]  host    Host name.
  *
  * @return A pointer to the new message.
  */
 /*@only@*/
 static message_t*
-make_message (unsigned int number, const char* protocol)
+make_message (const char* host)
   /*@ensures isnull result->description, result->oid@*/
 {
   message_t* message;
-  tracef ("   make_message %u %s\n", number, protocol);
 
   message = (message_t*) g_malloc (sizeof (message_t));
 
+  message->host = g_strdup (host);
+  /* TODO: Calc subnet (__host2subnet in openvas-client/nessus/parser.c). */
+  message->subnet = g_strdup (host);
   message->description = NULL;
   message->oid = NULL;
-  message->port.number = number;
-  if (strncasecmp ("udp", protocol, 3) == 0)
-    message->port.protocol = PORT_PROTOCOL_UDP;
-  else if (strncasecmp ("tcp", protocol, 3) == 0)
-    message->port.protocol = PORT_PROTOCOL_TCP;
-  else
-    message->port.protocol = PORT_PROTOCOL_OTHER;
+  message->port.number = 0;
+  message->port.protocol = PORT_PROTOCOL_OTHER;
 
   return message;
 }
@@ -222,9 +220,42 @@ make_message (unsigned int number, const char* protocol)
 static void
 free_message (/*@out@*/ /*@only@*/ message_t* message)
 {
+  if (message->host) free (message->host);
+  if (message->subnet) free (message->subnet);
   if (message->description) free (message->description);
   if (message->oid) free (message->oid);
   free (message);
+}
+
+/**
+ * @brief Set the port number of a message.
+ *
+ * @param[in]  message      Pointer to the message.  Used directly, freed by
+ *                          free_message.
+ * @param[in]  number       Port number.
+ */
+static void
+set_message_port_number (message_t* message, int number)
+{
+  message->port.number = number;
+}
+
+/**
+ * @brief Set the port protocol of a message.
+ *
+ * @param[in]  message      Pointer to the message.  Used directly, freed by
+ *                          free_message.
+ * @param[in]  protocol     Name of protocol on port.
+ */
+static void
+set_message_port_protocol (message_t* message, const char* protocol)
+{
+  if (strncasecmp ("udp", protocol, 3) == 0)
+    message->port.protocol = PORT_PROTOCOL_UDP;
+  else if (strncasecmp ("tcp", protocol, 3) == 0)
+    message->port.protocol = PORT_PROTOCOL_TCP;
+  else
+    message->port.protocol = PORT_PROTOCOL_OTHER;
 }
 
 /**
@@ -274,7 +305,7 @@ typedef struct
 static void
 write_message (message_t* message, FILE* stream, char* type)
 {
-  fprintf (stream, "results|%s|%s|", "dik", "dik"); // FIX
+  fprintf (stream, "results|%s|%s|", message->subnet, message->host);
   print_port (stream, &message->port);
   fprintf (stream, "|%s|%s|%s|\n", message->oid, type, message->description);
 }
@@ -1564,8 +1595,8 @@ process_otp_server_input ()
                 }
               case SERVER_DEBUG_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  //if (current_server_task)  HOST_START
+                  assert (current_message == NULL);
+                  current_message = make_message (field);
                   set_server_state (SERVER_DEBUG_NUMBER);
                   break;
                 }
@@ -1576,7 +1607,7 @@ process_otp_server_input ()
                   char *name;
                   char *protocol;
 
-                  assert (current_message == NULL);
+                  assert (current_message);
 
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
@@ -1591,7 +1622,8 @@ process_otp_server_input ()
                   tracef ("   server got debug port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_message = make_message (number, protocol);
+                  set_message_port_number (current_message, number);
+                  set_message_port_protocol (current_message, protocol);
 
                   set_server_state (SERVER_DEBUG_DESCRIPTION);
                   break;
@@ -1632,8 +1664,8 @@ process_otp_server_input ()
                 }
               case SERVER_HOLE_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  //if (current_server_task)  HOST_START
+                  assert (current_message == NULL);
+                  current_message = make_message (field);
                   set_server_state (SERVER_HOLE_NUMBER);
                   break;
                 }
@@ -1644,7 +1676,7 @@ process_otp_server_input ()
                   char *name;
                   char *protocol;
 
-                  assert (current_message == NULL);
+                  assert (current_message);
 
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
@@ -1659,7 +1691,8 @@ process_otp_server_input ()
                   tracef ("   server got hole port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_message = make_message (number, protocol);
+                  set_message_port_number (current_message, number);
+                  set_message_port_protocol (current_message, protocol);
 
                   set_server_state (SERVER_HOLE_DESCRIPTION);
                   break;
@@ -1700,8 +1733,8 @@ process_otp_server_input ()
                 }
               case SERVER_INFO_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  //if (current_server_task)  HOST_START
+                  assert (current_message == NULL);
+                  current_message = make_message (field);
                   set_server_state (SERVER_INFO_NUMBER);
                   break;
                 }
@@ -1712,7 +1745,7 @@ process_otp_server_input ()
                   char *name;
                   char *protocol;
 
-                  assert (current_message == NULL);
+                  assert (current_message);
 
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
@@ -1727,7 +1760,8 @@ process_otp_server_input ()
                   tracef ("   server got info port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_message = make_message (number, protocol);
+                  set_message_port_number (current_message, number);
+                  set_message_port_protocol (current_message, protocol);
 
                   set_server_state (SERVER_INFO_DESCRIPTION);
                   break;
@@ -1768,8 +1802,8 @@ process_otp_server_input ()
                 }
               case SERVER_LOG_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  //if (current_server_task)  HOST_START
+                  assert (current_message == NULL);
+                  current_message = make_message (field);
                   set_server_state (SERVER_LOG_NUMBER);
                   break;
                 }
@@ -1780,7 +1814,7 @@ process_otp_server_input ()
                   char *name;
                   char *protocol;
 
-                  assert (current_message == NULL);
+                  assert (current_message);
 
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
@@ -1795,7 +1829,8 @@ process_otp_server_input ()
                   tracef ("   server got log port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_message = make_message (number, protocol);
+                  set_message_port_number (current_message, number);
+                  set_message_port_protocol (current_message, protocol);
 
                   set_server_state (SERVER_LOG_DESCRIPTION);
                   break;
@@ -1836,8 +1871,8 @@ process_otp_server_input ()
                 }
               case SERVER_NOTE_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
-                  //if (current_server_task)  HOST_START
+                  assert (current_message == NULL);
+                  current_message = make_message (field);
                   set_server_state (SERVER_NOTE_NUMBER);
                   break;
                 }
@@ -1848,7 +1883,7 @@ process_otp_server_input ()
                   char *name;
                   char *protocol;
 
-                  assert (current_message == NULL);
+                  assert (current_message);
 
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
@@ -1863,7 +1898,8 @@ process_otp_server_input ()
                   tracef ("   server got note port, number: %i, protocol: %s\n",
                           number, protocol);
 
-                  current_message = make_message (number, protocol);
+                  set_message_port_number (current_message, number);
+                  set_message_port_protocol (current_message, protocol);
 
                   set_server_state (SERVER_NOTE_DESCRIPTION);
                   break;
