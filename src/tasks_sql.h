@@ -875,7 +875,7 @@ task_infos_size (task_t task)
 void
 inc_task_infos_size (task_t task)
 {
-  inc_task_int (task, "holes_size");
+  inc_task_int (task, "infos_size");
 }
 
 /**
