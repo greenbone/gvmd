@@ -690,7 +690,10 @@ create_report_file (task_t task)
   gchar* user_dir_name;
   gchar* dir_name;
   gchar* symlink_name;
+  gchar* name;
   FILE* file;
+  gboolean success;
+  GError* error;
 
   if (current_credentials.username == NULL) return -2;
 
@@ -791,6 +794,53 @@ create_report_file (task_t task)
     }
 
   current_report = file;
+
+  /* Initialise count cache. */
+
+  name = g_build_filename (dir_name, "report.nbe.cnt", NULL);
+  error = NULL;
+#define CNT "0 0 0 0 0\n"
+  success = g_file_set_contents (name, CNT, strlen (CNT), &error);
+#undef CNT
+  if (success == FALSE)
+    {
+      if (error)
+        {
+          fprintf (stderr,
+                   "Failed to initialize count cache in %s: %s.\n",
+                   name,
+                   error->message);
+          g_error_free (error);
+        }
+      g_free (name);
+      return -3;
+    }
+  g_free (name);
+
+  /* Initialise timestamp cache. */
+
+  name = g_build_filename (dir_name, "report.nbe.time", NULL);
+  error = NULL;
+#define TIME ""
+  success = g_file_set_contents (name, TIME, strlen (TIME), &error);
+#undef TIME
+  if (success == FALSE)
+    {
+      if (error)
+        {
+          fprintf (stderr,
+                   "Failed to initialize timestamp cache in %s: %s.\n",
+                   name,
+                   error->message);
+          g_error_free (error);
+        }
+      g_free (name);
+      return -3;
+    }
+  g_free (name);
+
+  /* Increment count. */
+
   inc_task_report_count (task);
 
   g_free (dir_name);

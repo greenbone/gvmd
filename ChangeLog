@@ -1,5 +1,9 @@
 2009-07-07  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (create_report_file): Initialise cache files.
+
+2009-07-07  Matthew Mundell <mmundell@intevation.de>
+
 	Add actual timestamps to GET_STATUS.
 
 	* src/otp.c (save_report): Save timestamp to a cache file.
