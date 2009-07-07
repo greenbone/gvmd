@@ -1194,7 +1194,7 @@ send_rule (gpointer rule)
  *
  * @return 0 success, -1 task ID error, -2 credentials missing,
  *         failed to open task dir, -4 out of space in to_client,
- *         -5 failed to get report counts.
+ *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
 send_reports (task_t task)
@@ -1253,11 +1253,15 @@ send_reports (task_t task)
       if (strlen (report_name) == OVAS_MANAGE_REPORT_ID_LENGTH)
         {
           int debugs, holes, infos, logs, warnings;
+          gchar *timestamp;
 
           if (report_counts (report_name,
                              &debugs, &holes, &infos, &logs,
                              &warnings))
             return -5;
+
+          if (report_timestamp (report_name, &timestamp))
+            return -6;
 
 #if 0
           report_dir_name = g_build_filename (dir_name, report_name, NULL);
@@ -1267,7 +1271,7 @@ send_reports (task_t task)
 
           msg = g_strdup_printf ("<report"
                                  " id=\"%s\">"
-                                 "<timestamp>FIX</timestamp>"
+                                 "<timestamp>%s</timestamp>"
                                  "<messages>"
                                  "<debug>%i</debug>"
                                  "<hole>%i</hole>"
@@ -1277,6 +1281,7 @@ send_reports (task_t task)
                                  "</messages>"
                                  "</report>",
                                  report_name,
+                                 timestamp,
                                  debugs,
                                  holes,
                                  infos,
@@ -2097,16 +2102,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings))
                           abort (); // FIX fail better
 
+                        if (report_timestamp (last_report_id, &timestamp))
+                          abort (); // FIX fail better
+
                         last_report = g_strdup_printf ("<last_report>"
                                                        "<report id=\"%s\">"
                                                        "<timestamp>"
-                                                       "FIX"
+                                                       "%s"
                                                        "</timestamp>"
                                                        "<messages>"
                                                        "<debug>%i</debug>"
@@ -2118,6 +2127,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        "</report>"
                                                        "</last_report>",
                                                        last_report_id,
+                                                       timestamp,
                                                        debugs,
                                                        holes,
                                                        infos,
@@ -2234,15 +2244,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (last_report_id)
                   {
                     int debugs, holes, infos, logs, warnings;
+                    gchar *timestamp;
 
                     if (report_counts (last_report_id,
                                        &debugs, &holes, &infos, &logs,
                                        &warnings))
                       abort (); // FIX fail better
 
+                    if (report_timestamp (last_report_id, &timestamp))
+                      abort ();
+
                     last_report = g_strdup_printf ("<last_report>"
                                                    "<report id=\"%s\">"
-                                                   "<timestamp>FIX</timestamp>"
+                                                   "<timestamp>%s</timestamp>"
                                                    "<messages>"
                                                    "<debug>%i</debug>"
                                                    "<hole>%i</hole>"
@@ -2253,11 +2267,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    "</report>"
                                                    "</last_report>",
                                                    last_report_id,
+                                                   timestamp,
                                                    debugs,
                                                    holes,
                                                    infos,
                                                    logs,
                                                    warnings);
+                    g_free (timestamp);
                     g_free (last_report_id);
                   }
                 else

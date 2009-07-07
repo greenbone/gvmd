@@ -303,6 +303,7 @@ save_report (task_t task)
 {
   gchar *reports_dir, *report_dir, *report_name, *current_dir, *cache_name;
   gchar *cache;
+  char *time;
   GError *error;
 
   assert (current_report != NULL);
@@ -336,6 +337,27 @@ save_report (task_t task)
   error = NULL;
   g_file_set_contents (cache_name, cache, strlen (cache), &error);
   g_free (cache);
+  if (error)
+    {
+      fprintf (stderr,
+               "Failed to write report cache to %s: %s.\n",
+               cache_name,
+               error->message);
+      g_error_free (error);
+      g_free (cache_name);
+      g_free (report_dir);
+      return -6;
+    }
+  g_free (cache_name);
+
+  /* Save time to cache. */
+
+  report_dir = g_path_get_dirname (current_report_name);
+  cache_name = g_build_filename (report_dir, "report.nbe.time", NULL);
+  error = NULL;
+  time = task_start_time (task);
+  g_file_set_contents (cache_name, time, strlen (time), &error);
+  free (time);
   if (error)
     {
       fprintf (stderr,
@@ -2238,10 +2260,6 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      char* time = g_strdup (field);
-                      tracef ("   server got start time: %s\n", time);
-                      set_task_start_time (current_server_task, time);
-
                       append_timestamp (current_server_task,
                                         "dik", // FIX
                                         "host_start",
@@ -2268,12 +2286,6 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      char* time = g_strdup (field);
-
-                      tracef ("   server got end time: %s\n", time);
-
-                      set_task_end_time (current_server_task, time);
-
                       append_timestamp (current_server_task,
                                         "dik", // FIX
                                         "host_end",
@@ -2296,6 +2308,8 @@ process_otp_server_input ()
                     {
                       set_task_run_status (current_server_task,
                                            TASK_STATUS_RUNNING);
+                      set_task_start_time (current_server_task,
+                                           g_strdup (field));
                       append_timestamp (current_server_task,
                                         "",
                                         "scan_start",
@@ -2334,6 +2348,8 @@ process_otp_server_input ()
                           default:
                             set_task_run_status (current_server_task,
                                                  TASK_STATUS_DONE);
+                            set_task_end_time (current_server_task,
+                                               g_strdup (field));
                         }
                       if (current_report)
                         {

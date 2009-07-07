@@ -370,7 +370,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   if (error)
     {
       fprintf (stderr,
-               "Failed to read report cache from %s: %s.\n",
+               "Failed to read report count cache from %s: %s.\n",
                cache_name,
                error->message);
       g_error_free (error);
@@ -387,6 +387,45 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
            "Failed to scan report cache (%s).\n",
            cache_name);
   return -1;
+}
+
+/**
+ * @brief Get the timestamp of a report.
+ *
+ * @param[in]   report_id    ID of report.
+ * @param[out]  timestamp    Timestamp on success.  Caller must free.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_timestamp (const char* report_id, gchar** timestamp)
+{
+  gchar *cache_name;
+  gsize length;
+  GError *error;
+
+  cache_name = g_build_filename (OPENVAS_STATE_DIR
+                                 "/mgr/users/",
+                                 current_credentials.username,
+                                 "reports",
+                                 report_id,
+                                 "report.nbe.time",
+                                 NULL);
+  error = NULL;
+  g_file_get_contents (cache_name, timestamp, &length, &error);
+  if (error)
+    {
+      fprintf (stderr,
+               "Failed to read report time cache from %s: %s.\n",
+               cache_name,
+               error->message);
+      g_error_free (error);
+      g_free (cache_name);
+      return -1;
+    }
+  g_free (cache_name);
+
+  return 0;
 }
 
 /**

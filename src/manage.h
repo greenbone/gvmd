@@ -358,6 +358,9 @@ int
 report_counts (const char*, int*, int*, int*, int*, int*);
 
 int
+report_timestamp (const char*, gchar**);
+
+int
 delete_report (const char*);
 
 int
