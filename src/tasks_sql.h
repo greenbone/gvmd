@@ -703,7 +703,7 @@ task_start_time (task_t task)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  Used directly, freed by free_task.
+ * @param[in]  time  New time.  Freed before return.
  */
 void
 set_task_start_time (task_t task, char* time)
@@ -713,6 +713,7 @@ set_task_start_time (task_t task, char* time)
        strlen (time),
        time,
        task);
+  free (time);
 }
 
 /**
@@ -735,7 +736,7 @@ task_end_time (task_t task)
  * @brief Set the end time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  Used directly, freed by free_task.
+ * @param[in]  time  New time.  Freed before return.
  */
 void
 set_task_end_time (task_t task, char* time)
@@ -745,6 +746,7 @@ set_task_end_time (task_t task, char* time)
        strlen (time),
        time,
        task);
+  free (time);
 }
 
 /**

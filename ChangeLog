@@ -1,5 +1,9 @@
 2009-07-07  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (set_task_end_time, set_task_start_time): Free time.
+
+2009-07-07  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (create_report_file): Initialise cache files.
 
 2009-07-07  Matthew Mundell <mmundell@intevation.de>
