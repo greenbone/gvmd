@@ -179,6 +179,11 @@ typedef struct
 static message_t* current_message = NULL;
 
 /**
+ * @brief Current host during OTP SERVER message commands.
+ */
+static gchar* current_host = NULL;
+
+/**
  * @brief Make a message.
  *
  * @param[in]  number    Port number.
@@ -2252,7 +2257,8 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_HOST_START_HOST:
                 {
-                  // FIX pass to append_timestamp
+                  assert (current_host == NULL);
+                  current_host = g_strdup (field);
                   set_server_state (SERVER_TIME_HOST_START_TIME);
                   break;
                 }
@@ -2260,10 +2266,13 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
+                      assert (current_host);
                       append_timestamp (current_server_task,
-                                        "dik", // FIX
+                                        current_host,
                                         "host_start",
                                         field);
+                      g_free (current_host);
+                      current_host = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -2278,7 +2287,8 @@ process_otp_server_input ()
                 }
               case SERVER_TIME_HOST_END_HOST:
                 {
-                  // FIX pass to append_timestamp
+                  assert (current_host == NULL);
+                  current_host = g_strdup (field);
                   set_server_state (SERVER_TIME_HOST_END_TIME);
                   break;
                 }
@@ -2286,10 +2296,13 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
+                      assert (current_host);
                       append_timestamp (current_server_task,
-                                        "dik", // FIX
+                                        current_host,
                                         "host_end",
                                         field);
+                      g_free (current_host);
+                      current_host = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
