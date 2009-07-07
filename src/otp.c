@@ -326,7 +326,7 @@ save_report (task_t task)
   /* Save counts to cache. */
 
   report_dir = g_path_get_dirname (current_report_name);
-  cache_name = g_build_filename (report_dir, "rebort.nbe.cnt", NULL);
+  cache_name = g_build_filename (report_dir, "report.nbe.cnt", NULL);
   cache = g_strdup_printf ("%i %i %i %i %i\n",
                            task_debugs_size (task),
                            task_holes_size (task),
