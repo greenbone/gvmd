@@ -1064,27 +1064,35 @@ send_task_preferences (task_t task, char* name)
               eq2 = memchr (desc, '=', seek - desc);
               if (eq2)
                 {
-                  if (sendn_to_server (desc, eq2 - desc))
+                  char* desc_end = eq2;
+                  desc_end--;
+                  while (*desc_end == ' ') desc_end--;
+                  desc_end++;
+                  while (*desc == ' ') desc++;
+                  if (desc < desc_end)
                     {
-                      free (orig_desc);
-                      return -1;
-                    }
-                  if (sendn_to_server (" <|> ", 5))
-                    {
-                      free (orig_desc);
-                      return -1;
-                    }
-                  if (sendn_to_server (eq2 + 2,
-                                       seek ? seek - (eq2 + 2)
-                                            : strlen (eq2 + 2)))
-                    {
-                      free (orig_desc);
-                      return -1;
-                    }
-                  if (sendn_to_server ("\n", 1))
-                    {
-                      free (orig_desc);
-                      return -1;
+                      if (sendn_to_server (desc, desc_end - desc))
+                        {
+                          free (orig_desc);
+                          return -1;
+                        }
+                      if (sendn_to_server (" <|> ", 5))
+                        {
+                          free (orig_desc);
+                          return -1;
+                        }
+                      if (sendn_to_server (eq2 + 2, /* Daring. */
+                                           seek ? seek - (eq2 + 2)
+                                                : strlen (eq2 + 2)))
+                        {
+                          free (orig_desc);
+                          return -1;
+                        }
+                      if (sendn_to_server ("\n", 1))
+                        {
+                          free (orig_desc);
+                          return -1;
+                        }
                     }
                 }
 
