@@ -1,5 +1,21 @@
 2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
+	Extend the initialisation mechanism, so that client-driven OTP begins
+	after the server sends the plugin list.
+
+	* src/otp.h (server_init_state_t): Add new states.
+
+	* src/ompd.c (write_to_server): Handle SERVER_INIT_GOT_MD5SUM and
+	SERVER_INIT_GOT_PLUGINS, by replying with the next OTP step.
+	(serve_omp): Account for new init states when preparing for select.
+
+	* src/otp.c (process_otp_server_input): Add
+	SERVER_INIT_SENT_COMPLETE_LIST and SERVER_INIT_SENT_PASSWORD to the	done
+	init state case.  In SERVER_PLUGIN_LIST_OID and SERVER_PLUGINS_MD5 set a
+	further init state instead of replying to the server directly.
+
+2009-07-08  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otpd.c (serve_otp): Add sender to log messages.  Remove logging of
 	first input, which is done by read_protocol now.
 

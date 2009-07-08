@@ -1386,10 +1386,26 @@ process_otp_server_input ()
       case SERVER_INIT_GOT_PASSWORD:
         /* Input from server after "Password : " and before password sent. */
         return -1;
+      case SERVER_INIT_GOT_MD5SUM:
+        /* Somehow called to process the input from the server that followed
+         * the initial md5sum, before the initial response to the md5sum has
+         * been sent.  A programming error, most likely in setting up for
+         * select in serve_omp. */
+        assert (0);
+        return -1;
+      case SERVER_INIT_GOT_PLUGINS:
+        /* Somehow called to process the input from the server that followed
+         * the initial plugin list, before the initial response to the list has
+         * been sent.  A programming error, most likely in setting up for
+         * select in serve_omp. */
+        assert (0);
+        return -1;
       case SERVER_INIT_CONNECT_INTR:
       case SERVER_INIT_CONNECTED:
         /* Input from server before version string sent. */
         return -1;
+      case SERVER_INIT_SENT_COMPLETE_LIST:
+      case SERVER_INIT_SENT_PASSWORD:
       case SERVER_INIT_DONE:
       case SERVER_INIT_TOP:
         if (server_state == SERVER_TOP)
@@ -1974,11 +1990,13 @@ process_otp_server_input ()
                       nvtis_free (server.plugins);
                       server.plugins = current_plugins;
                       current_plugins = NULL;
-                      set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))
                         {
                           case  0:
-                            if (acknowledge_md5sum ()) return -1;
+                            if (server_init_state == SERVER_INIT_SENT_COMPLETE_LIST)
+                              set_server_init_state (SERVER_INIT_GOT_PLUGINS);
+                            else
+                              set_server_state (SERVER_DONE);
                             break;
                           case -1: return -1;
                           case -2:
@@ -2082,7 +2100,10 @@ process_otp_server_input ()
                         // FIX introduce plugin cache
                         //if (acknowledge_md5sum ()) return -1;
                         //if (acknowledge_md5sum_sums ()) return -1;
-                        if (acknowledge_md5sum_info ()) return -1;
+                        if (server_init_state == SERVER_INIT_SENT_PASSWORD)
+                          set_server_init_state (SERVER_INIT_GOT_MD5SUM);
+                        else if (acknowledge_md5sum_info ())
+                          return -1;
                         break;
                       case -1: return -1;
                       case -2:

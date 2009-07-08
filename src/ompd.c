@@ -336,8 +336,46 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
           server_init_offset = write_string_to_server (server_session,
                                                        password + server_init_offset);
           if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_DONE);
+            set_server_init_state (SERVER_INIT_SENT_PASSWORD);
             /* Fall through to send any available output. */
+          else if (server_init_offset == -1)
+            {
+              server_init_offset = 0;
+              return -1;
+            }
+        }
+        break;
+      case SERVER_INIT_SENT_PASSWORD:
+        assert (0);
+        break;
+      case SERVER_INIT_GOT_MD5SUM:
+        {
+          // FIX implement cache
+          //char* const ack = "CLIENT <|> GO ON <|> CLIENT\n";
+          char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
+          server_init_offset = write_string_to_server (server_session,
+                                                       ack + server_init_offset);
+          if (server_init_offset == 0)
+            set_server_init_state (SERVER_INIT_SENT_COMPLETE_LIST);
+          else if (server_init_offset == -1)
+            {
+              server_init_offset = 0;
+              return -1;
+            }
+          else
+            break;
+        }
+        break;
+      case SERVER_INIT_SENT_COMPLETE_LIST:
+        assert (0);
+        break;
+      case SERVER_INIT_GOT_PLUGINS:
+        {
+          char* const ack = "CLIENT <|> GO ON <|> CLIENT\n";
+          server_init_offset = write_string_to_server (server_session,
+                                                       ack + server_init_offset);
+          if (server_init_offset == 0)
+            set_server_init_state (SERVER_INIT_DONE);
           else if (server_init_offset == -1)
             {
               server_init_offset = 0;
@@ -561,6 +599,8 @@ serve_omp (gnutls_session_t* client_session,
 
       if ((server_init_state == SERVER_INIT_DONE
            || server_init_state == SERVER_INIT_GOT_VERSION
+           || server_init_state == SERVER_INIT_SENT_COMPLETE_LIST
+           || server_init_state == SERVER_INIT_SENT_PASSWORD
            || server_init_state == SERVER_INIT_SENT_USER
            || server_init_state == SERVER_INIT_SENT_VERSION)
           && from_server_end < from_buffer_size)
@@ -574,7 +614,9 @@ serve_omp (gnutls_session_t* client_session,
            && to_server_buffer_space () > 0)
           || server_init_state == SERVER_INIT_CONNECT_INTR
           || server_init_state == SERVER_INIT_CONNECTED
+          || server_init_state == SERVER_INIT_GOT_MD5SUM
           || server_init_state == SERVER_INIT_GOT_PASSWORD
+          || server_init_state == SERVER_INIT_GOT_PLUGINS
           || server_init_state == SERVER_INIT_GOT_USER)
         {
           FD_SET (server_socket, &writefds);
