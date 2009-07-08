@@ -90,17 +90,6 @@ serve_otp (gnutls_session_t* client_session,
   int nfds, interrupted = 0;
   fd_set readfds, exceptfds, writefds;
 
-  /* Log the first client input, which was read by `read_protocol'. */
-#if TRACE || LOG
-  logf ("<= %.*s\n", from_client_end, from_client);
-#if TRACE_TEXT
-  tracef ("<= client  \"%.*s\"\n", from_client_end, from_client);
-#else
-  tracef ("<= client  %" BUFFER_SIZE_T_FORMAT " bytes\n",
-          from_client_end);
-#endif
-#endif /* TRACE || LOG */
-
   /* Connect to the server. */
   nfds = 1 + server_socket;
   while (1)
@@ -253,7 +242,7 @@ serve_otp (gnutls_session_t* client_session,
                * error" case. */
               if (from_client_end > initial_start)
                 {
-                  logf ("<= %.*s\n",
+                  logf ("<= client %.*s\n",
                         from_client_end - initial_start,
                         from_client + initial_start);
 #if TRACE_TEXT
@@ -404,7 +393,7 @@ serve_otp (gnutls_session_t* client_session,
                       close_stream_connection (client_socket);
                       return -1;
                     }
-                  logf ("=> %.*s\n",
+                  logf ("=> client %.*s\n",
                         from_server_end - from_server_start,
                         from_server + from_server_start);
                   from_server_start += count;

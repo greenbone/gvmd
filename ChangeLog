@@ -1,4 +1,9 @@
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <mmundell@intevation.de>
+
+	* src/otpd.c (serve_otp): Add sender to log messages.  Remove logging of
+	first input, which is done by read_protocol now.
+
+2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
 	Add logging of data sent to server.  Include sender in all log messages.
 
