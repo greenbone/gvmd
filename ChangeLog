@@ -1,5 +1,21 @@
 2009-07-07  Matthew Mundell <mmundell@intevation.de>
 
+	Add logging of data sent to server.  Include sender in all log messages.
+
+	* src/ovas-mngr-comm.c: Include logf.h.
+	(write_string_to_server, write_to_server_buffer): Log writes.
+
+	* src/ompd.c (write_to_client, serve_omp): Add sender to log messages.
+
+	* src/oxpd.c (read_protocol): Add sender to log messages.
+
+	* src/tests/report_path_task_uuid_0.c,
+	src/tests/report_path_task_uuid_1.c, src/tests/report_path_task_uuid_2.c,
+	src/tests/make_report_id_0.c, src/tests/common.c (log_stream): New
+	variable.
+
+2009-07-07  Matthew Mundell <mmundell@intevation.de>
+
 	Use the actual host name for results in reports.
 
 	* src/manage.h (message_t): Add subnet and host.

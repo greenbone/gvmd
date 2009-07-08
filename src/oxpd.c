@@ -215,7 +215,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                 }
 
 #if TRACE || LOG
-              logf ("<= %.*s\n", count, from_client + from_client_end);
+              logf ("<= client %.*s\n", count, from_client + from_client_end);
 #if TRACE_TEXT
               tracef ("<= client  \"%.*s\"\n",
                       count,

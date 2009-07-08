@@ -50,6 +50,7 @@
 #include <unistd.h>
 
 #include "tracef.h"
+#include "logf.h"
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -447,6 +448,9 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
           gnutls_perror ((int) count);
           return -1;
         }
+#if LOG
+      if (count) logf ("=> server %.*s\n", count, point);
+#endif
       point += count;
       tracef ("=> server  (string) %zi bytes\n", count);
     }
@@ -488,6 +492,9 @@ write_to_server_buffer (gnutls_session_t* server_session)
           gnutls_perror ((int) count);
           return -1;
         }
+#if LOG
+      if (count) logf ("=> server %.*s\n", count, to_server + to_server_start);
+#endif
       to_server_start += count;
       tracef ("=> server  %zi bytes\n", count);
     }

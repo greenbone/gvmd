@@ -29,6 +29,11 @@
 
 #include "../manage.h"
 
+/**
+ * @brief The log stream, for ovas-mngr-comm.
+ */
+FILE* log_stream = NULL;
+
 int
 main ()
 {

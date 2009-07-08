@@ -105,6 +105,11 @@ int verbose = 0;
  */
 struct sockaddr_in address;
 
+/**
+ * @brief The log stream, for ovas-mngr-comm.
+ */
+FILE* log_stream = NULL;
+
 
 /* Low level manager communication. */
 

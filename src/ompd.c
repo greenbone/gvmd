@@ -244,7 +244,7 @@ write_to_client (gnutls_session_t* client_session)
           gnutls_perror ((int) count);
           return -1;
         }
-      logf ("=> %.*s\n",
+      logf ("=> client %.*s\n",
             to_client_end - to_client_start,
             to_client + to_client_start);
       to_client_start += count;
@@ -650,7 +650,7 @@ serve_omp (gnutls_session_t* client_session,
            * error" case. */
           if (from_client_end > initial_start)
             {
-              logf ("<= %.*s\n",
+              logf ("<= client %.*s\n",
                     from_client_end - initial_start,
                     from_client + initial_start);
 #if TRACE_TEXT
@@ -733,7 +733,7 @@ serve_omp (gnutls_session_t* client_session,
            * error" case. */
           if (from_server_end > initial_start)
             {
-              logf ("<= %.*s\n",
+              logf ("<= server %.*s\n",
                     from_server_end - initial_start,
                     from_server + initial_start);
 #if TRACE_TEXT
