@@ -1,5 +1,20 @@
 2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
+	Store the original port strings in messages, and use these strings in the
+	reports.
+
+	* src/manage.c (port_t): Add string.
+
+	* src/otp.c (port_t): Add string.
+	(PARSE_PORTS): New conditional define.
+	(make_message): Init port string.
+	(free_message): Free port string.
+	(set_message_port_string): New function.
+	(write_message): Write port from original string.
+	(process_otp_server_input): Set port string on receiving message.
+
+2009-07-08  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (process_otp_server_input): Move settings of SERVER_DONE
 	in SERVER_PLUGIN_LIST_OID back to precede switch (moved into switch in
 	previous commit today).

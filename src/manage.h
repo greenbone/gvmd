@@ -89,6 +89,7 @@ typedef struct
 {
   unsigned int number;       ///< Port number.
   port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
+  char* string;              ///< Original string describing port.
 } port_t;
 
 // FIX should be in otp.c/h

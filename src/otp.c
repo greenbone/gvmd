@@ -93,9 +93,12 @@ typedef struct
 {
   int number;                ///< Port number.
   port_protocol_t protocol;  ///< Port protocol (TCP, UDP, ...).
+  char* string;              ///< Original string describing port.
 } port_t;
 #endif
 
+//#define PARSE_PORTS
+#ifdef PARSE_PORTS
 /**
  * @brief String for TCP ports.
  */
@@ -155,6 +158,7 @@ print_port (FILE* stream, port_t* port)
 {
   fprintf (stream, "FIX (%u/%s)", port->number, port_protocol_name (port));
 }
+#endif
 
 
 /* Messages. */
@@ -208,6 +212,7 @@ make_message (const char* host)
   message->oid = NULL;
   message->port.number = 0;
   message->port.protocol = PORT_PROTOCOL_OTHER;
+  message->port.string = NULL;
 
   return message;
 }
@@ -224,6 +229,7 @@ free_message (/*@out@*/ /*@only@*/ message_t* message)
   if (message->subnet) free (message->subnet);
   if (message->description) free (message->description);
   if (message->oid) free (message->oid);
+  if (message->port.string) free (message->port.string);
   free (message);
 }
 
@@ -256,6 +262,19 @@ set_message_port_protocol (message_t* message, const char* protocol)
     message->port.protocol = PORT_PROTOCOL_TCP;
   else
     message->port.protocol = PORT_PROTOCOL_OTHER;
+}
+
+/**
+ * @brief Set the original string of a port of a message.
+ *
+ * @param[in]  message      Pointer to the message.
+ * @param[in]  string       Port string.
+ */
+static void
+set_message_port_string (message_t* message, char* string)
+{
+  if (message->port.string) free (message->port.string);
+  message->port.string = string;
 }
 
 /**
@@ -306,7 +325,11 @@ static void
 write_message (message_t* message, FILE* stream, char* type)
 {
   fprintf (stream, "results|%s|%s|", message->subnet, message->host);
+#ifdef PARSE_PORTS
   print_port (stream, &message->port);
+#else
+  fputs (message->port.string, stream);
+#endif
   fprintf (stream, "|%s|%s|%s|\n", message->oid, type, message->description);
 }
 
@@ -1640,6 +1663,7 @@ process_otp_server_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
+                  set_message_port_string (current_message, g_strdup (field));
 
                   set_server_state (SERVER_DEBUG_DESCRIPTION);
                   break;
@@ -1709,6 +1733,7 @@ process_otp_server_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
+                  set_message_port_string (current_message, g_strdup (field));
 
                   set_server_state (SERVER_HOLE_DESCRIPTION);
                   break;
@@ -1778,6 +1803,7 @@ process_otp_server_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
+                  set_message_port_string (current_message, g_strdup (field));
 
                   set_server_state (SERVER_INFO_DESCRIPTION);
                   break;
@@ -1847,6 +1873,7 @@ process_otp_server_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
+                  set_message_port_string (current_message, g_strdup (field));
 
                   set_server_state (SERVER_LOG_DESCRIPTION);
                   break;
@@ -1916,6 +1943,7 @@ process_otp_server_input ()
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
+                  set_message_port_string (current_message, g_strdup (field));
 
                   set_server_state (SERVER_NOTE_DESCRIPTION);
                   break;
