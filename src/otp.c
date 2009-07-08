@@ -1990,13 +1990,12 @@ process_otp_server_input ()
                       nvtis_free (server.plugins);
                       server.plugins = current_plugins;
                       current_plugins = NULL;
+                      set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))
                         {
                           case  0:
                             if (server_init_state == SERVER_INIT_SENT_COMPLETE_LIST)
                               set_server_init_state (SERVER_INIT_GOT_PLUGINS);
-                            else
-                              set_server_state (SERVER_DONE);
                             break;
                           case -1: return -1;
                           case -2:

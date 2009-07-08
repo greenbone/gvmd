@@ -1,8 +1,14 @@
 2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (process_otp_server_input): Move settings of SERVER_DONE
+	in SERVER_PLUGIN_LIST_OID back to precede switch (moved into switch in
+	previous commit today).
+
+2009-07-08  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_report_3.c, src/tests/omp_get_report_2.c,
 	src/tests/omp_get_report_1.c, src/tests/omp_get_report_0.c: Correct
-x	header comments.
+	header comments.
 
 2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
