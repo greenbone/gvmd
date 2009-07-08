@@ -1,6 +1,6 @@
-/* Test 1 of deleting a report.
+/* Test 1 of getting a report.
  * $Id$
- * Description: Test DELETE_REPORT with an empty REPORT_ID.
+ * Description: Test GET_REPORT with an empty REPORT_ID.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>

@@ -1,6 +1,6 @@
-/* Test 1 of deleting a report.
+/* Test 3 of getting a report.
  * $Id$
- * Description: Test DELETE_REPORT with a valid REPORT_ID of a missing report.
+ * Description: Test GET_REPORT with a valid REPORT_ID of a missing report.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>

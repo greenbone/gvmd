@@ -1,6 +1,6 @@
-/* Test 1 of deleting a report.
+/* Test 2 of getting a report.
  * $Id$
- * Description: Test DELETE_REPORT with a bogus REPORT_ID.
+ * Description: Test GET_REPORT with a bogus REPORT_ID.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>

@@ -1,6 +1,6 @@
 /* Test 0 of getting a report.
  * $Id$
- * Description: Test saving a report.
+ * Description: Test getting a report.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
