@@ -68,6 +68,18 @@ if (XMLMANTOHTML_EXECUTABLE)
   set (XMLMANTOHTML_EXECUTABLE xmlmantohtml)
 endif (XMLMANTOHTML_EXECUTABLE)
 
+message (STATUS "Looking for SQLFairy...")
+
+find_program (SQLT-DIAGRAM_EXECUTABLE sqlt-diagram
+              PATHS /bin /usr/bin /usr/local/bin/
+              DOC "sqlt-diagram location")
+
+find_program (SQLT_EXECUTABLE sqlt
+              PATHS /bin /usr/bin /usr/local/bin/
+              DOC "sqlt location")
+
+message (STATUS "Looking for SQLFairy... ${SQLT-DIAGRAM_EXECUTABLE}, ${SQLT_EXECUTABLE}")
+
 ## build
 
 include (FindDoxygen)
@@ -86,10 +98,12 @@ set (DOC_FILES
 	 ../README ../INSTALL)
 
 add_custom_target (doc COMMENT "Building documentation..."
-                   DEPENDS openvasmd.8 Doxyfile .built-html)
+                   DEPENDS openvasmd.8 Doxyfile .built-html .built-html_db
+                           db.png)
 
 add_custom_target (doc-full COMMENT "Building documentation..."
-                   DEPENDS openvasmd.8 Doxyfile_full .built-html_full)
+                   DEPENDS openvasmd.8 Doxyfile_full .built-html_full
+                           .built-html_db db.png)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT openvasmd.8
@@ -114,6 +128,28 @@ else (XMLMANTOHTML_EXECUTABLE)
                       COMMAND echo "[Error: xmlmantohtml required to see manpage here]"
 					          > openvasmd.html)
 endif (XMLMANTOHTML_EXECUTABLE)
+
+if (SQLT-DIAGRAM_EXECUTABLE)
+  add_custom_command (OUTPUT db.png
+					  COMMAND sh
+					  ARGS -c \"${SQLT-DIAGRAM_EXECUTABLE} --color --title=\\\"Manager database\\\" -d PostgreSQL db_postgres.sql -o db.png\;\"
+					  DEPENDS db_postgres.sql)
+else (SQLT_EXECUTABLE)
+  add_custom_command (OUTPUT db.png
+					  COMMAND sh
+					  ARGS -c \"touch db.png;\")
+endif (SQLT-DIAGRAM_EXECUTABLE)
+
+if (SQLT_EXECUTABLE)
+  add_custom_command (OUTPUT .built-html_db
+					  COMMAND sh
+					  ARGS -c \"${SQLT_EXECUTABLE} --from PostgreSQL --to HTML --pretty --title=\\\"Manager database\\\" db_postgres.sql > db.html && touch .built-html_db\;\"
+					  DEPENDS db_postgres.sql)
+else (SQLT_EXECUTABLE)
+  add_custom_command (OUTPUT .built-html_db
+					  COMMAND sh
+					  ARGS -c \"echo \\\"[Error: sqlt, from SQLFairy, required to see database here]\\\" > db.html && touch .built-html_db\;\")
+endif (SQLT_EXECUTABLE)
 
 add_custom_command (OUTPUT .built-html
                     COMMAND sh

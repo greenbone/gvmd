@@ -1,3 +1,12 @@
+2009-07-10  Matthew Mundell <mmundell@intevation.de>
+
+	Add a Manager database model.
+
+	* src/doc/CMakeLists.txt (db.png, .built-html_db): New rules.
+	(SQLT_EXECUTABLE, SQLT-DIAGRAM_EXECUTABLE): New vars.
+
+	* src/doc/db_postgres.sql: New file.
+
 2009-07-08  Matthew Mundell <mmundell@intevation.de>
 
 	Store the original port strings in messages, and use these strings in the
