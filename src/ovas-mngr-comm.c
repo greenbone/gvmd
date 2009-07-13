@@ -259,7 +259,7 @@ end_session (int server_socket,
 
   if (close (server_socket) == -1)
     {
-      perror ("Failed to close server socket.");
+      perror ("Failed to close server socket");
       return -1;
     }
 
