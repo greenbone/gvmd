@@ -416,12 +416,6 @@ recreate_session (int server_socket,
                    *server_session,
                    *server_credentials))
     return -1;
-  // FIX shutdown?
-  if (close (server_socket) == -1)
-    {
-      perror ("Failed to close server socket.");
-      return -1;
-    }
   /* Make the server socket. */
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (server_socket == -1)
