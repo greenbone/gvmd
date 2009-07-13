@@ -84,14 +84,30 @@ sql (char* sql, ...)
 
   tracef ("   sql: %s\n", formatted);
 
-  ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-  g_free (formatted);
-  if (ret != SQLITE_OK || stmt == NULL)
+  /* Prepare statement. */
+
+  while (1)
     {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
+                       sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
       fprintf (stderr, "sqlite3_prepare failed: %s\n",
                sqlite3_errmsg (task_db));
       abort ();
     }
+
+  /* Run statement. */
+
   while (1)
     {
       ret = sqlite3_step (stmt);
@@ -105,6 +121,7 @@ sql (char* sql, ...)
           abort ();
         }
     }
+
   sqlite3_finalize (stmt);
 }
 
@@ -134,15 +151,31 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
 
   tracef ("   sql_x: %s\n", formatted);
 
-  ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-  g_free (formatted);
-  *stmt_return = stmt;
-  if (ret != SQLITE_OK || stmt == NULL)
+  /* Prepare statement. */
+
+  while (1)
     {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      *stmt_return = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
+                       sqlite3_errmsg (task_db));
+              return -1;
+            }
+          break;
+        }
       fprintf (stderr, "sqlite3_prepare failed: %s\n",
                sqlite3_errmsg (task_db));
       return -1;
     }
+
+  /* Run statement. */
+
   while (1)
     {
       ret = sqlite3_step (stmt);
@@ -324,11 +357,22 @@ init_task_iterator (task_iterator_t* iterator)
   formatted = g_strdup_printf ("SELECT ROWID FROM tasks_%s",
                                 current_credentials.username);
   tracef ("   sql (iterator): %s\n", formatted);
-  ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-  g_free (formatted);
-  iterator->stmt = stmt;
-  if (ret != SQLITE_OK || stmt == NULL)
+  while (1)
     {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
+                       sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
       fprintf (stderr, "sqlite3_prepare failed: %s\n",
                sqlite3_errmsg (task_db));
       abort ();
@@ -435,17 +479,33 @@ init_manage ()
 
   /* Set requested and running tasks to stopped. */
 
-  ret = sqlite3_prepare (task_db,
-                         "SELECT name from sqlite_master WHERE type='table';",
-                         -1, &stmt, &tail);
-  if (ret != SQLITE_OK || stmt == NULL)
+  /* Prepare statement. */
+  while (1)
     {
+      ret = sqlite3_prepare (task_db,
+                             "SELECT name from sqlite_master WHERE type='table';",
+                             -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              fprintf (stderr, "sqlite3_prepare 1 failed with NULL stmt: %s\n",
+                       sqlite3_errmsg (task_db));
+              sqlite3_close (task_db);
+              task_db = NULL;
+              return -1;
+            }
+          break;
+        }
       fprintf (stderr, "sqlite3_prepare 1 failed: %s\n",
                sqlite3_errmsg (task_db));
       sqlite3_close (task_db);
       task_db = NULL;
       return -1;
     }
+
+  /* Run statement. */
   while (1)
     {
       const unsigned char* name;
@@ -492,6 +552,7 @@ init_manage ()
           current_credentials.username = NULL;
         }
     }
+
   ret = sqlite3_finalize (stmt);
   sqlite3_close (task_db);
   task_db = NULL;
