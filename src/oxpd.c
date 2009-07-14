@@ -89,6 +89,10 @@ struct sockaddr_in server_address;
 /**
  * @brief Read and return the type of protocol from the client.
  *
+ * For OMP, this may read in OMP commands while determining the protocol,
+ * so the client must be sure to process the input before selecting
+ * on client_socket again.
+ *
  * @param[in]  client_session  The TLS session with the client.
  * @param[in]  client_socket   The socket connected to the client.
  *
@@ -113,15 +117,13 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   /* Read from the client, checking for the OTP initialisation string.
    * Fail if reading the protocol takes too long.
    *
-   * Read only one byte at a time, so that reading will stop as soon as
-   * the first '>' is reached.  This ensures that there is more of the
-   * first OMP command waiting on the socket (or there will be if the
-   * client is still to send the rest).  This enables the caller to safely
-   * select on the socket before handling the input.
+   * Read only up to the first '>' and only as many characters as there
+   * are in OTP_INIT_STRING.
    */
   if (time (&start_time) == -1)
     {
       perror ("Failed to get current time");
+      // FIX revert blocking
       return PROTOCOL_FAIL;
     }
   ret = PROTOCOL_FAIL;
@@ -143,7 +145,8 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       if (time (&now) == -1)
         {
           perror ("Failed to get now (0)");
-          return PROTOCOL_FAIL;
+          ret = PROTOCOL_FAIL;
+          break;
         }
       timeout.tv_usec = 0;
       timeout.tv_sec = READ_PROTOCOL_TIMEOUT - (now - start_time);
@@ -177,6 +180,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                   if (from_client_end == FROM_BUFFER_SIZE)
                     {
                       tracef ("read_protocol out of space in from_client\n");
+                      // FIX revert blocking
                       return PROTOCOL_FAIL;
                     }
 
@@ -239,14 +243,18 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
               else if (memchr (from_client,
                                '>',
                                strlen (OTP_INIT_STRING) - left))
-                ret = PROTOCOL_OMP;
+                {
+                  ret = PROTOCOL_OMP;
+                  break;
+                }
             }
         }
 
       if (time (&now) == -1)
         {
           perror ("Failed to get now (0)");
-          return PROTOCOL_FAIL;
+          ret = PROTOCOL_FAIL;
+          break;
         }
       if ((now - start_time) >= READ_PROTOCOL_TIMEOUT)
         {

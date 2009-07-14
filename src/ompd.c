@@ -459,7 +459,7 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* server_credentials,
            int client_socket, int* server_socket_addr)
 {
-  int nfds;
+  int nfds, ret;
   time_t last_client_activity_time;
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
@@ -494,14 +494,43 @@ serve_omp (gnutls_session_t* client_session,
   /* Initiate connection (to_server is empty so this will just init). */
   write_to_server (server_socket, server_session);
 
-  /* It is safe to select before handling the input that was read by
-   * read_protocol.  This is because read_protocol only reads up to 11
-   * characters, or up to the first '>' if that comes earlier.  As an OMP
-   * command is an XML entity, there is always more of the first OMP command
-   * to read after the read_protocol.  So, timeouts aside, this first select
-   * will always return (assuming the client sends a full command) and the
-   * resulting process_omp_client_input below will always happen.
+  /* Process any client input already read.  This is necessary because the
+   * caller may have called read_protocol, which may have read an entire OMP
+   * command.  If only one command was sent and the manager selected here,
+   * then the manager would sit waiting for more input from the client before
+   * processing the one command.
    */
+  ret = process_omp_client_input ();
+  if (ret == 0)
+    /* Processed all input. */
+    client_input_stalled = 0;
+  else if (ret == -1 || ret == -4)
+    {
+      /* Error.  Write rest of to_client to client, so that the
+       * client gets any buffered output and the response to the
+       * error. */
+      write_to_client (client_session);
+      close_stream_connection (client_socket);
+      return -1;
+    }
+  else if (ret == -2)
+    {
+      /* to_server buffer full. */
+      tracef ("   client input stalled 0\n");
+      client_input_stalled = 1;
+    }
+  else if (ret == -3)
+    {
+      /* to_client buffer full. */
+      tracef ("   client input stalled 0\n");
+      client_input_stalled = 2;
+    }
+  else
+    {
+      /* Programming error. */
+      assert (0);
+      client_input_stalled = 0;
+    }
 
   /* Record the start time. */
   if (time (&last_client_activity_time) == -1)
