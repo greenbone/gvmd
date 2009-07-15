@@ -1,5 +1,10 @@
 2009-07-15  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/read_protocol_0.c: Increase sleep.  Remove extra read from
+	fail case.
+
+2009-07-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (delete_report): Remove the last report link.
 
 2009-07-14  Matthew Mundell <mmundell@intevation.de>

@@ -45,8 +45,8 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* FIX This must be more than the timeout, which is currently 20. */
-  sleep (25);
+  /* FIX This must be more than the timeout, which is currently 300. */
+  sleep (320);
 
   switch (env_authenticate (&session))
     {
@@ -64,12 +64,6 @@ main ()
                                 "Test for read_protocol_0",
                                 "Simple test scan.",
                                 &id))
-    {
-      close_manager_connection (socket, session);
-      return EXIT_SUCCESS;
-    }
-  entity_t entity = NULL;
-  if (read_entity (&session, &entity))
     {
       close_manager_connection (socket, session);
       return EXIT_SUCCESS;
