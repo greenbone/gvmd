@@ -525,7 +525,8 @@ init_manage ()
       name = sqlite3_column_text (stmt, 0);
       tracef ("   table %s\n", name);
 
-      if (strlen ((const char*) name) > strlen ("tasks_"))
+      if (strlen ((const char*) name) > strlen ("tasks_")
+          && (strncmp ((const char*) name, "tasks_", strlen ("tasks_") == 0)))
         {
           task_t index;
           task_iterator_t iterator;
@@ -593,7 +594,9 @@ authenticate (credentials_t* credentials)
 {
   if (credentials->username && credentials->password)
     {
-      sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size)",
+      sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size);",
+           credentials->username);
+      sql ("CREATE TABLE IF NOT EXISTS reports_%s (uuid, task, nbefile, comment);",
            credentials->username);
       return openvas_authenticate (credentials->username,
                                    credentials->password);
@@ -810,6 +813,23 @@ set_task_end_time (task_t task, char* time)
   free (time);
 }
 
+void
+create_task_report (const task_t task, const char* report_id)
+{
+  sql ("INSERT into reports_%s (uuid, task, nbefile, comment)"
+       " VALUES ('%s', '%llu', '', '');",
+       current_credentials.username, report_id, task);
+  inc_task_report_count (task);
+}
+
+void
+delete_task_report (const task_t task, const char* report_id)
+{
+  sql ("DELETE from reports_%s where uuid = '%s';",
+       current_credentials.username, report_id);
+  dec_task_report_count (task);
+}
+
 /**
  * @brief Return the number of reports associated with a task.
  *
@@ -992,7 +1012,6 @@ inc_task_notes_size (task_t task)
 {
   inc_task_int (task, "notes_size");
 }
-
 
 /**
  * @brief Increment report count.

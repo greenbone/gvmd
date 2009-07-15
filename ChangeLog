@@ -1,5 +1,16 @@
 2009-07-15  Matthew Mundell <mmundell@intevation.de>
 
+	Add a reports table to the database.
+
+	* src/tasks_sql.h (init_manage): Only run task checks on tasks tables.
+	(authenticate): Create reports table.
+	(create_task_report, delete_task_report): New functions.
+
+	* src/manage.c (delete_report): Call the database report deleter.
+	(create_report_file): Call the database report creator.
+
+2009-07-15  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/read_protocol_0.c: Increase sleep.  Remove extra read from
 	fail case.
 

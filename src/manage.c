@@ -139,6 +139,11 @@ append_to_credentials_password (credentials_t* credentials,
 
 /* Reports. */
 
+/* Headers for functions used in this section, but included from
+ * tasks_sql.h later. */
+void create_task_report (const task_t, const char*);
+void delete_task_report (const task_t, const char*);
+
 /**
  * @brief Make a new universal identifier for a report.
  *
@@ -494,7 +499,9 @@ delete_report (const char* report_id)
                      link_name,
                      strerror (errno));
           g_free (link_name);
-          dec_task_report_count (task);
+          /* Delete the report from the database, including decrementing the
+           * report count on the task. */
+          delete_task_report (task, report_id);
 
           /* Remove the task's link to the last report if it links to this
            * report.
@@ -788,7 +795,6 @@ create_report_file (task_t task)
   free (tsk_uuid);
 
   symlink_name = g_build_filename (user_dir_name, report_id, NULL);
-  free (report_id);
   g_free (user_dir_name);
 
   /* Ensure task report directory exists. */
@@ -800,6 +806,7 @@ create_report_file (task_t task)
                strerror (errno));
       g_free (dir_name);
       g_free (symlink_name);
+      free (report_id);
       return -4;
     }
 
@@ -813,6 +820,7 @@ create_report_file (task_t task)
                symlink_name);
       g_free (dir_name);
       g_free (symlink_name);
+      free (report_id);
       return -3;
     }
 
@@ -830,6 +838,7 @@ create_report_file (task_t task)
       g_free (dir_name);
       g_free (current_report_name);
       g_free (symlink_name);
+      free (report_id);
       return -1;
     }
 
@@ -853,6 +862,7 @@ create_report_file (task_t task)
           g_error_free (error);
         }
       g_free (name);
+      free (report_id);
       return -3;
     }
   g_free (name);
@@ -875,13 +885,15 @@ create_report_file (task_t task)
           g_error_free (error);
         }
       g_free (name);
+      free (report_id);
       return -3;
     }
   g_free (name);
 
-  /* Increment count. */
+  /* Record the report in the database, including incrementing the report
+   * count on the task. */
 
-  inc_task_report_count (task);
+  create_task_report (task, report_id);
 
   g_free (dir_name);
   g_free (symlink_name);
