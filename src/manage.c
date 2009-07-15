@@ -485,15 +485,55 @@ delete_report (const char* report_id)
         }
       else
         {
+          /* Remove the link in the "reports" dir. */
+
           if (unlink (link_name))
             /* Just log the error. */
             fprintf (stderr,
                      "Failed to remove report symlink %s: %s.\n",
                      link_name,
                      strerror (errno));
-          g_free (name);
           g_free (link_name);
           dec_task_report_count (task);
+
+          /* Remove the task's link to the last report if it links to this
+           * report.
+           *
+           * TODO: The link should be updated to the next most recent report.
+           *       Moving the reports into the database should sort this out.
+           */
+
+          gchar* task_uuid = report_path_task_uuid (name);
+          g_free (name);
+          if (task_uuid)
+            {
+              gchar* last_report_id = task_last_report_id (task_uuid);
+              if (last_report_id)
+                {
+                  if (strcmp (last_report_id, report_id) == 0)
+                    {
+                      gchar* last;
+                      last = g_build_filename (OPENVAS_STATE_DIR
+                                               "/mgr/users/",
+                                               current_credentials.username,
+                                               "tasks",
+                                               task_uuid,
+                                               "reports",
+                                               "last",
+                                               NULL);
+                      if (unlink (last))
+                        /* Just log the error. */
+                        fprintf (stderr,
+                                 "Failed to remove last symlink %s: %s.\n",
+                                 last,
+                                 strerror (errno));
+                      g_free (last);
+                    }
+                  g_free (last_report_id);
+                }
+              g_free (task_uuid);
+            }
+
           return 0;
         }
     }
@@ -1370,6 +1410,12 @@ delete_reports (task_t task)
       /*@dependent@*/ const char* report_name = names[index]->d_name;
 
       if (report_name[0] == '.')
+        {
+          free (names[index]);
+          continue;
+        }
+
+      if (strcmp (report_name, "last") == 0)
         {
           free (names[index]);
           continue;
