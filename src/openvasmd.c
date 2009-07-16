@@ -269,7 +269,6 @@ serve_client (int client_socket)
       perror ("Failed to set real client socket flag");
       goto fail;
     }
-  gnutls_transport_set_lowat (*client_session, 0);
 
   /* Read a message from the client, and call the appropriate protocol
    * handler. */
