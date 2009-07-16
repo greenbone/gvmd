@@ -287,12 +287,10 @@ void
 inc_task_int (task_t task, const char* field)
 {
   int current = sql_int (0, 0,
-                         "SELECT %s FROM tasks_%s WHERE ROWID = %llu;",
+                         "SELECT %s FROM tasks WHERE ROWID = %llu;",
                          field,
-                         current_credentials.username,
                          task);
-  sql ("UPDATE tasks_%s SET %s = %i WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET %s = %i WHERE ROWID = %llu;",
        field,
        current + 1,
        task);
@@ -302,12 +300,10 @@ void
 dec_task_int (task_t task, const char* field)
 {
   int current = sql_int (0, 0,
-                         "SELECT %s FROM tasks_%s WHERE ROWID = %llu;",
+                         "SELECT %s FROM tasks WHERE ROWID = %llu;",
                          field,
-                         current_credentials.username,
                          task);
-  sql ("UPDATE tasks_%s SET %s = %i WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET %s = %i WHERE ROWID = %llu;",
        field,
        current - 1,
        task);
@@ -318,9 +314,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
 {
   char* current;
   current = sql_string (0, 0,
-                        "SELECT %s FROM tasks_%s WHERE ROWID = %llu;",
+                        "SELECT %s FROM tasks WHERE ROWID = %llu;",
                         field,
-                        current_credentials.username,
                         task);
   gchar* quote;
   if (current)
@@ -332,8 +327,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
     }
   else
     quote = sql_quote (value, strlen (value));
-  sql ("UPDATE tasks_%s SET %s = '%s' WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET %s = '%s' WHERE ROWID = %llu;",
        field,
        quote,
        task);
@@ -354,8 +348,12 @@ init_task_iterator (task_iterator_t* iterator)
   sqlite3_stmt* stmt;
 
   iterator->done = FALSE;
-  formatted = g_strdup_printf ("SELECT ROWID FROM tasks_%s",
-                                current_credentials.username);
+  if (current_credentials.username)
+    formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
+                                 " (SELECT ROWID FROM users WHERE name = '%s');",
+                                  current_credentials.username);
+  else
+    formatted = g_strdup_printf ("SELECT ROWID FROM tasks;");
   tracef ("   sql (iterator): %s\n", formatted);
   while (1)
     {
@@ -471,88 +469,39 @@ init_manage_process ()
 int
 init_manage ()
 {
-  const char* tail;
   int ret;
   sqlite3_stmt* stmt;
 
   init_manage_process ();
 
+  /* Ensure the tables exist. */
+
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task, nbefile, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
+
   /* Set requested and running tasks to stopped. */
 
-  /* Prepare statement. */
-  while (1)
+  task_t index;
+  task_iterator_t iterator;
+
+  assert (current_credentials.username == NULL);
+  init_task_iterator (&iterator);
+  while (next_task (&iterator, &index))
     {
-      ret = sqlite3_prepare (task_db,
-                             "SELECT name from sqlite_master WHERE type='table';",
-                             -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_OK)
+      switch (task_run_status (index))
         {
-          if (stmt == NULL)
-            {
-              fprintf (stderr, "sqlite3_prepare 1 failed with NULL stmt: %s\n",
-                       sqlite3_errmsg (task_db));
-              sqlite3_close (task_db);
-              task_db = NULL;
-              return -1;
-            }
-          break;
-        }
-      fprintf (stderr, "sqlite3_prepare 1 failed: %s\n",
-               sqlite3_errmsg (task_db));
-      sqlite3_close (task_db);
-      task_db = NULL;
-      return -1;
-    }
-
-  /* Run statement. */
-  while (1)
-    {
-      const unsigned char* name;
-
-      ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_DONE) break;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          fprintf (stderr, "sqlite3_step 1 failed: %s\n",
-                   sqlite3_errmsg (task_db));
-          sqlite3_close (task_db);
-          task_db = NULL;
-          return -1;
-        }
-      name = sqlite3_column_text (stmt, 0);
-      tracef ("   table %s\n", name);
-
-      if (strlen ((const char*) name) > strlen ("tasks_")
-          && (strncmp ((const char*) name, "tasks_", strlen ("tasks_") == 0)))
-        {
-          task_t index;
-          task_iterator_t iterator;
-
-          current_credentials.username = g_strdup ((const char*) name
-                                                   + strlen ("tasks_"));
-          init_task_iterator (&iterator);
-          while (next_task (&iterator, &index))
-            {
-              switch (task_run_status (index))
-                {
-                  case TASK_STATUS_DELETE_REQUESTED:
-                  case TASK_STATUS_REQUESTED:
-                  case TASK_STATUS_RUNNING:
-                  case TASK_STATUS_STOP_REQUESTED:
-                    set_task_run_status (index, TASK_STATUS_STOPPED);
-                    break;
-                  default:
-                    break;
-                }
-            }
-          cleanup_task_iterator (&iterator);
-          g_free (current_credentials.username);
-          current_credentials.username = NULL;
+          case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_REQUESTED:
+          case TASK_STATUS_RUNNING:
+          case TASK_STATUS_STOP_REQUESTED:
+            set_task_run_status (index, TASK_STATUS_STOPPED);
+            break;
+          default:
+            break;
         }
     }
+  cleanup_task_iterator (&iterator);
 
   ret = sqlite3_finalize (stmt);
   sqlite3_close (task_db);
@@ -594,10 +543,6 @@ authenticate (credentials_t* credentials)
 {
   if (credentials->username && credentials->password)
     {
-      sql ("CREATE TABLE IF NOT EXISTS tasks_%s (uuid, name, time, comment, description, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size);",
-           credentials->username);
-      sql ("CREATE TABLE IF NOT EXISTS reports_%s (uuid, task, nbefile, comment);",
-           credentials->username);
       return openvas_authenticate (credentials->username,
                                    credentials->password);
     }
@@ -613,7 +558,8 @@ unsigned int
 task_count ()
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM tasks_%s;",
+                                 "SELECT count(*) FROM tasks WHERE owner ="
+                                 " (SELECT ROWID FROM users WHERE name = '%s');",
                                  current_credentials.username);
 }
 
@@ -643,8 +589,7 @@ int
 task_uuid (task_t task, char ** id)
 {
   *id = sql_string (0, 0,
-                    "SELECT uuid FROM tasks_%s WHERE ROWID = %llu;",
-                    current_credentials.username,
+                    "SELECT uuid FROM tasks WHERE ROWID = %llu;",
                     task);
   return 0;
 }
@@ -660,8 +605,7 @@ char*
 task_name (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT name FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT name FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -676,8 +620,7 @@ char*
 task_comment (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT comment FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT comment FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -692,8 +635,7 @@ char*
 task_description (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT description FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT description FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -708,8 +650,7 @@ void
 set_task_description (task_t task, char* description, gsize length)
 {
   gchar* quote = sql_quote (description, strlen (description));
-  sql ("UPDATE tasks_%s SET description = '%s' WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
        quote,
        task);
   g_free (quote);
@@ -726,8 +667,7 @@ task_status_t
 task_run_status (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT run_status FROM tasks_%s WHERE ROWID = %llu;",
-                                 current_credentials.username,
+                                 "SELECT run_status FROM tasks WHERE ROWID = %llu;",
                                  task);
 }
 
@@ -741,8 +681,7 @@ task_run_status (task_t task)
 void
 set_task_run_status (task_t task, task_status_t status)
 {
-  sql ("UPDATE tasks_%s SET run_status = %u WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
        status,
        task);
 }
@@ -758,8 +697,7 @@ char*
 task_start_time (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT start_time FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT start_time FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -772,8 +710,7 @@ task_start_time (task_t task)
 void
 set_task_start_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks_%s SET start_time = '%.*s' WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET start_time = '%.*s' WHERE ROWID = %llu;",
        strlen (time),
        time,
        task);
@@ -791,8 +728,7 @@ char*
 task_end_time (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT end_time FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT end_time FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -805,8 +741,7 @@ task_end_time (task_t task)
 void
 set_task_end_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks_%s SET end_time = '%.*s' WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET end_time = '%.*s' WHERE ROWID = %llu;",
        strlen (time),
        time,
        task);
@@ -816,17 +751,16 @@ set_task_end_time (task_t task, char* time)
 void
 create_task_report (const task_t task, const char* report_id)
 {
-  sql ("INSERT into reports_%s (uuid, task, nbefile, comment)"
+  sql ("INSERT into reports (uuid, task, nbefile, comment)"
        " VALUES ('%s', '%llu', '', '');",
-       current_credentials.username, report_id, task);
+       report_id, task);
   inc_task_report_count (task);
 }
 
 void
 delete_task_report (const task_t task, const char* report_id)
 {
-  sql ("DELETE from reports_%s where uuid = '%s';",
-       current_credentials.username, report_id);
+  sql ("DELETE from reports where uuid = '%s';", report_id);
   dec_task_report_count (task);
 }
 
@@ -841,8 +775,7 @@ unsigned int
 task_report_count (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT report_count FROM tasks_%s WHERE ROWID = %llu;",
-                                 current_credentials.username,
+                                 "SELECT report_count FROM tasks WHERE ROWID = %llu;",
                                  task);
 }
 
@@ -857,8 +790,7 @@ char*
 task_attack_state (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT attack_state FROM tasks_%s WHERE ROWID = %llu;",
-                     current_credentials.username,
+                     "SELECT attack_state FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -871,8 +803,7 @@ task_attack_state (task_t task)
 void
 set_task_attack_state (task_t task, char* state)
 {
-  sql ("UPDATE tasks_%s SET attack_state = '%.*s' WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET attack_state = '%.*s' WHERE ROWID = %llu;",
        strlen (state),
        state,
        task);
@@ -889,8 +820,7 @@ int
 task_debugs_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT debugs_size FROM tasks_%s WHERE ROWID = %llu;",
-                  current_credentials.username,
+                  "SELECT debugs_size FROM tasks WHERE ROWID = %llu;",
                   task);
 }
 
@@ -916,8 +846,7 @@ int
 task_holes_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT holes_size FROM tasks_%s WHERE ROWID = %llu;",
-                  current_credentials.username,
+                  "SELECT holes_size FROM tasks WHERE ROWID = %llu;",
                   task);
 }
 
@@ -943,8 +872,7 @@ int
 task_infos_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT infos_size FROM tasks_%s WHERE ROWID = %llu;",
-                  current_credentials.username,
+                  "SELECT infos_size FROM tasks WHERE ROWID = %llu;",
                   task);
 }
 
@@ -970,8 +898,7 @@ int
 task_logs_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT logs_size FROM tasks_%s WHERE ROWID = %llu;",
-                  current_credentials.username,
+                  "SELECT logs_size FROM tasks WHERE ROWID = %llu;",
                   task);
 }
 
@@ -997,8 +924,7 @@ int
 task_notes_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT notes_size FROM tasks_%s WHERE ROWID = %llu;",
-                  current_credentials.username,
+                  "SELECT notes_size FROM tasks WHERE ROWID = %llu;",
                   task);
 }
 
@@ -1064,8 +990,9 @@ make_task (char* name, unsigned int time, char* comment)
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) NULL;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks_%s (uuid, name, time, comment)"
-       " VALUES ('%s', %s, %u, %s);",
+  sql ("INSERT into tasks (owner, uuid, name, time, comment)"
+       " VALUES ((SELECT ROWID FROM users WHERE name = '%s'),"
+       "         '%s', %s, %u, %s);",
        current_credentials.username, uuid, name, time, comment);
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
@@ -1134,8 +1061,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       out = g_base64_decode (value, &out_len);
       quote = sql_quote ((gchar*) out, out_len);
       g_free (out);
-      sql ("UPDATE tasks_%s SET description = '%s' WHERE ROWID = %llu;",
-           current_credentials.username,
+      sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
            quote,
            task);
       g_free (quote);
@@ -1143,8 +1069,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strncasecmp ("NAME", parameter, 4) == 0)
     {
       gchar* quote = sql_quote (value, strlen (value));
-      sql ("UPDATE tasks_%s SET name = '%s' WHERE ROWID = %llu;",
-           current_credentials.username,
+      sql ("UPDATE tasks SET name = '%s' WHERE ROWID = %llu;",
            value,
            task);
       g_free (quote);
@@ -1152,8 +1077,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strncasecmp ("COMMENT", parameter, 7) == 0)
     {
       gchar* quote = sql_quote (value, strlen (value));
-      sql ("UPDATE tasks_%s SET comment = '%s' WHERE ROWID = %llu;",
-           current_credentials.username,
+      sql ("UPDATE tasks SET comment = '%s' WHERE ROWID = %llu;",
            value,
            task);
       g_free (quote);
@@ -1252,9 +1176,7 @@ delete_task (task_t task)
     }
   g_free (name);
 
-  sql ("DELETE FROM tasks_%s WHERE ROWID = %llu;",
-       current_credentials.username,
-       task);
+  sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
 
   return 0;
 }
@@ -1318,8 +1240,7 @@ unsigned int
 task_current_port (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT current_port FROM tasks_%s WHERE ROWID = %llu;",
-                                 current_credentials.username,
+                                 "SELECT current_port FROM tasks WHERE ROWID = %llu;",
                                  task);
 }
 
@@ -1334,8 +1255,7 @@ unsigned int
 task_max_port (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT max_port FROM tasks_%s WHERE ROWID = %llu;",
-                                 current_credentials.username,
+                                 "SELECT max_port FROM tasks WHERE ROWID = %llu;",
                                  task);
 }
 
@@ -1349,8 +1269,7 @@ task_max_port (task_t task)
 void
 set_task_ports (task_t task, unsigned int current, unsigned int max)
 {
-  sql ("UPDATE tasks_%s SET current_port = %i, max_port = %i WHERE ROWID = %llu;",
-       current_credentials.username,
+  sql ("UPDATE tasks SET current_port = %i, max_port = %i WHERE ROWID = %llu;",
        current,
        max,
        task);
@@ -1381,8 +1300,7 @@ gboolean
 find_task (const char* uuid, task_t* task)
 {
   switch (sql_int64 (task, 0, 0,
-                     "SELECT ROWID FROM tasks_%s WHERE uuid = '%s';",
-                     current_credentials.username,
+                     "SELECT ROWID FROM tasks WHERE uuid = '%s';",
                      uuid))
     {
       case 0:
@@ -1408,7 +1326,7 @@ find_task (const char* uuid, task_t* task)
 void
 reset_task (task_t task)
 {
-  sql ("UPDATE tasks_%s SET"
+  sql ("UPDATE tasks SET"
        " start_time = '',"
        " end_time = '',"
        " attack_state = '',"
@@ -1420,6 +1338,5 @@ reset_task (task_t task)
        " logs_size = '0',"
        " notes_size = '0'"
        " WHERE ROWID = %llu;",
-       current_credentials.username,
        task);
 }
