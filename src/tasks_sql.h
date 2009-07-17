@@ -480,6 +480,11 @@ init_manage ()
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
 
+  /* Always create a single user, for now. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM users;") == 0)
+    sql ("INSERT into users (name, password) VALUES ('om', '');");
+
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.username == NULL);

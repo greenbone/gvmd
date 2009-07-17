@@ -1,5 +1,10 @@
 2009-07-17  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.c (init_manage): Insert the "om" user if the users
+	table is empty.
+
+2009-07-17  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.c (init_manage): Remove sqlite3_finalize that was for
 	the table-per-user model.
 
