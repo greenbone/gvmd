@@ -1,3 +1,8 @@
+2009-07-17  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tasks_sql.c (init_manage): Remove sqlite3_finalize that was for
+	the table-per-user model.
+
 2009-07-16  Matthew Mundell <mmundell@intevation.de>
 
 	Add a users table to the database.  Share one tasks table and one
@@ -5,7 +10,7 @@
 
 	* src/tasks_sql.c: Adjust all SQL queries to access the shared task or
 	report table, instead of a per-user table.
-	(init_task_iterator): If the credentials is set then iterator over that
+	(init_task_iterator): If the credentials are set then iterate over that
 	user's tasks, otherwise iterate over all tasks.
 	(init_manage): Move table creation here from authenticate.  Create users
 	table.  Adjust the task consistency check for the new single table.

@@ -469,8 +469,8 @@ init_manage_process ()
 int
 init_manage ()
 {
-  int ret;
-  sqlite3_stmt* stmt;
+  task_t index;
+  task_iterator_t iterator;
 
   init_manage_process ();
 
@@ -481,9 +481,6 @@ init_manage ()
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
 
   /* Set requested and running tasks to stopped. */
-
-  task_t index;
-  task_iterator_t iterator;
 
   assert (current_credentials.username == NULL);
   init_task_iterator (&iterator);
@@ -503,14 +500,9 @@ init_manage ()
     }
   cleanup_task_iterator (&iterator);
 
-  ret = sqlite3_finalize (stmt);
   sqlite3_close (task_db);
   task_db = NULL;
-  switch (ret)
-    {
-      case SQLITE_OK: return 0;
-      default: return -1;
-    }
+  return 0;
 }
 
 /**
