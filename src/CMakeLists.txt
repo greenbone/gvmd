@@ -128,6 +128,10 @@ if (OPENVAS_PID_DIR)
   add_definitions (-DOPENVAS_PID_DIR=\\\"${OPENVAS_PID_DIR}\\\")
 endif (OPENVAS_PID_DIR)
 
+if (OPENVAS_SYSCONF_DIR)
+  add_definitions (-DOPENVAS_SYSCONF_DIR=\\\"${OPENVAS_SYSCONF_DIR}\\\")
+endif (OPENVAS_SYSCONF_DIR)
+
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} -lpcap -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
 
@@ -137,12 +141,18 @@ set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
 MARK_AS_ADVANCED (LIB_TEMP)
 MARK_AS_ADVANCED (HEADER_TEMP)
 
+CONFIGURE_FILE (openvasmd_log_conf.cmake
+                "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd_log.conf")
+
 ## Install
 
 install (TARGETS openvasmd
          RUNTIME DESTINATION ${BINDIR}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
+
+install (FILES openvasmd_log.conf
+         DESTINATION ${OPENVAS_SYSCONF_DIR})
 
 ## Tests
 

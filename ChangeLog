@@ -1,5 +1,24 @@
 2009-07-17  Matthew Mundell <mmundell@intevation.de>
 
+	Switch trace messages to the openvas_libraries logging facility.
+
+	* src/openvasmd.c (cleanup): Free log config.
+	(main): Setup logging.
+
+	* src/tracef.h (tracef): Log with g_log.
+	(log_config): New def.
+
+	* src/ovas-mngr-comm.c (log_config): New variable.
+
+	* CMakeLists.txt (OPENVAS_SYSCONF_DIR): New variable.
+
+	* src/openvasmd_log_conf.cmake: New file.
+
+	* src/CMakeLists.txt: Setup OPENVAS_SYSCONF_DIR.  Configure and install
+	openvasmd_log.conf.
+
+2009-07-17  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.c (init_manage): Insert the "om" user if the users
 	table is empty.
 

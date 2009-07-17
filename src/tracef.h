@@ -32,6 +32,7 @@
 #define OPENVAS_MANAGER_TRACE_H
 
 #include <strings.h>
+#include <glib.h>
 
 #ifndef TRACE
 /**
@@ -54,6 +55,11 @@
  */
 extern int verbose;
 
+/**
+ * @brief Logging parameters, as passed to setup_log_handlers.
+ */
+extern GSList *log_config;
+
 #if TRACE
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,14 +71,9 @@ extern int verbose;
  *
  * Print the printf style \a args to stderr, preceded by the process ID.
  */
-#define tracef(args...)                            \
-  do {                                             \
-    if (verbose)                                   \
-      {                                            \
-        fprintf (stderr, "%7i  ", (int) getpid()); \
-        fprintf (stderr, args);                    \
-        if (fflush (stderr) == EOF) abort ();      \
-      }                                            \
+#define tracef(args...)                                         \
+  do {                                                          \
+    if (verbose) g_log ("openvasmd", G_LOG_LEVEL_DEBUG, args);  \
   } while (0)
 #else
 /**

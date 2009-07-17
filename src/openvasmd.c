@@ -108,6 +108,7 @@
 
 #include <network.h>
 #include <plugutils.h>
+#include <openvas_logging.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -405,6 +406,7 @@ cleanup ()
       if (fclose (log_stream)) perror ("Failed to close log stream");
     }
 #endif
+  if (log_config) free_log_configuration (log_config);
   ovas_server_context_free (server_context);
   // Delete pidfile
   gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
@@ -472,6 +474,7 @@ main (int argc, char** argv)
   static gchar *manager_port_string = NULL;
   static gchar *server_address_string = NULL;
   static gchar *server_port_string = NULL;
+  static gchar *rc_name = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
@@ -502,6 +505,14 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
+  rc_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+                              "openvasmd_log.conf",
+                              NULL);
+  if (g_file_test (rc_name, G_FILE_TEST_EXISTS))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
   tracef ("   OpenVAS Manager\n");
 
   if (server_address_string == NULL)
@@ -513,6 +524,7 @@ main (int argc, char** argv)
       if (manager_port <= 0 || manager_port >= 65536)
         {
           fprintf (stderr, "Manager port must be a number between 0 and 65536.\n");
+          free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
       manager_port = htons (manager_port);
@@ -533,6 +545,7 @@ main (int argc, char** argv)
       if (server_port <= 0 || server_port >= 65536)
         {
           fprintf (stderr, "Server port must be a number between 0 and 65536.\n");
+          free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
       server_port = htons (server_port);
@@ -566,10 +579,12 @@ main (int argc, char** argv)
           case -1:
             /* Parent when error. */
             perror ("Failed to fork into background");
+            free_log_configuration (log_config);
             exit (EXIT_FAILURE);
             break;
           default:
             /* Parent. */
+            free_log_configuration (log_config);
             exit (EXIT_SUCCESS);
             break;
         }
@@ -580,6 +595,7 @@ main (int argc, char** argv)
   if (init_ompd ())
     {
       fprintf (stderr, "Failed to initialise OMP daemon.\n");
+      free_log_configuration (log_config);
       exit (EXIT_FAILURE);
     }
 
@@ -588,6 +604,7 @@ main (int argc, char** argv)
   if (atexit (&cleanup))
     {
       fprintf (stderr, "Failed to register `atexit' cleanup function.\n");
+      free_log_configuration (log_config);
       exit (EXIT_FAILURE);
     }
 

@@ -69,6 +69,12 @@
  */
 int verbose = 0;
 
+// FIX This is the definition for the entire module.
+/**
+ * @brief Logging parameters, as passed to setup_log_handlers.
+ */
+GSList *log_config = NULL;
+
 /**
  * @brief Buffer of output to the server.
  */
