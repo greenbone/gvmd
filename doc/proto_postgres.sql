@@ -1,7 +1,7 @@
 CREATE TABLE meta
    (version_major integer,
 	version_minor integer,
-	nvts_md5sum);
+	nvts_md5sum text);
 
 CREATE TABLE users
    (id integer PRIMARY KEY,

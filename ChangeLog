@@ -1,5 +1,9 @@
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
 
+	* doc/proto_postgres.sql (meta): Type nvts_md5sum.
+
+2009-07-20  Matthew Mundell <mmundell@intevation.de>
+
 	* doc/proto_postgres.sql: New file.  Broad database prototype.
 
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
