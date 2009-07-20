@@ -59,7 +59,7 @@
 /**
  * @brief GLib log domain.
  */
-#define G_LOG_DOMAIN "md   omp"
+#define G_LOG_DOMAIN "md    omp"
 
 
 /* Help message. */

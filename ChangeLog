@@ -1,5 +1,9 @@
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (G_LOG_DOMAIN): Correct name.
+
+2009-07-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c, src/otp.c, src/otpd.c, src/oxpd.c: Remove stray full stops
 	from log messages.
 
