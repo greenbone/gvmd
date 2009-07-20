@@ -533,15 +533,23 @@ main (int argc, char** argv)
   setup_log_handlers (log_config);
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     openvas_log_func,
                      log_config);
-  g_log_set_handler ("  md-file",
+  g_log_set_handler ("md   file",
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     openvas_log_func,
                      log_config);
-  g_log_set_handler ("md-string",
+  g_log_set_handler ("md string",
                      ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
+                     openvas_log_func,
+                     log_config);
+  g_log_set_handler ("md   comm",
+                     ALL_LOG_LEVELS,
+                     openvas_log_func,
+                     log_config);
+  g_log_set_handler ("md    otp",
+                     ALL_LOG_LEVELS,
+                     openvas_log_func,
                      log_config);
 
   tracef ("   OpenVAS Manager\n");

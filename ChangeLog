@@ -1,5 +1,9 @@
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (main): Set log handlers for comm and otp domains.
+
+2009-07-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd_log_conf.cmake: Add comm section.
 
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
