@@ -406,7 +406,7 @@ save_report (task_t task)
   g_free (cache);
   if (error)
     {
-      g_warning ("%s: failed to write report cache to %s: %s.\n",
+      g_warning ("%s: failed to write report cache to %s: %s\n",
                  __FUNCTION__,
                  cache_name,
                  error->message);
@@ -427,7 +427,7 @@ save_report (task_t task)
   free (time);
   if (error)
     {
-      g_warning ("%s: failed to write report cache to %s: %s.\n",
+      g_warning ("%s: failed to write report cache to %s: %s\n",
                  __FUNCTION__,
                  cache_name,
                  error->message);

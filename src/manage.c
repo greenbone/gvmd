@@ -167,7 +167,7 @@ make_report_uuid ()
   ret = uuid_create (&uuid);
   if (ret)
     {
-      g_warning ("%s: failed to create UUID structure: %s.\n",
+      g_warning ("%s: failed to create UUID structure: %s\n",
                  __FUNCTION__,
                  uuid_error (ret));
       return NULL;
@@ -177,7 +177,7 @@ make_report_uuid ()
   ret = uuid_make (uuid, UUID_MAKE_V1);
   if (ret)
     {
-      g_warning ("%s: failed to make UUID: %s.\n",
+      g_warning ("%s: failed to make UUID: %s\n",
                  __FUNCTION__,
                  uuid_error (ret));
       return NULL;
@@ -188,7 +188,7 @@ make_report_uuid ()
   ret = uuid_export (uuid, UUID_FMT_STR, (void**) &id, NULL);
   if (ret)
     {
-      g_warning ("%s: failed to export UUID to text: %s.\n",
+      g_warning ("%s: failed to export UUID to text: %s\n",
                  __FUNCTION__,
                  uuid_error (ret));
       (void) uuid_destroy (uuid);
@@ -199,7 +199,7 @@ make_report_uuid ()
   ret = uuid_destroy (uuid);
   if (ret)
     {
-      g_warning ("%s: failed to free UUID structure: %s.\n",
+      g_warning ("%s: failed to free UUID structure: %s\n",
                  __FUNCTION__,
                  uuid_error (ret));
       if (id) free (id);
@@ -316,7 +316,7 @@ report_task (const char* report_id, task_t* task_return)
           g_free (link_name);
           if (error)
             {
-              g_warning ("%s: failed to read report symlink: %s.\n",
+              g_warning ("%s: failed to read report symlink: %s\n",
                          __FUNCTION__,
                          error->message);
               g_error_free (error);
@@ -330,7 +330,7 @@ report_task (const char* report_id, task_t* task_return)
             g_free (report_path);
             if (err && task == 0)
               {
-                g_warning ("%s: failed to find task %s.\n",
+                g_warning ("%s: failed to find task %s\n",
                            __FUNCTION__,
                            task_uuid);
                 g_free (task_uuid);
@@ -343,7 +343,7 @@ report_task (const char* report_id, task_t* task_return)
         }
       else
         {
-          g_warning ("%s: failed to access %s.\n", __FUNCTION__, link_name);
+          g_warning ("%s: failed to access %s\n", __FUNCTION__, link_name);
           g_free (link_name);
         }
     }
@@ -382,7 +382,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   g_file_get_contents (cache_name, &cache, &cache_len, &error);
   if (error)
     {
-      g_warning ("%s: failed to read report count cache from %s: %s.\n",
+      g_warning ("%s: failed to read report count cache from %s: %s\n",
                  __FUNCTION__,
                  cache_name,
                  error->message);
@@ -396,7 +396,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                 debugs, holes, infos, logs, warnings);
   g_free (cache);
   if (ret == 5) return 0;
-  g_warning ("%s: failed to scan report cache %s.\n",
+  g_warning ("%s: failed to scan report cache %s\n",
              __FUNCTION__,
              cache_name);
   return -1;
@@ -428,7 +428,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
   g_file_get_contents (cache_name, timestamp, &length, &error);
   if (error)
     {
-      g_warning ("%s: failed to read report time cache from %s: %s.\n",
+      g_warning ("%s: failed to read report time cache from %s: %s\n",
                  __FUNCTION__,
                  cache_name,
                  error->message);
@@ -474,7 +474,7 @@ delete_report (const char* report_id)
       gchar* name = g_file_read_link (link_name, &error);
       if (error)
         {
-          g_warning ("%s: failed to read report symlink: %s.\n",
+          g_warning ("%s: failed to read report symlink: %s\n",
                      __FUNCTION__,
                      error->message);
           g_error_free (error);
@@ -486,7 +486,7 @@ delete_report (const char* report_id)
         {
           if (error)
             {
-              g_warning ("%s: failed to remove %s: %s.\n",
+              g_warning ("%s: failed to remove %s: %s\n",
                          __FUNCTION__,
                          name,
                          error->message);
@@ -502,7 +502,7 @@ delete_report (const char* report_id)
 
           if (unlink (link_name))
             /* Just log the error. */
-            g_warning ("%s: failed to remove report symlink %s: %s.\n",
+            g_warning ("%s: failed to remove report symlink %s: %s\n",
                        __FUNCTION__,
                        link_name,
                        strerror (errno));
@@ -538,7 +538,7 @@ delete_report (const char* report_id)
                                                NULL);
                       if (unlink (last))
                         /* Just log the error. */
-                        g_warning ("%s: failed to remove last symlink %s: %s.\n",
+                        g_warning ("%s: failed to remove last symlink %s: %s\n",
                                    __FUNCTION__,
                                    last,
                                    strerror (errno));
@@ -554,7 +554,7 @@ delete_report (const char* report_id)
     }
   else
     {
-      g_warning ("%s: failed to access %s.\n", __FUNCTION__, link_name);
+      g_warning ("%s: failed to access %s\n", __FUNCTION__, link_name);
       g_free (link_name);
       return -2;
     }
@@ -595,7 +595,7 @@ set_report_parameter (char* report_id, const char* parameter, char* value)
       if (success == FALSE)
         {
           if (error)
-            g_warning ("%s: failed to save comment to %s: %s.\n",
+            g_warning ("%s: failed to save comment to %s: %s\n",
                        __FUNCTION__,
                        name,
                        error->message);
@@ -723,7 +723,7 @@ print_tasks ()
       while (next_task (&iterator, &index));
     }
   else
-    tracef ("   Task array empty or still to be created.\n\n");
+    tracef ("   Task array empty or still to be created\n\n");
 }
 #endif
 #endif
@@ -867,7 +867,7 @@ create_report_file (task_t task)
     {
       if (error)
         {
-          g_warning ("%s: failed to initialize count cache in %s: %s.\n",
+          g_warning ("%s: failed to initialize count cache in %s: %s\n",
                      __FUNCTION__,
                      name,
                      error->message);
@@ -890,7 +890,7 @@ create_report_file (task_t task)
     {
       if (error)
         {
-          g_warning ("%s: failed to initialize timestamp cache in %s: %s.\n",
+          g_warning ("%s: failed to initialize timestamp cache in %s: %s\n",
                      __FUNCTION__,
                      name,
                      error->message);

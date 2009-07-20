@@ -118,7 +118,7 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (FD_ISSET (server_socket, &exceptfds))
             {
-              g_warning ("%s: exception on server in child connect select.\n",
+              g_warning ("%s: exception on server in child connect select\n",
                          __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
@@ -192,7 +192,7 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (FD_ISSET (client_socket, &exceptfds))
             {
-              g_warning ("%s: exception on client in child select.\n",
+              g_warning ("%s: exception on client in child select\n",
                          __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
@@ -200,7 +200,7 @@ serve_otp (gnutls_session_t* client_session,
 
           if (FD_ISSET (server_socket, &exceptfds))
             {
-              g_warning ("%s: exception on server in child select.\n",
+              g_warning ("%s: exception on server in child select\n",
                          __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
@@ -337,7 +337,7 @@ serve_otp (gnutls_session_t* client_session,
                               || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                         {
                           int alert = gnutls_alert_get (*server_session);
-                          g_warning ("%s: tls Alert %d: %s.\n",
+                          g_warning ("%s: tls Alert %d: %s\n",
                                      __FUNCTION__,
                                      alert,
                                      gnutls_alert_get_name (alert));

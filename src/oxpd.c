@@ -177,7 +177,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
         {
           if (FD_ISSET (client_socket, &exceptfds))
             {
-              g_warning ("%s: exception in select.\n", __FUNCTION__);
+              g_warning ("%s: exception in select\n", __FUNCTION__);
               break;
             }
           if (FD_ISSET (client_socket, &readfds))
@@ -212,7 +212,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                           || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                     {
                       int alert = gnutls_alert_get (*client_session);
-                      g_warning ("%s: tls Alert %d: %s.\n",
+                      g_warning ("%s: tls Alert %d: %s\n",
                                  __FUNCTION__,
                                  alert,
                                  gnutls_alert_get_name (alert));
