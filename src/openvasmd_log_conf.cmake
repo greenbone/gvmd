@@ -19,6 +19,12 @@ prepend_time_format=%Y%m%d%H%M%S
 file=${OPENVAS_LOG_DIR}/openvasmd.log
 level=128
 
+[md   comm]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
+level=128
+
 [md   file]
 prepend="%t %p"
 prepend_time_format=%Y%m%d%H%M%S

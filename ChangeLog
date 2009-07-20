@@ -1,5 +1,9 @@
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd_log_conf.cmake: Add comm section.
+
+2009-07-20  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (G_LOG_DOMAIN): Correct name.
 
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
