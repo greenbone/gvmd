@@ -1,20 +1,51 @@
 [libopenvas]
-prepend="%p"
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
 file=${OPENVAS_LOG_DIR}/libopenvas.log
-level=128
 
 [libnasl]
-prepend="%p"
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
 file=${OPENVAS_LOG_DIR}/libnasl.log
-level=128
 
 [openvasd]
-prepend="%p"
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
 file=${OPENVAS_LOG_DIR}/openvasd.log
+
+[md   main]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
 level=128
 
-[openvasmd]
-prepend="%p"
+[md   file]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
+level=128
+
+[md string]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
+level=128
+
+[md manage]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
+level=128
+
+[md    omp]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
+file=${OPENVAS_LOG_DIR}/openvasmd.log
+level=128
+
+[md    otp]
+prepend="%t %p"
+prepend_time_format=%Y%m%d%H%M%S
 file=${OPENVAS_LOG_DIR}/openvasmd.log
 level=128
 

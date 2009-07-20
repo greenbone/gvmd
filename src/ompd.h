@@ -27,10 +27,11 @@
 #define OPENVAS_MANAGER_OMPD_H
 
 #include "types.h"
+#include <glib.h>
 #include <gnutls/gnutls.h>
 
 int
-init_ompd ();
+init_ompd (GSList*);
 
 int
 serve_omp (gnutls_session_t*, gnutls_session_t*,

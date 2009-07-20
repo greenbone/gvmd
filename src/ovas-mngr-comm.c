@@ -56,6 +56,12 @@
 #include "splint.h"
 #endif
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   comm"
+
 /**
  * @brief The size of the \ref to_server data buffer.
  */
@@ -126,43 +132,44 @@ make_session (int server_socket,
 
   if (gnutls_certificate_allocate_credentials (server_credentials))
     {
-      fprintf (stderr, "Failed to allocate server credentials.\n");
+      g_warning ("%s: failed to allocate server credentials\n", __FUNCTION__);
       goto close_fail;
     }
 
   if (gnutls_init (server_session, GNUTLS_CLIENT))
     {
-      fprintf (stderr, "Failed to initialise server session.\n");
+      g_warning ("%s: failed to initialise server session\n", __FUNCTION__);
       goto server_free_fail;
     }
 
   if (gnutls_protocol_set_priority (*server_session, protocol_priority))
     {
-      fprintf (stderr, "Failed to set protocol priority.\n");
+      g_warning ("%s: failed to set protocol priority\n", __FUNCTION__);
       goto server_fail;
     }
 
   if (gnutls_cipher_set_priority (*server_session, cipher_priority))
     {
-      fprintf (stderr, "Failed to set cipher priority.\n");
+      g_warning ("%s: failed to set cipher priority\n", __FUNCTION__);
       goto server_fail;
     }
 
   if (gnutls_compression_set_priority (*server_session, comp_priority))
     {
-      fprintf (stderr, "Failed to set compression priority.\n");
+      g_warning ("%s: failed to set compression priority\n", __FUNCTION__);
       goto server_fail;
     }
 
   if (gnutls_kx_set_priority (*server_session, kx_priority))
     {
-      fprintf (stderr, "Failed to set server key exchange priority.\n");
+      g_warning ("%s: failed to set server key exchange priority\n",
+                 __FUNCTION__);
       goto server_fail;
     }
 
   if (gnutls_mac_set_priority (*server_session, mac_priority))
     {
-      fprintf (stderr, "Failed to set mac priority.\n");
+      g_warning ("%s: failed to set mac priority\n", __FUNCTION__);
       goto server_fail;
     }
 
@@ -170,7 +177,7 @@ make_session (int server_socket,
                               GNUTLS_CRD_CERTIFICATE,
                               *server_credentials))
     {
-      fprintf (stderr, "Failed to set server credentials.\n");
+      g_warning ("%s: failed to set server credentials\n", __FUNCTION__);
       goto server_fail;
     }
 
@@ -180,7 +187,9 @@ make_session (int server_socket,
    * error" removes the data between `select' and `read'. */
   if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      perror ("Failed to set server socket flag");
+      g_warning ("%s: failed to set server socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       goto fail;
     }
 
@@ -221,7 +230,9 @@ end_session (int server_socket,
   // FIX get flags first
   if (fcntl (server_socket, F_SETFL, 0L) == -1)
     {
-      perror ("Failed to set server socket flag (end_session)");
+      g_warning ("%s: failed to set server socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
 #endif
@@ -230,7 +241,9 @@ end_session (int server_socket,
   // FIX get flags first
   if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      perror ("Failed to set server socket flag (end_session)");
+      g_warning ("%s: failed to set server socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
 #endif
@@ -246,26 +259,30 @@ end_session (int server_socket,
         }
       if (ret)
         {
-          fprintf (stderr, "Failed to gnutls_bye.\n");
-          gnutls_perror ((int) ret);
+          g_message ("   Failed to gnutls_bye: %s\n",
+                     gnutls_strerror ((int) ret));
           /* Carry on successfully anyway, as this often fails, perhaps
            * because the server is closing the connection first. */
           break;
         }
       break;
     }
-  if (count == 0) fprintf (stderr, "Gave up trying to gnutls_bye.\n");
+  if (count == 0) g_message ("   Gave up trying to gnutls_bye\n");
 
   if (shutdown (server_socket, SHUT_RDWR) == -1)
     {
       if (errno == ENOTCONN) return 0;
-      perror ("Failed to shutdown server socket");
+      g_warning ("%s: failed to shutdown server socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
 
   if (close (server_socket) == -1)
     {
-      perror ("Failed to close server socket");
+      g_warning ("%s: failed to close server socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
 
@@ -369,20 +386,25 @@ connect_to_server (int server_socket,
       if (getsockopt (server_socket, SOL_SOCKET, SO_ERROR, &ret, &ret_len)
           == -1)
         {
-          perror ("Failed to get socket option");
+          g_warning ("%s: failed to get socket option: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           return -1;
         }
       if (ret_len != (socklen_t) sizeof (ret))
         {
-          fprintf (stderr, "Weird option length from getsockopt: %i.\n",
-                   /* socklen_t is an int, according to getsockopt(2). */
-                   (int) ret_len);
+          g_warning ("%s: weird option length from getsockopt: %i\n",
+                     __FUNCTION__,
+                     /* socklen_t is an int, according to getsockopt(2). */
+                     (int) ret_len);
           return -1;
         }
       if (ret)
         {
           if (ret == EINPROGRESS) return -2;
-          perror ("Failed to connect to server (interrupted)");
+          g_warning ("%s: failed to connect to server (interrupted): %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           return -1;
         }
     }
@@ -392,7 +414,9 @@ connect_to_server (int server_socket,
            == -1)
     {
       if (errno == EINPROGRESS) return -2;
-      perror ("Failed to connect to server");
+      g_warning ("%s: failed to connect to server: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
   tracef ("   Connected to server on socket %i.\n", server_socket);
@@ -409,10 +433,12 @@ connect_to_server (int server_socket,
         break;
       if (ret == GNUTLS_E_AGAIN || ret == GNUTLS_E_INTERRUPTED)
         continue;
-      fprintf (stderr, "Failed to shake hands with server.\n");
-      gnutls_perror (ret);
+      g_warning ("%s: failed to shake hands with server: %s\n",
+                 __FUNCTION__,
+                 gnutls_strerror (ret));
       if (shutdown (server_socket, SHUT_RDWR) == -1)
-        perror ("Failed to shutdown server socket");
+        g_message ("   Failed to shutdown server socket: %s\n",
+                   strerror (errno));
       return -1;
     }
 
@@ -450,8 +476,9 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
           if (count == GNUTLS_E_REHANDSHAKE)
             /* \todo Rehandshake. */
             continue;
-          fprintf (stderr, "Failed to write to server.\n");
-          gnutls_perror ((int) count);
+          g_warning ("%s: failed to write to server: %s\n",
+                     __FUNCTION__,
+                     gnutls_strerror ((int) count));
           return -1;
         }
 #if LOG
@@ -494,8 +521,9 @@ write_to_server_buffer (gnutls_session_t* server_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             /* \todo Rehandshake. */
             continue;
-          fprintf (stderr, "Failed to write to server.\n");
-          gnutls_perror ((int) count);
+          g_warning ("%s: failed to write to server: %s\n",
+                     __FUNCTION__,
+                     gnutls_strerror ((int) count));
           return -1;
         }
 #if LOG

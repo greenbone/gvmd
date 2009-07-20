@@ -27,6 +27,7 @@
 #define OPENVAS_MANAGER_OMP_H
 
 #include "types.h"
+#include <glib.h>
 #include <sys/types.h>
 
 /**
@@ -35,7 +36,7 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_omp ();
+init_omp (GSList*);
 
 void
 init_omp_process ();

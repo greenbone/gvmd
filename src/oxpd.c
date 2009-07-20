@@ -33,6 +33,7 @@
 #include "logf.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -110,7 +111,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   // FIX get flags first
   if (fcntl (client_socket, F_SETFL, 0L) == -1)
     {
-      perror ("Failed to set client socket flag (read_protocol)");
+      g_warning ("%s: failed to set client socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return PROTOCOL_FAIL;
     }
 
@@ -122,7 +125,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
    */
   if (time (&start_time) == -1)
     {
-      perror ("Failed to get current time");
+      g_warning ("%s: failed to get current time: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       // FIX revert blocking
       return PROTOCOL_FAIL;
     }
@@ -144,7 +149,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
       if (time (&now) == -1)
         {
-          perror ("Failed to get now (0)");
+          g_warning ("%s: failed to get now (0): %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           ret = PROTOCOL_FAIL;
           break;
         }
@@ -161,14 +168,16 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
       if (select_ret == -1)
         {
-          perror ("Select (read_protocol) failed");
+          g_warning ("%s: select failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           break;
         }
       if (select_ret > 0)
         {
           if (FD_ISSET (client_socket, &exceptfds))
             {
-              fprintf (stderr, "Exception in select.\n");
+              g_warning ("%s: exception in select.\n", __FUNCTION__);
               break;
             }
           if (FD_ISSET (client_socket, &readfds))
@@ -203,12 +212,14 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                           || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                     {
                       int alert = gnutls_alert_get (*client_session);
-                      fprintf (stderr, "TLS Alert %d: %s.\n",
-                               alert,
-                               gnutls_alert_get_name (alert));
+                      g_warning ("%s: tls Alert %d: %s.\n",
+                                 __FUNCTION__,
+                                 alert,
+                                 gnutls_alert_get_name (alert));
                     }
-                  fprintf (stderr, "Failed to read from client (read_protocol).\n");
-                  gnutls_perror (count);
+                  g_warning ("%s: failed to read from client: %s\n",
+                             __FUNCTION__,
+                             gnutls_strerror (count));
                   break;
                 }
               if (count == 0)
@@ -252,7 +263,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
       if (time (&now) == -1)
         {
-          perror ("Failed to get now (0)");
+          g_warning ("%s: failed to get now (0): %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           ret = PROTOCOL_FAIL;
           break;
         }
@@ -268,7 +281,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   /* Turn blocking back off. */
   if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      perror ("Failed to reset client socket flag (read_protocol)");
+      g_warning ("%s: failed to reset client socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return PROTOCOL_FAIL;
     }
 

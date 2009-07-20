@@ -52,6 +52,12 @@
 #include "splint.h"
 #endif
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    otp"
+
 // FIX Should probably be passed into process_otp_server_input.
 extern buffer_size_t from_buffer_size;
 
@@ -378,7 +384,9 @@ save_report (task_t task)
 
   if (fclose (current_report))
     {
-      perror ("Failed to close report stream");
+      g_warning ("%s: failed to close report stream: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -2;
     }
   current_report = NULL;
@@ -398,10 +406,10 @@ save_report (task_t task)
   g_free (cache);
   if (error)
     {
-      fprintf (stderr,
-               "Failed to write report cache to %s: %s.\n",
-               cache_name,
-               error->message);
+      g_warning ("%s: failed to write report cache to %s: %s.\n",
+                 __FUNCTION__,
+                 cache_name,
+                 error->message);
       g_error_free (error);
       g_free (cache_name);
       g_free (report_dir);
@@ -419,10 +427,10 @@ save_report (task_t task)
   free (time);
   if (error)
     {
-      fprintf (stderr,
-               "Failed to write report cache to %s: %s.\n",
-               cache_name,
-               error->message);
+      g_warning ("%s: failed to write report cache to %s: %s.\n",
+                 __FUNCTION__,
+                 cache_name,
+                 error->message);
       g_error_free (error);
       g_free (cache_name);
       g_free (report_dir);
@@ -441,7 +449,9 @@ save_report (task_t task)
       g_free (current_dir);
       g_free (report_name);
       g_free (reports_dir);
-      perror ("Failed to change dir");
+      g_warning ("%s: failed to change dir: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -5;
     }
   if (unlink ("last"))
@@ -451,7 +461,9 @@ save_report (task_t task)
           g_free (current_dir);
           g_free (report_name);
           g_free (reports_dir);
-          perror ("Failed to remove last report");
+          g_warning ("%s: failed to remove last report: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           return -3;
         }
     }
@@ -460,7 +472,9 @@ save_report (task_t task)
       g_free (current_dir);
       g_free (report_name);
       g_free (reports_dir);
-      perror ("Failed to symlink last report");
+      g_warning ("%s: failed to symlink last report: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -4;
     }
   g_free (report_name);
@@ -468,7 +482,9 @@ save_report (task_t task)
   if (chdir (current_dir))
     {
       g_free (current_dir);
-      perror ("Failed to change dir");
+      g_warning ("%s: failed to change dir: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -5;
     }
   g_free (current_dir);
@@ -2437,7 +2453,9 @@ process_otp_server_input ()
                             delete_task (current_server_task);
                             if (fclose (current_report))
                               {
-                                perror ("Failed to close report stream");
+                                g_warning ("%s: failed to close report stream: %s\n",
+                                           __FUNCTION__,
+                                           strerror (errno));
                                 return -1;
                               }
                             current_report = NULL;

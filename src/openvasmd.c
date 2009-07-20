@@ -233,7 +233,9 @@ serve_client (int client_socket)
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (server_socket == -1)
     {
-      perror ("Failed to create server socket");
+      g_warning ("%s: failed to create server socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       close_stream_connection (client_socket);
       return EXIT_FAILURE;
     }
@@ -249,7 +251,9 @@ serve_client (int client_socket)
   int real_socket = nessus_get_socket_from_connection (client_socket);
   if (real_socket == -1 || real_socket == client_socket)
     {
-      perror ("Failed to get client socket from libopenvas");
+      g_warning ("%s: failed to get client socket from libopenvas: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       goto fail;
     }
 
@@ -257,7 +261,9 @@ serve_client (int client_socket)
   client_session = ovas_get_tlssession_from_connection (client_socket);
   if (client_session == NULL)
     {
-      perror ("Failed to get connection from client socket");
+      g_warning ("%s: failed to get connection from client socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       goto fail;
     }
   client_socket = real_socket;
@@ -267,7 +273,9 @@ serve_client (int client_socket)
    * error" removes the data between `select' and `read'. */
   if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      perror ("Failed to set real client socket flag");
+      g_warning ("%s: failed to set real client socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       goto fail;
     }
 
@@ -291,13 +299,13 @@ serve_client (int client_socket)
         break;
       case PROTOCOL_CLOSE:
         close_stream_connection (client_socket);
-        fprintf (stderr, "EOF while trying to read protocol.\n");
+        g_message ("   EOF while trying to read protocol\n");
         goto fail;
       case PROTOCOL_TIMEOUT:
         close_stream_connection (client_socket);
         break;
       default:
-        fprintf (stderr, "Failed to determine protocol.\n");
+        g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
     }
 
   end_session (server_socket, server_session, server_credentials);
@@ -333,7 +341,9 @@ accept_and_maybe_fork ()
       if (errno == EAGAIN || errno == EWOULDBLOCK)
         /* The connection is gone, return to select. */
         return;
-      perror ("Failed to accept client connection");
+      g_critical ("%s: failed to accept client connection: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 
@@ -350,7 +360,9 @@ accept_and_maybe_fork ()
            */
           if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
             {
-              perror ("Failed to set client socket flag");
+              g_critical ("%s: failed to set client socket flag: %s\n",
+                          __FUNCTION__,
+                          strerror (errno));
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
               exit (EXIT_FAILURE);
@@ -359,9 +371,9 @@ accept_and_maybe_fork ()
             = ovas_server_context_attach (server_context, client_socket);
           if (secure_client_socket == -1)
             {
-              fprintf (stderr,
-                       "Failed to attach server context to socket %i.\n",
-                       client_socket);
+              g_critical ("%s: failed to attach server context to socket %i\n",
+                          __FUNCTION__,
+                          client_socket);
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
               exit (EXIT_FAILURE);
@@ -375,7 +387,9 @@ accept_and_maybe_fork ()
         }
       case -1:
         /* Parent when error, return to select. */
-        perror ("Failed to fork child");
+        g_warning ("%s: failed to fork child: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
         close (client_socket);
         break;
       default:
@@ -403,7 +417,10 @@ cleanup ()
 #if LOG
   if (log_stream != NULL)
     {
-      if (fclose (log_stream)) perror ("Failed to close log stream");
+      if (fclose (log_stream))
+        g_critical ("%s: failed to close log stream: %s\n",
+                    __FUNCTION__,
+                    strerror (errno));
     }
 #endif
   if (log_config) free_log_configuration (log_config);
@@ -493,7 +510,7 @@ main (int argc, char** argv)
   g_option_context_add_main_entries (option_context, option_entries, NULL);
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
-      printf ("%s\n\n", error->message);
+      g_critical ("%s: %s\n\n", __FUNCTION__, error->message);
       exit (EXIT_FAILURE);
     }
 
@@ -505,6 +522,8 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
+  /* Setup logging. */
+
   rc_name = g_build_filename (OPENVAS_SYSCONF_DIR,
                               "openvasmd_log.conf",
                               NULL);
@@ -512,8 +531,22 @@ main (int argc, char** argv)
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+  g_log_set_handler ("  md-file",
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+  g_log_set_handler ("md-string",
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
 
   tracef ("   OpenVAS Manager\n");
+
+  /* Complete option processing. */
 
   if (server_address_string == NULL)
     server_address_string = OPENVASD_ADDRESS;
@@ -523,7 +556,8 @@ main (int argc, char** argv)
       manager_port = atoi (manager_port_string);
       if (manager_port <= 0 || manager_port >= 65536)
         {
-          fprintf (stderr, "Manager port must be a number between 0 and 65536.\n");
+          g_critical ("%s: Manager port must be a number between 0 and 65536\n",
+                      __FUNCTION__);
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
@@ -544,7 +578,8 @@ main (int argc, char** argv)
       server_port = atoi (server_port_string);
       if (server_port <= 0 || server_port >= 65536)
         {
-          fprintf (stderr, "Server port must be a number between 0 and 65536.\n");
+          g_critical ("%s: Server port must be a number between 0 and 65536\n",
+                      __FUNCTION__);
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
@@ -578,7 +613,9 @@ main (int argc, char** argv)
             break;
           case -1:
             /* Parent when error. */
-            perror ("Failed to fork into background");
+            g_critical ("%s: failed to fork into background: %s\n",
+                        __FUNCTION__,
+                        strerror (errno));
             free_log_configuration (log_config);
             exit (EXIT_FAILURE);
             break;
@@ -592,9 +629,9 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  if (init_ompd ())
+  if (init_ompd (log_config))
     {
-      fprintf (stderr, "Failed to initialise OMP daemon.\n");
+      g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
       free_log_configuration (log_config);
       exit (EXIT_FAILURE);
     }
@@ -603,7 +640,8 @@ main (int argc, char** argv)
 
   if (atexit (&cleanup))
     {
-      fprintf (stderr, "Failed to register `atexit' cleanup function.\n");
+      g_critical ("%s: failed to register `atexit' cleanup function\n",
+                  __FUNCTION__);
       free_log_configuration (log_config);
       exit (EXIT_FAILURE);
     }
@@ -613,7 +651,9 @@ main (int argc, char** argv)
   manager_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (manager_socket == -1)
     {
-      perror ("Failed to create manager socket");
+      g_critical ("%s: failed to create manager socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 
@@ -624,14 +664,18 @@ main (int argc, char** argv)
                             0755) /* "rwxr-xr-x" */
       == -1)
     {
-      perror ("Failed to create log directory");
+      g_critical ("%s: failed to create log directory: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 
   log_stream = fopen (LOG_FILE, "w");
   if (log_stream == NULL)
     {
-      perror ("Failed to open log file");
+      g_critical ("%s: failed to open log file: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 #endif
@@ -645,7 +689,7 @@ main (int argc, char** argv)
       || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
       || signal (SIGCHLD, SIG_IGN) == SIG_ERR)     /* RATS: ignore */
     {
-      fprintf (stderr, "Failed to register signal handler.\n");
+      g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
 
@@ -655,8 +699,9 @@ main (int argc, char** argv)
   server_address.sin_port = server_port;
   if (!inet_aton (server_address_string, &server_address.sin_addr))
     {
-      fprintf (stderr, "Failed to create server address %s.\n",
-               server_address_string);
+      g_critical ("%s: failed to create server address %s\n",
+                  __FUNCTION__,
+                  server_address_string);
       exit (EXIT_FAILURE);
     }
 
@@ -664,7 +709,7 @@ main (int argc, char** argv)
 
   if (nessus_SSL_init (NULL) < 0)
     {
-      fprintf (stderr, "Failed to initialise security.\n");
+      g_critical ("%s: failed to initialise security\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
   server_context
@@ -676,7 +721,7 @@ main (int argc, char** argv)
                                0);
   if (server_context == NULL)
     {
-      fprintf (stderr, "Failed to create server context.\n");
+      g_critical ("%s: failed to create server context\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
 
@@ -685,7 +730,9 @@ main (int argc, char** argv)
    * error" removes the connection between `select' and `accept'. */
   if (fcntl (manager_socket, F_SETFL, O_NONBLOCK) == -1)
     {
-      perror ("Failed to set manager socket flag");
+      g_critical ("%s: failed to set manager socket flag: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
 
@@ -697,8 +744,9 @@ main (int argc, char** argv)
     {
       if (!inet_aton (manager_address_string, &manager_address.sin_addr))
         {
-          fprintf (stderr, "Failed to create manager address %s.\n",
-                   manager_address_string);
+          g_critical ("%s: failed to create manager address %s\n",
+                      __FUNCTION__,
+                      manager_address_string);
           exit (EXIT_FAILURE);
         }
     }
@@ -710,7 +758,9 @@ main (int argc, char** argv)
             sizeof (manager_address))
       == -1)
     {
-      perror ("Failed to bind manager socket");
+      g_critical ("%s: failed to bind manager socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       close (manager_socket);
       exit (EXIT_FAILURE);
     }
@@ -726,7 +776,9 @@ main (int argc, char** argv)
 
   if (listen (manager_socket, MAX_CONNECTIONS) == -1)
     {
-      perror ("Failed to listen on manager socket");
+      g_critical ("%s: failed to listen on manager socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       close (manager_socket);
       exit (EXIT_FAILURE);
     }
@@ -737,7 +789,9 @@ main (int argc, char** argv)
   FILE *pidfile = g_fopen (pidfile_name, "w");
   if (pidfile == NULL)
     {
-      perror ("Failed to open pidfile");
+      g_critical ("%s: failed to open pidfile: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
       exit (EXIT_FAILURE);
     }
   else
@@ -768,14 +822,16 @@ main (int argc, char** argv)
 
       if (ret == -1)
         {
-          perror ("Select failed");
+          g_critical ("%s: select failed: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
           exit (EXIT_FAILURE);
         }
       if (ret > 0)
         {
           if (FD_ISSET (manager_socket, &exceptfds))
             {
-              fprintf (stderr, "Exception in select.\n");
+              g_critical ("%s: exception in select\n", __FUNCTION__);
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))

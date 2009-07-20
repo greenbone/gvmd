@@ -45,6 +45,12 @@
 #include "tracef.h"
 #include "string.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md string"
+
 /**
  * @brief Append a string to a string variable.
  *

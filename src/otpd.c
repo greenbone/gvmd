@@ -46,6 +46,7 @@
 
 #include <errno.h>
 #include <gnutls/gnutls.h>
+#include <string.h>
 
 #include <network.h>
 
@@ -107,7 +108,9 @@ serve_otp (gnutls_session_t* client_session,
       if (ret < 0)
         {
           if (errno == EINTR) continue;
-          perror ("Child connect select failed");
+          g_warning ("%s: child connect select failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           close_stream_connection (client_socket);
           return -1;
         }
@@ -115,8 +118,8 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (FD_ISSET (server_socket, &exceptfds))
             {
-              fprintf (stderr,
-                       "Exception on server in child connect select.\n");
+              g_warning ("%s: exception on server in child connect select.\n",
+                         __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
             }
@@ -179,7 +182,9 @@ serve_otp (gnutls_session_t* client_session,
       if (ret < 0)
         {
           if (errno == EINTR) continue;
-          perror ("Child select failed");
+          g_warning ("%s: child select failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           close_stream_connection (client_socket);
           return -1;
         }
@@ -187,14 +192,16 @@ serve_otp (gnutls_session_t* client_session,
         {
           if (FD_ISSET (client_socket, &exceptfds))
             {
-              fprintf (stderr, "Exception on client in child select.\n");
+              g_warning ("%s: exception on client in child select.\n",
+                         __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
             }
 
           if (FD_ISSET (server_socket, &exceptfds))
             {
-              fprintf (stderr, "Exception on server in child select.\n");
+              g_warning ("%s: exception on server in child select.\n",
+                         __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
             }
@@ -224,8 +231,9 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
-                      fprintf (stderr, "Failed to read from client.\n");
-                      gnutls_perror ((int) count);
+                      g_warning ("%s: failed to read from client: %s\n",
+                                 __FUNCTION__,
+                                 gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
                       return -1;
                     }
@@ -283,8 +291,9 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
-                      fprintf (stderr, "Failed to write to server.\n");
-                      gnutls_perror ((int) count);
+                      g_warning ("%s: failed to write to server: %s\n",
+                                 __FUNCTION__,
+                                 gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
                       return -1;
                     }
@@ -328,12 +337,14 @@ serve_otp (gnutls_session_t* client_session,
                               || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                         {
                           int alert = gnutls_alert_get (*server_session);
-                          fprintf (stderr, "TLS Alert %d: %s.\n",
-                                   alert,
-                                   gnutls_alert_get_name (alert));
+                          g_warning ("%s: tls Alert %d: %s.\n",
+                                     __FUNCTION__,
+                                     alert,
+                                     gnutls_alert_get_name (alert));
                         }
-                      fprintf (stderr, "Failed to read from server.\n");
-                      gnutls_perror ((int) count);
+                      g_warning ("%s: failed to read from server: %s\n",
+                                 __FUNCTION__,
+                                 gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
                       return -1;
                     }
@@ -388,8 +399,9 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
-                      fprintf (stderr, "Failed to write to client.\n");
-                      gnutls_perror ((int) count);
+                      g_warning ("%s: failed to write to client: %s\n",
+                                 __FUNCTION__,
+                                 gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
                       return -1;
                     }

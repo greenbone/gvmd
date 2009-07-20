@@ -35,13 +35,14 @@
  */
 #define TRACE 0
 
-/**
- * @brief GLib log domain for the file library.
- */
-#define G_LOG_DOMAIN "OpenVAS-File"
-
 #include "tracef.h"
 #include "file.h"
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   file"
 
 #include <errno.h>
 #include <fcntl.h>

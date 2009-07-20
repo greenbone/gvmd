@@ -31,7 +31,7 @@
 #include <ossp/uuid.h>
 
 int
-init_manage ();
+init_manage (GSList*);
 
 void
 init_manage_process ();

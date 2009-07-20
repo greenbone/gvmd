@@ -89,9 +89,9 @@ int socket(int domain, int type, int protocol);
  * @brief Initialise the OMP library for the OMP daemon.
  */
 int
-init_ompd ()
+init_ompd (GSList *log_config)
 {
-  return init_omp ();
+  return init_omp (log_config);
 }
 
 /**
@@ -134,12 +134,11 @@ read_from_client (gnutls_session_t* client_session,
               int alert = gnutls_alert_get (*client_session);
               /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
-              fprintf (stderr, "TLS Alert %d: %s.\n",
-                       alert,
-                       alert_name);
+              g_warning ("%s: TLS Alert %d: %s\n",
+                         __FUNCTION__, alert, alert_name);
             }
-          fprintf (stderr, "Failed to read from client.\n");
-          gnutls_perror ((int) count);
+          g_warning ("%s: failed to read from client: %s\n",
+                     __FUNCTION__, gnutls_strerror ((int) count));
           return -1;
         }
       if (count == 0)
@@ -186,7 +185,6 @@ read_from_server (gnutls_session_t* server_session,
               tracef ("   FIX should rehandshake\n");
               continue;
             }
-          fprintf (stderr, "is_fatal: %i\n", gnutls_error_is_fatal (count));
           if (gnutls_error_is_fatal (count) == 0
               && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
                   || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
@@ -194,12 +192,12 @@ read_from_server (gnutls_session_t* server_session,
               int alert = gnutls_alert_get (*server_session);
               /*@dependent@*/
               const char* alert_name = gnutls_alert_get_name (alert);
-              fprintf (stderr, "TLS Alert %d: %s.\n",
-                       alert,
-                       alert_name);
+              g_warning ("%s: TLS Alert %d: %s\n",
+                         __FUNCTION__, alert, alert_name);
             }
-          fprintf (stderr, "Failed to read from server.\n");
-          gnutls_perror (count);
+          g_warning ("%s: failed to read from server: %s\n",
+                     __FUNCTION__,
+                     gnutls_strerror (count));
           return -1;
         }
       if (count == 0)
@@ -240,8 +238,9 @@ write_to_client (gnutls_session_t* client_session)
           if (count == GNUTLS_E_REHANDSHAKE)
             /* \todo Rehandshake. */
             continue;
-          fprintf (stderr, "Failed to write to client.\n");
-          gnutls_perror ((int) count);
+          g_warning ("%s: failed to write to client: %s\n",
+                     __FUNCTION__,
+                     gnutls_strerror ((int) count));
           return -1;
         }
       logf ("=> client %.*s\n",
@@ -420,7 +419,9 @@ recreate_session (int server_socket,
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
   if (server_socket == -1)
     {
-      perror ("Failed to create server socket");
+      g_warning ("%s: failed to create server socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       return -1;
     }
   if (make_session (server_socket,
@@ -535,7 +536,9 @@ serve_omp (gnutls_session_t* client_session,
   /* Record the start time. */
   if (time (&last_client_activity_time) == -1)
     {
-      perror ("Failed to get current time");
+      g_warning ("%s: failed to get current time: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       close_stream_connection (client_socket);
       return -1;
     }
@@ -653,7 +656,9 @@ serve_omp (gnutls_session_t* client_session,
       if (ret < 0)
         {
           if (errno == EINTR) continue;
-          perror ("Child select failed");
+          g_warning ("%s: child select failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
           close_stream_connection (client_socket);
           return -1;
         }
@@ -661,14 +666,16 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
-          fprintf (stderr, "Exception on client in child select.\n");
+          g_warning ("%s: exception on client in child select\n",
+                     __FUNCTION__);
           close_stream_connection (client_socket);
           return -1;
         }
 
       if (FD_ISSET (server_socket, &exceptfds))
         {
-          fprintf (stderr, "Exception on server in child select.\n");
+          g_warning ("%s: exception on server in child select\n",
+                     __FUNCTION__);
           close_stream_connection (client_socket);
           return -1;
         }
@@ -705,7 +712,9 @@ serve_omp (gnutls_session_t* client_session,
 
           if (time (&last_client_activity_time) == -1)
             {
-              perror ("Failed to get current time (1)");
+              g_warning ("%s: failed to get current time (1): %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
               close_stream_connection (client_socket);
               return -1;
             }
@@ -906,7 +915,9 @@ serve_omp (gnutls_session_t* client_session,
 
           if (time (&last_client_activity_time) == -1)
             {
-              perror ("Failed to get current time (2)");
+              g_warning ("%s: failed to get current time (2): %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
               close_stream_connection (client_socket);
               return -1;
             }
@@ -1004,7 +1015,9 @@ serve_omp (gnutls_session_t* client_session,
           time_t current_time;
           if (time (&current_time) == -1)
             {
-              perror ("Failed to get current time (3)");
+              g_warning ("%s: failed to get current time (3): %s\n",
+                         __FUNCTION__,
+                         strerror (errno));
               close_stream_connection (client_socket);
               return -1;
             }

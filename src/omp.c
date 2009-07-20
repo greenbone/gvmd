@@ -49,10 +49,17 @@
 
 #include <openvas/certificate.h>
 #include <openvas/nvti.h>
+#include <openvas/openvas_logging.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
 #endif
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   omp"
 
 
 /* Help message. */
@@ -1232,9 +1239,9 @@ send_reports (task_t task)
           free (dir_name);
           return 0;
         }
-      fprintf (stderr, "Failed to open dir %s: %s\n",
-               dir_name,
-               strerror (errno));
+      g_message ("   Failed to open dir %s: %s\n",
+                 dir_name,
+                 strerror (errno));
       g_free (dir_name);
       return -3;
     }
@@ -1429,7 +1436,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             case 0:
               if (load_tasks ())
                 {
-                  fprintf (stderr, "Failed to load tasks.\n");
+                  g_warning ("%s: failed to load tasks\n", __FUNCTION__);
                   g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
                                "Manager failed to load tasks.");
                   free_credentials (&current_credentials);
@@ -2428,9 +2435,13 @@ extern buffer_size_t from_client_end;
  * @return 0 on success, else -1.
  */
 int
-init_omp ()
+init_omp (GSList *log_config)
 {
-  return init_manage ();
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+  return init_manage (log_config);
 }
 
 /**
@@ -2502,7 +2513,7 @@ process_omp_client_input ()
             tracef ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE\n");
           else
             err = -1;
-          fprintf (stderr, "Failed to parse client XML: %s\n", error->message);
+          g_message ("   Failed to parse client XML: %s\n", error->message);
           g_error_free (error);
         }
       else

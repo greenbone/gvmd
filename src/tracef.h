@@ -31,8 +31,28 @@
 #ifndef OPENVAS_MANAGER_TRACE_H
 #define OPENVAS_MANAGER_TRACE_H
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ *
+ * Libraries can override this by setting it after including tracef.h.
+ */
+#define G_LOG_DOMAIN "md   main"
+
 #include <strings.h>
 #include <glib.h>
+
+/**
+ * @brief Flag with all Glib log levels.
+ */
+#define ALL_LOG_LEVELS  (G_LOG_LEVEL_DEBUG      \
+                         | G_LOG_LEVEL_INFO     \
+                         | G_LOG_LEVEL_MESSAGE  \
+                         | G_LOG_LEVEL_WARNING  \
+                         | G_LOG_LEVEL_CRITICAL \
+                         | G_LOG_LEVEL_ERROR    \
+                         | G_LOG_FLAG_FATAL     \
+                         | G_LOG_FLAG_RECURSION)
 
 #ifndef TRACE
 /**
@@ -71,9 +91,9 @@ extern GSList *log_config;
  *
  * Print the printf style \a args to stderr, preceded by the process ID.
  */
-#define tracef(args...)                                         \
-  do {                                                          \
-    if (verbose) g_log ("openvasmd", G_LOG_LEVEL_DEBUG, args);  \
+#define tracef(args...)                                          \
+  do {                                                           \
+    if (verbose) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, args);  \
   } while (0)
 #else
 /**

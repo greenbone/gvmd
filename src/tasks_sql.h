@@ -25,6 +25,8 @@
 
 #include <sqlite3.h>
 
+#include <openvas/openvas_logging.h>
+
 
 /* Variables. */
 
@@ -95,14 +97,16 @@ sql (char* sql, ...)
         {
           if (stmt == NULL)
             {
-              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
-                       sqlite3_errmsg (task_db));
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
               abort ();
             }
           break;
         }
-      fprintf (stderr, "sqlite3_prepare failed: %s\n",
-               sqlite3_errmsg (task_db));
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       abort ();
     }
 
@@ -116,8 +120,9 @@ sql (char* sql, ...)
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          fprintf (stderr, "sqlite3_step failed: %s\n",
-                   sqlite3_errmsg (task_db));
+          g_warning ("%s: sqlite3_step failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           abort ();
         }
     }
@@ -163,14 +168,16 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
         {
           if (stmt == NULL)
             {
-              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
-                       sqlite3_errmsg (task_db));
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
               return -1;
             }
           break;
         }
-      fprintf (stderr, "sqlite3_prepare failed: %s\n",
-               sqlite3_errmsg (task_db));
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       return -1;
     }
 
@@ -182,14 +189,16 @@ sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE)
         {
-          fprintf (stderr, "sqlite3_step finished too soon\n");
+          g_warning ("%s: sqlite3_step finished too soon\n",
+                     __FUNCTION__);
           return 1;
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          fprintf (stderr, "sqlite3_step failed: %s\n",
-                   sqlite3_errmsg (task_db));
+          g_warning ("%s: sqlite3_step failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           return -1;
         }
       if (row == 0) break;
@@ -365,14 +374,16 @@ init_task_iterator (task_iterator_t* iterator)
         {
           if (stmt == NULL)
             {
-              fprintf (stderr, "sqlite3_prepare failed with NULL stmt: %s\n",
-                       sqlite3_errmsg (task_db));
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
               abort ();
             }
           break;
         }
-      fprintf (stderr, "sqlite3_prepare failed: %s\n",
-               sqlite3_errmsg (task_db));
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       abort ();
     }
 }
@@ -401,26 +412,23 @@ next_task (task_iterator_t* iterator, task_t* task)
 {
   int ret;
 
-  tracef ("next_task (%s)\n", iterator->done ? "done" : "");
-
   if (iterator->done) return FALSE;
 
   while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
   if (ret == SQLITE_DONE)
     {
-      tracef ("  reached done\n");
       iterator->done = TRUE;
       return FALSE;
     }
   if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
     {
       if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
-      fprintf (stderr, "sqlite3_step failed: %s\n",
-               sqlite3_errmsg (task_db));
+      g_warning ("%s: sqlite3_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       abort ();
     }
   *task = sqlite3_column_int64 (iterator->stmt, 0);
-  tracef ("  ret %llu", *task);
   return TRUE;
 }
 
@@ -443,15 +451,18 @@ init_manage_process ()
   g_free (mgr_dir);
   if (ret == -1)
     {
-      perror ("Failed to create mgr directory");
+      g_warning ("%s: failed to create mgr directory: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       abort (); // FIX
     }
 
   /* Open the database. */
   if (sqlite3_open (OPENVAS_STATE_DIR "/mgr/tasks.db", &task_db))
     {
-      fprintf (stderr, "sqlite3_open failed: %s\n",
-               sqlite3_errmsg (task_db));
+      g_warning ("%s: sqlite3_open failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       abort (); // FIX
     }
 }
@@ -467,10 +478,15 @@ init_manage_process ()
  * @return 0 on success, else -1.
  */
 int
-init_manage ()
+init_manage (GSList *log_config)
 {
   task_t index;
   task_iterator_t iterator;
+
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
 
   init_manage_process ();
 
@@ -1163,9 +1179,10 @@ delete_task (task_t task)
     {
       if (error)
         {
-          fprintf (stderr, "Failed to remove task dir %s: %s\n",
-                   name,
-                   error->message);
+          g_warning ("%s: failed to remove task dir %s: %s\n",
+                     __FUNCTION__,
+                     name,
+                     error->message);
           g_error_free (error);
         }
       g_free (name);
