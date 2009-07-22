@@ -466,7 +466,6 @@ INPUT                  = src/string.c \
                          src/tracef.h \
                          src/manage.c \
                          src/tasks_sql.h \
-                         src/tasks_fs.h \
                          src/ovas-mngr-comm.c \
                          src/otp.c \
                          src/omp.c \

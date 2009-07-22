@@ -93,7 +93,7 @@ set (DOC_FILES
 	 ../src/oxpd.c ../src/ompd.c ../src/otpd.c
 	 ../src/manage.c ../src/omp.c ../src/otp.c
 	 ../src/string.c ../src/file.c
-	 ../src/tasks_sql.h ../src/tasks_fs.h ../src/tracef.h
+	 ../src/tasks_sql.h ../src/tracef.h
 	 ../src/logf.h ../src/tests/common.c
 	 ../README ../INSTALL)
 

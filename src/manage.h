@@ -116,47 +116,7 @@ typedef enum
   TASK_STATUS_STOPPED
 } task_status_t;
 
-#ifdef TASKS_FS
-/**
- * @brief A task.
- */
-typedef struct
-{
-  unsigned int id;            ///< Unique ID.
-  char* name;                 ///< Name.  NULL if free.
-  unsigned int time;          ///< Repetition period, in seconds.
-  char* comment;              ///< Comment associated with task.
-  /*@null@*/
-  char* description;          ///< Description.
-  gsize description_length;   ///< Length of description.
-  gsize description_size;     ///< Actual size allocated for description.
-  task_status_t run_status;   ///< Run status of task.
-  char* start_time;           ///< Time the task last started.
-  char* end_time;             ///< Time the task last ended.
-  unsigned int report_count;  ///< The number of existing reports on the task.
-  /* The rest are for the current scan. */
-  /*@null@*/
-  char* attack_state;         ///< Attack status.
-  unsigned int current_port;  ///< Port currently under test.
-  unsigned int max_port;      ///< Last port to test.
-  /*@null@*/
-  GArray *open_ports;         ///< Open ports that the server has found.
-  int open_ports_size;        ///< Number of open ports.
-  int debugs_size;            ///< Number of debugs.
-  int holes_size;             ///< Number of holes.
-  int infos_size;             ///< Number of infos.
-  int logs_size;              ///< Number of logs.
-  int notes_size;             ///< Number of notes.
-} fs_task_t;
-
-typedef fs_task_t* task_t;
-
-typedef struct
-{
-  task_t index;
-  task_t end;
-} task_iterator_t;
-#else
+#ifdef TASKS_SQL
 typedef long long int task_t;
 
 #include <sqlite3.h>

@@ -648,9 +648,7 @@ static void
 print_tasks ();
 #endif
 
-#ifdef TASKS_FS
-#include "tasks_fs.h"
-#else
+#ifdef TASKS_SQL
 #include "tasks_sql.h"
 #endif
 

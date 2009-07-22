@@ -24,8 +24,6 @@
 
 ## Config
 
-#set (TASKS_CFLAG "-DTASKS_FS")
-#set (TASKS_LDFLAG "")
 set (TASKS_CFLAG "-DTASKS_SQL")
 set (TASKS_LDFLAG "-lsqlite3")
 
@@ -179,8 +177,7 @@ ADD_DEPENDENCIES (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
-             "manage.c" "ovas-mngr-comm.c" "string.c" "tasks_fs.h"
-			 "tasks_sql.h")
+             "manage.c" "ovas-mngr-comm.c" "string.c" "tasks_sql.h")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

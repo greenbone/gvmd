@@ -1,3 +1,22 @@
+2009-07-22  Matthew Mundell <mmundell@intevation.de>
+
+	Retire file system based task storage (-DTASKS_FS).
+
+	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Remove tasks_fs.h
+
+	* doc/CMakeLists.txt (DOC_FILES): Remove tasks_fs.h.
+
+	* src/manage.h: Remove TASKS_FS alternative.
+
+	* src/manage.c: Remove tasks_fs.h include.
+
+	* src/tests/CMakeLists.txt: Add -DTASKS_SQL to definitions.
+
+	* src/openvasmd.c (\mainpage): Remove tasks_fs.h reference.
+
+	* src/CMakeLists.txt: Remove TASKS_FS comments.
+	(C_FILES): Remove tasks_fs.h.
+
 2009-07-20  Matthew Mundell <mmundell@intevation.de>
 
 	* doc/proto_postgres.sql (meta): Type nvts_md5sum.

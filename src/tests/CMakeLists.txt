@@ -24,6 +24,8 @@
 
 ## Config
 
+add_definitions (-DTASKS_SQL)
+
 if (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
 else (OPENVAS_LIB_INSTALL_DIR)
