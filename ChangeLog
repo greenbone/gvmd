@@ -1,5 +1,11 @@
 2009-07-23  Matthew Mundell <mmundell@intevation.de>
 
+	* doc/proto_postgres.sql: Use date types for dates.
+	(results): Add subnet and nvt fields.
+	(reports): Add date field.
+
+2009-07-23  Matthew Mundell <mmundell@intevation.de>
+
 	Match the db model better to the state of the manager.
 
 	* doc/db_postgres.sql (nvt_selectors, results, report_hosts)

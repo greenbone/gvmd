@@ -60,7 +60,7 @@ CREATE TABLE jobs
 	name text UNIQUE,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
 	period integer,
-	start_time integer);
+	start_time date);
 
 CREATE TABLE job_hosts
    (job integer PRIMARY KEY REFERENCES jobs (id) ON DELETE RESTRICT,
@@ -72,29 +72,32 @@ CREATE TABLE scans
 	uuid text UNIQUE NOT NULL,
 	rcfile text,
 	run_status integer,
-	start_time integer,
-	end_time integer);
+	start_time date NOT NULL,
+	end_time date);
 
 CREATE TABLE scan_hosts
    (scan integer PRIMARY KEY REFERENCES scans (id) ON DELETE RESTRICT,
 	host integer PRIMARY KEY REFERENCES hosts (id) ON DELETE RESTRICT,
-	start_time integer,
-	end_time integer,
+	start_time date,
+	end_time date,
 	attack_state integer,
 	current_port integer,
 	max_port integer);
 
 CREATE TABLE results
    (id integer PRIMARY KEY,
-	host integer REFERENCES hosts (id) ON DELETE RESTRICT,
 	scan integer REFERENCES scans (id) ON DELETE RESTRICT,
-	type integer,
+	subnet text,
+	host integer REFERENCES hosts (id) ON DELETE RESTRICT,
 	port text,
+	nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
+	type integer,
 	description text);
 
 CREATE TABLE reports
    (id integer PRIMARY KEY,
 	uuid text NOT NULL,
+	date date,
 	name text,
 	comment text,
 	description text);
