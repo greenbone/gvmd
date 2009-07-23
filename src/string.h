@@ -46,4 +46,7 @@ strip_space (/*@shared@*/ char*, /*@shared@*/ char*);
 int
 isalnumstr (const char*);
 
+int
+isbase64 (const char*);
+
 #endif

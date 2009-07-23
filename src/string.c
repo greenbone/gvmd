@@ -33,7 +33,7 @@
  *
  * 0 to turn off all tracing messages.
  */
-#define TRACE 0
+#define TRACE 1
 
 #include <assert.h>
 #include <ctype.h>
@@ -140,7 +140,6 @@ char*
 strip_space (char* string, char* end)
 {
   assert (string <= end);
-  tracef ("   strip %p %p\n", string, end);
   if (string >= end) return string;
   end--;
   while (string[0] == ' ' || string[0] == '\n')
@@ -174,5 +173,26 @@ int
 isalnumstr (const char* string)
 {
   while (*string) if (isalnum (*string)) string++; else return 0;
+  return 1;
+}
+
+/**
+ * @brief Check whether a string contains only base64 characters.
+ *
+ * @param  string  String to check.
+ *
+ * @return 1 if all characters are base64 characters, else 0.
+ */
+int
+isbase64 (const char* string)
+{
+  while (*string)
+    if (isprint (*string))
+      string++;
+    else
+      {
+        tracef ("   %s: failed on %c\n", __FUNCTION__, *string);
+        return 0;
+      }
   return 1;
 }

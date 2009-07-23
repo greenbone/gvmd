@@ -1,3 +1,11 @@
+2009-07-23  Matthew Mundell <mmundell@intevation.de>
+
+	* src/string.c (isbase64): New function.
+	* src/string.h (isbase64): New header.
+
+	* src/tests/omp_get_report_0.c: Check that the report is all base64
+	characters instead of all alphanumeric characters.
+
 2009-07-22  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tasks_fs.h: Remove.
