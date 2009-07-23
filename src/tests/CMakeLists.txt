@@ -76,24 +76,6 @@ set_target_properties (rmdir_recursively_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG}
 target_link_libraries (rmdir_recursively_1 common)
 ADD_TEST (rmdir_recursively_1 rmdir_recursively_1)
 
-add_executable (report_path_task_uuid_0 report_path_task_uuid_0.c)
-target_link_libraries (report_path_task_uuid_0 manage ovas-mngr-comm string file)
-set_target_properties (report_path_task_uuid_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
-set_target_properties (report_path_task_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
-ADD_TEST (report_path_task_uuid_0 report_path_task_uuid_0)
-
-add_executable (report_path_task_uuid_1 report_path_task_uuid_1.c)
-target_link_libraries (report_path_task_uuid_1 manage ovas-mngr-comm string file)
-set_target_properties (report_path_task_uuid_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
-set_target_properties (report_path_task_uuid_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
-ADD_TEST (report_path_task_uuid_1 report_path_task_uuid_1)
-
-add_executable (report_path_task_uuid_2 report_path_task_uuid_2.c)
-target_link_libraries (report_path_task_uuid_2 manage ovas-mngr-comm string file)
-set_target_properties (report_path_task_uuid_2 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
-set_target_properties (report_path_task_uuid_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
-ADD_TEST (report_path_task_uuid_2 report_path_task_uuid_2)
-
 add_executable (strip_space_0 strip_space_0.c)
 target_link_libraries (strip_space_0 string)
 set_target_properties (strip_space_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")

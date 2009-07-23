@@ -241,7 +241,7 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
-      abort ();
+      return NULL;
     }
   ret2 = sqlite3_column_text (stmt, col);
   /* TODO: For efficiency, save this duplication by adjusting the task
@@ -492,9 +492,12 @@ init_manage (GSList *log_config)
 
   /* Ensure the tables exist. */
 
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, report_count, attack_state, current_port, max_port, debugs_size, holes_size, infos_size, logs_size, notes_size);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
 
   /* Always create a single user, for now. */
 
@@ -746,6 +749,425 @@ task_end_time (task_t task)
 }
 
 /**
+ * @brief Get the report ID from the most recently completed invocation of task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return The UUID of the task as a newly allocated string.
+ */
+gchar*
+task_last_report_id (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM reports WHERE task = %llu"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task);
+}
+
+
+/* Iterators. */
+
+/**
+ * @brief Cleanup an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+cleanup_iterator (iterator_t* iterator)
+{
+  sqlite3_finalize (iterator->stmt);
+}
+
+/**
+ * @brief Increment an iterator.
+ *
+ * @param[in]   iterator  Task iterator.
+ *
+ * @return TRUE if there was a next item, else FALSE.
+ */
+gboolean
+next (iterator_t* iterator)
+{
+  int ret;
+
+  if (iterator->done) return FALSE;
+
+  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
+  if (ret == SQLITE_DONE)
+    {
+      iterator->done = TRUE;
+      return FALSE;
+    }
+  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+    {
+      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
+      g_warning ("%s: sqlite3_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+  return TRUE;
+}
+
+
+/* Results. */
+
+/**
+ * @brief Make a result.
+ *
+ * @param[in]  task         The task associated with the result.
+ * @param[in]  subnet       Subnet.
+ * @param[in]  subnet       Host.
+ * @param[in]  port         The port the result refers to.
+ * @param[in]  nvt          The OID of the NVT that produced the result.
+ * @param[in]  type         Type of result.  "Security Hole", etc.
+ * @param[in]  description  Description of the result.
+ *
+ * @return A result descriptor for the new result.
+ */
+result_t
+make_result (task_t task, const char* subnet, const char* host,
+             const char* port, const char* nvt, const char* type,
+             const char* description)
+{
+  result_t result;
+  // TODO: Escape description.
+  sql ("INSERT into results (task, subnet, host, port, nvt, type, description)"
+       " VALUES (%llu, '%s', '%s', '%s', '%s', '%s', '%s');",
+       task, subnet, host, port, nvt, type, description);
+  result = sqlite3_last_insert_rowid (task_db);
+  return result;
+}
+
+
+/* Reports. */
+
+/**
+ * @brief Make a report.
+ *
+ * @param[in]  task  The task associated with the report.
+ * @param[in]  uuid  The UUID of the report.
+ *
+ * @return A report descriptor for the new report.
+ */
+report_t
+make_report (task_t task, const char* uuid)
+{
+  report_t report;
+  sql ("INSERT into reports (uuid, task, date, nbefile, comment)"
+       " VALUES ('%s', %llu, %i, '', '');",
+       uuid, task, time (NULL));
+  report = sqlite3_last_insert_rowid (task_db);
+  return report;
+}
+
+/**
+ * @brief Create the current report for a task.
+ *
+ * @param[in]  task   The task.
+ *
+ * @return 0 success, -1 new_report is already set, -2 failed to generate ID.
+ */
+static int
+create_report (task_t task)
+{
+  char* report_id;
+
+  assert (new_report == (report_t) NULL);
+  if (new_report) return -1;
+
+  /* Generate report UUID. */
+
+  report_id = make_report_uuid ();
+  if (report_id == NULL) return -2;
+
+  /* Create the report. */
+
+  new_report = make_report (task, report_id);
+
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Report UUID.
+ */
+char*
+report_uuid (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Add a result to a report.
+ *
+ * @param[in]  report  The report.
+ * @param[in]  result  The result.
+ */
+void
+report_add_result (report_t report, result_t result)
+{
+  sql ("INSERT into report_results (report, result)"
+       " VALUES (%llu, %llu);",
+       report, result);
+}
+
+/**
+ * @brief Initialise a report iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task whose reports the iterator loops over.
+ *                       All tasks if NULL.
+ */
+void
+init_report_iterator (iterator_t* iterator, task_t task)
+{
+  int ret;
+  const char* tail;
+  gchar* sql;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (task)
+    sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
+                           task);
+  else
+    sql = g_strdup_printf ("SELECT ROWID FROM reports;");
+  tracef ("   sql (report iterator): %s\n", sql);
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (sql);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+/**
+ * @brief Read the next task from an iterator.
+ *
+ * @param[in]   iterator  Task iterator.
+ * @param[out]  task      Task.
+ *
+ * @return TRUE if there was a next task, else FALSE.
+ */
+gboolean
+next_report (iterator_t* iterator, report_t* report)
+{
+  int ret;
+
+  if (iterator->done) return FALSE;
+
+  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
+  if (ret == SQLITE_DONE)
+    {
+      iterator->done = TRUE;
+      return FALSE;
+    }
+  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+    {
+      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
+      g_warning ("%s: sqlite3_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+  *report = sqlite3_column_int64 (iterator->stmt, 0);
+  return TRUE;
+}
+
+/**
+ * @brief Initialise a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  report    Report whose results the iterator loops over.
+ *                       All results if NULL.
+ */
+void
+init_result_iterator (iterator_t* iterator, report_t report)
+{
+  int ret;
+  const char* tail;
+  gchar* sql;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (report)
+    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                           " FROM results, reports"
+                           " WHERE reports.task = results.task"
+                           " AND reports.ROWID = %llu;",
+                           report);
+  else
+    sql = g_strdup_printf ("SELECT * FROM results;");
+  tracef ("   sql (result iterator): %s\n", sql);
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (sql);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+#if 0
+/**
+ * @brief Get the subnet from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The subnet of the result as a newly allocated string, or NULL on
+ *         error.
+ */
+char*
+result_iterator_subnet (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret ? g_strdup (ret) : NULL;
+}
+#endif
+
+#if 0
+/**
+ * @brief Get the NAME from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NAME of the result.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
+#endif
+
+#define DEF_ACCESS(name, col) \
+const char* \
+result_iterator_ ## name (iterator_t* iterator) \
+{ \
+  const char *ret; \
+  if (iterator->done) return NULL; \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
+  return ret; \
+}
+
+DEF_ACCESS (subnet, 0);
+DEF_ACCESS (host, 1);
+DEF_ACCESS (port, 2);
+DEF_ACCESS (nvt, 3);
+DEF_ACCESS (type, 4);
+DEF_ACCESS (descr, 5);
+
+#undef DEF_ACCESS
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  report    Report whose hosts the iterator loops over.
+ *                       All hosts if NULL.
+ */
+void
+init_host_iterator (iterator_t* iterator, report_t report)
+{
+  int ret;
+  const char* tail;
+  gchar* sql;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (report)
+    sql = g_strdup_printf ("SELECT * FROM report_hosts WHERE report = %llu;",
+                           report);
+  else
+    sql = g_strdup_printf ("SELECT * FROM report_hosts;");
+  tracef ("   sql (host iterator): %s\n", sql);
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (sql);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+#if 0
+/**
+ * @brief Get the NAME from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NAME of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
+#endif
+
+#define DEF_ACCESS(name, col) \
+const char* \
+host_iterator_ ## name (iterator_t* iterator) \
+{ \
+  const char *ret; \
+  if (iterator->done) return NULL; \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
+  return ret; \
+}
+
+DEF_ACCESS (host, 1);
+DEF_ACCESS (start_time, 2);
+DEF_ACCESS (end_time, 3);
+
+#undef DEF_ACCESS
+
+/**
  * @brief Set the end time of a task.
  *
  * @param[in]  task  Task.
@@ -761,21 +1183,213 @@ set_task_end_time (task_t task, char* time)
   free (time);
 }
 
-void
-create_task_report (const task_t task, const char* report_id)
+/**
+ * @brief Get the start time of a scan.
+ *
+ * @param[in]  report  The report associated with the scan.
+ *
+ * @return Start time of scan, in a newly allocated string.
+ */
+char*
+scan_start_time (report_t report)
 {
-  sql ("INSERT into reports (uuid, task, nbefile, comment)"
-       " VALUES ('%s', '%llu', '', '');",
-       report_id, task);
-  inc_task_report_count (task);
+  return sql_string (0, 0,
+                     "SELECT start_time FROM reports WHERE ROWID = %llu;",
+                     report);
 }
 
+/**
+ * @brief Set the start time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  Start time.
+ */
 void
-delete_task_report (const task_t task, const char* report_id)
+set_scan_start_time (report_t report, const char* timestamp)
 {
-  sql ("DELETE from reports where uuid = '%s';", report_id);
-  dec_task_report_count (task);
+  sql ("UPDATE reports SET start_time = '%s' WHERE ROWID = %llu;",
+       timestamp, report);
 }
+
+/**
+ * @brief Get the end time of a scan.
+ *
+ * @param[in]  report  The report associated with the scan.
+ *
+ * @return End time of scan, in a newly allocated string.
+ */
+char*
+scan_end_time (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT end_time FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Set the end time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  End time.
+ */
+void
+set_scan_end_time (report_t report, const char* timestamp)
+{
+  sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
+       timestamp, report);
+}
+
+/**
+ * @brief Set the end time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  End time.
+ */
+void
+set_scan_host_end_time (report_t report, const char* host,
+                        const char* timestamp)
+{
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, host))
+    sql ("UPDATE report_hosts SET end_time = '%s'"
+         " WHERE report = %llu AND host = '%s';",
+         timestamp, report, host);
+  else
+    sql ("INSERT into report_hosts (report, host, end_time)"
+         " VALUES (%llu, '%s', '%s');",
+         report, host, timestamp);
+}
+
+/**
+ * @brief Set the start time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  Start time.
+ */
+void
+set_scan_host_start_time (report_t report, const char* host,
+                          const char* timestamp)
+{
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, host))
+    sql ("UPDATE report_hosts SET start_time = '%s'"
+         " WHERE report = %llu AND host = '%s';",
+         timestamp, report, host);
+  else
+    sql ("INSERT into report_hosts (report, host, start_time)"
+         " VALUES (%llu, '%s', '%s');",
+         report, host, timestamp);
+}
+
+/**
+ * @brief Get the timestamp of a report.
+ *
+ * @param[in]   report_id    UUID of report.
+ * @param[out]  timestamp    Timestamp on success.  Caller must free.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_timestamp (const char* report_id, gchar** timestamp)
+{
+  const char* stamp;
+  time_t time = sql_int (0, 0,
+                         "SELECT date FROM reports where uuid = '%s';",
+                         report_id);
+  stamp = ctime (&time);
+  if (stamp == NULL) return -1;
+  /* Allocate a copy, clearing the newline from the end of the timestamp. */
+  *timestamp = g_strndup (stamp, strlen (stamp) - 1);
+  return 0;
+}
+
+#define REPORT_COUNT(var, name) \
+  *var = sql_int (0, 0, \
+                  "SELECT count(*) FROM results, report_results" \
+                  " WHERE results.type = '" name "'" \
+                  " AND results.ROWID = report_results.result" \
+                  " AND report_results.report" \
+                  " = (SELECT ROWID FROM reports WHERE uuid = '%s');", \
+                  report_id)
+
+/**
+ * @brief Get the message counts from a report cache.
+ *
+ * @param[in]   report_id    ID of report.
+ * @param[out]  debugs       Number of debug messages.
+ * @param[out]  holes        Number of hole messages.
+ * @param[out]  infos        Number of info messages.
+ * @param[out]  logs         Number of log messages.
+ * @param[out]  warnings     Number of warning messages.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_counts (const char* report_id, int* debugs, int* holes, int* infos,
+               int* logs, int* warnings)
+{
+  REPORT_COUNT (debugs,   "Debug Message");
+  REPORT_COUNT (holes,    "Security Hole");
+  REPORT_COUNT (infos,    "Security Warning");
+  REPORT_COUNT (logs,     "Log Message");
+  REPORT_COUNT (warnings, "Security Note");
+  return 0;
+}
+
+#undef REPORT_COUNT
+
+/**
+ * @brief Delete a report.
+ *
+ * @param[in]  report_id  ID of report.
+ *
+ * @return 0 success.
+ */
+int
+delete_report (report_t report)
+{
+  sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
+  sql ("DELETE FROM report_results WHERE report = %llu;", report);
+  sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
+  return 0;
+}
+
+/**
+ * @brief Set a report parameter.
+ *
+ * @param[in]  report_id  The ID of the report.
+ * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
+ * @param[in]  value      The value of the parameter.
+ *
+ * @return 0 success, -2 parameter name error,
+ *         -3 failed to write parameter to disk,
+ *         -4 username missing from current_credentials.
+ */
+int
+set_report_parameter (report_t report, const char* parameter, char* value)
+{
+  tracef ("   set_report_parameter %llu %s\n", report, parameter);
+  if (strncasecmp ("COMMENT", parameter, 7) == 0)
+    {
+      gchar* quote = sql_quote (value, strlen (value));
+      sql ("UPDATE reports SET comment = '%s' WHERE ROWID = %llu;",
+           value,
+           report);
+      g_free (quote);
+    }
+  else
+    return -2;
+  return 0;
+}
+
+
+/* FIX More task stuff. */
 
 /**
  * @brief Return the number of reports associated with a task.
@@ -788,7 +1402,7 @@ unsigned int
 task_report_count (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
-                                 "SELECT report_count FROM tasks WHERE ROWID = %llu;",
+                                 "SELECT count(*) FROM reports WHERE task = %llu;",
                                  task);
 }
 
@@ -833,19 +1447,9 @@ int
 task_debugs_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT debugs_size FROM tasks WHERE ROWID = %llu;",
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'Debug Message';",
                   task);
-}
-
-/**
- * @brief Increment number of debug messages in the current report of a task.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_debugs_size (task_t task)
-{
-  inc_task_int (task, "debugs_size");
 }
 
 /**
@@ -859,19 +1463,9 @@ int
 task_holes_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT holes_size FROM tasks WHERE ROWID = %llu;",
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'Security Hole';",
                   task);
-}
-
-/**
- * @brief Increment number of hole messages in the current report of a task.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_holes_size (task_t task)
-{
-  inc_task_int (task, "holes_size");
 }
 
 /**
@@ -885,19 +1479,9 @@ int
 task_infos_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT infos_size FROM tasks WHERE ROWID = %llu;",
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'Security Warning';",
                   task);
-}
-
-/**
- * @brief Increment number of info messages in the current report of a task.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_infos_size (task_t task)
-{
-  inc_task_int (task, "infos_size");
 }
 
 /**
@@ -911,19 +1495,9 @@ int
 task_logs_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT logs_size FROM tasks WHERE ROWID = %llu;",
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'Log Message';",
                   task);
-}
-
-/**
- * @brief Increment number of log messages in the current report of a task.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_logs_size (task_t task)
-{
-  inc_task_int (task, "logs_size");
 }
 
 /**
@@ -937,41 +1511,9 @@ int
 task_notes_size (task_t task)
 {
   return sql_int (0, 0,
-                  "SELECT notes_size FROM tasks WHERE ROWID = %llu;",
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'Security Note';",
                   task);
-}
-
-/**
- * @brief Increment number of note messages in the current report of a task.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_notes_size (task_t task)
-{
-  inc_task_int (task, "notes_size");
-}
-
-/**
- * @brief Increment report count.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_report_count (task_t task)
-{
-  inc_task_int (task, "report_count");
-}
-
-/**
- * @brief Decrement report count.
- *
- * @param[in]  task  Task.
- */
-void
-dec_task_report_count (task_t task)
-{
-  dec_task_int (task, "report_count");
 }
 
 /**
@@ -1149,10 +1691,7 @@ request_delete_task (task_t* task_pointer)
 int
 delete_task (task_t task)
 {
-  gboolean success;
   char* tsk_uuid;
-  gchar* name;
-  GError* error;
 
   tracef ("   delete task %u\n", task_id (task));
 
@@ -1164,32 +1703,7 @@ delete_task (task_t task)
 
   if (delete_reports (task)) return -1;
 
-  /* Remove the task directory, which contained the reports. */
-
-  name = g_build_filename (OPENVAS_STATE_DIR
-                           "/mgr/users/",
-                           current_credentials.username,
-                           "tasks",
-                           tsk_uuid,
-                           NULL);
-  free (tsk_uuid);
-  error = NULL;
-  success = rmdir_recursively (name, &error);
-  if (success == FALSE)
-    {
-      if (error)
-        {
-          g_warning ("%s: failed to remove task dir %s: %s\n",
-                     __FUNCTION__,
-                     name,
-                     error->message);
-          g_error_free (error);
-        }
-      g_free (name);
-      return -1;
-    }
-  g_free (name);
-
+  sql ("DELETE FROM results WHERE task = %llu;", task);
   sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
 
   return 0;
@@ -1333,6 +1847,36 @@ find_task (const char* uuid, task_t* task)
 }
 
 /**
+ * @brief Find a report given an identifier.
+ *
+ * @param[in]   uuid    A report identifier.
+ * @param[out]  report  Report return, 0 if succesfully failed to find task.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+gboolean
+find_report (const char* uuid, report_t* report)
+{
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Reset all running information for a task.
  *
  * @param[in]  task  Task.
@@ -1345,12 +1889,7 @@ reset_task (task_t task)
        " end_time = '',"
        " attack_state = '',"
        " current_port = '',"
-       " max_port = '',"
-       " debugs_size = '0',"
-       " holes_size = '0',"
-       " infos_size = '0',"
-       " logs_size = '0',"
-       " notes_size = '0'"
+       " max_port = ''"
        " WHERE ROWID = %llu;",
        task);
 }

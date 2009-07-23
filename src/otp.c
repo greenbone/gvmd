@@ -328,188 +328,16 @@ typedef struct
  * @param[in]  type     The message type (for example "Security Warning").
  */
 static void
-write_message (message_t* message, FILE* stream, char* type)
+write_message (task_t task, message_t* message, char* type)
 {
-  fprintf (stream, "results|%s|%s|", message->subnet, message->host);
-#ifdef PARSE_PORTS
-  print_port (stream, &message->port);
-#else
-  fputs (message->port.string, stream);
-#endif
-  fprintf (stream, "|%s|%s|%s|\n", message->oid, type, message->description);
-}
+  result_t result;
 
-/**
- * @brief Write a timestamp to a stream.
- *
- * @param[in]  file       The stream.
- * @param[in]  host       The host.
- * @param[in]  type       The type of the timestamp (for example, "host_end").
- * @param[in]  time       The time to stamp.
- */
-static void
-write_timestamp (FILE* file, const char* host, const char* type,
-                 const char* time)
-{
-  fprintf (file, "timestamps||%s|%s|%s|\n", host, type, time);
-}
+  assert (new_report);
 
-/**
- * @brief Close the current report.
- *
- * @param[in]  task  The task.
- *
- * @return 0 success, -1 current_report NULL, -2 failed to close file,
- *         -3 failed to remove last report, -4 failed to symlink last report,
- *         -5 failed to change dir, -6 failed to write cache.
- */
-static int
-save_report (task_t task)
-{
-  gchar *reports_dir, *report_dir, *report_name, *current_dir, *cache_name;
-  gchar *cache;
-  char *time;
-  GError *error;
-
-  assert (current_report != NULL);
-  if (current_report == NULL) return -1;
-
-#if TRACE
-  {
-    char* start_time = task_start_time (task);
-    tracef ("   Saving report (%s) on task %u\n", start_time, task_id (task));
-    free (start_time);
-  }
-#endif
-
-  if (fclose (current_report))
-    {
-      g_warning ("%s: failed to close report stream: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -2;
-    }
-  current_report = NULL;
-
-  /* Save counts to cache. */
-
-  report_dir = g_path_get_dirname (current_report_name);
-  cache_name = g_build_filename (report_dir, "report.nbe.cnt", NULL);
-  cache = g_strdup_printf ("%i %i %i %i %i\n",
-                           task_debugs_size (task),
-                           task_holes_size (task),
-                           task_infos_size (task),
-                           task_logs_size (task),
-                           task_notes_size (task));
-  error = NULL;
-  g_file_set_contents (cache_name, cache, strlen (cache), &error);
-  g_free (cache);
-  if (error)
-    {
-      g_warning ("%s: failed to write report cache to %s: %s\n",
-                 __FUNCTION__,
-                 cache_name,
-                 error->message);
-      g_error_free (error);
-      g_free (cache_name);
-      g_free (report_dir);
-      return -6;
-    }
-  g_free (cache_name);
-
-  /* Save time to cache. */
-
-  report_dir = g_path_get_dirname (current_report_name);
-  cache_name = g_build_filename (report_dir, "report.nbe.time", NULL);
-  error = NULL;
-  time = task_start_time (task);
-  g_file_set_contents (cache_name, time, strlen (time), &error);
-  free (time);
-  if (error)
-    {
-      g_warning ("%s: failed to write report cache to %s: %s\n",
-                 __FUNCTION__,
-                 cache_name,
-                 error->message);
-      g_error_free (error);
-      g_free (cache_name);
-      g_free (report_dir);
-      return -6;
-    }
-  g_free (cache_name);
-
-  /* Update the symlink to the last report. */
-
-  report_name = g_path_get_basename (report_dir);
-  reports_dir = g_path_get_dirname (report_dir);
-  g_free (report_dir);
-  current_dir = g_get_current_dir ();
-  if (chdir (reports_dir))
-    {
-      g_free (current_dir);
-      g_free (report_name);
-      g_free (reports_dir);
-      g_warning ("%s: failed to change dir: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -5;
-    }
-  if (unlink ("last"))
-    {
-      if (errno != ENOENT)
-        {
-          g_free (current_dir);
-          g_free (report_name);
-          g_free (reports_dir);
-          g_warning ("%s: failed to remove last report: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return -3;
-        }
-    }
-  if (symlink (report_name, "last"))
-    {
-      g_free (current_dir);
-      g_free (report_name);
-      g_free (reports_dir);
-      g_warning ("%s: failed to symlink last report: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -4;
-    }
-  g_free (report_name);
-  g_free (reports_dir);
-  if (chdir (current_dir))
-    {
-      g_free (current_dir);
-      g_warning ("%s: failed to change dir: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -5;
-    }
-  g_free (current_dir);
-
-  return 0;
-}
-
-
-/* Appending messages to reports. */
-
-/**
- * @brief Append a timestamp to a report.
- *
- * @param[in]  task  Task.
- * @param[in]  host  Host.
- * @param[in]  type  Type of timestamp.
- * @param[in]  time  Time.
- */
-static void
-append_timestamp (task_t task, const char* host, const char* type,
-                  const char* time)
-{
-  assert (current_report != NULL);
-  if (current_report)
-    write_timestamp (current_report, host, type, time);
+  result = make_result (task, message->subnet, message->host,
+                        message->port.string, message->oid, type,
+                        message->description);
+  if (new_report) report_add_result (new_report, result);
 }
 
 /**
@@ -521,12 +349,7 @@ append_timestamp (task_t task, const char* host, const char* type,
 static void
 append_debug_message (task_t task, message_t* message)
 {
-  assert (current_report != NULL);
-  if (current_report)
-    {
-      write_message (message, current_report, "Debug Message");
-      inc_task_debugs_size (task);
-    }
+  write_message (task, message, "Debug Message");
 }
 
 /**
@@ -538,12 +361,7 @@ append_debug_message (task_t task, message_t* message)
 static void
 append_hole_message (task_t task, message_t* message)
 {
-  assert (current_report != NULL);
-  if (current_report)
-    {
-      write_message (message, current_report, "Security Hole");
-      inc_task_holes_size (task);
-    }
+  write_message (task, message, "Security Hole");
 }
 
 /**
@@ -555,12 +373,7 @@ append_hole_message (task_t task, message_t* message)
 static void
 append_info_message (task_t task, message_t* message)
 {
-  assert (current_report != NULL);
-  if (current_report)
-    {
-      write_message (message, current_report, "Security Warning");
-      inc_task_infos_size (task);
-    }
+  write_message (task, message, "Security Warning");
 }
 
 /**
@@ -572,12 +385,7 @@ append_info_message (task_t task, message_t* message)
 static void
 append_log_message (task_t task, message_t* message)
 {
-  assert (current_report != NULL);
-  if (current_report)
-    {
-      write_message (message, current_report, "Log Message");
-      inc_task_logs_size (task);
-    }
+  write_message (task, message, "Log Message");
 }
 
 /**
@@ -589,12 +397,7 @@ append_log_message (task_t task, message_t* message)
 static void
 append_note_message (task_t task, message_t* message)
 {
-  assert (current_report != NULL);
-  if (current_report)
-    {
-      write_message (message, current_report, "Security Note");
-      inc_task_notes_size (task);
-    }
+  write_message (task, message, "Security Note");
 }
 
 
@@ -2367,10 +2170,9 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       assert (current_host);
-                      append_timestamp (current_server_task,
-                                        current_host,
-                                        "host_start",
-                                        field);
+                      set_scan_host_start_time (new_report,
+                                                current_host,
+                                                field);
                       g_free (current_host);
                       current_host = NULL;
                     }
@@ -2397,10 +2199,9 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       assert (current_host);
-                      append_timestamp (current_server_task,
-                                        current_host,
-                                        "host_end",
-                                        field);
+                      set_scan_host_end_time (new_report,
+                                              current_host,
+                                              field);
                       g_free (current_host);
                       current_host = NULL;
                     }
@@ -2423,10 +2224,7 @@ process_otp_server_input ()
                                            TASK_STATUS_RUNNING);
                       set_task_start_time (current_server_task,
                                            g_strdup (field));
-                      append_timestamp (current_server_task,
-                                        "",
-                                        "scan_start",
-                                        field);
+                      set_scan_start_time (new_report, field);
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -2451,14 +2249,7 @@ process_otp_server_input ()
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                             delete_task (current_server_task);
-                            if (fclose (current_report))
-                              {
-                                g_warning ("%s: failed to close report stream: %s\n",
-                                           __FUNCTION__,
-                                           strerror (errno));
-                                return -1;
-                              }
-                            current_report = NULL;
+                            new_report = (report_t) NULL;
                             break;
                           default:
                             set_task_run_status (current_server_task,
@@ -2466,17 +2257,10 @@ process_otp_server_input ()
                             set_task_end_time (current_server_task,
                                                g_strdup (field));
                         }
-                      if (current_report)
+                      if (new_report)
                         {
-                          append_timestamp (current_server_task,
-                                            "",
-                                            "scan_end",
-                                            field);
-                          if (save_report (current_server_task))
-                            {
-                              g_free (current_report_name);
-                              return -1;
-                            }
+                          set_scan_end_time (new_report, field);
+                          new_report = (report_t) NULL;
                           current_server_task = (task_t) NULL;
                         }
                     }

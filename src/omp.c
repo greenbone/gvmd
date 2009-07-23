@@ -1199,117 +1199,69 @@ send_rule (gpointer rule)
  *
  * @param[in]  task  The task.
  *
- * @return 0 success, -1 task ID error, -2 credentials missing,
- *         failed to open task dir, -4 out of space in to_client,
+ * @return 0 success, -4 out of space in to_client,
  *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
 send_reports (task_t task)
 {
-  // FIX Abstract report iterator and move it to manage.c.
+  iterator_t iterator;
+  report_t index;
 
-  gchar* dir_name;
-  char* tsk_uuid;
-  struct dirent ** names;
-  int count, index;
-  gchar* msg;
-
-  if (task_uuid (task, &tsk_uuid)) return -1;
-
-  if (current_credentials.username == NULL)
+  init_report_iterator (&iterator, task);
+  while (next_report (&iterator, &index))
     {
-      free (tsk_uuid);
-      return -2;
-    }
+      gchar *uuid, *timestamp, *msg;
+      int debugs, holes, infos, logs, warnings;
 
-  dir_name = g_build_filename (OPENVAS_STATE_DIR
-                               "/mgr/users/",
-                               current_credentials.username,
-                               "tasks",
-                               tsk_uuid,
-                               "reports",
-                               NULL);
-  free (tsk_uuid);
+      uuid = report_uuid (index);
 
-  count = scandir (dir_name, &names, NULL, alphasort);
-  if (count < 0)
-    {
-      if (errno == ENOENT)
+      if (report_counts (uuid,
+                         &debugs, &holes, &infos, &logs,
+                         &warnings))
         {
-          free (dir_name);
-          return 0;
-        }
-      g_message ("   Failed to open dir %s: %s\n",
-                 dir_name,
-                 strerror (errno));
-      g_free (dir_name);
-      return -3;
-    }
-
-  msg = NULL;
-  for (index = 0; index < count; index++)
-    {
-      /*@dependent@*/ const char* report_name = names[index]->d_name;
-
-      if (report_name[0] == '.')
-        {
-          free (names[index]);
-          continue;
+          free (uuid);
+          return -5;
         }
 
-      if (strlen (report_name) == OVAS_MANAGE_REPORT_ID_LENGTH)
+      if (report_timestamp (uuid, &timestamp))
         {
-          int debugs, holes, infos, logs, warnings;
-          gchar *timestamp;
+          free (uuid);
+          return -6;
+        }
 
-          if (report_counts (report_name,
-                             &debugs, &holes, &infos, &logs,
-                             &warnings))
-            return -5;
+      tracef ("     %s\n", uuid);
 
-          if (report_timestamp (report_name, &timestamp))
-            return -6;
-
-#if 0
-          report_dir_name = g_build_filename (dir_name, report_name, NULL);
-#endif
-
-          tracef ("     %s\n", report_name);
-
-          msg = g_strdup_printf ("<report"
-                                 " id=\"%s\">"
-                                 "<timestamp>%s</timestamp>"
-                                 "<messages>"
-                                 "<debug>%i</debug>"
-                                 "<hole>%i</hole>"
-                                 "<info>%i</info>"
-                                 "<log>%i</log>"
-                                 "<warning>%i</warning>"
-                                 "</messages>"
-                                 "</report>",
-                                 report_name,
-                                 timestamp,
-                                 debugs,
-                                 holes,
-                                 infos,
-                                 logs,
-                                 warnings);
-          if (send_to_client (msg))
-            {
-              g_free (msg);
-              while (index < count) { free (names[index++]); }
-              free (names);
-              g_free (dir_name);
-              return -4;
-            }
+      msg = g_strdup_printf ("<report"
+                             " id=\"%s\">"
+                             "<timestamp>%s</timestamp>"
+                             "<messages>"
+                             "<debug>%i</debug>"
+                             "<hole>%i</hole>"
+                             "<info>%i</info>"
+                             "<log>%i</log>"
+                             "<warning>%i</warning>"
+                             "</messages>"
+                             "</report>",
+                             uuid,
+                             timestamp,
+                             debugs,
+                             holes,
+                             infos,
+                             logs,
+                             warnings);
+      g_free (timestamp);
+      if (send_to_client (msg))
+        {
           g_free (msg);
+          free (uuid);
+          return -4;
         }
-
-      free (names[index]);
+      g_free (msg);
+      free (uuid);
     }
+  cleanup_iterator (&iterator);
 
-  free (names);
-  g_free (dir_name);
   return 0;
 }
 
@@ -1620,24 +1572,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SEND_TO_CLIENT_OR_FAIL ("<delete_report_response status=\"");
         if (current_uuid)
           {
+            report_t report;
+
             // FIX check syntax of current_uuid  STATUS_ERROR_SYNTAX
-            int ret = delete_report (current_uuid);
-            free_string_var (&current_uuid);
-            switch (ret)
+            if (find_report (current_uuid, &report))
+              SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
+            else if (report == 0)
+              SEND_TO_CLIENT_OR_FAIL (STATUS_ERROR_MISSING);
+            else
               {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (STATUS_OK);
-                  break;
-                case -1: /* Failed to find associated task. */
-                case -2: /* Report file missing. */
-                  SEND_TO_CLIENT_OR_FAIL (STATUS_ERROR_MISSING);
-                  break;
-                case -3: /* Failed to read link. */
-                case -4: /* Failed to remove report. */
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
-                  break;
+                int ret = delete_report (report);
+                switch (ret)
+                  {
+                    case 0:
+                      SEND_TO_CLIENT_OR_FAIL (STATUS_OK);
+                      break;
+                    default:
+                      SEND_TO_CLIENT_OR_FAIL (STATUS_INTERNAL_ERROR);
+                      break;
+                  }
               }
+            free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL (STATUS_ERROR_SYNTAX);
@@ -1647,71 +1602,91 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
-        if (current_credentials.username != NULL)
-          {
-            if (current_uuid == NULL)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));
-            else
-              {
-                gchar* name = g_build_filename (OPENVAS_STATE_DIR
-                                                "/mgr/users/",
-                                                current_credentials.username,
-                                                "reports",
-                                                current_uuid,
-                                                "report.nbe",
-                                                NULL);
-                free_string_var (&current_uuid);
-                // FIX glib access setuid note
-                if (g_file_test (name, G_FILE_TEST_EXISTS))
-                  {
-                    gboolean success;
-                    gchar* content;
-                    gsize content_length = 0;
-                    GError* content_error = NULL;
-                    success = g_file_get_contents (name,
-                                                   &content,
-                                                   &content_length,
-                                                   &content_error);
-                    g_free (name);
-                    if (success == FALSE)
-                      {
-                        if (content_error)
-                          g_error_free (content_error);
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_MISSING ("get_report"));
-                      }
-                    else
-                      {
-                        gchar* base64_content;
-                        SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
-                                                " status=\"" STATUS_OK "\">"
-                                                "<report>");
-                        base64_content = g_base64_encode ((guchar*) content,
-                                                          content_length);
-                        g_free (content);
-                        if (send_to_client (base64_content))
-                          {
-                            g_free (base64_content);
-                            error_send_to_client (error);
-                            return;
-                          }
-                        g_free (base64_content);
-                        SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                                "</get_report_response>");
-                      }
-                  }
-                else
-                  {
-                    g_free (name);
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
-                  }
-              }
-          }
-        else
+        if (current_credentials.username == NULL)
           {
             free_string_var (&current_uuid);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
           }
+
+        if (current_uuid == NULL)
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));
+        else
+          {
+            report_t report;
+            iterator_t results, hosts;
+            GString *nbe;
+            gchar *content, *base64_content;
+
+            if (find_report (current_uuid, &report))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+            else if (report == 0)
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+            else
+              {
+                /* TODO: Encode and send in chunks, after each printf. */
+
+                /* Build the NBE in memory. */
+
+                nbe = g_string_new ("");
+                g_string_append_printf (nbe,
+                                        "timestamps|||scan_start|%s|\n",
+                                        scan_start_time (report));
+
+                init_host_iterator (&hosts, report);
+                while (next (&hosts))
+                  g_string_append_printf (nbe,
+                                          "timestamps||%s|host_start|%s|\n",
+                                          host_iterator_host (&hosts),
+                                          host_iterator_start_time (&hosts));
+                cleanup_iterator (&hosts);
+
+                init_result_iterator (&results, report);
+                while (next (&results))
+                  g_string_append_printf (nbe,
+                                          "results|%s|%s|%s|%s|%s|%s|\n",
+                                          result_iterator_subnet (&results),
+                                          result_iterator_host (&results),
+                                          result_iterator_port (&results),
+                                          result_iterator_nvt (&results),
+                                          result_iterator_type (&results),
+                                          result_iterator_descr (&results));
+                cleanup_iterator (&results);
+
+                init_host_iterator (&hosts, report);
+                while (next (&hosts))
+                  g_string_append_printf (nbe,
+                                          "timestamps||%s|host_end|%s|\n",
+                                          host_iterator_host (&hosts),
+                                          host_iterator_end_time (&hosts));
+                cleanup_iterator (&hosts);
+
+                g_string_append_printf (nbe,
+                                        "timestamps|||scan_end|%s|\n",
+                                        scan_end_time (report));
+
+                /* Encode and send the NBE. */
+
+                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                        " status=\"" STATUS_OK "\">"
+                                        "<report>");
+                content = g_string_free(nbe, FALSE);
+                base64_content = g_base64_encode ((guchar*) content,
+                                                  strlen (content));
+                g_free (content);
+                if (send_to_client (base64_content))
+                  {
+                    g_free (base64_content);
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_free (base64_content);
+                SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                        "</get_report_response>");
+              }
+          }
+        free_string_var (&current_uuid);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -1789,27 +1764,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (modify_task_parameter != NULL
             && modify_task_value != NULL)
           {
+            report_t report;
+
             if (current_uuid == NULL)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
+            else if (find_report (current_uuid, &report))
+              {
+                free_string_var (&current_uuid);
+                free_string_var (&modify_task_parameter);
+                free_string_var (&modify_task_value);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+              }
+            else if (report == 0)
+              {
+                free_string_var (&current_uuid);
+                free_string_var (&modify_task_parameter);
+                free_string_var (&modify_task_value);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_report"));
+              }
             else
               {
-                int ret = set_report_parameter (current_uuid,
+                int ret = set_report_parameter (report,
                                                 modify_task_parameter,
                                                 modify_task_value);
                 free_string_var (&modify_task_parameter);
                 free_string_var (&modify_task_value);
-                free_string_var (&current_uuid);
                 switch (ret)
                   {
                     case 0:
                       SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
                       break;
                     case -2: /* Parameter name error. */
-                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_report"));
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_report"));
                       break;
                     case -3: /* Failed to write to disk. */
                     default:
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_report"));
                       break;
                   }
               }
@@ -2105,7 +2097,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     long progress;
                     unsigned int max_port, current_port;
 
-                    last_report_id = task_last_report_id (tsk_uuid);
+                    last_report_id = task_last_report_id (task);
                     if (last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
@@ -2140,6 +2132,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        infos,
                                                        logs,
                                                        warnings);
+                        g_free (timestamp);
                         g_free (last_report_id);
                       }
                     else
@@ -2247,7 +2240,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
 
-                last_report_id = task_last_report_id (tsk_uuid);
+                last_report_id = task_last_report_id (index);
                 if (last_report_id)
                   {
                     int debugs, holes, infos, logs, warnings;
@@ -2319,10 +2312,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     g_free (line);
                     error_send_to_client (error);
+                    cleanup_task_iterator (&iterator);
                     return;
                   }
                 g_free (line);
               }
+            cleanup_task_iterator (&iterator);
             SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
           }
         set_client_state (CLIENT_AUTHENTIC);

@@ -1,5 +1,72 @@
 2009-07-23  Matthew Mundell <mmundell@intevation.de>
 
+	Store the reports in the database instead of on the file system.
+
+	* src/manage.c (create_task_report, delete_task_report)
+	(report_path_task_uuid, report_task, current_report, current_report_name)
+	(create_report_file): Remove.
+	(task_last_report_id, report_counts, report_timestamp, delete_report)
+	(set_report_parameter): Remove, to manage.c.
+	(delete_reports): Drop file system handling.  Use iterator to delete
+	reports.
+	(start_task): Call create_report instead of create_report_file.
+
+	* src/manage.h: Update headers.
+	(result_t, report_t, iterator_t): New types.
+
+	* src/tasks_sql.h (sql_string): Return NULL on error.
+	(init_manage): Create results, report_hosts and report_results tables.
+	Remove some caching fields from tasks table.  Add date, start_time and
+	end_time to reports table.
+	(task_last_report_id, report_counts, report_timestamp, delete_report): New
+	functions, from manage.c.  Convert to db equivalents.
+	(cleanup_iterator, next, make_result, make_report, create_report)
+	(report_uuid, report_add_result, init_report_iterator, next_report)
+	(init_result_iterator, result_iterator_subnet, result_iterator_host)
+	(result_iterator_port, result_iterator_nvt, result_iterator_type)
+	(result_iterator_descr, init_host_iterator, host_iterator_host)
+	(host_iterator_start_time, host_iterator_end_time, scan_start_time)
+	(set_scan_start_time, scan_end_time, set_scan_end_time)
+	(set_scan_host_end_time, set_scan_host_start_time, find_report): New
+	functions.
+	(create_task_report, delete_task_report, inc_task_debugs_size)
+	(inc_task_holes_size, inc_task_infos_size, inc_task_logs_size)
+	(inc_task_notes_size, inc_task_report_count)
+	(dec_task_report_count): Remove.
+	(task_report_count, task_debugs_size, task_holes_size, task_infos_size)
+	(task_logs_size, task_notes_size): Use SQL "count" instead of a cache
+	field.
+	(delete_task): Remove file deleting.  Also delete from results table.
+	(reset_task): Remove cache fields.
+
+	* src/omp.c (send_reports): Loop with report iterator.
+	(omp_xml_handle_end_element): Adjust CLIENT_DELETE_REPORT for new
+	delete_report interface.  Rework CLIENT_GET_REPORT to reduce indentation,
+	building the nbe from the results table.  Adjust CLIENT_MODIFY_REPORT for
+	new	set_report_parameter interface.  In CLIENT_GET_STATUS pass task to
+	task_last_report_id instead of passing uuid, free timestamp and add
+	missing	cleanup_task_iterator calls.
+
+	* src/otp.c (write_message): Call make_result instead of writing to
+	stream.
+	(write_timestamp, save_report, append_timestamp): Remove.
+	(append_debug_message, append_hole_message, append_info_message)
+	(append_log_message, append_note_message):  Drop current report checks and
+	cache incrementing.
+	(process_otp_server_input): Replace append_timestamp calls with calls to
+	libmanage scan time setters.  In TASK_STATUS_DELETE_REQUESTED and
+	SERVER_TIME_SCAN_END remove report file handling and initialise
+	new_report.
+
+	* src/tests/CMakeLists.txt: Remove report_path_task_uuid_0,
+	report_path_task_uuid_1 and report_path_task_uuid_2.
+
+	* src/tests/report_path_task_uuid_0.c,
+	src/tests/report_path_task_uuid_1.c,
+	src/tests/report_path_task_uuid_2.c: Remove.
+
+2009-07-23  Matthew Mundell <mmundell@intevation.de>
+
 	* src/string.c (isbase64): New function.
 	* src/string.h (isbase64): New header.
 

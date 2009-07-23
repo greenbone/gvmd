@@ -118,14 +118,23 @@ typedef enum
 
 #ifdef TASKS_SQL
 typedef long long int task_t;
+typedef long long int result_t;
+typedef long long int report_t;
 
 #include <sqlite3.h>
 
+// FIX use iterator_t
 typedef struct
 {
   sqlite3_stmt* stmt;
   gboolean done;
 } task_iterator_t;
+
+typedef struct
+{
+  sqlite3_stmt* stmt;
+  gboolean done;
+} iterator_t;
 #endif
 
 
@@ -136,9 +145,7 @@ typedef struct
  */
 extern /*@null@*/ task_t current_server_task;
 
-extern /*@null@*/ FILE* current_report;
-
-extern /*@null@*/ gchar* current_report_name;
+extern /*@null@*/ report_t new_report;
 
 
 /* Task code specific to the representation of tasks. */
@@ -148,6 +155,9 @@ task_count ();
 
 void
 init_task_iterator (task_iterator_t*);
+
+void
+cleanup_task_iterator (task_iterator_t*);
 
 gboolean
 next_task (task_iterator_t*, task_t*);
@@ -200,32 +210,17 @@ set_task_attack_state (task_t task, char* state);
 int
 task_debugs_size (task_t);
 
-void
-inc_task_debugs_size (task_t);
-
 int
 task_holes_size (task_t);
-
-void
-inc_task_holes_size (task_t);
 
 int
 task_infos_size (task_t);
 
-void
-inc_task_infos_size (task_t);
-
 int
 task_logs_size (task_t);
 
-void
-inc_task_logs_size (task_t);
-
 int
 task_notes_size (task_t);
-
-void
-inc_task_notes_size (task_t);
 
 void
 free_tasks ();
@@ -297,10 +292,32 @@ int
 stop_task (task_t);
 
 
+/* Iteration. */
+
+void
+cleanup_iterator (iterator_t*);
+
+gboolean
+next (iterator_t*);
+
+
 /* Reports. */
 
 // FIX how is this doc'd?
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
+
+gboolean
+find_report (const char*, report_t*);
+
+result_t
+make_result (task_t, const char*, const char*, const char*, const char*,
+             const char*, const char*);
+
+void
+report_add_result (report_t, result_t);
+
+char*
+report_uuid (report_t);
 
 /*@-exportlocal@*/
 /*@only@*/ /*@null@*/
@@ -308,7 +325,7 @@ char*
 make_report_uuid ();
 
 gchar*
-task_last_report_id (const char*);
+task_last_report_id (task_t);
 
 gchar*
 report_path_task_uuid (gchar*);
@@ -320,14 +337,71 @@ report_task (const char*, task_t* task);
 int
 report_counts (const char*, int*, int*, int*, int*, int*);
 
+char*
+scan_start_time (report_t);
+
+void
+set_scan_start_time (report_t, const char*);
+
+char*
+scan_end_time (report_t);
+
+void
+set_scan_end_time (report_t, const char*);
+
+void
+set_scan_host_start_time (report_t, const char*, const char*);
+
+void
+set_scan_host_end_time (report_t, const char*, const char*);
+
 int
 report_timestamp (const char*, gchar**);
 
 int
-delete_report (const char*);
+delete_report (report_t);
 
 int
-set_report_parameter (char*, const char*, char*);
+set_report_parameter (report_t, const char*, char*);
+
+void
+init_report_iterator (iterator_t*, task_t);
+
+void
+init_result_iterator (iterator_t*, task_t);
+
+gboolean
+next_report (iterator_t*, report_t*);
+
+const char*
+result_iterator_subnet (iterator_t*);
+
+const char*
+result_iterator_host (iterator_t*);
+
+const char*
+result_iterator_port (iterator_t*);
+
+const char*
+result_iterator_nvt (iterator_t*);
+
+const char*
+result_iterator_type (iterator_t*);
+
+const char*
+result_iterator_descr (iterator_t*);
+
+void
+init_host_iterator (iterator_t*, report_t);
+
+const char*
+host_iterator_host (iterator_t*);
+
+const char*
+host_iterator_start_time (iterator_t*);
+
+const char*
+host_iterator_end_time (iterator_t*);
 
 
 /* Server messaging. */
