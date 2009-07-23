@@ -1,5 +1,14 @@
 2009-07-23  Matthew Mundell <mmundell@intevation.de>
 
+	Match the db model better to the state of the manager.
+
+	* doc/db_postgres.sql (nvt_selectors, results, report_hosts)
+	(report_results): New tables.
+	(tasks): Add reference to nvt_selector.
+	(reports): Add date, start_time, end_time.
+
+2009-07-23  Matthew Mundell <mmundell@intevation.de>
+
 	Store the reports in the database instead of on the file system.
 
 	* src/manage.c (create_task_report, delete_task_report)
