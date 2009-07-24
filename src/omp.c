@@ -2094,6 +2094,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar* response;
                     char* name;
                     gchar *last_report_id, *last_report;
+                    gchar *second_last_report_id, *second_last_report;
                     long progress;
                     unsigned int max_port, current_port;
 
@@ -2138,6 +2139,49 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       last_report = g_strdup ("");
 
+                    second_last_report_id = task_second_last_report_id (task);
+                    if (second_last_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (second_last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (second_last_report_id,
+                                              &timestamp))
+                          abort (); // FIX fail better
+
+                        second_last_report = g_strdup_printf
+                                              ("<second_last_report>"
+                                               "<report id=\"%s\">"
+                                               "<timestamp>"
+                                               "%s"
+                                               "</timestamp>"
+                                               "<messages>"
+                                               "<debug>%i</debug>"
+                                               "<hole>%i</hole>"
+                                               "<info>%i</info>"
+                                               "<log>%i</log>"
+                                               "<warning>%i</warning>"
+                                               "</messages>"
+                                               "</report>"
+                                               "</second_last_report>",
+                                               second_last_report_id,
+                                               timestamp,
+                                               debugs,
+                                               holes,
+                                               infos,
+                                               logs,
+                                               warnings);
+                        g_free (timestamp);
+                        g_free (second_last_report_id);
+                      }
+                    else
+                      second_last_report = g_strdup ("");
+
                     max_port = task_max_port (task);
                     current_port = task_current_port (task);
                     if (max_port)
@@ -2164,7 +2208,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 "<warning>%i</warning>"
                                                 "</messages>"
                                                 "<report_count>%u</report_count>"
-                                                "%s",
+                                                "%s%s",
                                                 tsk_uuid,
                                                 name,
                                                 task_run_status_name (task),
@@ -2175,8 +2219,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 task_logs_size (task),
                                                 task_notes_size (task),
                                                 task_report_count (task),
-                                                last_report);
+                                                last_report,
+                                                second_last_report);
                     g_free (last_report);
+                    g_free (second_last_report);
                     ret = send_to_client (response);
                     g_free (response);
                     g_free (name);
@@ -2223,6 +2269,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char* name = task_name (index);
                 char* tsk_uuid;
                 gchar *last_report_id, *last_report;
+                gchar *second_last_report_id, *second_last_report;
                 long progress;
                 unsigned int max_port, current_port;
 
@@ -2279,6 +2326,46 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   last_report = g_strdup ("");
 
+                second_last_report_id = task_second_last_report_id (index);
+                if (second_last_report_id)
+                  {
+                    int debugs, holes, infos, logs, warnings;
+                    gchar *timestamp;
+
+                    if (report_counts (second_last_report_id,
+                                       &debugs, &holes, &infos, &logs,
+                                       &warnings))
+                      abort (); // FIX fail better
+
+                    if (report_timestamp (second_last_report_id, &timestamp))
+                      abort ();
+
+                    second_last_report = g_strdup_printf
+                                          ("<second_last_report>"
+                                           "<report id=\"%s\">"
+                                           "<timestamp>%s</timestamp>"
+                                           "<messages>"
+                                           "<debug>%i</debug>"
+                                           "<hole>%i</hole>"
+                                           "<info>%i</info>"
+                                           "<log>%i</log>"
+                                           "<warning>%i</warning>"
+                                           "</messages>"
+                                           "</report>"
+                                           "</second_last_report>",
+                                           second_last_report_id,
+                                           timestamp,
+                                           debugs,
+                                           holes,
+                                           infos,
+                                           logs,
+                                           warnings);
+                    g_free (timestamp);
+                    g_free (second_last_report_id);
+                  }
+                else
+                  second_last_report = g_strdup ("");
+
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
@@ -2292,7 +2379,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<warning>%i</warning>"
                                         "</messages>"
                                         "<report_count>%u</report_count>"
-                                        "%s"
+                                        "%s%s"
                                         "</task>",
                                         tsk_uuid,
                                         name,
@@ -2304,8 +2391,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_logs_size (index),
                                         task_notes_size (index),
                                         task_report_count (index),
-                                        last_report);
+                                        last_report,
+                                        second_last_report);
                 g_free (last_report);
+                g_free (second_last_report);
                 free (name);
                 free (tsk_uuid);
                 if (send_to_client (line))

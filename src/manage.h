@@ -328,6 +328,9 @@ gchar*
 task_last_report_id (task_t);
 
 gchar*
+task_second_last_report_id (task_t);
+
+gchar*
 report_path_task_uuid (gchar*);
 
 gboolean

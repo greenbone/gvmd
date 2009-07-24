@@ -764,6 +764,22 @@ task_last_report_id (task_t task)
                      task);
 }
 
+/**
+ * @brief Get report ID from second most recently completed invocation of task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return The UUID of the task as a newly allocated string.
+ */
+gchar*
+task_second_last_report_id (task_t task)
+{
+  return sql_string (0, 1,
+                     "SELECT uuid FROM reports WHERE task = %llu"
+                     " ORDER BY date DESC LIMIT 2;",
+                     task);
+}
+
 
 /* Iterators. */
 
