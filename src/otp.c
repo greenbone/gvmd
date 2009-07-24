@@ -2261,8 +2261,8 @@ process_otp_server_input ()
                         {
                           set_scan_end_time (new_report, field);
                           new_report = (report_t) NULL;
-                          current_server_task = (task_t) NULL;
                         }
+                      current_server_task = (task_t) NULL;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
