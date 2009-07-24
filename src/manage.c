@@ -240,9 +240,9 @@ short server_active = 0;
 /*@null@*/ task_t current_server_task = (task_t) NULL;
 
 /**
- * @brief Report of the current task.
+ * @brief The report of the current task.
  */
-report_t new_report = (report_t) NULL;
+report_t current_report = (report_t) NULL;
 
 
 /* Task code specific to the representation of tasks. */

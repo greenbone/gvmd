@@ -332,12 +332,12 @@ write_message (task_t task, message_t* message, char* type)
 {
   result_t result;
 
-  assert (new_report);
+  assert (current_report);
 
   result = make_result (task, message->subnet, message->host,
                         message->port.string, message->oid, type,
                         message->description);
-  if (new_report) report_add_result (new_report, result);
+  if (current_report) report_add_result (current_report, result);
 }
 
 /**
@@ -2170,7 +2170,7 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       assert (current_host);
-                      set_scan_host_start_time (new_report,
+                      set_scan_host_start_time (current_report,
                                                 current_host,
                                                 field);
                       g_free (current_host);
@@ -2199,7 +2199,7 @@ process_otp_server_input ()
                   if (current_server_task)
                     {
                       assert (current_host);
-                      set_scan_host_end_time (new_report,
+                      set_scan_host_end_time (current_report,
                                               current_host,
                                               field);
                       g_free (current_host);
@@ -2224,7 +2224,7 @@ process_otp_server_input ()
                                            TASK_STATUS_RUNNING);
                       set_task_start_time (current_server_task,
                                            g_strdup (field));
-                      set_scan_start_time (new_report, field);
+                      set_scan_start_time (current_report, field);
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
@@ -2249,7 +2249,7 @@ process_otp_server_input ()
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                             delete_task (current_server_task);
-                            new_report = (report_t) NULL;
+                            current_report = (report_t) NULL;
                             break;
                           default:
                             set_task_run_status (current_server_task,
@@ -2257,10 +2257,10 @@ process_otp_server_input ()
                             set_task_end_time (current_server_task,
                                                g_strdup (field));
                         }
-                      if (new_report)
+                      if (current_report)
                         {
-                          set_scan_end_time (new_report, field);
-                          new_report = (report_t) NULL;
+                          set_scan_end_time (current_report, field);
+                          current_report = (report_t) NULL;
                         }
                       current_server_task = (task_t) NULL;
                     }

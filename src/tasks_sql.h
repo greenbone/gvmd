@@ -882,15 +882,15 @@ make_report (task_t task, const char* uuid)
  *
  * @param[in]  task   The task.
  *
- * @return 0 success, -1 new_report is already set, -2 failed to generate ID.
+ * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
  */
 static int
 create_report (task_t task)
 {
   char* report_id;
 
-  assert (new_report == (report_t) NULL);
-  if (new_report) return -1;
+  assert (current_report == (report_t) NULL);
+  if (current_report) return -1;
 
   /* Generate report UUID. */
 
@@ -899,7 +899,7 @@ create_report (task_t task)
 
   /* Create the report. */
 
-  new_report = make_report (task, report_id);
+  current_report = make_report (task, report_id);
 
   return 0;
 }

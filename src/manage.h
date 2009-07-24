@@ -145,7 +145,7 @@ typedef struct
  */
 extern /*@null@*/ task_t current_server_task;
 
-extern /*@null@*/ report_t new_report;
+extern /*@null@*/ report_t current_report;
 
 
 /* Task code specific to the representation of tasks. */

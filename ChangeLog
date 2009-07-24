@@ -1,5 +1,13 @@
 2009-07-24  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.h (new_report): Rename to current_report.
+	(current_report): New variable, was new_report.
+
+	* src/tasks_sql.h, src/otp.c, src/manage.c: Rename new_report to
+	current_report.
+
+2009-07-24  Matthew Mundell <mmundell@intevation.de>
+
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END always
 	clear current_server_task when current_server_task is set.
 
