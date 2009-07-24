@@ -1,5 +1,19 @@
 2009-07-24  Matthew Mundell <mmundell@intevation.de>
 
+	Add handling of the GET_REPORT FORMAT attribute.  Add a simple XML format.
+
+	* src/omp.c (current_format): New variable.
+	(omp_xml_handle_start_element): Handle GET_REPORT FORMAT attribute.
+	(SENDF_TO_CLIENT_OR_FAIL): Send with g_markup_printf_escaped.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT check which format was
+	requested.  Add a simple initial XML format.
+
+	* src/tests/CMakeLists.txt: Add omp_get_report_5.
+
+	* src/tests/omp_get_report_5.c: New file.  Tests requesting an XML report.
+
+2009-07-24  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.h (new_report): Rename to current_report.
 	(current_report): New variable, was new_report.
 

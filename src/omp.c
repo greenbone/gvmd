@@ -173,6 +173,12 @@ static /*@null@*/ /*@only@*/ char*
 current_uuid = NULL;
 
 /**
+ * @brief Current format of report, during GET_REPORT.
+ */
+static /*@null@*/ /*@only@*/ char*
+current_format = NULL;
+
+/**
  * @brief Parameter name during OMP MODIFY_TASK.
  */
 static /*@null@*/ /*@only@*/ char*
@@ -514,6 +520,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
               append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "format", &attribute))
+              append_string (&current_format, attribute);
             set_client_state (CLIENT_GET_REPORT);
           }
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
@@ -1296,7 +1305,7 @@ send_reports (task_t task)
 #define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
   do                                                                         \
     {                                                                        \
-      gchar* msg = g_strdup_printf (format , ## args);                       \
+      gchar* msg = g_markup_printf_escaped (format , ## args);               \
       if (send_to_client (msg))                                              \
         {                                                                    \
           g_free (msg);                                                      \
@@ -1623,7 +1632,55 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
             else if (report == 0)
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
-            else
+            else if (current_format == NULL
+                     || strcasecmp (current_format, "xml") == 0)
+              {
+                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                        " status=\"" STATUS_OK "\">"
+                                        "<report>");
+
+                SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
+                                         scan_start_time (report));
+
+                init_host_iterator (&hosts, report);
+                while (next (&hosts))
+                  SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
+                                           host_iterator_host (&hosts),
+                                           host_iterator_start_time (&hosts));
+                cleanup_iterator (&hosts);
+
+                init_result_iterator (&results, report);
+                while (next (&results))
+                  SENDF_TO_CLIENT_OR_FAIL ("<result>"
+                                           "<subnet>%s</subnet>"
+                                           "<host>%s</host>"
+                                           "<port>%s</port>"
+                                           "<nvt>%s</nvt>"
+                                           "<type>%s</type>"
+                                           "<description>%s</description>"
+                                           "</result>",
+                                           result_iterator_subnet (&results),
+                                           result_iterator_host (&results),
+                                           result_iterator_port (&results),
+                                           result_iterator_nvt (&results),
+                                           result_iterator_type (&results),
+                                           result_iterator_descr (&results));
+                cleanup_iterator (&results);
+
+                init_host_iterator (&hosts, report);
+                while (next (&hosts))
+                  SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
+                                           host_iterator_host (&hosts),
+                                           host_iterator_end_time (&hosts));
+                cleanup_iterator (&hosts);
+
+                SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
+                                         scan_end_time (report));
+
+                SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                        "</get_report_response>");
+              }
+            else if (strcasecmp (current_format, "nbe") == 0)
               {
                 /* TODO: Encode and send in chunks, after each printf. */
 
@@ -1685,8 +1742,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
               }
+            else
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));
           }
         free_string_var (&current_uuid);
+        free_string_var (&current_format);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
