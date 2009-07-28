@@ -132,6 +132,9 @@ int
 wait_for_task_start (gnutls_session_t*, const char*);
 
 int
+wait_for_task_stop (gnutls_session_t*, const char*);
+
+int
 wait_for_task_delete (gnutls_session_t*, const char*);
 
 int

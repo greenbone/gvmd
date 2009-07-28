@@ -293,6 +293,7 @@ task_run_status_name (task_t task)
       case TASK_STATUS_REQUESTED:        return "Requested";
       case TASK_STATUS_RUNNING:          return "Running";
       case TASK_STATUS_STOP_REQUESTED:   return "Stop requested";
+      case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Internal Error";
     }
 }

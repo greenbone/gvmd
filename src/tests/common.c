@@ -1424,6 +1424,119 @@ wait_for_task_end (gnutls_session_t* session, const char* id)
               free_entity (entity);
               return 1;
             }
+          if (strcmp (run_state, "Stopped") == 0)
+            {
+              free_entity (entity);
+              return 1;
+            }
+          free_entity (entity);
+        }
+
+      sleep (1);
+    }
+}
+
+/**
+ * @brief Wait for a task to stop on the server.
+ *
+ * @param[in]  session  Pointer to GNUTLS session.
+ * @param[in]  id       ID of task.
+ *
+ * @return 0 on success, 1 on internal error in task, -1 on error.
+ */
+int
+wait_for_task_stop (gnutls_session_t* session, const char* id)
+{
+  tracef ("wait_for_task_end\n");
+  while (1)
+    {
+      if (sendf_to_manager (session, "<get_status/>") == -1)
+        return -1;
+
+      /* Read the response. */
+
+      entity_t entity = NULL;
+      if (read_entity (session, &entity)) return -1;
+
+      /* Check the response. */
+
+      const char* status = entity_attribute (entity, "status");
+      if (status == NULL)
+        {
+          free_entity (entity);
+          return -1;
+        }
+      if (strlen (status) == 0)
+        {
+          free_entity (entity);
+          return -1;
+        }
+      if (status[0] == '2')
+        {
+          /* Check the running status of the given task. */
+
+          char* run_state = NULL;
+
+#if 0
+          /* Lisp version. */
+          (do-children (entity child)
+            (when (string= (entity-type child) "task")
+              (let ((task-id (entity-attribute child "task_id")))
+                (fi* task-id
+                  (free-entity entity)
+                  (return-from wait-for-task-start -1))
+                (when (string= task-id id)
+                  (let ((status (entity-child child "status")))
+                    (fi* status
+                      (free-entity entity)
+                      (return-from wait-for-task-start -1))
+                    (setq run-state (entity-text status)))
+                  (return)))))
+#endif
+
+          DO_CHILDREN (entity, child, temp,
+                       if (strcasecmp (entity_name (child), "task") == 0)
+                         {
+                           const char* task_id = entity_attribute (child, "id");
+                           if (task_id == NULL)
+                             {
+                               free_entity (entity);
+                               return -1;
+                             }
+                           if (strcasecmp (task_id, id) == 0)
+                             {
+                               entity_t status = entity_child (child, "status");
+                               if (status == NULL)
+                                 {
+                                   free_entity (entity);
+                                   return -1;
+                                 }
+                               run_state = entity_text (status);
+                               break;
+                             }
+                         });
+
+          if (run_state == NULL)
+            {
+              free_entity (entity);
+              return -1;
+            }
+
+          if (strcmp (run_state, "Stopped") == 0)
+            {
+              free_entity (entity);
+              return 0;
+            }
+          if (strcmp (run_state, "Done") == 0)
+            {
+              free_entity (entity);
+              return 1;
+            }
+          if (strcmp (run_state, "Internal Error") == 0)
+            {
+              free_entity (entity);
+              return 1;
+            }
           free_entity (entity);
         }
 

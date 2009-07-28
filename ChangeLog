@@ -1,5 +1,16 @@
 2009-07-28  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (task_run_status_name): Add TASK_STATUS_STOPPED.
+
+	* src/tests/common.c (wait_for_task_stop): New function.
+	(wait_for_task_end): Also check for "Stopped".
+	* src/tests/common.h (wait_for_task_stop): New header.
+
+	* src/tests/omp_abort_task_0.c: Wait for the task to stop after reading
+	the ABORT_TASK response.
+
+2009-07-28  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (omp_get_report): Add format to GET_REPORT XML.
 
 2009-07-24  Matthew Mundell <mmundell@intevation.de>

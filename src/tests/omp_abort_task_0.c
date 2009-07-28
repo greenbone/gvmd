@@ -134,6 +134,16 @@ main ()
         }
     }
 
+  /* Wait for the task to stop on the server. */
+
+  if (wait_for_task_stop (&session, id))
+    {
+      delete_task (&session, id);
+      free (id);
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
   free_entity (expected);
   free_entity (entity);
   delete_task (&session, id);
