@@ -1573,7 +1573,9 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
 int
 omp_get_report (gnutls_session_t* session, const char* id, entity_t* response)
 {
-  if (sendf_to_manager (session, "<get_report report_id=\"%s\"/>", id))
+  if (sendf_to_manager (session,
+                        "<get_report format=\"nbe\" report_id=\"%s\"/>",
+                        id))
     return -1;
 
   *response = NULL;
