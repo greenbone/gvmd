@@ -149,7 +149,7 @@ install (TARGETS openvasmd
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
 
-install (FILES openvasmd_log.conf
+install (FILES openvasmd_log.conf openvasmd_report_html.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
 ## Tests

@@ -351,6 +351,20 @@ set_target_properties (omp_get_report_5 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${
 target_link_libraries (omp_get_report_5 common)
 ADD_TEST (omp_get_report_5 omp_get_report_5)
 
+add_executable (omp_get_report_6 omp_get_report_6.c)
+target_link_libraries (omp_get_report_6 string)
+set_target_properties (omp_get_report_6 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_report_6 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_report_6 common)
+ADD_TEST (omp_get_report_6 omp_get_report_6)
+
+add_executable (omp_get_report_7 omp_get_report_7.c)
+target_link_libraries (omp_get_report_7 string)
+set_target_properties (omp_get_report_7 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_report_7 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_report_7 common)
+ADD_TEST (omp_get_report_7 omp_get_report_7)
+
 add_executable (omp_get_rules_0 omp_get_rules_0.c)
 target_link_libraries (omp_get_rules_0 string)
 set_target_properties (omp_get_rules_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")

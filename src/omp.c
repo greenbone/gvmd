@@ -46,6 +46,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 #include <openvas/certificate.h>
 #include <openvas/nvti.h>
@@ -1317,6 +1318,91 @@ send_reports (task_t task)
   while (0)
 
 /**
+ * @brief Print the XML for a report to a file.
+ *
+ * @param[in]   report    The report.
+ * @param[in]   xml_file  File name.
+ *
+ * @return 0 on success, else -1 with errno set.
+ */
+static int
+print_report_xml (report_t report, gchar* xml_file)
+{
+  FILE *out;
+  iterator_t results, hosts;
+
+  out = fopen (xml_file, "w");
+
+  if (out == NULL)
+    {
+      g_warning ("%s: fopen failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  fprintf (out, "<get_report_response status=\"" STATUS_OK "\"><report>");
+
+  fprintf (out,
+           "<scan_start>%s</scan_start>",
+           scan_start_time (report));
+
+  init_host_iterator (&hosts, report);
+  while (next (&hosts))
+    fprintf (out,
+             "<host_start><host>%s</host>%s</host_start>",
+             host_iterator_host (&hosts),
+             host_iterator_start_time (&hosts));
+  cleanup_iterator (&hosts);
+
+  init_result_iterator (&results, report);
+  while (next (&results))
+    {
+      gchar *descr;
+
+      descr = g_markup_escape_text (result_iterator_descr (&results), -1);
+      fprintf (out,
+               "<result>"
+               "<subnet>%s</subnet>"
+               "<host>%s</host>"
+               "<port>%s</port>"
+               "<nvt>%s</nvt>"
+               "<type>%s</type>"
+               "<description>%s</description>"
+               "</result>",
+               result_iterator_subnet (&results),
+               result_iterator_host (&results),
+               result_iterator_port (&results),
+               result_iterator_nvt (&results),
+               result_iterator_type (&results),
+               descr);
+      g_free (descr);
+    }
+  cleanup_iterator (&results);
+
+  init_host_iterator (&hosts, report);
+  while (next (&hosts))
+    fprintf (out,
+             "<host_end><host>%s</host>%s</host_end>",
+             host_iterator_host (&hosts),
+             host_iterator_end_time (&hosts));
+  cleanup_iterator (&hosts);
+
+  fprintf (out, "<scan_end>%s</scan_end>", scan_end_time (report));
+
+  fprintf (out, "</report></get_report_response>");
+
+  if (fclose (out))
+    {
+      g_warning ("%s: fclose failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -1727,8 +1813,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
                                         " status=\"" STATUS_OK "\">"
-                                        "<report>");
-                content = g_string_free(nbe, FALSE);
+                                        "<report format=\"nbe\">");
+                content = g_string_free (nbe, FALSE);
                 base64_content = g_base64_encode ((guchar*) content,
                                                   strlen (content));
                 g_free (content);
@@ -1741,6 +1827,290 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_free (base64_content);
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
+              }
+            else if (strcasecmp (current_format, "html") == 0)
+              {
+                gchar *xml_file;
+                gint xml_fd;
+
+                xml_file = g_strdup ("/tmp/openvasmd_xml_XXXXXX");
+
+                xml_fd = g_mkstemp (xml_file);
+
+                if (xml_fd == -1)
+                  {
+                    g_warning ("%s: g_mkstemp failed\n",
+                               __FUNCTION__);
+                    g_free (xml_file);
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                  }
+                else if (print_report_xml (report, xml_file))
+                  {
+                    g_free (xml_file);
+                    close (xml_fd);
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                  }
+                else
+                  {
+                    gchar *xsl_file;
+
+                    // TODO: Remove xml_file.
+
+                    close (xml_fd);
+
+                    xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                                 "openvasmd_report_html.xsl",
+                                                 NULL);
+                    if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                      {
+                        g_warning ("%s: XSL missing: %s\n",
+                                   __FUNCTION__,
+                                   xsl_file);
+                        g_free (xsl_file);
+                        g_free (xml_file);
+                        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                      }
+                    else
+                      {
+                        gchar *html_file, *command;
+                        gint html_fd;
+                        int ret;
+
+                        // TODO: Remove html_file.
+
+                        html_file = g_strdup ("/tmp/openvasmd_html_XXXXXX");
+
+                        html_fd = g_mkstemp (html_file);
+
+                        command = g_strdup_printf ("xsltproc -v %s %s -o %s 2> /dev/null",
+                                                   xsl_file,
+                                                   xml_file,
+                                                   html_file);
+                        g_free (xsl_file);
+                        g_free (xml_file);
+
+                        g_message ("   command: %s\n", command);
+
+                        if (html_fd == -1)
+                          {
+                            g_warning ("%s: g_mkstemp failed\n",
+                                       __FUNCTION__);
+                            g_free (html_file);
+                            SEND_TO_CLIENT_OR_FAIL
+                             (XML_INTERNAL_ERROR ("get_report"));
+                          }
+                        else if (ret = system (command),
+                                 // FIX ret is always -1
+                                 0 && ((ret) == -1
+                                       || WEXITSTATUS (ret)))
+                          {
+                            g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                       __FUNCTION__,
+                                       ret,
+                                       WEXITSTATUS (ret),
+                                       command);
+                            close (html_fd);
+                            g_free (command);
+                            g_free (html_file);
+                            SEND_TO_CLIENT_OR_FAIL
+                             (XML_INTERNAL_ERROR ("get_report"));
+                          }
+                        else
+                          {
+                            GError *get_error;
+                            gchar *html;
+                            gsize html_len;
+
+                            close (html_fd);
+                            g_free (command);
+
+                            /* Send the HTML to the client. */
+
+                            get_error = NULL;
+                            g_file_get_contents (html_file,
+                                                 &html,
+                                                 &html_len,
+                                                 &get_error);
+                            g_free (html_file);
+                            if (get_error)
+                              {
+                                g_warning ("%s: Failed to get HTML: %s\n",
+                                           __FUNCTION__,
+                                           get_error->message);
+                                g_error_free (get_error);
+                                SEND_TO_CLIENT_OR_FAIL
+                                 (XML_INTERNAL_ERROR ("get_report"));
+                              }
+                            else
+                              {
+                                gchar *base64;
+
+                                /* Encode and send the HTML. */
+
+                                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                                        " status=\"" STATUS_OK "\">"
+                                                        "<report format=\"html\">");
+                                base64 = g_base64_encode ((guchar*) html,
+                                                          html_len);
+                                g_free (html);
+                                if (send_to_client (base64))
+                                  {
+                                    g_free (base64);
+                                    error_send_to_client (error);
+                                    return;
+                                  }
+                                g_free (base64);
+                                SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                                        "</get_report_response>");
+                              }
+                          }
+                      }
+                  }
+              }
+            else if (strcasecmp (current_format, "pdf") == 0)
+              {
+                gchar *xml_file;
+                gint xml_fd;
+
+                // TODO: This block is very similar to the HTML block above.
+
+                xml_file = g_strdup ("/tmp/openvasmd_xml_XXXXXX");
+
+                xml_fd = g_mkstemp (xml_file);
+
+                if (xml_fd == -1)
+                  {
+                    g_warning ("%s: g_mkstemp failed\n",
+                               __FUNCTION__);
+                    g_free (xml_file);
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                  }
+                else if (print_report_xml (report, xml_file))
+                  {
+                    g_free (xml_file);
+                    close (xml_fd);
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                  }
+                else
+                  {
+                    gchar *xsl_file;
+
+                    // TODO: Remove xml_file.
+
+                    close (xml_fd);
+
+                    xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                                 "openvasmd_report_html.xsl",
+                                                 NULL);
+                    if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                      {
+                        g_warning ("%s: XSL missing: %s\n",
+                                   __FUNCTION__,
+                                   xsl_file);
+                        g_free (xsl_file);
+                        g_free (xml_file);
+                        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                      }
+                    else
+                      {
+                        gchar *pdf_file, *command;
+                        gint pdf_fd;
+                        int ret;
+
+                        // TODO: Remove pdf_file.
+
+                        pdf_file = g_strdup ("/tmp/openvasmd_pdf_XXXXXX");
+
+                        pdf_fd = g_mkstemp (pdf_file);
+
+                        command = g_strdup_printf ("xsltproc -v %s %s"
+                                                   " 2> /dev/null"
+                                                   " | tee /tmp/openvasmd_html"
+                                                   " | htmldoc -t pdf --webpage -f %s -"
+                                                   " 2> /dev/null",
+                                                   xsl_file,
+                                                   xml_file,
+                                                   pdf_file);
+                        g_free (xsl_file);
+                        g_free (xml_file);
+
+                        g_message ("   command: %s\n", command);
+
+                        if (pdf_fd == -1)
+                          {
+                            g_warning ("%s: g_mkstemp failed\n",
+                                       __FUNCTION__);
+                            g_free (pdf_file);
+                            SEND_TO_CLIENT_OR_FAIL
+                             (XML_INTERNAL_ERROR ("get_report"));
+                          }
+                        else if (ret = system (command),
+                                 // FIX ret is always -1
+                                 0 && ((ret) == -1
+                                       || WEXITSTATUS (ret)))
+                          {
+                            g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                       __FUNCTION__,
+                                       ret,
+                                       WEXITSTATUS (ret),
+                                       command);
+                            close (pdf_fd);
+                            g_free (command);
+                            g_free (pdf_file);
+                            SEND_TO_CLIENT_OR_FAIL
+                             (XML_INTERNAL_ERROR ("get_report"));
+                          }
+                        else
+                          {
+                            GError *get_error;
+                            gchar *pdf;
+                            gsize pdf_len;
+
+                            close (pdf_fd);
+                            g_free (command);
+
+                            /* Send the PDF to the client. */
+
+                            get_error = NULL;
+                            g_file_get_contents (pdf_file,
+                                                 &pdf,
+                                                 &pdf_len,
+                                                 &get_error);
+                            g_free (pdf_file);
+                            if (get_error)
+                              {
+                                g_warning ("%s: Failed to get PDF: %s\n",
+                                           __FUNCTION__,
+                                           get_error->message);
+                                g_error_free (get_error);
+                                SEND_TO_CLIENT_OR_FAIL
+                                 (XML_INTERNAL_ERROR ("get_report"));
+                              }
+                            else
+                              {
+                                gchar *base64;
+
+                                /* Encode and send the HTML. */
+
+                                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                                        " status=\"" STATUS_OK "\">"
+                                                        "<report format=\"pdf\">");
+                                base64 = g_base64_encode ((guchar*) pdf,
+                                                          pdf_len);
+                                g_free (pdf);
+                                if (send_to_client (base64))
+                                  {
+                                    g_free (base64);
+                                    error_send_to_client (error);
+                                    return;
+                                  }
+                                g_free (base64);
+                                SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                                        "</get_report_response>");
+                              }
+                          }
+                      }
+                  }
               }
             else
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report"));

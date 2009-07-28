@@ -1,5 +1,21 @@
 2009-07-28  Matthew Mundell <mmundell@intevation.de>
 
+	Add rough initial HTML and PDF report generation.
+
+	* src/omp.c (print_report_xml): New function.
+	(omp_xml_handle_end_element): Add HTML and PDF format handling to
+	GET_REPORT.
+
+	* src/openvasmd_report_html.xsl: New file.  Stylesheet for HTML report.
+
+	* src/CMakeLists.txt: Install openvasmd_report_html.xsl.
+
+	* src/tests/omp_get_report_6.c, src/tests/omp_get_report_7.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_get_report_6 and omp_get_report_7.
+
+2009-07-28  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd_log_conf.cmake: Remove quotes from "prepend" key.
 
 2009-07-28  Matthew Mundell <mmundell@intevation.de>
