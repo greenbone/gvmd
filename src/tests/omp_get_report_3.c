@@ -54,7 +54,7 @@ main ()
   /* Try get report. */
 
   if (send_to_manager (&session,
-                       "<get_report report_id=\"0.0.0.0.0.0.0.0.0.0\"/>")
+                       "<get_report format=\"nbe\" report_id=\"0.0.0.0.0.0.0.0.0.0\"/>")
       == -1)
    {
       close_manager_connection (socket, session);

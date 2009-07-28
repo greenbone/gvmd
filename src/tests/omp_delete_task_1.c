@@ -130,7 +130,7 @@ main ()
   /* Try get the report. */
 
   if (sendf_to_manager (&session,
-                        "<get_report report_id=\"%s\"/>",
+                        "<get_report format=\"nbe\" report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto free_fail;

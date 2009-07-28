@@ -1,6 +1,6 @@
 /* Test 0 of getting a report.
  * $Id$
- * Description: Test getting a report.
+ * Description: Test getting an NBE report.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -103,7 +103,7 @@ main ()
   /* Get the report. */
 
   if (sendf_to_manager (&session,
-                        "<get_report report_id=\"%s\"/>",
+                        "<get_report format=\"nbe\" report_id=\"%s\"/>",
                         report_id)
       == -1)
     goto delete_fail;
