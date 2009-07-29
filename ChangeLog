@@ -1,3 +1,10 @@
+2009-07-29  Matthew Mundell <mmundell@intevation.de>
+
+	* src/common.c (read_entity_and_text): New function.  Body from
+	read_entity.
+	(read_entity): Replace body with call to read_entity_and_text.
+	* src/common.h (read_entity_and_text): New header.
+
 2009-07-28  Matthew Mundell <mmundell@intevation.de>
 
 	Add rough initial HTML and PDF report generation.

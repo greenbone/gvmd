@@ -96,6 +96,9 @@ void
 print_entities (FILE*, entities_t);
 
 int
+read_entity_and_text (gnutls_session_t*, entity_t*, char**);
+
+int
 read_entity (gnutls_session_t*, entity_t*);
 
 /* OMP. */

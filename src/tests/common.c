@@ -718,14 +718,28 @@ handle_error (GMarkupParseContext* context,
  *
  * @param[in]   session   Pointer to GNUTLS session.
  * @param[out]  entity    Pointer to an entity tree.
+ * @param[out]  text      A pointer to a pointer, at which to store the
+ *                        address of a newly allocated string holding the
+ *                        text read from the session, if the text is required,
+ *                        else NULL.
  *
  * @return 0 success, -1 read error, -2 parse error, -3 end of file.
  */
 int
-read_entity (gnutls_session_t* session, entity_t* entity)
+read_entity_and_text (gnutls_session_t* session, entity_t* entity, char** text)
 {
-  /* Create the XML parser. */
   GMarkupParser xml_parser;
+  GError* error = NULL;
+  GMarkupParseContext *xml_context;
+  GString* string;
+
+  if (text == NULL)
+    string = NULL;
+  else
+    string = g_string_new ("");
+
+  /* Create the XML parser. */
+
   xml_parser.start_element = handle_start_element;
   xml_parser.end_element = handle_end_element;
   xml_parser.text = handle_text;
@@ -738,14 +752,14 @@ read_entity (gnutls_session_t* session, entity_t* entity)
   context_data.current = NULL;
 
   /* Setup the XML context. */
-  GError* error = NULL;
-  GMarkupParseContext *xml_context;
+
   xml_context = g_markup_parse_context_new (&xml_parser,
                                             0,
                                             &context_data,
                                             NULL);
 
   /* Read and parse, until encountering end of file or error. */
+
   while (1)
     {
       ssize_t count;
@@ -767,6 +781,7 @@ read_entity (gnutls_session_t* session, entity_t* entity)
               gnutls_perror (count);
               if (context_data.first && context_data.first->data)
                 free_entity (context_data.first->data);
+              if (string) g_string_free (string, TRUE);
               return -1;
             }
           if (count == 0)
@@ -780,12 +795,15 @@ read_entity (gnutls_session_t* session, entity_t* entity)
                 }
               if (context_data.first && context_data.first->data)
                 free_entity (context_data.first->data);
+              if (string) g_string_free (string, TRUE);
               return -3;
             }
           break;
         }
 
       tracef ("<= %.*s\n", count, buffer_start);
+
+      if (string) g_string_append_len (string, buffer_start, count);
 
       g_markup_parse_context_parse (xml_context,
 				    buffer_start,
@@ -797,6 +815,7 @@ read_entity (gnutls_session_t* session, entity_t* entity)
 	  g_error_free (error);
           if (context_data.first && context_data.first->data)
             free_entity (context_data.first->data);
+          if (string) g_string_free (string, TRUE);
 	  return -2;
 	}
       if (context_data.done)
@@ -811,9 +830,24 @@ read_entity (gnutls_session_t* session, entity_t* entity)
               return -2;
             }
           *entity = (entity_t) context_data.first->data;
+          if (string) *text = (char*) g_string_free (string, FALSE);
           return 0;
         }
     }
+}
+
+/**
+ * @brief Read an XML entity tree from the manager.
+ *
+ * @param[in]   session   Pointer to GNUTLS session.
+ * @param[out]  entity    Pointer to an entity tree.
+ *
+ * @return 0 success, -1 read error, -2 parse error, -3 end of file.
+ */
+int
+read_entity (gnutls_session_t* session, entity_t* entity)
+{
+  return read_entity_and_text (session, entity, NULL);
 }
 
 /**
