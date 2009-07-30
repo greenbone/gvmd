@@ -1,5 +1,13 @@
 2009-07-30  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (latex_escape_text, print_report_latex): New functions.
+	(latex_header, latex_footer): New variables.
+	(omp_xml_handle_end_element): Add a second rough PDF generator to
+	CLIENT_GET_REPORT.  This one produces the PDF via LaTeX instead of via
+	HTML via XSL via XML.
+
+2009-07-30  Matthew Mundell <mmundell@intevation.de>
+
 	* src/openvasmd_report_html.xsl: Lay the report out more like the
 	client PDF report.
 
