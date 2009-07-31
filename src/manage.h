@@ -319,6 +319,15 @@ report_add_result (report_t, result_t);
 char*
 report_uuid (report_t);
 
+int
+report_holes (report_t, const char*, int*);
+
+int
+report_notes (report_t, const char*, int*);
+
+int
+report_warnings (report_t, const char*, int*);
+
 /*@-exportlocal@*/
 /*@only@*/ /*@null@*/
 char*
@@ -371,7 +380,7 @@ void
 init_report_iterator (iterator_t*, task_t);
 
 void
-init_result_iterator (iterator_t*, task_t);
+init_result_iterator (iterator_t*, task_t, const char*);
 
 gboolean
 next_report (iterator_t*, report_t*);

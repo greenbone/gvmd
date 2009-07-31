@@ -920,6 +920,96 @@ report_uuid (report_t report)
 }
 
 /**
+ * @brief Get the number of holes in a report.
+ *
+ * @param[in]   report  Report.
+ * @param[in]   host    The host whose holes to count.  NULL for all hosts.
+ * @param[out]  holes   On success, number of holes.
+ *
+ * @return 0.
+ */
+int
+report_holes (report_t report, const char* host, int* holes)
+{
+  if (host)
+    *holes = sql_int (0, 0,
+                      "SELECT count(*) FROM results, report_results"
+                      " WHERE results.type = 'Security Hole'"
+                      " AND results.ROWID = report_results.result"
+                      " AND report_results.report = %llu"
+                      " AND results.host = '%s';",
+                      report);
+  else
+    *holes = sql_int (0, 0,
+                      "SELECT count(*) FROM results, report_results"
+                      " WHERE results.type = 'Security Hole'"
+                      " AND results.ROWID = report_results.result"
+                      " AND report_results.report = %llu;",
+                      report);
+  return 0;
+}
+
+/**
+ * @brief Get the number of notes in a report.
+ *
+ * @param[in]   report  Report.
+ * @param[in]   host    The host whose notes to count.  NULL for all hosts.
+ * @param[out]  notes   On success, number of notes.
+ *
+ * @return 0.
+ */
+int
+report_notes (report_t report, const char* host, int* notes)
+{
+  if (host)
+    *notes = sql_int (0, 0,
+                      "SELECT count(*) FROM results, report_results"
+                      " WHERE results.type = 'Security Note'"
+                      " AND results.ROWID = report_results.result"
+                      " AND report_results.report = %llu"
+                      " AND results.host = '%s';",
+                      report);
+  else
+    *notes = sql_int (0, 0,
+                      "SELECT count(*) FROM results, report_results"
+                      " WHERE results.type = 'Security Note'"
+                      " AND results.ROWID = report_results.result"
+                      " AND report_results.report = %llu;",
+                      report);
+  return 0;
+}
+
+/**
+ * @brief Get the number of warnings in a report.
+ *
+ * @param[in]   report    Report.
+ * @param[in]   host      The host whose warnings to count.  NULL for all hosts.
+ * @param[out]  warnings  On success, number of warnings.
+ *
+ * @return 0.
+ */
+int
+report_warnings (report_t report, const char* host, int* warnings)
+{
+  if (host)
+    *warnings = sql_int (0, 0,
+                         "SELECT count(*) FROM results, report_results"
+                         " WHERE results.type = 'Security Warning'"
+                         " AND results.ROWID = report_results.result"
+                         " AND report_results.report = %llu"
+                         " AND results.host = '%s';",
+                         report);
+  else
+    *warnings = sql_int (0, 0,
+                         "SELECT count(*) FROM results, report_results"
+                         " WHERE results.type = 'Security Warning'"
+                         " AND results.ROWID = report_results.result"
+                         " AND report_results.report = %llu;",
+                         report);
+  return 0;
+}
+
+/**
  * @brief Add a result to a report.
  *
  * @param[in]  report  The report.
@@ -1015,12 +1105,16 @@ next_report (iterator_t* iterator, report_t* report)
 /**
  * @brief Initialise a result iterator.
  *
+ * The results are ordered by host, then port, then type (severity).
+ *
  * @param[in]  iterator  Iterator.
  * @param[in]  report    Report whose results the iterator loops over.
  *                       All results if NULL.
+ * @param[in]  host      Host whose results the iterator loops over.
+ *                       All results if NULL.  Only considered if report given.
  */
 void
-init_result_iterator (iterator_t* iterator, report_t report)
+init_result_iterator (iterator_t* iterator, report_t report, const char* host)
 {
   int ret;
   const char* tail;
@@ -1029,11 +1123,24 @@ init_result_iterator (iterator_t* iterator, report_t report)
 
   iterator->done = FALSE;
   if (report)
-    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                           " FROM results, reports"
-                           " WHERE reports.task = results.task"
-                           " AND reports.ROWID = %llu;",
-                           report);
+    {
+      if (host)
+        sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                               " FROM results, reports"
+                               " WHERE reports.task = results.task"
+                               " AND reports.ROWID = %llu"
+                               " AND results.host = '%s'"
+                               " ORDER BY port, type;",
+                               report,
+                               host);
+      else
+        sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                               " FROM results, reports"
+                               " WHERE reports.task = results.task"
+                               " AND reports.ROWID = %llu"
+                               " ORDER BY host, port, type;",
+                               report);
+    }
   else
     sql = g_strdup_printf ("SELECT * FROM results;");
   tracef ("   sql (result iterator): %s\n", sql);
@@ -1335,7 +1442,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
                   report_id)
 
 /**
- * @brief Get the message counts from a report cache.
+ * @brief Get the message counts for a report.
  *
  * @param[in]   report_id    ID of report.
  * @param[out]  debugs       Number of debug messages.

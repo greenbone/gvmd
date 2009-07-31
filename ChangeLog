@@ -1,3 +1,25 @@
+2009-07-31  Matthew Mundell <mmundell@intevation.de>
+
+	Improve the LaTeX PDF report.
+
+	* src/tasks_sql.h (report_holes, report_notes, report_warnings): New
+	functions.
+	(init_result_iterator): Add a host argument to limit the results to a
+	particular host.  Update callers.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (latex_escape_text): Replace body with working implementation.
+	(latex_severity_heading, latex_severity_colour): New functions.
+	(latex_header): Define colours.  Refine settings.  Add title.
+	(latex_footer): Center.  Add spacing.
+	(print_report_latex): Move summary to abstract.  Use defined colours.
+	Add totals.  Fill in the "Most Severe Result(s)" column.  Use sections
+	with numbering.  Improve links.  Init result iterator with host.
+	Add the "[ return to host ]" link.  Colour issue headings according to
+	severity.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT remove "xml" from latex
+	file name and run pdflatex twice to ensure that references are correct.
+
 2009-07-30  Matthew Mundell <mmundell@intevation.de>
 
 	* src/omp.c (latex_escape_text, print_report_latex): New functions.

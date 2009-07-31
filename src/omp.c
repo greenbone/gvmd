@@ -1358,7 +1358,7 @@ print_report_xml (report_t report, gchar* xml_file)
              host_iterator_start_time (&hosts));
   cleanup_iterator (&hosts);
 
-  init_result_iterator (&results, report);
+  init_result_iterator (&results, report, NULL);
   while (next (&results))
     {
       gchar *descr;
@@ -1408,18 +1408,120 @@ print_report_xml (report_t report, gchar* xml_file)
 /**
  * @brief Make text safe for LaTeX.
  *
- * Replace \ with \\ and & with \&.
+ * Replace LaTeX special characters with LaTeX equivalents.
  *
  * @return A newly allocated version of text.
  */
 static gchar*
 latex_escape_text (const char *text)
 {
-  // FIX do this properly
-  gchar *new = g_strdup (text);
-  gchar *ch = new;
-  while (*ch) { if (*ch == '\\' || *ch == '&') *ch = '?'; ch++; }
+  // TODO: Do this better.
+
+  gsize left = strlen (text);
+  gchar *new, *ch;
+
+  /* Allocate buffer of a safe length. */
+  {
+    int bs = 0;
+    const char *c = text;
+    while (*c) { if (*c == '\\') bs++; c++; }
+    new = g_strndup (text,
+                     (left - bs) * 2 + bs * (strlen ("$\backslash$") - 1) + 1);
+  }
+
+  ch = new;
+  while (*ch)
+    {
+      /* FIX \~ becomes \verb{~} or \~{} */
+      if (*ch == '\\')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case 'r':
+                {
+                  /* \r is flushed */
+                  memmove (ch - 1, ch + 1, left);
+                  left--;
+                  ch -= 2;
+                  break;
+                }
+              case 'n':
+                {
+                  /* \n becomes "\n\n" (two newlines) */
+                  left--;
+                  *(ch - 1) = '\n';
+                  *ch = '\n';
+                  break;
+                }
+              default:
+                {
+                  /* \ becomes $\backslash$ */
+                  memmove (ch - 1 + strlen ("$\backslash$"), ch - 1, left);
+                  strncpy (ch - 1, "$\backslash$", strlen ("$\backslash$"));
+                  ch += (strlen ("$\backslash$") - 1);
+                  break;
+                }
+            }
+        }
+      else if (   *ch == '#' || *ch == '$' || *ch == '%'
+               || *ch == '&' || *ch == '_' || *ch == '^'
+               || *ch == '{' || *ch == '}')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case '\0':
+                break;
+              default:
+                /* & becomes \& */
+                memmove (ch, ch - 1, left);
+                *(ch - 1) = '\\';
+            }
+        }
+      ch++; left--;
+    }
   return new;
+}
+
+/**
+ * @brief Get the heading associated with a certain result severity.
+ *
+ * @param[in]  severity  The severity type.
+ *
+ * @return The heading associated with the given severity (for example,
+ *         "Informational").
+ */
+const char*
+latex_severity_heading (const char *severity)
+{
+  if (strcmp (severity, "Security Hole") == 0)
+    return "Vulnerability";
+  if (strcmp (severity, "Security Note") == 0)
+    return "Informational";
+  if (strcmp (severity, "Security Warning") == 0)
+    return "Warning";
+  return severity;
+}
+
+/**
+ * @brief Get the colour associated with a certain result severity.
+ *
+ * @param[in]  severity  The severity type.
+ *
+ * @return The colour associated with the given severity (for example,
+ *         "[rgb]{0.1,0.7,0}" or "{red}").
+ */
+const char*
+latex_severity_colour (const char *severity)
+{
+  if (strcmp (severity, "Security Hole") == 0)
+    return "{openvas_hole}";
+  if (strcmp (severity, "Security Note") == 0)
+    return "{openvas_note}";
+  if (strcmp (severity, "Security Warning") == 0)
+    return "{openavs_warning}";
+  return severity;
 }
 
 /**
@@ -1442,38 +1544,40 @@ const char* latex_header
     "\n"
     "% must come last\n"
     "\\usepackage{hyperref}\n"
+    "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
+    "\\definecolor{openvas_hole}{rgb}{0.80,0,0}\n"
+    "\\definecolor{openvas_note}{rgb}{0.93,0.86,0.5}\n"
+    "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
+    "\\definecolor{openvas_warning}{rgb}{0.93,0.60,0}\n"
+    "\\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}\n"
+    "\\usepackage[all]{hypcap}\n"
     "\n"
-    "%\\geometry{verbose,a4paper,tmargin=5mm}\n"
-    "\\geometry{verbose,a4paper,tmargin=24mm,bottom=24mm}\n"
-    "%\\geometry{verbose,a4paper}\n"
-    "%\\geometry{verbose,a4paper,tmargin=14mm,bottom=14mm}\n"
-    "%\\geometry{verbose,a5paper,tmargin=5mm}\n"
+    "%\\geometry{verbose,a4paper,tmargin=24mm,bottom=24mm}\n"
+    "\\geometry{verbose,a4paper}\n"
     "\\setlength{\\parskip}{\\smallskipamount}\n"
     "\\setlength{\\parindent}{0pt}\n"
     "\n"
-    "%\\titleformat{\\part}{\\normalsize}{\\thepart.}{}{\\bfseries}[\\titlerule]\n"
-    "%\\titleformat{\\section}{\\normalsize}{\\thesection.}{}{\\bfseries}\n"
-    "\n"
-    "% nice, but causes 0 width html columns from latex2html\n"
-    "%\\newlength{\\datecollen}\n"
-    "%\\setlength{\\datecollen}{48mm}\n"
+    "\\title{OpenVAS Scan Report}\n"
+    "\\pagestyle{headings}\n"
+    "\\pagenumbering{arabic}\n"
     "\n"
     "\\begin{document}\n"
     "\n"
-    "% OpenVAS Scan Report\n"
+    "\\maketitle\n"
     "\n"
-    "\\part*{Summary}\n"
-    "\n"
-    "This report lists results from a scan, sorted by host.\n"
-    "\n";
+    "\\renewcommand{\\abstractname}{Summary}\n";
 
 /**
  * @brief Header for latex report.
  */
 const char* latex_footer
-  = "\\rule{\\textwidth}{0.1pt}\n"
+  = "\n"
+    "\\begin{center}\n"
+    "\\medskip\n"
+    "\\rule{\\textwidth}{0.1pt}\n"
     "\n"
     "This file was generated by \\href{http://www.openvas.org/}{OpenVAS}, the free security scanner.\n"
+    "\\end{center}\n"
     "\n"
     "\\end{document}\n";
 
@@ -1490,7 +1594,7 @@ print_report_latex (report_t report, gchar* latex_file)
 {
   FILE *out;
   iterator_t results, hosts;
-  int num_hosts = 0;
+  int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
 
   out = fopen (latex_file, "w");
 
@@ -1505,41 +1609,73 @@ print_report_latex (report_t report, gchar* latex_file)
   fputs (latex_header, out);
 
   fprintf (out,
-           "\\begin{tabular}{ll}\n"
-           "Scan start& %s\\\\\n"
-           "Scan end& %s\\\\\n"
-           "\\end{tabular}\n\n",
+           "\\begin{abstract}\n"
+           "This document reports on the results of an OpenVAS security scan.\n"
+           "The scan started at %s and ended at %s.  The\n"
+           "report first summarises the results found.  Then, for each host,\n"
+           "the report describes every issue found.  Please consider the\n"
+           "advice given in each desciption, in order to rectify the issue.\n"
+           "\\end{abstract}\n",
            scan_start_time (report),
            scan_end_time (report));
 
   /* Print the list of hosts. */
 
   fprintf (out,
-           "\\begin{tabular}{|l|l|l|l|l|l|}\n"
+           "\\section{Result Overview}\n"
+           "\n"
+           "\\begin{tabularx}{\\textwidth * 1}{|l|X|l|l|l|l|}\n"
            "\\hline\n"
-           "\\rowcolor[rgb]{0.3,0.78,1}Host&Possible Issues&Holes&Warnings&Notes&False Positives\\\\\n");
+           "\\rowcolor{openvas_report}"
+           "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n");
 
   init_host_iterator (&hosts, report);
   while (next (&hosts))
     {
+      int holes, warnings, notes;
+      const char *host = host_iterator_host (&hosts);
+
+      report_holes (report, host, &holes);
+      report_warnings (report, host, &warnings);
+      report_notes (report, host, &notes);
+
+      total_holes += holes;
+      total_warnings += warnings;
+      total_notes += notes;
+
       num_hosts++;
       fprintf (out,
                "\\hline\n"
-               "\\hyperlink{host:%s}{%s}&FIX Security hole(s) found&0&0&0&0\\\\\n", // FIX 0s
-               host_iterator_host (&hosts),
-               host_iterator_host (&hosts));
+               // FIX 0 (false positives)
+               "\\hyperref[host:%s]{%s}&%s&%i&%i&%i&0\\\\\n",
+               host,
+               host,
+               ((holes > 1) ? "Security Holes found"
+                : ((holes == 1) ? "Security Hole found"
+                   : ((warnings > 1) ? "Security Warnings found"
+                      : ((warnings == 1) ? "Security Warning found"
+                         : ((notes > 1) ? "Security Notes found"
+                            : ((notes == 1) ? "Security Note found"
+                               : "")))))),
+               holes,
+               warnings,
+               notes);
     }
   cleanup_iterator (&hosts);
 
   fprintf (out,
            "\\hline\n"
-           "Total: %i&&0&0&0&0\\\\\n"
+           // FIX 0 (false positives)
+           "Total: %i&&%i&%i&%i&0\\\\\n"
            "\\hline\n"
-           "\\end{tabular}\n"
+           "\\end{tabularx}\n"
            "\n"
-           "\\part*{Results per Host}\n"
+           "\\section{Results per Host}\n"
            "\n",
-           num_hosts);
+           num_hosts,
+           total_holes,
+           total_warnings,
+           total_notes);
 
   /* Print a section for each host. */
 
@@ -1547,18 +1683,20 @@ print_report_latex (report_t report, gchar* latex_file)
   while (next (&hosts))
     {
       gchar *last_port;
+      const char *host = host_iterator_host (&hosts);
 
       /* Print the times. */
 
       fprintf (out,
-               "\\section*{\\hypertarget{host:%s}{%s}}\n"
+               "\\subsection{%s}\n"
+               "\\label{host:%s}\n"
                "\n"
                "\\begin{tabular}{ll}\n"
                "Host scan start&%s\\\\\n"
                "Host scan end&%s\\\\\n"
                "\\end{tabular}\n\n",
-               host_iterator_host (&hosts),
-               host_iterator_host (&hosts),
+               host,
+               host,
                host_iterator_start_time (&hosts),
                host_iterator_end_time (&hosts));
 
@@ -1567,10 +1705,10 @@ print_report_latex (report_t report, gchar* latex_file)
       fprintf (out,
                "\\begin{tabular}{|l|l|}\n"
                "\\hline\n"
-               "\\rowcolor[rgb]{0.3,0.78,1}Service (Port)&Issue regarding port\\\\\n"
+               "\\rowcolor{openvas_report}Service (Port)&Issue regarding port\\\\\n"
                "\\hline\n");
 
-      init_result_iterator (&results, report); // FIX only for current host
+      init_result_iterator (&results, report, host);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -1582,7 +1720,7 @@ print_report_latex (report_t report, gchar* latex_file)
           if (last_port) g_free (last_port);
           last_port = g_strdup (result_iterator_port (&results));
           fprintf (out,
-                   "\\hyperlink{port:%s %s}{%s}&%s(s) found\\\\\n"
+                   "\\hyperref[port:%s %s]{%s}&%s(s) found\\\\\n"
                    "\\hline\n",
                    host_iterator_host (&hosts),
                    last_port,
@@ -1595,18 +1733,20 @@ print_report_latex (report_t report, gchar* latex_file)
       fprintf (out,
                "\\end{tabular}\n"
                "\n"
-               "\\subsection*{Security Issues and Fixes -- %s}\n\n",
+               "%%\\subsection*{Security Issues and Fixes -- %s}\n\n",
                host_iterator_host (&hosts));
 
       /* Print the result details. */
 
-      init_result_iterator (&results, report); // FIX only for current host
+      init_result_iterator (&results, report, host);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
+      // FIX severity ordering is alphabetical on severity name
       while (next (&results))
         {
           gchar *descr;
+          const char *severity;
 
           descr = latex_escape_text (result_iterator_descr (&results));
 
@@ -1615,27 +1755,38 @@ print_report_latex (report_t report, gchar* latex_file)
             {
               if (last_port)
                 {
-                  fprintf (out, "\\end{tabularx}\n\n");
+                  fprintf (out,
+                           "\\end{tabularx}\\\\\n"
+                           "\\begin{footnotesize}"
+                           "\\hyperref[host:%s]{[ return to %s ]}\n"
+                           "\\end{footnotesize}"
+                           "\\end{tabular}\n",
+                           host,
+                           host);
                   g_free (last_port);
                   last_port = NULL;
                 }
               fprintf (out,
-                       "\\subsubsection*{\\hypertarget{port:%s %s}{%s}}\n\n"
+                       "\\subsubsection{%s}\n"
+                       "\\label{port:%s %s}\n\n"
+                       "\\begin{tabular}{l}\n"
                        "\\begin{tabularx}{\\textwidth * 1}{|X|}\n"
                        "\\hline\n",
-                       host_iterator_host (&hosts),
                        result_iterator_port (&results),
+                       host_iterator_host (&hosts),
                        result_iterator_port (&results));
             }
           if (last_port == NULL)
             last_port = g_strdup (result_iterator_port (&results));
+          severity = result_iterator_type (&results);
           fprintf (out,
-                   "\\rowcolor{red}%s\\\\\n"  // FIX colour,title per sev.
+                   "\\rowcolor%s%s\\\\\n"
                    "\\hline\n"
                    "%s\\\\\n"
                    "OpenVAS ID: \\href{http://www.openvas.org/?oid=\"%s\"}{%s}\\\\\n"
                    "\\hline\n",
-                   result_iterator_type (&results),
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity),
                    descr,
                    result_iterator_nvt (&results),
                    result_iterator_nvt (&results));
@@ -1644,10 +1795,17 @@ print_report_latex (report_t report, gchar* latex_file)
         }
       if (last_port)
         {
-          fprintf (out, "\\end{tabularx}\n\n");
           g_free (last_port);
-        }
 
+          fprintf (out,
+                   "\\end{tabularx}\n\\\\"
+                   "\\begin{footnotesize}"
+                   "\\hyperref[host:%s]{[ return to %s ]}"
+                   "\\end{footnotesize}\n"
+                   "\\end{tabular}\n",
+                   host,
+                   host);
+        }
       cleanup_iterator (&results);
     }
   cleanup_iterator (&hosts);
@@ -1999,7 +2157,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            host_iterator_start_time (&hosts));
                 cleanup_iterator (&hosts);
 
-                init_result_iterator (&results, report);
+                init_result_iterator (&results, report, NULL);
                 while (next (&results))
                   SENDF_TO_CLIENT_OR_FAIL ("<result>"
                                            "<subnet>%s</subnet>"
@@ -2049,7 +2207,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           host_iterator_start_time (&hosts));
                 cleanup_iterator (&hosts);
 
-                init_result_iterator (&results, report);
+                init_result_iterator (&results, report, NULL);
                 while (next (&results))
                   g_string_append_printf (nbe,
                                           "results|%s|%s|%s|%s|%s|%s|\n",
@@ -2381,7 +2539,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar *latex_file;
                 gint latex_fd;
 
-                latex_file = g_strdup ("/tmp/openvasmd_xml_XXXXXX.tex");
+                latex_file = g_strdup ("/tmp/openvasmd_XXXXXX.tex");
 
                 latex_fd = g_mkstemp (latex_file);
 
@@ -2419,10 +2577,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    O_RDWR | O_CREAT,
                                    S_IRUSR | S_IWUSR);
 
-                    command = g_strdup_printf ("pdflatex -output-directory /tmp/ %s"
-                                               //" > /dev/null 2>&1",
-                                               " > /tmp/openvasmd_pdflatex_out 2>&1",
-                                               latex_file);
+                    command = g_strdup_printf
+                               ("pdflatex -output-directory /tmp/ %s"
+                                " > /tmp/openvasmd_pdflatex_out 2>&1"
+                                " && pdflatex -output-directory /tmp/ %s"
+                                " > /tmp/openvasmd_pdflatex_out 2>&1",
+                                latex_file,
+                                latex_file);
                     g_free (latex_file);
 
                     g_message ("   command: %s\n", command);
