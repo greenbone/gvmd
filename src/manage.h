@@ -186,6 +186,9 @@ task_run_status (task_t);
 void
 set_task_run_status (task_t, task_status_t);
 
+report_t
+task_running_report (task_t);
+
 char*
 task_start_time (task_t);
 
@@ -201,11 +204,8 @@ set_task_end_time (task_t task, char* time);
 unsigned int
 task_report_count (task_t);
 
-char*
-task_attack_state (task_t);
-
 void
-set_task_attack_state (task_t task, char* state);
+set_scan_attack_state (report_t, const char*, const char*);
 
 int
 task_debugs_size (task_t);
@@ -264,14 +264,8 @@ append_to_task_name (task_t, const char*, int);
 int
 add_task_description_line (task_t, const char*, size_t);
 
-unsigned int
-task_current_port (task_t);
-
-unsigned int
-task_max_port (task_t);
-
 void
-set_task_ports (task_t, unsigned int, unsigned int);
+set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 
 void
 append_task_open_port (task_t, unsigned int, char*);
@@ -414,6 +408,15 @@ host_iterator_start_time (iterator_t*);
 
 const char*
 host_iterator_end_time (iterator_t*);
+
+const char*
+host_iterator_end_time (iterator_t*);
+
+int
+host_iterator_current_port (iterator_t*);
+
+int
+host_iterator_max_port (iterator_t*);
 
 
 /* Server messaging. */

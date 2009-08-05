@@ -2109,29 +2109,40 @@ process_otp_server_input ()
                 break;
               case SERVER_STATUS_ATTACK_STATE:
                 {
-                  if (current_server_task)
+                  if (current_host)
                     {
                       char* state = g_strdup (field);
-                      tracef ("   server got attack state: %s\n", state);
-                      set_task_attack_state (current_server_task, state);
+                      set_scan_attack_state (current_report,
+                                             current_host,
+                                             state);
                     }
                   set_server_state (SERVER_STATUS_PORTS);
                   break;
                 }
               case SERVER_STATUS_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  assert (current_host == NULL);
+                  current_host = g_strdup (field);
                   set_server_state (SERVER_STATUS_ATTACK_STATE);
                   break;
                 }
               case SERVER_STATUS_PORTS:
                 {
-                  if (current_server_task)
+                  assert (current_report);
+                  if (current_report && current_host)
                     {
                       unsigned int current, max;
                       tracef ("   server got ports: %s\n", field);
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
-                        set_task_ports (current_server_task, current, max);
+                        set_scan_ports (current_report,
+                                        current_host,
+                                        current,
+                                        max);
+                    }
+                  if (current_host)
+                    {
+                      g_free (current_host);
+                      current_host = NULL;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))

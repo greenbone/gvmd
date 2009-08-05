@@ -493,10 +493,10 @@ init_manage (GSList *log_config)
   /* Ensure the tables exist. */
 
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
-  sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
 
   /* Always create a single user, for now. */
@@ -700,6 +700,28 @@ set_task_run_status (task_t task, task_status_t status)
   sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
        status,
        task);
+}
+
+/**
+ * @brief Return the report currently being produced.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Current report of task if task is active, else (report_t) NULL.
+ */
+report_t
+task_running_report (task_t task)
+{
+  task_status_t run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_REQUESTED
+      || run_status == TASK_STATUS_RUNNING)
+    {
+      return (unsigned int) sql_int (0, 0,
+                                     "SELECT ROWID FROM reports"
+                                     " WHERE task = %llu AND end_time IS NULL;",
+                                     task);
+    }
+  return (report_t) NULL;
 }
 
 /**
@@ -1287,6 +1309,25 @@ host_iterator_ ## name (iterator_t* iterator) \
 DEF_ACCESS (host, 1);
 DEF_ACCESS (start_time, 2);
 DEF_ACCESS (end_time, 3);
+DEF_ACCESS (attack_state, 4);
+
+int
+host_iterator_current_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  return ret;
+}
+
+int
+host_iterator_max_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
 
 #undef DEF_ACCESS
 
@@ -1530,33 +1571,20 @@ task_report_count (task_t task)
 }
 
 /**
- * @brief Return the attack state of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Task attack state.
- */
-char*
-task_attack_state (task_t task)
-{
-  return sql_string (0, 0,
-                     "SELECT attack_state FROM tasks WHERE ROWID = %llu;",
-                     task);
-}
-
-/**
  * @brief Set the attack state of a task.
  *
  * @param[in]  task   Task.
  * @param[in]  state  New state.
  */
 void
-set_task_attack_state (task_t task, char* state)
+set_scan_attack_state (report_t report, const char* host, const char* state)
 {
-  sql ("UPDATE tasks SET attack_state = '%.*s' WHERE ROWID = %llu;",
-       strlen (state),
+  sql ("UPDATE report_hosts SET attack_state = '%s'"
+       " WHERE host = '%s' AND report = %llu;",
        state,
-       task);
+       state,
+       host,
+       report);
 }
 
 /**
@@ -1881,49 +1909,20 @@ add_task_description_line (task_t task, const char* line,
 }
 
 /**
- * @brief Return the current port of a task.
+ * @brief Set the ports for a particular host in a scan.
  *
- * @param[in]  task  Task.
- *
- * @return Current port.
- */
-unsigned int
-task_current_port (task_t task)
-{
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT current_port FROM tasks WHERE ROWID = %llu;",
-                                 task);
-}
-
-/**
- * @brief Return the max port of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Max port.
- */
-unsigned int
-task_max_port (task_t task)
-{
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT max_port FROM tasks WHERE ROWID = %llu;",
-                                 task);
-}
-
-/**
- * @brief Set the ports of a task.
- *
- * @param[in]  task     The task.
+ * @param[in]  report   Report associated with scan.
+ * @param[in]  host     Host.
  * @param[in]  current  New value for port currently being scanned.
  * @param[in]  max      New value for last port to be scanned.
  */
 void
-set_task_ports (task_t task, unsigned int current, unsigned int max)
+set_scan_ports (report_t report, const char* host, unsigned int current,
+                unsigned int max)
 {
-  sql ("UPDATE tasks SET current_port = %i, max_port = %i WHERE ROWID = %llu;",
-       current,
-       max,
-       task);
+  sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
+       " WHERE host = '%s' AND report = %llu;",
+       current, max, host, report);
 }
 
 /**
@@ -2009,10 +2008,7 @@ reset_task (task_t task)
 {
   sql ("UPDATE tasks SET"
        " start_time = '',"
-       " end_time = '',"
-       " attack_state = '',"
-       " current_port = '',"
-       " max_port = ''"
+       " end_time = ''"
        " WHERE ROWID = %llu;",
        task);
 }

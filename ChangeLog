@@ -1,3 +1,25 @@
+2009-08-05  Matthew Mundell <mmundell@intevation.de>
+
+	Extend PROGRESS in GET_STATUS to include per-host progress percentages.
+
+	* src/tasks_sql.h (init_manage): Move attack_state, current_port and
+	max_port from tasks table to report_hosts table
+	(task_running_report, host_iterator_attack_state)
+	(host_iterator_current_port, host_iterator_max_port)
+	(set_scan_attack_state, set_scan_ports): New functions.
+	(task_attack_state, set_task_attack_state, task_current_port)
+	(task_max_port, set_task_ports): Remove.
+	(reset_task): Remove moved fields from SQL.
+	* src/manage.h: Update headers.
+
+	* src/otp.c (process_otp_server_input): In SERVER_STATUS_ATTACK_STATE set
+	the attack state of the host scan instead of the task.  In
+	SERVER_STATUS_HOST set current_host.  In SERVER_STATUS_PORTS set scan
+	ports instead of task ports.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add
+	per-host progresses to PROGRESS.
+
 2009-07-31  Matthew Mundell <mmundell@intevation.de>
 
 	Improve the LaTeX PDF report.

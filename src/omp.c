@@ -3073,12 +3073,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   {
                     int ret;
-                    gchar* response;
+                    gchar *response, *progress_xml;
                     char* name;
                     gchar *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
-                    long progress;
-                    unsigned int max_port, current_port;
+                    report_t running_report;
 
                     last_report_id = task_last_report_id (task);
                     if (last_report_id)
@@ -3164,16 +3163,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       second_last_report = g_strdup ("");
 
-                    max_port = task_max_port (task);
-                    current_port = task_current_port (task);
-                    if (max_port)
+                    running_report = task_running_report (task);
+                    if (running_report)
                       {
-                        progress = (current_port * 100) / max_port;
-                        if (progress < 0) progress = 0;
-                        else if (progress > 100) progress = 100;
+                        long total = 0;
+                        int num_hosts = 0;
+                        iterator_t hosts;
+                        GString *string = g_string_new ("");
+
+                        init_host_iterator (&hosts, running_report);
+                        while (next (&hosts))
+                          {
+                            unsigned int max_port, current_port;
+                            long progress;
+
+                            max_port = host_iterator_max_port (&hosts);
+                            current_port = host_iterator_current_port (&hosts);
+                            if (max_port)
+                              {
+                                progress = (current_port * 100) / max_port;
+                                if (progress < 0) progress = 0;
+                                else if (progress > 100) progress = 100;
+                              }
+                            else
+                              progress = current_port ? 100 : 0;
+                            total += progress;
+                            num_hosts++;
+
+                            g_string_append_printf (string,
+                                                    "<progress>"
+                                                    "<host>%s</host>"
+                                                    "%li"
+                                                    "</progress>",
+                                                    host_iterator_host (&hosts),
+                                                    progress);
+                          }
+                        cleanup_iterator (&hosts);
+
+                        g_string_append_printf (string,
+                                                "%li",
+                                                num_hosts ? (total / num_hosts)
+                                                          : 0);
+                        progress_xml = g_string_free (string, FALSE);
                       }
                     else
-                      progress = current_port ? 100 : 0;
+                      progress_xml = g_strdup ("-1");
 
                     name = task_name (task);
                     response = g_strdup_printf ("<get_status_response"
@@ -3181,7 +3215,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 "<task id=\"%s\">"
                                                 "<name>%s</name>"
                                                 "<status>%s</status>"
-                                                "<progress>%li</progress>"
+                                                "<progress>%s</progress>"
                                                 "<messages>"
                                                 "<debug>%i</debug>"
                                                 "<hole>%i</hole>"
@@ -3194,7 +3228,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 tsk_uuid,
                                                 name,
                                                 task_run_status_name (task),
-                                                progress,
+                                                progress_xml,
                                                 task_debugs_size (task),
                                                 task_holes_size (task),
                                                 task_infos_size (task),
@@ -3203,6 +3237,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 task_report_count (task),
                                                 last_report,
                                                 second_last_report);
+                    g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
                     ret = send_to_client (response);
@@ -3230,6 +3265,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             task_iterator_t iterator;
             task_t index;
 
+            // TODO: A lot of this block is the same as the one above.
+
             free_string_var (&current_uuid);
 
             SEND_TO_CLIENT_OR_FAIL ("<get_status_response"
@@ -3247,24 +3284,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             init_task_iterator (&iterator);
             while (next_task (&iterator, &index))
               {
-                gchar* line;
+                gchar *line, *progress_xml;
                 char* name = task_name (index);
                 char* tsk_uuid;
                 gchar *last_report_id, *last_report;
                 gchar *second_last_report_id, *second_last_report;
-                long progress;
-                unsigned int max_port, current_port;
-
-                max_port = task_max_port (index);
-                current_port = task_current_port (index);
-                if (max_port)
-                  {
-                    progress = (current_port * 100) / max_port;
-                    if (progress < 0) progress = 0;
-                    else if (progress > 100) progress = 100;
-                  }
-                else
-                  progress = current_port ? 100 : 0;
+                report_t running_report;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
@@ -3348,11 +3373,57 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   second_last_report = g_strdup ("");
 
+                running_report = task_running_report (index);
+                if (running_report)
+                  {
+                    long total = 0;
+                    int num_hosts = 0;
+                    iterator_t hosts;
+                    GString *string = g_string_new ("");
+
+                    init_host_iterator (&hosts, running_report);
+                    while (next (&hosts))
+                      {
+                        unsigned int max_port, current_port;
+                        long progress;
+
+                        max_port = host_iterator_max_port (&hosts);
+                        current_port = host_iterator_current_port (&hosts);
+                        if (max_port)
+                          {
+                            progress = (current_port * 100) / max_port;
+                            if (progress < 0) progress = 0;
+                            else if (progress > 100) progress = 100;
+                          }
+                        else
+                          progress = current_port ? 100 : 0;
+                        total += progress;
+                        num_hosts++;
+
+                        g_string_append_printf (string,
+                                                "<progress>"
+                                                "<host>%s</host>"
+                                                "%li"
+                                                "</progress>",
+                                                host_iterator_host (&hosts),
+                                                progress);
+                      }
+                    cleanup_iterator (&hosts);
+
+                    g_string_append_printf (string,
+                                            "%li",
+                                            num_hosts ? (total / num_hosts)
+                                                      : 0);
+                    progress_xml = g_string_free (string, FALSE);
+                  }
+                else
+                  progress_xml = g_strdup ("-1");
+
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
                                         "<status>%s</status>"
-                                        "<progress>%li</progress>"
+                                        "<progress>%s</progress>"
                                         "<messages>"
                                         "<debug>%i</debug>"
                                         "<hole>%i</hole>"
@@ -3366,7 +3437,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         tsk_uuid,
                                         name,
                                         task_run_status_name (index),
-                                        progress,
+                                        progress_xml,
                                         task_debugs_size (index),
                                         task_holes_size (index),
                                         task_infos_size (index),
@@ -3375,6 +3446,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_report_count (index),
                                         last_report,
                                         second_last_report);
+                g_free (progress_xml);
                 g_free (last_report);
                 g_free (second_last_report);
                 free (name);
