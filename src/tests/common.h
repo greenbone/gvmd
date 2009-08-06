@@ -167,6 +167,12 @@ omp_until_up (int (*) (gnutls_session_t*, entity_t*),
               gnutls_session_t*,
               entity_t*);
 
+int
+omp_create_target (gnutls_session_t*, const char*, const char*);
+
+int
+omp_delete_target (gnutls_session_t*, const char*);
+
 /* Setup. */
 
 void

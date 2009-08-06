@@ -71,8 +71,10 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    CREATE_TARGET          Create a new target.\n"
 "    CREATE_TASK            Create a new task.\n"
 "    DELETE_REPORT          Delete an existing report.\n"
+"    DELETE_TARGET          Delete an existing target.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_CERTIFICATES       Get all available certificates.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
@@ -83,6 +85,7 @@ static char* help_text = "\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_STATUS             Get task status information.\n"
+"    GET_TARGETS            Get all targets.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
@@ -240,6 +243,9 @@ typedef enum
   CLIENT_ABORT_TASK_CRITERION,
 #endif
   CLIENT_AUTHENTICATE,
+  CLIENT_CREATE_TARGET,
+  CLIENT_CREATE_TARGET_HOSTS,
+  CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_NAME,
@@ -249,6 +255,8 @@ typedef enum
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_TASK,
+  CLIENT_DELETE_TARGET,
+  CLIENT_DELETE_TARGET_NAME,
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
@@ -258,6 +266,7 @@ typedef enum
   CLIENT_GET_REPORT,
   CLIENT_GET_RULES,
   CLIENT_GET_STATUS,
+  CLIENT_GET_TARGETS,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
@@ -358,6 +367,13 @@ error_send_to_client (GError** error)
  * @param  tag  Name of the command generating the response.
  */
 #define XML_OK(tag) "<" tag "_response status=\"" STATUS_OK "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_OK_CREATED response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
+#define XML_OK_CREATED(tag) "<" tag "_response status=\"" STATUS_OK_CREATED "\"/>"
 
 /**
  * @brief Expand to XML for a STATUS_OK_REQUESTED response.
@@ -486,6 +502,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
           }
+        else if (strncasecmp ("DELETE_TARGET", element_name, 13) == 0)
+          {
+            assert (modify_task_name == NULL);
+            append_string (&modify_task_name, "");
+            set_client_state (CLIENT_DELETE_TARGET);
+          }
         else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
           {
             const gchar* attribute;
@@ -531,6 +553,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
           set_client_state (CLIENT_GET_RULES);
+        else if (strncasecmp ("GET_TARGETS", element_name, 11) == 0)
+          set_client_state (CLIENT_GET_TARGETS);
         else if (strncasecmp ("HELP", element_name, 4) == 0)
           set_client_state (CLIENT_HELP);
         else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
@@ -555,6 +579,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == (task_t) NULL) abort (); // FIX
             set_client_state (CLIENT_CREATE_TASK);
+          }
+        else if (strncasecmp ("CREATE_TARGET", element_name, 13) == 0)
+          {
+            assert (modify_task_name == NULL);
+            assert (modify_task_value == NULL);
+            append_string (&modify_task_name, "");
+            append_string (&modify_task_value, "");
+            set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
           set_client_state (CLIENT_VERSION);
@@ -639,6 +671,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
+        break;
+
+      case CLIENT_DELETE_TARGET:
+        if (strncasecmp ("NAME", element_name, 4) == 0)
+          set_client_state (CLIENT_DELETE_TARGET_NAME);
+        else
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("delete_target")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_DELETE_TASK:
@@ -770,6 +820,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_GET_TARGETS:
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("get_targets")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_HELP:
         {
           if (send_to_client (XML_ERROR_SYNTAX ("help")))
@@ -850,6 +915,26 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("abort_task")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_TARGET:
+        if (strncasecmp ("HOSTS", element_name, 5) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_HOSTS);
+        else if (strncasecmp ("NAME", element_name, 4) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_NAME);
+        else
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("create_target")))
               {
                 error_send_to_client (error);
                 return;
@@ -2700,6 +2785,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_TARGET:
+        {
+          assert (strncasecmp ("DELETE_TARGET", element_name, 13) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target"));
+            }
+          else if (delete_target (modify_task_name))
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+            }
+          else
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_DELETE_TARGET_NAME:
+        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        set_client_state (CLIENT_DELETE_TARGET);
+        break;
+
       case CLIENT_DELETE_TASK:
         if (current_uuid)
           {
@@ -2948,6 +3061,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strncasecmp ("RCFILE", element_name, 6) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
+        break;
+
+      case CLIENT_CREATE_TARGET:
+        {
+          assert (strncasecmp ("CREATE_TARGET", element_name, 13) == 0);
+          assert (modify_task_name != NULL);
+          assert (modify_task_value != NULL);
+
+          if (strlen (modify_task_name) == 0
+              || strlen (modify_task_value) == 0)
+            {
+              free_string_var (&modify_task_name);
+              free_string_var (&modify_task_value);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target"));
+            }
+          else if (create_target (modify_task_name, modify_task_value))
+            {
+              free_string_var (&modify_task_name);
+              free_string_var (&modify_task_value);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target"));
+            }
+          else
+            {
+              free_string_var (&modify_task_name);
+              free_string_var (&modify_task_value);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_TARGET_HOSTS:
+        assert (strncasecmp ("HOSTS", element_name, 5) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_NAME:
+        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
         break;
 
       case CLIENT_CREATE_TASK:
@@ -3466,6 +3616,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_GET_TARGETS:
+        {
+          iterator_t targets;
+          assert (strncasecmp ("GET_TARGETS", element_name, 11) == 0);
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_targets_response>");
+          init_target_iterator (&targets);
+          while (next (&targets))
+            SENDF_TO_CLIENT_OR_FAIL ("<target>"
+                                     "<name>%s</name><hosts>%s</hosts>"
+                                     "</target>",
+                                     target_iterator_name (&targets),
+                                     target_iterator_hosts (&targets));
+          cleanup_iterator (&targets);
+          SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+
       default:
         assert (0);
         break;
@@ -3522,6 +3692,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+      case CLIENT_CREATE_TARGET_HOSTS:
+        append_text (&modify_task_value, text, text_len);
+        break;
+      case CLIENT_CREATE_TARGET_NAME:
+        append_text (&modify_task_name, text, text_len);
+        break;
+
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (current_client_task, text, text_len);
         break;
@@ -3534,6 +3711,10 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
+        break;
+
+      case CLIENT_DELETE_TARGET_NAME:
+        append_text (&modify_task_name, text, text_len);
         break;
 
       default:

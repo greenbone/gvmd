@@ -498,6 +498,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts);");
 
   /* Always create a single user, for now. */
 
@@ -1298,7 +1299,7 @@ init_host_iterator (iterator_t* iterator, report_t report)
 
 #define DEF_ACCESS(name, col) \
 const char* \
-host_iterator_ ## name (iterator_t* iterator) \
+name (iterator_t* iterator) \
 { \
   const char *ret; \
   if (iterator->done) return NULL; \
@@ -1306,10 +1307,10 @@ host_iterator_ ## name (iterator_t* iterator) \
   return ret; \
 }
 
-DEF_ACCESS (host, 1);
-DEF_ACCESS (start_time, 2);
-DEF_ACCESS (end_time, 3);
-DEF_ACCESS (attack_state, 4);
+DEF_ACCESS (host_iterator_host, 1);
+DEF_ACCESS (host_iterator_start_time, 2);
+DEF_ACCESS (host_iterator_end_time, 3);
+DEF_ACCESS (host_iterator_attack_state, 4);
 
 int
 host_iterator_current_port (iterator_t* iterator)
@@ -1328,8 +1329,6 @@ host_iterator_max_port (iterator_t* iterator)
   ret = (int) sqlite3_column_int (iterator->stmt, 6);
   return ret;
 }
-
-#undef DEF_ACCESS
 
 /**
  * @brief Set the end time of a task.
@@ -2012,3 +2011,107 @@ reset_task (task_t task)
        " WHERE ROWID = %llu;",
        task);
 }
+
+
+/* Targets. */
+
+/**
+ * @brief Create a target.
+ *
+ * @param[in]  name   Name of target.
+ * @param[in]  hosts  Host list of target.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+create_target (const char* name, const char* hosts)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_hosts;
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      return -1;
+    }
+
+  quoted_hosts = sql_quote (hosts, strlen (hosts));
+  sql ("INSERT INTO targets (name, hosts)"
+       " VALUES ('%s', '%s');",
+       quoted_name, quoted_hosts);
+  g_free (quoted_name);
+  g_free (quoted_hosts);
+  return 0;
+}
+
+/**
+ * @brief Delete a target.
+ *
+ * @param[in]  name   Name of target.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+delete_target (const char* name)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Initialise a table iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+static void
+init_table_iterator (iterator_t* iterator)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  formatted = g_strdup_printf ("SELECT * FROM targets;");
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+/**
+ * @brief Initialise a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_target_iterator (iterator_t* iterator)
+{
+  init_table_iterator (iterator);
+}
+
+DEF_ACCESS (target_iterator_name, 0);
+DEF_ACCESS (target_iterator_hosts, 1);
+
+#undef DEF_ACCESS

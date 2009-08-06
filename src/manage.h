@@ -419,6 +419,24 @@ int
 host_iterator_max_port (iterator_t*);
 
 
+/* Targets. */
+
+int
+create_target (const char*, const char*);
+
+int
+delete_target (const char*);
+
+void
+init_target_iterator (iterator_t*);
+
+const char*
+target_iterator_name (iterator_t*);
+
+const char*
+target_iterator_hosts (iterator_t*);
+
+
 /* Server messaging. */
 
 int

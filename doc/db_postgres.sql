@@ -11,6 +11,10 @@ CREATE TABLE nvt_selectors (
 	type integer,
 	details text);
 
+CREATE TABLE targets (
+	name text PRIMARY KEY,
+	hosts text);
+
 CREATE TABLE tasks (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,

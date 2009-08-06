@@ -419,7 +419,9 @@ next_entities (entities_t entities)
 entity_t
 first_entity (entities_t entities)
 {
-  return (entity_t) entities->data;
+  if (entities)
+    return (entity_t) entities->data;
+  return NULL;
 }
 
 /**
@@ -1907,6 +1909,118 @@ omp_until_up (int (*function) (gnutls_session_t*, entity_t*),
   int ret;
   while ((ret = function (session, response)) == 503);
   return ret;
+}
+
+/**
+ * @brief Create a target.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Name of target.
+ * @param[in]   hosts       Target hosts.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_create_target (gnutls_session_t* session,
+                   const char* name,
+                   const char* hosts)
+{
+  int ret;
+  entity_t entity;
+  const char* status;
+
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<create_target>"
+                                      "<name>%s</name>"
+                                      "<hosts>%s</hosts>"
+                                      "</create_target>",
+                                      name,
+                                      hosts);
+
+  /* Send the request. */
+
+  ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  status = entity_attribute (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  if (strlen (status) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
+}
+
+/**
+ * @brief Delete a target.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Name of target.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_delete_target (gnutls_session_t* session,
+                   const char* name)
+{
+  int ret;
+  entity_t entity;
+  const char* status;
+
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<delete_target>"
+                                      "<name>%s</name>"
+                                      "</delete_target>",
+                                      name);
+
+  /* Send the request. */
+
+  ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  status = entity_attribute (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  if (strlen (status) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
 }
 
 

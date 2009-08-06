@@ -1,5 +1,35 @@
 2009-08-06  Matthew Mundell <mmundell@intevation.de>
 
+	Add OMP CREATE_TARGET, DELETE_TARGET and GET_TARGETS.
+
+	* doc/db_postgres.sql: Add targets table.
+
+	* src/tasks_sql (init_manage): Add targets table.
+	(DEF_ACCESS): Take the full name of the function.  Update callers.
+	(create_target, delete_target, init_table_iterator, init_target_iterator)
+	(target_iterator_name, target_iterator_hosts): New functions.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (help_text): Add target commands.
+	(client_state_t): Add target states.
+	(XML_OK_CREATED): New macro.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add target command handling.
+
+	* src/common.c (first_entity): Add NULL guard.
+	(omp_create_target, omp_delete_target): New functions.
+	* src/common.h: Update headers.
+
+	* src/tests/omp_create_target_0.c, src/tests/omp_create_target_1.c,
+	src/tests/omp_delete_target_0.c, src/tests/omp_get_targets_0.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_create_target_0, omp_create_target_1,
+	omp_delete_target_0 and omp_get_targets_0.
+
+	* src/tests/omp_help_0.c: Add target commands to expected help text.
+
+2009-08-06  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_report_5.c: Match task name to test.
 
 2009-08-06  Matthew Mundell <mmundell@intevation.de>
