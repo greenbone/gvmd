@@ -404,7 +404,9 @@ make_entity (const char* name, const char* text)
 entities_t
 next_entities (entities_t entities)
 {
-  return (entities_t) entities->next;
+  if (entities)
+    return (entities_t) entities->next;
+  return NULL;
 }
 
 /**

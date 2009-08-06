@@ -1,3 +1,7 @@
+2009-08-06  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tests/common.c (next_entities): Add NULL guard.
+
 2009-08-05  Matthew Mundell <mmundell@intevation.de>
 
 	Extend PROGRESS in GET_STATUS to include per-host progress percentages.
