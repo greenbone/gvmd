@@ -1,5 +1,9 @@
 2009-08-06  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_report_5.c: Match task name to test.
+
+2009-08-06  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (next_entities): Add NULL guard.
 
 2009-08-05  Matthew Mundell <mmundell@intevation.de>

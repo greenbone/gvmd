@@ -52,8 +52,8 @@ main ()
 
   if (create_task_from_rc_file (&session,
                                 "new_task_small_rc",
-                                "Task for omp_get_report_0",
-                                "Test omp_get_report_0 task.",
+                                "Task for omp_get_report_5",
+                                "Test omp_get_report_5 task.",
                                 &id))
     goto fail;
 
