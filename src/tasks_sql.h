@@ -28,6 +28,11 @@
 #include <openvas/openvas_logging.h>
 
 
+/* Types. */
+
+typedef long long int config_t;
+
+
 /* Variables. */
 
 sqlite3* task_db = NULL;
@@ -493,6 +498,9 @@ init_manage (GSList *log_config)
   /* Ensure the tables exist. */
 
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
@@ -504,6 +512,20 @@ init_manage (GSList *log_config)
 
   if (sql_int (0, 0, "SELECT count(*) FROM users;") == 0)
     sql ("INSERT into users (name, password) VALUES ('om', '');");
+
+  /* Setup predefined selectors and configs. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors;") == 0
+      && sql_int (0, 0, "SELECT count(*) FROM configs;") == 0)
+    {
+      sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
+           " VALUES ('All', 0, 0, NULL);");
+      sql ("INSERT into configs (name, nvt_selector)"
+           " VALUES ('Full', 'All');");
+      // FIX setup full preferences
+      //     create_config ("full", OPENVAS_STATE_DIR "/mgr/openvasrc-full");?
+      //         depends on scanner?
+    }
 
   /* Set requested and running tasks to stopped. */
 
@@ -2067,7 +2089,7 @@ delete_target (const char* name)
  * @param[in]  iterator  Iterator.
  */
 static void
-init_table_iterator (iterator_t* iterator)
+init_table_iterator (iterator_t* iterator, const char* table)
 {
   int ret;
   const char* tail;
@@ -2075,7 +2097,7 @@ init_table_iterator (iterator_t* iterator)
   sqlite3_stmt* stmt;
 
   iterator->done = FALSE;
-  formatted = g_strdup_printf ("SELECT * FROM targets;");
+  formatted = g_strdup_printf ("SELECT * FROM %s;", table);
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
@@ -2108,10 +2130,236 @@ init_table_iterator (iterator_t* iterator)
 void
 init_target_iterator (iterator_t* iterator)
 {
-  init_table_iterator (iterator);
+  init_table_iterator (iterator, "targets");
 }
 
 DEF_ACCESS (target_iterator_name, 0);
 DEF_ACCESS (target_iterator_hosts, 1);
+
+
+/* Config. */
+
+/**
+ * @brief Copy the preferences and nvt selector from an RC file to a config.
+ *
+ * @param[in]  config   Config.
+ * @param[in]  rc       Text of RC file.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+insert_rc_into_config (config_t config, const char *config_name, const char *rc)
+{
+  char* seek;
+
+  if (rc == NULL || config_name == NULL) return -1;
+
+  while (1)
+    {
+      char* eq;
+      seek = strchr (rc, '\n');
+      eq = seek
+           ? memchr (rc, '=', seek - rc)
+           : strchr (rc, '=');
+      if (eq)
+        {
+          char* rc_end = eq;
+          rc_end--;
+          while (*rc_end == ' ') rc_end--;
+          rc_end++;
+          while (*rc == ' ') rc++;
+          if (rc < rc_end)
+            {
+              gchar *name, *value;
+              name = sql_quote (rc, rc_end - rc);
+              value = sql_quote (eq + 2, /* Daring. */
+                                 (seek ? seek - (eq + 2) : strlen (eq + 2)));
+              sql ("INSERT OR REPLACE INTO config_preferences"
+                   " (config, type, name, value)"
+                   " VALUES ('%llu', NULL, '%.*s', '%.*s');",
+                   config, name, value);
+              g_free (name);
+              g_free (value);
+            }
+        }
+      else if ((seek ? seek - rc >= 7 + strlen ("PLUGIN_SET") : 0)
+               && (strncmp (rc, "begin(", 6) == 0)
+               && (strncmp (rc + 6, "PLUGIN_SET", strlen ("PLUGIN_SET")) == 0)
+               && (rc[6 + strlen ("PLUGIN_SET")] == ')'))
+        {
+          /* Create an NVT selector from the plugin list. */
+          rc = seek + 1;
+          while ((seek = strchr (rc, '\n')))
+            {
+              char* eq2;
+
+              if ((seek ? seek - rc > 5 : 1)
+                  && strncmp (rc, "end(", 4) == 0)
+                {
+                  break;
+                }
+
+              eq2 = memchr (rc, '=', seek - rc);
+              if (eq2)
+                {
+                  char* rc_end = eq2;
+                  rc_end--;
+                  while (*rc_end == ' ') rc_end--;
+                  rc_end++;
+                  while (*rc == ' ') rc++;
+                  if (rc < rc_end)
+                    {
+                      int value_len = (seek ? seek - (eq2 + 2)
+                                            : strlen (eq2 + 2));
+                      sql ("INSERT INTO nvt_selectors"
+                           " (name, exclude, type, family_or_nvt)"
+                           " VALUES ('%s', %i, 2, '%.*s');",
+                           config_name,
+                           ((value_len == 3)
+                            && strncasecmp (eq2 + 2, "yes", 3) == 0),
+                           rc_end - rc,
+                           rc);
+                    }
+                }
+
+              rc = seek + 1;
+            }
+        }
+      else if ((seek ? seek - rc > 7 : 0)
+               && (strncmp (rc, "begin(", 6) == 0))
+        {
+          gchar *section_name;
+
+          section_name = sql_quote (rc + 6, seek - (rc + 6));
+
+          /* Insert the section. */
+
+          rc = seek + 1;
+          while ((seek = strchr (rc, '\n')))
+            {
+              char* eq2;
+
+              if ((seek ? seek - rc > 5 : 1)
+                  && strncmp (rc, "end(", 4) == 0)
+                {
+                  break;
+                }
+
+              eq2 = memchr (rc, '=', seek - rc);
+              if (eq2)
+                {
+                  char* rc_end = eq2;
+                  rc_end--;
+                  while (*rc_end == ' ') rc_end--;
+                  rc_end++;
+                  while (*rc == ' ') rc++;
+                  if (rc < rc_end)
+                    {
+                      gchar *name, *value;
+                      name = sql_quote (rc, rc_end - rc);
+                      value = sql_quote (eq2 + 2, /* Daring. */
+                                         seek - (eq2 + 2));
+                      sql ("INSERT OR REPLACE INTO config_preferences"
+                           " (config, type, name, value)"
+                           " VALUES (%llu, '%s', '%s', '%s');",
+                           config, section_name, name, value);
+                      g_free (name);
+                      g_free (value);
+                    }
+                }
+
+              rc = seek + 1;
+            }
+
+          g_free (section_name);
+        }
+      if (seek == NULL) break;
+      rc = seek + 1;
+    }
+
+  // FIX convert nvt_selector plugin list into an actual nvt selector
+
+  return 0;
+}
+
+/**
+ * @brief Create a config.
+ *
+ * @param[in]  name   Name of config.
+ * @param[in]  rc     RC file text.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+create_config (const char* name, const char* rc)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  config_t config;
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      return -1;
+    }
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      return -1;
+    }
+
+  sql ("INSERT INTO configs (name, nvt_selector)"
+       " VALUES ('%s', '%s');",
+       quoted_name, quoted_name);
+
+  /* Insert the RC into the config_preferences table. */
+
+  config = sqlite3_last_insert_rowid (task_db);
+  if (insert_rc_into_config (config, quoted_name, rc))
+    {
+      g_free (quoted_name);
+      return -1;
+    }
+
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Delete a config.
+ *
+ * @param[in]  name   Name of config.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+delete_config (const char* name)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
+       quoted_name);
+  sql ("DELETE FROM config_preferences"
+       " WHERE config = (SELECT ROWID from configs WHERE name = '%s');",
+       quoted_name);
+  sql ("DELETE FROM configs WHERE name = '%s';", quoted_name);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Initialise a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_config_iterator (iterator_t* iterator)
+{
+  init_table_iterator (iterator, "configs");
+}
+
+DEF_ACCESS (config_iterator_name, 0);
+DEF_ACCESS (config_iterator_nvt_selector, 1);
 
 #undef DEF_ACCESS

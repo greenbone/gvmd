@@ -71,12 +71,15 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    CREATE_CONFIG          Create a new config.\n"
 "    CREATE_TARGET          Create a new target.\n"
 "    CREATE_TASK            Create a new task.\n"
+"    DELETE_CONFIG          Delete an existing config.\n"
 "    DELETE_REPORT          Delete an existing report.\n"
 "    DELETE_TARGET          Delete an existing target.\n"
 "    DELETE_TASK            Delete an existing task.\n"
 "    GET_CERTIFICATES       Get all available certificates.\n"
+"    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
@@ -243,6 +246,9 @@ typedef enum
   CLIENT_ABORT_TASK_CRITERION,
 #endif
   CLIENT_AUTHENTICATE,
+  CLIENT_CREATE_CONFIG,
+  CLIENT_CREATE_CONFIG_NAME,
+  CLIENT_CREATE_CONFIG_RCFILE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_NAME,
@@ -253,11 +259,14 @@ typedef enum
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
+  CLIENT_DELETE_CONFIG,
+  CLIENT_DELETE_CONFIG_NAME,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TARGET_NAME,
   CLIENT_GET_CERTIFICATES,
+  CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
@@ -494,6 +503,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_ABORT_TASK);
           }
+        else if (strncasecmp ("DELETE_CONFIG", element_name, 13) == 0)
+          {
+            assert (modify_task_name == NULL);
+            append_string (&modify_task_name, "");
+            set_client_state (CLIENT_DELETE_CONFIG);
+          }
         else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
           {
             const gchar* attribute;
@@ -518,6 +533,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("GET_CERTIFICATES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_CERTIFICATES);
+        else if (strncasecmp ("GET_CONFIGS", element_name, 11) == 0)
+          set_client_state (CLIENT_GET_CONFIGS);
         else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strncasecmp ("GET_NVT_ALL", element_name, 11) == 0)
@@ -572,6 +589,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "task_id", &attribute))
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
+          }
+        else if (strncasecmp ("CREATE_CONFIG", element_name, 13) == 0)
+          {
+            assert (modify_task_name == NULL);
+            assert (modify_task_value == NULL);
+            append_string (&modify_task_name, "");
+            append_string (&modify_task_value, "");
+            set_client_state (CLIENT_CREATE_CONFIG);
           }
         else if (strncasecmp ("CREATE_TASK", element_name, 11) == 0)
           {
@@ -660,6 +685,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_DELETE_CONFIG:
+        if (strncasecmp ("NAME", element_name, 4) == 0)
+          set_client_state (CLIENT_DELETE_CONFIG_NAME);
+        else
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("delete_config")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_DELETE_REPORT:
         if (send_to_client (XML_ERROR_SYNTAX ("delete_report")))
           {
@@ -707,6 +750,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_CERTIFICATES:
           {
             if (send_to_client (XML_ERROR_SYNTAX ("get_certificates")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_CONFIGS:
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("get_configs")))
               {
                 error_send_to_client (error);
                 return;
@@ -915,6 +973,26 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("abort_task")))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_CONFIG:
+        if (strncasecmp ("NAME", element_name, 4) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_NAME);
+        else if (strncasecmp ("RCFILE", element_name, 6) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
+        else
+          {
+            if (send_to_client (XML_ERROR_SYNTAX ("create_config")))
               {
                 error_send_to_client (error);
                 return;
@@ -2785,6 +2863,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_CONFIG:
+        {
+          assert (strncasecmp ("DELETE_CONFIG", element_name, 13) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config"));
+            }
+          else if (delete_config (modify_task_name))
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
+            }
+          else
+            {
+              free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_DELETE_CONFIG_NAME:
+        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        set_client_state (CLIENT_DELETE_CONFIG);
+        break;
+
       case CLIENT_DELETE_TARGET:
         {
           assert (strncasecmp ("DELETE_TARGET", element_name, 13) == 0);
@@ -3061,6 +3167,55 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strncasecmp ("RCFILE", element_name, 6) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
+        break;
+
+      case CLIENT_CREATE_CONFIG:
+        {
+          assert (strncasecmp ("CREATE_CONFIG", element_name, 13) == 0);
+          assert (modify_task_name != NULL);
+          assert (modify_task_value != NULL);
+
+          if (strlen (modify_task_name) == 0
+              || strlen (modify_task_value) == 0)
+            {
+              free_string_var (&modify_task_name);
+              free_string_var (&modify_task_value);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_config"));
+            }
+          else
+            {
+              int ret;
+              gsize base64_len;
+              guchar *base64;
+
+              base64 = g_base64_decode (modify_task_value, &base64_len);
+              free_string_var (&modify_task_value);
+              /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
+               * when modify_task_value is zero length. */
+              if (base64 == NULL)
+                {
+                  base64 = (guchar*) g_strdup ("");
+                  base64_len = 0;
+                }
+
+              ret = create_config (modify_task_name, (char*) base64);
+              free_string_var (&modify_task_name);
+              g_free (base64);
+              if (ret)
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_config"));
+              else
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_CONFIG_NAME:
+        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        set_client_state (CLIENT_CREATE_CONFIG);
+        break;
+      case CLIENT_CREATE_CONFIG_RCFILE:
+        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
+        set_client_state (CLIENT_CREATE_CONFIG);
         break;
 
       case CLIENT_CREATE_TARGET:
@@ -3616,6 +3771,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_GET_CONFIGS:
+        {
+          iterator_t configs;
+          assert (strncasecmp ("GET_CONFIGS", element_name, 11) == 0);
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_configs_response>");
+          init_config_iterator (&configs);
+          while (next (&configs))
+            SENDF_TO_CLIENT_OR_FAIL ("<config>"
+                                     "<name>%s</name>"
+                                     "<family_count>"
+                                     "-1<growing>-1</growing>"
+                                     "</family_count>"
+                                     "<nvt_count>"
+                                     "-1<growing>-1</growing>"
+                                     "</nvt_count>"
+                                     "</config>",
+                                     config_iterator_name (&configs));
+          cleanup_iterator (&configs);
+          SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_TARGETS:
         {
           iterator_t targets;
@@ -3634,7 +3813,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
 
       default:
         assert (0);
@@ -3692,6 +3870,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+      case CLIENT_CREATE_CONFIG_NAME:
+        append_text (&modify_task_name, text, text_len);
+        break;
+      case CLIENT_CREATE_CONFIG_RCFILE:
+        append_text (&modify_task_value, text, text_len);
+        break;
+
       case CLIENT_CREATE_TARGET_HOSTS:
         append_text (&modify_task_value, text, text_len);
         break;
@@ -3713,6 +3898,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
 
+      case CLIENT_DELETE_CONFIG_NAME:
       case CLIENT_DELETE_TARGET_NAME:
         append_text (&modify_task_name, text, text_len);
         break;

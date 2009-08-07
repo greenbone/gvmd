@@ -173,6 +173,15 @@ omp_create_target (gnutls_session_t*, const char*, const char*);
 int
 omp_delete_target (gnutls_session_t*, const char*);
 
+int
+omp_create_config (gnutls_session_t*, const char*, const char*, unsigned int);
+
+int
+omp_create_config_from_rc_file (gnutls_session_t*, const char*, const char*);
+
+int
+omp_delete_config (gnutls_session_t*, const char*);
+
 /* Setup. */
 
 void

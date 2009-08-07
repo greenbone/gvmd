@@ -2023,6 +2023,160 @@ omp_delete_target (gnutls_session_t* session,
   return -1;
 }
 
+/**
+ * @brief Create a config, given the config description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   config      Config configuration.
+ * @param[in]   config_len  Length of config.
+ * @param[in]   name        Config name.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_create_config (gnutls_session_t* session,
+                   const char* name,
+                   const char* config,
+                   unsigned int config_len)
+{
+  /* Convert the file contents to base64. */
+
+  gchar* new_config_file = g_base64_encode ((guchar*) config,
+                                            config_len);
+
+  /* Create the OMP request. */
+
+  gchar* new_config_request;
+  new_config_request = g_strdup_printf ("<create_config>"
+                                        "<name>%s</name>"
+                                        "<rcfile>%s</rcfile>"
+                                        "</create_config>",
+                                        name,
+                                        new_config_file);
+  g_free (new_config_file);
+
+  /* Send the request. */
+
+  int ret = send_to_manager (session, new_config_request);
+  g_free (new_config_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  const char* status = entity_attribute (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  if (strlen (status) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
+}
+
+/**
+ * @brief Create a config, given the config description as an RC file.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Config name.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_create_config_from_rc_file (gnutls_session_t* session,
+                                const char* name,
+                                const char* file_name)
+{
+  gchar* new_config_rc = NULL;
+  gsize new_config_rc_len;
+  GError* error = NULL;
+  int ret;
+
+  /* Read in the RC file. */
+
+  g_file_get_contents (file_name,
+                       &new_config_rc,
+                       &new_config_rc_len,
+                       &error);
+  if (error)
+    {
+      g_error_free (error);
+      return -1;
+    }
+
+  ret = omp_create_config (session,
+                           name,
+                           new_config_rc,
+                           new_config_rc_len);
+  g_free (new_config_rc);
+  return ret;
+}
+
+/**
+ * @brief Delete a config.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Name of config.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_delete_config (gnutls_session_t* session,
+                   const char* name)
+{
+  int ret;
+  entity_t entity;
+  const char* status;
+
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<delete_config>"
+                                      "<name>%s</name>"
+                                      "</delete_config>",
+                                      name);
+
+  /* Send the request. */
+
+  ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Check the response. */
+
+  status = entity_attribute (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  if (strlen (status) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  char first = status[0];
+  free_entity (entity);
+  if (first == '2') return 0;
+  return -1;
+}
+
 
 /* Setup. */
 

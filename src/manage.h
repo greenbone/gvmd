@@ -437,6 +437,24 @@ const char*
 target_iterator_hosts (iterator_t*);
 
 
+/* Configs. */
+
+int
+create_config (const char*, const char*);
+
+int
+delete_config (const char*);
+
+void
+init_config_iterator (iterator_t*);
+
+const char*
+config_iterator_name (iterator_t*);
+
+const char*
+config_iterator_nvt_selector (iterator_t*);
+
+
 /* Server messaging. */
 
 int

@@ -1,3 +1,40 @@
+2009-08-07  Matthew Mundell <mmundell@intevation.de>
+
+	Add OMP CREATE_CONFIG, DELETE_CONFIG and GET_CONFIGS commands.
+
+	* doc/db_postgres.sql (config_preferences, configs): New tables.
+	(tasks): Replace nvt_selector and rcfile field with config field.
+	(nvt_selectors): Remove rowid and id.  Rename details family_or_nvt.
+
+	* src/tasks_sql.h (config_t): New type.
+	(init_manage): Add nvt_selectors, configs and config_preferences tables.
+	Setup predefined selectors and configs.
+	(init_table_iterator): Add table arg.
+	(init_target_iterator): Pass table name to init_target_iterator.
+	(insert_rc_into_config, create_config, delete_config)
+	(init_config_iterator, config_iterator_name)
+	(config_iterator_nvt_selector): New functions.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (help_text): Add config commands.
+	(client_state_t): Add config states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add config command handling.
+
+	* src/common.c (first_entity): Add NULL guard.
+	(create_config, omp_create_config_from_rc_file, omp_delete_config): New
+	functions.
+	* src/common.h: Update headers.
+
+	* src/tests/omp_create_config_0.c, src/tests/omp_create_config_1.c,
+	src/tests/omp_delete_config_0.c, src/tests/omp_get_configs_0.c,
+	src/tests/omp_get_configs_1.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_create_config_0, omp_create_config_1,
+	omp_delete_config_0, omp_get_configs_0 and omp_get_configs_1.
+
+	* src/tests/omp_help_0.c: Add config commands to expected help text.
+
 2009-08-06  Matthew Mundell <mmundell@intevation.de>
 
 	Add OMP CREATE_TARGET, DELETE_TARGET and GET_TARGETS.

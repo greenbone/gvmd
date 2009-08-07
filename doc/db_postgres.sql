@@ -4,24 +4,32 @@ CREATE TABLE users (
 	password text);
 
 CREATE TABLE nvt_selectors (
-	rowid integer PRIMARY KEY,
-	id integer,
     name text,
 	exclude boolean,
 	type integer,
-	details text);
+	family_or_nvt text);
 
 CREATE TABLE targets (
 	name text PRIMARY KEY,
 	hosts text);
+
+CREATE TABLE config_preferences (
+	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
+	type text PRIMARY KEY, -- openvasrc section name or NULL for top-level prefs
+	name text PRIMARY KEY,
+	value text);
+
+CREATE TABLE configs (
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
+	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT);
 
 CREATE TABLE tasks (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
 	name text,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	nvt_selector integer REFERENCES nvt_selectors (id) ON DELETE RESTRICT,
-	rcfile text,
+	config integer REFERENCES configs (id) ON DELETE RESTRICT,
 	comment text);
 
 CREATE TABLE results (
