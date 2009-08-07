@@ -1,5 +1,9 @@
 2009-08-07  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_targets_0.c: Compare strcmps to 0.  Correct return.
+
+2009-08-07  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (task_plugins, send_task_preferences)
 	(send_task_rules): Only consider "begin(..." lines that are newline
 	terminated.

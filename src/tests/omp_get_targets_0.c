@@ -95,10 +95,10 @@ main ()
       entity_t name = entity_child (target, "name");
       entity_t hosts = entity_child (target, "hosts");
       if (name == NULL || hosts == NULL) goto free_fail;
-      if (strcmp (entity_text (name), NAME_1)
+      if ((strcmp (entity_text (name), NAME_1) == 0)
           && (strcmp (entity_text (hosts), HOSTS_1) == 0))
         found_1 = 1;
-      else if (strcmp (entity_text (name), NAME_2)
+      else if ((strcmp (entity_text (name), NAME_2) == 0)
                && (strcmp (entity_text (hosts), HOSTS_2) == 0))
         found_2 = 1;
       targets = next_entities (targets);
@@ -110,5 +110,5 @@ main ()
   omp_delete_target (&session, NAME_1);
   omp_delete_target (&session, NAME_2);
   close_manager_connection (socket, session);
-  return found_1 && found_2;
+  return (found_1 && found_2) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
