@@ -334,6 +334,8 @@ print_tasks ()
 #endif
 #endif
 
+// TODO: Test these RC parsing functions.
+
 /**
  * @brief Return a task preference.
  *
@@ -433,7 +435,7 @@ task_plugins (task_t task)
                   desc);
 #endif
         }
-      else if ((seek ? seek - desc >= 17 : 1)
+      else if ((seek ? seek - desc >= 17 : 0)
                && (strncmp (desc, "begin(PLUGIN_SET)", 17) == 0
                    || strncmp (desc, "begin(SCANNER_SET)", 18) == 0))
         {
@@ -472,7 +474,7 @@ task_plugins (task_t task)
               desc = seek + 1;
             }
         }
-      else if ((seek ? seek - desc > 7 : 1)
+      else if ((seek ? seek - desc > 7 : 0)
                && strncmp (desc, "begin(", 6) == 0)
         {
           /* Read over the section. */
@@ -530,7 +532,7 @@ send_task_preferences (task_t task, char* name)
                   desc);
 #endif
         }
-      else if ((seek ? seek - desc >= 7 + strlen (name) : 1)
+      else if ((seek ? seek - desc >= 7 + strlen (name) : 0)
                && (strncmp (desc, "begin(", 6) == 0)
                && (strncmp (desc + 6, name, strlen (name)) == 0)
                && (desc[6 + strlen (name)] == ')'))
@@ -585,8 +587,8 @@ send_task_preferences (task_t task, char* name)
               desc = seek + 1;
             }
         }
-      else if ((seek ? seek - desc > 7 : 1)
-               && strncmp (desc, "begin(", 6) == 0)
+      else if ((seek ? seek - desc > 7 : 0)
+               && (strncmp (desc, "begin(", 6) == 0))
         {
           /* Read over the section. */
           desc = seek + 1;
@@ -643,7 +645,7 @@ send_task_rules (task_t task)
                   desc);
 #endif
         }
-      else if ((seek ? seek - desc >= 27 : 1)
+      else if ((seek ? seek - desc >= 27 : 0)
                && (strncmp (desc, "begin(CLIENTSIDE_USERRULES)", 27) == 0))
         {
           /* Send the preferences. */
@@ -664,7 +666,7 @@ send_task_rules (task_t task)
               desc = seek + 1;
             }
         }
-      else if ((seek ? seek - desc > 7 : 1)
+      else if ((seek ? seek - desc > 7 : 0)
                && strncmp (desc, "begin(", 6) == 0)
         {
           /* Read over the section. */
