@@ -1,5 +1,10 @@
 2009-08-07  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (insert_rc_into_config): Include the scanners in the
+	nvt selector list.  Remove quotes from an SQL integer value.
+
+2009-08-07  Matthew Mundell <mmundell@intevation.de>
+
 	Add OMP CREATE_CONFIG, DELETE_CONFIG and GET_CONFIGS commands.
 
 	* doc/db_postgres.sql (config_preferences, configs): New tables.

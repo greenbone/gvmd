@@ -2176,16 +2176,21 @@ insert_rc_into_config (config_t config, const char *config_name, const char *rc)
                                  (seek ? seek - (eq + 2) : strlen (eq + 2)));
               sql ("INSERT OR REPLACE INTO config_preferences"
                    " (config, type, name, value)"
-                   " VALUES ('%llu', NULL, '%.*s', '%.*s');",
+                   " VALUES (%llu, NULL, '%s', '%s');",
                    config, name, value);
               g_free (name);
               g_free (value);
             }
         }
-      else if ((seek ? seek - rc >= 7 + strlen ("PLUGIN_SET") : 0)
-               && (strncmp (rc, "begin(", 6) == 0)
-               && (strncmp (rc + 6, "PLUGIN_SET", strlen ("PLUGIN_SET")) == 0)
-               && (rc[6 + strlen ("PLUGIN_SET")] == ')'))
+      else if (((seek ? seek - rc >= 7 + strlen ("PLUGIN_SET") : 0)
+                && (strncmp (rc, "begin(", 6) == 0)
+                && (strncmp (rc + 6, "PLUGIN_SET", strlen ("PLUGIN_SET")) == 0)
+                && (rc[6 + strlen ("PLUGIN_SET")] == ')'))
+               || ((seek ? seek - rc >= 7 + strlen ("SCANNER_SET") : 0)
+                   && (strncmp (rc, "begin(", 6) == 0)
+                   && (strncmp (rc + 6, "SCANNER_SET", strlen ("SCANNER_SET"))
+                       == 0)
+                   && (rc[6 + strlen ("SCANNER_SET")] == ')')))
         {
           /* Create an NVT selector from the plugin list. */
           rc = seek + 1;
