@@ -63,6 +63,11 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Information about the server.
+ */
+server_t server;
+
 
 /* Functions defined in task_*.h and used before the include. */
 

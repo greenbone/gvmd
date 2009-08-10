@@ -2368,6 +2368,16 @@ init_config_iterator (iterator_t* iterator)
 DEF_ACCESS (config_iterator_name, 0);
 DEF_ACCESS (config_iterator_nvt_selector, 1);
 
+/* TODO: These need to handle strange cases, like when a family is
+ * included then excluded, or all is included then later excluded. */
+
+/**
+ * @brief Get the family growth status of an NVT selector.
+ *
+ * @param[in]  selector  NVT selector.
+ *
+ * @return 1 growing, 0 static.
+ */
 int
 nvt_selector_families_growing (const char* selector)
 {
@@ -2379,6 +2389,13 @@ nvt_selector_families_growing (const char* selector)
                   selector);
 }
 
+/**
+ * @brief Get the NVT growth status of an NVT selector.
+ *
+ * @param[in]  selector  NVT selector.
+ *
+ * @return 1 growing, 0 static.
+ */
 int
 nvt_selector_nvts_growing (const char* selector)
 {
@@ -2390,6 +2407,49 @@ nvt_selector_nvts_growing (const char* selector)
                   " AND exclude = 0"
                   " AND (type = 0 OR type = 1);",
                   selector);
+}
+
+/**
+ * @brief Get the number of families covered by a selector.
+ *
+ * @param[in]  selector  NVT selector.
+ *
+ * @return Family count if known, else -1.
+ */
+int
+nvt_selector_family_count (const char* selector)
+{
+#if 0
+  if (server.plugins)
+    return family_count (server.plugins);
+#endif
+  return -1;
+}
+
+/**
+ * @brief Get the number of NVTs covered by a selector.
+ *
+ * @param[in]  selector  NVT selector.
+ *
+ * @return NVT count if known, else -1.
+ */
+int
+nvt_selector_nvt_count (const char* selector)
+{
+  if (server.plugins)
+    {
+      if ((sql_int (0, 0,
+                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                    selector)
+           == 1)
+          && (sql_int (0, 0,
+                       "SELECT COUNT(*) FROM nvt_selectors"
+                       " WHERE name = '%s' AND type = 0;",
+                       selector)
+              == 1))
+        return g_hash_table_size (server.plugins);
+    }
+  return -1;
 }
 
 #undef DEF_ACCESS

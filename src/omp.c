@@ -3785,14 +3785,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                        "<name>%s</name>"
                                        "<family_count>"
-                                       "-1<growing>%i</growing>"
+                                       "%i<growing>%i</growing>"
                                        "</family_count>"
                                        "<nvt_count>"
-                                       "-1<growing>%i</growing>"
+                                       "%i<growing>%i</growing>"
                                        "</nvt_count>"
                                        "</config>",
                                        config_iterator_name (&configs),
+                                       nvt_selector_family_count (selector),
                                        nvt_selector_families_growing (selector),
+                                       nvt_selector_nvt_count (selector),
                                        nvt_selector_nvts_growing (selector));
             }
           cleanup_iterator (&configs);

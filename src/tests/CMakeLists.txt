@@ -26,13 +26,18 @@
 
 add_definitions (-DTASKS_SQL)
 
+if (OPENVAS_HEADER_INSTALL_DIR)
+  set (OVAS_CFLAGS "-I${OPENVAS_HEADER_INSTALL_DIR}")
+else (OPENVAS_HEADER_INSTALL_DIR)
+  set (OVAS_CFLAGS "")
+endif (OPENVAS_HEADER_INSTALL_DIR)
+
 if (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "-L${OPENVAS_LIB_INSTALL_DIR}")
 else (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "")
 endif (OPENVAS_LIB_INSTALL_DIR)
 
-#set (OVAS_LDFLAG "${LIB_TEMP} -lgnutls")
 set (OVAS_LDFLAG "${LIB_TEMP} -lsqlite3 -lgnutls -lopenvas")
 
 MARK_AS_ADVANCED (LIB_TEMP)
@@ -58,7 +63,7 @@ link_directories (${COMMON_BINARY_DIRECTORY}/file)
 
 add_executable (make_report_uuid_0 make_report_uuid_0.c)
 target_link_libraries (make_report_uuid_0 manage ovas-mngr-comm string file)
-set_target_properties (make_report_uuid_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (make_report_uuid_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (make_report_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
 ADD_TEST (make_report_uuid_0 make_report_uuid_0)
 
@@ -245,6 +250,13 @@ set_target_properties (omp_get_configs_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_
 set_target_properties (omp_get_configs_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
 target_link_libraries (omp_get_configs_1 common)
 ADD_TEST (omp_get_configs_1 omp_get_configs_1)
+
+add_executable (omp_get_configs_2 omp_get_configs_2.c)
+target_link_libraries (omp_get_configs_2 string)
+set_target_properties (omp_get_configs_2 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_get_configs_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_configs_2 common)
+ADD_TEST (omp_get_configs_2 omp_get_configs_2)
 
 add_executable (omp_get_dependencies_0 omp_get_dependencies_0.c)
 target_link_libraries (omp_get_dependencies_0 string)

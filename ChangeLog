@@ -1,5 +1,28 @@
 2009-08-10  Matthew Mundell <mmundell@intevation.de>
 
+	Add real OMP GET_CONFIGS count figures for the all selector case.
+
+	* src/tasks_sql.h (nvt_selector_families_growing)
+	(nvt_selector_nvts_growing): Add docs.
+	(nvt_selector_family_count, nvt_selector_nvt_count): New functions.
+
+	* src/manage.c (server_t): Move here from otp.c.
+	* src/otp.c (server): Move to manage.c.
+	* src/otp.h (server_t, server): Move to manage.h.
+
+	* src/manage.h (nvt_selector_family_count, nvt_selector_nvt_count)
+	(server_t, server): New headers.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS add
+	some real count figures.
+
+	* src/tests/CMakeLists.txt: Add omp_get_configs_2.
+	(make_report_uuid_0): Pass OpenVAS headers to compiler.
+
+	* src/tests/omp_get_configs_2.c: New file.
+
+2009-08-10  Matthew Mundell <mmundell@intevation.de>
+
 	Add real OMP GET_CONFIGS growing figures.
 
 	* src/tasks_sql.h (init_manage): Note selector types.

@@ -30,6 +30,29 @@
 #include <glib.h>
 #include <ossp/uuid.h>
 
+#include <openvas/certificate.h>
+#include <openvas/nvti.h>
+
+/**
+ * @brief Structure of information about the server.
+ */
+typedef struct
+{
+  certificates_t* certificates;      ///< List of certificates.
+  char* plugins_md5;                 ///< MD5 sum over all tests.
+  GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
+  nvtis_t* plugins;                  ///< Plugin meta-information.
+  GHashTable* preferences;           ///< Server preference.
+  GPtrArray* rules;                  ///< Server rules.
+  int rules_size;                    ///< Number of rules.
+} server_t;
+
+// FIX for omp.c,manage.c,otp.c access to server info (rules, prefs, ...)
+/**
+ * @brief Information about the server.
+ */
+extern server_t server;
+
 int
 init_manage (GSList*);
 
@@ -462,6 +485,12 @@ nvt_selector_families_growing (const char*);
 
 int
 nvt_selector_nvts_growing (const char*);
+
+int
+nvt_selector_family_count (const char*);
+
+int
+nvt_selector_nvt_count (const char*);
 
 
 /* Server messaging. */

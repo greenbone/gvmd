@@ -600,11 +600,6 @@ add_server_rule (/*@keep@*/ char* rule)
 /* Server state. */
 
 /**
- * @brief Information about the server.
- */
-server_t server;
-
-/**
  * @brief Initialise OTP library data.
  *
  * This must run once, before the first call to \ref process_otp_server_input.
