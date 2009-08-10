@@ -3779,16 +3779,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_configs_response>");
           init_config_iterator (&configs);
           while (next (&configs))
-            SENDF_TO_CLIENT_OR_FAIL ("<config>"
-                                     "<name>%s</name>"
-                                     "<family_count>"
-                                     "-1<growing>-1</growing>"
-                                     "</family_count>"
-                                     "<nvt_count>"
-                                     "-1<growing>-1</growing>"
-                                     "</nvt_count>"
-                                     "</config>",
-                                     config_iterator_name (&configs));
+            {
+              const char *selector;
+              selector = config_iterator_nvt_selector (&configs);
+              SENDF_TO_CLIENT_OR_FAIL ("<config>"
+                                       "<name>%s</name>"
+                                       "<family_count>"
+                                       "-1<growing>%i</growing>"
+                                       "</family_count>"
+                                       "<nvt_count>"
+                                       "-1<growing>%i</growing>"
+                                       "</nvt_count>"
+                                       "</config>",
+                                       config_iterator_name (&configs),
+                                       nvt_selector_families_growing (selector),
+                                       nvt_selector_nvts_growing (selector));
+            }
           cleanup_iterator (&configs);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);

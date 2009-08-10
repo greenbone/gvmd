@@ -498,6 +498,7 @@ init_manage (GSList *log_config)
   /* Ensure the tables exist. */
 
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
+  /* nvt_selectors types: 0 for all, 1 for family, 2 for NVT. */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
@@ -2366,5 +2367,29 @@ init_config_iterator (iterator_t* iterator)
 
 DEF_ACCESS (config_iterator_name, 0);
 DEF_ACCESS (config_iterator_nvt_selector, 1);
+
+int
+nvt_selector_families_growing (const char* selector)
+{
+  /* The number of families can only grow if there is selector that includes
+   * all. */
+  return sql_int (0, 0,
+                  "SELECT COUNT(*) FROM nvt_selectors"
+                  " WHERE name = '%s' AND type = 0 AND exclude = 0;",
+                  selector);
+}
+
+int
+nvt_selector_nvts_growing (const char* selector)
+{
+  /* The number of NVTs can grow if there is a selector that includes all,
+   * or if there is a selector that includes a family. */
+  return sql_int (0, 0,
+                  "SELECT COUNT(*) FROM nvt_selectors"
+                  " WHERE name = '%s'"
+                  " AND exclude = 0"
+                  " AND (type = 0 OR type = 1);",
+                  selector);
+}
 
 #undef DEF_ACCESS

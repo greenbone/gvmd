@@ -455,6 +455,15 @@ const char*
 config_iterator_nvt_selector (iterator_t*);
 
 
+/* NVT selectors. */
+
+int
+nvt_selector_families_growing (const char*);
+
+int
+nvt_selector_nvts_growing (const char*);
+
+
 /* Server messaging. */
 
 int
