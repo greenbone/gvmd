@@ -1,5 +1,10 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/tasks_sql.h (delete_report, create_target, delete_config):
+	Wrap SQL statements in transactions.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_configs_0.c,
 	src/tests/omp_get_configs_1.c: Add checks of growing values.
 

@@ -1540,9 +1540,11 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 int
 delete_report (report_t report)
 {
+  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
+  sql ("COMMIT;");
   return 0;
 }
 
@@ -2052,10 +2054,13 @@ create_target (const char* name, const char* hosts)
   gchar* quoted_name = sql_quote (name, strlen (name));
   gchar* quoted_hosts;
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
                quoted_name))
     {
       g_free (quoted_name);
+      sql ("END;");
       return -1;
     }
 
@@ -2065,6 +2070,9 @@ create_target (const char* name, const char* hosts)
        quoted_name, quoted_hosts);
   g_free (quoted_name);
   g_free (quoted_hosts);
+
+  sql ("COMMIT;");
+
   return 0;
 }
 
@@ -2515,12 +2523,14 @@ int
 delete_config (const char* name)
 {
   gchar* quoted_name = sql_quote (name, strlen (name));
+  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
        quoted_name);
   sql ("DELETE FROM config_preferences"
        " WHERE config = (SELECT ROWID from configs WHERE name = '%s');",
        quoted_name);
   sql ("DELETE FROM configs WHERE name = '%s';", quoted_name);
+  sql ("COMMIT;");
   g_free (quoted_name);
   return 0;
 }
