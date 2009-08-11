@@ -1,5 +1,16 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	Convert GET_CONFIGS RC NVTs to an NVT selector.
+
+	* src/tasks_sql.h (config_preference, clude): New functions.
+	(insert_rc_into_config): Buffer NVT ids in array and convert to selector
+	before returning.
+	(create_config): Drop const restriction on param rc.  Wrap the database
+	calls in a transaction.
+	* src/manage.h: Update header.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tracef.h (tracef): Convert the message to UTF-8 before logging.
 
 2009-08-10  Matthew Mundell <mmundell@intevation.de>

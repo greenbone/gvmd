@@ -2141,6 +2141,135 @@ DEF_ACCESS (target_iterator_hosts, 1);
 /* Config. */
 
 /**
+ * @brief Get the value of a config preference.
+ *
+ * @param[in]  config   Config.
+ * @param[in]  type     Preference category, NULL for general preferences.
+ * @param[in]  name     Name of the preference.
+ *
+ * @return If there is such a preference, the value of the preference as a
+ *         newly allocated string, else NULL.
+ */
+static char *
+config_preference (config_t config, const char *type, const char *preference)
+{
+  if (type)
+    return sql_string (0, 0,
+                       "SELECT value FROM config_preferences"
+                       " WHERE type = '%s' AND name = '%s';",
+                       type, preference);
+  else
+    return sql_string (0, 0,
+                       "SELECT value FROM config_preferences"
+                       " WHERE type = NULL AND name = '%s';",
+                       preference);
+}
+
+/**
+ * @brief Exclude or include an array of NVTs in a config.
+ *
+ * @param[in]  config_name  Config name.
+ * @param[in]  array        Array of NVTs.
+ * @param[in]  array_size   Size of no.
+ * @param[in]  exclude      If true exclude, else include.
+ */
+static void
+clude (const char *config_name, GArray *array, int array_size, int exclude)
+{
+  gint index;
+  const char* tail;
+  int ret;
+  sqlite3_stmt* stmt;
+  gchar* formatted;
+
+  formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
+                               " (name, exclude, type, family_or_nvt)"
+                               " VALUES ('%s', %i, 2, $value);",
+                               config_name,
+                               exclude);
+
+  tracef ("   sql: %s\n", formatted);
+
+  /* Prepare statement. */
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+
+  for (index = 0; index < array_size; index++)
+    {
+      const char *id;
+      id = g_array_index (array, char*, index);
+
+      /* Bind the ID to the "$value" in the SQL statement. */
+
+      while (1)
+        {
+          ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_STATIC);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_OK) break;
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          abort ();
+        }
+
+      /* Run the statement. */
+
+      while (1)
+        {
+          ret = sqlite3_step (stmt);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_DONE) break;
+          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+            {
+              if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+              g_warning ("%s: sqlite3_step failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+        }
+
+      /* Reset the statement. */
+
+      while (1)
+        {
+          ret = sqlite3_reset (stmt);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
+          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+            {
+              g_warning ("%s: sqlite3_reset failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+        }
+    }
+
+  sqlite3_finalize (stmt);
+  g_free (formatted);
+}
+
+/**
  * @brief Copy the preferences and nvt selector from an RC file to a config.
  *
  * @param[in]  config   Config.
@@ -2149,8 +2278,12 @@ DEF_ACCESS (target_iterator_hosts, 1);
  * @return 0 success, -1 error.
  */
 static int
-insert_rc_into_config (config_t config, const char *config_name, const char *rc)
+insert_rc_into_config (config_t config, const char *config_name, char *rc)
 {
+  GArray *yes = g_array_new (FALSE, FALSE, sizeof (rc));
+  GArray *no = g_array_new (FALSE, FALSE, sizeof (rc));
+  int yes_size = 0, no_size = 0;
+
   char* seek;
 
   if (rc == NULL || config_name == NULL) return -1;
@@ -2217,14 +2350,18 @@ insert_rc_into_config (config_t config, const char *config_name, const char *rc)
                     {
                       int value_len = (seek ? seek - (eq2 + 2)
                                             : strlen (eq2 + 2));
-                      sql ("INSERT INTO nvt_selectors"
-                           " (name, exclude, type, family_or_nvt)"
-                           " VALUES ('%s', %i, 2, '%.*s');",
-                           config_name,
-                           ((value_len == 3)
-                            && strncasecmp (eq2 + 2, "yes", 3) == 0),
-                           rc_end - rc,
-                           rc);
+                      *rc_end = '\0';
+                      if ((value_len == 3)
+                            && strncasecmp (eq2 + 2, "yes", 3) == 0)
+                        {
+                          g_array_append_val (yes, rc);
+                          yes_size++;
+                        }
+                      else
+                        {
+                          no_size++;
+                          g_array_append_val (no, rc);
+                        }
                     }
                 }
 
@@ -2283,7 +2420,35 @@ insert_rc_into_config (config_t config, const char *config_name, const char *rc)
       rc = seek + 1;
     }
 
-  // FIX convert nvt_selector plugin list into an actual nvt selector
+  {
+    char *auto_enable;
+    auto_enable = config_preference (config, NULL, "auto_enable_new_plugins");
+    if (auto_enable
+        && strcmp (auto_enable, "no")
+        && strcmp (auto_enable, "0"))
+      {
+        free (auto_enable);
+
+        /* Include the all selector. */
+
+        sql ("INSERT INTO nvt_selectors"
+             " (name, exclude, type, family_or_nvt)"
+             " VALUES ('%s', 0, 0, 0);",
+             config_name);
+
+        /* Explicitly exclude any nos. */
+
+        clude (config_name, no, no_size, 1);
+      }
+    else
+      {
+        /* Explictly include the yeses and exclude the nos.  Keep the nos
+         * because the config may change to auto enable new plugins. */
+
+        clude (config_name, yes, yes_size, 0);
+        clude (config_name, no, no_size, 1);
+      }
+  }
 
   return 0;
 }
@@ -2297,14 +2462,17 @@ insert_rc_into_config (config_t config, const char *config_name, const char *rc)
  * @return 0 success, -1 error.
  */
 int
-create_config (const char* name, const char* rc)
+create_config (const char* name, char* rc)
 {
   gchar* quoted_name = sql_quote (name, strlen (name));
   config_t config;
 
+  sql ("BEGIN IMMEDIATE;");
+
   if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
                quoted_name))
     {
+      sql ("END;");
       g_free (quoted_name);
       return -1;
     }
@@ -2312,6 +2480,7 @@ create_config (const char* name, const char* rc)
   if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                quoted_name))
     {
+      sql ("END;");
       g_free (quoted_name);
       return -1;
     }
@@ -2325,10 +2494,12 @@ create_config (const char* name, const char* rc)
   config = sqlite3_last_insert_rowid (task_db);
   if (insert_rc_into_config (config, quoted_name, rc))
     {
+      sql ("END;");
       g_free (quoted_name);
       return -1;
     }
 
+  sql ("COMMIT;");
   g_free (quoted_name);
   return 0;
 }

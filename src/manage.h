@@ -463,7 +463,7 @@ target_iterator_hosts (iterator_t*);
 /* Configs. */
 
 int
-create_config (const char*, const char*);
+create_config (const char*, char*);
 
 int
 delete_config (const char*);
