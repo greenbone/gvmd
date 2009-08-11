@@ -1,3 +1,7 @@
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tracef.h (tracef): Convert the message to UTF-8 before logging.
+
 2009-08-10  Matthew Mundell <mmundell@intevation.de>
 
 	Add real OMP GET_CONFIGS count figures for the all selector case.

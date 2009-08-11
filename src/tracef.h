@@ -93,7 +93,18 @@ extern GSList *log_config;
  */
 #define tracef(args...)                                          \
   do {                                                           \
-    if (verbose) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, args);  \
+    if (verbose)                                                 \
+      {                                                          \
+        /* UTF-8 hack: Convert log message to utf-8, in case it  \
+         * contains server input. */                             \
+        gsize size_dummy;                                        \
+        gchar* iso = g_strdup_printf (args);                     \
+        gchar* utf8 = g_convert (iso, -1, "UTF-8", "ISO_8859-1", \
+                                 NULL, &size_dummy, NULL);       \
+        g_free (iso);                                            \
+        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, utf8);           \
+        g_free (utf8);                                           \
+      }                                                          \
   } while (0)
 #else
 /**
