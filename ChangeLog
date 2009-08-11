@@ -1,5 +1,17 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	Add real OMP GET_CONFIGS count figures for static selectors.
+
+	* src/tasks_sql.h (init_nvt_selector_iterator)
+	(nvt_selector_iterator_include): New functions.
+	(nvt_selector_nvt_count): Add static selector counting.
+
+	* src/tests/CMakeLists.txt: Add omp_get_configs_3.
+
+	* src/tests/omp_get_configs_3.c: New file.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/tasks_sql.h (delete_report, create_target, delete_config):
 	Wrap SQL statements in transactions.
 

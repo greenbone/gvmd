@@ -2549,6 +2549,9 @@ init_config_iterator (iterator_t* iterator)
 DEF_ACCESS (config_iterator_name, 0);
 DEF_ACCESS (config_iterator_nvt_selector, 1);
 
+
+/* NVT selectors. */
+
 /* TODO: These need to handle strange cases, like when a family is
  * included then excluded, or all is included then later excluded. */
 
@@ -2608,6 +2611,65 @@ nvt_selector_family_count (const char* selector)
 }
 
 /**
+ * @brief Initialise a NVT selector iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+static void
+init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  assert (type >= 0 && type <= 2);
+
+  iterator->done = FALSE;
+  formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
+                               " WHERE name = '%s' AND type = %i;",
+                               selector, type);
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+/**
+ * @brief Get whether the selector rule is an include rule.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return -1 if iteration is complete, 1 if include, else 0.
+ */
+static int
+nvt_selector_iterator_include (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 1);
+  return ret == 0;
+}
+
+/**
  * @brief Get the number of NVTs covered by a selector.
  *
  * @param[in]  selector  NVT selector.
@@ -2619,16 +2681,31 @@ nvt_selector_nvt_count (const char* selector)
 {
   if (server.plugins)
     {
-      if ((sql_int (0, 0,
-                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                    selector)
-           == 1)
-          && (sql_int (0, 0,
-                       "SELECT COUNT(*) FROM nvt_selectors"
-                       " WHERE name = '%s' AND type = 0;",
-                       selector)
-              == 1))
-        return g_hash_table_size (server.plugins);
+      if (nvt_selector_nvts_growing (selector))
+        {
+          if ((sql_int (0, 0,
+                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                        selector)
+               == 1)
+              && (sql_int (0, 0,
+                           "SELECT COUNT(*) FROM nvt_selectors"
+                           " WHERE name = '%s' AND type = 0;",
+                           selector)
+                  == 1))
+            return g_hash_table_size (server.plugins);
+        }
+      else
+        {
+          int count = 0;
+          iterator_t nvts;
+
+          init_nvt_selector_iterator (&nvts, selector, 2);
+          while (next (&nvts))
+            if (nvt_selector_iterator_include (&nvts)) count++;
+          cleanup_iterator (&nvts);
+
+          return count;
+        }
     }
   return -1;
 }
