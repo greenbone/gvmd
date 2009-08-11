@@ -1540,11 +1540,9 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 int
 delete_report (report_t report)
 {
-  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
-  sql ("COMMIT;");
   return 0;
 }
 

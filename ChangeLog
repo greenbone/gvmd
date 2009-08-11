@@ -1,5 +1,10 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/tasks_sql.h (delete_report): Remove transaction, as
+	delete_reports calls delete_report inside an iterator.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	Add real OMP GET_CONFIGS count figures for static selectors.
 
 	* src/tasks_sql.h (init_nvt_selector_iterator)
