@@ -82,9 +82,35 @@ main ()
       entity_t name = entity_child (config, "name");
       if (name == NULL) goto free_fail;
       if (strcmp (entity_text (name), "Full") == 0)
-        found_1 = 1;
+        {
+          entity_t count, growing;
+          count = entity_child (config, "family_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "1"))
+            break;
+          count = entity_child (config, "nvt_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "1"))
+            break;
+          found_1 = 1;
+        }
       else if (strcmp (entity_text (name), "omp_get_configs_1") == 0)
-        found_2 = 1;
+        {
+          entity_t count, growing;
+          count = entity_child (config, "family_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "0"))
+            break;
+          count = entity_child (config, "nvt_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "0"))
+            break;
+          found_2 = 1;
+        }
       configs = next_entities (configs);
     }
 

@@ -75,6 +75,17 @@ main ()
       if (name == NULL) goto free_fail;
       if (strcmp (entity_text (name), "Full") == 0)
         {
+          entity_t count, growing;
+          count = entity_child (config, "family_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "1"))
+            break;
+          count = entity_child (config, "nvt_count");
+          if (count == NULL) break;
+          growing = entity_child (count, "growing");
+          if (growing == NULL || strcmp (entity_text (growing), "1"))
+            break;
           found_1 = 1;
           break;
         }

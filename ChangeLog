@@ -1,5 +1,10 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_configs_0.c,
+	src/tests/omp_get_configs_1.c: Add checks of growing values.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_start_task_3.c: Correct expected status.
 
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
