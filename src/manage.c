@@ -726,7 +726,11 @@ start_task (task_t task)
     return 0;
 
   targets = task_preference (task, "targets");
-  if (targets == NULL) return -2;
+  if (targets == NULL)
+    {
+      tracef ("   failed to get targets from preferences.\n");
+      return -2;
+    }
 
   /* Create the report. */
 

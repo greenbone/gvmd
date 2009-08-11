@@ -1,5 +1,9 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/manage.c (start_task): Add trace to fail case.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	Convert GET_CONFIGS RC NVTs to an NVT selector.
 
 	* src/tasks_sql.h (config_preference, clude): New functions.
