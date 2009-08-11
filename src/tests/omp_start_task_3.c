@@ -1,6 +1,6 @@
 /* Test 3 of OMP START_TASK.
  * $Id$
- * Description: Test the OMP START_TASK command with a target missing.
+ * Description: Test OMP START_TASK with RC missing targets.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -72,7 +72,7 @@ main ()
   /* Compare response to expected response. */
 
   entity_t expected = add_entity (NULL, "start_task_response", NULL);
-  add_attribute (expected, "status", "202");
+  add_attribute (expected, "status", "404");
 
   if (compare_entities (entity, expected))
     {

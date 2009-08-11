@@ -1,5 +1,9 @@
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_start_task_3.c: Correct expected status.
+
+2009-08-11  Matthew Mundell <mmundell@intevation.de>
+
 	* src/manage.c (start_task): Add trace to fail case.
 
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
