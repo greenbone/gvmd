@@ -54,6 +54,7 @@ main ()
 
   if (omp_create_config_from_rc_file (&session,
                                       "omp_delete_config_0",
+                                      "Test comment",
                                       "new_task_small_rc"))
     {
       close_manager_connection (socket, session);

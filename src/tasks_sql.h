@@ -515,7 +515,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
@@ -538,8 +538,8 @@ init_manage (GSList *log_config)
            " VALUES ('All', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
            ", NULL);");
-      sql ("INSERT into configs (name, nvt_selector)"
-           " VALUES ('Full', 'All');");
+      sql ("INSERT into configs (name, nvt_selector, comment)"
+           " VALUES ('Full', 'All', 'All inclusive configuration.');");
       // FIX setup full preferences
       //     create_config ("full", OPENVAS_STATE_DIR "/mgr/openvasrc-full");?
       //         depends on scanner?
@@ -2496,9 +2496,10 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
  * @return 0 success, -1 error.
  */
 int
-create_config (const char* name, char* rc)
+create_config (const char* name, const char* comment, char* rc)
 {
   gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_comment;
   config_t config;
 
   sql ("BEGIN IMMEDIATE;");
@@ -2519,9 +2520,11 @@ create_config (const char* name, char* rc)
       return -1;
     }
 
-  sql ("INSERT INTO configs (name, nvt_selector)"
-       " VALUES ('%s', '%s');",
-       quoted_name, quoted_name);
+  quoted_comment = sql_quote (comment, strlen (comment));
+  sql ("INSERT INTO configs (name, nvt_selector, comment)"
+       " VALUES ('%s', '%s', '%s');",
+       quoted_name, quoted_name, quoted_comment);
+  g_free (quoted_comment);
 
   /* Insert the RC into the config_preferences table. */
 
@@ -2574,6 +2577,15 @@ init_config_iterator (iterator_t* iterator)
 
 DEF_ACCESS (config_iterator_name, 0);
 DEF_ACCESS (config_iterator_nvt_selector, 1);
+
+const char*
+config_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  return ret ? ret : "";
+}
 
 
 /* NVT selectors. */

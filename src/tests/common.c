@@ -2035,18 +2035,20 @@ omp_delete_target (gnutls_session_t* session,
 }
 
 /**
- * @brief Create a config, given the config description as an RC file.
+ * @brief Create a config, given the config description as a string.
  *
  * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Config name.
+ * @param[in]   comment     Config comment.
  * @param[in]   config      Config configuration.
  * @param[in]   config_len  Length of config.
- * @param[in]   name        Config name.
  *
  * @return 0 on success, -1 on error.
  */
 int
 omp_create_config (gnutls_session_t* session,
                    const char* name,
+                   const char* comment,
                    const char* config,
                    unsigned int config_len)
 {
@@ -2058,12 +2060,22 @@ omp_create_config (gnutls_session_t* session,
   /* Create the OMP request. */
 
   gchar* new_config_request;
-  new_config_request = g_strdup_printf ("<create_config>"
-                                        "<name>%s</name>"
-                                        "<rcfile>%s</rcfile>"
-                                        "</create_config>",
-                                        name,
-                                        new_config_file);
+  if (comment)
+    new_config_request = g_strdup_printf ("<create_config>"
+                                          "<name>%s</name>"
+                                          "<comment>%s</comment>"
+                                          "<rcfile>%s</rcfile>"
+                                          "</create_config>",
+                                          name,
+                                          comment,
+                                          new_config_file);
+  else
+    new_config_request = g_strdup_printf ("<create_config>"
+                                          "<name>%s</name>"
+                                          "<rcfile>%s</rcfile>"
+                                          "</create_config>",
+                                          name,
+                                          new_config_file);
   g_free (new_config_file);
 
   /* Send the request. */
@@ -2101,12 +2113,15 @@ omp_create_config (gnutls_session_t* session,
  *
  * @param[in]   session     Pointer to GNUTLS session.
  * @param[in]   name        Config name.
+ * @param[in]   comment     Config comment.
+ * @param[in]   file_name   Name of RC file.
  *
  * @return 0 on success, -1 on error.
  */
 int
 omp_create_config_from_rc_file (gnutls_session_t* session,
                                 const char* name,
+                                const char* comment,
                                 const char* file_name)
 {
   gchar* new_config_rc = NULL;
@@ -2128,6 +2143,7 @@ omp_create_config_from_rc_file (gnutls_session_t* session,
 
   ret = omp_create_config (session,
                            name,
+                           comment,
                            new_config_rc,
                            new_config_rc_len);
   g_free (new_config_rc);

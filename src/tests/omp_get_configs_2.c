@@ -112,7 +112,11 @@ main ()
       if (name == NULL) goto free_fail;
       if (strcmp (entity_text (name), "Full") == 0)
         {
-          entity_t count, growing;
+          entity_t comment, count, growing;
+          comment = entity_child (config, "comment");
+          if (comment == NULL
+              || strcmp (entity_text (comment), "All inclusive configuration."))
+            break;
           count = entity_child (config, "family_count");
           if (count == NULL) break;
           growing = entity_child (count, "growing");

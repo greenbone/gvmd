@@ -94,6 +94,7 @@ main ()
 
   if (omp_create_config_from_rc_file (&session,
                                       "omp_get_configs_1",
+                                      NULL,
                                       "new_task_small_rc"))
     {
       close_manager_connection (socket, session);
@@ -122,7 +123,11 @@ main ()
       if (name == NULL) goto free_fail;
       if (strcmp (entity_text (name), "Full") == 0)
         {
-          entity_t count, growing;
+          entity_t comment, count, growing;
+          comment = entity_child (config, "comment");
+          if (comment == NULL
+              || strcmp (entity_text (comment), "All inclusive configuration."))
+            break;
           count = entity_child (config, "family_count");
           if (count == NULL) break;
           growing = entity_child (count, "growing");
@@ -137,7 +142,11 @@ main ()
         }
       else if (strcmp (entity_text (name), "omp_get_configs_1") == 0)
         {
-          entity_t count, growing;
+          entity_t comment, count, growing;
+          comment = entity_child (config, "comment");
+          if (comment == NULL
+              || strcmp (entity_text (comment), ""))
+            break;
           count = entity_child (config, "family_count");
           if (count == NULL || strcmp (entity_text (count), "2")) break;
           growing = entity_child (count, "growing");

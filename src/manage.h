@@ -466,7 +466,7 @@ target_iterator_comment (iterator_t*);
 /* Configs. */
 
 int
-create_config (const char*, char*);
+create_config (const char*, const char*, char*);
 
 int
 delete_config (const char*);
@@ -479,6 +479,9 @@ config_iterator_name (iterator_t*);
 
 const char*
 config_iterator_nvt_selector (iterator_t*);
+
+const char*
+config_iterator_comment (iterator_t*);
 
 
 /* NVT selectors. */

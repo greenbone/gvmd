@@ -247,6 +247,7 @@ typedef enum
 #endif
   CLIENT_AUTHENTICATE,
   CLIENT_CREATE_CONFIG,
+  CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_NAME,
   CLIENT_CREATE_CONFIG_RCFILE,
   CLIENT_CREATE_TARGET,
@@ -593,8 +594,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("CREATE_CONFIG", element_name, 13) == 0)
           {
+            assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
             assert (modify_task_value == NULL);
+            append_string (&modify_task_comment, "");
             append_string (&modify_task_name, "");
             append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_CONFIG);
@@ -608,12 +611,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strncasecmp ("CREATE_TARGET", element_name, 13) == 0)
           {
+            assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
             assert (modify_task_value == NULL);
-            assert (modify_task_comment == NULL);
+            append_string (&modify_task_comment, "");
             append_string (&modify_task_name, "");
             append_string (&modify_task_value, "");
-            append_string (&modify_task_comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
@@ -989,7 +992,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_CONFIG:
-        if (strncasecmp ("NAME", element_name, 4) == 0)
+        if (strncasecmp ("COMMENT", element_name, 7) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_COMMENT);
+        else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
         else if (strncasecmp ("RCFILE", element_name, 6) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
@@ -3190,6 +3195,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strlen (modify_task_name) == 0
               || strlen (modify_task_value) == 0)
             {
+              free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_config"));
@@ -3210,7 +3216,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   base64_len = 0;
                 }
 
-              ret = create_config (modify_task_name, (char*) base64);
+              ret = create_config (modify_task_name,
+                                   modify_task_comment,
+                                   (char*) base64);
+              free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               g_free (base64);
               if (ret)
@@ -3221,6 +3230,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_CREATE_CONFIG_COMMENT:
+        assert (strncasecmp ("COMMENT", element_name, 7) == 0);
+        set_client_state (CLIENT_CREATE_CONFIG);
+        break;
       case CLIENT_CREATE_CONFIG_NAME:
         assert (strncasecmp ("NAME", element_name, 4) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
@@ -3239,6 +3252,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strlen (modify_task_name) == 0
               || strlen (modify_task_value) == 0)
             {
+              free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target"));
@@ -3804,6 +3818,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               selector = config_iterator_nvt_selector (&configs);
               SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                        "<name>%s</name>"
+                                       "<comment>%s</comment>"
                                        "<family_count>"
                                        "%i<growing>%i</growing>"
                                        "</family_count>"
@@ -3812,6 +3827,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "</nvt_count>"
                                        "</config>",
                                        config_iterator_name (&configs),
+                                       config_iterator_comment (&configs),
                                        nvt_selector_family_count (selector),
                                        nvt_selector_families_growing (selector),
                                        nvt_selector_nvt_count (selector),
@@ -3901,6 +3917,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+      case CLIENT_CREATE_CONFIG_COMMENT:
+        append_text (&modify_task_comment, text, text_len);
+        break;
       case CLIENT_CREATE_CONFIG_NAME:
         append_text (&modify_task_name, text, text_len);
         break;
