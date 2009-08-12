@@ -38,6 +38,7 @@
 #define NAME_2 "omp_get_targets_0 2"
 #define HOSTS_1 "localhost,xxx,127.0.0.1"
 #define HOSTS_2 "196.168.0.1"
+#define COMMENT_1 "Test comment."
 
 int
 main ()
@@ -61,14 +62,14 @@ main ()
   /* Ensure the targets exist. */
 
   omp_delete_target (&session, NAME_1);
-  if (omp_create_target (&session, NAME_1, HOSTS_1) == -1)
+  if (omp_create_target (&session, NAME_1, HOSTS_1, COMMENT_1) == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   omp_delete_target (&session, NAME_2);
-  if (omp_create_target (&session, NAME_2, HOSTS_2) == -1)
+  if (omp_create_target (&session, NAME_2, HOSTS_2, NULL) == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -94,12 +95,16 @@ main ()
     {
       entity_t name = entity_child (target, "name");
       entity_t hosts = entity_child (target, "hosts");
-      if (name == NULL || hosts == NULL) goto free_fail;
+      entity_t comment = entity_child (target, "comment");
+      if (name == NULL || hosts == NULL || comment == NULL)
+        goto free_fail;
       if ((strcmp (entity_text (name), NAME_1) == 0)
-          && (strcmp (entity_text (hosts), HOSTS_1) == 0))
+          && (strcmp (entity_text (hosts), HOSTS_1) == 0)
+          && (strcmp (entity_text (comment), COMMENT_1) == 0))
         found_1 = 1;
       else if ((strcmp (entity_text (name), NAME_2) == 0)
-               && (strcmp (entity_text (hosts), HOSTS_2) == 0))
+               && (strcmp (entity_text (hosts), HOSTS_2) == 0)
+               && (strcmp (entity_text (comment), "") == 0))
         found_2 = 1;
       targets = next_entities (targets);
     }
