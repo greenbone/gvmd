@@ -1,5 +1,10 @@
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (insert_rc_into_config): Leave trailing paren off
+	section name.
+
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
 	* README: Cleanup and elaborate sample test invocation.
 
 	* INSTALL: Add sqlfairy dependency.  Try improve the configure
@@ -12,7 +17,7 @@
 
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
-	* src/tests/tasks_sql.h (delete_report): Remove transaction, as
+	* src/tasks_sql.h (delete_report): Remove transaction, as
 	delete_reports calls delete_report inside an iterator.
 
 2009-08-11  Matthew Mundell <mmundell@intevation.de>

@@ -2379,7 +2379,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         {
           gchar *section_name;
 
-          section_name = sql_quote (rc + 6, seek - (rc + 6));
+          section_name = sql_quote (rc + 6, seek - (rc + 6) - 1);
 
           /* Insert the section. */
 
