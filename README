@@ -31,3 +31,12 @@ The program usage message follows.
 	  -s, --sport=<number>        Server (openvasd) port number.
 	  -v, --verbose               Print progress messages.
 	  --version                   Print version.
+
+There are some tests under src/tests. To run them, start your openvasmd
+e.g
+       $ /path/to/installation/bin/openvasmd   --port 1242 --sport 9390
+set some environment variables
+       $ export OPENVAS_TEST_USER=user_created_by_openvas-adduser
+       $ export OPENVAS_TEST_PASSWORD=that_users_password
+       run the tests
+

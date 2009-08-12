@@ -7,10 +7,14 @@ Prerequisites:
 * gnutls
 * cmake
 * sqlite3
+* libossp-uuid
 
 Prerequisites for building documentation:
 * Doxygen
 * xmltoman (optional, for building man page)
+
+If your openvas/bin is not in your PATH, add it because libopenvas-config is needed (Do this before running cmake -DCMAKE_INSTALL_PREFIX)
+    $ export PATH=$PATH:/path/to/your/installation/bin/
 
 The very first time, run the command
 

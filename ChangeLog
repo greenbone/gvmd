@@ -1,3 +1,8 @@
+2009-08-12  Laban Mwangi <lmwangi@penguinlabs.co.ke>
+
+	* README: Added a sample invocation for tests
+	* INSTALL: Instructions for custom prefix openvas installs
+
 2009-08-11  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tests/tasks_sql.h (delete_report): Remove transaction, as
