@@ -1,3 +1,10 @@
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
+	* README: Cleanup and elaborate sample test invocation.
+
+	* INSTALL: Add sqlfairy dependency.  Try improve the configure
+	description.
+
 2009-08-12  Laban Mwangi <lmwangi@penguinlabs.co.ke>
 
 	* README: Added a sample invocation for tests
@@ -2681,7 +2688,7 @@
 
 2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
 
-	* (README, INSTALL): Update requirements and descriptions.
+	* README, INSTALL: Update requirements and descriptions.
 
 2009-05-08  Michael Wiegand <michael.wiegand@intevation.de>
 

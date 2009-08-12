@@ -32,11 +32,20 @@ The program usage message follows.
 	  -v, --verbose               Print progress messages.
 	  --version                   Print version.
 
-There are some tests under src/tests. To run them, start your openvasmd
-e.g
-       $ /path/to/installation/bin/openvasmd   --port 1242 --sport 9390
-set some environment variables
-       $ export OPENVAS_TEST_USER=user_created_by_openvas-adduser
-       $ export OPENVAS_TEST_PASSWORD=that_users_password
-       run the tests
+There are some tests under src/tests.  To run them, start your openvasmd,
+for example with
 
+    openvasmd   --port 1242 --sport 9390
+
+then set the environment variables for the user and password
+
+    export OPENVAS_TEST_USER=user_created_by_openvas-adduser
+    export OPENVAS_TEST_PASSWORD=that_users_password
+
+and then run all the tests
+
+    make test
+
+or any one of the tests, for example
+
+	src/test/omp_get_report_0
