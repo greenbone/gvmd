@@ -27,6 +27,21 @@
 
 #include <openvas/openvas_logging.h>
 
+/**
+ * @brief NVT selector type for "all" rule.
+ */
+#define NVT_SELECTOR_TYPE_ALL 0
+
+/**
+ * @brief NVT selector type for "family" rule.
+ */
+#define NVT_SELECTOR_TYPE_FAMILY 1
+
+/**
+ * @brief NVT selector type for "NVT" rule.
+ */
+#define NVT_SELECTOR_TYPE_NVT 2
+
 
 /* Types. */
 
@@ -498,7 +513,7 @@ init_manage (GSList *log_config)
   /* Ensure the tables exist. */
 
   sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
-  /* nvt_selectors types: 0 for all, 1 for family, 2 for NVT. */
+  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
@@ -520,7 +535,9 @@ init_manage (GSList *log_config)
       && sql_int (0, 0, "SELECT count(*) FROM configs;") == 0)
     {
       sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-           " VALUES ('All', 0, 0, NULL);");
+           " VALUES ('All', 0, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+           ", NULL);");
       sql ("INSERT into configs (name, nvt_selector)"
            " VALUES ('Full', 'All');");
       // FIX setup full preferences
@@ -2567,7 +2584,9 @@ nvt_selector_families_growing (const char* selector)
    * all. */
   return sql_int (0, 0,
                   "SELECT COUNT(*) FROM nvt_selectors"
-                  " WHERE name = '%s' AND type = 0 AND exclude = 0;",
+                  " WHERE name = '%s'"
+                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                  " AND exclude = 0;",
                   selector);
 }
 
@@ -2587,25 +2606,9 @@ nvt_selector_nvts_growing (const char* selector)
                   "SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND exclude = 0"
-                  " AND (type = 0 OR type = 1);",
+                  " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                  " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ");",
                   selector);
-}
-
-/**
- * @brief Get the number of families covered by a selector.
- *
- * @param[in]  selector  NVT selector.
- *
- * @return Family count if known, else -1.
- */
-int
-nvt_selector_family_count (const char* selector)
-{
-#if 0
-  if (server.plugins)
-    return family_count (server.plugins);
-#endif
-  return -1;
 }
 
 /**
@@ -2668,6 +2671,91 @@ nvt_selector_iterator_include (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the NVT or family from an NVT selector iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT selector, or NULL if iteration is complete.
+ */
+static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
+
+/**
+ * @brief Get the family of an NVT.
+ *
+ * @param[in]  nvtis  NVTI set.
+ * @param[in]  oid    OID of NVT.
+ *
+ * @return Family count if known, else -1.
+ */
+const char *
+nvt_family (const nvtis_t *nvtis, const char *oid)
+{
+  nvti_t *nvti = nvtis_lookup (server.plugins, oid);
+  if (nvti)
+    return nvti_family (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the number of families covered by a selector.
+ *
+ * @param[in]  selector  NVT selector.
+ *
+ * @return Family count if known, else -1.
+ */
+int
+nvt_selector_family_count (const char* selector)
+{
+  if (server.plugins)
+    {
+      if (nvt_selector_nvts_growing (selector))
+        {
+          return -1;
+        }
+      else
+        {
+          int count = 0;
+          iterator_t nvts;
+          GHashTable *families;
+
+          /* Static selector.  Count the number of families associated with
+           * the NVTs. */
+
+          families = g_hash_table_new_full (g_str_hash,
+                                            g_str_equal,
+                                            g_free,
+                                            NULL);
+
+          init_nvt_selector_iterator (&nvts, selector, NVT_SELECTOR_TYPE_NVT);
+          while (next (&nvts))
+            if (nvt_selector_iterator_include (&nvts))
+              {
+                const char *nvt = nvt_selector_iterator_nvt (&nvts);
+                if (nvt)
+                  {
+                    const char *family = nvt_family (server.plugins, nvt);
+                    if (family)
+                      {
+                        if (g_hash_table_lookup (families, family))
+                          continue;
+                        count++;
+                        g_hash_table_insert (families,
+                                             g_strdup (family),
+                                             (gpointer) 1);
+                      }
+                  }
+              }
+          cleanup_iterator (&nvts);
+
+          g_hash_table_destroy (families);
+
+          return count;
+        }
+    }
+  return -1;
+}
+
+/**
  * @brief Get the number of NVTs covered by a selector.
  *
  * @param[in]  selector  NVT selector.
@@ -2687,7 +2775,9 @@ nvt_selector_nvt_count (const char* selector)
                == 1)
               && (sql_int (0, 0,
                            "SELECT COUNT(*) FROM nvt_selectors"
-                           " WHERE name = '%s' AND type = 0;",
+                           " WHERE name = '%s'"
+                           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                           ";",
                            selector)
                   == 1))
             return g_hash_table_size (server.plugins);
@@ -2696,6 +2786,9 @@ nvt_selector_nvt_count (const char* selector)
         {
           int count = 0;
           iterator_t nvts;
+
+          // TODO: This counts the number of listed NVTs, there may be
+          //       fewer NVTs on the scanner.
 
           init_nvt_selector_iterator (&nvts, selector, 2);
           while (next (&nvts))

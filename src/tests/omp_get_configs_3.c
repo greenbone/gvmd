@@ -139,7 +139,7 @@ main ()
         {
           entity_t count, growing;
           count = entity_child (config, "family_count");
-          if (count == NULL) break;
+          if (count == NULL || strcmp (entity_text (count), "2")) break;
           growing = entity_child (count, "growing");
           if (growing == NULL || strcmp (entity_text (growing), "0"))
             break;

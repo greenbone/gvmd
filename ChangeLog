@@ -1,5 +1,17 @@
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
+	Add real OMP GET_CONFIGS family counts for static selectors.
+
+	* src/tasks_sql.h (NVT_SELECTOR_TYPE_ALL, NVT_SELECTOR_TYPE_FAMILY)
+	(NVT_SELECTOR_TYPE_NVT): New defines.  Use instead of numbers in
+	callers.
+	(nvt_selector_iterator_nvt, nvt_family): New functions.
+	(nvt_selector_family_count): Add counting for static selector.
+
+	* src/tests/omp_get_configs_3.c: Add family count check.
+
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (latex_severity_colour): Add "Debug Message" and "Log
 	Message".  Return "{openvas_text}" on fail.
 	(latex_header): Add colours openvas_text, openvas_debug and
