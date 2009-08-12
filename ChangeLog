@@ -1,5 +1,12 @@
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (latex_severity_colour): Add "Debug Message" and "Log
+	Message".  Return "{openvas_text}" on fail.
+	(latex_header): Add colours openvas_text, openvas_debug and
+	openvas_log.
+
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (insert_rc_into_config): Leave trailing paren off
 	section name.
 

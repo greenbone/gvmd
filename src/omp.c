@@ -1678,13 +1678,17 @@ latex_severity_heading (const char *severity)
 const char*
 latex_severity_colour (const char *severity)
 {
+  if (strcmp (severity, "Debug Message") == 0)
+    return "{openvas_debug}";
+  if (strcmp (severity, "Log Message") == 0)
+    return "{openvas_log}";
   if (strcmp (severity, "Security Hole") == 0)
     return "{openvas_hole}";
   if (strcmp (severity, "Security Note") == 0)
     return "{openvas_note}";
   if (strcmp (severity, "Security Warning") == 0)
-    return "{openavs_warning}";
-  return severity;
+    return "{openvas_warning}";
+  return "{openvas_text}";
 }
 
 /**
@@ -1708,6 +1712,9 @@ const char* latex_header
     "% must come last\n"
     "\\usepackage{hyperref}\n"
     "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
+    "\\definecolor{openvas_text}{rgb}{0,0,0}\n"
+    "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
+    "\\definecolor{openvas_log}{rgb}{0.49,0.49,0.49}\n"
     "\\definecolor{openvas_hole}{rgb}{0.80,0,0}\n"
     "\\definecolor{openvas_note}{rgb}{0.93,0.86,0.5}\n"
     "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
