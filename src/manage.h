@@ -445,7 +445,7 @@ host_iterator_max_port (iterator_t*);
 /* Targets. */
 
 int
-create_target (const char*, const char*);
+create_target (const char*, const char*, const char*);
 
 int
 delete_target (const char*);
@@ -458,6 +458,9 @@ target_iterator_name (iterator_t*);
 
 const char*
 target_iterator_hosts (iterator_t*);
+
+const char*
+target_iterator_comment (iterator_t*);
 
 
 /* Configs. */

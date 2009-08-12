@@ -1,5 +1,23 @@
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
+	Add comments to targets.
+
+	* src/tasks_sql.h (init_manage): Add comment column to targets table.
+	(create_target): Add comment param.
+	(target_iterator_comment): New function.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (client_state_t): Add comment state.
+	(omp_xml_handle_start_element, omp_xml_handle_text)
+	(omp_xml_handle_end_element): Handle target comments.
+
+	* src/tests/common.c (omp_create_target): Add comment param.
+	* src/tests/common.h: Update header.
+
+	* src/tests/omp_get_targets_0.c: Add comment to first target.
+
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/new_task_small_rc: Add 1.3.6.1.4.1.25623.1.0.10330 to
 	scanner set.  Add a second host.  Set port_range to default.
 

@@ -250,6 +250,7 @@ typedef enum
   CLIENT_CREATE_CONFIG_NAME,
   CLIENT_CREATE_CONFIG_RCFILE,
   CLIENT_CREATE_TARGET,
+  CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TASK,
@@ -609,8 +610,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             assert (modify_task_name == NULL);
             assert (modify_task_value == NULL);
+            assert (modify_task_comment == NULL);
             append_string (&modify_task_name, "");
             append_string (&modify_task_value, "");
+            append_string (&modify_task_comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
@@ -1006,7 +1009,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_TARGET:
-        if (strncasecmp ("HOSTS", element_name, 5) == 0)
+        if (strncasecmp ("COMMENT", element_name, 7) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_COMMENT);
+        else if (strncasecmp ("HOSTS", element_name, 5) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strncasecmp ("NAME", element_name, 4) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
@@ -3238,14 +3243,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target"));
             }
-          else if (create_target (modify_task_name, modify_task_value))
+          else if (create_target (modify_task_name,
+                                  modify_task_value,
+                                  modify_task_comment))
             {
+              free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target"));
             }
           else
             {
+              free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
@@ -3253,6 +3262,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_CREATE_TARGET_COMMENT:
+        assert (strncasecmp ("COMMENT", element_name, 7) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
       case CLIENT_CREATE_TARGET_HOSTS:
         assert (strncasecmp ("HOSTS", element_name, 5) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
@@ -3819,10 +3832,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           init_target_iterator (&targets);
           while (next (&targets))
             SENDF_TO_CLIENT_OR_FAIL ("<target>"
-                                     "<name>%s</name><hosts>%s</hosts>"
+                                     "<name>%s</name>"
+                                     "<hosts>%s</hosts>"
+                                     "<comment>%s</comment>"
                                      "</target>",
                                      target_iterator_name (&targets),
-                                     target_iterator_hosts (&targets));
+                                     target_iterator_hosts (&targets),
+                                     target_iterator_comment (&targets));
           cleanup_iterator (&targets);
           SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
           set_client_state (CLIENT_AUTHENTIC);
@@ -3892,6 +3908,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_text (&modify_task_value, text, text_len);
         break;
 
+      case CLIENT_CREATE_TARGET_COMMENT:
+        append_text (&modify_task_comment, text, text_len);
+        break;
       case CLIENT_CREATE_TARGET_HOSTS:
         append_text (&modify_task_value, text, text_len);
         break;

@@ -522,7 +522,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
 
   /* Always create a single user, for now. */
 
@@ -2064,10 +2064,10 @@ reset_task (task_t task)
  * @return 0 success, -1 error.
  */
 int
-create_target (const char* name, const char* hosts)
+create_target (const char* name, const char* hosts, const char* comment)
 {
-  gchar* quoted_name = sql_quote (name, strlen (name));
-  gchar* quoted_hosts;
+  gchar *quoted_name = sql_quote (name, strlen (name));
+  gchar *quoted_hosts, *quoted_comment;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -2079,10 +2079,12 @@ create_target (const char* name, const char* hosts)
       return -1;
     }
 
+  quoted_comment = sql_quote (comment, strlen (comment));
   quoted_hosts = sql_quote (hosts, strlen (hosts));
-  sql ("INSERT INTO targets (name, hosts)"
-       " VALUES ('%s', '%s');",
-       quoted_name, quoted_hosts);
+  sql ("INSERT INTO targets (name, hosts, comment)"
+       " VALUES ('%s', '%s', '%s');",
+       quoted_name, quoted_hosts, quoted_comment);
+  g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_hosts);
 
@@ -2159,6 +2161,15 @@ init_target_iterator (iterator_t* iterator)
 
 DEF_ACCESS (target_iterator_name, 0);
 DEF_ACCESS (target_iterator_hosts, 1);
+
+const char*
+target_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  return ret ? ret : "";
+}
 
 
 /* Config. */

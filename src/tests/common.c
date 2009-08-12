@@ -1923,7 +1923,8 @@ omp_until_up (int (*function) (gnutls_session_t*, entity_t*),
 int
 omp_create_target (gnutls_session_t* session,
                    const char* name,
-                   const char* hosts)
+                   const char* hosts,
+                   const char* comment)
 {
   int ret;
   entity_t entity;
@@ -1932,12 +1933,22 @@ omp_create_target (gnutls_session_t* session,
   /* Create the OMP request. */
 
   gchar* new_task_request;
-  new_task_request = g_strdup_printf ("<create_target>"
-                                      "<name>%s</name>"
-                                      "<hosts>%s</hosts>"
-                                      "</create_target>",
-                                      name,
-                                      hosts);
+  if (comment)
+    new_task_request = g_strdup_printf ("<create_target>"
+                                        "<name>%s</name>"
+                                        "<hosts>%s</hosts>"
+                                        "<comment>%s</comment>"
+                                        "</create_target>",
+                                        name,
+                                        hosts,
+                                        comment);
+  else
+    new_task_request = g_strdup_printf ("<create_target>"
+                                        "<name>%s</name>"
+                                        "<hosts>%s</hosts>"
+                                        "</create_target>",
+                                        name,
+                                        hosts);
 
   /* Send the request. */
 
