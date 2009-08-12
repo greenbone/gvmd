@@ -1,5 +1,10 @@
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/new_task_small_rc: Add 1.3.6.1.4.1.25623.1.0.10330 to
+	scanner set.  Add a second host.  Set port_range to default.
+
+2009-08-12  Matthew Mundell <mmundell@intevation.de>
+
 	Add real OMP GET_CONFIGS family counts for static selectors.
 
 	* src/tasks_sql.h (NVT_SELECTOR_TYPE_ALL, NVT_SELECTOR_TYPE_FAMILY)
