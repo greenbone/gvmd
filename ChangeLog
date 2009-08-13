@@ -1,3 +1,23 @@
+2009-08-13  Matthew Mundell <mmundell@intevation.de>
+
+	Add generic description of status code to each response.  For "syntax
+	error" (400) add a specific description for each type of error, instead of
+	a generic description.
+
+	* src/omp.c (STATUS_ERROR_MUST_AUTH_TEXT, STATUS_ERROR_MISSING_TEXT)
+	(STATUS_ERROR_AUTH_FAILED_TEXT, STATUS_OK_TEXT, STATUS_OK_CREATED_TEXT)
+	(STATUS_OK_REQUESTED_TEXT, STATUS_INTERNAL_ERROR_TEXT)
+	(STATUS_SERVICE_DOWN_TEXT): New defines.
+	(send_element_error_to_client): New function.
+	(XML_ERROR_SYNTAX): Add text param for status_text.  Pass in all callers.
+	(XML_ERROR_MISSING, XML_ERROR_AUTH_FAILED, XML_OK, XML_OK_CREATED)
+	(XML_OK_REQUESTED, XML_INTERNAL_ERROR, XML_SERVICE_DOWN): Add static
+	status_text attribute.
+	(omp_xml_handle_end_element): In CLIENT_MODIFY_TASK almost always
+	respond with internal error when set_task_parameter fails.
+
+	* src/tasks_sql.h (set_task_parameter): Cleanup doc.
+
 2009-08-12  Matthew Mundell <mmundell@intevation.de>
 
 	Add comments to configs.

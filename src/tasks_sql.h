@@ -1783,8 +1783,7 @@ save_tasks ()
  * @param[in]  value      The value of the parameter, in base64 if parameter
  *                        is "RCFILE".
  *
- * @return 0 on success, -1 when out of memory, -2 if parameter name error,
- *         -3 value error (NULL).
+ * @return 0 on success, -2 if parameter name error, -3 value error (NULL).
  */
 int
 set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
