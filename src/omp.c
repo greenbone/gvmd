@@ -3670,10 +3670,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             num_hosts++;
 
                             g_string_append_printf (string,
-                                                    "<progress>"
+                                                    "<host_progress>"
                                                     "<host>%s</host>"
                                                     "%li"
-                                                    "</progress>",
+                                                    "</host_progress>",
                                                     host_iterator_host (&hosts),
                                                     progress);
                           }
@@ -3886,10 +3886,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         num_hosts++;
 
                         g_string_append_printf (string,
-                                                "<progress>"
+                                                "<host_progress>"
                                                 "<host>%s</host>"
                                                 "%li"
-                                                "</progress>",
+                                                "</host_progress>",
                                                 host_iterator_host (&hosts),
                                                 progress);
                       }

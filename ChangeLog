@@ -1,3 +1,8 @@
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS rename
+	the per host PROGRESS element to HOST_PROGRESS.
+
 2009-08-14  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/openvasmd_log_conf.cmake,
@@ -7,7 +12,7 @@
 
 	* CMakeLists.txt:
 	Reverted exclude list, as filename of the critical file was changed.
-	
+
 	* src/CMakeLists.txt:
 	Updated reference to changed filename.
 
