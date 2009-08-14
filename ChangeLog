@@ -1,3 +1,11 @@
+2009-08-14  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* CMakeLists.txt:
+	Increased Project version number.
+	Changed the CPACK_SOURCE_IGNORE_FILES with the aim to not exclude
+	openvasmd_log_conf.cmake (pre-commit *cmake was excluded) when building
+	a (release) tar-ball.
+
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Make name in table users UNIQUE.
