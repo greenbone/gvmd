@@ -1,5 +1,10 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (authenticate): SELECT then INSERT instead of using
+	"INSERT OR REPLACE", so that the ROWID stays the same.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_certificates_1.c: Expect the status in an attribute.
 
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
