@@ -608,15 +608,23 @@ authenticate (credentials_t* credentials)
                                    credentials->password);
       if (fail == 0)
         {
+          gchar* name;
+
           /* Ensure the user exists in the database.  SELECT then INSERT
            * instead of using "INSERT OR REPLACE", so that the ROWID stays
            * the same. */
+
+          name = sql_quote (credentials->username,
+                            strlen (credentials->username));
           if (sql_int (0, 0,
                        "SELECT count(*) FROM users WHERE name = '%s';",
-                       credentials->username))
-            return 0;
-          sql ("INSERT INTO users (name) VALUES ('%s');",
-               credentials->username);
+                       name))
+            {
+              g_free (name);
+              return 0;
+            }
+          sql ("INSERT INTO users (name) VALUES ('%s');", name);
+          g_free (name);
           return 0;
         }
       return fail;

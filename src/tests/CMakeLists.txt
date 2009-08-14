@@ -118,6 +118,13 @@ set_target_properties (omp_abort_task_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${
 target_link_libraries (omp_abort_task_0 common)
 ADD_TEST (omp_abort_task_0 omp_abort_task_0)
 
+add_executable (omp_authenticate_0 omp_authenticate_0.c)
+target_link_libraries (omp_authenticate_0 string)
+set_target_properties (omp_authenticate_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_authenticate_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_authenticate_0 common)
+ADD_TEST (omp_authenticate_0 omp_authenticate_0)
+
 add_executable (omp_bogus_0 omp_bogus_0.c)
 target_link_libraries (omp_bogus_0 string)
 set_target_properties (omp_bogus_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")

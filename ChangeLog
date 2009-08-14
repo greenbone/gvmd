@@ -1,5 +1,13 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (authenticate): Quote username for INSERT.
+
+	* src/tests/omp_authenticate_0.c: New file.  Test with quote in name.
+
+	* src/tests/CMakeLists.txt: Add omp_authenticate_0.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (authenticate): SELECT then INSERT instead of using
 	"INSERT OR REPLACE", so that the ROWID stays the same.
 
