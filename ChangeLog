@@ -1,5 +1,14 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (STATUS_INTERNAL_ERROR_TEXT): Make case more consistent.
+	(omp_xml_handle_end_element): Remove status_text fullstop in
+	CLIENT_GET_NVT_FEED_CHECKSUM.  In CLIENT_CREATE_TARGET improve "name and
+	hosts" status_text and convert the create_target response to a syntax
+	error.  In CLIENT_START_TASK manually send the response, as
+	send_find_error_to_client adds quotation marks.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/ompd.c (write_to_server): In SERVER_INIT_GOT_PLUGINS also request
 	certificates.
 

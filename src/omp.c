@@ -181,7 +181,7 @@ static char* help_text = "\n"
 /**
  * @brief Response code text for an internal error.
  */
-#define STATUS_INTERNAL_ERROR_TEXT     "Internal Error"
+#define STATUS_INTERNAL_ERROR_TEXT     "Internal error"
 
 /**
  * @brief Response code when a service is down.
@@ -2344,7 +2344,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (current_uuid && strcasecmp (current_uuid, "md5"))
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
-                              "GET_NVT_FEED_CHECKSUM algorithm must be md5."));
+                              "GET_NVT_FEED_CHECKSUM algorithm must be md5"));
         else if (server.plugins_md5)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
@@ -3476,7 +3476,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_target",
                                   // FIX could pass an empty hosts element?
-                                  "CREATE_TARGET name and hosts must be at"
+                                  "CREATE_TARGET name and hosts must both be at"
                                   " least one character long"));
             }
           else if (create_target (modify_task_name,
@@ -3486,7 +3486,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               free_string_var (&modify_task_value);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_target",
+                                  "Target exists already"));
             }
           else
             {
@@ -3621,9 +3623,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   case -2:
                     /* Task definition missing or lacks targets. */
-                    if (send_find_error_to_client ("start_task",
-                                                   "targets",
-                                                   "in the task RC"))
+                    if (send_to_client ("<start_task_response"
+                                        " status=\"" STATUS_ERROR_MISSING "\""
+                                        " status_text=\"Failed to find targets"
+                                        " in the task RC\"/>"))
                       {
                         error_send_to_client (error);
                         return;
