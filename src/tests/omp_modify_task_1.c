@@ -107,7 +107,8 @@ main ()
   read_entity (&session2, &entity);
 
   entity_t expected = add_entity (NULL, "modify_task_response", NULL);
-  add_attribute (expected, "status", "202");
+  add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
 
   close_manager_connection (socket2, session2);
 

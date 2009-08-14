@@ -93,6 +93,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "help_response", help_text);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
 
   if (compare_entities (entity, expected))
     {

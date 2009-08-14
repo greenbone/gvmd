@@ -72,6 +72,9 @@ main ()
 
   expected = add_entity (NULL, "get_report_response", NULL);
   add_attribute (expected, "status", "404");
+  add_attribute (expected,
+                 "status_text",
+                 "Failed to find report '0.0.0.0.0.0.0.0.0.0'");
 
   if (compare_entities (entity, expected))
     {

@@ -39,6 +39,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  gchar* msg;
 
   setup_test ();
 
@@ -134,6 +135,7 @@ main ()
                         report_id)
       == -1)
     goto free_fail;
+  msg = g_strdup_printf ("Failed to find report '%s'", report_id);
   free_entity (entity);
 
   /* Read the response. */
@@ -145,6 +147,8 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_report_response", NULL);
   add_attribute (expected, "status", "404");
+  add_attribute (expected, "status_text", msg);
+  g_free (msg);
 
   if (compare_entities (entity, expected))
     {

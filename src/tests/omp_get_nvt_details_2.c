@@ -94,6 +94,9 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_nvt_details_response", NULL);
   add_attribute (expected, "status", "404");
+  add_attribute (expected,
+                 "status_text",
+                 "Failed to find NVT '0.0.0.0.0.0.0.0.0.0'");
 
   if (compare_entities (entity, expected))
     {

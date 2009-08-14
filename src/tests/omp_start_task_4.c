@@ -90,6 +90,9 @@ main ()
 
   entity_t expected = add_entity (NULL, "start_task_response", NULL);
   add_attribute (expected, "status", "404");
+  add_attribute (expected,
+                 "status_text",
+                 "Failed to find targets in the task RC");
 
   if (compare_entities (entity, expected))
     {

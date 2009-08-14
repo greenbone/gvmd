@@ -102,7 +102,8 @@ main ()
   /* Compare. */
 
   entity_t expected = add_entity (NULL, "modify_task_response", NULL);
-  add_attribute (expected, "status", "202");
+  add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

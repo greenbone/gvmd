@@ -68,6 +68,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_nvt_feed_checksum_response", NULL);
   add_attribute (expected, "status", "503");
+  add_attribute (expected, "status_text", "Service temporarily down");
 
   if (compare_entities (entity, expected))
     {

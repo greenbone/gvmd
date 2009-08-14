@@ -72,6 +72,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_version_response", NULL);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
   entity_t version = add_entity (&expected->entities, "version", "1.0");
   add_attribute (version, "preferred", "yes");
 

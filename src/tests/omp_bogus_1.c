@@ -1,4 +1,4 @@
-/* Test 0 of a bogus OMP command.
+/* Test 1 of a bogus OMP command.
  * $Id$
  * Description: Test the manager with a bogus command after authenticating.
  *
@@ -63,6 +63,7 @@ main ()
 
   expected = add_entity (NULL, "omp_response", NULL);
   add_attribute (expected, "status", "400");
+  add_attribute (expected, "status_text", "Bogus command name");
 
   if (compare_entities (entity, expected))
     {

@@ -1,6 +1,6 @@
 /* Test 0 of OMP GET_DEPENDENCIES.
  * $Id$
- * Description: Test the OMP GET_DEPENDENCIES command on a running task.
+ * Description: Test OMP GET_DEPENDENCIES before running a task.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -67,7 +67,8 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_dependencies_response", NULL);
-  add_attribute (expected, "status", "500");
+  add_attribute (expected, "status", "503");
+  add_attribute (expected, "status_text", "Service temporarily down");
 
   if (compare_entities (entity, expected))
     {

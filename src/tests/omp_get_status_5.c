@@ -88,10 +88,12 @@ main ()
 
   expected = add_entity (NULL, "get_status_response", NULL);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
   task = add_entity (&expected->entities, "task", NULL);
   add_attribute (task, "id", id);
   add_entity (&task->entities, "name", "Task for omp_get_status_5");
   add_entity (&task->entities, "status", "New");
+  add_entity (&task->entities, "progress", "-1");
   messages = add_entity (&task->entities, "messages", NULL);
   add_entity (&messages->entities, "debug", "0");
   add_entity (&messages->entities, "hole", "0");

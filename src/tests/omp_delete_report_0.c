@@ -39,6 +39,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
+  gchar* msg;
 
   setup_test ();
 
@@ -136,6 +137,7 @@ main ()
     }
   entity_t expected = add_entity (NULL, "delete_report_response", NULL);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
   if (compare_entities (entity, expected)) goto compare_fail;
   free_entity (expected);
   free_entity (entity);
@@ -158,6 +160,9 @@ main ()
 
   expected = add_entity (NULL, "get_report_response", NULL);
   add_attribute (expected, "status", "404");
+  msg = g_strdup_printf ("Failed to find report '%s'", report_id);
+  add_attribute (expected, "status_text", msg);
+  g_free (msg);
 
   if (compare_entities (entity, expected))
     {
@@ -166,8 +171,7 @@ main ()
  free_fail:
       free_entity (entity);
  delete_fail:
-      // FIX
-      //delete_task (&session, id);
+      delete_task (&session, id);
       free (id);
  fail:
       close_manager_connection (socket, session);
@@ -176,8 +180,7 @@ main ()
 
   free_entity (entity);
   free_entity (expected);
-  // FIX
-  //delete_task (&session, id);
+  delete_task (&session, id);
   free (id);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;

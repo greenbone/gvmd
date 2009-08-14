@@ -68,6 +68,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "get_rules_response", NULL);
   add_attribute (expected, "status", "500");
+  add_attribute (expected, "status_text", "Internal error");
 
   if (compare_entities (entity, expected))
     {

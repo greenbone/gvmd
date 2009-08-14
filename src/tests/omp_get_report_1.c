@@ -71,7 +71,8 @@ main ()
   /* Compare to expected response. */
 
   expected = add_entity (NULL, "get_report_response", NULL);
-  add_attribute (expected, "status", "400");
+  add_attribute (expected, "status", "404");
+  add_attribute (expected, "status_text", "Failed to find report ''");
 
   if (compare_entities (entity, expected))
     {

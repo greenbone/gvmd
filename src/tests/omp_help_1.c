@@ -60,9 +60,9 @@ main ()
 
   /* Compare to expected response. */
 
-  // FIX actually an auth error
   entity_t expected = add_entity (NULL, "omp_response", NULL);
   add_attribute (expected, "status", "400");
+  add_attribute (expected, "status_text", "First command must be AUTHENTICATE");
 
   if (compare_entities (entity, expected))
     {

@@ -58,10 +58,6 @@ main ()
 
   /* Start the task. */
 
-#if 0
-  if (env_authenticate (&session)) goto delete_fail;
-#endif
-
   gchar* msg = g_strdup_printf ("<start_task task_id=\"%s\"/>", id);
   int ret = send_to_manager (&session, msg);
   g_free (msg);
@@ -77,6 +73,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "start_task_response", NULL);
   add_attribute (expected, "status", "202");
+  add_attribute (expected, "status_text", "OK, request submitted");
 
   if (compare_entities (entity, expected))
     {

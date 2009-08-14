@@ -45,7 +45,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* Send request. */
+  /* Create target. */
 
   if (env_authenticate (&session))
     {
@@ -53,6 +53,7 @@ main ()
       return EXIT_FAILURE;
     }
 
+  omp_delete_target (&session, "omp_delete_target_0");
   if (send_to_manager (&session, "<create_target>"
                                  "<name>omp_delete_target_0</name>"
                                  "<hosts>localhost,xxx,127.0.0.1</hosts>"
@@ -76,6 +77,7 @@ main ()
 
   expected = add_entity (NULL, "create_target_response", NULL);
   add_attribute (expected, "status", "201");
+  add_attribute (expected, "status_text", "OK, resource created");
 
   if (compare_entities (entity, expected))
     {
@@ -112,6 +114,7 @@ main ()
 
   expected = add_entity (NULL, "delete_target_response", NULL);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

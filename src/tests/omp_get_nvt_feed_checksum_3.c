@@ -68,7 +68,10 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_nvt_feed_checksum_response", NULL);
-  add_attribute (expected, "status", "404");
+  add_attribute (expected, "status", "400");
+  add_attribute (expected,
+                 "status_text",
+                 "GET_NVT_FEED_CHECKSUM algorithm must be md5");
 
   if (compare_entities (entity, expected))
     {

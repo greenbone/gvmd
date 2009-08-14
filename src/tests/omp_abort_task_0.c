@@ -115,6 +115,7 @@ main ()
 
   entity_t expected = add_entity (NULL, "abort_task_response", NULL);
   add_attribute (expected, "status", "200");
+  add_attribute (expected, "status_text", "OK");
 
   if (compare_entities (entity, expected))
     {
@@ -122,6 +123,7 @@ main ()
       /* The server may still be busy stopping the task. */
       expected = add_entity (NULL, "abort_task_response", NULL);
       add_attribute (expected, "status", "202");
+      add_attribute (expected, "status_text", "OK, request submitted");
 
       if (compare_entities (entity, expected))
         {
