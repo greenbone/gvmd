@@ -1,5 +1,9 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/read_protocol_0.c: Correct typo in heading.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/omp_get_status_5.c: Add status_text and progress to
 	expectations.
 

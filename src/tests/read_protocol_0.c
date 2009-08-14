@@ -1,6 +1,6 @@
 /* Test 0 of read_protocol.
  * $Id$
- * Description: Test read_protcol timing out.
+ * Description: Test read_protocol timing out.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
