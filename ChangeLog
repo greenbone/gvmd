@@ -1,5 +1,10 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/ompd.c (write_to_server): In SERVER_INIT_GOT_PLUGINS also request
+	certificates.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS
 	free current_uuid.
 

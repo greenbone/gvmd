@@ -370,7 +370,8 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
         break;
       case SERVER_INIT_GOT_PLUGINS:
         {
-          char* const ack = "CLIENT <|> GO ON <|> CLIENT\n";
+          char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
+                            "CLIENT <|> CERTIFICATES <|> CLIENT\n";
           server_init_offset = write_string_to_server (server_session,
                                                        ack + server_init_offset);
           if (server_init_offset == 0)
