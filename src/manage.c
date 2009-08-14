@@ -221,6 +221,7 @@ delete_reports (task_t task)
 {
   report_t report;
   iterator_t iterator;
+  // FIX wrap in transaction?
   init_report_iterator (&iterator, task);
   while (next_report (&iterator, &report)) delete_report (report);
   return 0;
@@ -706,7 +707,7 @@ send_task_rules (task_t task)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer, -2 if the
- *         task definition is missing or is missing targets or creating the
+ *         task definition is missing or is missing targets, -3 if creating the
  *         report fails.
  */
 int
@@ -734,7 +735,7 @@ start_task (task_t task)
 
   /* Create the report. */
 
-  if (create_report (task)) return -2;
+  if (create_report (task)) return -3;
 
   /* Reset any running information. */
 

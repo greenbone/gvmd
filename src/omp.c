@@ -400,6 +400,31 @@ send_element_error_to_client (const char* command, const char* element)
 }
 
 /**
+ * @brief Send an XML find error response message to the client.
+ *
+ * @param[in]  command  Command name.
+ * @param[in]  type     Resource type.
+ * @param[in]  id       Resource ID.
+ *
+ * @return TRUE if out of space in to_client, else FALSE.
+ */
+static gboolean
+send_find_error_to_client (const char* command, const char* type,
+                           const char* id)
+{
+  gchar *msg;
+  gboolean ret;
+
+  msg = g_strdup_printf ("<%s_response status=\""
+                         STATUS_ERROR_MISSING
+                         "\" status_text=\"Failed to find %s '%s'\"/>",
+                         command, type, id);
+  ret = send_to_client (msg);
+  g_free (msg);
+  return ret;
+}
+
+/**
  * @brief Set an out of space parse error on a GError.
  *
  * @param [out]  error  The error.
@@ -2138,7 +2163,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("abort_task"));
+              {
+                if (send_find_error_to_client ("abort_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else switch (stop_task (task))
               {
                 case 0:   /* Stopped. */
@@ -2309,7 +2342,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         if (current_uuid && strcasecmp (current_uuid, "md5"))
-          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_nvt_feed_checksum"));
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
+                              "GET_NVT_FEED_CHECKSUM algorithm must be md5."));
         else if (server.plugins_md5)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
@@ -2341,9 +2376,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     send_plugin (plugin->oid, plugin, (gpointer) 1);
                     SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                   }
-                else
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_MISSING ("get_nvt_details"));
+                else if (send_find_error_to_client ("get_nvt_details",
+                                                    "NVT",
+                                                    current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
               }
             else
               {
@@ -2383,7 +2422,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_report (current_uuid, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report"));
             else if (report == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("delete_report"));
+              {
+                if (send_find_error_to_client ("delete_report",
+                                               "report",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else
               {
                 int ret = delete_report (report);
@@ -2431,7 +2478,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_report (current_uuid, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
             else if (report == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+              {
+                if (send_find_error_to_client ("get_report",
+                                               "report",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else if (current_format == NULL
                      || strcasecmp (current_format, "xml") == 0)
               {
@@ -2564,7 +2619,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     g_free (xml_file);
                     close (xml_fd);
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -2584,7 +2639,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    xsl_file);
                         g_free (xsl_file);
                         g_free (xml_file);
-                        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                        /* This is a missing resource, however the resource is
+                         * the responsibility of the manager admin. */
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -2707,7 +2765,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     g_free (xml_file);
                     close (xml_fd);
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -2727,7 +2785,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    xsl_file);
                         g_free (xsl_file);
                         g_free (xml_file);
-                        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                        /* This is a missing resource, however the resource is
+                         * the responsibility of the manager admin. */
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -2852,7 +2913,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     g_free (latex_file);
                     close (latex_fd);
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_report"));
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -3074,7 +3135,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("delete_task"));
+              {
+                if (send_find_error_to_client ("delete_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else switch (request_delete_task (&task))
               {
                 case 0:    /* Deleted. */
@@ -3134,7 +3203,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 free_string_var (&current_uuid);
                 free_string_var (&modify_task_parameter);
                 free_string_var (&modify_task_value);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_report"));
+                if (send_find_error_to_client ("modify_report",
+                                               "report",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
               }
             else
               {
@@ -3183,7 +3258,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("modify_task"));
+              {
+                if (send_find_error_to_client ("modify_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else
               {
                 int fail = 0, first = 1;
@@ -3439,7 +3522,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           //       eg on err half task could be saved (or saved with base64 file)
 
           if (task_uuid (current_client_task, &tsk_uuid))
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("create_task"));
+            {
+              if (send_find_error_to_client ("create_task",
+                                             "task",
+                                             current_uuid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           else
             {
               gchar* msg;
@@ -3508,7 +3599,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
+              {
+                if (send_find_error_to_client ("start_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else
               switch (start_task (task))
                 {
@@ -3521,7 +3620,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   case -2:
                     /* Task definition missing or lacks targets. */
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("start_task"));
+                    if (send_find_error_to_client ("start_task",
+                                                   "targets",
+                                                   "in the task RC"))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case -3:
+                    /* Failed to create report. */
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                     break;
                   default:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
@@ -3542,7 +3651,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
             else if (task == 0)
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_MISSING ("get_status"));
+              {
+                if (send_find_error_to_client ("get_status",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
             else
               {
                 char* tsk_uuid;

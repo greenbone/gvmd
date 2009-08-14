@@ -1,5 +1,18 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	Add more specific status_text attributes for "resource missing"	(404)
+	errors.
+
+	* src/manage.c (start_task): Return -3 if create_report fails.
+
+	* src/omp.c (send_find_error_to_client): New function.
+	(omp_xml_handle_end_element): Use send_find_error_to_client for resource
+	missing errors.  Convert CLIENT_GET_NVT_FEED_CHECKSUM algorithm error
+	to syntax error.  Convert report generation and missing XSL file errors
+	to internal errors.  Handle new start_task error.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS rename
 	the per host PROGRESS element to HOST_PROGRESS.
 
