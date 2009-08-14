@@ -1,3 +1,7 @@
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
+	* src/tracef.h (tracef): Add format string to g_log call.
+
 2009-08-13  Matthew Mundell <mmundell@intevation.de>
 
 	Add generic description of status code to each response.  For "syntax

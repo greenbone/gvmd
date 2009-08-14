@@ -102,7 +102,7 @@ extern GSList *log_config;
         gchar* utf8 = g_convert (iso, -1, "UTF-8", "ISO_8859-1", \
                                  NULL, &size_dummy, NULL);       \
         g_free (iso);                                            \
-        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, utf8);           \
+        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", utf8);     \
         g_free (utf8);                                           \
       }                                                          \
   } while (0)
