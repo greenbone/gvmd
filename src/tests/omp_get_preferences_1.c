@@ -125,23 +125,21 @@ main ()
 
   /* Compare to expected response. */
 
-  entity_t expected = add_entity (NULL, "get_preferences_response", NULL);
-  add_attribute (expected, "status", "200");
-
-  if (compare_entities (entity, expected))
+  if (entity
+      && entity_attribute (entity, "status")
+      && (strcmp (entity_attribute (entity, "status"), "200") == 0)
+      && (strcmp (entity_attribute (entity, "status_text"), "OK") == 0))
     {
       free_entity (entity);
-      free_entity (expected);
       delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
-      return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
 
-  free_entity (expected);
   free_entity (entity);
   delete_task (&session, id);
   close_manager_connection (socket, session);
   free (id);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

@@ -1,5 +1,10 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tests/omp_get_preferences_1.c: Check response parts instead of
+	comparing to an expected entity.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/read_protocol_0.c: Correct typo in heading.
 
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
