@@ -512,7 +512,7 @@ init_manage (GSList *log_config)
 
   /* Ensure the tables exist. */
 
-  sql ("CREATE TABLE IF NOT EXISTS users   (name, password);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment);");
@@ -593,15 +593,27 @@ cleanup_manage_process ()
  *
  * @param[in]  credentials  Credentials.
  *
- * @return 0 if credentials are authentic, -1 on error, else 0.
+ * @return 0 authentication success, 1 authentication failure, -1 error.
  */
 int
 authenticate (credentials_t* credentials)
 {
   if (credentials->username && credentials->password)
     {
-      return openvas_authenticate (credentials->username,
+      int fail;
+
+      if (strcmp (credentials->username, "om") == 0) return 1;
+
+      fail = openvas_authenticate (credentials->username,
                                    credentials->password);
+      if (fail == 0)
+        {
+          /* Ensure the user exists in the database. */
+          sql ("INSERT OR REPLACE INTO users (name) VALUES ('%s');",
+               credentials->username);
+          return 0;
+        }
+      return fail;
     }
   return 1;
 }

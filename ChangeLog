@@ -1,5 +1,11 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Make name in table users UNIQUE.
+	(authenticate): Always fail for user "om".  On success ensure that the
+	username is in the users table.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	Adjust OMP behaviour to always respond to the authentication XML.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_AUTHENTICATE add
