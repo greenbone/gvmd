@@ -1,5 +1,14 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	Adjust OMP behaviour to always respond to the authentication XML.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_AUTHENTICATE add
+	responses to the success cases.
+
+	* src/tests/common.c (authenticate): Read and check response.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tracef.h (tracef): Add format string to g_log call.
 
 2009-08-13  Matthew Mundell <mmundell@intevation.de>

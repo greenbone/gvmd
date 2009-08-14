@@ -2185,20 +2185,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE,
                                "Manager failed to load tasks.");
                   free_credentials (&current_credentials);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
                   set_client_state (CLIENT_TOP);
                 }
               else
-                set_client_state (CLIENT_AUTHENTIC);
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("authenticate"));
+                  set_client_state (CLIENT_AUTHENTIC);
+                }
               break;
             case 1:
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               free_credentials (&current_credentials);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
             case -1:
             default:
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
               free_credentials (&current_credentials);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
           }

@@ -1052,41 +1052,53 @@ task_status (entity_t response)
  * @param[in]  username  Username.
  * @param[in]  password  Password.
  *
- * @return 0 on success, 1 if manager closed connection, -1 on error.
+ * @return 0 on success, 1 if manager closed connection, 2 if auth failed,
+ *         -1 on error.
  */
 int
 authenticate (gnutls_session_t* session,
               const char* username,
               const char* password)
 {
-  gchar* msg = g_strdup_printf ("<authenticate><credentials>"
-                                "<username>%s</username>"
-                                "<password>%s</password>"
-                                "</credentials></authenticate>",
-                                username,
-                                password);
+  entity_t entity;
+  const char* status;
+  char first;
+  gchar* msg;
+
+  /* Send the auth request. */
+
+  msg = g_strdup_printf ("<authenticate><credentials>"
+                         "<username>%s</username>"
+                         "<password>%s</password>"
+                         "</credentials></authenticate>",
+                         username,
+                         password);
   int ret = send_to_manager (session, msg);
   g_free (msg);
   if (ret) return ret;
 
-#if 1
-  return 0;
-#else
-  /* What to do if OMP authenticate is changed to respond always. */
+  /* Read the response. */
 
-  entity_t entity = NULL;
+  entity = NULL;
   if (read_entity (session, &entity)) return -1;
 
-  entity_t expected = add_entity (NULL, "authenticate_response", NULL);
-  add_attribute (expected, "status", "201");
+  /* Check the response. */
 
-  ret = compare_entities (entity, expected);
-
-  free_entity (expected);
+  status = entity_attribute (entity, "status");
+  if (status == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  if (strlen (status) == 0)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  first = status[0];
   free_entity (entity);
-
-  return ret ? -1 : 0;
-#endif
+  if (first == '2') return 0;
+  return 2;
 }
 
 /**
