@@ -152,7 +152,7 @@ main ()
 
   if (entity == NULL
       || entity_attribute (entity, "status") == NULL
-      || strcmp (entity_attribute (entity, "status"), "404"))
+      || strcmp (entity_attribute (entity, "status"), "400"))
     {
       free_entity (entity);
       delete_task (&session, id);
