@@ -1,5 +1,10 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS
+	free current_uuid.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	Add more specific status_text attributes for "resource missing"	(404)
 	errors.
 

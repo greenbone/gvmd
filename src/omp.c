@@ -2409,6 +2409,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
+        free_string_var (&current_uuid);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
