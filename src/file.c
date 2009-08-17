@@ -115,6 +115,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                    g_file_error_from_errno (errno),
                    (gchar*) strerror (errno));
       g_dir_close (dir);
+      close (pwd);
       return FALSE;
     }
 
@@ -127,6 +128,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                    g_file_error_from_errno (errno),
                    (gchar*) strerror (errno));
       g_dir_close (dir);
+      close (pwd);
       return FALSE;
     }
 
@@ -144,6 +146,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
               g_propagate_error (error, temp_error);
               g_dir_close (dir);
               (void) fchdir (pwd);
+              close (pwd);
               return FALSE;
             }
         }
@@ -158,6 +161,7 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                            (gchar*) strerror (errno));
               g_dir_close (dir);
               (void) fchdir (pwd);
+              close (pwd);
               return FALSE;
             }
         }
@@ -176,6 +180,8 @@ rmdir_recursively (const gchar* dir_name, GError** error)
                  G_FILE_ERROR,
                  g_file_error_from_errno (errno),
                  (gchar*) strerror (errno));
+
+  close (pwd);
 
   /* Remove the given directory. */
 
