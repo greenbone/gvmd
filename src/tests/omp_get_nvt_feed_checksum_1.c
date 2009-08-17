@@ -90,7 +90,6 @@ main ()
 
   /* Request the task status. */
 
-#if 0
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
@@ -98,7 +97,6 @@ main ()
       free (id);
       return EXIT_FAILURE;
     }
-#endif
 
   if (sendf_to_manager (&session,
                         "<get_status task_id=\"%s\"/>",
@@ -122,16 +120,6 @@ main ()
   free_entity (entity);
 
   /* Get the feed checksum. */
-
-#if 0
-  if (env_authenticate (&session))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-#endif
 
   if (send_to_manager (&session, "<get_nvt_feed_checksum/>") == -1)
     {

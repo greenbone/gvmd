@@ -63,9 +63,7 @@ main ()
 
   /* Request the status. */
 
-#if 0
   if (env_authenticate (&session)) goto delete_fail;
-#endif
 
   if (send_to_manager (&session, "<get_status/>") == -1)
     goto delete_fail;

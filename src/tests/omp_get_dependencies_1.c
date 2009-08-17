@@ -86,16 +86,6 @@ main ()
 
   /* Request the task status. */
 
-#if 0
-  if (env_authenticate (&session))
-    {
-      delete_task (&session, id);
-      free (id);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
-    }
-#endif
-
   if (sendf_to_manager (&session,
                         "<get_status task_id=\"%s\"/>",
                         id)
@@ -119,7 +109,6 @@ main ()
 
   /* Get the preferences. */
 
-#if 0
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
@@ -127,7 +116,6 @@ main ()
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-#endif
 
   if (send_to_manager (&session, "<get_dependencies/>") == -1)
     {

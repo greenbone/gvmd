@@ -104,7 +104,6 @@ main ()
 
   /* Request the task status. */
 
-#if 0
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
@@ -112,7 +111,6 @@ main ()
       free (id);
       return EXIT_FAILURE;
     }
-#endif
 
   if (sendf_to_manager (&session,
                         "<get_status task_id=\"%s\"/>",

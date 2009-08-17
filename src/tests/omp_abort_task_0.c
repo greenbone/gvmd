@@ -85,7 +85,6 @@ main ()
 
   /* Cancel the task. */
 
-#if 0
   if (env_authenticate (&session))
     {
       delete_task (&session, id);
@@ -93,7 +92,6 @@ main ()
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
-#endif
 
   if (sendf_to_manager (&session,
                         "<abort_task task_id=\"%s\"/>",

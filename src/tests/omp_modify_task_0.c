@@ -68,16 +68,6 @@ main ()
 
   /* Send a modify_task request. */
 
-#if 0
-  if (env_authenticate (&session))
-    {
-      delete_task (&session, id);
-      close_manager_connection (socket, session);
-      free (id);
-      return EXIT_FAILURE;
-    }
-#endif
-
   if (sendf_to_manager (&session,
                         "<modify_task"
                         " task_id=\"%s\">"
