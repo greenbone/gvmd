@@ -262,6 +262,12 @@ connect_to_manager_host_port (gnutls_session_t * session,
 /**
  * @brief Connect to the manager.
  *
+ * If the environment variables OPENVAS_TEST_HOST is set then connect to
+ * that host, otherwise connect to host 127.0.0.1.
+ *
+ * If the environment variables OPENVAS_TEST_PORT is set then connect to
+ * that port, otherwise connect to port 1242.
+ *
  * @param[in]  session  Pointer to GNUTLS session.
  *
  * @return 0 on success, -1 on error.
@@ -269,7 +275,13 @@ connect_to_manager_host_port (gnutls_session_t * session,
 int
 connect_to_manager (gnutls_session_t * session)
 {
-  return connect_to_manager_host_port (session, OPENVASMD_ADDRESS, OPENVASMD_PORT);
+  char* env_host = getenv ("OPENVAS_TEST_HOST");
+  char* env_port = getenv ("OPENVAS_TEST_PORT");
+  return connect_to_manager_host_port (session,
+                                       env_host ? env_host
+                                                : OPENVASMD_ADDRESS,
+                                       env_port ? atoi (env_port)
+                                                : OPENVASMD_PORT);
 }
 
 /**
