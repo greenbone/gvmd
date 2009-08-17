@@ -1,6 +1,16 @@
+2009-08-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/otp.c (parse_server_certificate_public_key):
+	Duplicate string only if needed, closed memleak, free gchar with g_free.
+	Memleak found by cppcheck.
+
+	* ChangeLog:
+	Minor reformatting.
+
 2009-08-17  Matthew Mundell <mmundell@intevation.de>
 
-    * src/tests/omp_modify_task_0.c, src/tests/omp_get_nvt_feed_checksum_1.c,
+	* src/tests/omp_modify_task_0.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
 	src/tests/omp_get_nvt_details_4.c,
 	src/tests/omp_get_nvt_feed_checksum_5.c, src/tests/omp_get_status_0.c,
 	src/tests/omp_get_status_2.c, src/tests/omp_get_nvt_all_1.c,
