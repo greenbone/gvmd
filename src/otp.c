@@ -750,7 +750,8 @@ extern buffer_size_t from_server_end;
 static int
 parse_server_certificate_public_key (char** messages)
 {
-  char *value, *end, *match;
+  gchar *value
+  char *end, *match;
   assert (current_certificate != NULL);
   end = *messages + from_server_end - from_server_start;
   while (*messages < end && ((*messages)[0] == ' '))
@@ -760,12 +761,13 @@ parse_server_certificate_public_key (char** messages)
                        from_server_end - from_server_start)))
     {
       match[0] = '\0';
-      value = g_strdup (*messages);
       if (current_certificates && current_certificate)
         {
+          value = g_strdup (*messages);
           certificate_set_public_key (current_certificate, value);
           certificates_add (current_certificates, current_certificate);
           current_certificate = NULL;
+          g_free (value);
         }
       set_server_state (SERVER_CERTIFICATE_FINGERPRINT);
       from_server_start += match + 1 - *messages;

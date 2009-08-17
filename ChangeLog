@@ -1,5 +1,11 @@
 2009-08-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/otp.c (parse_server_plugin_list_tags):
+	Duplicate string only if needed, closed memleak, free gchar with g_free.
+	Memleak found by cppcheck.
+
+2009-08-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/otp.c (parse_server_certificate_public_key):
 	Duplicate string only if needed, closed memleak, free gchar with g_free.
 	Memleak found by cppcheck.
