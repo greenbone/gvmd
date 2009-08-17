@@ -422,6 +422,7 @@ cleanup ()
                     strerror (errno));
     }
 #endif
+  tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
   ovas_server_context_free (server_context);
   // Delete pidfile

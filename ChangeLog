@@ -1,5 +1,9 @@
 2009-08-14  Matthew Mundell <mmundell@intevation.de>
 
+	* src/openvasmd.c (cleanup): Add "Exiting" message.
+
+2009-08-14  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tasks_sql.h (authenticate): Quote username for INSERT.
 
 	* src/tests/omp_authenticate_0.c: New file.  Test with quote in name.
