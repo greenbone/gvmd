@@ -1,5 +1,9 @@
 2009-08-17  Matthew Mundell <mmundell@intevation.de>
 
+	* src/otp.c (parse_server_certificate_public_key): Add missing semicolon.
+
+2009-08-17  Matthew Mundell <mmundell@intevation.de>
+
 	* src/tests/common.c (connect_to_manager): Pass environment variables
 	OPENVAS_TEST_HOST and OPENVAS_TEST_PORT as host and port if set.
 

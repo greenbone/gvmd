@@ -750,7 +750,7 @@ extern buffer_size_t from_server_end;
 static int
 parse_server_certificate_public_key (char** messages)
 {
-  gchar *value
+  gchar *value;
   char *end, *match;
   assert (current_certificate != NULL);
   end = *messages + from_server_end - from_server_start;
