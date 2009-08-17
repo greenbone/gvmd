@@ -1,12 +1,18 @@
-2009-08-17  Matthew Mundell <mmundell@intevation.de>
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tests/omp_create_target_0.c, src/tests/omp_create_target_1.c,
+	src/tests/omp_get_targets_0.c, src/tests/omp_delete_target_0.c,
+	ChangeLog: Switch to full email address.
+
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (rmdir_recursively): Close pwd after use.
 
-2009-08-17  Matthew Mundell <mmundell@intevation.de>
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (parse_server_certificate_public_key): Add missing semicolon.
 
-2009-08-17  Matthew Mundell <mmundell@intevation.de>
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (connect_to_manager): Pass environment variables
 	OPENVAS_TEST_HOST and OPENVAS_TEST_PORT as host and port if set.
@@ -26,7 +32,7 @@
 	* ChangeLog:
 	Minor reformatting.
 
-2009-08-17  Matthew Mundell <mmundell@intevation.de>
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_modify_task_0.c, src/tests/omp_get_nvt_feed_checksum_1.c,
 	src/tests/omp_get_nvt_details_4.c,
@@ -38,11 +44,11 @@
 	src/tests/omp_get_dependencies_1.c, src/tests/omp_abort_task_0.c: Either
 	enable or remove the arbitrary mid-session re-authentications.
 
-2009-08-17  Matthew Mundell <mmundell@intevation.de>
+2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (cleanup): Add "Exiting" message.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (authenticate): Quote username for INSERT.
 
@@ -50,29 +56,29 @@
 
 	* src/tests/CMakeLists.txt: Add omp_authenticate_0.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (authenticate): SELECT then INSERT instead of using
 	"INSERT OR REPLACE", so that the ROWID stays the same.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_certificates_1.c: Expect the status in an attribute.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_nvt_feed_checksum_5.c: Correct expected status.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_preferences_1.c: Check response parts instead of
 	comparing to an expected entity.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/read_protocol_0.c: Correct typo in heading.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_status_5.c: Add status_text and progress to
 	expectations.
@@ -106,7 +112,7 @@
 	src/tests/omp_start_task_3.c, src/tests/omp_start_task_4.c: Add
 	status_text to expectations.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (STATUS_INTERNAL_ERROR_TEXT): Make case more consistent.
 	(omp_xml_handle_end_element): Remove status_text fullstop in
@@ -115,17 +121,17 @@
 	error.  In CLIENT_START_TASK manually send the response, as
 	send_find_error_to_client adds quotation marks.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (write_to_server): In SERVER_INIT_GOT_PLUGINS also request
 	certificates.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS
 	free current_uuid.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add more specific status_text attributes for "resource missing"	(404)
 	errors.
@@ -138,7 +144,7 @@
 	to syntax error.  Convert report generation and missing XSL file errors
 	to internal errors.  Handle new start_task error.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS rename
 	the per host PROGRESS element to HOST_PROGRESS.
@@ -164,13 +170,13 @@
 	openvasmd_log_conf.cmake (pre-commit *cmake was excluded) when building
 	a (release) tar-ball.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Make name in table users UNIQUE.
 	(authenticate): Always fail for user "om".  On success ensure that the
 	username is in the users table.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Adjust OMP behaviour to always respond to the authentication XML.
 
@@ -179,11 +185,11 @@
 
 	* src/tests/common.c (authenticate): Read and check response.
 
-2009-08-14  Matthew Mundell <mmundell@intevation.de>
+2009-08-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tracef.h (tracef): Add format string to g_log call.
 
-2009-08-13  Matthew Mundell <mmundell@intevation.de>
+2009-08-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add generic description of status code to each response.  For "syntax
 	error" (400) add a specific description for each type of error, instead of
@@ -203,7 +209,7 @@
 
 	* src/tasks_sql.h (set_task_parameter): Cleanup doc.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add comments to configs.
 
@@ -226,7 +232,7 @@
 	src/tests/omp_get_configs_2.c, src/tests/omp_get_configs_3.c,
 	src/tests/omp_delete_config_0.c: Add comments and comment checks.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add comments to targets.
 
@@ -244,12 +250,12 @@
 
 	* src/tests/omp_get_targets_0.c: Add comment to first target.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/new_task_small_rc: Add 1.3.6.1.4.1.25623.1.0.10330 to
 	scanner set.  Add a second host.  Set port_range to default.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add real OMP GET_CONFIGS family counts for static selectors.
 
@@ -261,19 +267,19 @@
 
 	* src/tests/omp_get_configs_3.c: Add family count check.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (latex_severity_colour): Add "Debug Message" and "Log
 	Message".  Return "{openvas_text}" on fail.
 	(latex_header): Add colours openvas_text, openvas_debug and
 	openvas_log.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (insert_rc_into_config): Leave trailing paren off
 	section name.
 
-2009-08-12  Matthew Mundell <mmundell@intevation.de>
+2009-08-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* README: Cleanup and elaborate sample test invocation.
 
@@ -285,12 +291,12 @@
 	* README: Added a sample invocation for tests
 	* INSTALL: Instructions for custom prefix openvas installs
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (delete_report): Remove transaction, as
 	delete_reports calls delete_report inside an iterator.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add real OMP GET_CONFIGS count figures for static selectors.
 
@@ -302,25 +308,25 @@
 
 	* src/tests/omp_get_configs_3.c: New file.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/tasks_sql.h (delete_report, create_target, delete_config):
 	Wrap SQL statements in transactions.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_configs_0.c,
 	src/tests/omp_get_configs_1.c: Add checks of growing values.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_start_task_3.c: Correct expected status.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (start_task): Add trace to fail case.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Convert GET_CONFIGS RC NVTs to an NVT selector.
 
@@ -331,11 +337,11 @@
 	calls in a transaction.
 	* src/manage.h: Update header.
 
-2009-08-11  Matthew Mundell <mmundell@intevation.de>
+2009-08-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tracef.h (tracef): Convert the message to UTF-8 before logging.
 
-2009-08-10  Matthew Mundell <mmundell@intevation.de>
+2009-08-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add real OMP GET_CONFIGS count figures for the all selector case.
 
@@ -358,7 +364,7 @@
 
 	* src/tests/omp_get_configs_2.c: New file.
 
-2009-08-10  Matthew Mundell <mmundell@intevation.de>
+2009-08-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add real OMP GET_CONFIGS growing figures.
 
@@ -369,22 +375,22 @@
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS add
 	real growing figures.
 
-2009-08-07  Matthew Mundell <mmundell@intevation.de>
+2009-08-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_targets_0.c: Compare strcmps to 0.  Correct return.
 
-2009-08-07  Matthew Mundell <mmundell@intevation.de>
+2009-08-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (task_plugins, send_task_preferences)
 	(send_task_rules): Only consider "begin(..." lines that are newline
 	terminated.
 
-2009-08-07  Matthew Mundell <mmundell@intevation.de>
+2009-08-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (insert_rc_into_config): Include the scanners in the
 	nvt selector list.  Remove quotes from an SQL integer value.
 
-2009-08-07  Matthew Mundell <mmundell@intevation.de>
+2009-08-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP CREATE_CONFIG, DELETE_CONFIG and GET_CONFIGS commands.
 
@@ -421,7 +427,7 @@
 
 	* src/tests/omp_help_0.c: Add config commands to expected help text.
 
-2009-08-06  Matthew Mundell <mmundell@intevation.de>
+2009-08-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP CREATE_TARGET, DELETE_TARGET and GET_TARGETS.
 
@@ -451,15 +457,15 @@
 
 	* src/tests/omp_help_0.c: Add target commands to expected help text.
 
-2009-08-06  Matthew Mundell <mmundell@intevation.de>
+2009-08-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_report_5.c: Match task name to test.
 
-2009-08-06  Matthew Mundell <mmundell@intevation.de>
+2009-08-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (next_entities): Add NULL guard.
 
-2009-08-05  Matthew Mundell <mmundell@intevation.de>
+2009-08-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Extend PROGRESS in GET_STATUS to include per-host progress percentages.
 
@@ -481,7 +487,7 @@
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add
 	per-host progresses to PROGRESS.
 
-2009-07-31  Matthew Mundell <mmundell@intevation.de>
+2009-07-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Improve the LaTeX PDF report.
 
@@ -503,7 +509,7 @@
 	(omp_xml_handle_end_element): In CLIENT_GET_REPORT remove "xml" from latex
 	file name and run pdflatex twice to ensure that references are correct.
 
-2009-07-30  Matthew Mundell <mmundell@intevation.de>
+2009-07-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (latex_escape_text, print_report_latex): New functions.
 	(latex_header, latex_footer): New variables.
@@ -511,19 +517,19 @@
 	CLIENT_GET_REPORT.  This one produces the PDF via LaTeX instead of via
 	HTML via XSL via XML.
 
-2009-07-30  Matthew Mundell <mmundell@intevation.de>
+2009-07-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd_report_html.xsl: Lay the report out more like the
 	client PDF report.
 
-2009-07-29  Matthew Mundell <mmundell@intevation.de>
+2009-07-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/common.c (read_entity_and_text): New function.  Body from
 	read_entity.
 	(read_entity): Replace body with call to read_entity_and_text.
 	* src/common.h (read_entity_and_text): New header.
 
-2009-07-28  Matthew Mundell <mmundell@intevation.de>
+2009-07-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add rough initial HTML and PDF report generation.
 
@@ -539,18 +545,18 @@
 
 	* src/tests/CMakeLists.txt: Add omp_get_report_6 and omp_get_report_7.
 
-2009-07-28  Matthew Mundell <mmundell@intevation.de>
+2009-07-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd_log_conf.cmake: Remove quotes from "prepend" key.
 
-2009-07-28  Matthew Mundell <mmundell@intevation.de>
+2009-07-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_report_0.c, src/tests/omp_get_report_1.c,
 	src/tests/omp_delete_report_0.c, src/tests/omp_get_report_4.c,
 	src/tests/omp_delete_task_1.c, src/tests/omp_get_report_2.c,
 	src/tests/omp_get_report_3.c: Add format to GET_REPORT XML.
 
-2009-07-28  Matthew Mundell <mmundell@intevation.de>
+2009-07-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (task_run_status_name): Add TASK_STATUS_STOPPED.
 
@@ -561,11 +567,11 @@
 	* src/tests/omp_abort_task_0.c: Wait for the task to stop after reading
 	the ABORT_TASK response.
 
-2009-07-28  Matthew Mundell <mmundell@intevation.de>
+2009-07-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (omp_get_report): Add format to GET_REPORT XML.
 
-2009-07-24  Matthew Mundell <mmundell@intevation.de>
+2009-07-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add handling of the GET_REPORT FORMAT attribute.  Add a simple XML format.
 
@@ -579,7 +585,7 @@
 
 	* src/tests/omp_get_report_5.c: New file.  Tests requesting an XML report.
 
-2009-07-24  Matthew Mundell <mmundell@intevation.de>
+2009-07-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.h (new_report): Rename to current_report.
 	(current_report): New variable, was new_report.
@@ -587,12 +593,12 @@
 	* src/tasks_sql.h, src/otp.c, src/manage.c: Rename new_report to
 	current_report.
 
-2009-07-24  Matthew Mundell <mmundell@intevation.de>
+2009-07-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END always
 	clear current_server_task when current_server_task is set.
 
-2009-07-24  Matthew Mundell <mmundell@intevation.de>
+2009-07-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a SECOND_LAST_REPORT element to the GET_STATUS response.
 
@@ -603,13 +609,13 @@
 	* src/omp.c (omp_xml_handle_end_element): Add SECOND_LAST_REPORT in
 	CLIENT_GET_STATUS.
 
-2009-07-23  Matthew Mundell <mmundell@intevation.de>
+2009-07-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/proto_postgres.sql: Use date types for dates.
 	(results): Add subnet and nvt fields.
 	(reports): Add date field.
 
-2009-07-23  Matthew Mundell <mmundell@intevation.de>
+2009-07-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Match the db model better to the state of the manager.
 
@@ -618,7 +624,7 @@
 	(tasks): Add reference to nvt_selector.
 	(reports): Add date, start_time, end_time.
 
-2009-07-23  Matthew Mundell <mmundell@intevation.de>
+2009-07-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Store the reports in the database instead of on the file system.
 
@@ -685,7 +691,7 @@
 	src/tests/report_path_task_uuid_1.c,
 	src/tests/report_path_task_uuid_2.c: Remove.
 
-2009-07-23  Matthew Mundell <mmundell@intevation.de>
+2009-07-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/string.c (isbase64): New function.
 	* src/string.h (isbase64): New header.
@@ -693,11 +699,11 @@
 	* src/tests/omp_get_report_0.c: Check that the report is all base64
 	characters instead of all alphanumeric characters.
 
-2009-07-22  Matthew Mundell <mmundell@intevation.de>
+2009-07-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_fs.h: Remove.
 
-2009-07-22  Matthew Mundell <mmundell@intevation.de>
+2009-07-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Retire file system based task storage (-DTASKS_FS).
 
@@ -716,32 +722,32 @@
 	* src/CMakeLists.txt: Remove TASKS_FS comments.
 	(C_FILES): Remove tasks_fs.h.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/proto_postgres.sql (meta): Type nvts_md5sum.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/proto_postgres.sql: New file.  Broad database prototype.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (main): Set log handlers for comm and otp domains.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd_log_conf.cmake: Add comm section.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (G_LOG_DOMAIN): Correct name.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c, src/otp.c, src/otpd.c, src/oxpd.c: Remove stray full stops
 	from log messages.
 
-2009-07-20  Matthew Mundell <mmundell@intevation.de>
+2009-07-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Switch to GLib facilities for all remaining logging.
 
@@ -780,7 +786,7 @@
 	(next_task): Reduce tracing.
 	(init_manage): Set log handler.
 
-2009-07-17  Matthew Mundell <mmundell@intevation.de>
+2009-07-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Switch trace messages to the openvas_libraries logging facility.
 
@@ -799,17 +805,17 @@
 	* src/CMakeLists.txt: Setup OPENVAS_SYSCONF_DIR.  Configure and install
 	openvasmd_log.conf.
 
-2009-07-17  Matthew Mundell <mmundell@intevation.de>
+2009-07-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.c (init_manage): Insert the "om" user if the users
 	table is empty.
 
-2009-07-17  Matthew Mundell <mmundell@intevation.de>
+2009-07-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.c (init_manage): Remove sqlite3_finalize that was for
 	the table-per-user model.
 
-2009-07-16  Matthew Mundell <mmundell@intevation.de>
+2009-07-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a users table to the database.  Share one tasks table and one
 	reports table between all users.
@@ -822,11 +828,11 @@
 	table.  Adjust the task consistency check for the new single table.
 	(authenticate): Move table creation to init_manage.
 
-2009-07-16  Matthew Mundell <mmundell@intevation.de>
+2009-07-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (serve_client): Leave the lowat value alone.
 
-2009-07-15  Matthew Mundell <mmundell@intevation.de>
+2009-07-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a reports table to the database.
 
@@ -837,16 +843,16 @@
 	* src/manage.c (delete_report): Call the database report deleter.
 	(create_report_file): Call the database report creator.
 
-2009-07-15  Matthew Mundell <mmundell@intevation.de>
+2009-07-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/read_protocol_0.c: Increase sleep.  Remove extra read from
 	fail case.
 
-2009-07-15  Matthew Mundell <mmundell@intevation.de>
+2009-07-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (delete_report): Remove the last report link.
 
-2009-07-14  Matthew Mundell <mmundell@intevation.de>
+2009-07-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Correct the handling of the case where the initial OMP XML elements	are
 	shorter	than the OTP init string.
@@ -862,26 +868,26 @@
 
 	* src/tests/CMakeLists.txt: Add omp_help_1.
 
-2009-07-13  Matthew Mundell <mmundell@intevation.de>
+2009-07-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (end_session): Remove full stop from perror string.
 
-2009-07-13  Matthew Mundell <mmundell@intevation.de>
+2009-07-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (recreate_session): Remove close, which is done in
 	end_session.
 
-2009-07-13  Matthew Mundell <mmundell@intevation.de>
+2009-07-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (sql, sql_x, init_task_iterator, init_manage): Handle
 	SQLITE_BUSY returns from sqlite3_prepare.
 
-2009-07-13  Matthew Mundell <mmundell@intevation.de>
+2009-07-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* TODO: Remove the lazy login entry which is done.  Add an entry about
 	atomicity of CREATE_TASK.  Correct a typo.
 
-2009-07-10  Matthew Mundell <mmundell@intevation.de>
+2009-07-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a Manager database model.
 
@@ -890,7 +896,7 @@
 
 	* src/doc/db_postgres.sql: New file.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Store the original port strings in messages, and use these strings in the
 	reports.
@@ -905,24 +911,24 @@
 	(write_message): Write port from original string.
 	(process_otp_server_input): Set port string on receiving message.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): Move settings of SERVER_DONE
 	in SERVER_PLUGIN_LIST_OID back to precede switch (moved into switch in
 	previous commit today).
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_report_3.c, src/tests/omp_get_report_2.c,
 	src/tests/omp_get_report_1.c, src/tests/omp_get_report_0.c: Correct
 	header comments.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (send_task_preferences): Send less of the whitespace around
 	the fields.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Extend the initialisation mechanism, so that client-driven OTP begins
 	after the server sends the plugin list.
@@ -938,12 +944,12 @@
 	init state case.  In SERVER_PLUGIN_LIST_OID and SERVER_PLUGINS_MD5 set a
 	further init state instead of replying to the server directly.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otpd.c (serve_otp): Add sender to log messages.  Remove logging of
 	first input, which is done by read_protocol now.
 
-2009-07-08  Matthew Mundell <mmundell@intevation.de>
+2009-07-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add logging of data sent to server.  Include sender in all log messages.
 
@@ -959,7 +965,7 @@
 	src/tests/make_report_id_0.c, src/tests/common.c (log_stream): New
 	variable.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Use the actual host name for results in reports.
 
@@ -972,25 +978,25 @@
 	(write_message): Write host and subnet from message structure.
 	(process_otp_server_input): Add message host handling.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (current_host): New variable.
 	(process_otp_server_input): Use the actual host name for host timestamps.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (inc_task_infos_size): Increment infos instead of
 	holes.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (set_task_end_time, set_task_start_time): Free time.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (create_report_file): Initialise cache files.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add actual timestamps to GET_STATUS.
 
@@ -1004,11 +1010,11 @@
 	* src/omp.c (send_reports, omp_xml_handle_end_element): Add counts to
 	GET_STATUS <timestamp>.
 
-2009-07-07  Matthew Mundell <mmundell@intevation.de>
+2009-07-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (save_report): Correct file name.
 
-2009-07-06  Matthew Mundell <mmundell@intevation.de>
+2009-07-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add actual message counts to GET_STATUS.
 
@@ -1020,12 +1026,12 @@
 	* src/omp.c (send_reports, omp_xml_handle_end_element): Add counts to
 	GET_STATUS <messages>.
 
-2009-07-06  Matthew Mundell <mmundell@intevation.de>
+2009-07-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_reports, omp_xml_handle_end_element): Ensure all
 	GET_STATUS cases include <warning> in <messages>.
 
-2009-07-06  Matthew Mundell <mmundell@intevation.de>
+2009-07-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Reset task running information before starting the task.
 
@@ -1034,19 +1040,19 @@
 
 	* src/manage.c (start_task): Call reset_task before starting the task.
 
-2009-07-06  Matthew Mundell <mmundell@intevation.de>
+2009-07-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_report_4.c: New file.  Tests GET_REPORT with extra
 	elements.
 
 	* src/tests/CMakeLists.txt (omp_get_report_4): New test.
 
-2009-07-06  Matthew Mundell <mmundell@intevation.de>
+2009-07-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): In CLIENT_GET_REPORT remove
 	"_response", which is added by XML_ERROR_SYNTAX.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Only setup the client in the fd sets when the
 	client is active.  As a result move the first timeout check to precede
@@ -1055,58 +1061,58 @@
 	client is active, and only do the second timeout check when the client is
 	active.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt (CMAKE_BUILD_TYPE): Set to debug.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.h (READ_PROTOCOL_TIMEOUT): Increase.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (connect_to_manager_host_port): After connecting,
 	if the environment variable OPENVAS_TEST_WAIT is true, then read a char
 	before continuing.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (sql_quote): Increment start in quote counting loop.
 
 	* src/tests/new_task_small_rc (SERVER_PREFS): Add some fields with quotes.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_start_task_4.c: New file.  Tests START_TASK with missing
 	rcfile.
 
 	* src/tests/CMakeLists.txt: Add omp_start_task_4.
 
-2009-07-03  Matthew Mundell <mmundell@intevation.de>
+2009-07-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Check task_description return.
 
 	* src/manage.c (task_preference, task_plugins, send_task_preferences)
 	(send_task_rules): Check task_description return.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Only select on client for exceptions when
 	client is active.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Improve the "safe to select" comment a bit.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.c (read_protocol): Log what is read.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_plugin): Send a dummy checksum.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Before starting a task, check that the task has targets.
 
@@ -1120,18 +1126,18 @@
 
 	* src/tests/CMakeLists.txt: Add omp_start_task_3.
 
-2009-07-02  Matthew Mundell <mmundell@intevation.de>
+2009-07-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.c (read_protocol): Read as much as possible at a time up to
 	the length of the OTP protocol string, in case the client presumes that
 	what it has written has been entirely read.
 
-2009-07-01  Matthew Mundell <mmundell@intevation.de>
+2009-07-01  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Account for 0 current_port in
 	GET_STATUS progress calculation.
 
-2009-07-01  Matthew Mundell <mmundell@intevation.de>
+2009-07-01  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a PROGRESS element to the GET_STATUS response.
 
@@ -1141,12 +1147,12 @@
 
 	* src/omp.c (omp_xml_handle_end_element): Add PROGRESS to GET_STATUS.
 
-2009-07-01  Matthew Mundell <mmundell@intevation.de>
+2009-07-01  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_STATUS only print a
 	LAST_REPORT if there is a last report.
 
-2009-06-30  Matthew Mundell <mmundell@intevation.de>
+2009-06-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a LAST_REPORT element to the GET_STATUS response.
 
@@ -1160,21 +1166,21 @@
 
 	* src/omp.c (omp_xml_handle_end_element): Add LAST_REPORT to GET_STATUS.
 
-2009-06-30  Matthew Mundell <mmundell@intevation.de>
+2009-06-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_to_client): Trace when out of space.
 
-2009-06-30  Matthew Mundell <mmundell@intevation.de>
+2009-06-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Add report_count to
 	the plural GET_STATUS response.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	(start_task): Use send_to_server instead of sendf_to_server for constant
 	string.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (request_plugin_list): Remove.
 	(acknowledge_md5sum_sums, acknowledge_md5sum_info)
@@ -1185,57 +1191,57 @@
 	getting the feed md5.  Acknowledge the md5sum (GO ON) after receiving the
 	plugin list.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove attempts at initiating
 	connections in XML_SERVICE_DOWN cases, now that serve_omp connects
 	eagerly.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK respond
 	with XML_OK instead of XML_OK_REQUESTED.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): In CLIENT_CREATE_TASK
 	initialise the task description.
 	(omp_xml_handle_end_element): In CLIENT_CREATE_TASK_RCFILE check the
 	return from g_base64_decode.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Eagerly initiate the OTP server connection.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Let the select loop handle the first input, as
 	read_protocol now only reads up to the first '>'.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.c (read_protocol): Read at most up to the first '>', so that
 	the caller can select on the socket after the call and be sure that the
 	select will return within the first command.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (serve_client): Remove server socket closing, which
 	is now done in end_session.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (set_task_parameter): Convert rcfile before storing it
 	in database.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_create_task_1.c: New file.  Tests OMP CREATE_TASK with
 	empty RC file.
 
 	* src/tests/CMakeLists.txt: Add omp_create_task_1.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (connect_to_manager_host_port, create_task)
 	(create_task_from_rc_file, start_task, wait_for_task_end)
@@ -1244,26 +1250,26 @@
 	(omp_get_certificates, omp_until_up): New functions.
 	* src/tests/common.h: Update headers.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (end_session): Break out of the gnutls_bye loop
 	if the bye succeeds.  Enable close code.  Move gnutls_deinit and
 	gnutls_certificate_free_credentials after shutdown and close.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (sendn_to_server): Trace when out of space.
 
-2009-06-29  Matthew Mundell <mmundell@intevation.de>
+2009-06-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (TO_SERVER_BUFFER_SIZE): Increase.
 
-2009-06-24  Matthew Mundell <mmundell@intevation.de>
+2009-06-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage_process): Ensure that the
 	OPENVAS_STATE_DIR "mgr/" directory exists.
 
-2009-06-24  Matthew Mundell <mmundell@intevation.de>
+2009-06-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Close the database before returning,
 	so that forked processes open their own connections.
@@ -1295,37 +1301,37 @@
 
 	* CHANGES: Updated, fixed typos in change notes for the last release.
 
-2009-06-22  Matthew Mundell <mmundell@intevation.de>
+2009-06-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (omp_get_status): Return statuses of all tasks if
 	ID is NULL.
 
-2009-06-22  Matthew Mundell <mmundell@intevation.de>
+2009-06-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (foreach_print_attribute): New function.
 	(print_entity): Add attribute printing.
 
 	* TODO: Remove associated entry.
 
-2009-06-22  Matthew Mundell <mmundell@intevation.de>
+2009-06-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (omp_get_report): New function.
 	* src/tests/common.h (omp_get_report): New header.
 
-2009-06-22  Matthew Mundell <mmundell@intevation.de>
+2009-06-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.h: Add multiple-include guard.
 
-2009-06-18  Matthew Mundell <mmundell@intevation.de>
+2009-06-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (main): Neaten formatting.
 
-2009-06-18  Matthew Mundell <mmundell@intevation.de>
+2009-06-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (wait_for_task_start, wait_for_task_end): Return
 	if task state becomes "Internal Error".
 
-2009-06-18  Matthew Mundell <mmundell@intevation.de>
+2009-06-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (parse_server_bad_login): New function.
 	(process_otp_server_input): Check for bad login response from server.
@@ -1333,12 +1339,12 @@
 	* src/ompd.c (serve_omp): Handle "bad login" return from
 	process_otp_server_input.
 
-2009-06-18  Matthew Mundell <mmundell@intevation.de>
+2009-06-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (recreate_session): New function.
 	(serve_omp): Move session creation to recreate_session.
 
-2009-06-18  Matthew Mundell <mmundell@intevation.de>
+2009-06-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (write_to_server): Change OTP username and password.
 
@@ -1354,7 +1360,7 @@
 	(main): Write the PID to the pidfile once the server is running.
 	(cleanup): Remove the pidfile on exit.
 
-2009-06-17  Matthew Mundell <mmundell@intevation.de>
+2009-06-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_reports, omp_xml_handle_end_element): Use
 	OPENVAS_STATE_DIR instead of PREFIX "/var/lib/openvas/".
@@ -1399,15 +1405,15 @@
 
 	* CMakeLists.txt: Updated version information.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c, TODO: Move note about communication functions to TODO.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c (serve_omp): Remove lastfds tracing.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move read_protocol from the main manager daemon into oxpd.
 
@@ -1420,15 +1426,15 @@
 	(protocol_read_t): New type, from src/openvasmd.c.
 	(read_protocol): New header.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.c: Enable FROM_BUFFER_SIZE check.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/CMakeLists.txt (DOC_FILES): Add oxpd.c.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Separate the common ompd and otpd globals into a new file.
 
@@ -1453,11 +1459,11 @@
 
 	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Add src/oxpd.c.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/file.c (rmdir_recursively): Add descriptive comments.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (send_task_preferences): Free orig_desc in error cases.
 
@@ -1466,16 +1472,16 @@
 	* CMakeLists.txt: Make source archive filenames consistent with other
 	modules and Debians expectations.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt: Turn off optimisation for now, as it results in a
 	warning about the uuid_export call in make_report_uuid.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* TODO: Add missing paren.
 
-2009-06-16  Matthew Mundell <mmundell@intevation.de>
+2009-06-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Acknowledge OTP server BYE messages.
 
@@ -1491,23 +1497,23 @@
 	* src/manage.c (acknowledge_bye): New function.
 	* src/manage.h (acknowledge_bye): New header.
 
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
+2009-06-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* TODO: New file.
 
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
+2009-06-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (sql_int, sql_string): Check return from sql_x.
 
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
+2009-06-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_preferences_1.c: Enable test for expected value.
 
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
+2009-06-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_preferences_0.c: Correct expected status code.
 
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
+2009-06-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move OID entity of OMP GET_NVT_DETAILS to an attribute.
 
@@ -1518,11 +1524,11 @@
 	* src/tests/omp_get_nvt_details_2.c, src/tests/omp_get_nvt_details_3.c,
 	src/tests/omp_get_nvt_details_4.c: Pass OID in an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (delete_task): Pass TASK_ID as attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move REPORT_ID entities of OMP DELETE_REPORT, GET_REPORT and
 	MODIFY_REPORT commands to attributes.
@@ -1538,7 +1544,7 @@
 	src/tests/omp_get_report_3.c, src/tests/omp_modify_report_0.c: Adjust for
 	updated OMP.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_report_0.c: Improve check of expected response.
 
@@ -1548,7 +1554,7 @@
 	* src/tests/CMakeLists.txt: Add omp_get_report_1, omp_get_report_2 and
 	omp_get_report_3.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_task_0.c,
 	src/tests/omp_delete_task_1.c, src/tests/omp_delete_task_2.c,
@@ -1564,7 +1570,7 @@
 	* src/tests/common.c (wait_for_task_delete, omp_get_status): Pass
 	GET_STATUS TASK_ID as an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move TASK_ID entity of OMP GET_STATUS to an attribute.
 
@@ -1576,11 +1582,11 @@
 	src/tests/omp_get_status_4.c, src/tests/omp_get_status_5.c: Pass TASK_ID
 	in an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_status_0.c: Correct expectations.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move TASK_ID entity of OMP ABORT_TASK to an attribute.
 
@@ -1592,12 +1598,12 @@
 
 	* ChangeLog: Correct function names in last three entries.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_abort_task_0.c: Expect that the operation may also
 	succeed completely.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move TASK_ID entity of OMP START_TASK to an attribute.
 
@@ -1611,7 +1617,7 @@
 
 	* ChangeLog: Correct descriptions in last two entries.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move TASK_ID entity of OMP DELETE_TASK to an attribute.
 
@@ -1622,7 +1628,7 @@
 	* src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
 	src/tests/omp_delete_task_1.c: Pass TASK_ID in an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move TASK_ID entity of OMP MODIFY_TASK to an attribute.
 
@@ -1633,7 +1639,7 @@
 	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Pass
 	TASK_ID in an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move OID entity of OMP GET_NVT_ALL and GET_NVT_DETAILS to an attribute.
 
@@ -1641,7 +1647,7 @@
 
 	* src/tests/omp_get_nvt_details_4.c: Expect OID in an attribute.
 
-2009-06-11  Matthew Mundell <mmundell@intevation.de>
+2009-06-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Get the GET_NVT_DETAILS tests passing.
 
@@ -1652,22 +1658,22 @@
 	* src/tests/omp_get_nvt_details_1.c,
 	src/tests/omp_get_nvt_details_4.c: Expect status in an attribute.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_report_0.c, src/tests/omp_delete_task_1.c
 	src/tests/omp_get_report_0.c, src/tests/omp_modify_report_0.c: Adjust
 	for move of GET_STATUS REPORT ID to an attribute.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_reports): Move ID of GET_STATUS REPORT to an attribute.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (task_preference): Free orig_desc after last use,
 	instead of before.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Account for the move of GET_STATUS TASK_ID to an attribute in all
 	remaining tests.
@@ -1680,7 +1686,7 @@
 	src/tests/omp_modify_report_0.c, src/tests/omp_modify_task_1.c: Match
 	updated GET_STATUS.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move GET_STATUS response TASK_ID to an attribute of the task.
 
@@ -1696,7 +1702,7 @@
 	src/tests/omp_get_status_4.c, src/tests/omp_get_status_5.c: Improve checks
 	and match updated OMP.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Merge the OMP MODIFY_REPORT command's VALUE and PARAMETER entities.
 
@@ -1706,12 +1712,12 @@
 
 	* src/tests/omp_modify_report_0.c: Match updated OMP.
 
-2009-06-10  Matthew Mundell <mmundell@intevation.de>
+2009-06-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): Reorder CLIENT_MODIFY_TASK
 	conditions.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Merge the OMP MODIFY_TASK command's VALUE and PARAMETER entities.
 
@@ -1722,7 +1728,7 @@
 	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Match
 	updated OMP.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_status_0.c: Change "identifier" to "name" in
 	expected response.
@@ -1732,12 +1738,12 @@
 
 	* src/tests/omp_modify_task_0.c: Use new response code.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c: Rename task name symbols to use "name" instead of
 	"identifier".
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add RCFILE, NAME and COMMENT elements to OMP MODIFY_TASK.
 
@@ -1747,11 +1753,11 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Handle new MODIFY_TASK elements.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* ChangeLog: Convert space indentation to tabs.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename TASK_FILE to RCFILE in the OMP command CREATE_TASK.
 
@@ -1767,11 +1773,11 @@
 
 	* src/tests/omp_create_task_0.c: Send RCFILE instead of TASK_FILE.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (set_task_parameter): Correct doc parameter description.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename task name symbols to use "name" instead of "identifier".
 
@@ -1784,15 +1790,15 @@
 	(append_to_task_name): New function, renamed from append_to_task_identifier.
 	* src/manage.h: Update header.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_nvt_feed_checksum_1.c: Include ../string.h.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/read_protocol_0.c: Correct task name.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename IDENTIFIER to NAME in OMP commands CREATE_TASK and GET_STATUS.
 
@@ -1809,21 +1815,21 @@
 
 	* src/tests/omp_get_status_2.c: Improve expected response.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (serve_client): Improve comment slightly.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otpd.c (serve_otp): Close client socket on return.
 
-2009-06-09  Matthew Mundell <mmundell@intevation.de>
+2009-06-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (read_protocol): Check return from time for error.
 
 	* ChangeLog: Correct entry dates for yesterday.
 
-2009-06-08  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Close client connections that are idle for longer than a fixed limit.
 
@@ -1839,23 +1845,23 @@
 
 	* src/tests/CMakeLists.txt: Add timeout_0.  Move timeout tests to end.
 
-2009-06-08  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (accept_and_maybe_fork): Close client socket in
 	parent process.
 
-2009-06-08  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): In the cases where the OTP that
 	follows is either a field or "<|> SERVER", check for the '|' in
 	addition to checking if the length of "field" is zero, as "field" may
 	legitimately be an empty field (" <|> field2 ...").
 
-2009-06-08  Matthew Mundell <mmundell@intevation.de>
+2009-06-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (stringify): Remove.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Bring comment docs up to date.
 
@@ -1870,28 +1876,28 @@
 	(compare_find_attribute): Doc attributes2 param.
 	(omp_get_status): Doc status param.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (make_task): Initialise task run state.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_create_task_0.c: Add check that task run status is
 	initialised correctly.
 
-2009-06-05  Matthew Mundell <mmundell@intevation.de>
+2009-06-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (omp_get_status): New function.
 	* src/tests/common.h (omp_get_status): New header.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (parse_server_plugin_list_tags, process_otp_server_input): Use
 	new nvtis function names.
 
 	* src/omp.c (omp_xml_handle_end_element): Use new nvtis function names.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (find_attribute): New function.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element): Handle
@@ -1907,7 +1913,7 @@
 	omp_get_nvt_feed_checksum_3, omp_get_nvt_feed_checksum_4 and
 	omp_get_nvt_feed_checksum_5.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_ALL change
 	algorithm entity to a feed_checksum attribute.
@@ -1917,20 +1923,20 @@
 
 	* ChangeLog: Add entry for last commit.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/string.h (isalnumstr): New header.
 	* src/string.c (isalnumstr): New function.
 	* src/tests/omp_get_nvt_feed_checksum_1.c (isalnumstr): Remove.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In
 	CLIENT_GET_NVT_FEED_CHECKSUM add checksum entity with algorithm.
 
 	* src/tests/omp_get_nvt_feed_checksum_1.c: Match updated OMP.
 
-2009-06-04  Matthew Mundell <mmundell@intevation.de>
+2009-06-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_VERSION move
 	preferred entity to attribute.
@@ -1938,33 +1944,33 @@
 	* src/tests/omp_get_version_0.c: Move expected preferred entity to
 	attribute.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_task_2.c: Correct expected tag name and string
 	comparison.  Compare the response status instead of the task status, to
 	the response code.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_task_0.c: Add check of whether delete request
 	succeeded immediately.  Correct expected tag name and string comparison.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_task_1.c: Wait for the task to stop before
 	requesting the report.  Use one entity at a time and free the entities
 	after use.  Pass sendf_to_manager the ID text instead of the ID entity.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (wait_for_task_delete): New function.
 	* src/tests/common.h (wait_for_task_delete): New header.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (task_status): Revert to correct implementation.
 
-2009-06-03  Matthew Mundell <mmundell@intevation.de>
+2009-06-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	When stopping tasks, account for the case where the task is stopped
 	already.
@@ -1983,19 +1989,19 @@
 	with OK_REQUESTED.  Add INTERNAL_ERROR cases to the return checks
 	of all find_task calls.
 
-2009-06-02  Matthew Mundell <mmundell@intevation.de>
+2009-06-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS correct
 	opening tag and add closing tag.
 
-2009-06-02  Matthew Mundell <mmundell@intevation.de>
+2009-06-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_bogus_0.c, src/tests/omp_bogus_1.c: New files, which
 	test the manager with a bogus command.
 
 	* src/tests/CMakeLists.txt: Add omp_bogus_0 and omp_bogus_1.
 
-2009-06-02  Matthew Mundell <mmundell@intevation.de>
+2009-06-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move response statuses into attributes, in tests.
 
@@ -2028,7 +2034,7 @@
 	(task_status, authenticate, start_task, wait_for_task_start)
 	(wait_for_task_end, delete_task): Adjust for attribute statuses.
 
-2009-06-02  Matthew Mundell <mmundell@intevation.de>
+2009-06-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move response statuses into attributes.
 
@@ -2043,7 +2049,7 @@
 	status tags to attributes.
 	(process_omp_client_input): Return -4 on XML syntax error.
 
-2009-05-29  Matthew Mundell <mmundell@intevation.de>
+2009-05-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Make the tests compile and run again.
 
@@ -2066,7 +2072,7 @@
 	strip_space_0, strip_space_1, strip_space_2, strip_space_3): Link to
 	common and requirement of common.
 
-2009-05-29  Matthew Mundell <mmundell@intevation.de>
+2009-05-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_abort_task_0.c, src/tests/omp_create_task_0.c,
 	src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
@@ -2092,7 +2098,7 @@
 	src/tests/strip_space_2.c, src/tests/strip_space_3.c: Call setup_test
 	before testing.
 
-2009-05-29  Matthew Mundell <mmundell@intevation.de>
+2009-05-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OTP CERTIFICATES handling and OMP GET_CERTIFICATES.
 
@@ -2121,23 +2127,23 @@
 	* src/tests/CMakeLists.txt: Add omp_get_certificates_0 and
 	omp_get_certificates_1.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/CMakeLists.txt: Sort rules.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (help_text, client_state_t): Sort entries.
 
 	* src/tests/omp_help_0.c (help_text): Sort entries.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (create_task): Rename NEW_TASK call to CREATE_TASK.
 	(wait_for_task_start, wait_for_task_end): Rename STATUS call to
 	GET_STATUS.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename OMP STATUS to GET_STATUS.
 
@@ -2176,7 +2182,7 @@
 	src/tests/omp_get_nvt_details_1.c, src/tests/omp_get_nvt_all_1.c,
 	src/tests/omp_modify_report_0.c: Rename all STATUS calls to GET_STATUS.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename OMP GET_NVT_FEED_DETAILS to GET_NVT_DETAILS.
 
@@ -2211,7 +2217,7 @@
 	* src/tests/omp_get_nvt_details_4.c: New file.  Was
 	omp_get_nvt_feed_details_4.c.  Adjust for new name.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename OMP GET_NVT_FEED_ALL to GET_NVT_ALL.
 
@@ -2231,7 +2237,7 @@
 	* src/tests/omp_get_nvt_all_1.c: New file.  Was omp_get_nvt_feed_all_1.c.
 	Adjust for new name.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename OMP NEW_TASK to CREATE_TASK.
 
@@ -2245,11 +2251,11 @@
 	* src/tests/omp_create_task_0.c: New file.  Was omp_new_task_0.c.  Adjust
 	for new name.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (help_text): Remove dummy implementation key.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename OMP OMP_VERSION to GET_VERSION.
 
@@ -2262,20 +2268,20 @@
 	* src/tests/omp_get_version_0.c: New file.  Was omp_version_0.c.  Adjust
 	for	new name.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.h (TO_CLIENT_BUFFER_SIZE): Increase, for now.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_nvt_feed_details_4.c: Get ID via get_nvt_feed_all
 	instead of get_nvt_feed_details.  Remove printing.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (read_protocol): Use the right socket.
 
-2009-05-28  Matthew Mundell <mmundell@intevation.de>
+2009-05-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Timeout if reading the protocol takes too long.
 
@@ -2291,11 +2297,11 @@
 
 	* src/tests/read_protocol_0.c: New file.
 
-2009-05-27  Matthew Mundell <mmundell@intevation.de>
+2009-05-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_plugin): Correct g_convert charset names.
 
-2009-05-27  Matthew Mundell <mmundell@intevation.de>
+2009-05-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Switch to libopenvas nvtis for plugin information.
 
@@ -2321,7 +2327,7 @@
 
 	* src/CMakeLists.txt (omp, otp): Add openvas headers dir to compile flags.
 
-2009-05-27  Matthew Mundell <mmundell@intevation.de>
+2009-05-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Implement OMP GET_NVT_FEED_DETAILS when called to return a specific NVT.
 
@@ -2342,7 +2348,7 @@
 
 	* src/tests/CMakeLists.txt: Add new tests.
 
-2009-05-26  Matthew Mundell <mmundell@intevation.de>
+2009-05-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Implement OMP GET_NVT_FEED_DETAILS when called to return all NVTs.
 
@@ -2358,7 +2364,7 @@
 
 	* src/tests/omp_get_nvt_feed_all_1.c: Also check for response status 503.
 
-2009-05-26  Matthew Mundell <mmundell@intevation.de>
+2009-05-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Implement OMP GET_NVT_FEED_ALL.
 
@@ -2398,7 +2404,7 @@
 
 	* src/tests/omp_get_nvt_feed_all_1.c: Get feed initially.  Check response.
 
-2009-05-26  Matthew Mundell <mmundell@intevation.de>
+2009-05-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Enable real
 	CLIENT_GET_NVT_FEED_CHECKSUM implementation.
@@ -2408,7 +2414,7 @@
 	* src/tests/omp_get_nvt_feed_checksum_1.c: Add comparison to expected
 	response.
 
-2009-05-25  Matthew Mundell <mmundell@intevation.de>
+2009-05-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): Add enclosing tags that were
 	missing from certain responses.  Initialise current_uuid in STATUS.
@@ -2437,12 +2443,12 @@
 	src/tests/omp_get_nvt_feed_all_1.c: Switch to string task IDs.  Match
 	response statuses to manager.
 
-2009-05-25  Matthew Mundell <mmundell@intevation.de>
+2009-05-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (main): Fork into background on start, or stay in
 	foreground if -f switch given.
 
-2009-05-23  Matthew Mundell <mmundell@intevation.de>
+2009-05-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (STATUS_SERVICE_DOWN): New status code.
 	(omp_xml_handle_start_element): Initialise current_uuid in operations that
@@ -2452,7 +2458,7 @@
 	and CLIENT_GET_NVT_FEED_CHECKSUM.  In CLIENT_STATUS adjust the
 	current_uuid check to account for the new initial value of current_uuid.
 
-2009-05-22  Matthew Mundell <mmundell@intevation.de>
+2009-05-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/make_report_id_0.c: Rename make_report_uuid_0.c.
 	* src/tests/report_path_task_name_0.c: Rename report_path_task_uuid_0.c.
@@ -2466,12 +2472,12 @@
 
 	* src/tests/CMakeLists.txt: Update file names.  Remove duplicate entries.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (report_task): Correct variable name.  Move free to after
 	last use.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Better match HTTP response codes in response statuses.
 
@@ -2480,15 +2486,15 @@
 	(STATUS_OK_CREATED, STATUS_OK_REQUESTED, STATUS_INTERNAL_ERROR): New
 	defines.  Use instead of codes in all XML status entities.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (current_task_task_id): Rename current_uuid.  Update callers.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/CMakeLists.txt (OVAS_LDFLAG): Add libopenvas.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Rename make_report_id to make_report_uuid, and report_path_task_name to
 	report_path_task_uuid.
@@ -2506,16 +2512,16 @@
 
 	* src/tests/make_report_id_0.c: Update to make_report_uuid.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/CMakeLists.txt: Remove OPENVAS_USERS_DIR definition added too
 	eagerly.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (\mainpage): Add License Information section.
 
-2009-05-20  Matthew Mundell <mmundell@intevation.de>
+2009-05-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add task UUIDs.
 
@@ -2537,7 +2543,7 @@
 
 	* src/omp.c: Use task_uuid instead of task_id_string.
 
-2009-05-19  Matthew Mundell <mmundell@intevation.de>
+2009-05-19  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add real authentication.
 
@@ -2557,22 +2563,22 @@
 	* src/CMakeLists.txt (TEMP): Split into LIB_TEMP and HEADER_TEMP.
 	(manage): Pass openvas headers.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_task_2.c: Add check of whether removal has been
 	requested.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (create_report_file): Use stored start time.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END close
 	current report after removing report and check if the current report
 	still exists before writing to it.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Bring FS based tasks up to date.
 
@@ -2585,11 +2591,11 @@
 	(request_delete_task): New function.
 	(delete_task): Move some of body to request_delete_task.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_modify_task_1.c: Declare name.  Correct init of name.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (init_omp): Doc return.
 
@@ -2598,7 +2604,7 @@
 
 	* ChangeLog: Add heading to last log.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Ensure that task statuses are consistent on startup.
 
@@ -2618,7 +2624,7 @@
 	* src/ompd.c (init_ompd): New function.
 	* src/ompd.h: Update headers.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.h (DO_CHILDREN, id_string): Move back to common.c.
 
@@ -2629,12 +2635,12 @@
 
 	* ChangeLog: Log last commit.
 
-2009-05-18  Matthew Mundell <mmundell@intevation.de>
+2009-05-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/Doxyfile (EXTRACT_ALL): Turn off, to enable warnings about
 	missing function docs.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/logf.h (LOG_FILE): Change extension to comm, as this file is only
 	a log of communication.
@@ -2643,13 +2649,13 @@
 
 	* src/CMakeLists.txt: Remove making of log directory from install.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_fs.h, src/tasks_sql.h: Update doc params.
 
 	* src/manage.c (task_run_status_name): Add missing doc.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (task_status): New function.
 
@@ -2658,12 +2664,12 @@
 	* src/tests/omp_delete_task_0.c: Add check of whether removal has been
 	requested.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Extend the ID version of OMP
 	STATUS to return more task information.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an intermediate "delete requested" task state, and delete the task
 	only after receiving the SCAN_END message from the server.
@@ -2683,7 +2689,7 @@
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_END call
 	delete_task if a delete was requested.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an intermediate "stop requested" task state, and set the task
 	to "done" or "stopped" only when receiving the SCAN_END message
@@ -2736,12 +2742,12 @@
 	seemed to somehow trigger a segfault in the packaged Debian binary when
 	compiled on Lenny.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/new_task_empty_rc, src/tests/new_task_medium_rc: Remove old
 	XML wrapper tags.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/new_task_small_rc (CLIENTSIDE_USERRULES): Add two rules.
 
@@ -2749,19 +2755,19 @@
 	(start_task): Move required preferences to follow task preferences.
 	Enable sending of task rules.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_delete_task_2.c: New file.  Tests removing a running
 	task.
 
 	* src/tests/CMakeLists.txt: Add omp_delete_task_2.
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otp.c (process_otp_server_input): Clear server_active in
 	SERVER_BYE.  (Missing file from 2009-05-13 client exit commit.)
 
-2009-05-15  Matthew Mundell <mmundell@intevation.de>
+2009-05-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (sendn_to_server): New function.
 	(send_to_server): Use sendn_to_server.
@@ -2772,17 +2778,17 @@
 	(start_task): Send 0 if plugin set is empty.  Send server and plugin
 	preferences.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_status_4.c: Correct test number in comment.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_start_task_2.c: New file.
 
 	* src/tests/CMakeLists.txt: Add omp_start_task_2.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Ensure that the manager process continues handling server messages if
 	the client exits before the server has finished a running task.
@@ -2799,11 +2805,11 @@
 	* src/ompd.c (serve_omp): If the server is active when the client
 	connection closes then only exit after the server is done.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_modify_task_1.c: Turn off verbosity.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_modify_task_1.c: New file.
 
@@ -2811,23 +2817,23 @@
 
 	* src/tests/common.h (id_string): New header.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (DO_CHILDREN): Move to header.
 
 	* src/tests/common.h (DO_CHILDREN): New macro, from common.c.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_status_3.c: Remove tracing.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_modify_task_0.c: Improve task name.
 
 	* ChangeLog: Correct last log.
 
-2009-05-13  Matthew Mundell <mmundell@intevation.de>
+2009-05-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_status_4.c: Remove tracing.
 
@@ -2837,7 +2843,7 @@
 
 	* doc/Doxyfile, doc/Doxyfile_full, CMakeLists.txt: Set to 0.5.1.SVN.
 
-2009-05-12  Matthew Mundell <mmundell@intevation.de>
+2009-05-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/openvasmd.c (cleanup): Check log_stream before closing.
 
@@ -2851,12 +2857,12 @@
 
 	* CMakeLists.txt: Added doc/generated to CPACK_SOURCE_IGNORE_FILES.
 
-2009-05-12  Matthew Mundell <mmundell@intevation.de>
+2009-05-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/common.c (DO_CHILDREN): Add back (accidentally removed
 	yesterday).
 
-2009-05-12  Matthew Mundell <mmundell@intevation.de>
+2009-05-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/Doxyfile, doc/Doxyfile_full (INPUT): Revert to explicit file list.
 
@@ -2866,7 +2872,7 @@
 	* src/openvasmd.c (manpage): Adjust include for updated Doxyfile
 	EXAMPLE_PATH.
 
-2009-05-12  Matthew Mundell <mmundell@intevation.de>
+2009-05-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/Doxyfile_full: Flush trailing whitespace.
 
@@ -2883,7 +2889,7 @@
 	* doc/CMakeLists.txt: Adjusted to provide the make doc and doc-full
 	targets consistent with the other modules.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an OMP HELP command.
 
@@ -2896,7 +2902,7 @@
 
 	* src/tests/CMakeLists.txt: Add omp_help_0.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a verbose flag.
 
@@ -2912,17 +2918,17 @@
 
 	* README: Update usage message.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/Doxyfile (INPUT): Add src/tasks_sql.h and src/tasks_fs.h.
 
 	* src/openvasmd.c (\mainpage): Note src/tasks_sql.h and src/tasks_fs.h.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* README: Revert sentence about connecting as though to server.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Address remaining warnings.
 
@@ -2932,15 +2938,15 @@
 
 	* src/manage.c (print_tasks): Direct out.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/otpd.c (serve_otp): Connect to server initially.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (task_plugins): Separate plugins with semicolons.
 
-2009-05-11  Matthew Mundell <mmundell@intevation.de>
+2009-05-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/Doxyfile (EXTRACT_STATIC): Enable.
 
@@ -2952,11 +2958,11 @@
 
 	* src/otp.c, src/manage.c: Add missing docs.
 
-2009-05-08  Matthew Mundell <mmundell@intevation.de>
+2009-05-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/CMakeLists.txt (install): Create PREFIX/var/lib/openvas/mgr/.
 
-2009-05-08  Matthew Mundell <mmundell@intevation.de>
+2009-05-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): Correct lengths in
 	CLIENT_TOP comparisons.
