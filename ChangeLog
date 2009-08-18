@@ -1,5 +1,12 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_start_task_3.c: New file.  Tests START_TASK with a task
+	created with a target and a config.
+
+	* src/tests/CMakeLists.txt: Add omp_start_task_3.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_1.c: Use a
 	real RC so that CREATE_TASK succeeds.
 
