@@ -579,7 +579,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
-        if (strncasecmp ("AUTHENTICATE", element_name, 12) == 0)
+        if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
 // FIX
 #if 0
@@ -605,7 +605,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTIC:
-        if (strncasecmp ("AUTHENTICATE", element_name, 12) == 0)
+        if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
             // FIX Could check if reauthenticating current credentials, to
             // save the loading of the tasks.
@@ -614,7 +614,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }
-        else if (strncasecmp ("ABORT_TASK", element_name, 10) == 0)
+        else if (strcasecmp ("ABORT_TASK", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -622,13 +622,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_ABORT_TASK);
           }
-        else if (strncasecmp ("DELETE_CONFIG", element_name, 13) == 0)
+        else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
             assert (modify_task_name == NULL);
             append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_CONFIG);
           }
-        else if (strncasecmp ("DELETE_REPORT", element_name, 13) == 0)
+        else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -636,13 +636,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
           }
-        else if (strncasecmp ("DELETE_TARGET", element_name, 13) == 0)
+        else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
             assert (modify_task_name == NULL);
             append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_TARGET);
           }
-        else if (strncasecmp ("DELETE_TASK", element_name, 11) == 0)
+        else if (strcasecmp ("DELETE_TASK", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -650,15 +650,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_TASK);
           }
-        else if (strncasecmp ("GET_CERTIFICATES", element_name, 16) == 0)
+        else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
           set_client_state (CLIENT_GET_CERTIFICATES);
-        else if (strncasecmp ("GET_CONFIGS", element_name, 11) == 0)
+        else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           set_client_state (CLIENT_GET_CONFIGS);
-        else if (strncasecmp ("GET_DEPENDENCIES", element_name, 16) == 0)
+        else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
-        else if (strncasecmp ("GET_NVT_ALL", element_name, 11) == 0)
+        else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
           set_client_state (CLIENT_GET_NVT_ALL);
-        else if (strncasecmp ("GET_NVT_FEED_CHECKSUM", element_name, 21) == 0)
+        else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -666,7 +666,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
-        else if (strncasecmp ("GET_NVT_DETAILS", element_name, 20) == 0)
+        else if (strcasecmp ("GET_NVT_DETAILS", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -674,9 +674,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
-        else if (strncasecmp ("GET_PREFERENCES", element_name, 15) == 0)
+        else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
-        else if (strncasecmp ("GET_REPORT", element_name, 10) == 0)
+        else if (strcasecmp ("GET_REPORT", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -687,13 +687,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_format, attribute);
             set_client_state (CLIENT_GET_REPORT);
           }
-        else if (strncasecmp ("GET_RULES", element_name, 9) == 0)
+        else if (strcasecmp ("GET_RULES", element_name) == 0)
           set_client_state (CLIENT_GET_RULES);
-        else if (strncasecmp ("GET_TARGETS", element_name, 11) == 0)
+        else if (strcasecmp ("GET_TARGETS", element_name) == 0)
           set_client_state (CLIENT_GET_TARGETS);
-        else if (strncasecmp ("HELP", element_name, 4) == 0)
+        else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
-        else if (strncasecmp ("MODIFY_REPORT", element_name, 13) == 0)
+        else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -701,7 +701,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
-        else if (strncasecmp ("MODIFY_TASK", element_name, 11) == 0)
+        else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -709,7 +709,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
           }
-        else if (strncasecmp ("CREATE_CONFIG", element_name, 13) == 0)
+        else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
           {
             assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
@@ -719,14 +719,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_CONFIG);
           }
-        else if (strncasecmp ("CREATE_TASK", element_name, 11) == 0)
+        else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
             assert (current_client_task == (task_t) NULL);
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == (task_t) NULL) abort (); // FIX
             set_client_state (CLIENT_CREATE_TASK);
           }
-        else if (strncasecmp ("CREATE_TARGET", element_name, 13) == 0)
+        else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
             assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
@@ -736,9 +736,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
-        else if (strncasecmp ("GET_VERSION", element_name, 11) == 0)
+        else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_VERSION);
-        else if (strncasecmp ("START_TASK", element_name, 10) == 0)
+        else if (strcasecmp ("START_TASK", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -746,7 +746,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_START_TASK);
           }
-        else if (strncasecmp ("GET_STATUS", element_name, 10) == 0)
+        else if (strcasecmp ("GET_STATUS", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -769,7 +769,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTICATE:
-        if (strncasecmp ("CREDENTIALS", element_name, 11) == 0)
+        if (strcasecmp ("CREDENTIALS", element_name) == 0)
           set_client_state (CLIENT_CREDENTIALS);
         else
           {
@@ -788,9 +788,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREDENTIALS:
-        if (strncasecmp ("USERNAME", element_name, 8) == 0)
+        if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_CREDENTIALS_USERNAME);
-        else if (strncasecmp ("PASSWORD", element_name, 8) == 0)
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_CREDENTIALS_PASSWORD);
         else
           {
@@ -809,7 +809,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_CONFIG:
-        if (strncasecmp ("NAME", element_name, 4) == 0)
+        if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_DELETE_CONFIG_NAME);
         else
           {
@@ -840,7 +840,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TARGET:
-        if (strncasecmp ("NAME", element_name, 4) == 0)
+        if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_DELETE_TARGET_NAME);
         else
           {
@@ -1033,7 +1033,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+        if (strcasecmp ("PARAMETER", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -1057,11 +1057,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
-        if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_COMMENT);
-        else if (strncasecmp ("NAME", element_name, 4) == 0)
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
-        else if (strncasecmp ("PARAMETER", element_name, 9) == 0)
+        else if (strcasecmp ("PARAMETER", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
@@ -1069,7 +1069,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&modify_task_parameter, attribute);
             set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
           }
-        else if (strncasecmp ("RCFILE", element_name, 6) == 0)
+        else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else
           {
@@ -1088,7 +1088,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_ABORT_TASK:
 #if 0
-        if (strncasecmp ("CRITERION", element_name, 9) == 0)
+        if (strcasecmp ("CRITERION", element_name) == 0)
           set_client_state (CLIENT_ABORT_TASK_CRITERION);
 #else
         if (0)
@@ -1110,11 +1110,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_CONFIG:
-        if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_COMMENT);
-        else if (strncasecmp ("NAME", element_name, 4) == 0)
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
-        else if (strncasecmp ("RCFILE", element_name, 6) == 0)
+        else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
         else
           {
@@ -1132,11 +1132,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_TARGET:
-        if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
-        else if (strncasecmp ("HOSTS", element_name, 5) == 0)
+        else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
-        else if (strncasecmp ("NAME", element_name, 4) == 0)
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else
           {
@@ -1154,7 +1154,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_TASK:
-        if (strncasecmp ("RCFILE", element_name, 6) == 0)
+        if (strcasecmp ("RCFILE", element_name) == 0)
           {
             /* Initialise the task description. */
             if (current_client_task
@@ -1162,13 +1162,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               abort (); // FIX out of mem
             set_client_state (CLIENT_CREATE_TASK_RCFILE);
           }
-        else if (strncasecmp ("NAME", element_name, 4) == 0)
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_NAME);
-        else if (strncasecmp ("COMMENT", element_name, 7) == 0)
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
-        else if (strncasecmp ("CONFIG", element_name, 6) == 0)
+        else if (strcasecmp ("CONFIG", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_CONFIG);
-        else if (strncasecmp ("TARGET", element_name, 6) == 0)
+        else if (strcasecmp ("TARGET", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_TARGET);
         else
           {
@@ -2205,11 +2205,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
 #if 0
       case CLIENT_ABORT_TASK_CRITERION:
-        assert (strncasecmp ("CRITERION", element_name, 9) == 0);
+        assert (strcasecmp ("CRITERION", element_name) == 0);
         set_client_state (CLIENT_ABORT_TASK);
         break;
       case CLIENT_ABORT_TASK_CRITERION_VALUE:
-        assert (strncasecmp ("TASK_ID", element_name, 7) == 0);
+        assert (strcasecmp ("TASK_ID", element_name) == 0);
         set_client_state (CLIENT_ABORT_TASK);
         break;
 #endif
@@ -2248,17 +2248,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREDENTIALS:
-        assert (strncasecmp ("CREDENTIALS", element_name, 11) == 0);
+        assert (strcasecmp ("CREDENTIALS", element_name) == 0);
         set_client_state (CLIENT_AUTHENTICATE);
         break;
 
       case CLIENT_CREDENTIALS_USERNAME:
-        assert (strncasecmp ("USERNAME", element_name, 8) == 0);
+        assert (strcasecmp ("USERNAME", element_name) == 0);
         set_client_state (CLIENT_CREDENTIALS);
         break;
 
       case CLIENT_CREDENTIALS_PASSWORD:
-        assert (strncasecmp ("PASSWORD", element_name, 8) == 0);
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
         set_client_state (CLIENT_CREDENTIALS);
         break;
 
@@ -2420,7 +2420,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_REPORT:
-        assert (strncasecmp ("DELETE_REPORT", element_name, 13) == 0);
+        assert (strcasecmp ("DELETE_REPORT", element_name) == 0);
         if (current_uuid)
           {
             report_t report;
@@ -2462,7 +2462,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_REPORT:
-        assert (strncasecmp ("GET_REPORT", element_name, 10) == 0);
+        assert (strcasecmp ("GET_REPORT", element_name) == 0);
         if (current_credentials.username == NULL)
           {
             free_string_var (&current_uuid);
@@ -3074,7 +3074,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_CONFIG:
         {
-          assert (strncasecmp ("DELETE_CONFIG", element_name, 13) == 0);
+          assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
           assert (modify_task_name != NULL);
 
           if (strlen (modify_task_name) == 0)
@@ -3099,13 +3099,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       case CLIENT_DELETE_CONFIG_NAME:
-        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_DELETE_CONFIG);
         break;
 
       case CLIENT_DELETE_TARGET:
         {
-          assert (strncasecmp ("DELETE_TARGET", element_name, 13) == 0);
+          assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
           assert (modify_task_name != NULL);
 
           if (strlen (modify_task_name) == 0)
@@ -3130,7 +3130,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       case CLIENT_DELETE_TARGET_NAME:
-        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_DELETE_TARGET);
         break;
 
@@ -3253,7 +3253,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_REPORT_PARAMETER:
-        assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
+        assert (strcasecmp ("PARAMETER", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
         break;
 
@@ -3399,17 +3399,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
-        assert (strncasecmp ("PARAMETER", element_name, 9) == 0);
+        assert (strcasecmp ("PARAMETER", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
-        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
+        assert (strcasecmp ("RCFILE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
 
       case CLIENT_CREATE_CONFIG:
         {
-          assert (strncasecmp ("CREATE_CONFIG", element_name, 13) == 0);
+          assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (modify_task_name != NULL);
           assert (modify_task_value != NULL);
 
@@ -3456,21 +3456,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       case CLIENT_CREATE_CONFIG_COMMENT:
-        assert (strncasecmp ("COMMENT", element_name, 7) == 0);
+        assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       case CLIENT_CREATE_CONFIG_NAME:
-        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       case CLIENT_CREATE_CONFIG_RCFILE:
-        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
+        assert (strcasecmp ("RCFILE", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
 
       case CLIENT_CREATE_TARGET:
         {
-          assert (strncasecmp ("CREATE_TARGET", element_name, 13) == 0);
+          assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (modify_task_name != NULL);
           assert (modify_task_value != NULL);
 
@@ -3508,15 +3508,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       case CLIENT_CREATE_TARGET_COMMENT:
-        assert (strncasecmp ("COMMENT", element_name, 7) == 0);
+        assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_HOSTS:
-        assert (strncasecmp ("HOSTS", element_name, 5) == 0);
+        assert (strcasecmp ("HOSTS", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_NAME:
-        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
 
@@ -3525,7 +3525,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar* msg;
           char *tsk_uuid, *name, *description, *config, *target;
 
-          assert (strncasecmp ("CREATE_TASK", element_name, 11) == 0);
+          assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (current_client_task != (task_t) NULL);
 
           /* The task already exists in the database at this point,
@@ -3704,19 +3704,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       case CLIENT_CREATE_TASK_COMMENT:
-        assert (strncasecmp ("COMMENT", element_name, 12) == 0);
+        assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_CONFIG:
-        assert (strncasecmp ("CONFIG", element_name, 6) == 0);
+        assert (strcasecmp ("CONFIG", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_NAME:
-        assert (strncasecmp ("NAME", element_name, 4) == 0);
+        assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_RCFILE:
-        assert (strncasecmp ("RCFILE", element_name, 6) == 0);
+        assert (strcasecmp ("RCFILE", element_name) == 0);
         if (current_client_task)
           {
             gsize out_len;
@@ -3744,7 +3744,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
       case CLIENT_CREATE_TASK_TARGET:
-        assert (strncasecmp ("TARGET", element_name, 6) == 0);
+        assert (strcasecmp ("TARGET", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
@@ -3804,7 +3804,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_STATUS:
-        assert (strncasecmp ("GET_STATUS", element_name, 10) == 0);
+        assert (strcasecmp ("GET_STATUS", element_name) == 0);
         if (current_uuid && strlen (current_uuid))
           {
             task_t task;
@@ -4231,7 +4231,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_CONFIGS:
         {
           iterator_t configs;
-          assert (strncasecmp ("GET_CONFIGS", element_name, 11) == 0);
+          assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
           SEND_TO_CLIENT_OR_FAIL ("<get_configs_response>");
           init_config_iterator (&configs);
@@ -4265,7 +4265,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_TARGETS:
         {
           iterator_t targets;
-          assert (strncasecmp ("GET_TARGETS", element_name, 11) == 0);
+          assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
           SEND_TO_CLIENT_OR_FAIL ("<get_targets_response>");
           init_target_iterator (&targets);

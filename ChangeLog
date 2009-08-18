@@ -1,5 +1,11 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h, src/omp.c, src/otp.c: Replace strncmp and
+	strncasecmp with strcmp and strcasecmp for comparing with NULL
+	terminated strings.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_start_task_3.c: New file.  Tests START_TASK with a task
 	created with a target and a config.
 

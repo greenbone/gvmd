@@ -1671,7 +1671,7 @@ int
 set_report_parameter (report_t report, const char* parameter, char* value)
 {
   tracef ("   set_report_parameter %llu %s\n", report, parameter);
-  if (strncasecmp ("COMMENT", parameter, 7) == 0)
+  if (strcasecmp ("COMMENT", parameter) == 0)
     {
       gchar* quote = sql_quote (value, strlen (value));
       sql ("UPDATE reports SET comment = '%s' WHERE ROWID = %llu;",
@@ -1890,7 +1890,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       free (value);
       return -2;
     }
-  if (strncasecmp ("RCFILE", parameter, 6) == 0)
+  if (strcasecmp ("RCFILE", parameter) == 0)
     {
       gsize out_len;
       guchar* out;
@@ -1903,7 +1903,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
            task);
       g_free (quote);
     }
-  else if (strncasecmp ("NAME", parameter, 4) == 0)
+  else if (strcasecmp ("NAME", parameter) == 0)
     {
       gchar* quote = sql_quote (value, strlen (value));
       sql ("UPDATE tasks SET name = '%s' WHERE ROWID = %llu;",
@@ -1911,7 +1911,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
            task);
       g_free (quote);
     }
-  else if (strncasecmp ("COMMENT", parameter, 7) == 0)
+  else if (strcasecmp ("COMMENT", parameter) == 0)
     {
       gchar* quote = sql_quote (value, strlen (value));
       sql ("UPDATE tasks SET comment = '%s' WHERE ROWID = %llu;",

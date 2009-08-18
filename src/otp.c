@@ -262,9 +262,9 @@ set_message_port_number (message_t* message, int number)
 static void
 set_message_port_protocol (message_t* message, const char* protocol)
 {
-  if (strncasecmp ("udp", protocol, 3) == 0)
+  if (strcasecmp ("udp", protocol) == 0)
     message->port.protocol = PORT_PROTOCOL_UDP;
-  else if (strncasecmp ("tcp", protocol, 3) == 0)
+  else if (strcasecmp ("tcp", protocol) == 0)
     message->port.protocol = PORT_PROTOCOL_TCP;
   else
     message->port.protocol = PORT_PROTOCOL_OTHER;
@@ -1365,7 +1365,7 @@ process_otp_server_input ()
           switch (server_state)
             {
               case SERVER_BYE:
-                if (strncasecmp ("BYE", field, 3))
+                if (strcasecmp ("BYE", field))
                   return -1;
                 /* It's up to the caller to set the init state, as the
                  * caller must flush the ACK. */
@@ -1958,7 +1958,7 @@ process_otp_server_input ()
                 }
               case SERVER_PORT_HOST:
                 {
-                  //if (strncasecmp ("chiles", field, 11) == 0) // FIX
+                  //if (strcasecmp ("chiles", field) == 0) // FIX
                   set_server_state (SERVER_PORT_NUMBER);
                   break;
                 }
@@ -2037,21 +2037,21 @@ process_otp_server_input ()
                   }
                 break;
               case SERVER_SERVER:
-                if (strncasecmp ("BYE", field, 3) == 0)
+                if (strcasecmp ("BYE", field) == 0)
                   set_server_state (SERVER_BYE);
-                else if (strncasecmp ("DEBUG", field, 5) == 0)
+                else if (strcasecmp ("DEBUG", field) == 0)
                   set_server_state (SERVER_HOLE_HOST);
-                else if (strncasecmp ("HOLE", field, 4) == 0)
+                else if (strcasecmp ("HOLE", field) == 0)
                   set_server_state (SERVER_HOLE_HOST);
-                else if (strncasecmp ("INFO", field, 4) == 0)
+                else if (strcasecmp ("INFO", field) == 0)
                   set_server_state (SERVER_INFO_HOST);
-                else if (strncasecmp ("LOG", field, 3) == 0)
+                else if (strcasecmp ("LOG", field) == 0)
                   set_server_state (SERVER_LOG_HOST);
-                else if (strncasecmp ("NOTE", field, 4) == 0)
+                else if (strcasecmp ("NOTE", field) == 0)
                   set_server_state (SERVER_NOTE_HOST);
-                else if (strncasecmp ("PLUGINS_MD5", field, 11) == 0)
+                else if (strcasecmp ("PLUGINS_MD5", field) == 0)
                   set_server_state (SERVER_PLUGINS_MD5);
-                else if (strncasecmp ("PLUGIN_LIST", field, 11) == 0)
+                else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
                     /* current_plugins may be allocated already due to a
                      * request for the list before the end of the previous
@@ -2062,14 +2062,14 @@ process_otp_server_input ()
                       current_plugins = nvtis_new ();
                     set_server_state (SERVER_PLUGIN_LIST_OID);
                   }
-                else if (strncasecmp ("PORT", field, 4) == 0)
+                else if (strcasecmp ("PORT", field) == 0)
                   set_server_state (SERVER_PORT_HOST);
-                else if (strncasecmp ("PREFERENCES", field, 11) == 0)
+                else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
                     make_server_preferences ();
                     set_server_state (SERVER_PREFERENCE_NAME);
                   }
-                else if (strncasecmp ("RULES", field, 5) == 0)
+                else if (strcasecmp ("RULES", field) == 0)
                   {
                     maybe_free_server_rules ();
                     make_server_rules ();
@@ -2089,11 +2089,11 @@ process_otp_server_input ()
                       }
                     break;
                   }
-                else if (strncasecmp ("TIME", field, 4) == 0)
+                else if (strcasecmp ("TIME", field) == 0)
                   {
                     set_server_state (SERVER_TIME);
                   }
-                else if (strncasecmp ("STATUS", field, 6) == 0)
+                else if (strcasecmp ("STATUS", field) == 0)
                   {
                     set_server_state (SERVER_STATUS_HOST);
                   }
@@ -2154,13 +2154,13 @@ process_otp_server_input ()
                 }
               case SERVER_TIME:
                 {
-                  if (strncasecmp ("HOST_START", field, 10) == 0)
+                  if (strcasecmp ("HOST_START", field) == 0)
                     set_server_state (SERVER_TIME_HOST_START_HOST);
-                  else if (strncasecmp ("HOST_END", field, 8) == 0)
+                  else if (strcasecmp ("HOST_END", field) == 0)
                     set_server_state (SERVER_TIME_HOST_END_HOST);
-                  else if (strncasecmp ("SCAN_START", field, 10) == 0)
+                  else if (strcasecmp ("SCAN_START", field) == 0)
                     set_server_state (SERVER_TIME_SCAN_START);
-                  else if (strncasecmp ("SCAN_END", field, 8) == 0)
+                  else if (strcasecmp ("SCAN_END", field) == 0)
                     set_server_state (SERVER_TIME_SCAN_END);
                   else
                     abort (); // FIX read all fields up to <|> SERVER?
@@ -2286,8 +2286,8 @@ process_otp_server_input ()
               case SERVER_TOP:
               default:
                 tracef ("   switch t\n");
-                tracef ("   cmp %i\n", strncasecmp ("SERVER", field, 6));
-                if (strncasecmp ("SERVER", field, 6))
+                tracef ("   cmp %i\n", strcasecmp ("SERVER", field));
+                if (strcasecmp ("SERVER", field))
                   return -1;
                 set_server_state (SERVER_SERVER);
                 /* Look for any newline delimited server commands. */
