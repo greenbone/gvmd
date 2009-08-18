@@ -1504,7 +1504,8 @@ wait_for_task_end (gnutls_session_t* session, const char* id)
  * @param[in]  session  Pointer to GNUTLS session.
  * @param[in]  id       ID of task.
  *
- * @return 0 on success, 1 on internal error in task, -1 on error.
+ * @return 0 on success, 1 on internal error in task, -1 on error,
+ *         -2 on failure to find the task.
  */
 int
 wait_for_task_stop (gnutls_session_t* session, const char* id)
@@ -1581,7 +1582,7 @@ wait_for_task_stop (gnutls_session_t* session, const char* id)
           if (run_state == NULL)
             {
               free_entity (entity);
-              return -1;
+              return -2;
             }
 
           if (strcmp (run_state, "Stopped") == 0)
@@ -1592,7 +1593,7 @@ wait_for_task_stop (gnutls_session_t* session, const char* id)
           if (strcmp (run_state, "Done") == 0)
             {
               free_entity (entity);
-              return 1;
+              return 0;
             }
           if (strcmp (run_state, "Internal Error") == 0)
             {

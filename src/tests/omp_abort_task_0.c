@@ -136,7 +136,7 @@ main ()
 
   /* Wait for the task to stop on the server. */
 
-  if (wait_for_task_stop (&session, id))
+  if (wait_for_task_stop (&session, id) == -1)
     {
       delete_task (&session, id);
       free (id);
