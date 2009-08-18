@@ -20,8 +20,7 @@ CREATE TABLE config_preferences (
 	value text);
 
 CREATE TABLE configs (
-	id integer PRIMARY KEY,
-	name text UNIQUE NOT NULL,
+	name text PRIMARY KEY,
 	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT);
 
 CREATE TABLE tasks (
@@ -29,7 +28,8 @@ CREATE TABLE tasks (
 	uuid text UNIQUE NOT NULL,
 	name text,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	config integer REFERENCES configs (id) ON DELETE RESTRICT,
+	config integer REFERENCES configs (name) ON DELETE RESTRICT,
+	target integer REFERENCES targets (name) ON DELETE RESTRICT,
 	comment text);
 
 CREATE TABLE results (

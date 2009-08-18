@@ -350,14 +350,16 @@ print_tasks ()
  *
  * @return The preference on success, else NULL.
  */
-static char*
-task_preference (task_t task, const char* name)
+char*
+rc_preference (const char* desc, const char* name)
 {
-  char* desc = task_description (task);
-  char* orig_desc = desc;
   char* seek;
 
-  if (desc == NULL) return NULL;
+  if (desc == NULL)
+    {
+      tracef ("   desc NULL\n");
+      return NULL;
+    }
 
   while ((seek = strchr (desc, '\n')))
     {
@@ -376,7 +378,6 @@ task_preference (task_t task, const char* name)
               gchar* ret;
               ret = g_strndup (eq + 2,
                                seek ? seek - (eq + 2) : strlen (seek));
-              free (orig_desc);
               return ret;
             }
         }
@@ -403,7 +404,6 @@ task_preference (task_t task, const char* name)
       if (seek == NULL) break;
       desc = seek + 1;
     }
-  free (orig_desc);
   return NULL;
 }
 
@@ -416,286 +416,113 @@ task_preference (task_t task, const char* name)
  *         if the task is to invoke all plugins, or NULL if the task
  *         is yet to be defined.
  */
-static char*
-task_plugins (task_t task)
+static gchar*
+nvt_selector_plugins (const char* selector)
 {
-  char* desc = task_description (task);
-  char* orig_desc = desc;
-  char* seek;
-  GString* plugins;
-  gboolean first = TRUE;
-
-  if (desc == NULL) return NULL;
-
-  plugins = g_string_new ("");
-  while ((seek = strchr (desc, '\n')))
+  if (nvt_selector_nvts_growing (selector))
     {
-      char* eq = seek
-                 ? memchr (desc, '=', seek - desc)
-                 : strchr (desc, '=');
-      if (eq)
-        {
-#if 0
-          tracef ("   skip: %.*s\n",
-                  seek ? seek - desc : strlen (seek),
-                  desc);
-#endif
-        }
-      else if ((seek ? seek - desc >= 17 : 0)
-               && (strncmp (desc, "begin(PLUGIN_SET)", 17) == 0
-                   || strncmp (desc, "begin(SCANNER_SET)", 18) == 0))
-        {
-          /* Read in the plugins. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              char* eq2;
-
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-
-              eq2 = memchr (desc, '=', seek - desc);
-              if (eq2)
-                {
-                  if (strncasecmp (eq2 + 2, "yes", 3) == 0)
-                    {
-                      if (first)
-                        first = FALSE;
-                      else
-                        g_string_append_c (plugins, ';');
-                      /* FIX Rather skip all whitespace before and after
-                             name. */
-                      g_string_append_len (plugins, desc + 1, eq2 - desc - 2);
-#if 0
-                      tracef ("   plugin: %.*s\n",
-                              eq2 - desc - 1,
-                              desc);
-#endif
-                    }
-                }
-
-              desc = seek + 1;
-            }
-        }
-      else if ((seek ? seek - desc > 7 : 0)
-               && strncmp (desc, "begin(", 6) == 0)
-        {
-          /* Read over the section. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-#if 0
-              tracef ("skip s: %.*s\n",
-                      seek ? seek - desc : strlen (seek),
-                      desc);
-#endif
-              desc = seek + 1;
-            }
-        }
-      if (seek == NULL) break;
-      desc = seek + 1;
+      if ((sql_int (0, 0,
+                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                    selector)
+           == 1)
+          && (sql_int (0, 0,
+                       "SELECT COUNT(*) FROM nvt_selectors"
+                       " WHERE name = '%s'"
+                       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                       ";",
+                       selector)
+              == 1))
+         return g_strdup ("");
+      return NULL;
     }
-  free (orig_desc);
-  return g_string_free (plugins, FALSE);
+  else
+    {
+      GString* plugins;
+      iterator_t nvts;
+      gboolean first = TRUE;
+
+      plugins = g_string_new ("");
+      init_nvt_selector_iterator (&nvts, selector, 2);
+      while (next (&nvts))
+        if (nvt_selector_iterator_include (&nvts))
+          {
+            if (first)
+              first = FALSE;
+            else
+              g_string_append_c (plugins, ';');
+            g_string_append (plugins, nvt_selector_iterator_nvt (&nvts));
+          }
+      cleanup_iterator (&nvts);
+
+      return g_string_free (plugins, FALSE);
+    }
 }
 
 /**
- * @brief Send the task preferences (SERVER_PREFS) to the server.
+ * @brief Send the preferences from a config to the server.
  *
  * @param[in]  task  Task.
+ * @param[in]  name  Name of preference section to send.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_task_preferences (task_t task, char* name)
+send_config_preferences (const char* config, const char* name)
 {
-  char* desc = task_description (task);
-  char* orig_desc = desc;
-  char* seek;
+  iterator_t prefs;
 
-  if (desc == NULL) return -1;
-
-  while (1)
+  init_preference_iterator (&prefs, config, name);
+  while (next (&prefs))
     {
-      char* eq;
-      seek = strchr (desc, '\n');
-      eq = seek
-           ? memchr (desc, '=', seek - desc)
-           : strchr (desc, '=');
-      if (eq)
+      if (send_to_server (preference_iterator_name (&prefs)))
         {
-#if 0
-          tracef ("   skip: %.*s\n",
-                  seek ? seek - desc : strlen (seek),
-                  desc);
-#endif
+          cleanup_iterator (&prefs);
+          return -1;
         }
-      else if ((seek ? seek - desc >= 7 + strlen (name) : 0)
-               && (strncmp (desc, "begin(", 6) == 0)
-               && (strncmp (desc + 6, name, strlen (name)) == 0)
-               && (desc[6 + strlen (name)] == ')'))
+
+      if (sendn_to_server (" <|> ", 5))
         {
-          /* Send the preferences. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              char* eq2;
-
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-
-              eq2 = memchr (desc, '=', seek - desc);
-              if (eq2)
-                {
-                  char* desc_end = eq2;
-                  desc_end--;
-                  while (*desc_end == ' ') desc_end--;
-                  desc_end++;
-                  while (*desc == ' ') desc++;
-                  if (desc < desc_end)
-                    {
-                      if (sendn_to_server (desc, desc_end - desc))
-                        {
-                          free (orig_desc);
-                          return -1;
-                        }
-                      if (sendn_to_server (" <|> ", 5))
-                        {
-                          free (orig_desc);
-                          return -1;
-                        }
-                      if (sendn_to_server (eq2 + 2, /* Daring. */
-                                           seek ? seek - (eq2 + 2)
-                                                : strlen (eq2 + 2)))
-                        {
-                          free (orig_desc);
-                          return -1;
-                        }
-                      if (sendn_to_server ("\n", 1))
-                        {
-                          free (orig_desc);
-                          return -1;
-                        }
-                    }
-                }
-
-              desc = seek + 1;
-            }
+          cleanup_iterator (&prefs);
+          return -1;
         }
-      else if ((seek ? seek - desc > 7 : 0)
-               && (strncmp (desc, "begin(", 6) == 0))
+
+      if (send_to_server (preference_iterator_value (&prefs)))
         {
-          /* Read over the section. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-#if 0
-              tracef ("skip s: %.*s\n",
-                      seek ? seek - desc : strlen (seek),
-                      desc);
-#endif
-              desc = seek + 1;
-            }
+          cleanup_iterator (&prefs);
+          return -1;
         }
-      if (seek == NULL) break;
-      desc = seek + 1;
     }
-  free (orig_desc);
+  cleanup_iterator (&prefs);
   return 0;
 }
 
 /**
- * @brief Send the task rules (CLIENTSIDE_USERRULES) to the server.
+ * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the server.
  *
- * @param[in]  task  Task.
+ * @param[in]  config  Config.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_task_rules (task_t task)
+send_config_rules (const char* config)
 {
-  char* desc = task_description (task);
-  char* orig_desc = desc;
-  char* seek;
+  iterator_t prefs;
 
-  if (desc == NULL) return -1;
-
-  while (1)
+  init_preference_iterator (&prefs, config, "CLIENTSIDE_USERRULES");
+  while (next (&prefs))
     {
-      char* eq;
-      seek = strchr (desc, '\n');
-      eq = seek
-           ? memchr (desc, '=', seek - desc)
-           : strchr (desc, '=');
-      if (eq)
+      if (send_to_server (preference_iterator_name (&prefs)))
         {
-#if 0
-          tracef ("   skip: %.*s\n",
-                  seek ? seek - desc : strlen (seek),
-                  desc);
-#endif
+          cleanup_iterator (&prefs);
+          return -1;
         }
-      else if ((seek ? seek - desc >= 27 : 0)
-               && (strncmp (desc, "begin(CLIENTSIDE_USERRULES)", 27) == 0))
+      if (sendn_to_server ("\n", 1))
         {
-          /* Send the preferences. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-
-              if (sendn_to_server (desc, seek ? seek - desc : strlen (desc)))
-                return -1;
-              if (sendn_to_server ("\n", 1))
-                return -1;
-
-              desc = seek + 1;
-            }
+          cleanup_iterator (&prefs);
+          return -1;
         }
-      else if ((seek ? seek - desc > 7 : 0)
-               && strncmp (desc, "begin(", 6) == 0)
-        {
-          /* Read over the section. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-#if 0
-              tracef ("skip s: %.*s\n",
-                      seek ? seek - desc : strlen (seek),
-                      desc);
-#endif
-              desc = seek + 1;
-            }
-        }
-      if (seek == NULL) break;
-      desc = seek + 1;
     }
-  free (orig_desc);
+  cleanup_iterator (&prefs);
   return 0;
 }
 
@@ -707,14 +534,14 @@ send_task_rules (task_t task)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, -1 if out of space in \ref to_server buffer, -2 if the
- *         task definition is missing or is missing targets, -3 if creating the
- *         report fails.
+ *         task is missing a target, -3 if creating the report fails, -4 target
+ *         missing hosts, -5 task missing config.
  */
 int
 start_task (task_t task)
 {
-  char* targets;
-  char* plugins;
+  char *hosts, *target, *config, *selector;
+  gchar *plugins;
   int fail;
 
   tracef ("   start task %u\n", task_id (task));
@@ -726,11 +553,19 @@ start_task (task_t task)
       || run_status == TASK_STATUS_RUNNING)
     return 0;
 
-  targets = task_preference (task, "targets");
-  if (targets == NULL)
+  target = task_target (task);
+  if (target == NULL)
     {
-      tracef ("   failed to get targets from preferences.\n");
+      tracef ("   task target is NULL.\n");
       return -2;
+    }
+
+  hosts = target_hosts (target);
+  free (target);
+  if (hosts == NULL)
+    {
+      tracef ("   target hosts is NULL.\n");
+      return -4;
     }
 
   /* Create the report. */
@@ -741,11 +576,31 @@ start_task (task_t task)
 
   reset_task (task);
 
-  /* Start the task. */
+  /* Send the preferences header. */
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
 
-  plugins = task_plugins (task);
+  /* Get the config and selector. */
+
+  config = task_config (task);
+  if (config == NULL)
+    {
+      tracef ("   task config is NULL.\n");
+      return -5;
+    }
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    {
+      free (config);
+      tracef ("   task config is NULL.\n");
+      return -5;
+    }
+
+  /* Send the plugin list. */
+
+  plugins = nvt_selector_plugins (selector);
+  free (selector);
   if (strlen (plugins))
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
@@ -753,26 +608,72 @@ start_task (task_t task)
   free (plugins);
   if (fail) return -1;
 
-  if (send_to_server ("ntp_keep_communication_alive <|> yes\n")) return -1;
-  if (send_to_server ("ntp_client_accepts_notes <|> yes\n")) return -1;
+  /* Send some fixed preferences. */
+
+  if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
+    {
+      free (config);
+      return -1;
+    }
+  if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
+    {
+      free (config);
+      return -1;
+    }
   // FIX still getting FINISHED msgs
-  if (send_to_server ("ntp_opt_show_end <|> no\n")) return -1;
-  if (send_to_server ("ntp_short_status <|> no\n")) return -1;
+  if (send_to_server ("ntp_opt_show_end <|> no\n"))
+    {
+      free (config);
+      return -1;
+    }
+  if (send_to_server ("ntp_short_status <|> no\n"))
+    {
+      free (config);
+      return -1;
+    }
 
-  if (send_task_preferences (task, "SERVER_PREFS")) return -1;
-  if (send_task_preferences (task, "PLUGINS_PREFS")) return -1;
+  /* Send the server and plugins preferences. */
 
+  if (send_config_preferences (config, "SERVER_PREFS"))
+    {
+      free (config);
+      return -1;
+    }
+  if (send_config_preferences (config, "PLUGINS_PREFS"))
+    {
+      free (config);
+      return -1;
+    }
+
+  if (send_to_server ("<|> CLIENT\n"))
+    {
+      free (config);
+      return -1;
+    }
+
+  /* Send the rules. */
+
+  if (send_to_server ("CLIENT <|> RULES <|>\n"))
+    {
+      free (config);
+      return -1;
+    }
+
+  if (send_config_rules (config))
+    {
+      free (config);
+      return -1;
+    }
+
+  free (config);
   if (send_to_server ("<|> CLIENT\n")) return -1;
 
-  if (send_to_server ("CLIENT <|> RULES <|>\n")) return -1;
-
-  if (send_task_rules (task)) return -1;
-  if (send_to_server ("<|> CLIENT\n")) return -1;
+  /* Send the attack command. */
 
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
-                          strlen (targets),
-                          targets);
-  free (targets);
+                          strlen (hosts),
+                          hosts);
+  free (hosts);
   if (fail) return -1;
   server_active = 1;
 

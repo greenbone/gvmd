@@ -198,6 +198,12 @@ char*
 task_comment (task_t);
 
 char*
+task_config (task_t);
+
+char*
+task_target (task_t);
+
+char*
 task_description (task_t);
 
 void
@@ -282,7 +288,13 @@ int
 append_to_task_comment (task_t, const char*, int);
 
 int
+append_to_task_config (task_t, const char*, int);
+
+int
 append_to_task_name (task_t, const char*, int);
+
+int
+append_to_task_target (task_t, const char*, int);
 
 int
 add_task_description_line (task_t, const char*, size_t);
@@ -442,6 +454,12 @@ int
 host_iterator_max_port (iterator_t*);
 
 
+/* RC's. */
+
+char*
+rc_preference (const char*, const char*);
+
+
 /* Targets. */
 
 int
@@ -461,6 +479,9 @@ target_iterator_hosts (iterator_t*);
 
 const char*
 target_iterator_comment (iterator_t*);
+
+char*
+target_hosts (const char*);
 
 
 /* Configs. */
@@ -482,6 +503,9 @@ config_iterator_nvt_selector (iterator_t*);
 
 const char*
 config_iterator_comment (iterator_t*);
+
+char*
+config_nvt_selector (const char*);
 
 
 /* NVT selectors. */

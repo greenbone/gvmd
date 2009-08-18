@@ -314,7 +314,7 @@ to_server_buffer_space ()
  * @return 0 for success, any other value for failure.
  */
 int
-sendn_to_server (char * msg, size_t n)
+sendn_to_server (const char * msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
@@ -338,7 +338,7 @@ sendn_to_server (char * msg, size_t n)
  * @return 0 for success, any other value for failure.
  */
 int
-send_to_server (char * msg)
+send_to_server (const char * msg)
 {
   return sendn_to_server (msg, strlen (msg));
 }

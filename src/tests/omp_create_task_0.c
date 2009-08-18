@@ -38,7 +38,7 @@ main ()
 {
   int socket, ret;
   gnutls_session_t session;
-  entity_t entity, id_entity, expected, status;
+  entity_t entity, expected;
 
   setup_test ();
 
@@ -73,35 +73,18 @@ main ()
       return EXIT_FAILURE;
     }
 
-  id_entity = entity_child (entity, "task_id");
-  if (id_entity == NULL)
-    {
-      free_entity (entity);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
-    }
-
   /* Compare. */
 
   expected = add_entity (NULL, "create_task_response", NULL);
-  add_attribute (expected, "status", "201");
-  add_attribute (expected, "status_text", "OK, resource created");
-  add_entity (&expected->entities, "task_id", entity_text (id_entity));
+  add_attribute (expected, "status", "400");
+  add_attribute (expected,
+                 "status_text",
+                 "CREATE_TASK rcfile must have targets");
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;
   else
     ret = EXIT_SUCCESS;
-
-  if (omp_get_status (&session, entity_text (id_entity), &status))
-    ret = EXIT_FAILURE;
-  else
-    {
-      if (task_status (status) == NULL
-          || strcmp (task_status (status), "New"))
-        ret = EXIT_FAILURE;
-      free_entity (status);
-    }
 
   /* Cleanup. */
 

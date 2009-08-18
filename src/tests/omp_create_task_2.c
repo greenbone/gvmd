@@ -1,9 +1,9 @@
-/* Test 1 of OMP CREATE_TASK.
+/* Test 2 of OMP CREATE_TASK.
  * $Id$
- * Description: Test the OMP CREATE_TASK command with an empty RC file.
+ * Description: Test OMP CREATE_TASK with rcfile, target and config.
  *
  * Authors:
- * Matthew Mundell <matt@mundell.ukfsn.org>
+ * Matthew Mundell <matthew.mundell@intevation.de>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -54,9 +54,11 @@ main ()
     }
 
   if (send_to_manager (&session, "<create_task>"
-                                 "<rcfile></rcfile>"
-                                 "<name>omp_create_task_1 task</name>"
-                                 "<comment>Task for omp_create_task_1.</comment>"
+                                 "<rcfile>YmFzZTY0IHRleHQ=</rcfile>"
+                                 "<name>omp_create_task_2 task</name>"
+                                 "<comment>Task for omp_create_task_2.</comment>"
+                                 "<target>All</target>"
+                                 "<config>Full</config>"
                                  "</create_task>")
       == -1)
     {
@@ -79,7 +81,8 @@ main ()
   add_attribute (expected, "status", "400");
   add_attribute (expected,
                  "status_text",
-                 "CREATE_TASK rcfile must have targets");
+                 "CREATE_TASK requires either an rcfile or both a"
+                 " config and a target");
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;

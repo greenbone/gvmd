@@ -1,9 +1,9 @@
-/* Test 1 of OMP CREATE_TASK.
+/* Test 3 of OMP CREATE_TASK.
  * $Id$
- * Description: Test the OMP CREATE_TASK command with an empty RC file.
+ * Description: Test OMP CREATE_TASK with target and config.
  *
  * Authors:
- * Matthew Mundell <matt@mundell.ukfsn.org>
+ * Matthew Mundell <matthew.mundell@intevation.de>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH
@@ -38,7 +38,7 @@ main ()
 {
   int socket, ret;
   gnutls_session_t session;
-  entity_t entity, expected;
+  entity_t entity, id_entity, expected;
 
   setup_test ();
 
@@ -54,9 +54,10 @@ main ()
     }
 
   if (send_to_manager (&session, "<create_task>"
-                                 "<rcfile></rcfile>"
-                                 "<name>omp_create_task_1 task</name>"
-                                 "<comment>Task for omp_create_task_1.</comment>"
+                                 "<name>omp_create_task_3 task</name>"
+                                 "<comment>Task for omp_create_task_3.</comment>"
+                                 "<target>Localhost</target>"
+                                 "<config>Full</config>"
                                  "</create_task>")
       == -1)
     {
@@ -73,13 +74,20 @@ main ()
       return EXIT_FAILURE;
     }
 
+  id_entity = entity_child (entity, "task_id");
+  if (id_entity == NULL)
+    {
+      free_entity (entity);
+      close_manager_connection (socket, session);
+      return EXIT_FAILURE;
+    }
+
   /* Compare. */
 
   expected = add_entity (NULL, "create_task_response", NULL);
-  add_attribute (expected, "status", "400");
-  add_attribute (expected,
-                 "status_text",
-                 "CREATE_TASK rcfile must have targets");
+  add_attribute (expected, "status", "201");
+  add_attribute (expected, "status_text", "OK, resource created");
+  add_entity (&expected->entities, "task_id", entity_text (id_entity));
 
   if (compare_entities (entity, expected))
     ret = EXIT_FAILURE;
@@ -88,6 +96,7 @@ main ()
 
   /* Cleanup. */
 
+  delete_task (&session, entity_text (id_entity));
   close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);

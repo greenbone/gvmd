@@ -296,8 +296,10 @@ typedef enum
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
+  CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_RCFILE,
+  CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
@@ -1164,6 +1166,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strncasecmp ("COMMENT", element_name, 7) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
+        else if (strncasecmp ("CONFIG", element_name, 6) == 0)
+          set_client_state (CLIENT_CREATE_TASK_CONFIG);
+        else if (strncasecmp ("TARGET", element_name, 6) == 0)
+          set_client_state (CLIENT_CREATE_TASK_TARGET);
         else
           {
             if (send_element_error_to_client ("create_task", element_name))
@@ -3252,6 +3258,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
+        // FIX update to match create_task (config, target)
         if (current_uuid)
           {
             assert (current_client_task == (task_t) NULL);
@@ -3515,17 +3522,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TASK:
         {
-          char* tsk_uuid;
+          gchar* msg;
+          char *tsk_uuid, *name, *description, *config, *target;
 
           assert (strncasecmp ("CREATE_TASK", element_name, 11) == 0);
           assert (current_client_task != (task_t) NULL);
 
-          // FIX if all rqrd fields given then ok, else respond fail
-          // FIX only here should the task be added to tasks
-          //       eg on err half task could be saved (or saved with base64 file)
+          /* The task already exists in the database at this point,
+           * including the RC file (in the description column), so on
+           * failure be sure to call request_delete_task to remove the
+           * task. */
+          // FIX fail cases of CLIENT_CREATE_TASK_* states must do so too
+
+          /* Get the task ID. */
 
           if (task_uuid (current_client_task, &tsk_uuid))
             {
+              request_delete_task (&current_client_task);
               if (send_find_error_to_client ("create_task",
                                              "task",
                                              current_uuid))
@@ -3533,32 +3546,167 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   error_send_to_client (error);
                   return;
                 }
+              current_client_task = (task_t) NULL;
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          /* Check for the right combination of rcfile, target and config. */
+
+          description = task_description (current_client_task);
+          config = task_config (current_client_task);
+          target = task_target (current_client_task);
+          if ((description && (config || target))
+              || (description == NULL
+                  && (config == NULL || target == NULL)))
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              free (config);
+              free (target);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "CREATE_TASK requires either an rcfile"
+                                  " or both a config and a target"));
+              current_client_task = (task_t) NULL;
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          /* Check for name. */
+
+          name = task_name (current_client_task);
+          if (name == NULL)
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              free (description);
+              free (config);
+              free (target);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "CREATE_TASK requires a name attribute"));
+              current_client_task = (task_t) NULL;
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          /* If there's an rc file, setup the target and config, otherwise
+           * check that the target and config exist. */
+
+          if (description)
+            {
+              int ret;
+              char *hosts;
+              gchar *target_name, *config_name;
+
+              /* Create the config. */
+
+              config_name = g_strdup_printf ("Imported config for task %s",
+                                             tsk_uuid);
+              ret = create_config (config_name, NULL, (char*) description);
+              g_free (config_name);
+              if (ret)
+                {
+                  request_delete_task (&current_client_task);
+                  free (description);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  current_client_task = (task_t) NULL;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              /* Create the target. */
+
+              hosts = rc_preference (description, "targets");
+              if (hosts == NULL)
+                {
+                  request_delete_task (&current_client_task);
+                  g_free (description);
+                  free (tsk_uuid);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX
+                     ("create_task",
+                      "CREATE_TASK rcfile must have targets"));
+                  current_client_task = (task_t) NULL;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              g_free (description);
+
+              target_name = g_strdup_printf ("Imported target for task %s",
+                                             tsk_uuid);
+              if (create_target (target_name, hosts, NULL))
+                {
+                  request_delete_task (&current_client_task);
+                  g_free (target_name);
+                  g_free (description);
+                  free (tsk_uuid);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_task"));
+                  current_client_task = (task_t) NULL;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              g_free (target_name);
             }
           else
             {
-              gchar* msg;
-              msg = g_strdup_printf
-                     ("<create_task_response"
-                      " status=\"" STATUS_OK_CREATED "\""
-                      " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
-                      "<task_id>%s</task_id>"
-                      "</create_task_response>",
-                      tsk_uuid);
-              free (tsk_uuid);
-              if (send_to_client (msg))
+              if (target_hosts (target) == NULL)
                 {
-                  g_free (msg);
-                  error_send_to_client (error);
-                  return;
+                  request_delete_task (&current_client_task);
+                  free (tsk_uuid);
+                  free (config);
+                  free (target);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "CREATE_TASK target must exist"));
+                  current_client_task = (task_t) NULL;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
                 }
-              g_free (msg);
+              if (config_nvt_selector (config) == NULL)
+                {
+                  request_delete_task (&current_client_task);
+                  free (tsk_uuid);
+                  free (config);
+                  free (target);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "CREATE_TASK config must exist"));
+                  current_client_task = (task_t) NULL;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
             }
+
+          /* Respond successfully. */
+
+          msg = g_strdup_printf
+                 ("<create_task_response"
+                  " status=\"" STATUS_OK_CREATED "\""
+                  " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
+                  "<task_id>%s</task_id>"
+                  "</create_task_response>",
+                  tsk_uuid);
+          free (tsk_uuid);
+          if (send_to_client (msg))
+            {
+              g_free (msg);
+              error_send_to_client (error);
+              return;
+            }
+          g_free (msg);
           current_client_task = (task_t) NULL;
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
       case CLIENT_CREATE_TASK_COMMENT:
         assert (strncasecmp ("COMMENT", element_name, 12) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
+      case CLIENT_CREATE_TASK_CONFIG:
+        assert (strncasecmp ("CONFIG", element_name, 6) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
       case CLIENT_CREATE_TASK_NAME:
@@ -3593,6 +3741,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TASK);
           }
         break;
+      case CLIENT_CREATE_TASK_TARGET:
+        assert (strncasecmp ("TARGET", element_name, 6) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
 
       case CLIENT_START_TASK:
         if (current_uuid)
@@ -3622,11 +3774,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     abort ();
                     break;
                   case -2:
-                    /* Task definition missing or lacks targets. */
+                    /* Task target lacks hosts.  This is checked when the
+                     * target is created anyway. */
+                    assert (0);
                     if (send_to_client ("<start_task_response"
                                         " status=\"" STATUS_ERROR_MISSING "\""
-                                        " status_text=\"Failed to find targets"
-                                        " in the task RC\"/>"))
+                                        " status_text=\"Task target is missing"
+                                        " hosts\"/>"))
                       {
                         error_send_to_client (error);
                         return;
@@ -4207,6 +4361,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (current_client_task, text, text_len);
         break;
+      case CLIENT_CREATE_TASK_CONFIG:
+        append_to_task_config (current_client_task, text, text_len);
+        break;
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (current_client_task, text, text_len);
         break;
@@ -4216,6 +4373,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
+        break;
+      case CLIENT_CREATE_TASK_TARGET:
+        append_to_task_target (current_client_task, text, text_len);
         break;
 
       case CLIENT_DELETE_CONFIG_NAME:

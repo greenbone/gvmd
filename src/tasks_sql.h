@@ -517,7 +517,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
@@ -544,6 +544,11 @@ init_manage (GSList *log_config)
       //     create_config ("full", OPENVAS_STATE_DIR "/mgr/openvasrc-full");?
       //         depends on scanner?
     }
+
+  /* Setup predefined targets. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM targets;") == 0)
+    sql ("INSERT into targets (name, hosts) VALUES ('Localhost', 'localhost');");
 
   /* Set requested and running tasks to stopped. */
 
@@ -704,6 +709,36 @@ task_comment (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT comment FROM tasks WHERE ROWID = %llu;",
+                     task);
+}
+
+/**
+ * @brief Return the config of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Config of task.
+ */
+char*
+task_config (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT config FROM tasks WHERE ROWID = %llu;",
+                     task);
+}
+
+/**
+ * @brief Return the target of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Target of task.
+ */
+char*
+task_target (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT target FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -1941,6 +1976,22 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
 }
 
 /**
+ * @brief Append text to the config associated with a task.
+ *
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
+int
+append_to_task_config (task_t task, const char* text, /*@unused@*/ int length)
+{
+  append_to_task_string (task, "config", text);
+  return 0;
+}
+
+/**
  * @brief Append text to the name associated with a task.
  *
  * @param[in]  task    A pointer to the task.
@@ -1954,6 +2005,22 @@ append_to_task_name (task_t task, const char* text,
                            /*@unused@*/ int length)
 {
   append_to_task_string (task, "name", text);
+  return 0;
+}
+
+/**
+ * @brief Append text to the target associated with a task.
+ *
+ * @param[in]  task    A pointer to the task.
+ * @param[in]  text    The text to append.
+ * @param[in]  length  Length of the text.
+ *
+ * @return 0 on success, -1 if out of memory.
+ */
+int
+append_to_task_target (task_t task, const char* text, /*@unused@*/ int length)
+{
+  append_to_task_string (task, "target", text);
   return 0;
 }
 
@@ -2099,17 +2166,27 @@ create_target (const char* name, const char* hosts, const char* comment)
   if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
                quoted_name))
     {
+      tracef ("   failed to find target\n");
       g_free (quoted_name);
       sql ("END;");
       return -1;
     }
 
-  quoted_comment = sql_quote (comment, strlen (comment));
   quoted_hosts = sql_quote (hosts, strlen (hosts));
-  sql ("INSERT INTO targets (name, hosts, comment)"
-       " VALUES ('%s', '%s', '%s');",
-       quoted_name, quoted_hosts, quoted_comment);
-  g_free (quoted_comment);
+
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment, strlen (comment));
+      sql ("INSERT INTO targets (name, hosts, comment)"
+           " VALUES ('%s', '%s', '%s');",
+           quoted_name, quoted_hosts, quoted_comment);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO targets (name, hosts, comment)"
+         " VALUES ('%s', '%s', '');",
+         quoted_name, quoted_hosts);
+
   g_free (quoted_name);
   g_free (quoted_hosts);
 
@@ -2128,6 +2205,7 @@ create_target (const char* name, const char* hosts, const char* comment)
 int
 delete_target (const char* name)
 {
+  // FIX fail if a task references the target
   gchar* quoted_name = sql_quote (name, strlen (name));
   sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
   g_free (quoted_name);
@@ -2194,6 +2272,24 @@ target_iterator_comment (iterator_t* iterator)
   if (iterator->done) return "";
   ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
+}
+
+/**
+ * @brief Return the hosts associated with a target.
+ *
+ * @param[in]  name  Target name.
+ *
+ * @return Comma separated list of hosts if available, else NULL.
+ */
+char*
+target_hosts (const char *name)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  char* hosts = sql_string (0, 0,
+                            "SELECT hosts FROM targets WHERE name = '%s';",
+                            quoted_name);
+  g_free (quoted_name);
+  return hosts;
 }
 
 
@@ -2345,7 +2441,17 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
   char* seek;
 
-  if (rc == NULL || config_name == NULL) return -1;
+  if (rc == NULL)
+    {
+      tracef ("   rc NULL\n");
+      return -1;
+    }
+
+  if (config_name == NULL)
+    {
+      tracef ("   config_name NULL\n");
+      return -1;
+    }
 
   while (1)
     {
@@ -2513,9 +2619,9 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 }
 
 /**
- * @brief Create a config.
+ * @brief Create a config from an RC file.
  *
- * @param[in]  name   Name of config.
+ * @param[in]  name   Name of config and NVT selector.
  * @param[in]  rc     RC file text.
  *
  * @return 0 success, -1 error.
@@ -2532,6 +2638,7 @@ create_config (const char* name, const char* comment, char* rc)
   if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
                quoted_name))
     {
+      tracef ("   config \"%s\" already exists\n", name);
       sql ("END;");
       g_free (quoted_name);
       return -1;
@@ -2540,16 +2647,24 @@ create_config (const char* name, const char* comment, char* rc)
   if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                quoted_name))
     {
+      tracef ("   NVT selector \"%s\" already exists\n", name);
       sql ("END;");
       g_free (quoted_name);
       return -1;
     }
 
-  quoted_comment = sql_quote (comment, strlen (comment));
-  sql ("INSERT INTO configs (name, nvt_selector, comment)"
-       " VALUES ('%s', '%s', '%s');",
-       quoted_name, quoted_name, quoted_comment);
-  g_free (quoted_comment);
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment, strlen (comment));
+      sql ("INSERT INTO configs (name, nvt_selector, comment)"
+           " VALUES ('%s', '%s', '%s');",
+           quoted_name, quoted_name, quoted_comment);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO configs (name, nvt_selector, comment)"
+         " VALUES ('%s', '%s', '');",
+         quoted_name, quoted_name);
 
   /* Insert the RC into the config_preferences table. */
 
@@ -2576,6 +2691,7 @@ create_config (const char* name, const char* comment, char* rc)
 int
 delete_config (const char* name)
 {
+  // FIX fail if a task references the config
   gchar* quoted_name = sql_quote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
@@ -2610,6 +2726,84 @@ config_iterator_comment (iterator_t* iterator)
   if (iterator->done) return "";
   ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
+}
+
+/**
+ * @brief Initialise a preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  section   Preference section, NULL for general preferences.
+ */
+static void
+init_preference_iterator (iterator_t* iterator, const char* config, const char* section)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+  gchar *quoted_config = sql_quote (config, strlen (config));
+
+  iterator->done = FALSE;
+  if (section)
+    {
+      gchar *quoted_section = sql_quote (section, strlen (section));
+      formatted = g_strdup_printf ("SELECT * FROM config_preferences"
+                                   " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                                   " AND section = '%s';",
+                                   quoted_config, quoted_section);
+      g_free (quoted_section);
+    }
+  else
+    formatted = g_strdup_printf ("SELECT * FROM config_preferences"
+                                 " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                                 " AND section = NULL;",
+                                 quoted_config);
+  g_free (quoted_config);
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+static DEF_ACCESS (preference_iterator_name, 2);
+static DEF_ACCESS (preference_iterator_value, 3);
+
+/**
+ * @brief Return the NVT selector associated with a config.
+ *
+ * @param[in]  name  Config name.
+ *
+ * @return Name of NVT selector if config exists and NVT selector is set, else
+ *         NULL.
+ */
+char*
+config_nvt_selector (const char *name)
+{
+  gchar* quoted_name = sql_quote (name, strlen (name));
+  char* selector = sql_string (0, 0,
+                               "SELECT nvt_selector FROM configs WHERE name = '%s';",
+                               quoted_name);
+  g_free (quoted_name);
+  return selector;
 }
 
 
@@ -2813,9 +3007,9 @@ nvt_selector_family_count (const char* selector)
 int
 nvt_selector_nvt_count (const char* selector)
 {
-  if (server.plugins)
+  if (nvt_selector_nvts_growing (selector))
     {
-      if (nvt_selector_nvts_growing (selector))
+      if (server.plugins)
         {
           if ((sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
@@ -2830,23 +3024,23 @@ nvt_selector_nvt_count (const char* selector)
                   == 1))
             return g_hash_table_size (server.plugins);
         }
-      else
-        {
-          int count = 0;
-          iterator_t nvts;
-
-          // TODO: This counts the number of listed NVTs, there may be
-          //       fewer NVTs on the scanner.
-
-          init_nvt_selector_iterator (&nvts, selector, 2);
-          while (next (&nvts))
-            if (nvt_selector_iterator_include (&nvts)) count++;
-          cleanup_iterator (&nvts);
-
-          return count;
-        }
+      return -1;
     }
-  return -1;
+  else
+    {
+      int count = 0;
+      iterator_t nvts;
+
+      // TODO: This counts the number of listed NVTs, there may be
+      //       fewer NVTs on the scanner.
+
+      init_nvt_selector_iterator (&nvts, selector, 2);
+      while (next (&nvts))
+        if (nvt_selector_iterator_include (&nvts)) count++;
+      cleanup_iterator (&nvts);
+
+      return count;
+    }
 }
 
 #undef DEF_ACCESS

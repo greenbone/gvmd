@@ -1,3 +1,47 @@
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add targets and configs to CREATE_TASK.
+
+	* src/ovas-mngr-comm.c (sendn_to_server, send_to_server): Make params
+	const.
+	* src/ovas-mngr-comm.h: Update headers.
+
+	* src/tasks_sql.h (init_manage): Add config and target to tasks table.
+	Setup a "Localhost" target.
+	(task_config, task_target, target_hosts, append_to_task_config)
+	(append_to_task_target, init_preference_iterator)
+	(preference_iterator_name, preference_iterator_value)
+	(config_nvt_selector): New functions
+	(create_target, create_config): Add tracing to error cases.  Handle NULL
+	comment.
+	(insert_rc_into_config): Add tracing to error cases.
+	(nvt_selector_nvt_count): Only check server.plugins for the growing case.
+
+	* src/manage.c (task_preference): Remove.  Body moved to rc_preference.
+	(task_plugins, send_task_preferences, send_task_rules): Remove.
+	(rc_preference, nvt_selector_plugins, send_config_preferences)
+	(send_config_rules): New functions.
+	(start_task): Rework to send target, plugins, preferences and rules from
+	the task's config and target.
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (client_state_t): Add new states.
+	(omp_xml_handle_start_element, omp_xml_handle_text)
+	(omp_xml_handle_end_element): Handle targets and configs in CREATE_TASK.
+
+	* src/tests/omp_create_task_0.c, src/tests/omp_create_task_1.c: Adjust
+	expected value.
+
+	* src/tests/omp_create_task_2.c, src/tests/omp_create_task_3.c,
+	src/tests/omp_create_task_4.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_create_task_2, omp_create_task_3
+	and omp_create_task_4.
+
+	* doc/db_postgres.sql (configs): Remove id field, to match manager.
+	(tasks): Add target field.  Refer config to name in configs.
+
 2009-08-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_create_target_0.c, src/tests/omp_create_target_1.c,
