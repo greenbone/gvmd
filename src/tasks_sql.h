@@ -488,6 +488,113 @@ init_manage_process ()
 }
 
 /**
+ * @brief Setup the config preferences for the "Full" config.
+ */
+void
+setup_full_config_prefs (config_t config)
+{
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'max_hosts', '20');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'max_checks', '4');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'cgi_path', '/cgi-bin:/scripts');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'port_range', 'default');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'auto_enable_dependencies', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'silent_dependencies', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'host_expansion', 'ip');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'ping_hosts', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'reverse_lookup', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'save_knowledge_base', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'only_test_hosts_whose_kb_we_dont_have', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'only_test_hosts_whose_kb_we_have', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_restore', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_scanners', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_info_gathering', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_attacks', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_denials', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'kb_max_age', '864000');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'log_whole_attack', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'language', 'english');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'checks_read_timeout', '5');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'non_simult_ports', '139, 445');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'plugins_timeout', '320');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'slice_network_addresses', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'nasl_no_signature_check', 'yes');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'ping_hosts', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'reverse_lookup', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
+       config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'no');",
+       config);
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -534,15 +641,17 @@ init_manage (GSList *log_config)
   if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors;") == 0
       && sql_int (0, 0, "SELECT count(*) FROM configs;") == 0)
     {
+      config_t config;
+
       sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
            " VALUES ('All', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
            ", NULL);");
       sql ("INSERT into configs (name, nvt_selector, comment)"
            " VALUES ('Full', 'All', 'All inclusive configuration.');");
-      // FIX setup full preferences
-      //     create_config ("full", OPENVAS_STATE_DIR "/mgr/openvasrc-full");?
-      //         depends on scanner?
+      /* Setup preferences for the full config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config);
     }
 
   /* Setup predefined targets. */

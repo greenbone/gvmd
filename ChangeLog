@@ -1,6 +1,11 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/manage.c (send_config_preferences): Send newline after plugin.
+	* src/tasks_sql.h (setup_full_config_prefs): New function.
+	(init_manage): Setup SERVER_PREFS of Full config.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.c (send_config_preferences): Send newline after preference.
 	(start_task): Check nvt_selector_plugins return for NULL.
 
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
