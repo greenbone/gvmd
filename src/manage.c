@@ -491,6 +491,12 @@ send_config_preferences (const char* config, const char* name)
           cleanup_iterator (&prefs);
           return -1;
         }
+
+      if (sendn_to_server ("\n", 1))
+        {
+          cleanup_iterator (&prefs);
+          return -1;
+        }
     }
   cleanup_iterator (&prefs);
   return 0;
@@ -601,7 +607,7 @@ start_task (task_t task)
 
   plugins = nvt_selector_plugins (selector);
   free (selector);
-  if (strlen (plugins))
+  if (plugins && strlen (plugins))
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
     fail = send_to_server ("plugin_set <|> 0\n");
