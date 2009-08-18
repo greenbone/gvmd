@@ -93,7 +93,7 @@ main ()
   /* Create a config. */
 
   if (omp_create_config_from_rc_file (&session,
-                                      "omp_get_configs_1",
+                                      "omp_get_configs_3",
                                       NULL,
                                       "new_task_small_rc"))
     {
@@ -140,7 +140,7 @@ main ()
             break;
           found_1 = 1;
         }
-      else if (strcmp (entity_text (name), "omp_get_configs_1") == 0)
+      else if (strcmp (entity_text (name), "omp_get_configs_3") == 0)
         {
           entity_t comment, count, growing;
           comment = entity_child (config, "comment");
@@ -166,7 +166,7 @@ main ()
  free_fail:
   free_entity (entity);
  delete_fail:
-  omp_delete_config (&session, "omp_get_configs_1");
+  omp_delete_config (&session, "omp_get_configs_3");
   close_manager_connection (socket, session);
   return (found_1 && found_2) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
