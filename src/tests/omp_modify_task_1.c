@@ -55,14 +55,11 @@ main ()
 
   /* Create a task in process 1. */
 
-#define CONFIG "Task configuration."
-
-  if (create_task (&session1,
-                   CONFIG,
-                   strlen (CONFIG),
-                   "Test for omp_modify_task_1",
-                   "Comment.",
-                   &id))
+  if (create_task_from_rc_file (&session1,
+                                "new_task_empty_rc",
+                                "Test for omp_modify_task_1",
+                                "Comment.",
+                                &id))
     {
       close_manager_connection (socket1, session1);
       return EXIT_FAILURE;

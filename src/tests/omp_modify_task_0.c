@@ -53,14 +53,11 @@ main ()
 
   /* Create a task. */
 
-#define CONFIG "Task configuration."
-
-  if (create_task (&session,
-                   CONFIG,
-                   strlen (CONFIG),
-                   "Test for omp_modify_task_0",
-                   "Comment.",
-                   &id))
+  if (create_task_from_rc_file (&session,
+                                "new_task_empty_rc",
+                                "Test for omp_modify_task_0",
+                                "Comment.",
+                                &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
