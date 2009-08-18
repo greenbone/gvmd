@@ -1,5 +1,13 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_start_task_3.c: Remove, replaced by omp_create_task_0.
+	* src/tests/omp_start_task_4.c: Remove, CREATE_TASK now prevents creation
+	of such a task.
+
+	* src/tests/CMakeLists.txt: Remove omp_start_task_3 and omp_start_task_4.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/common.c (wait_for_task_stop): Make the Done return the
 	same as Stopped.  Add return -2, in case the task has been deleted.
 
