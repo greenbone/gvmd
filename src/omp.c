@@ -3605,6 +3605,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               config_name = g_strdup_printf ("Imported config for task %s",
                                              tsk_uuid);
               ret = create_config (config_name, NULL, (char*) description);
+              set_task_config (current_client_task, config_name);
               g_free (config_name);
               if (ret)
                 {
@@ -3636,6 +3637,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
+              set_task_target (current_client_task, target_name);
               if (create_target (target_name, hosts, NULL))
                 {
                   request_delete_task (&current_client_task);

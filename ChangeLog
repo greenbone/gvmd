@@ -1,5 +1,16 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Address errors in last commit.
+
+	* src/tasks_sql.h (set_task_target, set_task_config): New functions.
+	(init_preference_iterator): Correct column name in SQL.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK set the
+	task target and config when creating from an rcfile.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add targets and configs to CREATE_TASK.
 
 	* src/ovas-mngr-comm.c (sendn_to_server, send_to_server): Make params

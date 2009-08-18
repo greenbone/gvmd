@@ -200,8 +200,14 @@ task_comment (task_t);
 char*
 task_config (task_t);
 
+void
+set_task_config (task_t, const char*);
+
 char*
 task_target (task_t);
+
+void
+set_task_target (task_t, const char*);
 
 char*
 task_description (task_t);

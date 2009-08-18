@@ -728,6 +728,22 @@ task_config (task_t task)
 }
 
 /**
+ * @brief Set the config of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  config  Config.
+ */
+void
+set_task_config (task_t task, const char* config)
+{
+  gchar* quote = sql_quote (config, strlen (config));
+  sql ("UPDATE tasks SET config = '%s' WHERE ROWID = %llu;",
+       quote,
+       task);
+  g_free (quote);
+}
+
+/**
  * @brief Return the target of a task.
  *
  * @param[in]  task  Task.
@@ -740,6 +756,22 @@ task_target (task_t task)
   return sql_string (0, 0,
                      "SELECT target FROM tasks WHERE ROWID = %llu;",
                      task);
+}
+
+/**
+ * @brief Set the target of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_target (task_t task, const char* target)
+{
+  gchar* quote = sql_quote (target, strlen (target));
+  sql ("UPDATE tasks SET target = '%s' WHERE ROWID = %llu;",
+       quote,
+       task);
+  g_free (quote);
 }
 
 /**
@@ -2749,14 +2781,14 @@ init_preference_iterator (iterator_t* iterator, const char* config, const char* 
       gchar *quoted_section = sql_quote (section, strlen (section));
       formatted = g_strdup_printf ("SELECT * FROM config_preferences"
                                    " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                   " AND section = '%s';",
+                                   " AND type = '%s';",
                                    quoted_config, quoted_section);
       g_free (quoted_section);
     }
   else
     formatted = g_strdup_printf ("SELECT * FROM config_preferences"
                                  " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                 " AND section = NULL;",
+                                 " AND type = NULL;",
                                  quoted_config);
   g_free (quoted_config);
 
