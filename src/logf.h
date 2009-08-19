@@ -57,11 +57,14 @@ extern FILE* log_stream;
  *
  * Print the printf style \a args to log_stream, preceded by the process ID.
  */
-#define logf(args...)                               \
-  do {                                              \
-    fprintf (log_stream, "%7i  ", (int) getpid());  \
-    fprintf (log_stream, args);                     \
-    if (fflush (log_stream) == EOF) abort ();       \
+#define logf(args...)                                   \
+  do {                                                  \
+    if (log_stream)                                     \
+      {                                                 \
+        fprintf (log_stream, "%7i  ", (int) getpid());  \
+        fprintf (log_stream, args);                     \
+        if (fflush (log_stream) == EOF) abort ();       \
+      }                                                 \
   } while (0)
 #else
 /**

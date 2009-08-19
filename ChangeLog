@@ -1,5 +1,58 @@
 2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a permanent NVT cache.
+
+	* src/tasks_sql.h (sql_quote): Rename to sql_nquote.  Update callers.
+	(sql_nquote, sql_quote, manage_has_nvts, nvts_size, nvts_md5sum)
+	(set_nvts_md5sum, find_nvt, make_nvt_from_nvti)
+	(init_nvt_iterator, nvt_iterator_oid, nvt_iterator_version)
+	(nvt_iterator_name, nvt_iterator_summary, nvt_iterator_description)
+	(nvt_iterator_copyright, nvt_iterator_cve, nvt_iterator_bid)
+	(nvt_iterator_xref, nvt_iterator_tag, nvt_iterator_sign_key_ids)
+	(nvt_iterator_category, nvt_iterator_family): New functions.
+	(init_manage_process): Add clearing of NVT cache, controlled by param.
+	(init_manage): Add meta and nvts tables.
+	(nvt_family, nvt_selector_family_count, nvt_selector_nvt_count): Adjust
+	for new NVT cache.
+
+	* src/manage.h: Add new interfaces defined in tasks_sql.h.
+	(server_t): Remove plugins.
+	(nvt_t): New type.
+
+	* src/manage.c (nvt_selector_plugins): Always return a list of all the
+	plugins.
+	(start_task): Expect all plugins as a list from nvt_selector_plugins.
+
+	* src/omp.c (send_plugin): Switch to nvt iterator, rename send_nvt.
+	(send_nvt): New function.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVT_ALL,
+	CLIENT_GET_NVT_FEED_CHECKSUM and CLIENT_GET_NVT_DETAILS switch to new
+	cache interface.
+	(init_omp_process): Pass an update_nvt_cache flag through to
+	init_manage_process.
+
+	* src/otp.c (current_plugins): Remove.
+	(init_otp_data): Remove server.plugins init.
+	(parse_server_plugin_list_tags): Add nvti to database instead of to
+	server.plugins.
+	(process_otp_server_input): Remove current_plugins and server.plugins
+	handling.  On receiving the final plugin from a plugin list, set the
+	md5sum and return as though the server sent BYE.
+
+	* src/ompd.c (ompd_nvt_cache_mode): New variable.
+	(write_to_server): In "cache mode" request the plugin list, otherwise fall
+	through to the "GO ON".
+	(serve_omp): If the client_socket is -1 initiate "cache mode" and only do
+	the server part of the service.
+
+	* src/openvasmd.c (main): Add an update program option that causes the
+	manager to run as a single process that simply calls serve_omp in "cache
+	mode" to update the NVT cache.
+
+	* src/logf.h (logf): Only log if log_stream is set.
+
+2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (setup_full_config_prefs): New function.
 	(init_manage): Setup SERVER_PREFS of Full config.
 

@@ -412,9 +412,7 @@ rc_preference (const char* desc, const char* name)
  *
  * @param[in]  task  Task.
  *
- * @return A string of semi-colon separated plugin IDS, or the empty string
- *         if the task is to invoke all plugins, or NULL if the task
- *         is yet to be defined.
+ * @return A string of semi-colon separated plugin IDS if known, else NULL.
  */
 static gchar*
 nvt_selector_plugins (const char* selector)
@@ -432,7 +430,25 @@ nvt_selector_plugins (const char* selector)
                        ";",
                        selector)
               == 1))
-         return g_strdup ("");
+        {
+          GString* plugins;
+          iterator_t nvts;
+          gboolean first = TRUE;
+
+          plugins = g_string_new ("");
+          init_nvt_iterator (&nvts);
+          while (next (&nvts))
+            {
+              if (first)
+                first = FALSE;
+              else
+                g_string_append_c (plugins, ';');
+              g_string_append (plugins, nvt_iterator_oid (&nvts));
+            }
+          cleanup_iterator (&nvts);
+          return g_string_free (plugins, FALSE);
+        }
+      // FIX finalise selector implementation
       return NULL;
     }
   else
@@ -607,7 +623,7 @@ start_task (task_t task)
 
   plugins = nvt_selector_plugins (selector);
   free (selector);
-  if (plugins && strlen (plugins))
+  if (plugins)
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
     fail = send_to_server ("plugin_set <|> 0\n");

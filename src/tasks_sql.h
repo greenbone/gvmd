@@ -55,8 +55,8 @@ sqlite3* task_db = NULL;
 
 /* SQL helpers. */
 
-gchar*
-sql_quote (const char* string, size_t length)
+static gchar*
+sql_nquote (const char* string, size_t length)
 {
   gchar *new, *new_start;
   const gchar *start, *end;
@@ -89,6 +89,12 @@ sql_quote (const char* string, size_t length)
     }
 
   return new_start;
+}
+
+static gchar*
+sql_quote (const char* string)
+{
+  return sql_nquote (string, strlen (string));
 }
 
 void
@@ -351,11 +357,11 @@ append_to_task_string (task_t task, const char* field, const char* value)
     {
       gchar* new = g_strconcat ((const gchar*) current, value, NULL);
       free (current);
-      quote = sql_quote (new, strlen (new));
+      quote = sql_nquote (new, strlen (new));
       g_free (new);
     }
   else
-    quote = sql_quote (value, strlen (value));
+    quote = sql_nquote (value, strlen (value));
   sql ("UPDATE tasks SET %s = '%s' WHERE ROWID = %llu;",
        field,
        quote,
@@ -455,15 +461,27 @@ next_task (task_iterator_t* iterator, task_t* task)
 /**
  * @brief Initialize the manage library for a process.
  *
- * Simply open the SQL database.
+ * Open the SQL database.
+ *
+ * @param[in]  update_nvt_cache  If true, clear the NVT cache.
  */
 void
-init_manage_process ()
+init_manage_process (int update_nvt_cache)
 {
   gchar *mgr_dir;
   int ret;
 
-  if (task_db) return;
+  if (task_db)
+    {
+      if (update_nvt_cache)
+        {
+          sql ("BEGIN EXCLUSIVE;");
+          sql ("DELETE FROM nvts;");
+          sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
+          sql ("COMMIT;");
+        }
+      return;
+    }
 
   /* Ensure the mgr directory exists. */
   mgr_dir = g_build_filename (OPENVAS_STATE_DIR "/mgr/", NULL);
@@ -484,6 +502,14 @@ init_manage_process ()
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
       abort (); // FIX
+    }
+
+  if (update_nvt_cache)
+    {
+      sql ("BEGIN EXCLUSIVE;");
+      sql ("DELETE FROM nvts;");
+      sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
+      sql ("COMMIT;");
     }
 }
 
@@ -615,10 +641,11 @@ init_manage (GSList *log_config)
                      (GLogFunc) openvas_log_func,
                      log_config);
 
-  init_manage_process ();
+  init_manage_process (0);
 
   /* Ensure the tables exist. */
 
+  sql ("CREATE TABLE IF NOT EXISTS meta    (name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
@@ -630,6 +657,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
 
   /* Always create a single user, for now. */
 
@@ -728,7 +756,7 @@ authenticate (credentials_t* credentials)
            * instead of using "INSERT OR REPLACE", so that the ROWID stays
            * the same. */
 
-          name = sql_quote (credentials->username,
+          name = sql_nquote (credentials->username,
                             strlen (credentials->username));
           if (sql_int (0, 0,
                        "SELECT count(*) FROM users WHERE name = '%s';",
@@ -845,7 +873,7 @@ task_config (task_t task)
 void
 set_task_config (task_t task, const char* config)
 {
-  gchar* quote = sql_quote (config, strlen (config));
+  gchar* quote = sql_nquote (config, strlen (config));
   sql ("UPDATE tasks SET config = '%s' WHERE ROWID = %llu;",
        quote,
        task);
@@ -876,7 +904,7 @@ task_target (task_t task)
 void
 set_task_target (task_t task, const char* target)
 {
-  gchar* quote = sql_quote (target, strlen (target));
+  gchar* quote = sql_nquote (target, strlen (target));
   sql ("UPDATE tasks SET target = '%s' WHERE ROWID = %llu;",
        quote,
        task);
@@ -908,7 +936,7 @@ task_description (task_t task)
 void
 set_task_description (task_t task, char* description, gsize length)
 {
-  gchar* quote = sql_quote (description, strlen (description));
+  gchar* quote = sql_nquote (description, strlen (description));
   sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
        quote,
        task);
@@ -1782,7 +1810,7 @@ set_report_parameter (report_t report, const char* parameter, char* value)
   tracef ("   set_report_parameter %llu %s\n", report, parameter);
   if (strcasecmp ("COMMENT", parameter) == 0)
     {
-      gchar* quote = sql_quote (value, strlen (value));
+      gchar* quote = sql_nquote (value, strlen (value));
       sql ("UPDATE reports SET comment = '%s' WHERE ROWID = %llu;",
            value,
            report);
@@ -2005,7 +2033,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       guchar* out;
       gchar* quote;
       out = g_base64_decode (value, &out_len);
-      quote = sql_quote ((gchar*) out, out_len);
+      quote = sql_nquote ((gchar*) out, out_len);
       g_free (out);
       sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
            quote,
@@ -2014,7 +2042,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   else if (strcasecmp ("NAME", parameter) == 0)
     {
-      gchar* quote = sql_quote (value, strlen (value));
+      gchar* quote = sql_nquote (value, strlen (value));
       sql ("UPDATE tasks SET name = '%s' WHERE ROWID = %llu;",
            value,
            task);
@@ -2022,7 +2050,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   else if (strcasecmp ("COMMENT", parameter) == 0)
     {
-      gchar* quote = sql_quote (value, strlen (value));
+      gchar* quote = sql_nquote (value, strlen (value));
       sql ("UPDATE tasks SET comment = '%s' WHERE ROWID = %llu;",
            value,
            task);
@@ -2299,7 +2327,7 @@ reset_task (task_t task)
 int
 create_target (const char* name, const char* hosts, const char* comment)
 {
-  gchar *quoted_name = sql_quote (name, strlen (name));
+  gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
 
   sql ("BEGIN IMMEDIATE;");
@@ -2313,11 +2341,11 @@ create_target (const char* name, const char* hosts, const char* comment)
       return -1;
     }
 
-  quoted_hosts = sql_quote (hosts, strlen (hosts));
+  quoted_hosts = sql_nquote (hosts, strlen (hosts));
 
   if (comment)
     {
-      quoted_comment = sql_quote (comment, strlen (comment));
+      quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets (name, hosts, comment)"
            " VALUES ('%s', '%s', '%s');",
            quoted_name, quoted_hosts, quoted_comment);
@@ -2347,7 +2375,7 @@ int
 delete_target (const char* name)
 {
   // FIX fail if a task references the target
-  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_name = sql_nquote (name, strlen (name));
   sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
   g_free (quoted_name);
   return 0;
@@ -2425,7 +2453,7 @@ target_iterator_comment (iterator_t* iterator)
 char*
 target_hosts (const char *name)
 {
-  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_name = sql_nquote (name, strlen (name));
   char* hosts = sql_string (0, 0,
                             "SELECT hosts FROM targets WHERE name = '%s';",
                             quoted_name);
@@ -2611,9 +2639,9 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
           if (rc < rc_end)
             {
               gchar *name, *value;
-              name = sql_quote (rc, rc_end - rc);
-              value = sql_quote (eq + 2, /* Daring. */
-                                 (seek ? seek - (eq + 2) : strlen (eq + 2)));
+              name = sql_nquote (rc, rc_end - rc);
+              value = sql_nquote (eq + 2, /* Daring. */
+                                  (seek ? seek - (eq + 2) : strlen (eq + 2)));
               sql ("INSERT OR REPLACE INTO config_preferences"
                    " (config, type, name, value)"
                    " VALUES (%llu, NULL, '%s', '%s');",
@@ -2679,7 +2707,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         {
           gchar *section_name;
 
-          section_name = sql_quote (rc + 6, seek - (rc + 6) - 1);
+          section_name = sql_nquote (rc + 6, seek - (rc + 6) - 1);
 
           /* Insert the section. */
 
@@ -2705,9 +2733,9 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                   if (rc < rc_end)
                     {
                       gchar *name, *value;
-                      name = sql_quote (rc, rc_end - rc);
-                      value = sql_quote (eq2 + 2, /* Daring. */
-                                         seek - (eq2 + 2));
+                      name = sql_nquote (rc, rc_end - rc);
+                      value = sql_nquote (eq2 + 2, /* Daring. */
+                                          seek - (eq2 + 2));
                       sql ("INSERT OR REPLACE INTO config_preferences"
                            " (config, type, name, value)"
                            " VALUES (%llu, '%s', '%s', '%s');",
@@ -2770,7 +2798,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 int
 create_config (const char* name, const char* comment, char* rc)
 {
-  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_name = sql_nquote (name, strlen (name));
   gchar* quoted_comment;
   config_t config;
 
@@ -2796,7 +2824,7 @@ create_config (const char* name, const char* comment, char* rc)
 
   if (comment)
     {
-      quoted_comment = sql_quote (comment, strlen (comment));
+      quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (name, nvt_selector, comment)"
            " VALUES ('%s', '%s', '%s');",
            quoted_name, quoted_name, quoted_comment);
@@ -2833,7 +2861,7 @@ int
 delete_config (const char* name)
 {
   // FIX fail if a task references the config
-  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_name = sql_nquote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
        quoted_name);
@@ -2882,12 +2910,12 @@ init_preference_iterator (iterator_t* iterator, const char* config, const char* 
   const char* tail;
   gchar* formatted;
   sqlite3_stmt* stmt;
-  gchar *quoted_config = sql_quote (config, strlen (config));
+  gchar *quoted_config = sql_nquote (config, strlen (config));
 
   iterator->done = FALSE;
   if (section)
     {
-      gchar *quoted_section = sql_quote (section, strlen (section));
+      gchar *quoted_section = sql_nquote (section, strlen (section));
       formatted = g_strdup_printf ("SELECT * FROM config_preferences"
                                    " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
                                    " AND type = '%s';",
@@ -2939,13 +2967,208 @@ static DEF_ACCESS (preference_iterator_value, 3);
 char*
 config_nvt_selector (const char *name)
 {
-  gchar* quoted_name = sql_quote (name, strlen (name));
+  gchar* quoted_name = sql_nquote (name, strlen (name));
   char* selector = sql_string (0, 0,
                                "SELECT nvt_selector FROM configs WHERE name = '%s';",
                                quoted_name);
   g_free (quoted_name);
   return selector;
 }
+
+
+/* NVT's. */
+
+/**
+ * @brief Return whether the NVT cache is present.
+ *
+ * @return 1 if a cache of NVTs is present, else 0.
+ */
+static int
+nvt_cache_present ()
+{
+  return sql_int (0, 0,
+                  "SELECT count(value) FROM meta"
+                  " WHERE name = 'nvts_checksum';");
+}
+
+/**
+ * @brief Return number of plugins in the plugin cache.
+ *
+ * @return Number of plugins.
+ */
+int
+nvts_size ()
+{
+  return sql_int (0, 0, "SELECT count(*) FROM nvts;");
+}
+
+/**
+ * @brief Return md5sum of the plugins in the plugin cache.
+ *
+ * @return Number of plugins if the plugins are cached, else NULL.
+ */
+char*
+nvts_md5sum ()
+{
+  return sql_string (0, 0,
+                     "SELECT value FROM meta WHERE name = 'nvts_md5sum';");
+}
+
+/**
+ * @brief Set the md5sum of the plugins in the plugin cache.
+ */
+void
+set_nvts_md5sum (const char *md5sum)
+{
+  gchar* quoted = sql_quote (md5sum);
+  sql ("INSERT OR REPLACE INTO meta (name, value)"
+       " VALUES ('nvts_md5sum', '%s');",
+       quoted);
+  g_free (quoted);
+}
+
+/**
+ * @brief Find an NVT given an identifier.
+ *
+ * @param[in]   oid  An NVT identifier.
+ * @param[out]  nvt  NVT return, 0 if succesfully failed to find task.
+ *
+ * @return FALSE on success (including if failed to find NVT), TRUE on error.
+ */
+gboolean
+find_nvt (const char* oid, nvt_t* nvt)
+{
+  switch (sql_int64 (nvt, 0, 0,
+                     "SELECT ROWID FROM nvts WHERE oid = '%s';",
+                     oid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *nvt = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Get the family of an NVT.
+ *
+ * @param[in]  nvt  NVT.
+ *
+ * @return Family name if set, else NULL.
+ */
+char *
+nvt_family (nvt_t nvt)
+{
+  return sql_string (0, 0,
+                     "SELECT family FROM nvts WHERE ROWID = %llu;",
+                     nvt);
+}
+
+/**
+ * @brief Make an nvt from an nvti.
+ *
+ * @param[in]  nvti  NVTI.
+ *
+ * @return An NVT.
+ */
+nvt_t
+make_nvt_from_nvti (const nvti_t *nvti)
+{
+  gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
+  gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
+  gchar *quoted_sign_key_ids, *quoted_family;
+
+  quoted_version = sql_quote (nvti_version (nvti));
+  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
+  quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
+  quoted_description = sql_quote (nvti_description (nvti)
+                                  ? nvti_description (nvti)
+                                  : "");
+  quoted_copyright = sql_quote (nvti_copyright (nvti)
+                                ? nvti_copyright (nvti)
+                                : "");
+  quoted_cve = sql_quote (nvti_cve (nvti) ? nvti_cve (nvti) : "");
+  quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
+  quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
+  quoted_tag = sql_quote (nvti_tag (nvti) ? nvti_tag (nvti) : "");
+  quoted_sign_key_ids = sql_quote (nvti_sign_key_ids (nvti)
+                                   ? nvti_sign_key_ids (nvti)
+                                   : "");
+  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
+
+  sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
+       " cve, bid, xref, tag, sign_key_ids, category, family)"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " '%s', '%i', '%s');",
+       nvti_oid (nvti),
+       quoted_version,
+       quoted_name,
+       quoted_summary,
+       quoted_description,
+       quoted_copyright,
+       quoted_cve,
+       quoted_bid,
+       quoted_xref,
+       quoted_tag,
+       quoted_sign_key_ids,
+       nvti_category (nvti),
+       quoted_family);
+
+  g_free (quoted_version);
+  g_free (quoted_name);
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_copyright);
+  g_free (quoted_cve);
+  g_free (quoted_bid);
+  g_free (quoted_xref);
+  g_free (quoted_tag);
+  g_free (quoted_sign_key_ids);
+  g_free (quoted_family);
+
+  return sqlite3_last_insert_rowid (task_db);
+}
+
+/**
+ * @brief Initialise an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_nvt_iterator (iterator_t* iterator)
+{
+  init_table_iterator (iterator, "nvts");
+}
+
+/**
+ * @brief Get the NVT or family from an NVT selector iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT selector, or NULL if iteration is complete.
+ */
+DEF_ACCESS (nvt_iterator_oid, 0);
+
+DEF_ACCESS (nvt_iterator_version, 1);
+DEF_ACCESS (nvt_iterator_name, 2);
+DEF_ACCESS (nvt_iterator_summary, 3);
+DEF_ACCESS (nvt_iterator_description, 4);
+DEF_ACCESS (nvt_iterator_copyright, 5);
+DEF_ACCESS (nvt_iterator_cve, 6);
+DEF_ACCESS (nvt_iterator_bid, 7);
+DEF_ACCESS (nvt_iterator_xref, 8);
+DEF_ACCESS (nvt_iterator_tag, 9);
+DEF_ACCESS (nvt_iterator_sign_key_ids, 10);
+DEF_ACCESS (nvt_iterator_category, 11);
+DEF_ACCESS (nvt_iterator_family, 12);
 
 
 /* NVT selectors. */
@@ -2995,7 +3218,7 @@ nvt_selector_nvts_growing (const char* selector)
 }
 
 /**
- * @brief Initialise a NVT selector iterator.
+ * @brief Initialise an NVT selector iterator.
  *
  * @param[in]  iterator  Iterator.
  */
@@ -3063,23 +3286,6 @@ nvt_selector_iterator_include (iterator_t* iterator)
 static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
 
 /**
- * @brief Get the family of an NVT.
- *
- * @param[in]  nvtis  NVTI set.
- * @param[in]  oid    OID of NVT.
- *
- * @return Family count if known, else -1.
- */
-const char *
-nvt_family (const nvtis_t *nvtis, const char *oid)
-{
-  nvti_t *nvti = nvtis_lookup (server.plugins, oid);
-  if (nvti)
-    return nvti_family (nvti);
-  return NULL;
-}
-
-/**
  * @brief Get the number of families covered by a selector.
  *
  * @param[in]  selector  NVT selector.
@@ -3089,7 +3295,7 @@ nvt_family (const nvtis_t *nvtis, const char *oid)
 int
 nvt_selector_family_count (const char* selector)
 {
-  if (server.plugins)
+  if (nvt_cache_present ())
     {
       if (nvt_selector_nvts_growing (selector))
         {
@@ -3113,18 +3319,26 @@ nvt_selector_family_count (const char* selector)
           while (next (&nvts))
             if (nvt_selector_iterator_include (&nvts))
               {
-                const char *nvt = nvt_selector_iterator_nvt (&nvts);
-                if (nvt)
+                const char *nvt_oid = nvt_selector_iterator_nvt (&nvts);
+                if (nvt_oid)
                   {
-                    const char *family = nvt_family (server.plugins, nvt);
-                    if (family)
+                    nvt_t nvt;
+                    if (find_nvt (nvt_oid, &nvt) == FALSE && nvt > 0)
                       {
-                        if (g_hash_table_lookup (families, family))
-                          continue;
-                        count++;
-                        g_hash_table_insert (families,
-                                             g_strdup (family),
-                                             (gpointer) 1);
+                        char *family = nvt_family (nvt);
+                        if (family)
+                          {
+                            if (g_hash_table_lookup (families, family))
+                              {
+                                free (family);
+                                continue;
+                              }
+                            count++;
+                            g_hash_table_insert (families,
+                                                 g_strdup (family),
+                                                 (gpointer) 1);
+                            free (family);
+                          }
                       }
                   }
               }
@@ -3150,7 +3364,7 @@ nvt_selector_nvt_count (const char* selector)
 {
   if (nvt_selector_nvts_growing (selector))
     {
-      if (server.plugins)
+      if (nvt_cache_present ())
         {
           if ((sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
@@ -3163,7 +3377,7 @@ nvt_selector_nvt_count (const char* selector)
                            ";",
                            selector)
                   == 1))
-            return g_hash_table_size (server.plugins);
+            return sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
         }
       return -1;
     }

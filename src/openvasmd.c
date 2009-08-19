@@ -200,6 +200,7 @@ struct sockaddr_in manager_address;
 FILE* log_stream = NULL;
 #endif
 
+// FIX rename ~manager_ovas_context
 /**
  * @brief The server context.
  */
@@ -311,7 +312,7 @@ serve_client (int client_socket)
   return EXIT_SUCCESS;
 
  fail:
-  close_stream_connection (client_socket);
+  close_stream_connection (client_socket); // FIX why close only on fail?
   end_session (server_socket, server_session, server_credentials);
   return EXIT_FAILURE;
 }
@@ -485,6 +486,7 @@ main (int argc, char** argv)
 
   /* Process options. */
 
+  static gboolean update_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
@@ -501,6 +503,7 @@ main (int argc, char** argv)
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
+        { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
         { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
@@ -559,28 +562,6 @@ main (int argc, char** argv)
   if (server_address_string == NULL)
     server_address_string = OPENVASD_ADDRESS;
 
-  if (manager_port_string)
-    {
-      manager_port = atoi (manager_port_string);
-      if (manager_port <= 0 || manager_port >= 65536)
-        {
-          g_critical ("%s: Manager port must be a number between 0 and 65536\n",
-                      __FUNCTION__);
-          free_log_configuration (log_config);
-          exit (EXIT_FAILURE);
-        }
-      manager_port = htons (manager_port);
-    }
-  else
-    {
-      struct servent *servent = getservbyname ("openvas", "tcp");
-      if (servent)
-        // FIX free servent?
-        manager_address.sin_port = servent->s_port;
-      else
-        manager_address.sin_port = htons (OPENVASMD_PORT);
-    }
-
   if (server_port_string)
     {
       server_port = atoi (server_port_string);
@@ -601,6 +582,136 @@ main (int argc, char** argv)
         server_port = servent->s_port;
       else
         server_port = htons (OPENVASD_PORT);
+    }
+
+  if (update_nvt_cache)
+    {
+      /* Run the NVT caching manager: update NVT cache and then exit. */
+
+      int server_socket;
+      gnutls_session_t server_session;
+      gnutls_certificate_credentials_t server_credentials;
+
+      /* Initialise OMP daemon. */
+
+      if (init_ompd (log_config))
+        {
+          g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+          free_log_configuration (log_config);
+          exit (EXIT_FAILURE);
+        }
+
+      /* Register the `cleanup' function. */
+
+      if (atexit (&cleanup))
+        {
+          g_critical ("%s: failed to register `atexit' cleanup function\n",
+                      __FUNCTION__);
+          free_log_configuration (log_config);
+          exit (EXIT_FAILURE);
+        }
+
+      /* Register the signal handlers. */
+
+      /* Warning from RATS heeded (signals now use small, separate handlers)
+       * hence annotations. */
+      if (signal (SIGTERM, handle_sigterm) == SIG_ERR  /* RATS: ignore */
+          || signal (SIGINT, handle_sigint) == SIG_ERR /* RATS: ignore */
+          || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
+          || signal (SIGCHLD, SIG_IGN) == SIG_ERR)     /* RATS: ignore */
+        {
+          g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
+          exit (EXIT_FAILURE);
+        }
+
+      /* Setup the server address. */
+
+      server_address.sin_family = AF_INET;
+      server_address.sin_port = server_port;
+      if (!inet_aton (server_address_string, &server_address.sin_addr))
+        {
+          g_critical ("%s: failed to create server address %s\n",
+                      __FUNCTION__,
+                      server_address_string);
+          exit (EXIT_FAILURE);
+        }
+
+      /* Setup security. */
+
+      if (nessus_SSL_init (NULL) < 0)
+        {
+          g_critical ("%s: failed to initialise security\n", __FUNCTION__);
+          exit (EXIT_FAILURE);
+        }
+      server_context
+        = ovas_server_context_new (NESSUS_ENCAPS_TLSv1,
+                                   SERVERCERT,
+                                   SERVERKEY,
+                                   NULL,
+                                   CACERT,
+                                   0);
+      if (server_context == NULL)
+        {
+          g_critical ("%s: failed to create server context\n", __FUNCTION__);
+          exit (EXIT_FAILURE);
+        }
+
+      tracef ("   Set to connect to address %s port %i\n",
+              server_address_string,
+              ntohs (server_address.sin_port));
+
+      /* Make the server socket. */
+      server_socket = socket (PF_INET, SOCK_STREAM, 0);
+      if (server_socket == -1)
+        {
+          g_warning ("%s: failed to create server socket: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return EXIT_FAILURE;
+        }
+
+      if (make_session (server_socket, &server_session, &server_credentials))
+        return EXIT_FAILURE;
+
+      /* Call the OMP client serving function with client -1.  This invokes a
+       * scanner-only manager loop.  As nvt_cache_mode is true, the manager
+       * loop will request and cache the plugins, then exit. */
+
+      if (serve_omp (NULL, &server_session, &server_credentials,
+                     -1, &server_socket))
+        {
+          end_session (server_socket, server_session, server_credentials);
+          return EXIT_FAILURE;
+        }
+      else
+        {
+          end_session (server_socket, server_session, server_credentials);
+          return EXIT_SUCCESS;
+        }
+    }
+
+  /* Run the standard manager. */
+
+  if (manager_port_string)
+    {
+      manager_port = atoi (manager_port_string);
+      if (manager_port <= 0 || manager_port >= 65536)
+        {
+          g_critical ("%s: Manager port must be a number between 0 and 65536\n",
+                      __FUNCTION__);
+          free_log_configuration (log_config);
+          exit (EXIT_FAILURE);
+        }
+      manager_port = htons (manager_port);
+    }
+  else
+    {
+      struct servent *servent = getservbyname ("openvas", "tcp");
+      if (servent)
+        // FIX free servent?
+        manager_address.sin_port = servent->s_port;
+      else
+        manager_address.sin_port = htons (OPENVASMD_PORT);
     }
 
 #if 0
@@ -688,7 +799,7 @@ main (int argc, char** argv)
     }
 #endif
 
-  /* Register the signal handler. */
+  /* Register the signal handlers. */
 
   /* Warning from RATS heeded (signals now use small, separate handlers)
    * hence annotations. */
@@ -843,7 +954,7 @@ main (int argc, char** argv)
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))
-            accept_and_maybe_fork();
+            accept_and_maybe_fork ();
         }
     }
 

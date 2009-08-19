@@ -86,6 +86,11 @@ int socket(int domain, int type, int protocol);
 #define FD_SERVER_WRITE 8
 
 /**
+ * @brief Flag for running in NVT cache mode.
+ */
+static int ompd_nvt_cache_mode = 0;
+
+/**
  * @brief Initialise the OMP library for the OMP daemon.
  */
 int
@@ -347,33 +352,33 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
       case SERVER_INIT_SENT_PASSWORD:
         assert (0);
         break;
-      case SERVER_INIT_GOT_MD5SUM:
-        {
-          // FIX implement cache
-          //char* const ack = "CLIENT <|> GO ON <|> CLIENT\n";
-          char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
-          server_init_offset = write_string_to_server (server_session,
-                                                       ack + server_init_offset);
-          if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_SENT_COMPLETE_LIST);
-          else if (server_init_offset == -1)
-            {
-              server_init_offset = 0;
-              return -1;
-            }
-          else
-            break;
-        }
-        break;
       case SERVER_INIT_SENT_COMPLETE_LIST:
         assert (0);
         break;
+      case SERVER_INIT_GOT_MD5SUM:
+        if (ompd_nvt_cache_mode)
+          {
+            static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
+            server_init_offset = write_string_to_server
+                                  (server_session,
+                                   ack + server_init_offset);
+            if (server_init_offset == 0)
+              set_server_init_state (SERVER_INIT_SENT_COMPLETE_LIST);
+            else if (server_init_offset == -1)
+              {
+                server_init_offset = 0;
+                return -1;
+              }
+            break;
+          }
+        /*@fallthrough@*/
       case SERVER_INIT_GOT_PLUGINS:
         {
-          char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
-                            "CLIENT <|> CERTIFICATES <|> CLIENT\n";
-          server_init_offset = write_string_to_server (server_session,
-                                                       ack + server_init_offset);
+          static char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
+                                   "CLIENT <|> CERTIFICATES <|> CLIENT\n";
+          server_init_offset = write_string_to_server
+                                (server_session,
+                                 ack + server_init_offset);
           if (server_init_offset == 0)
             set_server_init_state (SERVER_INIT_DONE);
           else if (server_init_offset == -1)
@@ -447,10 +452,12 @@ recreate_session (int server_socket,
  * If compiled with logging (\ref LOG) then log all input and output
  * with \ref logf.
  *
+ * If client_socket is 0 or less, then update the NVT cache and exit.
+ *
  * @param[in]  client_session      The TLS session with the client.
  * @param[in]  server_session      The TLS session with the server.
  * @param[in]  server_credentials  The TSL server credentials.
- * @param[in]  client_socket       The socket connected to the client.
+ * @param[in]  client_socket       The socket connected to the client, if any.
  * @param[in]  server_socket_addr  The socket connected to the server.
  *
  * @return 0 on success, -1 on error.
@@ -473,15 +480,20 @@ serve_omp (gnutls_session_t* client_session,
   gboolean server_input_stalled = FALSE;
   /* Client status flag.  Set to 0 when the client closes the connection
    * while the server is active. */
-  short client_active = 1;
+  short client_active = client_socket > 0;
 
-  tracef ("   Serving OMP.\n");
+  ompd_nvt_cache_mode = client_socket <= 0;
+
+  if (ompd_nvt_cache_mode)
+    tracef ("   Updating NVT cache.\n");
+  else
+    tracef ("   Serving OMP.\n");
 
   /* Initialise server information. */
   init_otp_data ();
 
   /* Initialise the XML parser and the manage library. */
-  init_omp_process ();
+  init_omp_process (ompd_nvt_cache_mode);
 #if 0
   // FIX consider free_omp_data (); on return
   if (tasks) free_tasks ();
@@ -496,52 +508,55 @@ serve_omp (gnutls_session_t* client_session,
   /* Initiate connection (to_server is empty so this will just init). */
   write_to_server (server_socket, server_session);
 
-  /* Process any client input already read.  This is necessary because the
-   * caller may have called read_protocol, which may have read an entire OMP
-   * command.  If only one command was sent and the manager selected here,
-   * then the manager would sit waiting for more input from the client before
-   * processing the one command.
-   */
-  ret = process_omp_client_input ();
-  if (ret == 0)
-    /* Processed all input. */
-    client_input_stalled = 0;
-  else if (ret == -1 || ret == -4)
+  if (client_active)
     {
-      /* Error.  Write rest of to_client to client, so that the
-       * client gets any buffered output and the response to the
-       * error. */
-      write_to_client (client_session);
-      close_stream_connection (client_socket);
-      return -1;
-    }
-  else if (ret == -2)
-    {
-      /* to_server buffer full. */
-      tracef ("   client input stalled 0\n");
-      client_input_stalled = 1;
-    }
-  else if (ret == -3)
-    {
-      /* to_client buffer full. */
-      tracef ("   client input stalled 0\n");
-      client_input_stalled = 2;
-    }
-  else
-    {
-      /* Programming error. */
-      assert (0);
-      client_input_stalled = 0;
-    }
+      /* Process any client input already read.  This is necessary because the
+       * caller may have called read_protocol, which may have read an entire OMP
+       * command.  If only one command was sent and the manager selected here,
+       * then the manager would sit waiting for more input from the client
+       * before processing the one command.
+       */
+      ret = process_omp_client_input ();
+      if (ret == 0)
+        /* Processed all input. */
+        client_input_stalled = 0;
+      else if (ret == -1 || ret == -4)
+        {
+          /* Error.  Write rest of to_client to client, so that the
+           * client gets any buffered output and the response to the
+           * error. */
+          write_to_client (client_session);
+          close_stream_connection (client_socket);
+          return -1;
+        }
+      else if (ret == -2)
+        {
+          /* to_server buffer full. */
+          tracef ("   client input stalled 0\n");
+          client_input_stalled = 1;
+        }
+      else if (ret == -3)
+        {
+          /* to_client buffer full. */
+          tracef ("   client input stalled 0\n");
+          client_input_stalled = 2;
+        }
+      else
+        {
+          /* Programming error. */
+          assert (0);
+          client_input_stalled = 0;
+        }
 
-  /* Record the start time. */
-  if (time (&last_client_activity_time) == -1)
-    {
-      g_warning ("%s: failed to get current time: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      close_stream_connection (client_socket);
-      return -1;
+      /* Record the start time. */
+      if (time (&last_client_activity_time) == -1)
+        {
+          g_warning ("%s: failed to get current time: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          close_stream_connection (client_socket);
+          return -1;
+        }
     }
 
   /* Loop handling input from the sockets.

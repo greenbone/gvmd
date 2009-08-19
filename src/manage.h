@@ -41,7 +41,6 @@ typedef struct
   certificates_t* certificates;      ///< List of certificates.
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
-  nvtis_t* plugins;                  ///< Plugin meta-information.
   GHashTable* preferences;           ///< Server preference.
   GPtrArray* rules;                  ///< Server rules.
   int rules_size;                    ///< Number of rules.
@@ -143,6 +142,7 @@ typedef enum
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
+typedef long long int nvt_t;
 
 #include <sqlite3.h>
 
@@ -512,6 +512,66 @@ config_iterator_comment (iterator_t*);
 
 char*
 config_nvt_selector (const char*);
+
+
+/* NVT's. */
+
+int
+nvts_size ();
+
+char*
+nvts_md5sum ();
+
+void
+set_nvts_md5sum (const char*);
+
+nvt_t
+make_nvt_from_nvti (const nvti_t*);
+
+gboolean
+find_nvt (const char*, nvt_t*);
+
+void
+init_nvt_iterator (iterator_t*);
+
+const char*
+nvt_iterator_oid (iterator_t*);
+
+const char*
+nvt_iterator_version (iterator_t*);
+
+const char*
+nvt_iterator_name (iterator_t*);
+
+const char*
+nvt_iterator_summary (iterator_t*);
+
+const char*
+nvt_iterator_description (iterator_t*);
+
+const char*
+nvt_iterator_copyright (iterator_t*);
+
+const char*
+nvt_iterator_cve (iterator_t*);
+
+const char*
+nvt_iterator_bid (iterator_t*);
+
+const char*
+nvt_iterator_xref (iterator_t*);
+
+const char*
+nvt_iterator_tag (iterator_t*);
+
+const char*
+nvt_iterator_sign_key_ids (iterator_t*);
+
+const char*
+nvt_iterator_category (iterator_t*);
+
+const char*
+nvt_iterator_family (iterator_t*);
 
 
 /* NVT selectors. */

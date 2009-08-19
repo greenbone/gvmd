@@ -441,12 +441,6 @@ add_server_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
 /* Server plugins. */
 
 /**
- * @brief The current plugins, during reading of server plugin list.
- */
-/*@only@*/
-static nvtis_t* current_plugins = NULL;
-
-/**
  * @brief The current plugin, during reading of server plugin list.
  */
 /*@only@*/
@@ -610,7 +604,6 @@ init_otp_data ()
   server.certificates = NULL;
   server.preferences = NULL;
   server.rules = NULL;
-  server.plugins = NULL;
   server.plugins_md5 = NULL;
 }
 
@@ -887,10 +880,10 @@ parse_server_plugin_list_tags (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      if (current_plugins && current_plugin)
+      if (current_plugin)
         {
           nvti_set_tag (current_plugin, value);
-          nvtis_add (current_plugins, current_plugin);
+          make_nvt_from_nvti (current_plugin);
           current_plugin = NULL;
         }
       set_server_state (SERVER_PLUGIN_LIST_OID);
@@ -1831,15 +1824,21 @@ process_otp_server_input ()
                 {
                   if (strlen (field) == 0 && field[1] == '|')
                     {
-                      nvtis_free (server.plugins);
-                      server.plugins = current_plugins;
-                      current_plugins = NULL;
                       set_server_state (SERVER_DONE);
                       switch (parse_server_done (&messages))
                         {
                           case  0:
                             if (server_init_state == SERVER_INIT_SENT_COMPLETE_LIST)
-                              set_server_init_state (SERVER_INIT_GOT_PLUGINS);
+                              {
+                                set_server_init_state (SERVER_INIT_GOT_PLUGINS);
+                                /* Initialisation only sends COMPLETE_LIST when
+                                 * caching plugins, so return 1 (as though the
+                                 * server sent BYE). */
+                                // FIX should perhaps exit more formally with
+                                //     server
+                                set_nvts_md5sum (server.plugins_md5);
+                                return 1;
+                              }
                             break;
                           case -1: return -1;
                           case -2:
@@ -1940,9 +1939,6 @@ process_otp_server_input ()
                   switch (parse_server_done (&messages))
                     {
                       case  0:
-                        // FIX introduce plugin cache
-                        //if (acknowledge_md5sum ()) return -1;
-                        //if (acknowledge_md5sum_sums ()) return -1;
                         if (server_init_state == SERVER_INIT_SENT_PASSWORD)
                           set_server_init_state (SERVER_INIT_GOT_MD5SUM);
                         else if (acknowledge_md5sum_info ())
@@ -2053,13 +2049,6 @@ process_otp_server_input ()
                   set_server_state (SERVER_PLUGINS_MD5);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
-                    /* current_plugins may be allocated already due to a
-                     * request for the list before the end of the previous
-                     * request.  In this case just let the responses mix.
-                     * FIX depends what server does on multiple requests
-                     */
-                    if (current_plugins == NULL)
-                      current_plugins = nvtis_new ();
                     set_server_state (SERVER_PLUGIN_LIST_OID);
                   }
                 else if (strcasecmp ("PORT", field) == 0)

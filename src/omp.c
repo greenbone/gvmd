@@ -1340,7 +1340,7 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
  * @param  x  Prefix for names in snippet.
  */
 #define DEF(x)                                                    \
-      char* x = nvti_ ## x (plugin);                              \
+      const char* x = nvt_iterator_ ## x (nvts);                  \
       /* FIX The g_convert is a temp hack. */                     \
       gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
                                          "UTF-8", "ISO_8859-1",   \
@@ -1352,21 +1352,18 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
       g_free (x ## _utf8);
 
 /**
- * @brief Send XML for a plugin.
+ * @brief Send XML for an NVT.
  *
- * @param[in]  key    The plugin OID.
- * @param[in]  value  The plugin.
- * @param[in]  dummy  Dummy variable, for nvtis_find.
+ * @param[in]  key      The plugin OID.
+ * @param[in]  details  If true, detailed XML, else simple XML.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
+send_nvt (iterator_t *nvts, int details)
 {
-  nvti_t* plugin = (nvti_t*) plugin_gp;
-  char* oid = (char*) oid_gp;
-  char* name = nvti_name (plugin);
-  int details = (int) details_gp;
+  const char* oid = nvt_iterator_oid (nvts);
+  const char* name = nvt_iterator_oid (nvts);
   gchar* msg;
 
   gchar* name_text = g_markup_escape_text (name, strlen (name));
@@ -1386,7 +1383,7 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
       msg = g_strdup_printf ("<nvt"
                              " oid=\"%s\">"
                              "<name>%s</name>"
-                             "<category>%i</category>"
+                             "<category>%s</category>"
                              "<copyright>%s</copyright>"
                              "<description>%s</description>"
                              "<summary>%s</summary>"
@@ -1406,16 +1403,16 @@ send_plugin (gpointer oid_gp, gpointer plugin_gp, gpointer details_gp)
                              "</nvt>",
                              oid,
                              name_text,
-                             nvti_category (plugin),
+                             nvt_iterator_category (nvts),
                              copyright_text,
                              description_text,
                              summary_text,
                              family_text,
                              version_text,
-                             nvti_cve (plugin),
-                             nvti_bid (plugin),
-                             nvti_xref (plugin),
-                             nvti_sign_key_ids (plugin),
+                             nvt_iterator_cve (nvts),
+                             nvt_iterator_bid (nvts),
+                             nvt_iterator_xref (nvts),
+                             nvt_iterator_sign_key_ids (nvts),
                              tag_text);
       g_free (copyright_text);
       g_free (description_text);
@@ -2321,100 +2318,139 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_ALL:
-        if (server.plugins)
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                     nvtis_size (server.plugins));
-            if (server.plugins_md5)
-              {
-                SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
-                SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
-                SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
-              }
-            if (nvtis_find (server.plugins, send_plugin, (gpointer) 0))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
+        {
+          char *md5sum = nvts_md5sum ();
+          if (md5sum)
+            {
+              iterator_t nvts;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                                       nvts_size ());
+              SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
+              SEND_TO_CLIENT_OR_FAIL (md5sum);
+              free (md5sum);
+              SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+
+              init_nvt_iterator (&nvts);
+              while (next (&nvts))
+                if (send_nvt (&nvts, 0))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+
+              SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
+            }
+          else
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
+        }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
-        if (current_uuid && strcasecmp (current_uuid, "md5"))
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
-                              "GET_NVT_FEED_CHECKSUM algorithm must be md5"));
-        else if (server.plugins_md5)
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">"
-                                    "<checksum algorithm=\"md5\">");
-            SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
-            SEND_TO_CLIENT_OR_FAIL ("</checksum>"
-                                    "</get_nvt_feed_checksum_response>");
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
-        free_string_var (&current_uuid);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        {
+          char *md5sum;
+          if (current_uuid && strcasecmp (current_uuid, "md5"))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
+                                "GET_NVT_FEED_CHECKSUM algorithm must be md5"));
+
+          else if ((md5sum = nvts_md5sum ()))
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">"
+                                      "<checksum algorithm=\"md5\">");
+              SEND_TO_CLIENT_OR_FAIL (md5sum);
+              free (md5sum);
+              SEND_TO_CLIENT_OR_FAIL ("</checksum>"
+                                      "</get_nvt_feed_checksum_response>");
+            }
+          else
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
+          free_string_var (&current_uuid);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_NVT_DETAILS:
-        if (server.plugins)
-          {
-            if (current_uuid)
-              {
-                nvti_t* plugin = nvtis_lookup (server.plugins, current_uuid);
-                if (plugin)
-                 {
+        {
+          char *md5sum = nvts_md5sum ();
+          if (md5sum)
+            {
+              if (current_uuid)
+                {
+                  nvt_t nvt;
+
+                  free (md5sum);
+                  if (find_nvt (current_uuid, &nvt))
                     SEND_TO_CLIENT_OR_FAIL
-                     ("<get_nvt_details_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">");
-                    send_plugin (plugin->oid, plugin, (gpointer) 1);
-                    SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
-                  }
-                else if (send_find_error_to_client ("get_nvt_details",
-                                                    "NVT",
-                                                    current_uuid))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else
-              {
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<get_nvt_details_response"
-                  " status=\"" STATUS_OK "\""
-                  " status_text=\"" STATUS_OK_TEXT "\">"
-                  "<nvt_count>%u</nvt_count>",
-                  nvtis_size (server.plugins));
-                if (server.plugins_md5)
-                  {
-                    SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
-                                            "<algorithm>md5</algorithm>");
-                    SEND_TO_CLIENT_OR_FAIL (server.plugins_md5);
-                    SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
-                  }
-                if (nvtis_find (server.plugins, send_plugin, (gpointer) 1))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
+                     (XML_INTERNAL_ERROR ("get_nvt_details"));
+                  else if (nvt == 0)
+                    {
+                      if (send_find_error_to_client ("get_nvt_details",
+                                                     "NVT",
+                                                     current_uuid))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                    }
+                  else
+                    {
+                      iterator_t nvts;
+
+                      SEND_TO_CLIENT_OR_FAIL
+                       ("<get_nvt_details_response"
+                        " status=\"" STATUS_OK "\""
+                        " status_text=\"" STATUS_OK_TEXT "\">");
+
+                      init_nvt_iterator (&nvts);
+                      while (next (&nvts))
+                        if (send_nvt (&nvts, 1))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                      cleanup_iterator (&nvts);
+
+                      SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
+                    }
+                }
+              else
+                {
+                  iterator_t nvts;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<get_nvt_details_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<nvt_count>%u</nvt_count>",
+                    nvts_size ());
+                  SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
+                                          "<algorithm>md5</algorithm>");
+                  SEND_TO_CLIENT_OR_FAIL (md5sum);
+                  free (md5sum);
+                  SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+
+                  init_nvt_iterator (&nvts);
+                  while (next (&nvts))
+                    if (send_nvt (&nvts, 1))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                  cleanup_iterator (&nvts);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
+                }
+            }
+          else
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
+        }
         free_string_var (&current_uuid);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -4434,13 +4470,15 @@ init_omp (GSList *log_config)
 /**
  * @brief Initialise OMP library data for a process.
  *
+ * @param[in]  update_nvt_cache  If true, process will just update NVT cache.
+ *
  * This should run once per process, before the first call to \ref
  * process_omp_client_input.
  */
 void
-init_omp_process ()
+init_omp_process (int update_nvt_cache)
 {
-  init_manage_process ();
+  init_manage_process (update_nvt_cache);
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
   xml_parser.end_element = omp_xml_handle_end_element;
