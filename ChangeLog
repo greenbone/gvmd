@@ -1,4 +1,9 @@
-2009-08-18  Matthew Mundell <matthew.mundell@intevation.de>
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/ovas-mngr-comm.c (connect_to_server): Get error message from
+	getsockopt return instead of errno.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a permanent NVT cache.
 

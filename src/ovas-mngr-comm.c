@@ -404,7 +404,7 @@ connect_to_server (int server_socket,
           if (ret == EINPROGRESS) return -2;
           g_warning ("%s: failed to connect to server (interrupted): %s\n",
                      __FUNCTION__,
-                     strerror (errno));
+                     strerror (ret));
           return -1;
         }
     }
