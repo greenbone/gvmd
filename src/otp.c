@@ -2217,11 +2217,15 @@ process_otp_server_input ()
                 {
                   if (current_server_task)
                     {
-                      set_task_run_status (current_server_task,
-                                           TASK_STATUS_RUNNING);
-                      set_task_start_time (current_server_task,
-                                           g_strdup (field));
-                      set_scan_start_time (current_report, field);
+                      if (task_run_status (current_server_task)
+                          == TASK_STATUS_REQUESTED)
+                        {
+                          set_task_run_status (current_server_task,
+                                               TASK_STATUS_RUNNING);
+                          set_task_start_time (current_server_task,
+                                               g_strdup (field));
+                          set_scan_start_time (current_report, field);
+                        }
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))
