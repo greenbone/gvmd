@@ -1,5 +1,13 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (task_run_status_name): Capitalise all words of run
+	statuses.
+
+	* src/tests/omp_delete_task_2.c, src/tests/omp_delete_task_0.c: Match
+	new run statuses.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (make_result): Quote description for SQL.
 
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>

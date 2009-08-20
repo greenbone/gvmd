@@ -148,7 +148,7 @@ main ()
       free_entity (expected);
 
       /* It may be that the server is still busy stopping the task. */
-      if (running && status && strcmp (status, "Delete requested") == 0)
+      if (running && status && strcmp (status, "Delete Requested") == 0)
         {
           free_entity (entity);
           close_manager_connection (socket, session);

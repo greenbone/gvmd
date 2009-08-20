@@ -293,12 +293,12 @@ task_run_status_name (task_t task)
 {
   switch (task_run_status (task))
     {
-      case TASK_STATUS_DELETE_REQUESTED: return "Delete requested";
+      case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
       case TASK_STATUS_REQUESTED:        return "Requested";
       case TASK_STATUS_RUNNING:          return "Running";
-      case TASK_STATUS_STOP_REQUESTED:   return "Stop requested";
+      case TASK_STATUS_STOP_REQUESTED:   return "Stop Requested";
       case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Internal Error";
     }

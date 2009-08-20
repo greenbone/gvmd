@@ -138,7 +138,7 @@ main ()
       const char* status_text = task_status (entity);
 
       /* It may be that the server is still busy stopping the task. */
-      if (status_text && strcmp (status_text, "Delete requested") == 0)
+      if (status_text && strcmp (status_text, "Delete Requested") == 0)
         {
           free_entity (entity);
           free (id);
