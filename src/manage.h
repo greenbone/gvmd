@@ -378,7 +378,7 @@ gchar*
 report_path_task_uuid (gchar*);
 
 gboolean
-report_task (const char*, task_t* task);
+report_task (report_t, task_t*);
 /*@=exportlocal@*/
 
 int

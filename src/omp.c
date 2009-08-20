@@ -2533,10 +2533,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (current_format == NULL
                      || strcasecmp (current_format, "xml") == 0)
               {
-                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
-                                        " status=\"" STATUS_OK "\""
-                                        " status_text=\"" STATUS_OK_TEXT "\">"
-                                        "<report>");
+                task_t task;
+                char* tsk_uuid = NULL;
+
+                if (report_task (report, &task))
+                  {
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                    free_string_var (&current_uuid);
+                    free_string_var (&current_format);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    break;
+                  }
+                else if (task && task_uuid (task, &tsk_uuid))
+                  {
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                    free_string_var (&current_uuid);
+                    free_string_var (&current_format);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    break;
+                  }
+
+                SENDF_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                         " status=\"" STATUS_OK "\""
+                                         " status_text=\"" STATUS_OK_TEXT "\">"
+                                         "<report id=\"%s\">",
+                                         current_uuid);
+
+                if (task && tsk_uuid)
+                  {
+                    char* tsk_name = task_name (task);
+                    SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                             "<name>%s</name>"
+                                             "</task>",
+                                             tsk_uuid,
+                                             tsk_name ? tsk_name : "");
+                    free (tsk_name);
+                    free (tsk_uuid);
+                  }
 
                 SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
                                          scan_start_time (report));

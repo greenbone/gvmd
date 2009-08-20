@@ -1213,6 +1213,35 @@ report_uuid (report_t report)
 }
 
 /**
+ * @brief Return the task of a report.
+ *
+ * @param[in]   report  A report.
+ * @param[out]  task    Task return, 0 if succesfully failed to find task.
+ *
+ * @return FALSE on success (including if failed to find report), TRUE on error.
+ */
+gboolean
+report_task (report_t report, task_t *task)
+{
+  switch (sql_int64 (task, 0, 0,
+                     "SELECT task FROM reports WHERE ROWID = %llu;",
+                     report))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *task = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+  return FALSE;
+}
+
+/**
  * @brief Get the number of holes in a report.
  *
  * @param[in]   report  Report.

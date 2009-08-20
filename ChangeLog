@@ -1,5 +1,13 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (report_task): New function.
+	* src/manage.h (report_task): New header.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT add report
+	ID and task with ID and name to the XML	report.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/otp.c (process_otp_server_input): In SERVER_TIME_SCAN_START only
 	set task properties if the task is in the requested state, as the task
 	may also be in "stop requested" or "delete requested" states.
