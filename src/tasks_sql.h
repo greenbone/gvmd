@@ -3170,11 +3170,44 @@ make_nvt_from_nvti (const nvti_t *nvti)
  * @brief Initialise an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  nvt       NVT to iterate over, all if 0.
  */
 void
-init_nvt_iterator (iterator_t* iterator)
+init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
 {
-  init_table_iterator (iterator, "nvts");
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (nvt)
+    formatted = g_strdup_printf ("SELECT * FROM nvts WHERE ROWID = %llu;",
+                                 nvt);
+  else
+    formatted = g_strdup_printf ("SELECT * FROM nvts;");
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
 }
 
 /**

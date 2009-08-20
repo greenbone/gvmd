@@ -2384,7 +2384,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (md5sum);
               SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-              init_nvt_iterator (&nvts);
+              init_nvt_iterator (&nvts, (nvt_t) 0);
               while (next (&nvts))
                 if (send_nvt (&nvts, 0))
                   {
@@ -2458,7 +2458,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         " status=\"" STATUS_OK "\""
                         " status_text=\"" STATUS_OK_TEXT "\">");
 
-                      init_nvt_iterator (&nvts);
+                      init_nvt_iterator (&nvts, nvt);
                       while (next (&nvts))
                         if (send_nvt (&nvts, 1))
                           {
@@ -2486,7 +2486,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (md5sum);
                   SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-                  init_nvt_iterator (&nvts);
+                  init_nvt_iterator (&nvts, (nvt_t) 0);
                   while (next (&nvts))
                     if (send_nvt (&nvts, 1))
                       {
