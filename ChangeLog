@@ -1,5 +1,9 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (make_result): Quote description for SQL.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (main): Shorten --foreground description.
 
 	* README: Describe the cache updating option.  Update the usage message.

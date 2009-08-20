@@ -1140,10 +1140,11 @@ make_result (task_t task, const char* subnet, const char* host,
              const char* description)
 {
   result_t result;
-  // TODO: Escape description.
+  gchar *quoted_descr = sql_quote (description);
   sql ("INSERT into results (task, subnet, host, port, nvt, type, description)"
        " VALUES (%llu, '%s', '%s', '%s', '%s', '%s', '%s');",
-       task, subnet, host, port, nvt, type, description);
+       task, subnet, host, port, nvt, type, quoted_descr);
+  g_free (quoted_descr);
   result = sqlite3_last_insert_rowid (task_db);
   return result;
 }
