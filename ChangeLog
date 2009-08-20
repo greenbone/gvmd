@@ -1,5 +1,10 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/logf.h (logf): Turn off comm logging and log error if fflush fails,
+	instead of aborting.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (task_run_status_name): Capitalise all words of run
 	statuses.
 

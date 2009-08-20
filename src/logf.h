@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <glib.h>
 
 /**
  * @brief Logging flag.
@@ -63,7 +64,14 @@ extern FILE* log_stream;
       {                                                 \
         fprintf (log_stream, "%7i  ", (int) getpid());  \
         fprintf (log_stream, args);                     \
-        if (fflush (log_stream) == EOF) abort ();       \
+        if (fflush (log_stream) == EOF)                 \
+          {                                             \
+            fclose (log_stream);                        \
+            log_stream = 0;                             \
+            g_warning ("%s: fflush failed, so turned off comm logging: %s\n", \
+                       __FUNCTION__,                    \
+                       strerror (errno));               \
+          }                                             \
       }                                                 \
   } while (0)
 #else
