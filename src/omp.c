@@ -1780,6 +1780,56 @@ latex_escape_text (const char *text)
 }
 
 /**
+ * @brief Convert \n's to real newline's.
+ *
+ * @return A newly allocated version of text.
+ */
+static gchar*
+convert_to_newlines (const char *text)
+{
+  // TODO: Do this better.
+
+  gsize left = strlen (text);
+  gchar *new, *ch;
+
+  /* Allocate buffer of a safe length. */
+  {
+    new = g_strdup (text);
+  }
+
+  ch = new;
+  while (*ch)
+    {
+      if (*ch == '\\')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case 'r':
+                {
+                  /* \r is flushed */
+                  memmove (ch - 1, ch + 1, left);
+                  left--;
+                  ch -= 2;
+                  break;
+                }
+              case 'n':
+                {
+                  /* \n becomes "\n" (one newline) */
+                  memmove (ch, ch + 1, left);
+                  left--;
+                  *(ch - 1) = '\n';
+                  ch--;
+                  break;
+                }
+            }
+        }
+      ch++; left--;
+    }
+  return new;
+}
+
+/**
  * @brief Get the heading associated with a certain result severity.
  *
  * @param[in]  severity  The severity type.
@@ -2583,20 +2633,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 init_result_iterator (&results, report, NULL);
                 while (next (&results))
-                  SENDF_TO_CLIENT_OR_FAIL ("<result>"
-                                           "<subnet>%s</subnet>"
-                                           "<host>%s</host>"
-                                           "<port>%s</port>"
-                                           "<nvt>%s</nvt>"
-                                           "<type>%s</type>"
-                                           "<description>%s</description>"
-                                           "</result>",
-                                           result_iterator_subnet (&results),
-                                           result_iterator_host (&results),
-                                           result_iterator_port (&results),
-                                           result_iterator_nvt (&results),
-                                           result_iterator_type (&results),
-                                           result_iterator_descr (&results));
+                  {
+                    const char *descr = result_iterator_descr (&results);
+                    gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
+                    SENDF_TO_CLIENT_OR_FAIL ("<result>"
+                                             "<subnet>%s</subnet>"
+                                             "<host>%s</host>"
+                                             "<port>%s</port>"
+                                             "<nvt>%s</nvt>"
+                                             "<type>%s</type>"
+                                             "<description>%s</description>"
+                                             "</result>",
+                                             result_iterator_subnet (&results),
+                                             result_iterator_host (&results),
+                                             result_iterator_port (&results),
+                                             result_iterator_nvt (&results),
+                                             result_iterator_type (&results),
+                                             descr ? nl_descr : "");
+                    if (descr) g_free (nl_descr);
+                  }
                 cleanup_iterator (&results);
 
                 init_host_iterator (&hosts, report);

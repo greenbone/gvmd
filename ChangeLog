@@ -1,5 +1,11 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (convert_to_newlines): New function.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT convert \n's in the
+	XML result decriptions to real newlines.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (report_task): New function.
 	* src/manage.h (report_task): New header.
 
