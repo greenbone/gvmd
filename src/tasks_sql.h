@@ -1881,7 +1881,6 @@ set_scan_attack_state (report_t report, const char* host, const char* state)
   sql ("UPDATE report_hosts SET attack_state = '%s'"
        " WHERE host = '%s' AND report = %llu;",
        state,
-       state,
        host,
        report);
 }

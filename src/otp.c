@@ -2095,7 +2095,7 @@ process_otp_server_input ()
                 break;
               case SERVER_STATUS_ATTACK_STATE:
                 {
-                  if (current_host)
+                  if (current_report && current_host)
                     {
                       char* state = g_strdup (field);
                       set_scan_attack_state (current_report,

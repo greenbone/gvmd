@@ -453,6 +453,9 @@ host_iterator_end_time (iterator_t*);
 const char*
 host_iterator_end_time (iterator_t*);
 
+const char*
+host_iterator_attack_state (iterator_t*);
+
 int
 host_iterator_current_port (iterator_t*);
 

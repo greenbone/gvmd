@@ -4061,12 +4061,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             current_port = host_iterator_current_port (&hosts);
                             if (max_port)
                               {
-                                progress = (current_port * 100) / max_port;
+                                progress = (current_port * 50) / max_port;
                                 if (progress < 0) progress = 0;
-                                else if (progress > 100) progress = 100;
+                                else if (progress > 50) progress = 50;
                               }
                             else
-                              progress = current_port ? 100 : 0;
+                              progress = current_port ? 50 : 0;
+                            /* First 50% is scanning, second 50% is the rest. */
+                            if (strcasecmp (host_iterator_attack_state (&hosts),
+                                            "portscan"))
+                              progress += 50;
                             total += progress;
                             num_hosts++;
 
@@ -4277,12 +4281,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         current_port = host_iterator_current_port (&hosts);
                         if (max_port)
                           {
-                            progress = (current_port * 100) / max_port;
+                            progress = (current_port * 50) / max_port;
                             if (progress < 0) progress = 0;
-                            else if (progress > 100) progress = 100;
+                            else if (progress > 50) progress = 50;
                           }
                         else
-                          progress = current_port ? 100 : 0;
+                          progress = current_port ? 50 : 0;
+                        /* First 50% is scanning, second 50% is the rest. */
+                        if (strcasecmp (host_iterator_attack_state (&hosts),
+                                        "portscan"))
+                          progress += 50;
                         total += progress;
                         num_hosts++;
 

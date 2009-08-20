@@ -1,3 +1,15 @@
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (set_scan_attack_state): Remove duplicate argument.
+
+	* src/manage.h (host_iterator_attack_state): New header.
+
+	* src/otp.c (process_otp_server_input): In SERVER_STATUS_ATTACK_STATE add
+	check that there is a current report.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS send the
+	portscan progress as first 50% and test progress as second 50%.
+
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/logf.h (logf): Turn off comm logging and log error if fflush fails,
