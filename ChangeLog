@@ -1,5 +1,13 @@
 2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd.c (main): Shorten --foreground description.
+
+	* README: Describe the cache updating option.  Update the usage message.
+
+	* INSTALL: Increase library version.
+
+2009-08-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_nvt_iterator): Add NVT arg.
 	* src/manage.h (init_nvt_iterator): Add NVT arg.
 

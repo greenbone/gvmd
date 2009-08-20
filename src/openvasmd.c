@@ -498,7 +498,7 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
-        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in the foreground, instead of forking into the background.", NULL },
+        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
