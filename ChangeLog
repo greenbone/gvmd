@@ -1,5 +1,13 @@
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (start_task): Fail if a task is already running.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK add a
+	response for the above failure and extend the start_task return
+	checking.
+
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (stop_task): Only stop the current task if it's the
 	given task.
 

@@ -3893,6 +3893,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else
               switch (start_task (task))
                 {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
+                    break;
                   case -1:
                     /* to_server is full. */
                     // FIX or other error
@@ -3900,25 +3903,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     // process_omp_client_input must return -2
                     abort ();
                     break;
+                  case -6:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("start_task",
+                                        "There is already a task running in"
+                                        " this process"));
+                    break;
                   case -2:
                     /* Task target lacks hosts.  This is checked when the
-                     * target is created anyway. */
+                     * target is created. */
                     assert (0);
-                    if (send_to_client ("<start_task_response"
-                                        " status=\"" STATUS_ERROR_MISSING "\""
-                                        " status_text=\"Task target is missing"
-                                        " hosts\"/>"))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    break;
-                  case -3:
-                    /* Failed to create report. */
+                    /*@fallthrough@*/
+                  case -4:
+                    /* Task lacks target.  This is checked when the task is
+                     * created anyway. */
+                    assert (0);
+                    /*@fallthrough@*/
+                  case -3: /* Failed to create report. */
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                     break;
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
+                  default: /* Programming error. */
+                    assert (0);
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                     break;
                 }
             free_string_var (&current_uuid);
