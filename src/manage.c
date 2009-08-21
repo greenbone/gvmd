@@ -343,9 +343,9 @@ print_tasks ()
 // TODO: Test these RC parsing functions.
 
 /**
- * @brief Return a task preference.
+ * @brief Return a preference from an RC.
  *
- * @param[in]  task  The task.
+ * @param[in]  desc  The RC.
  * @param[in]  name  The name of the preference.
  *
  * @return The preference on success, else NULL.

@@ -1919,12 +1919,15 @@ omp_get_certificates (gnutls_session_t* session, entity_t* response)
 }
 
 /**
- * @brief Get the manager certificates.
+ * @brief Poll an OMP service until it is up.
  *
+ * Repeatedly call a function while it returns the value 503.
+ *
+ * @param[in]  function  Function to call to do polling.
  * @param[in]  session   Pointer to GNUTLS session.
  * @param[out] response  On success contains GET_CERTIFICATES response.
  *
- * @return 0 on success, -1 or OMP response code on error.
+ * @return The value returned from the function.
  */
 int
 omp_until_up (int (*function) (gnutls_session_t*, entity_t*),
@@ -1942,6 +1945,7 @@ omp_until_up (int (*function) (gnutls_session_t*, entity_t*),
  * @param[in]   session     Pointer to GNUTLS session.
  * @param[in]   name        Name of target.
  * @param[in]   hosts       Target hosts.
+ * @param[in]   comment     Target comment.
  *
  * @return 0 on success, -1 on error.
  */

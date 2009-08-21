@@ -445,7 +445,8 @@ error_send_to_client (GError** error)
 /**
  * @brief Expand to XML for a STATUS_ERROR_SYNTAX response.
  *
- * @param  tag  Name of the command generating the response.
+ * @param  tag   Name of the command generating the response.
+ * @param  text  Text for the status_text attribute of the response.
  */
 #define XML_ERROR_SYNTAX(tag, text)                      \
  "<" tag "_response"                                     \
@@ -4550,6 +4551,8 @@ extern buffer_size_t from_client_end;
 
 /**
  * @brief Initialise OMP library.
+ *
+ * @param[in]  log_config  Logging configuration list.
  *
  * @return 0 on success, else -1.
  */

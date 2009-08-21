@@ -18,27 +18,27 @@ as though it was connecting to openvasd.
 
 A command like
 
-	openvasmd --sport 7772 --update
+    openvasmd --sport 7772 --update
 
 will update the Manager's NVT cache, and then exit.
 
 The program usage message follows.
 
-	Usage:
-	  openvasmd [OPTION...] - OpenVAS security scanner manager
+    Usage:
+      openvasmd [OPTION...] - OpenVAS security scanner manager
 
-	Help Options:
-	  -?, --help                  Show help options
+    Help Options:
+      -?, --help                  Show help options
 
-	Application Options:
-	  -f, --foreground            Run in foreground.
-	  -a, --listen=<address>      Listen on <address>.
-	  -p, --port=<number>         Use port number <number>.
-	  -l, --slisten=<address>     Server (openvasd) address.
-	  -s, --sport=<number>        Server (openvasd) port number.
-	  -u, --update                Update the NVT cache and exit.
-	  -v, --verbose               Print progress messages.
-	  --version                   Print version and exit.
+    Application Options:
+      -f, --foreground            Run in foreground.
+      -a, --listen=<address>      Listen on <address>.
+      -p, --port=<number>         Use port number <number>.
+      -l, --slisten=<address>     Server (openvasd) address.
+      -s, --sport=<number>        Server (openvasd) port number.
+      -u, --update                Update the NVT cache and exit.
+      -v, --verbose               Print progress messages.
+      --version                   Print version and exit.
 
 There are some tests under src/tests.  To run them, start your openvasmd,
 for example with
@@ -56,4 +56,4 @@ and then run all the tests
 
 or any one of the tests, for example
 
-	src/test/omp_get_report_0
+    src/test/omp_get_report_0

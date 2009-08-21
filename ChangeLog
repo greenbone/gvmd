@@ -1,3 +1,11 @@
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/README: Convert tabs to spaces.
+
+	* src/tests/common.c, src/omp.c, src/manage.c: Add missing docs.
+
+	* src/oxpd.c: Add missing docs.  Add splint guard around #error.
+
 2009-08-21  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Post release version bump.

@@ -39,8 +39,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef S_SPLINT_S
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for `read'
+#endif
 #endif
 
 /**
@@ -85,6 +87,9 @@ buffer_size_t from_server_end = 0;
  */
 struct sockaddr_in server_address;
 
+/**
+ * @brief The OTP initialisation string.
+ */
 #define OTP_INIT_STRING "< OTP/1.0 >\n"
 
 /**
