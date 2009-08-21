@@ -1,5 +1,19 @@
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	When processing the server input perform any task stop requests received
+	in other processes.
+
+	* src/omp.c (process_omp_client_input): Add note about writing whole
+	commands to to_server.
+
+	* src/manage.c (manage_check_current_task): New function.
+	* src/manage.h (manage_check_current_task): New header.
+
+	* src/otp.c (process_otp_server_input): Call manage_check_current_task
+	initially.
+
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (set_scan_attack_state): Remove duplicate argument.
 
 	* src/manage.h (host_iterator_attack_state): New header.

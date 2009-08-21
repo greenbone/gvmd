@@ -1149,6 +1149,18 @@ process_otp_server_input ()
   buffer_size_t from_start, from_end;
   //tracef ("   consider %.*s\n", from_server_end - from_server_start, messages);
 
+  /* Before processing the input, check if another manager process has stopped
+   * the current task.  If so, send the stop request to the server.  This is
+   * the only place in this file that writes to the to_server buffer, and hence
+   * the only place that requires that the writes to to_server in the OMP XML
+   * handlers must be whole OTP commands. */
+
+  if (manage_check_current_task () == -1)
+    {
+      /* Out of space in to_server.  Just treat it as an error for now. */
+      return -1;
+    }
+
   /* First, handle special server states where the input from the server
    * ends in something other than <|> (usually a newline). */
 

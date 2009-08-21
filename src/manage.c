@@ -809,3 +809,34 @@ acknowledge_md5sum_info ()
     return -1;
   return 0;
 }
+
+/**
+ * @brief Handle state changes to current task made by other processes.
+ *
+ * @return 0 on success, -1 if out of space in \ref to_server buffer, 1 if
+ *         queued to server.
+ */
+int
+manage_check_current_task ()
+{
+  if (current_server_task)
+    {
+      task_status_t run_status;
+
+#if 0
+      // FIX should prevent this from repeating somehow
+      if (current_server_task_stop_requested) return;
+#endif
+
+      // FIX something should check safety credential before this
+      run_status = task_run_status (current_server_task);
+      if (run_status == TASK_STATUS_STOP_REQUESTED)
+        {
+          /* Some other process changed to this status, so request the stop. */
+          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+            return -1;
+          return 1;
+        }
+    }
+  return 0;
+}

@@ -609,4 +609,7 @@ acknowledge_md5sum_sums ();
 int
 acknowledge_md5sum_info ();
 
+int
+manage_check_current_task ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

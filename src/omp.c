@@ -4608,6 +4608,10 @@ process_omp_client_input ()
   gboolean success;
   GError* error = NULL;
 
+  /* In the XML parser handlers all writes to the to_server buffer must be
+   * complete OTP commands, because the caller may also write into to_server
+   * between calls to this function (via manage_check_current_task). */
+
   if (xml_context == NULL) return -1;
 
   success = g_markup_parse_context_parse (xml_context,
