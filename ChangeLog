@@ -1,5 +1,13 @@
 2009-08-21  Michael Wiegand <michael.wiegand@intevation.de>
 
+	Post release version bump.
+
+	* VERSION: Set to 0.7.1.SVN.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+2009-08-21  Michael Wiegand <michael.wiegand@intevation.de>
+
 	Preparing the openvas-manager 0.7.0 relase.
 
 	* VERSION: Set to 0.7.0.
