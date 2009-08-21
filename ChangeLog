@@ -1,3 +1,15 @@
+2009-08-21  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.7.0 relase.
+
+	* VERSION: Set to 0.7.0.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* CHANGES: Updated.
+
+	* packaging/debian/control: Updated dependencies.
+
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	When processing the server input perform any task stop requests received
