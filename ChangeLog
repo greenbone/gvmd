@@ -1,5 +1,10 @@
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (stop_task): Only stop the current task if it's the
+	given task.
+
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/README: Convert tabs to spaces.
 
 	* src/tests/common.c, src/omp.c, src/manage.c: Add missing docs.

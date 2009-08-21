@@ -734,7 +734,8 @@ stop_task (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+      if (current_server_task == task
+          && send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
