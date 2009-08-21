@@ -3017,7 +3017,7 @@ nvt_cache_present ()
 {
   return sql_int (0, 0,
                   "SELECT count(value) FROM meta"
-                  " WHERE name = 'nvts_checksum';");
+                  " WHERE name = 'nvts_md5sum';");
 }
 
 /**
@@ -3361,6 +3361,18 @@ nvt_selector_family_count (const char* selector)
     {
       if (nvt_selector_nvts_growing (selector))
         {
+          if ((sql_int (0, 0,
+                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                        selector)
+               == 1)
+              && (sql_int (0, 0,
+                           "SELECT COUNT(*) FROM nvt_selectors"
+                           " WHERE name = '%s'"
+                           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                           ";",
+                           selector)
+                  == 1))
+            return sql_int (0, 0, "SELECT COUNT(DISTINCT family) FROM nvts;");
           return -1;
         }
       else
