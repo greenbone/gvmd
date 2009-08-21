@@ -2398,14 +2398,23 @@ create_target (const char* name, const char* hosts, const char* comment)
  *
  * @param[in]  name   Name of target.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 fail because a task refers to the target, -1 error.
  */
 int
 delete_target (const char* name)
 {
-  // FIX fail if a task references the target
-  gchar* quoted_name = sql_nquote (name, strlen (name));
+  gchar* quoted_name = sql_quote (name);
+  sql ("BEGIN IMMEDIATE;");
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE target = '%s'",
+               name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
   sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
+  sql ("COMMIT;");
   g_free (quoted_name);
   return 0;
 }
@@ -2884,14 +2893,21 @@ create_config (const char* name, const char* comment, char* rc)
  *
  * @param[in]  name   Name of config.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 fail because a task refers to the config, -1 error.
  */
 int
 delete_config (const char* name)
 {
-  // FIX fail if a task references the config
   gchar* quoted_name = sql_nquote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE config = '%s'",
+               name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
   sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
        quoted_name);
   sql ("DELETE FROM config_preferences"

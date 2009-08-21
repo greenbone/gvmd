@@ -209,6 +209,13 @@ set_target_properties (omp_delete_config_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG}
 target_link_libraries (omp_delete_config_0 common)
 ADD_TEST (omp_delete_config_0 omp_delete_config_0)
 
+add_executable (omp_delete_config_1 omp_delete_config_1.c)
+target_link_libraries (omp_delete_config_1 string)
+set_target_properties (omp_delete_config_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_delete_config_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_delete_config_1 common)
+ADD_TEST (omp_delete_config_1 omp_delete_config_1)
+
 add_executable (omp_delete_report_0 omp_delete_report_0.c)
 target_link_libraries (omp_delete_report_0 string)
 set_target_properties (omp_delete_report_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
@@ -229,6 +236,13 @@ set_target_properties (omp_delete_target_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLI
 set_target_properties (omp_delete_target_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
 target_link_libraries (omp_delete_target_0 common)
 ADD_TEST (omp_delete_target_0 omp_delete_target_0)
+
+add_executable (omp_delete_target_1 omp_delete_target_1.c)
+target_link_libraries (omp_delete_target_1 string)
+set_target_properties (omp_delete_target_1 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_delete_target_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_delete_target_1 common)
+ADD_TEST (omp_delete_target_1 omp_delete_target_1)
 
 add_executable (omp_delete_task_0 omp_delete_task_0.c)
 target_link_libraries (omp_delete_task_0 string)

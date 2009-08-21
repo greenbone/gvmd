@@ -119,6 +119,10 @@ create_task (gnutls_session_t*, const char*, unsigned int,
              const char*, const char*, char**);
 
 int
+omp_create_task (gnutls_session_t*, const char*, const char*,
+                 const char*, const char*, char**);
+
+int
 create_task_from_rc_file (gnutls_session_t*, const char*, const char*,
                           const char*, char**);
 

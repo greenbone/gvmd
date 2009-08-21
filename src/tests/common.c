@@ -1140,6 +1140,64 @@ env_authenticate (gnutls_session_t* session)
 }
 
 /**
+ * @brief Create a task given a config and target.
+ *
+ * @param[in]   session     Pointer to GNUTLS session.
+ * @param[in]   name        Task name.
+ * @param[in]   config      Task config name.
+ * @param[in]   target      Task target name.
+ * @param[in]   comment     Task comment.
+ * @param[out]  id          Pointer for newly allocated ID of new task.  Only
+ *                          set on successful return.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+omp_create_task (gnutls_session_t* session,
+                 const char* name,
+                 const char* config,
+                 const char* target,
+                 const char* comment,
+                 char** id)
+{
+  /* Create the OMP request. */
+
+  gchar* new_task_request;
+  new_task_request = g_strdup_printf ("<create_task>"
+                                      "<config>%s</config>"
+                                      "<target>%s</target>"
+                                      "<name>%s</name>"
+                                      "<comment>%s</comment>"
+                                      "</create_task>",
+                                      config,
+                                      target,
+                                      name,
+                                      comment);
+
+  /* Send the request. */
+
+  int ret = send_to_manager (session, new_task_request);
+  g_free (new_task_request);
+  if (ret) return -1;
+
+  /* Read the response. */
+
+  entity_t entity = NULL;
+  if (read_entity (session, &entity)) return -1;
+
+  /* Get the ID of the new task from the response. */
+
+  entity_t id_entity = entity_child (entity, "task_id");
+  if (id_entity == NULL)
+    {
+      free_entity (entity);
+      return -1;
+    }
+  *id = g_strdup (entity_text (id_entity));
+  return 0;
+}
+
+/**
  * @brief Create a task, given the task description as an RC file.
  *
  * @param[in]   session     Pointer to GNUTLS session.

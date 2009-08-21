@@ -3210,15 +3210,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_CONFIG name must be at least one"
                                   " character long"));
             }
-          else if (delete_config (modify_task_name))
+          else switch (delete_config (modify_task_name))
             {
-              free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
-            }
-          else
-            {
-              free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
+              case 0:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
+                break;
+              case 1:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
+                                                          "Config is in use"));
+                break;
+              default:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
             }
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -3241,15 +3246,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_TARGET name must be at least one"
                                   " character long"));
             }
-          else if (delete_target (modify_task_name))
+          else switch (delete_target (modify_task_name))
             {
-              free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-            }
-          else
-            {
-              free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+              case 0:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+                break;
+              case 1:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
+                                                          "Target is in use"));
+                break;
+              default:
+                free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
             }
           set_client_state (CLIENT_AUTHENTIC);
           break;

@@ -1,5 +1,24 @@
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Prevent deletion of a config/target if a task refers to the config/target.
+
+	* src/tasks_sql.h (delete_config, delete_target): Fail if a task refers
+	to the config/target.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_CONFIG and
+	CLIENT_DELETE_TARGET handle new delete_config/delete_target fail return.
+
+	* src/tests/common.c (omp_create_task): New function.
+	* src/tests/common.h: Add header.
+
+	* src/tests/omp_delete_config_1.c, src/tests/omp_delete_target_1.c: New
+	files.
+
+	* src/tests/CMakeLists.txt: Add omp_delete_config_1 and
+	omp_delete_target_1.
+
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (nvt_cache_present): Correct column name in SQL.
 	(nvt_selector_family_count): Add real family count for the All selector.
 
