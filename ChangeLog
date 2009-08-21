@@ -1,5 +1,12 @@
 2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_start_task_4.c: New file.  Tests starting a task when
+	another task is already running on the same connection.
+
+	* src/tests/CMakeLists.txt: Add omp_start_task_4.
+
+2009-08-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (start_task): Fail if a task is already running.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK add a
