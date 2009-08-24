@@ -4386,8 +4386,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           init_config_iterator (&configs);
           while (next (&configs))
             {
-              const char *selector;
+              const char *selector, *config_name;
               selector = config_iterator_nvt_selector (&configs);
+              config_name = config_iterator_name (&configs);
               SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                        "<name>%s</name>"
                                        "<comment>%s</comment>"
@@ -4398,11 +4399,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "%i<growing>%i</growing>"
                                        "</nvt_count>"
                                        "</config>",
-                                       config_iterator_name (&configs),
+                                       config_name,
                                        config_iterator_comment (&configs),
-                                       nvt_selector_family_count (selector),
+                                       nvt_selector_family_count (selector,
+                                                                  config_name),
                                        nvt_selector_families_growing (selector),
-                                       nvt_selector_nvt_count (selector),
+                                       nvt_selector_nvt_count (selector,
+                                                               config_name),
                                        nvt_selector_nvts_growing (selector));
             }
           cleanup_iterator (&configs);

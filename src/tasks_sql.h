@@ -649,7 +649,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
@@ -2642,9 +2642,9 @@ clude (const char *config_name, GArray *array, int array_size, int exclude)
 static int
 insert_rc_into_config (config_t config, const char *config_name, char *rc)
 {
-  GArray *yes = g_array_new (FALSE, FALSE, sizeof (rc));
-  GArray *no = g_array_new (FALSE, FALSE, sizeof (rc));
-  int yes_size = 0, no_size = 0;
+  GArray *yes = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
+  GArray *no = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
+  int yes_size = 0, no_size = 0, family_count = 0;
 
   char* seek;
 
@@ -2698,7 +2698,14 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                        == 0)
                    && (rc[6 + strlen ("SCANNER_SET")] == ')')))
         {
+          GHashTable *families;
+
           /* Create an NVT selector from the plugin list. */
+
+          families = g_hash_table_new_full (g_str_hash,
+                                            g_str_equal,
+                                            free,
+                                            NULL);
           rc = seek + 1;
           while ((seek = strchr (rc, '\n')))
             {
@@ -2720,9 +2727,29 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                   while (*rc == ' ') rc++;
                   if (rc < rc_end)
                     {
+                      char *family;
                       int value_len = (seek ? seek - (eq2 + 2)
                                             : strlen (eq2 + 2));
                       *rc_end = '\0';
+
+                      family = sql_string (0, 0,
+                                           "SELECT family FROM nvts"
+                                           " WHERE oid = '%s'"
+                                           " LIMIT 1;",
+                                           rc);
+                      if (family)
+                        {
+                          if (g_hash_table_lookup (families, family))
+                            free (family);
+                          else
+                            {
+                              family_count++;
+                              g_hash_table_insert (families,
+                                                   family,
+                                                   (gpointer) 1);
+                            }
+                        }
+
                       if ((value_len == 3)
                             && strncasecmp (eq2 + 2, "yes", 3) == 0)
                         {
@@ -2739,6 +2766,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
               rc = seek + 1;
             }
+          g_hash_table_destroy (families);
         }
       else if ((seek ? seek - rc > 7 : 0)
                && (strncmp (rc, "begin(", 6) == 0))
@@ -2819,6 +2847,15 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
         clude (config_name, yes, yes_size, 0);
         clude (config_name, no, no_size, 1);
+
+        /* Cache the family and NVT count. */
+
+        sql ("UPDATE configs SET nvt_count = %i WHERE name = '%s';",
+             yes_size,
+             config_name);
+        sql ("UPDATE configs SET family_count = %i WHERE name = '%s';",
+             family_count,
+             config_name);
       }
   }
 
@@ -3033,7 +3070,7 @@ nvt_cache_present ()
 {
   return sql_int (0, 0,
                   "SELECT count(value) FROM meta"
-                  " WHERE name = 'nvts_md5sum';");
+                  " WHERE name = 'nvts_md5sum' LIMIT 1;");
 }
 
 /**
@@ -3113,7 +3150,7 @@ char *
 nvt_family (nvt_t nvt)
 {
   return sql_string (0, 0,
-                     "SELECT family FROM nvts WHERE ROWID = %llu;",
+                     "SELECT family FROM nvts WHERE ROWID = %llu LIMIT 1;",
                      nvt);
 }
 
@@ -3270,7 +3307,8 @@ nvt_selector_families_growing (const char* selector)
                   "SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                  " AND exclude = 0;",
+                  " AND exclude = 0"
+                  " LIMIT 1;",
                   selector);
 }
 
@@ -3291,7 +3329,8 @@ nvt_selector_nvts_growing (const char* selector)
                   " WHERE name = '%s'"
                   " AND exclude = 0"
                   " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                  " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ");",
+                  " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ")"
+                  " LIMIT 1;",
                   selector);
 }
 
@@ -3367,11 +3406,12 @@ static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
  * @brief Get the number of families covered by a selector.
  *
  * @param[in]  selector  NVT selector.
+ * @param[in]  config    Config selector is part of.
  *
  * @return Family count if known, else -1.
  */
 int
-nvt_selector_family_count (const char* selector)
+nvt_selector_family_count (const char* selector, const char* config)
 {
   if (nvt_cache_present ())
     {
@@ -3393,11 +3433,9 @@ nvt_selector_family_count (const char* selector)
         }
       else
         return sql_int (0, 0,
-                        "SELECT COUNT(DISTINCT nvts.family) FROM nvt_selectors, nvts"
-                        " WHERE nvt_selectors.family_or_nvt = nvts.oid"
-                        " AND nvt_selectors.name = '%s'"
-                        " AND nvt_selectors.type = 2"
-                        " AND nvt_selectors.exclude = 0;",
+                        "SELECT family_count FROM configs"
+                        " WHERE name = '%s'"
+                        " LIMIT 1;",
                         selector);
     }
   return -1;
@@ -3407,11 +3445,12 @@ nvt_selector_family_count (const char* selector)
  * @brief Get the number of NVTs covered by a selector.
  *
  * @param[in]  selector  NVT selector.
+ * @param[in]  config    Config selector is part of.
  *
  * @return NVT count if known, else -1.
  */
 int
-nvt_selector_nvt_count (const char* selector)
+nvt_selector_nvt_count (const char* selector, const char* config)
 {
   if (nvt_selector_nvts_growing (selector))
     {
@@ -3434,9 +3473,10 @@ nvt_selector_nvt_count (const char* selector)
     }
   else
     return sql_int (0, 0,
-                    "SELECT COUNT(*) FROM nvt_selectors"
-                    " WHERE name = '%s' AND type = 2 AND exclude = 0;",
-                    selector);
+                    "SELECT nvt_count FROM configs"
+                    " WHERE name = '%s'"
+                    " LIMIT 1;",
+                    config);
 }
 
 #undef DEF_ACCESS

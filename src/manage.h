@@ -586,10 +586,10 @@ int
 nvt_selector_nvts_growing (const char*);
 
 int
-nvt_selector_family_count (const char*);
+nvt_selector_family_count (const char*, const char*);
 
 int
-nvt_selector_nvt_count (const char*);
+nvt_selector_nvt_count (const char*, const char*);
 
 
 /* Server messaging. */

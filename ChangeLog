@@ -1,5 +1,20 @@
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Speed up creating a config and getting configs.
+
+	* src/tasks_sql.h (init_manage): Add count caches to configs table.
+	(insert_rc_into_config): Pre-allocate the arrays.  Cache the family and
+	NVT counts in the database.
+	(nvt_cache_present, nvt_family, nvt_selector_families_growing)
+	(nvt_selector_nvts_growing): Limit the SQL to one result.
+	(nvt_selector_family_count, nvt_selector_nvt_count): Use cached count.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS pass
+	config name to NVT count functions.
+
+2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (nvt_selector_family_count)
 	(nvt_selector_nvt_count): Count static nvts and families in SQL instead of
 	counting through the result of the SQL.
