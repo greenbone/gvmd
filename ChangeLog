@@ -1,5 +1,10 @@
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd.d (accept_and_maybe_fork): Add FORK define, for compiling
+	to run in single process.
+
+2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Cache growing states of selectors in configs.
 
 	* src/tasks_sql.h (init_manage): Add growing state caches to table

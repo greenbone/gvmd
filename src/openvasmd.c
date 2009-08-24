@@ -347,6 +347,8 @@ accept_and_maybe_fork ()
       exit (EXIT_FAILURE);
     }
 
+#define FORK 1
+#if FORK
   /* Fork a child to serve the client. */
   pid_t pid = fork ();
   switch (pid)
@@ -354,6 +356,7 @@ accept_and_maybe_fork ()
       case 0:
         /* Child. */
         {
+#endif /* FORK */
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
@@ -381,8 +384,15 @@ accept_and_maybe_fork ()
           tracef ("   Server context attached.\n");
           /* It's up to serve_client to close_stream_connection on
            * secure_client_socket. */
+#if FORK
           int ret = serve_client (secure_client_socket);
           save_tasks ();
+#else
+          serve_client (secure_client_socket);
+          save_tasks ();
+          cleanup_manage_process ();
+#endif
+#if FORK
           exit (ret);
         }
       case -1:
@@ -394,9 +404,12 @@ accept_and_maybe_fork ()
         break;
       default:
         /* Parent.  Return to select. */
+#endif /* FORK */
         close (client_socket);
+#if FORK
         break;
     }
+#endif /* FORK */
 }
 
 
