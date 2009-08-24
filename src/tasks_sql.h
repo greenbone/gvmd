@@ -3392,52 +3392,13 @@ nvt_selector_family_count (const char* selector)
           return -1;
         }
       else
-        {
-          int count = 0;
-          iterator_t nvts;
-          GHashTable *families;
-
-          /* Static selector.  Count the number of families associated with
-           * the NVTs. */
-
-          families = g_hash_table_new_full (g_str_hash,
-                                            g_str_equal,
-                                            g_free,
-                                            NULL);
-
-          init_nvt_selector_iterator (&nvts, selector, NVT_SELECTOR_TYPE_NVT);
-          while (next (&nvts))
-            if (nvt_selector_iterator_include (&nvts))
-              {
-                const char *nvt_oid = nvt_selector_iterator_nvt (&nvts);
-                if (nvt_oid)
-                  {
-                    nvt_t nvt;
-                    if (find_nvt (nvt_oid, &nvt) == FALSE && nvt > 0)
-                      {
-                        char *family = nvt_family (nvt);
-                        if (family)
-                          {
-                            if (g_hash_table_lookup (families, family))
-                              {
-                                free (family);
-                                continue;
-                              }
-                            count++;
-                            g_hash_table_insert (families,
-                                                 g_strdup (family),
-                                                 (gpointer) 1);
-                            free (family);
-                          }
-                      }
-                  }
-              }
-          cleanup_iterator (&nvts);
-
-          g_hash_table_destroy (families);
-
-          return count;
-        }
+        return sql_int (0, 0,
+                        "SELECT COUNT(DISTINCT nvts.family) FROM nvt_selectors, nvts"
+                        " WHERE nvt_selectors.family_or_nvt = nvts.oid"
+                        " AND nvt_selectors.name = '%s'"
+                        " AND nvt_selectors.type = 2"
+                        " AND nvt_selectors.exclude = 0;",
+                        selector);
     }
   return -1;
 }
@@ -3472,20 +3433,10 @@ nvt_selector_nvt_count (const char* selector)
       return -1;
     }
   else
-    {
-      int count = 0;
-      iterator_t nvts;
-
-      // TODO: This counts the number of listed NVTs, there may be
-      //       fewer NVTs on the scanner.
-
-      init_nvt_selector_iterator (&nvts, selector, 2);
-      while (next (&nvts))
-        if (nvt_selector_iterator_include (&nvts)) count++;
-      cleanup_iterator (&nvts);
-
-      return count;
-    }
+    return sql_int (0, 0,
+                    "SELECT COUNT(*) FROM nvt_selectors"
+                    " WHERE name = '%s' AND type = 2 AND exclude = 0;",
+                    selector);
 }
 
 #undef DEF_ACCESS
