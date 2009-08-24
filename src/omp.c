@@ -4414,10 +4414,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_iterator_comment (&configs),
                                        nvt_selector_family_count (selector,
                                                                   config_name),
-                                       nvt_selector_families_growing (selector),
+                                       config_iterator_families_growing (&configs),
                                        nvt_selector_nvt_count (selector,
                                                                config_name),
-                                       nvt_selector_nvts_growing (selector));
+                                       config_iterator_nvts_growing (&configs));
             }
           cleanup_iterator (&configs);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");

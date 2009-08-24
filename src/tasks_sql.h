@@ -649,7 +649,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
@@ -675,8 +675,8 @@ init_manage (GSList *log_config)
            " VALUES ('All', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
            ", NULL);");
-      sql ("INSERT into configs (name, nvt_selector, comment)"
-           " VALUES ('Full', 'All', 'All inclusive configuration.');");
+      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing, families_growing)"
+           " VALUES ('Full', 'All', 'All inclusive configuration.', 1, 1);");
       /* Setup preferences for the full config. */
       config = sqlite3_last_insert_rowid (task_db);
       setup_full_config_prefs (config);
@@ -2839,6 +2839,13 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         /* Explicitly exclude any nos. */
 
         clude (config_name, no, no_size, 1);
+
+        /* Cache the growth types. */
+
+        sql ("UPDATE configs"
+             " SET families_growing = 1, nvts_growing = 1"
+             " WHERE name = '%s';",
+             config_name);
       }
     else
       {
@@ -2855,6 +2862,13 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
              config_name);
         sql ("UPDATE configs SET family_count = %i WHERE name = '%s';",
              family_count,
+             config_name);
+
+        /* Cache the selector types. */
+
+        sql ("UPDATE configs"
+             " SET families_growing = 0, nvts_growing = 0"
+             " WHERE name = '%s';",
              config_name);
       }
   }
@@ -2977,6 +2991,24 @@ config_iterator_comment (iterator_t* iterator)
   if (iterator->done) return "";
   ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
+}
+
+int
+config_iterator_families_growing (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  return ret;
+}
+
+int
+config_iterator_nvts_growing (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
 }
 
 /**
@@ -3303,6 +3335,7 @@ nvt_selector_families_growing (const char* selector)
 {
   /* The number of families can only grow if there is selector that includes
    * all. */
+#if 0
   return sql_int (0, 0,
                   "SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
@@ -3310,6 +3343,19 @@ nvt_selector_families_growing (const char* selector)
                   " AND exclude = 0"
                   " LIMIT 1;",
                   selector);
+#else
+  char *string;
+  string = sql_string (0, 0,
+                       "SELECT name FROM nvt_selectors"
+                       " WHERE name = '%s'"
+                       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                       " AND exclude = 0"
+                       " LIMIT 1;",
+                       selector);
+  if (string == NULL) return 0;
+  free (string);
+  return 1;
+#endif
 }
 
 /**
@@ -3324,6 +3370,7 @@ nvt_selector_nvts_growing (const char* selector)
 {
   /* The number of NVTs can grow if there is a selector that includes all,
    * or if there is a selector that includes a family. */
+#if 0
   return sql_int (0, 0,
                   "SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
@@ -3332,6 +3379,52 @@ nvt_selector_nvts_growing (const char* selector)
                   " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ")"
                   " LIMIT 1;",
                   selector);
+#else
+  char *string;
+  string = sql_string (0, 0,
+                       "SELECT name FROM nvt_selectors"
+                       " WHERE name = '%s'"
+                       " AND exclude = 0"
+                       " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                         " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ")"
+                       " LIMIT 1;",
+                       selector);
+  if (string == NULL) return 0;
+  free (string);
+  return 1;
+#endif
+}
+
+/**
+ * @brief Get the NVT growth status of a config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 growing, 0 static.
+ */
+int
+config_nvts_growing (const char* config)
+{
+  return sql_int (0, 0,
+                  "SELECT nvts_growing FROM configs"
+                  " WHERE name = '%s' LIMIT 1;",
+                  config);
+}
+
+/**
+ * @brief Get the family growth status of a config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 1 growing, 0 static.
+ */
+int
+config_families_growing (const char* config)
+{
+  return sql_int (0, 0,
+                  "SELECT families_growing FROM configs"
+                  " WHERE name = '%s' LIMIT 1;",
+                  config);
 }
 
 /**
@@ -3415,7 +3508,7 @@ nvt_selector_family_count (const char* selector, const char* config)
 {
   if (nvt_cache_present ())
     {
-      if (nvt_selector_nvts_growing (selector))
+      if (config_families_growing (config))
         {
           if ((sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
@@ -3452,7 +3545,7 @@ nvt_selector_family_count (const char* selector, const char* config)
 int
 nvt_selector_nvt_count (const char* selector, const char* config)
 {
-  if (nvt_selector_nvts_growing (selector))
+  if (config_nvts_growing (config))
     {
       if (nvt_cache_present ())
         {

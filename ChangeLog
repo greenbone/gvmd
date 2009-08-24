@@ -1,5 +1,22 @@
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Cache growing states of selectors in configs.
+
+	* src/tasks_sql.h (init_manage): Add growing state caches to table
+	configs.
+	(insert_rc_into_config): Cache growing states afterwards.
+	(config_iterator_families_growing, config_iterator_nvts_growing)
+	(config_nvts_growing, config_families_growing): New functions.
+	(nvt_selector_family_count, nvt_selector_nvt_count): Use cached
+	growing states.
+	(nvt_selector_nvts_growing, nvt_selector_families_growing): Try speed up.
+	* src/manage.h: Add headers.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS get
+	cached growing state from config.
+
+2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Switch response for creating an existing config to a user error.
 
 	* src/tasks_sql.h (create_config): Return -1 if config exists.

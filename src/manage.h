@@ -513,6 +513,12 @@ config_iterator_nvt_selector (iterator_t*);
 const char*
 config_iterator_comment (iterator_t*);
 
+int
+config_iterator_nvts_growing (iterator_t*);
+
+int
+config_iterator_families_growing (iterator_t*);
+
 char*
 config_nvt_selector (const char*);
 
