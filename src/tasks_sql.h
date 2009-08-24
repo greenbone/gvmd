@@ -2351,7 +2351,7 @@ reset_task (task_t task)
  * @param[in]  name   Name of target.
  * @param[in]  hosts  Host list of target.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 target exists already.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment)
@@ -2367,7 +2367,7 @@ create_target (const char* name, const char* hosts, const char* comment)
       tracef ("   failed to find target\n");
       g_free (quoted_name);
       sql ("END;");
-      return -1;
+      return 1;
     }
 
   quoted_hosts = sql_nquote (hosts, strlen (hosts));
@@ -2868,7 +2868,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
  * @param[in]  name   Name of config and NVT selector.
  * @param[in]  rc     RC file text.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 config exists already, -1 error.
  */
 int
 create_config (const char* name, const char* comment, char* rc)
@@ -2885,10 +2885,10 @@ create_config (const char* name, const char* comment, char* rc)
       tracef ("   config \"%s\" already exists\n", name);
       sql ("END;");
       g_free (quoted_name);
-      return -1;
+      return 1;
     }
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
                quoted_name))
     {
       tracef ("   NVT selector \"%s\" already exists\n", name);

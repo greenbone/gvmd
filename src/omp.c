@@ -3582,10 +3582,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free_string_var (&modify_task_comment);
               free_string_var (&modify_task_name);
               g_free (base64);
-              if (ret)
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_config"));
-              else
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+              switch (ret)
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Config exists already"));
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_config"));
+                    break;
+                }
             }
           set_client_state (CLIENT_AUTHENTIC);
           break;
