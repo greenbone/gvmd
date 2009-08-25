@@ -4354,6 +4354,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     cleanup_iterator (&hosts);
 
+                    total_progress = num_hosts ? (total / num_hosts) : 0;
+
 #if 1
                     tracef ("   total: %li\n", total);
                     tracef ("   num_hosts: %i\n", num_hosts);

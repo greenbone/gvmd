@@ -1,5 +1,10 @@
 2009-08-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Add back progress calculation
+	lost with tracing.
+
+2009-08-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Add progress tracing to
 	CLIENT_GET_STATUS.
 
