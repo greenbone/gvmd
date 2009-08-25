@@ -1,5 +1,14 @@
 2009-08-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Setup a predefined example task and report.
+
+	* src/tasks_sql.h (init_manage): Add hidden field to task.  Setup example
+	task and report.
+	(make_task): Init hidden field.
+	(delete_task): Return error if task is hidden.
+
+2009-08-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Add back progress calculation
 	lost with tracing.
 

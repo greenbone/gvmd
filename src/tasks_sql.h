@@ -651,7 +651,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, time, comment, description, owner, run_status, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
@@ -686,6 +686,55 @@ init_manage (GSList *log_config)
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets;") == 0)
     sql ("INSERT into targets (name, hosts) VALUES ('Localhost', 'localhost');");
+
+  /* Ensure the predefined example task and report exists. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM tasks WHERE hidden = 1;") == 0)
+    {
+      sql ("INSERT into tasks (uuid, name, hidden, comment, owner,"
+           " run_status, start_time, end_time, config, target)"
+           " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f29', 'Example task',"
+           " 1, 'This is an example task for the help pages.', NULL, %i,"
+           " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
+           " 'Full', 'Localhost');",
+           TASK_STATUS_DONE);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM reports"
+               " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f30';")
+      == 0)
+    {
+      task_t task;
+      result_t result;
+      report_t report;
+
+      if (find_task ("343435d6-91b0-11de-9478-ffd71f4c6f29", &task))
+        g_warning ("%s: failed to find the example task", __FUNCTION__);
+      else
+        {
+          sql ("INSERT into reports (uuid, task, comment,"
+               " start_time, end_time)"
+               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', %llu,"
+               " 'This is an example report for the help pages.',"
+               " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009');",
+               task);
+          report = sqlite3_last_insert_rowid (task_db);
+          sql ("INSERT into results (task, subnet, host, port, nvt, type,"
+               " description)"
+               " VALUES (%llu, '', 'localhost', 'telnet (23/tcp)',"
+               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note',"
+               " 'A telnet server seems to be running on this port');",
+               task);
+          result = sqlite3_last_insert_rowid (task_db);
+          sql ("INSERT into report_results (report, result) VALUES (%llu, %llu)",
+               report, result);
+          sql ("INSERT into report_hosts (report, host, start_time, end_time)"
+               " VALUES (%llu, 'localhost', 'Tue Aug 25 21:48:26 2009',"
+               " 'Tue Aug 25 21:52:15 2009')",
+               report);
+        }
+    }
 
   /* Set requested and running tasks to stopped. */
 
@@ -1994,9 +2043,9 @@ make_task (char* name, unsigned int time, char* comment)
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) NULL;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks (owner, uuid, name, time, comment)"
+  sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment)"
        " VALUES ((SELECT ROWID FROM users WHERE name = '%s'),"
-       "         '%s', %s, %u, %s);",
+       "         '%s', %s, 0, %u, %s);",
        current_credentials.username, uuid, name, time, comment);
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
@@ -2114,6 +2163,7 @@ request_delete_task (task_t* task_pointer)
   switch (stop_task (task))
     {
       case 0:    /* Stopped. */
+        // FIX check error?
         delete_task (task);
         return 0;
       case 1:    /* Stop requested. */
@@ -2142,6 +2192,9 @@ delete_task (task_t task)
   char* tsk_uuid;
 
   tracef ("   delete task %u\n", task_id (task));
+
+  if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;"))
+    return -1;
 
   if (current_credentials.username == NULL) return -1;
 
