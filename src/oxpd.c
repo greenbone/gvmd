@@ -173,6 +173,7 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
 
       if (select_ret == -1)
         {
+          if (errno == EINTR) continue;
           g_warning ("%s: select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));

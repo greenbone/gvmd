@@ -954,6 +954,7 @@ main (int argc, char** argv)
 
       if (ret == -1)
         {
+          if (errno == EINTR) continue;
           g_critical ("%s: select failed: %s\n",
                       __FUNCTION__,
                       strerror (errno));

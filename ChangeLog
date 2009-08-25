@@ -1,5 +1,11 @@
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/oxpd.c (read_protocol): Check for EINTR from select.
+
+	* src/openvasmd.c (main): Check for EINTR from select.
+
+2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.d (accept_and_maybe_fork): Add FORK define, for compiling
 	to run in single process.
 
