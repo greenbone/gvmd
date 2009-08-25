@@ -4075,7 +4075,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (running_report)
                       {
                         long total = 0;
-                        int num_hosts = 0;
+                        int num_hosts = 0, total_progress;
                         iterator_t hosts;
                         GString *string = g_string_new ("");
 
@@ -4099,6 +4099,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             if (strcasecmp (host_iterator_attack_state (&hosts),
                                             "portscan"))
                               progress += 50;
+#if 1
+                            tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
+                            tracef ("   current_port: %u\n", current_port);
+                            tracef ("   max_port: %u\n", max_port);
+                            tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
+                            tracef ("   total now: %li\n", total);
+#endif
                             total += progress;
                             num_hosts++;
 
@@ -4112,10 +4119,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         cleanup_iterator (&hosts);
 
+                        total_progress = num_hosts ? (total / num_hosts) : 0;
+
+#if 1
+                        tracef ("   total: %li\n", total);
+                        tracef ("   num_hosts: %i\n", num_hosts);
+                        tracef ("   total_progress: %i\n", total_progress);
+#endif
+
                         g_string_append_printf (string,
-                                                "%li",
-                                                num_hosts ? (total / num_hosts)
-                                                          : 0);
+                                                "%i",
+                                                total_progress);
                         progress_xml = g_string_free (string, FALSE);
                       }
                     else
@@ -4295,7 +4309,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (running_report)
                   {
                     long total = 0;
-                    int num_hosts = 0;
+                    int num_hosts = 0, total_progress;
                     iterator_t hosts;
                     GString *string = g_string_new ("");
 
@@ -4322,6 +4336,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         total += progress;
                         num_hosts++;
 
+#if 1
+                        tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
+                        tracef ("   current_port: %u\n", current_port);
+                        tracef ("   max_port: %u\n", max_port);
+                        tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
+                        tracef ("   total now: %li\n", total);
+#endif
+
                         g_string_append_printf (string,
                                                 "<host_progress>"
                                                 "<host>%s</host>"
@@ -4332,10 +4354,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     cleanup_iterator (&hosts);
 
+#if 1
+                    tracef ("   total: %li\n", total);
+                    tracef ("   num_hosts: %i\n", num_hosts);
+                    tracef ("   total_progress: %i\n", total_progress);
+#endif
+
                     g_string_append_printf (string,
-                                            "%li",
-                                            num_hosts ? (total / num_hosts)
-                                                      : 0);
+                                            "%i",
+                                            total_progress);
                     progress_xml = g_string_free (string, FALSE);
                   }
                 else
