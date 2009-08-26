@@ -1,5 +1,10 @@
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+    * src/tasks_sql.h (init_manage): Ensure that the predefined database
+	entries always exists.
+
+2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
+
     * src/tasks_sql.h (scan_start_time, scan_end_time): Return an empty string
 	if the field is NULL, so that the resulting XML entity is empty.
 

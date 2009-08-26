@@ -659,32 +659,36 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
 
-  /* Always create a single user, for now. */
+  /* Ensure the special "om" user exists. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM users;") == 0)
+  if (sql_int (0, 0, "SELECT count(*) FROM users WHERE name = 'om';") == 0)
     sql ("INSERT into users (name, password) VALUES ('om', '');");
 
-  /* Setup predefined selectors and configs. */
+  /* Ensure the predefined selectors and configs exist. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors;") == 0
-      && sql_int (0, 0, "SELECT count(*) FROM configs;") == 0)
+  if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors WHERE name = 'All';")
+      == 0)
+    sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
+         " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM configs WHERE name = 'Full';")
+      == 0)
     {
       config_t config;
 
-      sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-           " VALUES ('All', 0, "
-           G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-           ", NULL);");
-      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing, families_growing)"
+      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
+           " families_growing)"
            " VALUES ('Full', 'All', 'All inclusive configuration.', 1, 1);");
+
       /* Setup preferences for the full config. */
       config = sqlite3_last_insert_rowid (task_db);
       setup_full_config_prefs (config);
     }
 
-  /* Setup predefined targets. */
+  /* Ensure the predefined target exists. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM targets;") == 0)
+  if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
+      == 0)
     sql ("INSERT into targets (name, hosts) VALUES ('Localhost', 'localhost');");
 
   /* Ensure the predefined example task and report exists. */
