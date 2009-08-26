@@ -1,5 +1,21 @@
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a COMMANDS OTP command.
+
+	* src/omp.c (help_text): Add COMMANDS.
+	(client_state_t): Add states for COMMANDS.
+	(SEND_TO_CLIENT_OR_FAIL, SENDF_TO_CLIENT_OR_FAIL): Move up in file.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add COMMANDS
+	handling.
+
+	* src/tests/omp_help_0.c (help_text): Add COMMANDS.
+
+	* src/tests/omp_commands_0.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_commands_0.
+
+2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
+
     * src/tasks_sql.h (init_manage): Ensure that the predefined database
 	entries always exists.
 

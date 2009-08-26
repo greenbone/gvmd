@@ -35,6 +35,7 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    COMMANDS               Run a list of commands.\n"
 "    CREATE_CONFIG          Create a new config.\n"
 "    CREATE_TARGET          Create a new target.\n"
 "    CREATE_TASK            Create a new task.\n"

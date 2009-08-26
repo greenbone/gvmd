@@ -139,6 +139,13 @@ set_target_properties (omp_bogus_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_
 target_link_libraries (omp_bogus_1 common)
 ADD_TEST (omp_bogus_1 omp_bogus_1)
 
+add_executable (omp_commands_0 omp_commands_0.c)
+target_link_libraries (omp_commands_0 string)
+set_target_properties (omp_commands_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")
+set_target_properties (omp_commands_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_commands_0 common)
+ADD_TEST (omp_commands_0 omp_commands_0)
+
 add_executable (omp_create_config_0 omp_create_config_0.c)
 target_link_libraries (omp_create_config_0 string)
 set_target_properties (omp_create_config_0 PROPERTIES COMPILE_FLAGS "-I .. ${GLIB_CFLAGS}")

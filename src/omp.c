@@ -71,6 +71,7 @@
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
+"    COMMANDS               Run a list of commands.\n"
 "    CREATE_CONFIG          Create a new config.\n"
 "    CREATE_TARGET          Create a new target.\n"
 "    CREATE_TASK            Create a new task.\n"
@@ -286,6 +287,8 @@ typedef enum
   CLIENT_ABORT_TASK_CRITERION,
 #endif
   CLIENT_AUTHENTICATE,
+  CLIENT_AUTHENTIC_COMMANDS,
+  CLIENT_COMMANDS,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_NAME,
@@ -551,6 +554,48 @@ find_attribute (const gchar **attribute_names,
 }
 
 /**
+ * @brief Send response message to client, returning on fail.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   msg    The message, a string.
+ */
+#define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
+  do                                                                         \
+    {                                                                        \
+      if (send_to_client (msg))                                              \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
+  while (0)
+
+/**
+ * @brief Send response message to client, returning on fail.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   format    Format string for message.
+ * @param[in]   args      Arguments for format string.
+ */
+#define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
+  do                                                                         \
+    {                                                                        \
+      gchar* msg = g_markup_printf_escaped (format , ## args);               \
+      if (send_to_client (msg))                                              \
+        {                                                                    \
+          g_free (msg);                                                      \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+      g_free (msg);                                                          \
+    }                                                                        \
+  while (0)
+
+/**
  * @brief Handle the start of an OMP XML element.
  *
  * React to the start of an XML element according to the current value
@@ -580,6 +625,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
+      case CLIENT_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
 // FIX
@@ -589,6 +635,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_credentials.password == NULL);
 #endif
             set_client_state (CLIENT_AUTHENTICATE);
+          }
+        else if (strcasecmp ("COMMANDS", element_name) == 0)
+          {
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<commands_response"
+              " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
+            set_client_state (CLIENT_COMMANDS);
           }
         else
           {
@@ -606,6 +659,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTIC:
+      case CLIENT_AUTHENTIC_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
             // FIX Could check if reauthenticating current credentials, to
@@ -622,6 +676,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "task_id", &attribute))
               append_string (&current_uuid, attribute);
             set_client_state (CLIENT_ABORT_TASK);
+          }
+        else if (strcasecmp ("COMMANDS", element_name) == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL
+             ("<commands_response"
+              " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
+            set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
@@ -1572,48 +1633,6 @@ send_reports (task_t task)
 }
 
 /**
- * @brief Send response message to client, returning on fail.
- *
- * Queue a message in \ref to_client with \ref send_to_client.  On failure
- * call \ref error_send_to_client on a GError* called "error" and do a return.
- *
- * @param[in]   msg    The message, a string.
- */
-#define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
-  do                                                                         \
-    {                                                                        \
-      if (send_to_client (msg))                                              \
-        {                                                                    \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-    }                                                                        \
-  while (0)
-
-/**
- * @brief Send response message to client, returning on fail.
- *
- * Queue a message in \ref to_client with \ref send_to_client.  On failure
- * call \ref error_send_to_client on a GError* called "error" and do a return.
- *
- * @param[in]   format    Format string for message.
- * @param[in]   args      Arguments for format string.
- */
-#define SENDF_TO_CLIENT_OR_FAIL(format, args...)                             \
-  do                                                                         \
-    {                                                                        \
-      gchar* msg = g_markup_printf_escaped (format , ## args);               \
-      if (send_to_client (msg))                                              \
-        {                                                                    \
-          g_free (msg);                                                      \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-      g_free (msg);                                                          \
-    }                                                                        \
-  while (0)
-
-/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]   report    The report.
@@ -2303,6 +2322,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_TOP);
               break;
           }
+        break;
+
+      case CLIENT_AUTHENTIC:
+      case CLIENT_COMMANDS:
+      case CLIENT_AUTHENTIC_COMMANDS:
+        assert (strcasecmp ("COMMANDS", element_name) == 0);
+        SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
         break;
 
       case CLIENT_CREDENTIALS:
