@@ -1705,9 +1705,10 @@ set_task_end_time (task_t task, char* time)
 char*
 scan_start_time (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT start_time FROM reports WHERE ROWID = %llu;",
-                     report);
+  char *time = sql_string (0, 0,
+                           "SELECT start_time FROM reports WHERE ROWID = %llu;",
+                           report);
+  return time ? time : g_strdup ("");
 }
 
 /**
@@ -1733,9 +1734,10 @@ set_scan_start_time (report_t report, const char* timestamp)
 char*
 scan_end_time (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT end_time FROM reports WHERE ROWID = %llu;",
-                     report);
+  char *time = sql_string (0, 0,
+                           "SELECT end_time FROM reports WHERE ROWID = %llu;",
+                           report);
+  return time ? time : g_strdup ("");
 }
 
 /**
