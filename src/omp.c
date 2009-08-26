@@ -1626,6 +1626,7 @@ print_report_xml (report_t report, gchar* xml_file)
 {
   FILE *out;
   iterator_t results, hosts;
+  char *end_time, *start_time;
 
   out = fopen (xml_file, "w");
 
@@ -1642,9 +1643,11 @@ print_report_xml (report_t report, gchar* xml_file)
            " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
            "<report>");
 
+  start_time = scan_start_time (report);
   fprintf (out,
            "<scan_start>%s</scan_start>",
-           scan_start_time (report));
+           start_time);
+  free (start_time);
 
   init_host_iterator (&hosts, report);
   while (next (&hosts))
@@ -1687,7 +1690,9 @@ print_report_xml (report_t report, gchar* xml_file)
              host_iterator_end_time (&hosts));
   cleanup_iterator (&hosts);
 
-  fprintf (out, "<scan_end>%s</scan_end>", scan_end_time (report));
+  end_time = scan_end_time (report);
+  fprintf (out, "<scan_end>%s</scan_end>", end_time);
+  free (end_time);
 
   fprintf (out, "</report></get_report_response>");
 
@@ -1948,6 +1953,7 @@ print_report_latex (report_t report, gchar* latex_file)
   FILE *out;
   iterator_t results, hosts;
   int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
+  char *start_time, *end_time;
 
   out = fopen (latex_file, "w");
 
@@ -1961,6 +1967,8 @@ print_report_latex (report_t report, gchar* latex_file)
 
   fputs (latex_header, out);
 
+  start_time = scan_start_time (report);
+  end_time = scan_end_time (report);
   fprintf (out,
            "\\begin{abstract}\n"
            "This document reports on the results of an OpenVAS security scan.\n"
@@ -1969,8 +1977,10 @@ print_report_latex (report_t report, gchar* latex_file)
            "the report describes every issue found.  Please consider the\n"
            "advice given in each desciption, in order to rectify the issue.\n"
            "\\end{abstract}\n",
-           scan_start_time (report),
-           scan_end_time (report));
+           start_time,
+           end_time);
+  free (start_time);
+  free (end_time);
 
   /* Print the list of hosts. */
 
@@ -2590,7 +2600,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      || strcasecmp (current_format, "xml") == 0)
               {
                 task_t task;
-                char* tsk_uuid = NULL;
+                char *tsk_uuid = NULL, *start_time, *end_time;
 
                 if (report_task (report, &task))
                   {
@@ -2627,8 +2637,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (tsk_uuid);
                   }
 
+                start_time = scan_start_time (report);
                 SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
-                                         scan_start_time (report));
+                                         start_time);
+                free (start_time);
 
                 init_host_iterator (&hosts, report);
                 while (next (&hosts))
@@ -2667,22 +2679,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            host_iterator_end_time (&hosts));
                 cleanup_iterator (&hosts);
 
+                end_time = scan_end_time (report);
                 SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
-                                         scan_end_time (report));
+                                         end_time);
+                free (end_time);
 
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
               }
             else if (strcasecmp (current_format, "nbe") == 0)
               {
+                char *start_time, *end_time;
+
                 /* TODO: Encode and send in chunks, after each printf. */
 
                 /* Build the NBE in memory. */
 
                 nbe = g_string_new ("");
+                start_time = scan_start_time (report);
                 g_string_append_printf (nbe,
                                         "timestamps|||scan_start|%s|\n",
-                                        scan_start_time (report));
+                                        start_time);
+                free (start_time);
 
                 init_host_iterator (&hosts, report);
                 while (next (&hosts))
@@ -2712,9 +2730,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           host_iterator_end_time (&hosts));
                 cleanup_iterator (&hosts);
 
+                end_time = scan_end_time (report);
                 g_string_append_printf (nbe,
                                         "timestamps|||scan_end|%s|\n",
-                                        scan_end_time (report));
+                                        end_time);
+                free (end_time);
 
                 /* Encode and send the NBE. */
 
