@@ -1,3 +1,14 @@
+2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Prevent deletion of hidden tasks and reports.
+
+	* src/tasks_sql.h (init_manage): Add hidden field to reports.
+	(make_report): Init hidden field.
+	(delete_report, delete_task, request_delete_task): Add hidden checks.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_REPORT and
+	CLIENT_DELETE_TASK respond with syntax error if report/task was hidden.
+
 2009-08-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Setup a predefined example task and report.

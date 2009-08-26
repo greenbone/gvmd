@@ -653,7 +653,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
@@ -713,9 +713,9 @@ init_manage (GSList *log_config)
         g_warning ("%s: failed to find the example task", __FUNCTION__);
       else
         {
-          sql ("INSERT into reports (uuid, task, comment,"
+          sql ("INSERT into reports (uuid, hidden, task, comment,"
                " start_time, end_time)"
-               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', %llu,"
+               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009');",
                task);
@@ -1213,8 +1213,8 @@ report_t
 make_report (task_t task, const char* uuid)
 {
   report_t report;
-  sql ("INSERT into reports (uuid, task, date, nbefile, comment)"
-       " VALUES ('%s', %llu, %i, '', '');",
+  sql ("INSERT into reports (uuid, hidden, task, date, nbefile, comment)"
+       " VALUES ('%s', 0, %llu, %i, '', '');",
        uuid, task, time (NULL));
   report = sqlite3_last_insert_rowid (task_db);
   return report;
@@ -1861,11 +1861,14 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  *
  * @param[in]  report_id  ID of report.
  *
- * @return 0 success.
+ * @return 0 success, 1 report is hidden.
  */
 int
 delete_report (report_t report)
 {
+  if (sql_int (0, 0, "SELECT hidden from reports WHERE ROWID = %llu;", report))
+    return 1;
+
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
@@ -2149,7 +2152,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  *
  * @param[in]  task_pointer  A pointer to the task.
  *
- * @return 0 if deleted, 1 if delete requested, -1 if error.
+ * @return 0 if deleted, 1 if delete requested, 2 if task is hidden,
+ *         -1 if error.
  */
 int
 request_delete_task (task_t* task_pointer)
@@ -2157,6 +2161,11 @@ request_delete_task (task_t* task_pointer)
   task_t task = *task_pointer;
 
   tracef ("   request delete task %u\n", task_id (task));
+
+  if (sql_int (0, 0,
+               "SELECT hidden from tasks WHERE ROWID = %llu;",
+               *task_pointer))
+    return 2;
 
   if (current_credentials.username == NULL) return -1;
 
@@ -2184,7 +2193,7 @@ request_delete_task (task_t* task_pointer)
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 if task is hidden, -1 on error.
  */
 int
 delete_task (task_t task)
@@ -2193,7 +2202,7 @@ delete_task (task_t task)
 
   tracef ("   delete task %u\n", task_id (task));
 
-  if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;"))
+  if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;", task))
     return -1;
 
   if (current_credentials.username == NULL) return -1;

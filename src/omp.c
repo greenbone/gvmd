@@ -2533,6 +2533,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case 0:
                       SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
                       break;
+                    case 1:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("delete_report",
+                                          "Attempt to delete a hidden report"));
+                      break;
                     default:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("delete_report"));
@@ -3293,6 +3298,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 case 1:    /* Delete requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
+                  break;
+                case 2:    /* Hidden task. */
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_task",
+                                      "Attempt to delete a hidden task"));
                   break;
                 default:   /* Programming error. */
                   assert (0);
