@@ -382,6 +382,9 @@ report_task (report_t, task_t*);
 /*@=exportlocal@*/
 
 int
+report_scan_result_count (report_t, int*);
+
+int
 report_counts (const char*, int*, int*, int*, int*, int*);
 
 char*
@@ -415,7 +418,7 @@ void
 init_report_iterator (iterator_t*, task_t);
 
 void
-init_result_iterator (iterator_t*, task_t, const char*);
+init_result_iterator (iterator_t*, task_t, const char*, int, int);
 
 gboolean
 next_report (iterator_t*, report_t*);

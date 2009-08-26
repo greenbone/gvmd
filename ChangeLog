@@ -1,5 +1,24 @@
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add "first_result" and "max_start" attributes to GET_REPORT.
+
+	* src/tasks_sql.h (init_result_iterator): Add first_result and max_results
+	args.  Update callers.
+	(report_scan_result_count): New function.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (current_int_1, current_int_2): New variables.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Setup
+	"first_result" and "max_start" for GET_REPORT init_result_iterator.  Add
+	a SCAN_RESULT_COUNT to the GET_REPORT REPORT and enclose the results
+	in a RESULTS.
+
+	* src/tests/omp_get_report_8.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_get_report_8.
+
+2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add a COMMANDS OTP command.
 
 	* src/omp.c (help_text): Add COMMANDS.

@@ -198,6 +198,16 @@ static char* help_text = "\n"
 /* Global variables. */
 
 /**
+ * @brief Generic integer variable for communicating between the callbacks.
+ */
+int current_int_1;
+
+/**
+ * @brief Generic integer variable for communicating between the callbacks.
+ */
+int current_int_2;
+
+/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -747,6 +757,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
               append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "first_result", &attribute))
+              current_int_1 = atoi (attribute);
+            else
+              current_int_1 = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "max_results", &attribute))
+              current_int_2 = atoi (attribute);
+            else
+              current_int_2 = -1;
             set_client_state (CLIENT_GET_REPORT);
           }
         else if (strcasecmp ("GET_RULES", element_name) == 0)
@@ -1647,6 +1667,10 @@ print_report_xml (report_t report, gchar* xml_file)
   iterator_t results, hosts;
   char *end_time, *start_time;
 
+  /* TODO: This is now out of sync with the XML report.  It is only used to
+   *       generate the "html" report and the "html-pdf", which need extensive
+   *       work anyway. */
+
   out = fopen (xml_file, "w");
 
   if (out == NULL)
@@ -1676,7 +1700,10 @@ print_report_xml (report_t report, gchar* xml_file)
              host_iterator_start_time (&hosts));
   cleanup_iterator (&hosts);
 
-  init_result_iterator (&results, report, NULL);
+  init_result_iterator (&results, report, NULL,
+                        current_int_1,  /* First result. */
+                        current_int_2); /* Max results. */
+
   while (next (&results))
     {
       gchar *descr;
@@ -2090,7 +2117,9 @@ print_report_latex (report_t report, gchar* latex_file)
                "\\rowcolor{openvas_report}Service (Port)&Issue regarding port\\\\\n"
                "\\hline\n");
 
-      init_result_iterator (&results, report, host);
+      init_result_iterator (&results, report, host,
+                            current_int_1,  /* First result. */
+                            current_int_2); /* Max results. */
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -2120,7 +2149,9 @@ print_report_latex (report_t report, gchar* latex_file)
 
       /* Print the result details. */
 
-      init_result_iterator (&results, report, host);
+      init_result_iterator (&results, report, host,
+                            current_int_1,  /* First result. */
+                            current_int_2); /* Max results. */
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -2627,6 +2658,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 task_t task;
                 char *tsk_uuid = NULL, *start_time, *end_time;
+                int result_count;
 
                 if (report_task (report, &task))
                   {
@@ -2645,11 +2677,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   }
 
-                SENDF_TO_CLIENT_OR_FAIL ("<get_report_response"
-                                         " status=\"" STATUS_OK "\""
-                                         " status_text=\"" STATUS_OK_TEXT "\">"
-                                         "<report id=\"%s\">",
-                                         current_uuid);
+                report_scan_result_count (report, &result_count);
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("<get_report_response"
+                  " status=\"" STATUS_OK "\""
+                  " status_text=\"" STATUS_OK_TEXT "\">"
+                  "<report id=\"%s\">"
+                  "<scan_result_count>%i</scan_result_count>",
+                  current_uuid,
+                  result_count);
 
                 if (task && tsk_uuid)
                   {
@@ -2675,7 +2711,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            host_iterator_start_time (&hosts));
                 cleanup_iterator (&hosts);
 
-                init_result_iterator (&results, report, NULL);
+                init_result_iterator (&results, report, NULL,
+                                      current_int_1,  /* First result. */
+                                      current_int_2); /* Max results. */
+                SENDF_TO_CLIENT_OR_FAIL ("<results start=\"%i\">",
+                                         current_int_1);
                 while (next (&results))
                   {
                     const char *descr = result_iterator_descr (&results);
@@ -2696,6 +2736,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              descr ? nl_descr : "");
                     if (descr) g_free (nl_descr);
                   }
+                SENDF_TO_CLIENT_OR_FAIL ("</results>");
                 cleanup_iterator (&results);
 
                 init_host_iterator (&hosts, report);
@@ -2736,7 +2777,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           host_iterator_start_time (&hosts));
                 cleanup_iterator (&hosts);
 
-                init_result_iterator (&results, report, NULL);
+                init_result_iterator (&results, report, NULL,
+                                      current_int_1,  /* First result. */
+                                      current_int_2); /* Max results. */
                 while (next (&results))
                   g_string_append_printf (nbe,
                                           "results|%s|%s|%s|%s|%s|%s|\n",

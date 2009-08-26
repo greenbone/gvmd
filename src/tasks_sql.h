@@ -1483,14 +1483,18 @@ next_report (iterator_t* iterator, report_t* report)
  *
  * The results are ordered by host, then port, then type (severity).
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  report    Report whose results the iterator loops over.
- *                       All results if NULL.
- * @param[in]  host      Host whose results the iterator loops over.
- *                       All results if NULL.  Only considered if report given.
+ * @param[in]  iterator      Iterator.
+ * @param[in]  report        Report whose results the iterator loops over.
+ *                           All results if NULL.
+ * @param[in]  host          Host whose results the iterator loops over.  All
+ *                           results if NULL.  Only considered if report given.
+ * @param[in]  first_result  The result to start from.  The results are 0
+ *                           indexed.
+ * @param[in]  max_results   The maximum number of results returned.
  */
 void
-init_result_iterator (iterator_t* iterator, report_t report, const char* host)
+init_result_iterator (iterator_t* iterator, report_t report, const char* host,
+                      int first_result, int max_results)
 {
   int ret;
   const char* tail;
@@ -1506,19 +1510,21 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host)
                                " WHERE reports.task = results.task"
                                " AND reports.ROWID = %llu"
                                " AND results.host = '%s'"
-                               " ORDER BY port, type;",
-                               report,
-                               host);
+                               " ORDER BY port, type"
+                               " LIMIT %i OFFSET %i;",
+                               report, host, max_results, first_result);
       else
         sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
                                " FROM results, reports"
                                " WHERE reports.task = results.task"
                                " AND reports.ROWID = %llu"
-                               " ORDER BY host, port, type;",
-                               report);
+                               " ORDER BY host, port, type"
+                               " LIMIT %i OFFSET %i;",
+                               report, max_results, first_result);
     }
   else
-    sql = g_strdup_printf ("SELECT * FROM results;");
+    sql = g_strdup_printf ("SELECT * FROM results LIMIT %i OFFSET %i;",
+                           max_results, first_result);
   tracef ("   sql (result iterator): %s\n", sql);
   while (1)
     {
@@ -1824,6 +1830,25 @@ report_timestamp (const char* report_id, gchar** timestamp)
   if (stamp == NULL) return -1;
   /* Allocate a copy, clearing the newline from the end of the timestamp. */
   *timestamp = g_strndup (stamp, strlen (stamp) - 1);
+  return 0;
+}
+
+/**
+ * @brief Get the number of results in the scan associated with a report.
+ *
+ * @param[in]   report  Report.
+ * @param[out]  count   Total number of results in the scan.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_scan_result_count (report_t report, int* count)
+{
+  *count = sql_int (0, 0,
+                    "SELECT count(*) FROM results, report_results"
+                    " WHERE results.ROWID = report_results.result"
+                    " AND report_results.report = %llu;",
+                    report);
   return 0;
 }
 
