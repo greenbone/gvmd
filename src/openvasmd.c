@@ -607,11 +607,20 @@ main (int argc, char** argv)
 
       /* Initialise OMP daemon. */
 
-      if (init_ompd (log_config))
+      switch (init_ompd (log_config))
         {
-          g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
-          free_log_configuration (log_config);
-          exit (EXIT_FAILURE);
+          case 0:
+            break;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            exit (EXIT_FAILURE);
+            break;
+          case -1:
+          default:
+            g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            exit (EXIT_FAILURE);
         }
 
       /* Register the `cleanup' function. */
@@ -761,11 +770,20 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  if (init_ompd (log_config))
+  switch (init_ompd (log_config))
     {
-      g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
-      free_log_configuration (log_config);
-      exit (EXIT_FAILURE);
+      case 0:
+        break;
+      case -2:
+        g_critical ("%s: database is wrong version\n", __FUNCTION__);
+        free_log_configuration (log_config);
+        exit (EXIT_FAILURE);
+        break;
+      case -1:
+      default:
+        g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+        free_log_configuration (log_config);
+        exit (EXIT_FAILURE);
     }
 
   /* Register the `cleanup' function. */

@@ -4814,7 +4814,7 @@ extern buffer_size_t from_client_end;
  *
  * @param[in]  log_config  Logging configuration list.
  *
- * @return 0 on success, else -1.
+ * @return 0 success, -1 error, -2 database is wrong version.
  */
 int
 init_omp (GSList *log_config)

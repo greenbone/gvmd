@@ -28,6 +28,11 @@
 #include <openvas/openvas_logging.h>
 
 /**
+ * @brief Version of the database schema.
+ */
+#define DATABASE_VERSION 0
+
+/**
  * @brief NVT selector type for "all" rule.
  */
 #define NVT_SELECTOR_TYPE_ALL 0
@@ -628,11 +633,12 @@ setup_full_config_prefs (config_t config)
  * Beware that calling this function while tasks are running may lead to
  * problems.
  *
- * @return 0 on success, else -1.
+ * @return 0 success, -1 error, -2 database is wrong version.
  */
 int
 init_manage (GSList *log_config)
 {
+  const char *database_version;
   task_t index;
   task_iterator_t iterator;
 
@@ -642,6 +648,15 @@ init_manage (GSList *log_config)
                      log_config);
 
   init_manage_process (0);
+
+  /* Check that the version of the database is correct. */
+
+  database_version = sql_string (0, 0,
+                                 "SELECT value FROM meta"
+                                 " WHERE name = 'database_version';");
+  if (database_version
+      && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
+    return -2;
 
   /* Ensure the tables exist. */
 
@@ -658,6 +673,11 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
+
+  /* Ensure the version is set. */
+
+  sql ("INSERT OR REPLACE INTO meta (name, value)"
+       " VALUES ('database_version', '" G_STRINGIFY (DATABASE_VERSION) "');");
 
   /* Ensure the special "om" user exists. */
 

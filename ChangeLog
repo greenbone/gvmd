@@ -1,5 +1,18 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a database version check.
+
+	* src/tasks_sql.h (DATABASE_VERSION): New define.
+	(init_manage): Check database version.  Ensure version is set.
+
+	* src/omp.c (init_omp): Add version return to doc.
+
+	* src/ompd.c (init_ompd): Add version return to doc.
+
+	* src/openvasmd.c (main): Check init_ompd return for wrong version.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (task_first_report_id, task_finished_report_count): New
 	functions.
 	(task_last_report_id, task_second_last_report_id): Only consider completed

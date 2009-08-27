@@ -92,6 +92,8 @@ static int ompd_nvt_cache_mode = 0;
 
 /**
  * @brief Initialise the OMP library for the OMP daemon.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version.
  */
 int
 init_ompd (GSList *log_config)
