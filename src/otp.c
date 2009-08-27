@@ -665,6 +665,7 @@ typedef enum
   SERVER_STATUS_ATTACK_STATE,
   SERVER_STATUS_HOST,
   SERVER_STATUS_PORTS,
+  SERVER_STATUS_PROGRESS,
   SERVER_TIME,
   SERVER_TIME_HOST_START_HOST,
   SERVER_TIME_HOST_START_TIME,
@@ -2109,12 +2110,19 @@ process_otp_server_input ()
                 {
                   if (current_report && current_host)
                     {
-                      char* state = g_strdup (field);
-                      set_scan_attack_state (current_report,
-                                             current_host,
-                                             state);
+                      if (strcmp (field, "portscan"))
+                        {
+                          char* state = g_strdup (field);
+                          set_scan_attack_state (current_report,
+                                                 current_host,
+                                                 state);
+                          set_server_state (SERVER_STATUS_PROGRESS);
+                        }
+                      else
+                        set_server_state (SERVER_STATUS_PORTS);
                     }
-                  set_server_state (SERVER_STATUS_PORTS);
+                  else
+                    set_server_state (SERVER_STATUS_PORTS);
                   break;
                 }
               case SERVER_STATUS_HOST:
@@ -2126,6 +2134,26 @@ process_otp_server_input ()
                 }
               case SERVER_STATUS_PORTS:
                 {
+                  /* For now, just read over the ports. */
+                  if (current_host)
+                    {
+                      g_free (current_host);
+                      current_host = NULL;
+                    }
+                  set_server_state (SERVER_DONE);
+                  switch (parse_server_done (&messages))
+                    {
+                      case -1: return -1;
+                      case -2:
+                        /* Need more input. */
+                        if (sync_buffer ()) return -1;
+                        return 0;
+                    }
+                  break;
+                }
+              case SERVER_STATUS_PROGRESS:
+                {
+                  /* Store the progress in the ports slots in the db. */
                   assert (current_report);
                   if (current_report && current_host)
                     {

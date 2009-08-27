@@ -4119,13 +4119,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
                 else
                   {
-                    int ret;
+                    int ret, maximum_hosts;
                     gchar *response, *progress_xml;
-                    char* name;
+                    char *name, *hosts;
                     gchar *first_report_id, *first_report;
                     gchar *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
+
+                    hosts = target_hosts (task_target (task));
+                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
 
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
@@ -4270,16 +4273,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             current_port = host_iterator_current_port (&hosts);
                             if (max_port)
                               {
-                                progress = (current_port * 50) / max_port;
+                                progress = (current_port * 100) / max_port;
                                 if (progress < 0) progress = 0;
-                                else if (progress > 50) progress = 50;
+                                else if (progress > 100) progress = 100;
                               }
                             else
-                              progress = current_port ? 50 : 0;
-                            /* First 50% is scanning, second 50% is the rest. */
-                            if (strcasecmp (host_iterator_attack_state (&hosts),
-                                            "portscan"))
-                              progress += 50;
+                              progress = current_port ? 100 : 0;
+
 #if 1
                             tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
                             tracef ("   current_port: %u\n", current_port);
@@ -4300,11 +4300,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         cleanup_iterator (&hosts);
 
-                        total_progress = num_hosts ? (total / num_hosts) : 0;
+                        total_progress = maximum_hosts
+                                         ? (total / maximum_hosts) : 0;
 
 #if 1
                         tracef ("   total: %li\n", total);
                         tracef ("   num_hosts: %i\n", num_hosts);
+                        tracef ("   maximum_hosts: %i\n", maximum_hosts);
                         tracef ("   total_progress: %i\n", total_progress);
 #endif
 
@@ -4402,15 +4404,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             while (next_task (&iterator, &index))
               {
                 gchar *line, *progress_xml;
-                char* name = task_name (index);
-                char* tsk_uuid;
+                char *name = task_name (index);
+                char *tsk_uuid, *hosts;
                 gchar *first_report_id, *first_report;
                 gchar *last_report_id, *last_report;
                 gchar *second_last_report_id, *second_last_report;
                 report_t running_report;
+                int maximum_hosts;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
+
+                hosts = target_hosts (task_target (index));
+                maximum_hosts = hosts ? max_hosts (hosts) : 0;
 
                 first_report_id = task_first_report_id (index);
                 if (first_report_id)
@@ -4550,16 +4556,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         current_port = host_iterator_current_port (&hosts);
                         if (max_port)
                           {
-                            progress = (current_port * 50) / max_port;
+                            progress = (current_port * 100) / max_port;
                             if (progress < 0) progress = 0;
-                            else if (progress > 50) progress = 50;
+                            else if (progress > 100) progress = 100;
                           }
                         else
-                          progress = current_port ? 50 : 0;
-                        /* First 50% is scanning, second 50% is the rest. */
-                        if (strcasecmp (host_iterator_attack_state (&hosts),
-                                        "portscan"))
-                          progress += 50;
+                          progress = current_port ? 100 : 0;
                         total += progress;
                         num_hosts++;
 
@@ -4581,11 +4583,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     cleanup_iterator (&hosts);
 
-                    total_progress = num_hosts ? (total / num_hosts) : 0;
+                    total_progress = maximum_hosts ? (total / maximum_hosts) : 0;
 
 #if 1
                     tracef ("   total: %li\n", total);
                     tracef ("   num_hosts: %i\n", num_hosts);
+                    tracef ("   maximum_hosts: %i\n", maximum_hosts);
                     tracef ("   total_progress: %i\n", total_progress);
 #endif
 

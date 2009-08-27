@@ -1,5 +1,19 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Make the GET_STATUS progress be attack-only and relative to the maximum
+	number of hosts.
+
+	* src/omp.c (omp_xml_handle_end_element): Base the GET_STATUS progress
+	entirely on the attack progress, and make the attack progress relative
+	to the maximum number of hosts defined by the task target instead of
+	to the total number of hosts acknowledged by the scanner.
+
+	* src/otp.c (server_state_t): Add SERVER_STATUS_PROGRESS.
+	(process_otp_server_input): Read over portscan STATUS messages, instead
+	of saving them the the database.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (max_hosts): New function.
 	(omp_xml_handle_end_element): Add a MAX_HOSTS to GET_TARGET which is the
 	number of hosts described by the target.
