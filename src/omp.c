@@ -759,7 +759,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_format, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
-              current_int_1 = atoi (attribute);
+              current_int_1 = atoi (attribute) - 1;
             else
               current_int_1 = 0;
             if (find_attribute (attribute_names, attribute_values,

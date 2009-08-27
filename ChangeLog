@@ -1,3 +1,12 @@
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Make the "first_result" attrib of GET_REPORT index from 1.
+
+	* src/omp.c (omp_xml_handle_start_element): Adjust current_int_1 for 0
+	indexing of iterator.
+
+	* src/tests/omp_get_report_8.c: Increment "first_result".
+
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add "first_result" and "max_start" attributes to GET_REPORT.

@@ -105,7 +105,7 @@ main ()
   if (sendf_to_manager (&session,
                         "<get_report"
                         " format=\"xml\" report_id=\"%s\""
-                        " first_result=\"1\" max_results=\"2\"/>",
+                        " first_result=\"2\" max_results=\"2\"/>",
                         report_id)
       == -1)
     goto delete_fail;
