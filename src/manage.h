@@ -495,6 +495,9 @@ target_iterator_comment (iterator_t*);
 char*
 target_hosts (const char*);
 
+int
+target_in_use (const char*);
+
 
 /* Configs. */
 
@@ -524,6 +527,9 @@ config_iterator_families_growing (iterator_t*);
 
 char*
 config_nvt_selector (const char*);
+
+int
+config_in_use (const char*);
 
 
 /* NVT's. */

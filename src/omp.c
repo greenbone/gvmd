@@ -4537,6 +4537,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
                                        "</nvt_count>"
+                                       "<in_use>%i</in_use>"
                                        "</config>",
                                        config_name,
                                        config_iterator_comment (&configs),
@@ -4545,7 +4546,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_iterator_families_growing (&configs),
                                        nvt_selector_nvt_count (selector,
                                                                config_name),
-                                       config_iterator_nvts_growing (&configs));
+                                       config_iterator_nvts_growing (&configs),
+                                       config_in_use (config_name));
             }
           cleanup_iterator (&configs);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
@@ -4565,10 +4567,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      "<name>%s</name>"
                                      "<hosts>%s</hosts>"
                                      "<comment>%s</comment>"
+                                     "<in_use>%i</in_use>"
                                      "</target>",
                                      target_iterator_name (&targets),
                                      target_iterator_hosts (&targets),
-                                     target_iterator_comment (&targets));
+                                     target_iterator_comment (&targets),
+                                     target_in_use
+                                      (target_iterator_name (&targets)));
           cleanup_iterator (&targets);
           SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
           set_client_state (CLIENT_AUTHENTIC);

@@ -1,5 +1,16 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add IN_USE element to responses from GET_TARGETS and GET_CONFIGS.
+
+	* src/omp.c (omp_xml_handle_end_element): Add in_use to CLIENT_GET_TARGETS
+	and CLIENT_GET_CONFIGS.
+
+	* src/tasks_sql.h (target_in_use, config_in_use): New functions.
+	(delete_target, delete_config): Use quoted target/config in SQL.
+	* src/manage.h: Add headers.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Make the "first_result" attrib of GET_REPORT index from 1.
 
 	* src/omp.c (omp_xml_handle_start_element): Adjust current_int_1 for 0

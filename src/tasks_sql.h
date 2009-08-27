@@ -2500,7 +2500,7 @@ delete_target (const char* name)
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
                "SELECT count(*) FROM tasks WHERE target = '%s'",
-               name))
+               quoted_name))
     {
       g_free (quoted_name);
       sql ("END;");
@@ -2590,6 +2590,24 @@ target_hosts (const char *name)
                             quoted_name);
   g_free (quoted_name);
   return hosts;
+}
+
+/**
+ * @brief Return whether a target is referenced by a task
+ *
+ * @param[in]  name   Name of target.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+target_in_use (const char* name)
+{
+  gchar* quoted_name = sql_quote (name);
+  int ret = sql_int (0, 0,
+                     "SELECT count(*) FROM tasks WHERE target = '%s'",
+                     quoted_name);
+  g_free (quoted_name);
+  return ret;
 }
 
 
@@ -3046,7 +3064,7 @@ delete_config (const char* name)
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
                "SELECT count(*) FROM tasks WHERE config = '%s'",
-               name))
+               quoted_name))
     {
       g_free (quoted_name);
       sql ("END;");
@@ -3101,6 +3119,24 @@ config_iterator_nvts_growing (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
+
+/**
+ * @brief Return whether a config is referenced by a task
+ *
+ * @param[in]  name   Name of config.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+config_in_use (const char* name)
+{
+  gchar* quoted_name = sql_quote (name);
+  int ret = sql_int (0, 0,
+                     "SELECT count(*) FROM tasks WHERE config = '%s'",
+                     quoted_name);
+  g_free (quoted_name);
   return ret;
 }
 
