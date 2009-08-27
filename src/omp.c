@@ -759,6 +759,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               append_string (&current_format, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
+              /* Subtract 1 to switch from 1 to 0 indexing. */
               current_int_1 = atoi (attribute) - 1;
             else
               current_int_1 = 0;
@@ -2717,7 +2718,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SENDF_TO_CLIENT_OR_FAIL ("<results"
                                          " start=\"%i\""
                                          " max=\"%i\">",
-                                         current_int_1,
+                                         /* Add 1 for 1 indexing. */
+                                         current_int_1 + 1,
                                          current_int_2);
                 while (next (&results))
                   {
@@ -4085,9 +4087,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret;
                     gchar *response, *progress_xml;
                     char* name;
+                    gchar *first_report_id, *first_report;
                     gchar *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
+
+                    first_report_id = task_first_report_id (task);
+                    if (first_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (first_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (first_report_id, &timestamp))
+                          abort (); // FIX fail better
+
+                        first_report = g_strdup_printf ("<first_report>"
+                                                        "<report id=\"%s\">"
+                                                        "<timestamp>"
+                                                        "%s"
+                                                        "</timestamp>"
+                                                        "<messages>"
+                                                        "<debug>%i</debug>"
+                                                        "<hole>%i</hole>"
+                                                        "<info>%i</info>"
+                                                        "<log>%i</log>"
+                                                        "<warning>%i</warning>"
+                                                        "</messages>"
+                                                        "</report>"
+                                                        "</first_report>",
+                                                        first_report_id,
+                                                        timestamp,
+                                                        debugs,
+                                                        holes,
+                                                        infos,
+                                                        logs,
+                                                        warnings);
+                        g_free (timestamp);
+                        g_free (first_report_id);
+                      }
+                    else
+                      first_report = g_strdup ("");
 
                     last_report_id = task_last_report_id (task);
                     if (last_report_id)
@@ -4253,8 +4297,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<log>%i</log>"
                                  "<warning>%i</warning>"
                                  "</messages>"
-                                 "<report_count>%u</report_count>"
-                                 "%s%s",
+                                 "<report_count>"
+                                 "%u<finished>%u</finished>"
+                                 "</report_count>"
+                                 "%s%s%s",
                                  tsk_uuid,
                                  name,
                                  task_run_status_name (task),
@@ -4265,6 +4311,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_logs_size (task),
                                  task_notes_size (task),
                                  task_report_count (task),
+                                 task_finished_report_count (task),
+                                 first_report,
                                  last_report,
                                  second_last_report);
                     g_free (progress_xml);
@@ -4321,12 +4369,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar *line, *progress_xml;
                 char* name = task_name (index);
                 char* tsk_uuid;
+                gchar *first_report_id, *first_report;
                 gchar *last_report_id, *last_report;
                 gchar *second_last_report_id, *second_last_report;
                 report_t running_report;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
+
+                first_report_id = task_first_report_id (index);
+                if (first_report_id)
+                  {
+                    int debugs, holes, infos, logs, warnings;
+                    gchar *timestamp;
+
+                    if (report_counts (first_report_id,
+                                       &debugs, &holes, &infos, &logs,
+                                       &warnings))
+                      abort (); // FIX fail better
+
+                    if (report_timestamp (first_report_id, &timestamp))
+                      abort (); // FIX fail better
+
+                    first_report = g_strdup_printf ("<first_report>"
+                                                    "<report id=\"%s\">"
+                                                    "<timestamp>"
+                                                    "%s"
+                                                    "</timestamp>"
+                                                    "<messages>"
+                                                    "<debug>%i</debug>"
+                                                    "<hole>%i</hole>"
+                                                    "<info>%i</info>"
+                                                    "<log>%i</log>"
+                                                    "<warning>%i</warning>"
+                                                    "</messages>"
+                                                    "</report>"
+                                                    "</first_report>",
+                                                    first_report_id,
+                                                    timestamp,
+                                                    debugs,
+                                                    holes,
+                                                    infos,
+                                                    logs,
+                                                    warnings);
+                    g_free (timestamp);
+                    g_free (first_report_id);
+                  }
+                else
+                  first_report = g_strdup ("");
 
                 last_report_id = task_last_report_id (index);
                 if (last_report_id)
@@ -4484,8 +4574,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<log>%i</log>"
                                         "<warning>%i</warning>"
                                         "</messages>"
-                                        "<report_count>%u</report_count>"
-                                        "%s%s"
+                                        "<report_count>"
+                                        "%u<finished>%u</finished>"
+                                        "</report_count>"
+                                        "%s%s%s"
                                         "</task>",
                                         tsk_uuid,
                                         name,
@@ -4497,6 +4589,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_logs_size (index),
                                         task_notes_size (index),
                                         task_report_count (index),
+                                        task_finished_report_count (index),
+                                        first_report,
                                         last_report,
                                         second_last_report);
                 g_free (progress_xml);

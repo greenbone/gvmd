@@ -239,6 +239,9 @@ set_task_end_time (task_t task, char* time);
 unsigned int
 task_report_count (task_t);
 
+unsigned int
+task_finished_report_count (task_t);
+
 void
 set_scan_attack_state (report_t, const char*, const char*);
 
@@ -367,6 +370,9 @@ report_warnings (report_t, const char*, int*);
 /*@only@*/ /*@null@*/
 char*
 make_report_uuid ();
+
+gchar*
+task_first_report_id (task_t);
 
 gchar*
 task_last_report_id (task_t);

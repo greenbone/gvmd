@@ -1,5 +1,18 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (task_first_report_id, task_finished_report_count): New
+	functions.
+	(task_last_report_id, task_second_last_report_id): Only consider completed
+	reports.
+	* src/manage.h: Add headers.
+
+	* src/omp.c (omp_xml_handle_end_element): Use 1 indexing "start" in
+	RESULTS in the GET_REPORT response.  Add a FIRST_REPORT to the GET_STATUS
+	response.  Include a count of finished reports in the GET_STATUS report
+	count.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Add a "max" attribute to
 	RESULT in the GET_REPORT xml case.
 

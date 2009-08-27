@@ -1095,6 +1095,23 @@ task_end_time (task_t task)
 }
 
 /**
+ * @brief Get the report ID from the very first completed invocation of task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return The UUID of the task as a newly allocated string.
+ */
+gchar*
+task_first_report_id (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM reports WHERE task = %llu"
+                     " AND LENGTH(end_time) > 0"
+                     " ORDER BY date ASC LIMIT 1;",
+                     task);
+}
+
+/**
  * @brief Get the report ID from the most recently completed invocation of task.
  *
  * @param[in]  task  The task.
@@ -1106,6 +1123,7 @@ task_last_report_id (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM reports WHERE task = %llu"
+                     " AND LENGTH(end_time) > 0"
                      " ORDER BY date DESC LIMIT 1;",
                      task);
 }
@@ -1122,6 +1140,7 @@ task_second_last_report_id (task_t task)
 {
   return sql_string (0, 1,
                      "SELECT uuid FROM reports WHERE task = %llu"
+                     " AND LENGTH(end_time) > 0"
                      " ORDER BY date DESC LIMIT 2;",
                      task);
 }
@@ -1949,6 +1968,23 @@ task_report_count (task_t task)
 {
   return (unsigned int) sql_int (0, 0,
                                  "SELECT count(*) FROM reports WHERE task = %llu;",
+                                 task);
+}
+
+/**
+ * @brief Return the number of finished reports associated with a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of reports.
+ */
+unsigned int
+task_finished_report_count (task_t task)
+{
+  return (unsigned int) sql_int (0, 0,
+                                 "SELECT count(*) FROM reports"
+                                 " WHERE task = %llu"
+                                 " AND LENGTH(end_time) > 0;",
                                  task);
 }
 
