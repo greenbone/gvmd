@@ -1,5 +1,9 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd_report_html.xsl: Note error involving preceding.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Make the GET_STATUS progress be attack-only and relative to the maximum
 	number of hosts.
 

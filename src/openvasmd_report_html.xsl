@@ -182,6 +182,7 @@
 		  <td>Issue regarding port</td>
 		</tr>
 
+        <!-- FIX the preceding:: bit here just worked by luck on the test data. -->
 		<xsl:for-each select="../result[not(port/text() = preceding::port/text())]">
 		  <xsl:sort select="port"/>
 		  <xsl:sort select="type"/>
