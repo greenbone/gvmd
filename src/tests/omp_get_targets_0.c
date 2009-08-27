@@ -36,8 +36,10 @@
 
 #define NAME_1 "omp_get_targets_0 1"
 #define NAME_2 "omp_get_targets_0 2"
-#define HOSTS_1 "localhost,xxx,127.0.0.1"
+#define HOSTS_1 "localhost,xxx,127.0.0.1/8"
 #define HOSTS_2 "196.168.0.1"
+#define MAX_HOSTS_1 "258"
+#define MAX_HOSTS_2 "1"
 #define COMMENT_1 "Test comment."
 
 int
@@ -81,7 +83,7 @@ main ()
       == -1)
     goto delete_fail;
 
-  /* Check that it includes both created entries. */
+  /* Check that the response includes both created entries. */
 
   entity = NULL;
   if (read_entity (&session, &entity))
@@ -95,15 +97,18 @@ main ()
     {
       entity_t name = entity_child (target, "name");
       entity_t hosts = entity_child (target, "hosts");
+      entity_t max_hosts = entity_child (target, "max_hosts");
       entity_t comment = entity_child (target, "comment");
-      if (name == NULL || hosts == NULL || comment == NULL)
+      if (name == NULL || hosts == NULL || comment == NULL || max_hosts == NULL)
         goto free_fail;
       if ((strcmp (entity_text (name), NAME_1) == 0)
           && (strcmp (entity_text (hosts), HOSTS_1) == 0)
+          && (strcmp (entity_text (max_hosts), MAX_HOSTS_1) == 0)
           && (strcmp (entity_text (comment), COMMENT_1) == 0))
         found_1 = 1;
       else if ((strcmp (entity_text (name), NAME_2) == 0)
                && (strcmp (entity_text (hosts), HOSTS_2) == 0)
+               && (strcmp (entity_text (max_hosts), MAX_HOSTS_2) == 0)
                && (strcmp (entity_text (comment), "") == 0))
         found_2 = 1;
       targets = next_entities (targets);
