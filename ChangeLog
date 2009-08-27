@@ -1,5 +1,9 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/CMakeLists.txt (openvasmd): Remove -lpcap.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_get_targets_0.c: Add MAX_HOSTS checks.
 
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
