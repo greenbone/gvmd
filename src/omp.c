@@ -2714,8 +2714,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 init_result_iterator (&results, report, NULL,
                                       current_int_1,  /* First result. */
                                       current_int_2); /* Max results. */
-                SENDF_TO_CLIENT_OR_FAIL ("<results start=\"%i\">",
-                                         current_int_1);
+                SENDF_TO_CLIENT_OR_FAIL ("<results"
+                                         " start=\"%i\""
+                                         " max=\"%i\">",
+                                         current_int_1,
+                                         current_int_2);
                 while (next (&results))
                   {
                     const char *descr = result_iterator_descr (&results);
