@@ -537,6 +537,41 @@ error_send_to_client (GError** error)
  " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
 
 /**
+ * @brief Return number of hosts described by a hosts string.
+ *
+ * @param[in]  hosts  String describing hosts.
+ *
+ * @return Number of hosts.
+ */
+int
+max_hosts (const char *hosts)
+{
+  int count = 0;
+  gchar** split = g_strsplit (hosts, ",", 0);
+  gchar** point = split;
+
+  // TODO: check for errors in "hosts"
+
+  while (*point)
+    {
+      gchar* slash = strchr (*point, '/');
+      if (slash)
+        {
+          slash++;
+          if (*slash)
+            count += 1 << atoi (slash);
+          else
+            /* Just a trailing /. */
+            count++;
+        }
+      else
+        count++;
+      point += 1;
+    }
+  return count;
+}
+
+/**
  * @brief Find an attribute in a parser callback list of attributes.
  *
  * @param[in]   attribute_names   List of names.
@@ -4663,11 +4698,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SENDF_TO_CLIENT_OR_FAIL ("<target>"
                                      "<name>%s</name>"
                                      "<hosts>%s</hosts>"
+                                     "<max_hosts>%i</max_hosts>"
                                      "<comment>%s</comment>"
                                      "<in_use>%i</in_use>"
                                      "</target>",
                                      target_iterator_name (&targets),
                                      target_iterator_hosts (&targets),
+                                     max_hosts
+                                      (target_iterator_hosts (&targets)),
                                      target_iterator_comment (&targets),
                                      target_in_use
                                       (target_iterator_name (&targets)));

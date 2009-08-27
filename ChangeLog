@@ -1,5 +1,11 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (max_hosts): New function.
+	(omp_xml_handle_end_element): Add a MAX_HOSTS to GET_TARGET which is the
+	number of hosts described by the target.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add a database version check.
 
 	* src/tasks_sql.h (DATABASE_VERSION): New define.
