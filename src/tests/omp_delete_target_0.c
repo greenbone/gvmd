@@ -89,7 +89,7 @@ main ()
   free_entity (entity);
   free_entity (expected);
 
-  /* Remove the task. */
+  /* Remove the target. */
 
   if (send_to_manager (&session,
                        "<delete_target>"

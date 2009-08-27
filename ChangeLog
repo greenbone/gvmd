@@ -1,5 +1,9 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_delete_target_0.c: Correct comment.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd_report_html.xsl: Note error involving preceding.
 
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
