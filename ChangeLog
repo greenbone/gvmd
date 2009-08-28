@@ -1,5 +1,11 @@
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_result_iterator): Correct SQL.
+
+	* src/tracef.h (ALL_LOG_LEVELS): Use G_LOG_LEVEL_MASK.
+
+2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/CMakeLists.txt (openvasmd): Remove -lpcap.
 
 2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>

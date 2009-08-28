@@ -1545,18 +1545,18 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
     {
       if (host)
         sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                               " FROM results, reports"
-                               " WHERE reports.task = results.task"
-                               " AND reports.ROWID = %llu"
+                               " FROM results, report_results"
+                               " WHERE report_results.report = %llu"
+                               " AND report_results.result = results.ROWID"
                                " AND results.host = '%s'"
                                " ORDER BY port, type"
                                " LIMIT %i OFFSET %i;",
                                report, host, max_results, first_result);
       else
         sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                               " FROM results, reports"
-                               " WHERE reports.task = results.task"
-                               " AND reports.ROWID = %llu"
+                               " FROM results, report_results"
+                               " WHERE report_results.report = %llu"
+                               " AND report_results.result = results.ROWID"
                                " ORDER BY host, port, type"
                                " LIMIT %i OFFSET %i;",
                                report, max_results, first_result);

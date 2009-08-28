@@ -45,12 +45,7 @@
 /**
  * @brief Flag with all Glib log levels.
  */
-#define ALL_LOG_LEVELS  (G_LOG_LEVEL_DEBUG      \
-                         | G_LOG_LEVEL_INFO     \
-                         | G_LOG_LEVEL_MESSAGE  \
-                         | G_LOG_LEVEL_WARNING  \
-                         | G_LOG_LEVEL_CRITICAL \
-                         | G_LOG_LEVEL_ERROR    \
+#define ALL_LOG_LEVELS  (G_LOG_LEVEL_MASK       \
                          | G_LOG_FLAG_FATAL     \
                          | G_LOG_FLAG_RECURSION)
 
