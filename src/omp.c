@@ -1635,7 +1635,7 @@ send_reports (task_t task)
   while (next_report (&iterator, &index))
     {
       gchar *uuid, *timestamp, *msg;
-      int debugs, holes, infos, logs, warnings;
+      int debugs, holes, infos, logs, warnings, run_status;
 
       uuid = report_uuid (index);
 
@@ -1655,9 +1655,12 @@ send_reports (task_t task)
 
       tracef ("     %s\n", uuid);
 
+      report_scan_run_status (index, &run_status);
       msg = g_strdup_printf ("<report"
                              " id=\"%s\">"
+                             // FIX s/b scan_start like get_report
                              "<timestamp>%s</timestamp>"
+                             "<scan_run_status>%s</scan_run_status>"
                              "<messages>"
                              "<debug>%i</debug>"
                              "<hole>%i</hole>"
@@ -1668,6 +1671,9 @@ send_reports (task_t task)
                              "</report>",
                              uuid,
                              timestamp,
+                             run_status_name
+                              (run_status ? run_status
+                                          : TASK_STATUS_INTERNAL_ERROR),
                              debugs,
                              holes,
                              infos,
@@ -2694,7 +2700,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 task_t task;
                 char *tsk_uuid = NULL, *start_time, *end_time;
-                int result_count;
+                int result_count, run_status;
 
                 if (report_task (report, &task))
                   {
@@ -2714,13 +2720,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
 
                 report_scan_result_count (report, &result_count);
+                report_scan_run_status (report, &run_status);
                 SENDF_TO_CLIENT_OR_FAIL
                  ("<get_report_response"
                   " status=\"" STATUS_OK "\""
                   " status_text=\"" STATUS_OK_TEXT "\">"
                   "<report id=\"%s\">"
+                  "<scan_run_status>%s</scan_run_status>"
                   "<scan_result_count>%i</scan_result_count>",
                   current_uuid,
+                  run_status_name (run_status
+                                   ? run_status
+                                   : TASK_STATUS_INTERNAL_ERROR),
                   result_count);
 
                 if (task && tsk_uuid)

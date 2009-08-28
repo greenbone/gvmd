@@ -1,4 +1,30 @@
-2009-08-27  Matthew Mundell <matthew.mundell@intevation.de>
+2009-08-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add SCAN_RUN_STATUS to REPORTs, as a reliable way of telling if the
+	associated task finished.
+
+	* src/tasks_sql.h (init_manage): Make run_status in tasks an integer.
+	Add a scan_run_status field to reports.
+	(set_task_run_status): Also set the run_status in the current report.
+	(task_first_report_id, task_last_report_id)
+	(task_finished_report_count): Use scan_run_status to indicate report
+	completion.
+	(report_scan_run_status): New function.
+
+	* src/omp.c (send_reports): Add SCAN_RUN_STATUS to REPORT for
+	GET_STATUS, so clients can tell which reports completed.
+	(omp_xml_handle_end_element): As above, for REPORT in XML GET_REPORT
+	response.
+
+	* src/manage.c (run_status_name): New function, body from
+	task_run_status_name.
+	(task_run_status_name): Call run_status_name.
+
+	* src/manage.h (run_status_name, report_scan_run_status): New headers.
+	(task_status_t): Add internal error state, so user can get name of
+	internal error.
+
+2009-08-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_result_iterator): Correct SQL.
 

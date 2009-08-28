@@ -666,9 +666,9 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
@@ -1041,6 +1041,10 @@ task_run_status (task_t task)
 void
 set_task_run_status (task_t task, task_status_t status)
 {
+  if ((task == current_server_task) && current_report)
+    sql ("UPDATE reports SET scan_run_status = %u WHERE ROWID = %llu;",
+         status,
+         current_report);
   sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
        status,
        task);
@@ -1126,9 +1130,10 @@ task_first_report_id (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM reports WHERE task = %llu"
-                     " AND LENGTH(end_time) > 0"
+                     " AND scan_run_status = %u"
                      " ORDER BY date ASC LIMIT 1;",
-                     task);
+                     task,
+                     TASK_STATUS_DONE);
 }
 
 /**
@@ -1143,9 +1148,10 @@ task_last_report_id (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM reports WHERE task = %llu"
-                     " AND LENGTH(end_time) > 0"
+                     " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1;",
-                     task);
+                     task,
+                     TASK_STATUS_DONE);
 }
 
 /**
@@ -1873,6 +1879,24 @@ report_timestamp (const char* report_id, gchar** timestamp)
 }
 
 /**
+ * @brief Return the run status of the scan associated with a report.
+ *
+ * @param[in]   report  Report.
+ * @param[out]  state   Scan run status.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_scan_run_status (report_t report, int* status)
+{
+  *status = sql_int (0, 0,
+                     "SELECT scan_run_status FROM reports"
+                     " WHERE reports.ROWID = %llu;",
+                     report);
+  return 0;
+}
+
+/**
  * @brief Get the number of results in the scan associated with a report.
  *
  * @param[in]   report  Report.
@@ -2004,8 +2028,9 @@ task_finished_report_count (task_t task)
   return (unsigned int) sql_int (0, 0,
                                  "SELECT count(*) FROM reports"
                                  " WHERE task = %llu"
-                                 " AND LENGTH(end_time) > 0;",
-                                 task);
+                                 " AND scan_run_status = %u;",
+                                 task,
+                                 TASK_STATUS_DONE);
 }
 
 /**

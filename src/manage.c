@@ -281,17 +281,16 @@ make_task_uuid ()
 }
 
 /**
- * @brief Get the name of the status of a task.
+ * @brief Get the name of a run status.
  *
- * @param[in]  task  The task.
+ * @param[in]  status  Run status.
  *
- * @return The name of the status of the given task (for example, "Done" or
- *         "Running").
+ * @return The name of the status (for example, "Done" or "Running").
  */
 const char*
-task_run_status_name (task_t task)
+run_status_name (task_status_t status)
 {
-  switch (task_run_status (task))
+  switch (status)
     {
       case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
       case TASK_STATUS_DONE:             return "Done";
@@ -302,6 +301,20 @@ task_run_status_name (task_t task)
       case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Internal Error";
     }
+}
+
+/**
+ * @brief Get the name of the status of a task.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return The name of the status of the given task (for example, "Done" or
+ *         "Running").
+ */
+const char*
+task_run_status_name (task_t task)
+{
+  return run_status_name (task_run_status (task));
 }
 
 #if 0

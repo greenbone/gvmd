@@ -135,7 +135,8 @@ typedef enum
   TASK_STATUS_REQUESTED,
   TASK_STATUS_RUNNING,
   TASK_STATUS_STOP_REQUESTED,
-  TASK_STATUS_STOPPED
+  TASK_STATUS_STOPPED,
+  TASK_STATUS_INTERNAL_ERROR
 } task_status_t;
 
 #ifdef TASKS_SQL
@@ -321,6 +322,9 @@ char*
 make_task_uuid ();
 
 const char*
+run_status_name (task_status_t status);
+
+const char*
 task_run_status_name (task_t task);
 
 int
@@ -386,6 +390,9 @@ report_path_task_uuid (gchar*);
 gboolean
 report_task (report_t, task_t*);
 /*@=exportlocal@*/
+
+int
+report_scan_run_status (report_t, int*);
 
 int
 report_scan_result_count (report_t, int*);
