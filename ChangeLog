@@ -1,3 +1,8 @@
+2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (setup_full_config_prefs): Add parameters.
+	(init_manage): Add more predefined configs.
+
 2009-08-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add SCAN_RUN_STATUS to REPORTs, as a reliable way of telling if the

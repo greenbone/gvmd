@@ -519,10 +519,16 @@ init_manage_process (int update_nvt_cache)
 }
 
 /**
- * @brief Setup the config preferences for the "Full" config.
+ * @brief Setup config preferences for a config.
+ *
+ * @param[in]  config         The config.
+ * @param[in]  safe_checks    Value for safe_checks option.
+ * @param[in]  optimize_test  Value for optimize_test option.
+ * @param[in]  port_range     Value for port_range option.
  */
 void
-setup_full_config_prefs (config_t config)
+setup_full_config_prefs (config_t config, const char *safe_checks,
+                          const char *optimize_test,  const char *port_range)
 {
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'max_hosts', '20');",
@@ -534,8 +540,9 @@ setup_full_config_prefs (config_t config)
        " VALUES (%i, 'SERVER_PREFS', 'cgi_path', '/cgi-bin:/scripts');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'port_range', 'default');",
-       config);
+       " VALUES (%i, 'SERVER_PREFS', 'port_range', '%s');",
+       config,
+       port_range);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'auto_enable_dependencies', 'yes');",
        config);
@@ -552,11 +559,13 @@ setup_full_config_prefs (config_t config)
        " VALUES (%i, 'SERVER_PREFS', 'reverse_lookup', 'no');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'yes');",
-       config);
+       " VALUES (%i, 'SERVER_PREFS', 'optimize_test', '%s');",
+       config,
+       optimize_test);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'yes');",
-       config);
+       " VALUES (%i, 'SERVER_PREFS', 'safe_checks', '%s');",
+       config,
+       safe_checks);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
        config);
@@ -691,18 +700,79 @@ init_manage (GSList *log_config)
     sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
          " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM configs WHERE name = 'Full';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Full and fast';")
       == 0)
     {
       config_t config;
 
       sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
            " families_growing)"
-           " VALUES ('Full', 'All', 'All inclusive configuration.', 1, 1);");
+           " VALUES ('Full and fast', 'All',"
+           " 'All NVT''s; optimized by using previously collected information.',"
+           " 1, 1);");
+
+      /* Setup preferences for the config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config, "yes", "yes", "default");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Full and fast ultimate';")
+      == 0)
+    {
+      config_t config;
+
+      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
+           " families_growing)"
+           " VALUES ('Full and fast ultimate', 'All',"
+           " 'All NVT''s including those that can stop services/hosts;"
+           " optimized by using previously collected information.',"
+           " 1, 1);");
 
       /* Setup preferences for the full config. */
       config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config);
+      setup_full_config_prefs (config, "no", "yes", "default");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Full and very deep';")
+      == 0)
+    {
+      config_t config;
+
+      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
+           " families_growing)"
+           " VALUES ('Full and very deep', 'All',"
+           " 'All NVT''s; don''t trust previously collected information; slow.',"
+           " 1, 1);");
+
+      /* Setup preferences for the full config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config, "yes", "no", "1-65535");
+
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Full and very deep ultimate';")
+      == 0)
+    {
+      config_t config;
+
+      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
+           " families_growing)"
+           " VALUES ('Full and very deep ultimate', 'All',"
+           " 'All NVT''s including those that can stop services/hosts;"
+           " don''t trust previously collected information; slow.',"
+           " 1, 1);");
+
+      /* Setup preferences for the full config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config, "no", "no", "1-65535");
     }
 
   /* Ensure the predefined target exists. */
