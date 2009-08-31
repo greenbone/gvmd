@@ -24,9 +24,13 @@
 
 message ("-- Configuring the Manager...")
 
-project (openvas-manager)
+project (openvas-manager C)
 
 cmake_minimum_required (VERSION 2.4)
+
+if (POLICY CMP0005)
+   cmake_policy (SET CMP0005 OLD)
+endif (POLICY CMP0005)
 
 SET (CMAKE_BUILD_TYPE debug)
 
