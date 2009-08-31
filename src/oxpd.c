@@ -41,7 +41,7 @@
 
 #ifndef S_SPLINT_S
 #if FROM_BUFFER_SIZE > SSIZE_MAX
-#error FROM_BUFFER_SIZE too big for `read'
+#error FROM_BUFFER_SIZE too big for "read"
 #endif
 #endif
 

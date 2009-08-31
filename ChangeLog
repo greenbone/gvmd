@@ -1,5 +1,9 @@
 2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/oxpd.c: Quote in cpp error message with double quotes.
+
+2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c, src/tasks_sql.h, src/otp.c, src/manage.c: Refer to the "NULL"
 	task ID with 0 instead of NULL.
 
