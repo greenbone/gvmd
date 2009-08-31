@@ -1493,7 +1493,7 @@ process_otp_server_input ()
               case SERVER_DEBUG_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) NULL)
+                      && current_server_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1563,7 +1563,7 @@ process_otp_server_input ()
               case SERVER_HOLE_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) NULL)
+                      && current_server_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1633,7 +1633,7 @@ process_otp_server_input ()
               case SERVER_INFO_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) NULL)
+                      && current_server_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1703,7 +1703,7 @@ process_otp_server_input ()
               case SERVER_LOG_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) NULL)
+                      && current_server_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -1773,7 +1773,7 @@ process_otp_server_input ()
               case SERVER_NOTE_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) NULL)
+                      && current_server_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
@@ -2290,7 +2290,7 @@ process_otp_server_input ()
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                             delete_task (current_server_task);
-                            current_report = (report_t) NULL;
+                            current_report = (report_t) 0;
                             break;
                           default:
                             set_task_run_status (current_server_task,
@@ -2301,9 +2301,9 @@ process_otp_server_input ()
                       if (current_report)
                         {
                           set_scan_end_time (current_report, field);
-                          current_report = (report_t) NULL;
+                          current_report = (report_t) 0;
                         }
-                      current_server_task = (task_t) NULL;
+                      current_server_task = (task_t) 0;
                     }
                   set_server_state (SERVER_DONE);
                   switch (parse_server_done (&messages))

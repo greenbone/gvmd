@@ -1125,7 +1125,7 @@ set_task_run_status (task_t task, task_status_t status)
  *
  * @param[in]  task  Task.
  *
- * @return Current report of task if task is active, else (report_t) NULL.
+ * @return Current report of task if task is active, else (report_t) 0.
  */
 report_t
 task_running_report (task_t task)
@@ -1139,7 +1139,7 @@ task_running_report (task_t task)
                                      " WHERE task = %llu AND end_time IS NULL;",
                                      task);
     }
-  return (report_t) NULL;
+  return (report_t) 0;
 }
 
 /**
@@ -1351,7 +1351,7 @@ create_report (task_t task)
 {
   char* report_id;
 
-  assert (current_report == (report_t) NULL);
+  assert (current_report == (report_t) 0);
   if (current_report) return -1;
 
   /* Generate report UUID. */
@@ -2218,7 +2218,7 @@ free_tasks ()
  * @param[in]  time     The period of the task, in seconds.
  * @param[in]  comment  A comment associated the task.
  *
- * @return A pointer to the new task or the NULL task on error (in which
+ * @return A pointer to the new task or the 0 task on error (in which
  *         case the caller must free name and comment).
  */
 task_t
@@ -2226,7 +2226,7 @@ make_task (char* name, unsigned int time, char* comment)
 {
   task_t task;
   char* uuid = make_task_uuid ();
-  if (uuid == NULL) return (task_t) NULL;
+  if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
   sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment)"
        " VALUES ((SELECT ROWID FROM users WHERE name = '%s'),"

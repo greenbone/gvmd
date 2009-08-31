@@ -1,5 +1,10 @@
 2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c, src/tasks_sql.h, src/otp.c, src/manage.c: Refer to the "NULL"
+	task ID with 0 instead of NULL.
+
+2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* CMakeLists.txt: Set project language.  Add CMP0005 policy check.
 
 2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>

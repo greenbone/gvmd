@@ -243,12 +243,12 @@ short server_active = 0;
 /**
  * @brief The task currently running on the server.
  */
-/*@null@*/ task_t current_server_task = (task_t) NULL;
+/*@null@*/ task_t current_server_task = (task_t) 0;
 
 /**
  * @brief The report of the current task.
  */
-report_t current_report = (report_t) NULL;
+report_t current_report = (report_t) 0;
 
 
 /* Task code specific to the representation of tasks. */

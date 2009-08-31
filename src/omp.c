@@ -225,7 +225,7 @@ buffer_size_t to_client_end = 0;
  * @brief Current client task during commands like CREATE_TASK and MODIFY_TASK.
  */
 /*@null@*/ /*@dependent@*/
-static task_t current_client_task = (task_t) NULL;
+static task_t current_client_task = (task_t) 0;
 
 /**
  * @brief Current report or task UUID, during a few operations.
@@ -839,9 +839,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
-            assert (current_client_task == (task_t) NULL);
+            assert (current_client_task == (task_t) 0);
             current_client_task = make_task (NULL, 0, NULL);
-            if (current_client_task == (task_t) NULL) abort (); // FIX
+            if (current_client_task == (task_t) 0) abort (); // FIX
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -2314,7 +2314,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             task_t task;
 
-            assert (current_client_task == (task_t) NULL);
+            assert (current_client_task == (task_t) 0);
 
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
@@ -3417,7 +3417,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK:
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) NULL);
+            assert (current_client_task == (task_t) 0);
             task_t task;
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
@@ -3546,7 +3546,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         // FIX update to match create_task (config, target)
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) NULL);
+            assert (current_client_task == (task_t) 0);
             task_t task;
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
@@ -3822,7 +3822,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           char *tsk_uuid, *name, *description, *config, *target;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
-          assert (current_client_task != (task_t) NULL);
+          assert (current_client_task != (task_t) 0);
 
           /* The task already exists in the database at this point,
            * including the RC file (in the description column), so on
@@ -3842,7 +3842,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   error_send_to_client (error);
                   return;
                 }
-              current_client_task = (task_t) NULL;
+              current_client_task = (task_t) 0;
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
@@ -3864,7 +3864,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires either an rcfile"
                                   " or both a config and a target"));
-              current_client_task = (task_t) NULL;
+              current_client_task = (task_t) 0;
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
@@ -3882,7 +3882,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
-              current_client_task = (task_t) NULL;
+              current_client_task = (task_t) 0;
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
@@ -3908,7 +3908,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   request_delete_task (&current_client_task);
                   free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  current_client_task = (task_t) NULL;
+                  current_client_task = (task_t) 0;
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -3925,7 +3925,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX
                      ("create_task",
                       "CREATE_TASK rcfile must have targets"));
-                  current_client_task = (task_t) NULL;
+                  current_client_task = (task_t) 0;
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -3942,7 +3942,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_task"));
-                  current_client_task = (task_t) NULL;
+                  current_client_task = (task_t) 0;
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -3959,7 +3959,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK target must exist"));
-                  current_client_task = (task_t) NULL;
+                  current_client_task = (task_t) 0;
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -3972,7 +3972,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK config must exist"));
-                  current_client_task = (task_t) NULL;
+                  current_client_task = (task_t) 0;
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -3995,7 +3995,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               return;
             }
           g_free (msg);
-          current_client_task = (task_t) NULL;
+          current_client_task = (task_t) 0;
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -4047,7 +4047,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) NULL);
+            assert (current_client_task == (task_t) 0);
             task_t task;
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
