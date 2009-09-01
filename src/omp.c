@@ -4067,6 +4067,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
                     break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("start_task",
+                                        "Task is active already"));
+                    break;
                   case -1:
                     /* to_server is full. */
                     // FIX or other error

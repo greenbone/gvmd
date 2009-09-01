@@ -570,7 +570,8 @@ send_config_rules (const char* config)
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer, -2 if the
+ * @return 0 on success, 1 task is active already,
+ *         -1 if out of space in \ref to_server buffer, -2 if the
  *         task is missing a target, -3 if creating the report fails, -4 target
  *         missing hosts, -5 task missing config, -6 if there's already a task
  *         running in this process.
@@ -588,8 +589,10 @@ start_task (task_t task)
 
   task_status_t run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING)
-    return 0;
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_DELETE_REQUESTED)
+    return 1;
 
   if (current_server_task) return -6;
 

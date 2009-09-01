@@ -1,5 +1,18 @@
 2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Switch START_TASK response to an error if the task is active.
+
+	* src/manage.c (start_task): Return 1 if task is active.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK respond
+	with error if task is active.
+
+	* src/tests/omp_start_task_5.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_start_task_5.
+
+2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (setup_full_config_prefs): Switch to integers for the
 	option args, to work around sending string literals to `sql'.  Update
 	callers.
