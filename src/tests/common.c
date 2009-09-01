@@ -57,7 +57,7 @@
 /**
  * @brief Manager (openvasmd) port.
  */
-#define OPENVASMD_PORT 1242
+#define OPENVASMD_PORT 9390
 
 /**
  * @brief Manager (openvasmd) address.
