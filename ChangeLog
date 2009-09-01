@@ -1,3 +1,11 @@
+2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tests/CMakeLists.txt: Remove "-I .." from all COMPILE_FLAGS.  Add
+	libopenvas-config generated flags to OVAS_LDFLAGS and OVAS_CFLAGS.
+
+	* src/CMakeLists.txt (openvasmd): Replace -lopenvas with OPENVAS_LDFLAGS
+	in LINK_FLAGS.
+
 2009-08-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/oxpd.c: Quote in cpp error message with double quotes.

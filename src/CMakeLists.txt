@@ -131,7 +131,7 @@ if (OPENVAS_SYSCONF_DIR)
 endif (OPENVAS_SYSCONF_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${LIB_TEMP} -unessus_get_socket_from_connection -lopenvas -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG}")
+                       "${LIB_TEMP} -unessus_get_socket_from_connection -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG} ${OPENVAS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
                        "${TASKS_CFLAG} ${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
