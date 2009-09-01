@@ -1,5 +1,11 @@
 2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (setup_full_config_prefs): Switch to integers for the
+	option args, to work around sending string literals to `sql'.  Update
+	callers.
+
+2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/common.c (OPENVASMD_PORT): Change to 9390.
 
 2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>

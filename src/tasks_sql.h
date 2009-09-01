@@ -522,13 +522,13 @@ init_manage_process (int update_nvt_cache)
  * @brief Setup config preferences for a config.
  *
  * @param[in]  config         The config.
- * @param[in]  safe_checks    Value for safe_checks option.
- * @param[in]  optimize_test  Value for optimize_test option.
- * @param[in]  port_range     Value for port_range option.
+ * @param[in]  safe_checks    safe_checks option: 1 for "yes", 0 for "no".
+ * @param[in]  optimize_test  optimize_test option: 1 for "yes", 0 for "no".
+ * @param[in]  port_range     port_range option: 1 for "yes", 0 for "no".
  */
-void
-setup_full_config_prefs (config_t config, const char *safe_checks,
-                          const char *optimize_test,  const char *port_range)
+static void
+setup_full_config_prefs (config_t config, int safe_checks,
+                         int optimize_test, int port_range)
 {
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'max_hosts', '20');",
@@ -539,10 +539,14 @@ setup_full_config_prefs (config_t config, const char *safe_checks,
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'cgi_path', '/cgi-bin:/scripts');",
        config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'port_range', '%s');",
-       config,
-       port_range);
+  if (port_range)
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'port_range', '1-65535');",
+         config);
+  else
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'port_range', 'default');",
+         config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'auto_enable_dependencies', 'yes');",
        config);
@@ -558,14 +562,22 @@ setup_full_config_prefs (config_t config, const char *safe_checks,
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'reverse_lookup', 'no');",
        config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'optimize_test', '%s');",
-       config,
-       optimize_test);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'safe_checks', '%s');",
-       config,
-       safe_checks);
+  if (optimize_test)
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'yes');",
+         config);
+  else
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'no');",
+         config);
+  if (safe_checks)
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'yes');",
+         config);
+  else
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%i, 'SERVER_PREFS', 'safe_checks', 'no');",
+         config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'use_mac_addr', 'no');",
        config);
@@ -715,7 +727,7 @@ init_manage (GSList *log_config)
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config, "yes", "yes", "default");
+      setup_full_config_prefs (config, 1, 1, 0);
     }
 
   if (sql_int (0, 0,
@@ -732,9 +744,9 @@ init_manage (GSList *log_config)
            " optimized by using previously collected information.',"
            " 1, 1);");
 
-      /* Setup preferences for the full config. */
+      /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config, "no", "yes", "default");
+      setup_full_config_prefs (config, 0, 1, 0);
     }
 
   if (sql_int (0, 0,
@@ -750,10 +762,9 @@ init_manage (GSList *log_config)
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " 1, 1);");
 
-      /* Setup preferences for the full config. */
+      /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config, "yes", "no", "1-65535");
-
+      setup_full_config_prefs (config, 1, 0, 1);
     }
 
   if (sql_int (0, 0,
@@ -770,9 +781,9 @@ init_manage (GSList *log_config)
            " don''t trust previously collected information; slow.',"
            " 1, 1);");
 
-      /* Setup preferences for the full config. */
+      /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config, "no", "no", "1-65535");
+      setup_full_config_prefs (config, 0, 0, 1);
     }
 
   /* Ensure the predefined target exists. */
