@@ -1247,9 +1247,10 @@ task_second_last_report_id (task_t task)
 {
   return sql_string (0, 1,
                      "SELECT uuid FROM reports WHERE task = %llu"
-                     " AND LENGTH(end_time) > 0"
+                     " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 2;",
-                     task);
+                     task,
+                     TASK_STATUS_DONE);
 }
 
 

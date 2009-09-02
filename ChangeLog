@@ -1,5 +1,10 @@
 2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (task_second_last_report_id): Use scan_run_status as
+	"finished" criterion, as task_last_report_id does.
+
+2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/otp.c (parse_server_error): Set the task state to Internal Error
 	for E001.
 	(process_otp_server_input): In SERVER_TIME_SCAN_END leave the task state
