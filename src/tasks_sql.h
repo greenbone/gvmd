@@ -321,6 +321,207 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
 }
 
 
+/* Migration. */
+
+/**
+ * @brief Backup the database to a file.
+ *
+ * @return Name of backup file.
+ */
+gchar *
+backup_db ()
+{
+  // FIX ensure lock on db and db synced first
+  return NULL;
+}
+
+/**
+ * @brief Restore the database from a file.
+ *
+ * @param Name of backup file.
+ *
+ * @return 0 success, -1 fail.
+ */
+int
+restore_db ()
+{
+  // FIX ensure lock on db and db synced first
+  return -1;
+}
+
+/**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_db_supported_version ()
+{
+  return DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager if found, else -1.
+ */
+int
+manage_db_version ()
+{
+  int number;
+  char *version = sql_string (0, 0,
+                              "SELECT value FROM meta"
+                              " WHERE name = 'database_version' LIMIT 1;");
+  if (number)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
+ * @brief A migrator.
+ */
+typedef struct
+{
+  int version;         ///< Version that the migrator produces.
+  int (*function) ();  ///< Function that does the migration.  NULL if too hard.
+} migrator_t;
+
+#if 0
+/**
+ * @brief Migrate the database from version 0 to version 1.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_0_to_1 ()
+{
+  /* Ensure that the database is currently version 0. */
+  if (manage_db_version () != 0) return -1;
+
+  /* Update the database. */
+
+  return 0;
+}
+#endif
+
+/**
+ * @brief Array of database version migrators.
+ */
+static migrator_t database_migrators[]
+ = {{0, NULL},
+#if 0
+    {1, migrate_0_to_1},
+#endif
+    /* End marker. */
+    {-1, NULL}};
+
+/**
+ * @brief Check whether a migration is available.
+ *
+ * @return 1 yes, 0 no, -1 error.
+ */
+static int
+migrate_is_available (int old_version, int new_version)
+{
+  migrator_t *migrators;
+
+  migrators = database_migrators + old_version + 1;
+
+  while ((migrators->version >= 0) && (migrators->version <= new_version))
+    {
+      if (migrators->function == NULL) return 0;
+      if (migrators->version == new_version) return 1;
+      migrators++;
+    }
+
+  return -1;
+}
+
+/**
+ * @brief Migrate database to version supported by this manager.
+ *
+ * @return 0 success, 1 already on supported version, 2 too hard, -1 error.
+ */
+int
+manage_migrate (GSList *log_config)
+{
+  gchar *backup_file;
+  migrator_t *migrators;
+  /* The version on the disk. */
+  int old_version;
+  /* The version that this program requires. */
+  int new_version;
+
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+
+  init_manage_process (0);
+
+  old_version = manage_db_version ();
+  new_version = manage_db_supported_version ();
+
+  if (old_version == -1)
+    {
+      cleanup_manage_process ();
+      return -1;
+    }
+
+  if (old_version == new_version)
+    {
+      cleanup_manage_process ();
+      return 1;
+    }
+
+  switch (migrate_is_available (old_version, new_version))
+    {
+      case -1:
+        cleanup_manage_process ();
+        return -1;
+      case  0:
+        cleanup_manage_process ();
+        return  2;
+    }
+
+  backup_file = backup_db ();
+  // FIX check return
+
+  /* Call the migrators to take the DB from the old version to the new. */
+
+  migrators = database_migrators + old_version + 1;
+
+  while ((migrators->version >= 0) && (migrators->version <= new_version))
+    {
+      if (migrators->function == NULL)
+        {
+          restore_db (backup_file);
+          g_free (backup_file);
+          cleanup_manage_process ();
+          return -1;
+        }
+
+      if (migrators->function ())
+        {
+          restore_db (backup_file);
+          g_free (backup_file);
+          cleanup_manage_process ();
+          return -1;
+        }
+      migrators++;
+    }
+
+  // FIX remove backup_file
+  g_free (backup_file);
+  cleanup_manage_process ();
+  return 0;
+}
+
+
 /* Task functions. */
 
 void

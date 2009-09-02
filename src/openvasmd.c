@@ -499,6 +499,7 @@ main (int argc, char** argv)
 
   /* Process options. */
 
+  static gboolean migrate_database = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
@@ -513,6 +514,7 @@ main (int argc, char** argv)
     = {
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
+        { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
@@ -532,8 +534,11 @@ main (int argc, char** argv)
 
   if (print_version)
     {
-      printf ("openvasmd (%s) %s for %s\n",
-              PROGNAME, OPENVASMD_VERSION, OPENVAS_OS_NAME);
+      printf ("openvasmd (%s) %s with db %i for %s\n",
+              PROGNAME,
+              OPENVASMD_VERSION,
+              manage_db_supported_version (),
+              OPENVAS_OS_NAME);
       printf ("Copyright (C) 2009 Greenbone Networks GmbH\n\n");
       exit (EXIT_SUCCESS);
     }
@@ -569,6 +574,36 @@ main (int argc, char** argv)
                      log_config);
 
   tracef ("   OpenVAS Manager\n");
+
+  if (migrate_database)
+    {
+      tracef ("   Migrating database.\n");
+
+      /* Migrate the database to the version supported by this manager. */
+      switch (manage_migrate (log_config))
+        {
+          case 0:
+            tracef ("   Migration succeeded.\n");
+            return EXIT_SUCCESS;
+          case 1:
+            g_warning ("%s: database is already at the supported version\n",
+                       __FUNCTION__);
+            return EXIT_SUCCESS;
+          case 2:
+            g_warning ("%s: database migration too hard\n",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_critical ("%s: database migration failed\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+          default:
+            assert (0);
+            g_critical ("%s: strange return from manage_migrate\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+    }
 
   /* Complete option processing. */
 

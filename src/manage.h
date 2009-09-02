@@ -88,6 +88,18 @@ int
 authenticate (credentials_t*);
 
 
+/* Database migration. */
+
+int
+manage_db_supported_version ();
+
+int
+manage_db_version ();
+
+int
+manage_migrate (GSList *log_config);
+
+
 /* Task structures. */
 
 short server_active;

@@ -1,5 +1,18 @@
 2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration support.
+
+	* src/openvasmd.c (main): Add a migrate option.  Add the supported
+	database version to the version string.
+
+	* src/tasks_sql.h (backup_db, restore_db, manage_db_supported_version)
+	(manage_db_version, migrate_is_available, manage_migrate): New functions.
+	(migrator_t): New type.
+	(database_migrators): New variable.
+	* src/manage.h: Update headers.
+
+2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (task_second_last_report_id): Use scan_run_status as
 	"finished" criterion, as task_last_report_id does.
 
