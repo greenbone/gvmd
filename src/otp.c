@@ -623,6 +623,7 @@ typedef enum
   SERVER_DEBUG_HOST,
   SERVER_DEBUG_NUMBER,
   SERVER_DEBUG_OID,
+  SERVER_ERROR,
   SERVER_HOLE_DESCRIPTION,
   SERVER_HOLE_HOST,
   SERVER_HOLE_NUMBER,
@@ -735,6 +736,58 @@ extern buffer_size_t from_server_start;
 extern buffer_size_t from_server_end;
 
 /**
+ * @brief "Synchronise" the \ref from_server buffer.
+ *
+ * Move any OTP in the \ref from_server buffer to the front of the buffer.
+ *
+ * @return 0 success, -1 \ref from_server is full.
+ */
+static int
+sync_buffer ()
+{
+  if (from_server_start > 0 && from_server_start == from_server_end)
+    {
+      from_server_start = from_server_end = 0;
+      tracef ("   server start caught end\n");
+    }
+  else if (from_server_start == 0)
+    {
+      if (from_server_end == from_buffer_size)
+        {
+          // FIX if the buffer is entirely full here then exit
+          //     (or will hang waiting for buffer to empty)
+          //     this could happen if the server sends a field with length >= buffer length
+          //         could realloc buffer
+          //             which may eventually use all mem and bring down manager
+          //                 would only bring down the process serving the client
+          //                 may lead to out of mem in other processes?
+          //                 could realloc to an upper limit within avail mem
+          tracef ("   server buffer full\n");
+          return -1;
+        }
+    }
+  else
+    {
+      /* Move the remaining partial line to the front of the buffer.  This
+       * ensures that there is space after the partial line into which
+       * serve_omp can read the rest of the line. */
+      char* start = from_server + from_server_start;
+      from_server_end -= from_server_start;
+      memmove (from_server, start, from_server_end);
+      from_server_start = 0;
+#if TRACE
+      from_server[from_server_end] = '\0';
+      //tracef ("   new from_server: %s\n", from_server);
+      tracef ("   new from_server_start: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_server_start);
+      tracef ("   new from_server_end: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_server_end);
+#endif
+    }
+  return 0;
+}
+
+/**
  * @brief Parse the final field of a certificate in a certificate list.
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -828,6 +881,103 @@ parse_server_bad_login (char** messages)
         }
     }
   return 1;
+}
+
+/**
+ * @brief Parse the description in an ERROR message.
+ *
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return 0 success, -1 fail, -2 too few characters (need more input).
+ */
+static int
+parse_server_error (char** messages)
+{
+  char err;
+  char *end = *messages + from_server_end - from_server_start;
+
+  /* OTP has two error messages.  One ends with a newline, the other ends
+   * with a "<|> SERVER" field (and a newline).  The GTK client is
+   * hardcoded to handle these two error types. */
+
+  while (*messages < end && ((*messages)[0] == ' ' || (*messages)[0] == '\n'))
+    { (*messages)++; from_server_start++; }
+  if ((int) (end - *messages) < 5)
+    /* Too few characters to be the error number, return to select to
+     * wait for more input. */
+    return -2;
+  if (sscanf (*messages, "E00%c ", &err) != 1)
+    {
+      tracef ("   server fail: failed to parse error message number\n");
+      return -1;
+    }
+  from_server_start += 5;
+  (*messages) += 5;
+  switch (err)
+    {
+      case '1':
+        {
+          int length = strlen ("- Invalid port range <|>");
+
+          /* Parse "- Invalid port range". */
+
+          if ((int) (end - *messages) < length)
+            /* Too few characters, return to select to wait for more input. */
+            return -2;
+
+          if (strncmp (*messages, "- Invalid port range <|>", length))
+            {
+              tracef ("   server fail: failed to parse error description\n");
+              tracef ("   server fail: messages was: %.*s\n",
+                      length,
+                      *messages);
+              return -1;
+            }
+
+          g_warning ("%s: Received \"invalid port range\" ERROR message\n",
+                     __FUNCTION__);
+
+          from_server_start += length;
+          (*messages) += length;
+
+          /* TODO: Somehow show that the scan had an error.  The server has
+           *       stopped the task anyway -- the next message is SCAN_END. */
+
+          set_server_state (SERVER_DONE);
+          switch (parse_server_done (messages))
+            {
+              case -1: return -1;
+              case -2:
+                /* Need more input. */
+                if (sync_buffer ()) return -1;
+                return -1;
+            }
+        }
+        break;
+
+      case '2':
+        {
+          char *match;
+          if ((match = memchr (*messages,
+                               (int) '\n',
+                               from_server_end - from_server_start)))
+            {
+              from_server_start += match - *messages;
+              *messages = match;
+
+              /* TODO: Parse the list of hosts and note that permissions
+               *       prevented those scans. */
+
+              set_server_state (SERVER_TOP);
+            }
+          else
+            /* Need more input for a newline. */
+            return -2;
+        }
+        break;
+    }
+
+  return 0;
 }
 
 /**
@@ -1073,58 +1223,6 @@ parse_server_server (/*@dependent@*/ char** messages)
       return -2;
     }
   return -4;
-}
-
-/**
- * @brief "Synchronise" the \ref from_server buffer.
- *
- * Move any OTP in the \ref from_server buffer to the front of the buffer.
- *
- * @return 0 success, -1 \ref from_server is full.
- */
-static int
-sync_buffer ()
-{
-  if (from_server_start > 0 && from_server_start == from_server_end)
-    {
-      from_server_start = from_server_end = 0;
-      tracef ("   server start caught end\n");
-    }
-  else if (from_server_start == 0)
-    {
-      if (from_server_end == from_buffer_size)
-        {
-          // FIX if the buffer is entirely full here then exit
-          //     (or will hang waiting for buffer to empty)
-          //     this could happen if the server sends a field with length >= buffer length
-          //         could realloc buffer
-          //             which may eventually use all mem and bring down manager
-          //                 would only bring down the process serving the client
-          //                 may lead to out of mem in other processes?
-          //                 could realloc to an upper limit within avail mem
-          tracef ("   server buffer full\n");
-          return -1;
-        }
-    }
-  else
-    {
-      /* Move the remaining partial line to the front of the buffer.  This
-       * ensures that there is space after the partial line into which
-       * serve_omp can read the rest of the line. */
-      char* start = from_server + from_server_start;
-      from_server_end -= from_server_start;
-      memmove (from_server, start, from_server_end);
-      from_server_start = 0;
-#if TRACE
-      from_server[from_server_end] = '\0';
-      //tracef ("   new from_server: %s\n", from_server);
-      tracef ("   new from_server_start: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_server_start);
-      tracef ("   new from_server_end: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_server_end);
-#endif
-    }
-  return 0;
 }
 
 /**
@@ -1513,6 +1611,9 @@ process_otp_server_input ()
                     }
                   break;
                 }
+              case SERVER_ERROR:
+                assert (0);
+                break;
               case SERVER_HOLE_DESCRIPTION:
                 {
                   if (current_message)
@@ -2050,6 +2151,25 @@ process_otp_server_input ()
                   set_server_state (SERVER_BYE);
                 else if (strcasecmp ("DEBUG", field) == 0)
                   set_server_state (SERVER_HOLE_HOST);
+                else if (strcasecmp ("ERROR", field) == 0)
+                  {
+                    set_server_state (SERVER_ERROR);
+                    switch (parse_server_error (&messages))
+                      {
+                        case 0:
+                          /* parse_server_error can read across a <|>,
+                           * because one ERROR case is newline terminated
+                           * while the other is "<|> SERVER" terminated,
+                           * so adjust input. */
+                          input = messages;
+                          break;
+                        case -1: return -1;
+                        case -2:
+                          /* Need more input. */
+                          if (sync_buffer ()) return -1;
+                          return 0;
+                      }
+                  }
                 else if (strcasecmp ("HOLE", field) == 0)
                   set_server_state (SERVER_HOLE_HOST);
                 else if (strcasecmp ("INFO", field) == 0)

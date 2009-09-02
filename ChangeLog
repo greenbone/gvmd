@@ -1,3 +1,12 @@
+2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OTP ERROR handling.
+
+	* src/otp.c (server_state_t): Add new state.
+	(sync_buffer): Move up in file.
+	(parse_server_error): New function.
+	(process_otp_server_input): Handle OTP ERROR.
+
 2009-09-02  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Post release version bump.
