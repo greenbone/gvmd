@@ -1,3 +1,13 @@
+2009-09-02  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.8.0 relase.
+
+	* VERSION: Set to 0.8.0.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* CHANGES: Updated.
+
 2009-09-01  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Switch START_TASK response to an error if the task is active.
