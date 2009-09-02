@@ -940,8 +940,9 @@ parse_server_error (char** messages)
           from_server_start += length;
           (*messages) += length;
 
-          /* TODO: Somehow show that the scan had an error.  The server has
-           *       stopped the task anyway -- the next message is SCAN_END. */
+          if (current_server_task)
+            set_task_run_status (current_server_task,
+                                 TASK_STATUS_INTERNAL_ERROR);
 
           set_server_state (SERVER_DONE);
           switch (parse_server_done (messages))
@@ -2404,6 +2405,8 @@ process_otp_server_input ()
                     {
                       switch (task_run_status (current_server_task))
                         {
+                          case TASK_STATUS_INTERNAL_ERROR:
+                            break;
                           case TASK_STATUS_STOP_REQUESTED:
                             set_task_run_status (current_server_task,
                                                  TASK_STATUS_STOPPED);

@@ -1,5 +1,12 @@
 2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/otp.c (parse_server_error): Set the task state to Internal Error
+	for E001.
+	(process_otp_server_input): In SERVER_TIME_SCAN_END leave the task state
+	as Internal Error when it is Internal Error.
+
+2009-09-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OTP ERROR handling.
 
 	* src/otp.c (server_state_t): Add new state.
