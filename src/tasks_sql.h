@@ -4022,7 +4022,7 @@ nvt_selector_family_count (const char* selector, const char* config)
                         "SELECT family_count FROM configs"
                         " WHERE name = '%s'"
                         " LIMIT 1;",
-                        selector);
+                        config);
     }
   return -1;
 }
