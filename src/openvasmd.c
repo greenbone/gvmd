@@ -695,7 +695,7 @@ main (int argc, char** argv)
 
       /* Setup security. */
 
-      if (nessus_SSL_init (NULL) < 0)
+      if (openvas_SSL_init () < 0)
         {
           g_critical ("%s: failed to initialise security\n", __FUNCTION__);
           exit (EXIT_FAILURE);
@@ -892,7 +892,7 @@ main (int argc, char** argv)
 
   /* Setup security. */
 
-  if (nessus_SSL_init (NULL) < 0)
+  if (openvas_SSL_init () < 0)
     {
       g_critical ("%s: failed to initialise security\n", __FUNCTION__);
       exit (EXIT_FAILURE);
