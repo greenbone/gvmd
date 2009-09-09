@@ -342,6 +342,13 @@ set_target_properties (omp_get_targets_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} $
 target_link_libraries (omp_get_targets_0 common)
 ADD_TEST (omp_get_targets_0 omp_get_targets_0)
 
+add_executable (omp_get_targets_1 omp_get_targets_1.c)
+target_link_libraries (omp_get_targets_1 string)
+set_target_properties (omp_get_targets_1 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+set_target_properties (omp_get_targets_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_targets_1 common)
+ADD_TEST (omp_get_targets_1 omp_get_targets_1)
+
 add_executable (omp_get_nvt_all_0 omp_get_nvt_all_0.c)
 target_link_libraries (omp_get_nvt_all_0 string)
 set_target_properties (omp_get_nvt_all_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")

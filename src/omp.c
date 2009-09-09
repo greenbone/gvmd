@@ -541,12 +541,12 @@ error_send_to_client (GError** error)
  *
  * @param[in]  hosts  String describing hosts.
  *
- * @return Number of hosts.
+ * @return Number of hosts, or -1 on error.
  */
 int
 max_hosts (const char *hosts)
 {
-  int count = 0;
+  long count = 0;
   gchar** split = g_strsplit (hosts, ",", 0);
   gchar** point = split;
 
@@ -559,7 +559,13 @@ max_hosts (const char *hosts)
         {
           slash++;
           if (*slash)
-            count += 1 << atoi (slash);
+            {
+              long int mask;
+              errno = 0;
+              mask = strtol (slash, NULL, 10);
+              if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+              count += 1L << (32 - mask);
+            }
           else
             /* Just a trailing /. */
             count++;
@@ -1751,6 +1757,8 @@ print_report_xml (report_t report, gchar* xml_file)
       gchar *descr;
 
       descr = g_markup_escape_text (result_iterator_descr (&results), -1);
+      // FIX as in other <result response below?
+      //gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
       fprintf (out,
                "<result>"
                "<subnet>%s</subnet>"
@@ -3568,7 +3576,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  * modification at a time, that is, one parameter or one of
                  * file, name and comment.  Otherwise a syntax error in a
                  * later part of the command would result in an error being
-                 * returning while some part of the command actually
+                 * returned while some part of the command actually
                  * succeeded. */
 
                 if (modify_task_rcfile)
@@ -3978,7 +3986,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
 
-          /* Respond successfully. */
+          /* Send success response. */
 
           msg = g_strdup_printf
                  ("<create_task_response"

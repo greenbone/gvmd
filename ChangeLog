@@ -1,3 +1,14 @@
+2009-09-09  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (max_hosts): Invert the sense of the mask.  Use longs.
+	(omp_xml_handle_end_element): Improve comments a bit.
+
+	* src/tests/omp_get_targets_0.c: Correct figures.
+
+	* src/tests/omp_get_targets_1.c: New file.
+
+	* src/tests/CMakeLists.txt: Add omp_get_targets_1.
+
 2009-09-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (nvt_selector_family_count): Use config name for
