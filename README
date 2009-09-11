@@ -1,20 +1,16 @@
 About OpenVAS-Manger
 --------------------
 
-The OpenVAS-Manager is a layer between OpenVAS-Scanner
-and various client applications such as OpenVAS-Client
-or Greenbone Security Assistant.
-Among other features, it adds server-side storage
-of scan results and it makes it unecessary for scan
-clients to keep connection until a scan finishes.
+The OpenVAS-Manager is a layer between OpenVAS-Scanner and various client
+applications such as OpenVAS-Client or Greenbone Security Assistant.  Among
+other features, it adds server-side storage of scan results and it makes it
+unecessary for scan clients to keep connection until a scan finishes.
 
-OpenVAS-Manager is licensed under GNU General Public
-License Version 2 or any later version. Please see
-file COPYING for details.
+OpenVAS-Manager is licensed under GNU General Public License Version 2 or
+any later version. Please see file COPYING for details.
 
-All parts of OpenVAS-Manager are
-Copyright (C) by Greenbone Networks GmbH
-(see http://www.greenbone.net)
+All parts of OpenVAS-Manager are Copyright (C) by Greenbone Networks GmbH
+(see http://www.greenbone.net).
 
 
 Howto use
@@ -66,5 +62,4 @@ and then run all the tests
 
 or any one of the tests, for example
 
-    cd src/tests
-    make omp_get_report_0
+    src/tests/omp_get_report_0
