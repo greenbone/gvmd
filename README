@@ -1,24 +1,34 @@
-The OpenVAS Manager aims to be a layer between OpenVAS-Client and the
-actual OpenVAS Server.  Basically it should be responsible for any tasks
-where no high system privileges are required.
+About OpenVAS-Manger
+--------------------
 
-This module is in an early stage of development.
+The OpenVAS-Manager is a layer between OpenVAS-Scanner
+and various client applications such as OpenVAS-Client
+or Greenbone Security Assistant.
+Among other features, it adds server-side storage
+of scan results and it makes it unecessary for scan
+clients to keep connection until a scan finishes.
 
-It is not mandatory to have OpenVAS Manager for using OpenVAS 1.0 or 2.0.
+OpenVAS-Manager is licensed under GNU General Public
+License Version 2 or any later version. Please see
+file COPYING for details.
+
+All parts of OpenVAS-Manager are
+Copyright (C) by Greenbone Networks GmbH
+(see http://www.greenbone.net)
 
 
 Howto use
 ---------
 
-For example, if openvasd is running on port 7772, the following command
-starts the Manager on port 1241.  The client can then connect to port 1241
+For example, if openvasd is running on port 9391, the following command
+starts the Manager on port 9390.  The client can then connect to port 9390
 as though it was connecting to openvasd.
 
-    openvasmd --port 1241 --sport 7772
+    openvasmd --port 9390 --sport 9391
 
 A command like
 
-    openvasmd --sport 7772 --update
+    openvasmd --sport 9391 --update
 
 will update the Manager's NVT cache, and then exit.
 
@@ -43,7 +53,7 @@ The program usage message follows.
 There are some tests under src/tests.  To run them, start your openvasmd,
 for example with
 
-    openvasmd   --port 1242 --sport 9390
+    openvasmd   --port 9390 --sport 9391
 
 then set the environment variables for the user and password
 
@@ -56,4 +66,5 @@ and then run all the tests
 
 or any one of the tests, for example
 
-    src/test/omp_get_report_0
+    cd src/tests
+    make omp_get_report_0

@@ -1,3 +1,11 @@
+2009-09-11  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/types.h, src/tests/omp_get_report_1.c,
+	src/tests/omp_get_report_2.c, src/tests/omp_get_report_3.c:
+	Transferred  Copyright from Intevation to Greenbone.
+
+	* README: Reworked.
+
 2009-09-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (max_hosts): Invert the sense of the mask.  Use longs.
