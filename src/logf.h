@@ -43,7 +43,7 @@
  * All data transfered to and from the client is logged to a file.  If 0 then
  * logging is turned off.
  */
-#define LOG 1
+#define LOG 0
 
 /**
  * @brief Name of log file.

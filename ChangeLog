@@ -1,5 +1,10 @@
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/logf.h (LOG): Set to 0, that it, turn off compilation of
+	communication logging.
+
+2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Create RC file in DB when creating a task from config and target.
 	Update config and target when setting a task RC file.
 
