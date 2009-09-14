@@ -1487,7 +1487,7 @@ static gboolean
 send_nvt (iterator_t *nvts, int details)
 {
   const char* oid = nvt_iterator_oid (nvts);
-  const char* name = nvt_iterator_oid (nvts);
+  const char* name = nvt_iterator_name (nvts);
   gchar* msg;
 
   gchar* name_text = g_markup_escape_text (name, strlen (name));
