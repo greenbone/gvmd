@@ -876,6 +876,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
               append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "rcfile", &attribute))
+              current_int_1 = atoi (attribute);
+            else
+              current_int_1 = 0;
             set_client_state (CLIENT_GET_STATUS);
           }
         else
@@ -4148,14 +4153,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
-                    char *name, *hosts;
+                    char *name, *target, *hosts;
                     gchar *first_report_id, *first_report;
-                    gchar *last_report_id, *last_report;
+                    char* description;
+                    gchar *description64, *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
 
-                    hosts = target_hosts (task_target (task));
+                    target = task_target (task);
+                    hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? max_hosts (hosts) : 0;
+                    free (target);
 
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
@@ -4345,6 +4353,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       progress_xml = g_strdup ("-1");
 
+                    if (current_int_1)
+                      {
+                        description = task_description (task);
+                        if (description)
+                          {
+                            gchar *d64;
+                            d64 = g_base64_encode ((guchar*) description,
+                                                   strlen (description));
+                            free (description);
+                            description64 = g_strdup_printf ("<rcfile>"
+                                                             "%s"
+                                                             "</rcfile>",
+                                                             d64);
+                            g_free (d64);
+                          }
+                        else
+                          description64 = g_strdup ("<rcfile></rcfile>");
+                      }
+                    else
+                      description64 = g_strdup ("");
+
                     name = task_name (task);
                     response = g_strdup_printf
                                 ("<get_status_response"
@@ -4354,6 +4383,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<name>%s</name>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
+                                 "%s"
                                  "<messages>"
                                  "<debug>%i</debug>"
                                  "<hole>%i</hole>"
@@ -4369,6 +4399,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  name,
                                  task_run_status_name (task),
                                  progress_xml,
+                                 description64,
                                  task_debugs_size (task),
                                  task_holes_size (task),
                                  task_infos_size (task),
@@ -4385,6 +4416,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     ret = send_to_client (response);
                     g_free (response);
                     g_free (name);
+                    g_free (description64);
                     g_free (tsk_uuid);
                     if (ret)
                       {
@@ -4432,9 +4464,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 gchar *line, *progress_xml;
                 char *name = task_name (index);
-                char *tsk_uuid, *hosts;
+                char *tsk_uuid, *target, *hosts;
                 gchar *first_report_id, *first_report;
-                gchar *last_report_id, *last_report;
+                char *description;
+                gchar *description64, *last_report_id, *last_report;
                 gchar *second_last_report_id, *second_last_report;
                 report_t running_report;
                 int maximum_hosts;
@@ -4442,8 +4475,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
 
-                hosts = target_hosts (task_target (index));
+                target = task_target (index);
+                hosts = target ? target_hosts (target) : NULL;
                 maximum_hosts = hosts ? max_hosts (hosts) : 0;
+                free (target);
 
                 first_report_id = task_first_report_id (index);
                 if (first_report_id)
@@ -4524,6 +4559,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
                 else
                   last_report = g_strdup ("");
+
+                if (current_int_1)
+                  {
+                    description = task_description (index);
+                    if (description)
+                      {
+                        gchar *d64;
+                        d64 = g_base64_encode ((guchar*) description,
+                                               strlen (description));
+                        free (description);
+                        description64 = g_strdup_printf ("<rcfile>"
+                                                         "%s"
+                                                         "</rcfile>",
+                                                         d64);
+                        g_free (d64);
+                      }
+                    else
+                      description64 = g_strdup ("<rcfile></rcfile>");
+                  }
+                else
+                  description64 = g_strdup ("");
 
                 second_last_report_id = task_second_last_report_id (index);
                 if (second_last_report_id)
@@ -4632,6 +4688,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<name>%s</name>"
                                         "<status>%s</status>"
                                         "<progress>%s</progress>"
+                                        "%s"
                                         "<messages>"
                                         "<debug>%i</debug>"
                                         "<hole>%i</hole>"
@@ -4648,6 +4705,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         name,
                                         task_run_status_name (index),
                                         progress_xml,
+                                        description64,
                                         task_debugs_size (index),
                                         task_holes_size (index),
                                         task_infos_size (index),
@@ -4662,6 +4720,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_free (last_report);
                 g_free (second_last_report);
                 free (name);
+                free (description64);
                 free (tsk_uuid);
                 if (send_to_client (line))
                   {

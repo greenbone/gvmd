@@ -1745,14 +1745,17 @@ delete_task (gnutls_session_t* session, const char* id)
 /**
  * @brief Get the status of a task.
  *
- * @param[in]  session  Pointer to GNUTLS session.
- * @param[in]  id       ID of task or NULL for all tasks.
- * @param[out] status   Status return.  On success contains GET_STATUS response.
+ * @param[in]  session         Pointer to GNUTLS session.
+ * @param[in]  id              ID of task or NULL for all tasks.
+ * @param[in]  include_rcfile  Request rcfile in status if true.
+ * @param[out] status          Status return.  On success contains GET_STATUS
+ *                             response.
  *
  * @return 0 on success, -1 or OMP response code on error.
  */
 int
-omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
+omp_get_status (gnutls_session_t* session, const char* id, int include_rcfile,
+                entity_t* status)
 {
   const char* status_code;
   int ret;
@@ -1765,8 +1768,9 @@ omp_get_status (gnutls_session_t* session, const char* id, entity_t* status)
   else
     {
       if (sendf_to_manager (session,
-                            "<get_status task_id=\"%s\"/>",
-                            id)
+                            "<get_status task_id=\"%s\" rcfile=\"%i\"/>",
+                            id,
+                            include_rcfile)
           == -1)
         return -1;
     }
