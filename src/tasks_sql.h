@@ -57,6 +57,8 @@ typedef long long int config_t;
 
 sqlite3* task_db = NULL;
 
+nvtis_t* nvti_cache = NULL;
+
 
 /* SQL helpers. */
 
@@ -1061,6 +1063,25 @@ init_manage (GSList *log_config)
         }
     }
   cleanup_task_iterator (&iterator);
+
+  /* Load the NVT cache into memory. */
+
+  if (nvti_cache == NULL)
+    {
+      iterator_t nvts;
+
+      nvti_cache = nvtis_new ();
+
+      init_nvt_iterator (&nvts, (nvt_t) 0);
+      while (next (&nvts))
+        {
+          nvti_t *nvti = nvti_new ();
+          nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
+          nvti_set_family (nvti, nvt_iterator_family (&nvts));
+          nvtis_add (nvti_cache, nvti);
+        }
+      cleanup_iterator (&nvts);
+    }
 
   sqlite3_close (task_db);
   task_db = NULL;
@@ -3119,9 +3140,9 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 {
   GArray *yes = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
   GArray *no = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
-  int yes_size = 0, no_size = 0, family_count = 0;
-
+  int yes_size = 0, no_size = 0;
   char* seek;
+  GHashTable *families;
 
   if (rc == NULL)
     {
@@ -3134,6 +3155,11 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
       tracef ("   config_name NULL\n");
       return -1;
     }
+
+  families = g_hash_table_new_full (g_str_hash,
+                                    g_str_equal,
+                                    NULL,
+                                    NULL);
 
   while (1)
     {
@@ -3173,14 +3199,8 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                        == 0)
                    && (rc[6 + strlen ("SCANNER_SET")] == ')')))
         {
-          GHashTable *families;
-
           /* Create an NVT selector from the plugin list. */
 
-          families = g_hash_table_new_full (g_str_hash,
-                                            g_str_equal,
-                                            free,
-                                            NULL);
           rc = seek + 1;
           while ((seek = strchr (rc, '\n')))
             {
@@ -3202,34 +3222,23 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                   while (*rc == ' ') rc++;
                   if (rc < rc_end)
                     {
-                      char *family;
                       int value_len = (seek ? seek - (eq2 + 2)
                                             : strlen (eq2 + 2));
                       *rc_end = '\0';
 
-                      family = sql_string (0, 0,
-                                           "SELECT family FROM nvts"
-                                           " WHERE oid = '%s'"
-                                           " LIMIT 1;",
-                                           rc);
-                      if (family)
-                        {
-                          if (g_hash_table_lookup (families, family))
-                            free (family);
-                          else
-                            {
-                              family_count++;
-                              g_hash_table_insert (families,
-                                                   family,
-                                                   (gpointer) 1);
-                            }
-                        }
-
                       if ((value_len == 3)
-                            && strncasecmp (eq2 + 2, "yes", 3) == 0)
+                          && strncasecmp (eq2 + 2, "yes", 3) == 0)
                         {
+                          nvti_t * nvti;
+
                           g_array_append_val (yes, rc);
                           yes_size++;
+
+                          nvti = nvtis_lookup (nvti_cache, rc);
+                          if (nvti)
+                            g_hash_table_insert (families,
+                                                 nvti_family (nvti),
+                                                 (gpointer) 1);
                         }
                       else
                         {
@@ -3241,7 +3250,6 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
               rc = seek + 1;
             }
-          g_hash_table_destroy (families);
         }
       else if ((seek ? seek - rc > 7 : 0)
                && (strncmp (rc, "begin(", 6) == 0))
@@ -3330,21 +3338,16 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         clude (config_name, yes, yes_size, 0);
         clude (config_name, no, no_size, 1);
 
-        /* Cache the family and NVT count. */
+        /* Cache the family and NVT count and selector types. */
 
-        sql ("UPDATE configs SET nvt_count = %i WHERE name = '%s';",
+        sql ("UPDATE configs SET"
+             " family_count = %i,"
+             " nvt_count = %i, families_growing = 0, nvts_growing = 0"
+             " WHERE name = '%s';",
+             g_hash_table_size (families),
              yes_size,
              config_name);
-        sql ("UPDATE configs SET family_count = %i WHERE name = '%s';",
-             family_count,
-             config_name);
-
-        /* Cache the selector types. */
-
-        sql ("UPDATE configs"
-             " SET families_growing = 0, nvts_growing = 0"
-             " WHERE name = '%s';",
-             config_name);
+        g_hash_table_destroy (families);
       }
   }
 

@@ -1,5 +1,17 @@
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Keep the NVT cache in memory in each process, in an attempt to speed up
+	family lookups when creating configs from RC files.
+
+	* src/tasks_sql.h (nvti_cache): New variable.
+	(init_manage): Load NVT cache from DB into memory.
+	(insert_rc_into_config): Do the family lookup with nvti_cache and use the
+	families hash table for counting only.  Also only do the family lookup if
+	the plugin is included ("yes"), and	use a single SQL statement to cache
+	all the config info.
+
+2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add an rcfile attribute to OMP GET_STATUS, for getting task RC files.
 
 	* src/omp.c (omp_xml_handle_start_element): Check for attribute.
