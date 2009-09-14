@@ -53,6 +53,36 @@
 typedef long long int config_t;
 
 
+/* Static headers. */
+
+static void
+init_preference_iterator (iterator_t*, const char*, const char*);
+
+static const char*
+preference_iterator_name (iterator_t*);
+
+static const char*
+preference_iterator_value (iterator_t*);
+
+static void
+init_nvt_selector_iterator (iterator_t*, const char*, int);
+
+static const char*
+nvt_selector_iterator_nvt (iterator_t*);
+
+static int
+nvt_selector_iterator_include (iterator_t*);
+
+gboolean
+find_config (const char*, task_t*);
+
+static int
+insert_rc_into_config (config_t, const char*, char*);
+
+static void
+set_target_hosts (const char *, const char *);
+
+
 /* Variables. */
 
 sqlite3* task_db = NULL;
@@ -1475,6 +1505,178 @@ task_second_last_report_id (task_t task)
                      TASK_STATUS_DONE);
 }
 
+/**
+ * @brief Generate rcfile in task from config and target.
+ *
+ * @param[in]  task  The task.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+make_task_rcfile (task_t task)
+{
+  char *config, *target, *selector, *name, *hosts, *rc;
+  iterator_t prefs;
+  GString *buffer;
+
+  config = task_config (task);
+  if (config == NULL) return -1;
+
+  target = task_target (task);
+  if (target == NULL)
+    {
+      free (config);
+      return -1;
+    }
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    {
+      free (config);
+      free (target);
+      return -1;
+    }
+
+  name = task_name (task);
+  if (name == NULL)
+    {
+      free (config);
+      free (target);
+      free (selector);
+      return -1;
+    }
+
+  /* Header. */
+
+  buffer = g_string_new ("# This file was automatically created"
+                         " by openvasmd, the OpenVAS Manager daemon.\n");
+
+  /* General preferences. */
+
+  init_preference_iterator (&prefs, config, NULL);
+  while (next (&prefs))
+    g_string_append_printf (buffer,
+                            "%s = %s\n",
+                            preference_iterator_name (&prefs),
+                            preference_iterator_value (&prefs));
+  cleanup_iterator (&prefs);
+
+  g_string_append_printf (buffer, "name = %s\n", name);
+
+  /* Targets for general preferences. */
+
+  hosts = target_hosts (target);
+  free (target);
+  if (hosts)
+    g_string_append_printf (buffer, "targets = %s\n\n", hosts);
+  else
+    {
+      free (hosts);
+      free (config);
+      free (selector);
+      g_string_free (buffer, TRUE);
+      return -1;
+    }
+  free (hosts);
+
+  /* Scanner set. */
+
+  g_string_append (buffer, "begin(SCANNER_SET)\n");
+  // FIX how know if scanner?
+  g_string_append (buffer, "end(SCANNER_SET)\n\n");
+
+  /* Server preferences. */
+
+  g_string_append (buffer, "begin(SERVER_PREFS)\n");
+  init_preference_iterator (&prefs, config, "SERVER_PREFS");
+  while (next (&prefs))
+    g_string_append_printf (buffer,
+                            " %s = %s\n",
+                            preference_iterator_name (&prefs),
+                            preference_iterator_value (&prefs));
+  cleanup_iterator (&prefs);
+  g_string_append (buffer, "end(SERVER_PREFS)\n\n");
+
+  /* Client side user rules. */
+
+  g_string_append (buffer, "begin(CLIENTSIDE_USERRULES)\n");
+  g_string_append (buffer, "end(CLIENTSIDE_USERRULES)\n\n");
+
+  /* Plugin preferences. */
+
+  g_string_append (buffer, "begin(PLUGINS_PREFS)\n");
+  init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
+  while (next (&prefs))
+    g_string_append_printf (buffer,
+                            " %s = %s\n",
+                            preference_iterator_name (&prefs),
+                            preference_iterator_value (&prefs));
+  cleanup_iterator (&prefs);
+  g_string_append (buffer, "end(PLUGINS_PREFS)\n\n");
+
+  /* Plugin set. */
+
+  g_string_append (buffer, "begin(PLUGIN_SET)\n");
+  {
+    /* This block is a modified copy of nvt_selector_plugins (from
+     * manage.c). */
+    if (nvt_selector_nvts_growing (selector))
+      {
+        if ((sql_int (0, 0,
+                      "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                      selector)
+             == 1)
+            && (sql_int (0, 0,
+                         "SELECT COUNT(*) FROM nvt_selectors"
+                         " WHERE name = '%s'"
+                         " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                         ";",
+                         selector)
+                == 1))
+          {
+            iterator_t nvts;
+
+            init_nvt_iterator (&nvts, (nvt_t) 0);
+            while (next (&nvts))
+              g_string_append_printf (buffer,
+                                      " %s = yes\n",
+                                      nvt_iterator_oid (&nvts));
+            cleanup_iterator (&nvts);
+          }
+        // FIX finalise selector implementation
+      }
+    else
+      {
+        iterator_t nvts;
+
+        init_nvt_selector_iterator (&nvts, selector, 2);
+        while (next (&nvts))
+          g_string_append_printf (buffer,
+                                  " %s = %s\n",
+                                  nvt_selector_iterator_nvt (&nvts),
+                                  nvt_selector_iterator_include (&nvts)
+                                  ? "yes" : "no");
+        cleanup_iterator (&nvts);
+      }
+  }
+  g_string_append (buffer, "end(PLUGIN_SET)\n\n");
+
+  /* Server info. */
+
+  g_string_append (buffer, "begin(SERVER_INFO)\n");
+  g_string_append (buffer, "end(SERVER_INFO)\n");
+
+  free (config);
+  free (selector);
+
+  rc = g_string_free (buffer, FALSE);
+
+  set_task_description (task, rc, strlen (rc));
+  free (rc);
+
+  return 0;
+}
+
 
 /* Iterators. */
 
@@ -2526,16 +2728,111 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   if (strcasecmp ("RCFILE", parameter) == 0)
     {
-      gsize out_len;
-      guchar* out;
-      gchar* quote;
-      out = g_base64_decode (value, &out_len);
-      quote = sql_nquote ((gchar*) out, out_len);
-      g_free (out);
+      gsize rc_len;
+      guchar *rc;
+      gchar *quoted_rc;
+
+      rc = g_base64_decode (value, &rc_len);
+
+      sql ("BEGIN IMMEDIATE;");
+
+      /* Update task config. */
+
+      {
+        config_t config;
+        char *config_name, *target, *selector;
+        char *quoted_config_name, *quoted_selector;
+
+        config_name = task_config (task);
+        if (config_name == NULL)
+          {
+            sql ("END");
+            return -1;
+          }
+
+        target = task_target (task);
+        if (target == NULL)
+          {
+            free (config_name);
+            sql ("END");
+            return -1;
+          }
+
+        selector = config_nvt_selector (config_name);
+        if (selector == NULL)
+          {
+            free (config_name);
+            free (target);
+            sql ("END");
+            return -1;
+          }
+        quoted_selector = sql_quote (selector);
+        free (selector);
+
+        if (find_config (config_name, &config))
+          {
+            free (quoted_selector);
+            free (config_name);
+            free (target);
+            sql ("END");
+            return -1;
+          }
+        else if (config == 0)
+          {
+            free (quoted_selector);
+            free (config_name);
+            free (target);
+            sql ("END");
+            return -1;
+          }
+        else
+          {
+            char *hosts;
+
+            /* Flush config preferences. */
+
+            sql ("DELETE FROM config_preferences WHERE config = %llu;",
+                 config);
+
+            /* Flush selector NVTs. */
+
+            sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
+                 quoted_selector);
+            free (quoted_selector);
+
+            /* Fill config from RC. */
+
+            quoted_config_name = sql_quote (config_name);
+            free (config_name);
+            if (insert_rc_into_config (config, quoted_config_name, (gchar*) rc))
+              {
+                sql ("END");
+                return -1;
+              }
+
+            /* Replace targets. */
+
+            hosts = rc_preference ((gchar*) rc, "targets");
+            if (hosts == NULL)
+              {
+                sql ("END");
+                return -1;
+              }
+            set_target_hosts (target, hosts);
+            free (hosts);
+          }
+      }
+
+      /* Update task description (rcfile). */
+
+      quoted_rc = sql_quote ((gchar*) rc);
+      g_free (rc);
       sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
-           quote,
+           quoted_rc,
            task);
-      g_free (quote);
+      g_free (quoted_rc);
+
+      sql ("COMMIT");
     }
   else if (strcasecmp ("NAME", parameter) == 0)
     {
@@ -2978,6 +3275,23 @@ target_hosts (const char *name)
 }
 
 /**
+ * @brief Set the hosts associated with a target.
+ *
+ * @param[in]  name  Target name.
+ * @param[in]  name  New value for hosts.
+ */
+static void
+set_target_hosts (const char *name, const char *hosts)
+{
+  gchar* quoted_name = sql_quote (name);
+  gchar* quoted_hosts = sql_quote (hosts);
+  sql ("UPDATE targets SET hosts = '%s' WHERE name = '%s';",
+       quoted_hosts, quoted_name);
+  g_free (quoted_hosts);
+  g_free (quoted_name);
+}
+
+/**
  * @brief Return whether a target is referenced by a task
  *
  * @param[in]  name   Name of target.
@@ -2996,7 +3310,7 @@ target_in_use (const char* name)
 }
 
 
-/* Config. */
+/* Configs. */
 
 /**
  * @brief Get the value of a config preference.
@@ -3357,8 +3671,9 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 /**
  * @brief Create a config from an RC file.
  *
- * @param[in]  name   Name of config and NVT selector.
- * @param[in]  rc     RC file text.
+ * @param[in]  name     Name of config and NVT selector.
+ * @param[in]  comment  Comment on config.
+ * @param[in]  rc       RC file text.
  *
  * @return 0 success, 1 config exists already, -1 error.
  */
@@ -3583,6 +3898,36 @@ config_nvt_selector (const char *name)
                                quoted_name);
   g_free (quoted_name);
   return selector;
+}
+
+/**
+ * @brief Find a config given a name.
+ *
+ * @param[in]   name  Config name.
+ * @param[out]  task  Task return, 0 if succesfully failed to find task.
+ *
+ * @return FALSE on success (including if failed to find task), TRUE on error.
+ */
+gboolean
+find_config (const char* name, task_t* task)
+{
+  switch (sql_int64 (task, 0, 0,
+                     "SELECT ROWID FROM configs WHERE name = '%s';",
+                     name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *task = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
 }
 
 

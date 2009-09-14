@@ -1,5 +1,19 @@
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Create RC file in DB when creating a task from config and target.
+	Update config and target when setting a task RC file.
+
+	* src/tasks_sql.h: Add a static header declaration section.
+	(make_task_rcfile, set_target_hosts, find_config): New function.
+	(set_task_parameter): Update config and target in RCFILE case.
+	(create_config): Add missing doc.
+	* src/manage.h (make_task_rcfile): New export.
+
+	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_CREATE_TASK
+	config and target case, generate the RC file.
+
+2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Keep the NVT cache in memory in each process, in an attempt to speed up
 	family lookups when creating configs from RC files.
 

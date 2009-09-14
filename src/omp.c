@@ -3992,6 +3992,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
+
+              /* Generate the rcfile in the task. */
+
+              if (make_task_rcfile (current_client_task))
+                {
+                  request_delete_task (&current_client_task);
+                  free (tsk_uuid);
+                  free (config);
+                  free (target);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Failed to generate task rcfile"));
+                  current_client_task = (task_t) 0;
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
             }
 
           /* Send success response. */
