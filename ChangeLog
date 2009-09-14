@@ -1,5 +1,10 @@
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Add missing
+	CLIENT_MODIFY_TASK_NAME case.
+
+2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_RULES case
 	response with service down instead of internal error when server.rules
 	is NULL.

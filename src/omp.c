@@ -3690,6 +3690,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "MODIFY_TASK requires a task_id attribute"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
+      case CLIENT_MODIFY_TASK_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
       case CLIENT_MODIFY_TASK_PARAMETER:
         assert (strcasecmp ("PARAMETER", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
