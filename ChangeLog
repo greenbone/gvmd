@@ -1,5 +1,12 @@
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/common.c (BUFFER_SIZE): Increase.
+	(connect_to_manager_host_port): Neaten formatting.
+	(create_task, omp_modify_task, omp_create_config): Check string lengths
+	before passing them to g_base64_encode.
+
+2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (send_nvt): Correct NVT name accessor.
 
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>

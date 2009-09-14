@@ -67,7 +67,7 @@
 /**
  * @brief Size of the buffer for reading from the manager.
  */
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 1048576
 
 /**
  * @brief Trace flag.
@@ -146,7 +146,7 @@ connect_to_manager_host_port (gnutls_session_t * session,
   else
     address.sin_port = htons (port);
 
-  if (!inet_aton(host, &address.sin_addr))
+  if (!inet_aton (host, &address.sin_addr))
     {
       fprintf (stderr, "Failed to create server address %s.\n",
                host);
@@ -1220,8 +1220,9 @@ create_task (gnutls_session_t* session,
 {
   /* Convert the file contents to base64. */
 
-  gchar* new_task_file = g_base64_encode ((guchar*) config,
-                                          config_len);
+  gchar* new_task_file = strlen (config)
+                         ? g_base64_encode ((guchar*) config, config_len)
+                         : g_strdup ("");
 
   /* Create the OMP request. */
 
@@ -1890,11 +1891,24 @@ omp_modify_task (gnutls_session_t* session, const char* id,
   if (sendf_to_manager (session, "<modify_task task_id=\"%s\">", id))
     return -1;
 
-  if (rcfile
-      && sendf_to_manager (session,
-                           "<rcfile>%s</rcfile>",
-                           g_base64_encode ((guchar*) rcfile, strlen (rcfile))))
-    return -1;
+  if (rcfile)
+    {
+      if (strlen (rcfile) == 0)
+        {
+          if (send_to_manager (session, "<rcfile></rcfile>"))
+            return -1;
+        }
+      else
+        {
+          gchar *base64_rc = g_base64_encode ((guchar*) rcfile,
+                                              strlen (rcfile));
+          int ret = sendf_to_manager (session,
+                                      "<rcfile>%s</rcfile>",
+                                      base64_rc);
+          g_free (base64_rc);
+          if (ret) return -1;
+        }
+    }
 
   if (name && sendf_to_manager (session, "<name>%s</name>", name))
     return -1;
@@ -2141,8 +2155,9 @@ omp_create_config (gnutls_session_t* session,
 {
   /* Convert the file contents to base64. */
 
-  gchar* new_config_file = g_base64_encode ((guchar*) config,
-                                            config_len);
+  gchar* new_config_file = strlen (config)
+                           ? g_base64_encode ((guchar*) config, config_len)
+                           : g_strdup ("");
 
   /* Create the OMP request. */
 
