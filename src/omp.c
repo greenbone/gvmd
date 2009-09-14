@@ -3321,7 +3321,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_RULES:
-        // FIX XML_SERVICE_DOWN?
         if (server.rules)
           {
             int index;
@@ -3337,7 +3336,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL ("</get_rules_response>");
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_rules"));
+          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_rules"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
