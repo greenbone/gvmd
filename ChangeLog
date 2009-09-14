@@ -1,3 +1,15 @@
+2009-09-14  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.8.1 relase.
+
+	* VERSION: Set to 0.8.1.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* CHANGES: Updated.
+
 2009-09-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* README: Fill paragraphs.  Change test command back to the command
