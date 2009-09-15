@@ -1,6 +1,73 @@
+2009-09-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Switch to OMP library in openvas-libraries.
+
+	* src/tests/common.c (BUFFER_SIZE, TRACE, send_to_manager)
+	(sendf_to_manager, context_data_t, make_entity, next_entities)
+	(first_entities, add_entity, add_attribute, free_entity, entity_text)
+	(entity_name, compare_entity_with_name, entity_child, entity_attribute)
+	(buffer_start, buffer_point, buffer_end, add_attribute)
+	(handle_start_element, handle_end_element, handle_text, handle_error)
+	(read_entity_and_text, read_entity, foreach_print_attribute, print_entity)
+	(print_entities, compare_find_attribute, compare_entities, DO_CHILDREN)
+	(task_status, authenticate, env_authenticate, omp_create_task)
+	(create_task, create_task_from_rc_file, start_task, wait_for_task_start)
+	(wait_for_task_end, wait_for_task_stop, wait_for_task_delete, delete_task)
+	(omp_get_status, omp_get_report, omp_delete_report, omp_delete_task)
+	(omp_modify_task, omp_get_preferences, omp_get_certificates, omp_until_up)
+	(omp_create_target, omp_delete_target, omp_create_config)
+	(omp_create_config_from_rc_file, omp_delete_config): Remove.
+	(connect_to_manager_host_port, close_manager_connection): Wrap library
+	functions.
+	* src/tests/common.h: Remove headers.
+
+	* src/tests/CMakeLists.txt: Link to -lopenvas_omp.
+
+	* src/tests/omp_abort_task_0.c, src/tests/omp_authenticate_0.c,
+	src/tests/omp_bogus_0.c, src/tests/omp_bogus_1.c,
+	src/tests/omp_commands_0.c, src/tests/omp_create_target_0.c,
+	src/tests/omp_create_target_1.c, src/tests/omp_create_task_0.c,
+	src/tests/omp_create_task_1.c, src/tests/omp_create_task_2.c,
+	src/tests/omp_create_task_3.c, src/tests/omp_create_task_4.c,
+	src/tests/omp_delete_config_1.c, src/tests/omp_delete_report_0.c,
+	src/tests/omp_delete_report_1.c, src/tests/omp_delete_target_0.c,
+	src/tests/omp_delete_target_1.c, src/tests/omp_delete_task_0.c,
+	src/tests/omp_delete_task_1.c, src/tests/omp_delete_task_2.c,
+	src/tests/omp_get_certificates_0.c, src/tests/omp_get_certificates_1.c,
+	src/tests/omp_get_configs_0.c, src/tests/omp_get_configs_1.c,
+	src/tests/omp_get_configs_2.c, src/tests/omp_get_configs_3.c,
+	src/tests/omp_get_dependencies_0.c, src/tests/omp_get_dependencies_1.c,
+	src/tests/omp_get_nvt_all_0.c, src/tests/omp_get_nvt_all_1.c,
+	src/tests/omp_get_nvt_details_0.c, src/tests/omp_get_nvt_details_1.c,
+	src/tests/omp_get_nvt_details_2.c, src/tests/omp_get_nvt_details_3.c,
+	src/tests/omp_get_nvt_details_4.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_feed_checksum_2.c,
+	src/tests/omp_get_nvt_feed_checksum_3.c,
+	src/tests/omp_get_nvt_feed_checksum_4.c,
+	src/tests/omp_get_nvt_feed_checksum_5.c,
+	src/tests/omp_get_preferences_0.c, src/tests/omp_get_preferences_1.c,
+	src/tests/omp_get_report_0.c, src/tests/omp_get_report_1.c,
+	src/tests/omp_get_report_2.c, src/tests/omp_get_report_3.c,
+	src/tests/omp_get_report_4.c, src/tests/omp_get_report_5.c,
+	src/tests/omp_get_report_6.c, src/tests/omp_get_report_7.c,
+	src/tests/omp_get_report_8.c, src/tests/omp_get_rules_0.c,
+	src/tests/omp_get_rules_1.c, src/tests/omp_get_status_0.c,
+	src/tests/omp_get_status_1.c, src/tests/omp_get_status_2.c,
+	src/tests/omp_get_status_3.c, src/tests/omp_get_status_4.c,
+	src/tests/omp_get_status_5.c, src/tests/omp_get_targets_0.c,
+	src/tests/omp_get_targets_1.c, src/tests/omp_get_version_0.c,
+	src/tests/omp_help_0.c, src/tests/omp_help_1.c,
+	src/tests/omp_modify_report_0.c, src/tests/omp_modify_task_0.c,
+	src/tests/omp_modify_task_1.c, src/tests/omp_start_task_0.c,
+	src/tests/omp_start_task_3.c, src/tests/omp_start_task_4.c,
+	src/tests/omp_start_task_5.c, src/tests/timeout_0.c: Use OMP interface
+	from libraries.
+
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/logf.h (LOG): Set to 0, that it, turn off compilation of
+	* src/logf.h (LOG): Set to 0.  That is, turn off compilation of
 	communication logging.
 
 2009-09-14  Matthew Mundell <matthew.mundell@intevation.de>

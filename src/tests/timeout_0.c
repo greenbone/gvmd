@@ -53,7 +53,7 @@ main ()
   /* FIX This must be more than the client timeout, which is currently 900. */
   sleep (960);
 
-  if (send_to_manager (&session, "<get_version/>\n") == -1)
+  if (openvas_server_send (&session, "<get_version/>\n") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_SUCCESS;

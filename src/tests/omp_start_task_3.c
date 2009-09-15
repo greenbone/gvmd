@@ -51,12 +51,13 @@ main ()
 
   /* Create a task. */
 
-  if (send_to_manager (&session, "<create_task>"
-                                 "<name>omp_start_task_4 task</name>"
-                                 "<comment>Task for omp_create_task_4.</comment>"
-                                 "<target>Localhost</target>"
-                                 "<config>Full</config>"
-                                 "</create_task>")
+  if (openvas_server_send (&session,
+                           "<create_task>"
+                           "<name>omp_start_task_4 task</name>"
+                           "<comment>Task for omp_create_task_4.</comment>"
+                           "<target>Localhost</target>"
+                           "<config>Full</config>"
+                           "</create_task>")
       == -1)
     goto fail;
 

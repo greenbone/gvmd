@@ -65,14 +65,14 @@ main ()
 
   /* Send a modify_task request. */
 
-  if (sendf_to_manager (&session,
-                        "<modify_task"
-                        " task_id=\"%s\">"
-                        "<parameter id=\"comment\">"
-                        "Modified comment."
-                        "</parameter>"
-                        "</modify_task>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<modify_task"
+                            " task_id=\"%s\">"
+                            "<parameter id=\"comment\">"
+                            "Modified comment."
+                            "</parameter>"
+                            "</modify_task>",
+                            id)
       == -1)
     {
       delete_task (&session, id);

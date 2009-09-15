@@ -39,11 +39,11 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (send_to_manager (&session,
-                       "<authenticate><credentials>"
-                       "<username>o'm</username>"
-                       "<password>om</password>"
-                       "</credentials></authenticate>")
+  if (openvas_server_send (&session,
+                           "<authenticate><credentials>"
+                           "<username>o'm</username>"
+                           "<password>om</password>"
+                           "</credentials></authenticate>")
       == -1)
     {
       close_manager_connection (socket, session);

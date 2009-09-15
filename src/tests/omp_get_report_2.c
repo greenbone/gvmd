@@ -53,8 +53,8 @@ main ()
 
   /* Try get report. */
 
-  if (send_to_manager (&session,
-                       "<get_report format=\"nbe\" report_id=\"skdjf\"/>")
+  if (openvas_server_send (&session,
+                           "<get_report format=\"nbe\" report_id=\"skdjf\"/>")
       == -1)
    {
       close_manager_connection (socket, session);

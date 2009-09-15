@@ -72,7 +72,8 @@ main ()
 
   /* Request the status. */
 
-  if (send_to_manager (&session, "<get_status/>") == -1) goto delete_fail;
+  if (openvas_server_send (&session, "<get_status/>") == -1)
+    goto delete_fail;
 
   /* Read the response. */
 

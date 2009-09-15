@@ -52,11 +52,11 @@ main ()
 
   /* Request the help text. */
 
-  if (send_to_manager (&session,
-                       "<commands>"
-                       "<get_version/>"
-                       "<get_version/>"
-                       "</commands>")
+  if (openvas_server_send (&session,
+                           "<commands>"
+                           "<get_version/>"
+                           "<get_version/>"
+                           "</commands>")
       == -1)
      {
       close_manager_connection (socket, session);

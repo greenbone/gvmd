@@ -57,8 +57,8 @@ main ()
 
   while (1)
     {
-      if (send_to_manager (&session,
-                           "<get_nvt_details oid=\"0.0.0.0.0.0.0.0.0.0\"/>")
+      if (openvas_server_send (&session,
+                               "<get_nvt_details oid=\"0.0.0.0.0.0.0.0.0.0\"/>")
           == -1)
         {
           close_manager_connection (socket, session);
@@ -92,7 +92,7 @@ main ()
 
   /* Request the configs. */
 
-  if (send_to_manager (&session, "<get_configs/>")
+  if (openvas_server_send (&session, "<get_configs/>")
       == -1)
     goto close_fail;
 

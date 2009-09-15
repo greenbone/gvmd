@@ -54,10 +54,10 @@ main ()
     }
 
   omp_delete_target (&session, "omp_create_target_1");
-  if (send_to_manager (&session, "<create_target>"
-                                 "<name>omp_create_target_1</name>"
-                                 "<hosts>localhost,127.0.0.1</hosts>"
-                                 "</create_target>")
+  if (openvas_server_send (&session, "<create_target>"
+                                     "<name>omp_create_target_1</name>"
+                                     "<hosts>localhost,127.0.0.1</hosts>"
+                                     "</create_target>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -81,7 +81,8 @@ main ()
 
   if (compare_entities (entity, expected))
     {
-      send_to_manager (&session, "<delete_target name=\"omp_create_target_1\"/>");
+      openvas_server_send (&session,
+                           "<delete_target name=\"omp_create_target_1\"/>");
       close_manager_connection (socket, session);
       free_entity (entity);
       free_entity (expected);
@@ -92,10 +93,10 @@ main ()
 
   /* Try create target again. */
 
-  if (send_to_manager (&session, "<create_target>"
-                                 "<name>omp_create_target_1</name>"
-                                 "<hosts>localhost,127.0.0.1</hosts>"
-                                 "</create_target>")
+  if (openvas_server_send (&session, "<create_target>"
+                                     "<name>omp_create_target_1</name>"
+                                     "<hosts>localhost,127.0.0.1</hosts>"
+                                     "</create_target>")
       == -1)
     {
       close_manager_connection (socket, session);

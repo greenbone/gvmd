@@ -93,9 +93,9 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (sendf_to_manager (&session,
-                        "<abort_task task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<abort_task task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session, id);

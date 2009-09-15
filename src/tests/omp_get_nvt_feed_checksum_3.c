@@ -53,7 +53,8 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<get_nvt_feed_checksum algorithm=\"xxx\"/>")
+  if (openvas_server_send (&session,
+                           "<get_nvt_feed_checksum algorithm=\"xxx\"/>")
       == -1)
     {
       close_manager_connection (socket, session);

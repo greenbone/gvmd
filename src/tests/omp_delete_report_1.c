@@ -52,8 +52,8 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session,
-                       "<delete_report report_id=\"\"/>")
+  if (openvas_server_send (&session,
+                           "<delete_report report_id=\"\"/>")
       == -1)
     {
       close_manager_connection (socket, session);

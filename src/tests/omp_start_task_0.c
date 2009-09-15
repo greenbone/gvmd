@@ -59,7 +59,7 @@ main ()
   /* Start the task. */
 
   gchar* msg = g_strdup_printf ("<start_task task_id=\"%s\"/>", id);
-  int ret = send_to_manager (&session, msg);
+  int ret = openvas_server_send (&session, msg);
   g_free (msg);
   if (ret == -1)
     goto delete_fail;

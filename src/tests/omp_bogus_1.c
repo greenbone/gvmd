@@ -51,7 +51,7 @@ main ()
 
   /* Send the XML. */
 
-  if (send_to_manager (&session, "<xxx_bogus_command_name_xxx/>") == -1)
+  if (openvas_server_send (&session, "<xxx_bogus_command_name_xxx/>") == -1)
     goto fail;
 
   /* Read the response. */

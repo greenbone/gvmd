@@ -54,10 +54,11 @@ main ()
     }
 
   omp_delete_target (&session, "omp_delete_target_0");
-  if (send_to_manager (&session, "<create_target>"
-                                 "<name>omp_delete_target_0</name>"
-                                 "<hosts>localhost,xxx,127.0.0.1</hosts>"
-                                 "</create_target>")
+  if (openvas_server_send (&session,
+                           "<create_target>"
+                           "<name>omp_delete_target_0</name>"
+                           "<hosts>localhost,xxx,127.0.0.1</hosts>"
+                           "</create_target>")
       == -1)
     {
       close_manager_connection (socket, session);
@@ -91,10 +92,10 @@ main ()
 
   /* Remove the target. */
 
-  if (send_to_manager (&session,
-                       "<delete_target>"
-                       "<name>omp_delete_target_0</name>"
-                       "</delete_target>")
+  if (openvas_server_send (&session,
+                           "<delete_target>"
+                           "<name>omp_delete_target_0</name>"
+                           "</delete_target>")
       == -1)
     {
       close_manager_connection (socket, session);

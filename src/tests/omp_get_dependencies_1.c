@@ -86,9 +86,9 @@ main ()
 
   /* Request the task status. */
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session, id);
@@ -117,7 +117,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<get_dependencies/>") == -1)
+  if (openvas_server_send (&session, "<get_dependencies/>") == -1)
     {
       delete_task (&session, id);
       free (id);

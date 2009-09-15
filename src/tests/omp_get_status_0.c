@@ -65,7 +65,7 @@ main ()
 
   if (env_authenticate (&session)) goto delete_fail;
 
-  if (send_to_manager (&session, "<get_status/>") == -1)
+  if (openvas_server_send (&session, "<get_status/>") == -1)
     goto delete_fail;
 
   /* Read the response. */

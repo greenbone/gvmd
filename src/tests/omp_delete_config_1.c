@@ -80,10 +80,10 @@ main ()
 
   /* Try remove config. */
 
-  if (sendf_to_manager (&session,
-                        "<delete_config>"
-                        "<name>omp_delete_config_1</name>"
-                        "</delete_config>"))
+  if (openvas_server_send (&session,
+                           "<delete_config>"
+                           "<name>omp_delete_config_1</name>"
+                           "</delete_config>"))
     goto delete_fail;
 
   /* Read the response. */

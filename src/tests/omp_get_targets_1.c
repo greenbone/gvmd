@@ -79,7 +79,7 @@ main ()
 
   /* Request the targets. */
 
-  if (send_to_manager (&session, "<get_targets/>")
+  if (openvas_server_send (&session, "<get_targets/>")
       == -1)
     goto delete_fail;
 

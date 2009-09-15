@@ -57,7 +57,7 @@ main ()
 
   /* Request feed information once, so manager requests it from server. */
 
-  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
+  if (openvas_server_send (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -112,9 +112,9 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session, id);
@@ -138,7 +138,7 @@ main ()
 
   /* Get summary of all NVTs, to get details of one NVT. */
 
-  if (send_to_manager (&session, "<get_nvt_all/>") == -1)
+  if (openvas_server_send (&session, "<get_nvt_all/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -160,9 +160,9 @@ main ()
 
   /* Request details of the NVT. */
 
-  if (sendf_to_manager (&session,
-                        "<get_nvt_details oid=\"%s\"/>",
-                        nvt_id)
+  if (openvas_server_sendf (&session,
+                            "<get_nvt_details oid=\"%s\"/>",
+                            nvt_id)
       == -1)
     {
       free_entity (entity);

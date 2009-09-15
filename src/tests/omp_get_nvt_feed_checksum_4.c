@@ -98,9 +98,9 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session, id);
@@ -129,7 +129,8 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<get_nvt_feed_checksum algorithm=\"md5\"/>")
+  if (openvas_server_send (&session,
+                           "<get_nvt_feed_checksum algorithm=\"md5\"/>")
       == -1)
     {
       delete_task (&session, id);

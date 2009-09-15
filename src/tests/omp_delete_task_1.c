@@ -74,9 +74,9 @@ main ()
 
   /* Request the status. */
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     goto delete_fail;
 
@@ -109,11 +109,11 @@ main ()
 
   /* Remove the task. */
 
-  if (sendf_to_manager (&session,
-                        "<delete_task"
-                        " task_id=\"%s\">"
-                        "</delete_task>",
-                        id))
+  if (openvas_server_sendf (&session,
+                            "<delete_task"
+                            " task_id=\"%s\">"
+                            "</delete_task>",
+                            id))
     goto delete_fail;
 
   entity_t entity2 = NULL;
@@ -130,9 +130,9 @@ main ()
 
   /* Try get the report. */
 
-  if (sendf_to_manager (&session,
-                        "<get_report format=\"nbe\" report_id=\"%s\"/>",
-                        report_id)
+  if (openvas_server_sendf (&session,
+                            "<get_report format=\"nbe\" report_id=\"%s\"/>",
+                            report_id)
       == -1)
     goto free_fail;
   msg = g_strdup_printf ("Failed to find report '%s'", report_id);

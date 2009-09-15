@@ -71,9 +71,9 @@ main ()
 
   /* Try start the second task. */
 
-  if (sendf_to_manager (&session,
-                        "<start_task task_id=\"%s\"/>",
-                        id2)
+  if (openvas_server_sendf (&session,
+                            "<start_task task_id=\"%s\"/>",
+                            id2)
       == -1)
     return -1;
 

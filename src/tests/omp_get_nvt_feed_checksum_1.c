@@ -98,9 +98,9 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session, id);
@@ -121,7 +121,7 @@ main ()
 
   /* Get the feed checksum. */
 
-  if (send_to_manager (&session, "<get_nvt_feed_checksum/>") == -1)
+  if (openvas_server_send (&session, "<get_nvt_feed_checksum/>") == -1)
     {
       delete_task (&session, id);
       close_manager_connection (socket, session);

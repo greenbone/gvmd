@@ -77,11 +77,11 @@ main ()
 
   /* Remove the task. */
 
-  if (sendf_to_manager (&session,
-                        "<delete_task"
-                        " task_id=\"%s\">"
-                        "</delete_task>",
-                        id))
+  if (openvas_server_sendf (&session,
+                            "<delete_task"
+                            " task_id=\"%s\">"
+                            "</delete_task>",
+                            id))
     {
       free (id);
       close_manager_connection (socket, session);
@@ -99,9 +99,9 @@ main ()
 
   /* Request the status. */
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       free (id);

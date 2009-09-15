@@ -56,7 +56,7 @@ main ()
   /* Request certificates, and give the server some time to send other
    * cruft first. */
 
-  if (send_to_manager (&session, "<get_certificates/>") == -1)
+  if (openvas_server_send (&session, "<get_certificates/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -74,7 +74,7 @@ main ()
 
   while (1)
     {
-      if (send_to_manager (&session, "<get_certificates/>") == -1)
+      if (openvas_server_send (&session, "<get_certificates/>") == -1)
         {
           close_manager_connection (socket, session);
           return EXIT_FAILURE;

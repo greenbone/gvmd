@@ -85,12 +85,12 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (sendf_to_manager (&session2,
-                        "<modify_task"
-                        " task_id=\"%s\">"
-                        "<parameter id=\"name\">Modified name</parameter>"
-                        "</modify_task>",
-                        id)
+  if (openvas_server_sendf (&session2,
+                            "<modify_task"
+                            " task_id=\"%s\">"
+                            "<parameter id=\"name\">Modified name</parameter>"
+                            "</modify_task>",
+                            id)
       == -1)
     {
       delete_task (&session1, id);
@@ -123,9 +123,9 @@ main ()
 
   /* Check that process 1 registered the change. */
 
-  if (sendf_to_manager (&session1,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session1,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       delete_task (&session1, id);

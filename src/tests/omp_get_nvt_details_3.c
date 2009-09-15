@@ -57,7 +57,7 @@ main ()
   while (1)
     {
 
-      if (send_to_manager (&session, "<get_nvt_details oid=\"-*_*-\"/>")
+      if (openvas_server_send (&session, "<get_nvt_details oid=\"-*_*-\"/>")
           == -1)
         {
           close_manager_connection (socket, session);

@@ -53,11 +53,12 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<create_task>"
-                                 "<rcfile></rcfile>"
-                                 "<name>omp_create_task_1 task</name>"
-                                 "<comment>Task for omp_create_task_1.</comment>"
-                                 "</create_task>")
+  if (openvas_server_send (&session,
+                           "<create_task>"
+                           "<rcfile></rcfile>"
+                           "<name>omp_create_task_1 task</name>"
+                           "<comment>Task for omp_create_task_1.</comment>"
+                           "</create_task>")
       == -1)
     {
       close_manager_connection (socket, session);

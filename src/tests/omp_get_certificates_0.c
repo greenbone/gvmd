@@ -53,7 +53,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<get_certificates/>") == -1)
+  if (openvas_server_send (&session, "<get_certificates/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

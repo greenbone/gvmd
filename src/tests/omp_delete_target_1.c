@@ -80,10 +80,10 @@ main ()
 
   /* Try remove target. */
 
-  if (sendf_to_manager (&session,
-                        "<delete_target>"
-                        "<name>omp_delete_target_1</name>"
-                        "</delete_target>"))
+  if (openvas_server_send (&session,
+                           "<delete_target>"
+                           "<name>omp_delete_target_1</name>"
+                           "</delete_target>"))
     goto delete_fail;
 
   /* Read the response. */

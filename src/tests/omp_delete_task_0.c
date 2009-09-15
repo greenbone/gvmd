@@ -70,7 +70,7 @@ main ()
                          " task_id=\"%s\">"
                          "</delete_task>",
                          id);
-  ret = send_to_manager (&session, msg);
+  ret = openvas_server_send (&session, msg);
   g_free (msg);
   if (ret == -1)
     {
@@ -117,9 +117,9 @@ main ()
 
   /* Check the status of the task. */
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     {
       free (id);

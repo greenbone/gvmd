@@ -79,7 +79,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (send_to_manager (&session, "<help/>") == -1)
+  if (openvas_server_send (&session, "<help/>") == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

@@ -53,7 +53,7 @@ main ()
   if (env_authenticate (&session)) goto fail;
 
   if (create_task_from_rc_file (&session,
-                                "new_task_empty_rc",
+                                "new_task_small__many_plugins_yes_rc",
                                 "Test for omp_create_task_4 task",
                                 "Task for manager test omp_create_task_4.",
                                 &id))
@@ -63,7 +63,7 @@ main ()
 
   if (env_authenticate (&session)) goto delete_fail;
 
-  if (send_to_manager (&session, "<get_targets/>") == -1)
+  if (openvas_server_send (&session, "<get_targets/>") == -1)
     goto delete_fail;
 
   entity = NULL;

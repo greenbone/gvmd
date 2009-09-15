@@ -55,7 +55,7 @@ main ()
 
   /* Request the configs. */
 
-  if (send_to_manager (&session, "<get_configs/>")
+  if (openvas_server_send (&session, "<get_configs/>")
       == -1)
     goto close_fail;
 

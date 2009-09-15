@@ -67,9 +67,9 @@ main ()
 
   /* Request the status. */
 
-  if (sendf_to_manager (&session,
-                        "<get_status task_id=\"%s\"/>",
-                        id)
+  if (openvas_server_sendf (&session,
+                            "<get_status task_id=\"%s\"/>",
+                            id)
       == -1)
     goto delete_fail;
 
@@ -102,9 +102,9 @@ main ()
 
   /* Get the report. */
 
-  if (sendf_to_manager (&session,
-                        "<get_report format=\"pdf\" report_id=\"%s\"/>",
-                        report_id)
+  if (openvas_server_sendf (&session,
+                            "<get_report format=\"pdf\" report_id=\"%s\"/>",
+                            report_id)
       == -1)
     goto delete_fail;
 
