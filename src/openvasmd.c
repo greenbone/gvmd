@@ -248,7 +248,7 @@ serve_client (int client_socket)
 
   /* Get client socket and session from libopenvas. */
 
-  int real_socket = nessus_get_socket_from_connection (client_socket);
+  int real_socket = openvas_get_socket_from_connection (client_socket);
   if (real_socket == -1 || real_socket == client_socket)
     {
       g_warning ("%s: failed to get client socket from libopenvas: %s\n",

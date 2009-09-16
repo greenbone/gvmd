@@ -1,3 +1,12 @@
+2009-09-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/openvasmd.c (serve_client): Renamed call of
+	nessus_get_socket_from_connection to
+	openvas_get_socket_from_connection.
+
+	* src/CMakeLists.txt: Renamed nessus_get_socket_from_connection
+	to openvas_get_socket_from_connection.
+
 2009-09-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (max_hosts): Handle dotted decimal CIDR addresses.  Only
