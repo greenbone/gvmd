@@ -41,12 +41,15 @@
 #include "string.h"
 #include "tracef.h"
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -561,12 +564,39 @@ max_hosts (const char *hosts)
           if (*slash)
             {
               long int mask;
-              errno = 0;
-              mask = strtol (slash, NULL, 10);
-              if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+              struct in_addr addr;
+
+              /* Convert text after slash to a bit netmask. */
+
+              if (atoi (slash) > 32 && inet_aton (slash, &addr))
+                {
+                  in_addr_t haddr;
+
+                  /* 192.168.200.0/255.255.255.252 */
+
+                  haddr = ntohl (addr.s_addr);
+                  mask = 32;
+                  while ((haddr & 1) == 0)
+                    {
+                      mask--;
+                      haddr = haddr >> 1;
+                    }
+                  if (mask < 8 || mask > 32) return -1;
+                }
+              else
+                {
+                  /* 192.168.200.0/30 */
+
+                  errno = 0;
+                  mask = strtol (slash, NULL, 10);
+                  if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                }
+
+              /* Calculate number of hosts. */
+
               count += 1L << (32 - mask);
               /* Leave out the network and broadcast addresses. */
-              if (mask < 31) count -= 2;
+              if (mask < 31) count--;
             }
           else
             /* Just a trailing /. */

@@ -38,7 +38,7 @@
 #define NAME_2 "omp_get_targets_0 2"
 #define HOSTS_1 "localhost,xxx,127.0.0.1/28"
 #define HOSTS_2 "196.168.0.1"
-#define MAX_HOSTS_1 "18"
+#define MAX_HOSTS_1 "17"
 #define MAX_HOSTS_2 "1"
 #define COMMENT_1 "Test comment."
 

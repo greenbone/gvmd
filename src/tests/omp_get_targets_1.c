@@ -39,7 +39,7 @@
 #define HOSTS_1 "localhost/32"
 #define HOSTS_2 "196.168.0.1/8"
 #define MAX_HOSTS_1 "1"
-#define MAX_HOSTS_2 "16777216"
+#define MAX_HOSTS_2 "16777215"
 #define COMMENT_1 "Test comment."
 
 int
