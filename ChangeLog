@@ -1,3 +1,7 @@
+2009-09-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (max_hosts): Subtract network and broadcast from count.
+
 2009-09-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Switch to OMP library in openvas-libraries.

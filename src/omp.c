@@ -565,6 +565,8 @@ max_hosts (const char *hosts)
               mask = strtol (slash, NULL, 10);
               if (errno == ERANGE || mask < 8 || mask > 32) return -1;
               count += 1L << (32 - mask);
+              /* Leave out the network and broadcast addresses. */
+              if (mask < 31) count -= 2;
             }
           else
             /* Just a trailing /. */
