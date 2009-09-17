@@ -45,7 +45,7 @@ else (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "")
 endif (OPENVAS_LIB_INSTALL_DIR)
 
-set (OVAS_LDFLAG "${LIB_TEMP} -lsqlite3 -lgnutls ${OPENVAS_LDFLAGS} -lopenvas_omp")
+set (OVAS_LDFLAG "${LIB_TEMP} -lsqlite3 -lgnutls ${OPENVAS_LDFLAGS}")
 
 MARK_AS_ADVANCED (LIB_TEMP)
 

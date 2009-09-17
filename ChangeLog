@@ -1,3 +1,7 @@
+2009-09-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tests/CMakeLists.txt (OVAS_LDFLAG): Remove -lopenvas_omp.
+
 2009-09-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (serve_client): Renamed call of
