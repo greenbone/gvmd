@@ -108,6 +108,7 @@
 #include <network.h>
 #include <plugutils.h>
 #include <openvas_logging.h>
+#include <openvas_server.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -239,7 +240,9 @@ serve_client (int client_socket)
       return EXIT_FAILURE;
     }
 
-  if (make_session (server_socket, &server_session, &server_credentials))
+  if (openvas_server_session_new (server_socket,
+                                  &server_session,
+                                  &server_credentials))
     {
       close_stream_connection (client_socket);
       return EXIT_FAILURE;
@@ -307,12 +310,16 @@ serve_client (int client_socket)
         g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
     }
 
-  end_session (server_socket, server_session, server_credentials);
+  openvas_server_session_free (server_socket,
+                               server_session,
+                               server_credentials);
   return EXIT_SUCCESS;
 
  fail:
   close_stream_connection (client_socket); // FIX why close only on fail?
-  end_session (server_socket, server_session, server_credentials);
+  openvas_server_session_free (server_socket,
+                               server_session,
+                               server_credentials);
   return EXIT_FAILURE;
 }
 
@@ -728,7 +735,9 @@ main (int argc, char** argv)
           return EXIT_FAILURE;
         }
 
-      if (make_session (server_socket, &server_session, &server_credentials))
+      if (openvas_server_session_new (server_socket,
+                                      &server_session,
+                                      &server_credentials))
         return EXIT_FAILURE;
 
       /* Call the OMP client serving function with client -1.  This invokes a
@@ -738,12 +747,16 @@ main (int argc, char** argv)
       if (serve_omp (NULL, &server_session, &server_credentials,
                      -1, &server_socket))
         {
-          end_session (server_socket, server_session, server_credentials);
+          openvas_server_session_free (server_socket,
+                                       server_session,
+                                       server_credentials);
           return EXIT_FAILURE;
         }
       else
         {
-          end_session (server_socket, server_session, server_credentials);
+          openvas_server_session_free (server_socket,
+                                       server_session,
+                                       server_credentials);
           return EXIT_SUCCESS;
         }
     }

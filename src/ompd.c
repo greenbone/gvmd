@@ -47,7 +47,6 @@
 
 #include <assert.h>
 #include <errno.h>
-
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -55,6 +54,7 @@
 #include <unistd.h>
 
 #include <network.h>
+#include <openvas_server.h>
 
 #ifdef S_SPLINT_S
 /* FIX Weird that these are missing. */
@@ -279,11 +279,11 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
     {
       case SERVER_INIT_CONNECT_INTR:
       case SERVER_INIT_TOP:
-        switch (connect_to_server (server_socket,
-                                   &server_address,
-                                   server_session,
-                                   server_init_state
-                                   == SERVER_INIT_CONNECT_INTR))
+        switch (openvas_server_connect (server_socket,
+                                        &server_address,
+                                        server_session,
+                                        server_init_state
+                                        == SERVER_INIT_CONNECT_INTR))
           {
             case 0:
               set_server_init_state (SERVER_INIT_CONNECTED);
@@ -419,9 +419,9 @@ recreate_session (int server_socket,
                   gnutls_session_t* server_session,
                   gnutls_certificate_credentials_t* server_credentials)
 {
-  if (end_session (server_socket,
-                   *server_session,
-                   *server_credentials))
+  if (openvas_server_session_free (server_socket,
+                                   *server_session,
+                                   *server_credentials))
     return -1;
   /* Make the server socket. */
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -432,9 +432,9 @@ recreate_session (int server_socket,
                  strerror (errno));
       return -1;
     }
-  if (make_session (server_socket,
-                    server_session,
-                    server_credentials))
+  if (openvas_server_session_new (server_socket,
+                                  server_session,
+                                  server_credentials))
     return -1;
   return server_socket;
 }
@@ -475,7 +475,7 @@ serve_omp (gnutls_session_t* client_session,
   fd_set readfds, exceptfds, writefds;
   int server_socket = *server_socket_addr;
   /* True if processing of the client input is waiting for space in the
-   * to_server buffer. */
+   * to_server or to_client buffer. */
   short client_input_stalled;
   /* True if processing of the server input is waiting for space in the
    * to_client buffer. */

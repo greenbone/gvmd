@@ -1,5 +1,14 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/ovas-mngr-comm.c (make_session, end_session)
+	(connect_to_server): Remove.  Replace in openvas_server library.
+
+	* src/openvasmd.c, src/otpd.c, src/ompd.c: Replace calls to make_session,
+	end_session	and connect_to_server with calls to the new openvas_server
+	equivalents.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (OPENVASD_PORT): Set to 9391.
 	(OPENVASMD_PORT): Set to 9390.
 	(server_context): Remove.  Rename to ovas_server_context.

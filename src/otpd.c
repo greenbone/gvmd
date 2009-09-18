@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include <network.h>
+#include <openvas_server.h>
 
 /**
  * @brief File descriptor set mask: selecting on client read.
@@ -125,10 +126,10 @@ serve_otp (gnutls_session_t* client_session,
             }
           if (FD_ISSET (server_socket, &writefds))
             {
-              ret = connect_to_server (server_socket,
-                                       &server_address,
-                                       server_session,
-                                       interrupted);
+              ret = openvas_server_connect (server_socket,
+                                            &server_address,
+                                            server_session,
+                                            interrupted);
               if (ret == 0)
                 break;
               if (ret == -2)
