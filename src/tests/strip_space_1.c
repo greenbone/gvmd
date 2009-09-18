@@ -1,6 +1,6 @@
-/* Test 1 of strip_space.
+/* Test 1 of openvas_strip_space.
  * $Id$
- * Description: Test strip_space with leading space.
+ * Description: Test openvas_strip_space with leading space.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -28,7 +28,6 @@
 #include <string.h>
 
 #include "common.h"
-#include "../string.h"
 
 int
 main ()
@@ -40,7 +39,7 @@ main ()
 
   strncpy (string, " abcd", 6);
 
-  char* result = strip_space (string, string + 5);
+  char* result = openvas_strip_space (string, string + 5);
   if (strlen (result) != 4 || strcmp (result, expect))
     return EXIT_FAILURE;
 

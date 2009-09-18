@@ -32,7 +32,6 @@
 
 #include "common.h"
 #include "../tracef.h"
-#include "../string.h"
 
 int
 main ()
@@ -124,7 +123,7 @@ main ()
       && entity_attribute (entity, "status")
       && (strcmp (entity_attribute (entity, "status"), "200") == 0)
       && (report = entity_child (entity, "report"))
-      && isalnumstr (entity_text (report)))
+      && openvas_isalnumstr (entity_text (report)))
     {
       free_entity (entity);
       delete_task (&session, id);

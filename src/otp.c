@@ -37,7 +37,6 @@
 
 #include "otp.h"
 #include "manage.h"
-#include "string.h"
 #include "tracef.h"
 #include "types.h"
 
@@ -47,6 +46,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <openvas/openvas_string.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -1463,7 +1464,7 @@ process_otp_server_input ()
           tracef ("   server message: %s\n", message);
 
           /* Strip leading and trailing whitespace. */
-          field = strip_space (message, match);
+          field = openvas_strip_space (message, match);
 
           tracef ("   server old state %i\n", server_state);
           tracef ("   server field: %s\n", field);

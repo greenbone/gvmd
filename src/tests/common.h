@@ -33,6 +33,7 @@
 /* @todo Only include these in tests that use them. */
 #include <openvas/omp.h>
 #include <openvas/openvas_server.h>
+#include <openvas/openvas_string.h>
 
 /* Communication. */
 

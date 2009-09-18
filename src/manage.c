@@ -39,7 +39,6 @@
 #include "manage.h"
 #include "file.h"
 #include "ovas-mngr-comm.h"
-#include "string.h"
 #include "tracef.h"
 
 #include <assert.h>
@@ -52,6 +51,7 @@
 #include <strings.h>
 
 #include <openvas/openvas_auth.h>
+#include <openvas/openvas_string.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -129,7 +129,7 @@ append_to_credentials_username (credentials_t* credentials,
                                 const char* text,
                                 gsize length)
 {
-  append_text (&credentials->username, text, length);
+  openvas_append_text (&credentials->username, text, length);
 }
 
 /**
@@ -144,7 +144,7 @@ append_to_credentials_password (credentials_t* credentials,
                                 const char* text,
                                 gsize length)
 {
-  append_text (&credentials->password, text, length);
+  openvas_append_text (&credentials->password, text, length);
 }
 
 

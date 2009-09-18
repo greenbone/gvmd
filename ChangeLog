@@ -1,7 +1,37 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Switch to openvas-libraries string functions.
+
+	* src/string.h, src/string.c: Remove.
+
+	* doc/Doxyfile_full, doc/Doxyfile: Remove string.c.
+
+	* src/omp.c, src/otp.c, src/manage.c: Switch to openvas-libraries string
+	functions.
+
+	* src/CMakeLists.txt: Remove string library.
+
+	* src/tests/CMakeLists.txt: Drop string linkage.
+
+	* src/tests/common.h: Include openvas_string.h for tests.
+
+	* src/tests/strip_space_3.c, src/tests/omp_get_targets_1.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_feed_checksum_5.c, src/tests/omp_get_nvt_all_1.c,
+	src/tests/omp_get_report_5.c, src/tests/omp_get_report_7.c,
+	src/tests/omp_get_configs_0.c, src/tests/omp_get_configs_2.c,
+	src/tests/strip_space_0.c, src/tests/strip_space_2.c,
+	src/tests/omp_get_targets_0.c, src/tests/omp_get_nvt_feed_checksum_4.c,
+	src/tests/omp_get_report_0.c, src/tests/omp_get_report_4.c,
+	src/tests/omp_get_report_6.c, src/tests/omp_get_report_8.c,
+	src/tests/omp_get_configs_1.c, src/tests/omp_get_configs_3.c,
+	src/tests/strip_space_1.c: Switch tests to openvas-libraries string
+	functions.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (make_session, end_session)
-	(connect_to_server): Remove.  Replace in openvas_server library.
+	(connect_to_server): Remove.  Replaced in openvas_server library.
 
 	* src/openvasmd.c, src/otpd.c, src/ompd.c: Replace calls to make_session,
 	end_session	and connect_to_server with calls to the new openvas_server

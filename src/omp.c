@@ -38,7 +38,6 @@
 #include "omp.h"
 #include "manage.h"
 #include "otp.h"      // FIX for access to server_t server
-#include "string.h"
 #include "tracef.h"
 
 #include <arpa/inet.h>
@@ -57,6 +56,7 @@
 #include <openvas/certificate.h>
 #include <openvas/nvti.h>
 #include <openvas/openvas_logging.h>
+#include <openvas/openvas_string.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -757,7 +757,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_ABORT_TASK);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
@@ -770,7 +770,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
             assert (modify_task_name == NULL);
-            append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_CONFIG);
           }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
@@ -778,13 +778,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
             assert (modify_task_name == NULL);
-            append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_TARGET);
           }
         else if (strcasecmp ("DELETE_TASK", element_name) == 0)
@@ -792,7 +792,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_TASK);
           }
         else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
@@ -808,7 +808,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "algorithm", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
         else if (strcasecmp ("GET_NVT_DETAILS", element_name) == 0)
@@ -816,7 +816,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "oid", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -826,10 +826,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
-              append_string (&current_format, attribute);
+              openvas_append_string (&current_format, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
               /* Subtract 1 to switch from 1 to 0 indexing. */
@@ -854,7 +854,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
@@ -862,7 +862,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -870,9 +870,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
             assert (modify_task_value == NULL);
-            append_string (&modify_task_comment, "");
-            append_string (&modify_task_name, "");
-            append_string (&modify_task_value, "");
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_CONFIG);
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
@@ -887,9 +887,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (modify_task_comment == NULL);
             assert (modify_task_name == NULL);
             assert (modify_task_value == NULL);
-            append_string (&modify_task_comment, "");
-            append_string (&modify_task_name, "");
-            append_string (&modify_task_value, "");
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
@@ -899,7 +899,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_START_TASK);
           }
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
@@ -907,7 +907,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              append_string (&current_uuid, attribute);
+              openvas_append_string (&current_uuid, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
               current_int_1 = atoi (attribute);
@@ -1199,7 +1199,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "id", &attribute))
-              append_string (&modify_task_parameter, attribute);
+              openvas_append_string (&modify_task_parameter, attribute);
             set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
           }
         else
@@ -1227,7 +1227,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "id", &attribute))
-              append_string (&modify_task_parameter, attribute);
+              openvas_append_string (&modify_task_parameter, attribute);
             set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
           }
         else if (strcasecmp ("RCFILE", element_name) == 0)
@@ -2389,7 +2389,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   // process_omp_client_input must return -2
                   abort ();
               }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -2576,7 +2576,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
-          free_string_var (&current_uuid);
+          openvas_free_string_var (&current_uuid);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -2656,7 +2656,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
         }
-        free_string_var (&current_uuid);
+        openvas_free_string_var (&current_uuid);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -2698,7 +2698,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       break;
                   }
               }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -2711,7 +2711,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("GET_REPORT", element_name) == 0);
         if (current_credentials.username == NULL)
           {
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
@@ -2750,16 +2750,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (report_task (report, &task))
                   {
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    free_string_var (&current_uuid);
-                    free_string_var (&current_format);
+                    openvas_free_string_var (&current_uuid);
+                    openvas_free_string_var (&current_format);
                     set_client_state (CLIENT_AUTHENTIC);
                     break;
                   }
                 else if (task && task_uuid (task, &tsk_uuid))
                   {
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    free_string_var (&current_uuid);
-                    free_string_var (&current_format);
+                    openvas_free_string_var (&current_uuid);
+                    openvas_free_string_var (&current_format);
                     set_client_state (CLIENT_AUTHENTIC);
                     break;
                   }
@@ -3352,8 +3352,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("get_report",
                                   "Bogus report format in format attribute"));
           }
-        free_string_var (&current_uuid);
-        free_string_var (&current_format);
+        openvas_free_string_var (&current_uuid);
+        openvas_free_string_var (&current_format);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -3393,7 +3393,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           if (strlen (modify_task_name) == 0)
             {
-              free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_name);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("delete_config",
                                   "DELETE_CONFIG name must be at least one"
@@ -3402,16 +3402,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_config (modify_task_name))
             {
               case 0:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
                 break;
               case 1:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                           "Config is in use"));
                 break;
               default:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
             }
           set_client_state (CLIENT_AUTHENTIC);
@@ -3429,7 +3429,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           if (strlen (modify_task_name) == 0)
             {
-              free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_name);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("delete_target",
                                   "DELETE_TARGET name must be at least one"
@@ -3438,16 +3438,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_target (modify_task_name))
             {
               case 0:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
                 break;
               case 1:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
                                                           "Target is in use"));
                 break;
               default:
-                free_string_var (&modify_task_name);
+                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
             }
           set_client_state (CLIENT_AUTHENTIC);
@@ -3499,7 +3499,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   abort ();
                   break;
               }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -3529,16 +3529,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "MODIFY_REPORT requires a report_id attribute"));
             else if (find_report (current_uuid, &report))
               {
-                free_string_var (&current_uuid);
-                free_string_var (&modify_task_parameter);
-                free_string_var (&modify_task_value);
+                openvas_free_string_var (&current_uuid);
+                openvas_free_string_var (&modify_task_parameter);
+                openvas_free_string_var (&modify_task_value);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
               }
             else if (report == 0)
               {
-                free_string_var (&current_uuid);
-                free_string_var (&modify_task_parameter);
-                free_string_var (&modify_task_value);
+                openvas_free_string_var (&current_uuid);
+                openvas_free_string_var (&modify_task_parameter);
+                openvas_free_string_var (&modify_task_value);
                 if (send_find_error_to_client ("modify_report",
                                                "report",
                                                current_uuid))
@@ -3552,8 +3552,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 int ret = set_report_parameter (report,
                                                 modify_task_parameter,
                                                 modify_task_value);
-                free_string_var (&modify_task_parameter);
-                free_string_var (&modify_task_value);
+                openvas_free_string_var (&modify_task_parameter);
+                openvas_free_string_var (&modify_task_value);
                 switch (ret)
                   {
                     case 0:
@@ -3574,9 +3574,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            free_string_var (&modify_task_parameter);
-            free_string_var (&modify_task_value);
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&modify_task_parameter);
+            openvas_free_string_var (&modify_task_value);
+            openvas_free_string_var (&current_uuid);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
           }
         set_client_state (CLIENT_AUTHENTIC);
@@ -3623,10 +3623,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     modify_task_rcfile = NULL;
                     if (fail)
                       {
-                        free_string_var (&modify_task_name);
-                        free_string_var (&modify_task_comment);
-                        free_string_var (&modify_task_parameter);
-                        free_string_var (&modify_task_value);
+                        openvas_free_string_var (&modify_task_name);
+                        openvas_free_string_var (&modify_task_comment);
+                        openvas_free_string_var (&modify_task_parameter);
+                        openvas_free_string_var (&modify_task_value);
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("modify_task"));
                       }
@@ -3642,9 +3642,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     modify_task_name = NULL;
                     if (fail)
                       {
-                        free_string_var (&modify_task_comment);
-                        free_string_var (&modify_task_parameter);
-                        free_string_var (&modify_task_value);
+                        openvas_free_string_var (&modify_task_comment);
+                        openvas_free_string_var (&modify_task_parameter);
+                        openvas_free_string_var (&modify_task_value);
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("modify_task"));
                       }
@@ -3660,8 +3660,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     modify_task_comment = NULL;
                     if (fail)
                       {
-                        free_string_var (&modify_task_parameter);
-                        free_string_var (&modify_task_value);
+                        openvas_free_string_var (&modify_task_parameter);
+                        openvas_free_string_var (&modify_task_value);
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("modify_task"));
                       }
@@ -3676,7 +3676,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         fail = set_task_parameter (task,
                                                    modify_task_parameter,
                                                    modify_task_value);
-                        free_string_var (&modify_task_parameter);
+                        openvas_free_string_var (&modify_task_parameter);
                         modify_task_value = NULL;
                         if (fail)
                           {
@@ -3696,7 +3696,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         if (modify_task_value)
                           {
-                            free_string_var (&modify_task_value);
+                            openvas_free_string_var (&modify_task_value);
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_ERROR_SYNTAX ("modify_task",
                                                 "MODIFY_TASK parameter requires"
@@ -3704,7 +3704,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else if (modify_task_parameter)
                           {
-                            free_string_var (&modify_task_parameter);
+                            openvas_free_string_var (&modify_task_parameter);
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("modify_task"));
                           }
@@ -3713,13 +3713,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     else
                       {
-                        free_string_var (&modify_task_parameter);
-                        free_string_var (&modify_task_value);
+                        openvas_free_string_var (&modify_task_parameter);
+                        openvas_free_string_var (&modify_task_value);
                         SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                       }
                   }
               }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -3749,9 +3749,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strlen (modify_task_name) == 0
               || strlen (modify_task_value) == 0)
             {
-              free_string_var (&modify_task_comment);
-              free_string_var (&modify_task_name);
-              free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
                                   // FIX could pass an empty rcfile?
@@ -3765,7 +3765,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               guchar *base64;
 
               base64 = g_base64_decode (modify_task_value, &base64_len);
-              free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_value);
               /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
                * when modify_task_value is zero length. */
               if (base64 == NULL)
@@ -3777,8 +3777,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               ret = create_config (modify_task_name,
                                    modify_task_comment,
                                    (char*) base64);
-              free_string_var (&modify_task_comment);
-              free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
               g_free (base64);
               switch (ret)
                 {
@@ -3821,9 +3821,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strlen (modify_task_name) == 0
               || strlen (modify_task_value) == 0)
             {
-              free_string_var (&modify_task_comment);
-              free_string_var (&modify_task_name);
-              free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_target",
                                   // FIX could pass an empty hosts element?
@@ -3834,18 +3834,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   modify_task_value,
                                   modify_task_comment))
             {
-              free_string_var (&modify_task_comment);
-              free_string_var (&modify_task_name);
-              free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_target",
                                   "Target exists already"));
             }
           else
             {
-              free_string_var (&modify_task_comment);
-              free_string_var (&modify_task_name);
-              free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_value);
               SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
             }
           set_client_state (CLIENT_AUTHENTIC);
@@ -4167,7 +4167,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                     break;
                 }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
@@ -4477,7 +4477,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "</get_status_response>");
                   }
               }
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
           }
         else if (current_uuid)
           SEND_TO_CLIENT_OR_FAIL
@@ -4492,7 +4492,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             // TODO: A lot of this block is the same as the one above.
 
-            free_string_var (&current_uuid);
+            openvas_free_string_var (&current_uuid);
 
             SEND_TO_CLIENT_OR_FAIL ("<get_status_response"
                                     " status=\"" STATUS_OK "\""
@@ -4868,7 +4868,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * (\ref current_client_task) with functions like \ref append_text,
+ * (\ref current_client_task) with functions like \ref openvas_append_text,
  * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
@@ -4889,20 +4889,20 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_MODIFY_REPORT_PARAMETER:
-        append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_task_value, text, text_len);
         break;
 
       case CLIENT_MODIFY_TASK_COMMENT:
-        append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&modify_task_comment, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_NAME:
-        append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&modify_task_name, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_PARAMETER:
-        append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_task_value, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
-        append_text (&modify_task_rcfile, text, text_len);
+        openvas_append_text (&modify_task_rcfile, text, text_len);
         break;
 
       case CLIENT_CREDENTIALS_USERNAME:
@@ -4913,23 +4913,23 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_CONFIG_COMMENT:
-        append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&modify_task_comment, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_NAME:
-        append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&modify_task_name, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_RCFILE:
-        append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_task_value, text, text_len);
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:
-        append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&modify_task_comment, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_HOSTS:
-        append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_task_value, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_NAME:
-        append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&modify_task_name, text, text_len);
         break;
 
       case CLIENT_CREATE_TASK_COMMENT:
@@ -4954,7 +4954,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_CONFIG_NAME:
       case CLIENT_DELETE_TARGET_NAME:
-        append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&modify_task_name, text, text_len);
         break;
 
       default:

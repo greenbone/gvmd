@@ -55,13 +55,10 @@ endif (OPENVAS_LIB_INSTALL_DIR)
 
 ## Libraries
 
-# file and string are just in libraries to aid testing.
+# file is just in libraries to aid testing.
 
 add_library (file file.c)
 set_target_properties (file PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
-
-add_library (string string.c)
-set_target_properties (string PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (ovas-mngr-comm ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
@@ -84,7 +81,7 @@ link_directories (${STRING_BINARY_DIRECTORY}/string)
 link_directories (${FILE_BINARY_DIRECTORY}/file)
 
 add_executable (openvasmd openvasmd.c oxpd.c ompd.c otpd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage string file)
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage file)
 
 exec_program (libopenvas-config
               ARGS --cflags
@@ -177,7 +174,7 @@ ADD_DEPENDENCIES (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c" "file.c"
-             "manage.c" "ovas-mngr-comm.c" "string.c" "tasks_sql.h")
+             "manage.c" "ovas-mngr-comm.c" "tasks_sql.h")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

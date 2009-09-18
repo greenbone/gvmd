@@ -32,7 +32,6 @@
 
 #include "common.h"
 #include "../tracef.h"
-#include "../string.h"
 
 #define NAME_1 "omp_get_targets_1 1"
 #define NAME_2 "omp_get_targets_1 2"

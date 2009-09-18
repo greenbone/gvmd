@@ -34,7 +34,6 @@
 
 #include "common.h"
 #include "../tracef.h"
-#include "../string.h"
 
 int
 main ()
@@ -143,7 +142,7 @@ main ()
       || entity_attribute (checksum, "algorithm") == NULL
       || strcmp (entity_attribute (checksum, "algorithm"), "md5")
       || (md5 = entity_text (checksum)) == NULL
-      || !isalnumstr (md5))
+      || !openvas_isalnumstr (md5))
     {
       free_entity (entity);
       delete_task (&session, id);

@@ -32,7 +32,6 @@
 
 #include "common.h"
 #include "../tracef.h"
-#include "../string.h"
 
 int
 main ()
