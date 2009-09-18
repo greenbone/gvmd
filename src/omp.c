@@ -4790,7 +4790,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t configs;
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_configs_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
           init_config_iterator (&configs);
           while (next (&configs))
             {
@@ -4829,7 +4831,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t targets;
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_targets_response>");
+          SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
           init_target_iterator (&targets);
           while (next (&targets))
             SENDF_TO_CLIENT_OR_FAIL ("<target>"

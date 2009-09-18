@@ -77,51 +77,57 @@ main ()
       goto delete_fail;
     }
 
-  configs = entity->entities;
-  while ((config = first_entity (configs)))
+  if (entity_attribute (entity, "status")
+      && strcmp (entity_attribute (entity, "status"), "200") == 0)
     {
-      entity_t name = entity_child (config, "name");
-      if (name == NULL) goto free_fail;
-      if (strcmp (entity_text (name), "Full") == 0)
+      configs = entity->entities;
+      while ((config = first_entity (configs)))
         {
-          entity_t comment, count, growing;
-          comment = entity_child (config, "comment");
-          if (comment == NULL
-              || strcmp (entity_text (comment), "All inclusive configuration."))
-            break;
-          count = entity_child (config, "family_count");
-          if (count == NULL) break;
-          growing = entity_child (count, "growing");
-          if (growing == NULL || strcmp (entity_text (growing), "1"))
-            break;
-          count = entity_child (config, "nvt_count");
-          if (count == NULL) break;
-          growing = entity_child (count, "growing");
-          if (growing == NULL || strcmp (entity_text (growing), "1"))
-            break;
-          found_1 = 1;
+          entity_t name = entity_child (config, "name");
+          if (name == NULL) goto free_fail;
+          if (strcmp (entity_text (name), "Full and fast") == 0)
+            {
+              entity_t comment, count, growing;
+              comment = entity_child (config, "comment");
+              if (comment == NULL
+                  || strcmp (entity_text (comment),
+                             "All NVT's; optimized by using previously"
+                             " collected information."))
+                break;
+              count = entity_child (config, "family_count");
+              if (count == NULL) break;
+              growing = entity_child (count, "growing");
+              if (growing == NULL || strcmp (entity_text (growing), "1"))
+                break;
+              count = entity_child (config, "nvt_count");
+              if (count == NULL) break;
+              growing = entity_child (count, "growing");
+              if (growing == NULL || strcmp (entity_text (growing), "1"))
+                break;
+              found_1 = 1;
+            }
+          else if (strcmp (entity_text (name), "omp_get_configs_1") == 0)
+            {
+              entity_t comment, count, growing;
+              comment = entity_child (config, "comment");
+              if (comment == NULL
+                  || strcmp (entity_text (comment),
+                             "Test comment for omp_get_configs_1."))
+                break;
+              count = entity_child (config, "family_count");
+              if (count == NULL) break;
+              growing = entity_child (count, "growing");
+              if (growing == NULL || strcmp (entity_text (growing), "0"))
+                break;
+              count = entity_child (config, "nvt_count");
+              if (count == NULL) break;
+              growing = entity_child (count, "growing");
+              if (growing == NULL || strcmp (entity_text (growing), "0"))
+                break;
+              found_2 = 1;
+            }
+          configs = next_entities (configs);
         }
-      else if (strcmp (entity_text (name), "omp_get_configs_1") == 0)
-        {
-          entity_t comment, count, growing;
-          comment = entity_child (config, "comment");
-          if (comment == NULL
-              || strcmp (entity_text (comment),
-                         "Test comment for omp_get_configs_1."))
-            break;
-          count = entity_child (config, "family_count");
-          if (count == NULL) break;
-          growing = entity_child (count, "growing");
-          if (growing == NULL || strcmp (entity_text (growing), "0"))
-            break;
-          count = entity_child (config, "nvt_count");
-          if (count == NULL) break;
-          growing = entity_child (count, "growing");
-          if (growing == NULL || strcmp (entity_text (growing), "0"))
-            break;
-          found_2 = 1;
-        }
-      configs = next_entities (configs);
     }
 
  free_fail:

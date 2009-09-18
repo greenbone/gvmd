@@ -92,26 +92,33 @@ main ()
       goto delete_fail;
     }
 
-  targets = entity->entities;
-  while ((target = first_entity (targets)))
+  if (entity_attribute (entity, "status")
+      && strcmp (entity_attribute (entity, "status"), "200") == 0)
     {
-      entity_t name = entity_child (target, "name");
-      entity_t hosts = entity_child (target, "hosts");
-      entity_t max_hosts = entity_child (target, "max_hosts");
-      entity_t comment = entity_child (target, "comment");
-      if (name == NULL || hosts == NULL || comment == NULL || max_hosts == NULL)
-        goto free_fail;
-      if ((strcmp (entity_text (name), NAME_1) == 0)
-          && (strcmp (entity_text (hosts), HOSTS_1) == 0)
-          && (strcmp (entity_text (max_hosts), MAX_HOSTS_1) == 0)
-          && (strcmp (entity_text (comment), COMMENT_1) == 0))
-        found_1 = 1;
-      else if ((strcmp (entity_text (name), NAME_2) == 0)
-               && (strcmp (entity_text (hosts), HOSTS_2) == 0)
-               && (strcmp (entity_text (max_hosts), MAX_HOSTS_2) == 0)
-               && (strcmp (entity_text (comment), "") == 0))
-        found_2 = 1;
-      targets = next_entities (targets);
+      targets = entity->entities;
+      while ((target = first_entity (targets)))
+        {
+          entity_t name = entity_child (target, "name");
+          entity_t hosts = entity_child (target, "hosts");
+          entity_t max_hosts = entity_child (target, "max_hosts");
+          entity_t comment = entity_child (target, "comment");
+          if (name == NULL
+              || hosts == NULL
+              || comment == NULL
+              || max_hosts == NULL)
+            goto free_fail;
+          if ((strcmp (entity_text (name), NAME_1) == 0)
+              && (strcmp (entity_text (hosts), HOSTS_1) == 0)
+              && (strcmp (entity_text (max_hosts), MAX_HOSTS_1) == 0)
+              && (strcmp (entity_text (comment), COMMENT_1) == 0))
+            found_1 = 1;
+          else if ((strcmp (entity_text (name), NAME_2) == 0)
+                   && (strcmp (entity_text (hosts), HOSTS_2) == 0)
+                   && (strcmp (entity_text (max_hosts), MAX_HOSTS_2) == 0)
+                   && (strcmp (entity_text (comment), "") == 0))
+            found_2 = 1;
+          targets = next_entities (targets);
+        }
     }
 
  free_fail:
