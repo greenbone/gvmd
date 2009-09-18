@@ -47,7 +47,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session)) goto fail;
+  if (omp_authenticate_env (&session)) goto fail;
 
   /* Create a task. */
 
@@ -78,21 +78,21 @@ main ()
 
   /* Start the task. */
 
-  if (start_task (&session, id))
+  if (omp_start_task (&session, id))
     goto delete_fail;
 
   /* Wait for the task to finish on the server. */
 
-  if (wait_for_task_end (&session, id))
+  if (omp_wait_for_task_end (&session, id))
     goto delete_fail;
 
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   free_entity (entity);
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;
 
  delete_fail:
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   free_entity (entity);
  fail:
   close_manager_connection (socket, session);

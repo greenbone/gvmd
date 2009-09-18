@@ -45,7 +45,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -53,11 +53,11 @@ main ()
 
   /* Create a task. */
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_empty_rc",
-                                "Test for omp_modify_task_0",
-                                "Comment.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_empty_rc",
+                               "Test for omp_modify_task_0",
+                               "Comment.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -75,7 +75,7 @@ main ()
                             id)
       == -1)
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -99,7 +99,7 @@ main ()
 
   /* Cleanup. */
 
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);

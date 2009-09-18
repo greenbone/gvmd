@@ -48,17 +48,17 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Test for omp_delete_task_0",
-                                "Simple test scan.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small_rc",
+                               "Test for omp_delete_task_0",
+                               "Simple test scan.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -66,11 +66,11 @@ main ()
 
   /* Start the task. */
 
-  if (start_task (&session, id)) goto delete_fail;
+  if (omp_start_task (&session, id)) goto delete_fail;
 
   /* Wait for the task to finish on the server. */
 
-  if (wait_for_task_end (&session, id)) goto delete_fail;
+  if (omp_wait_for_task_end (&session, id)) goto delete_fail;
 
   /* Request the status. */
 
@@ -126,7 +126,7 @@ main ()
 
   /* Wait for the server to stop the task. */
 
-  if (wait_for_task_delete (&session, id)) goto free_fail;
+  if (omp_wait_for_task_delete (&session, id)) goto free_fail;
 
   /* Try get the report. */
 
@@ -156,7 +156,7 @@ main ()
  free_fail:
       free_entity (entity);
  delete_fail:
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       free (id);
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

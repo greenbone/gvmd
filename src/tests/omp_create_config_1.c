@@ -44,7 +44,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

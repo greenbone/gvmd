@@ -49,17 +49,17 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Task for omp_get_status_5",
-                                "Test omp_get_status_5 task.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small_rc",
+                               "Task for omp_get_status_5",
+                               "Test omp_get_status_5 task.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -72,7 +72,7 @@ main ()
                             id)
       == -1)
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -106,7 +106,7 @@ main ()
     {
       free_entity (entity);
       free_entity (expected);
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -114,7 +114,7 @@ main ()
 
   free_entity (entity);
   free_entity (expected);
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   close_manager_connection (socket, session);
   free (id);
   return EXIT_SUCCESS;

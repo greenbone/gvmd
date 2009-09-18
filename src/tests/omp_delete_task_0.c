@@ -48,17 +48,17 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Test for omp_delete_task_0",
-                                "Simple test scan.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small_rc",
+                               "Test for omp_delete_task_0",
+                               "Simple test scan.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -143,7 +143,7 @@ main ()
 
   if (compare_entities (entity, expected))
     {
-      const char* status = task_status (entity);
+      const char* status = omp_task_status (entity);
 
       free_entity (expected);
 

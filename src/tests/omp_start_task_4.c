@@ -47,27 +47,27 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session)) goto fail;
+  if (omp_authenticate_env (&session)) goto fail;
 
   /* Create the tasks. */
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_medium_rc",
-                                "Task 1 for omp_start_task_4",
-                                "Test omp_start_task_0 task.",
-                                &id1))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_medium_rc",
+                               "Task 1 for omp_start_task_4",
+                               "Test omp_start_task_0 task.",
+                               &id1))
     goto fail;
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_medium_rc",
-                                "Task 2 for omp_start_task_4",
-                                "Test omp_start_task_0 task.",
-                                &id2))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_medium_rc",
+                               "Task 2 for omp_start_task_4",
+                               "Test omp_start_task_0 task.",
+                               &id2))
     goto fail;
 
   /* Start the first task. */
 
-  if (start_task (&session, id1)) goto delete_fail;
+  if (omp_start_task (&session, id1)) goto delete_fail;
 
   /* Try start the second task. */
 
@@ -91,8 +91,8 @@ main ()
       free_entity (expected);
       free_entity (entity);
  delete_fail:
-      delete_task (&session, id1);
-      delete_task (&session, id2);
+      omp_delete_task (&session, id1);
+      omp_delete_task (&session, id2);
       free (id1);
       free (id2);
  fail:
@@ -102,8 +102,8 @@ main ()
 
   free_entity (expected);
   free_entity (entity);
-  delete_task (&session, id1);
-  delete_task (&session, id2);
+  omp_delete_task (&session, id1);
+  omp_delete_task (&session, id2);
   free (id1);
   free (id2);
   close_manager_connection (socket, session);

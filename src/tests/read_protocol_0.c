@@ -48,7 +48,7 @@ main ()
   /* FIX This must be more than the timeout, which is currently 300. */
   sleep (320);
 
-  switch (env_authenticate (&session))
+  switch (omp_authenticate_env (&session))
     {
       case 1:
         /* Manager closed connection. */
@@ -59,11 +59,11 @@ main ()
         break;
     }
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Test for read_protocol_0",
-                                "Simple test scan.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small_rc",
+                               "Test for read_protocol_0",
+                               "Simple test scan.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_SUCCESS;

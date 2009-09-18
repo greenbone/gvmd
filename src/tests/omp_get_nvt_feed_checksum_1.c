@@ -51,17 +51,17 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small_rc",
-                                "Task for omp_get_nvt_feed_checksum_1",
-                                "Test omp_get_nvt_feed_checksum_1 task.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small_rc",
+                               "Task for omp_get_nvt_feed_checksum_1",
+                               "Test omp_get_nvt_feed_checksum_1 task.",
+                               &id))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -69,9 +69,9 @@ main ()
 
   /* Start the task. */
 
-  if (start_task (&session, id))
+  if (omp_start_task (&session, id))
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -79,9 +79,9 @@ main ()
 
   /* Wait for the task to start on the server. */
 
-  if (wait_for_task_start (&session, id))
+  if (omp_wait_for_task_start (&session, id))
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -89,9 +89,9 @@ main ()
 
   /* Request the task status. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -102,7 +102,7 @@ main ()
                             id)
       == -1)
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -111,7 +111,7 @@ main ()
   entity = NULL;
   if (read_entity (&session, &entity))
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -122,7 +122,7 @@ main ()
 
   if (openvas_server_send (&session, "<get_nvt_feed_checksum/>") == -1)
     {
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
@@ -145,14 +145,14 @@ main ()
       || !openvas_isalnumstr (md5))
     {
       free_entity (entity);
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       close_manager_connection (socket, session);
       free (id);
       return EXIT_FAILURE;
     }
 
   free_entity (entity);
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   close_manager_connection (socket, session);
   free (id);
   return EXIT_SUCCESS;

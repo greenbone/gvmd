@@ -47,7 +47,7 @@ main ()
 
   /* Send request. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -97,7 +97,7 @@ main ()
 
   /* Cleanup. */
 
-  delete_task (&session, entity_text (id_entity));
+  omp_delete_task (&session, entity_text (id_entity));
   close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);

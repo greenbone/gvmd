@@ -50,18 +50,18 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session)) goto fail;
+  if (omp_authenticate_env (&session)) goto fail;
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_small__many_plugins_yes_rc",
-                                "Test for omp_create_task_4 task",
-                                "Task for manager test omp_create_task_4.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_small__many_plugins_yes_rc",
+                               "Test for omp_create_task_4 task",
+                               "Task for manager test omp_create_task_4.",
+                               &id))
     goto fail;
 
   /* Check that there is a target for the task. */
 
-  if (env_authenticate (&session)) goto delete_fail;
+  if (omp_authenticate_env (&session)) goto delete_fail;
 
   if (openvas_server_send (&session, "<get_targets/>") == -1)
     goto delete_fail;
@@ -96,7 +96,7 @@ main ()
   g_free (target_name);
   free_entity (entity);
  delete_fail:
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   free (id);
  fail:
   close_manager_connection (socket, session);

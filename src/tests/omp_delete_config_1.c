@@ -46,7 +46,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -104,7 +104,7 @@ main ()
       free_entity (expected);
       free_entity (entity);
  delete_fail:
-      delete_task (&session, id);
+      omp_delete_task (&session, id);
       omp_delete_config (&session, "omp_delete_config_1");
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -112,7 +112,7 @@ main ()
 
   free_entity (expected);
   free_entity (entity);
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   omp_delete_config (&session, "omp_delete_config_1");
   close_manager_connection (socket, session);
   return EXIT_SUCCESS;

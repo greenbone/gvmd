@@ -47,7 +47,7 @@ main ()
   socket1 = connect_to_manager (&session1);
   if (socket1 == -1) return EXIT_FAILURE;
 
-  if (env_authenticate (&session1))
+  if (omp_authenticate_env (&session1))
     {
       close_manager_connection (socket1, session1);
       return EXIT_FAILURE;
@@ -55,11 +55,11 @@ main ()
 
   /* Create a task in process 1. */
 
-  if (create_task_from_rc_file (&session1,
-                                "new_task_empty_rc",
-                                "Test for omp_modify_task_1",
-                                "Comment.",
-                                &id))
+  if (omp_create_task_rc_file (&session1,
+                               "new_task_empty_rc",
+                               "Test for omp_modify_task_1",
+                               "Comment.",
+                               &id))
     {
       close_manager_connection (socket1, session1);
       return EXIT_FAILURE;
@@ -76,9 +76,9 @@ main ()
       return EXIT_FAILURE;
     }
 
-  if (env_authenticate (&session2))
+  if (omp_authenticate_env (&session2))
     {
-      delete_task (&session1, id);
+      omp_delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       close_manager_connection (socket2, session2);
       free (id);
@@ -93,7 +93,7 @@ main ()
                             id)
       == -1)
     {
-      delete_task (&session1, id);
+      omp_delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       close_manager_connection (socket2, session2);
       free (id);
@@ -111,7 +111,7 @@ main ()
 
   if (compare_entities (entity, expected))
     {
-      delete_task (&session1, id);
+      omp_delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       free_entity (entity);
       free_entity (expected);
@@ -128,7 +128,7 @@ main ()
                             id)
       == -1)
     {
-      delete_task (&session1, id);
+      omp_delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       free (id);
       return EXIT_FAILURE;
@@ -138,7 +138,7 @@ main ()
   if (read_entity (&session1, &entity))
     {
       fprintf (stderr, "Failed to read response.\n");
-      delete_task (&session1, id);
+      omp_delete_task (&session1, id);
       close_manager_connection (socket1, session1);
       free (id);
       return EXIT_FAILURE;
@@ -158,7 +158,7 @@ main ()
 
   /* Cleanup. */
 
-  delete_task (&session1, id);
+  omp_delete_task (&session1, id);
   close_manager_connection (socket1, session1);
   close_manager_connection (socket2, session2);
   free_entity (entity);

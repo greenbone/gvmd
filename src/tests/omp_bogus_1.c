@@ -47,7 +47,7 @@ main ()
 
   /* Authenticate. */
 
-  if (env_authenticate (&session)) goto fail;
+  if (omp_authenticate_env (&session)) goto fail;
 
   /* Send the XML. */
 

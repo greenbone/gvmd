@@ -47,7 +47,7 @@ main ()
 
   /* Request the feed information. */
 
-  if (env_authenticate (&session))
+  if (omp_authenticate_env (&session))
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;

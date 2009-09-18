@@ -48,22 +48,22 @@ main ()
 
   /* Create a task. */
 
-  if (env_authenticate (&session)) goto fail;
+  if (omp_authenticate_env (&session)) goto fail;
 
-  if (create_task_from_rc_file (&session,
-                                "new_task_empty_rc",
-                                "Test omp_get_status_0 task",
-                                "Task for manager test omp_get_status_0.",
-                                &id))
+  if (omp_create_task_rc_file (&session,
+                               "new_task_empty_rc",
+                               "Test omp_get_status_0 task",
+                               "Task for manager test omp_get_status_0.",
+                               &id))
     goto fail;
 
   /* Start the task. */
 
-  if (start_task (&session, id)) goto delete_fail;
+  if (omp_start_task (&session, id)) goto delete_fail;
 
   /* Request the status. */
 
-  if (env_authenticate (&session)) goto delete_fail;
+  if (omp_authenticate_env (&session)) goto delete_fail;
 
   if (openvas_server_send (&session, "<get_status/>") == -1)
     goto delete_fail;
@@ -99,7 +99,7 @@ main ()
                       || strcmp (status, "Done") == 0))
                 {
                   free_entity (entity);
-                  delete_task (&session, id);
+                  omp_delete_task (&session, id);
                   free (id);
                   close_manager_connection (socket, session);
                   return EXIT_SUCCESS;
@@ -112,7 +112,7 @@ main ()
 
   free_entity (entity);
  delete_fail:
-  delete_task (&session, id);
+  omp_delete_task (&session, id);
   free (id);
  fail:
   close_manager_connection (socket, session);
