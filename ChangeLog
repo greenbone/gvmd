@@ -1,5 +1,16 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd.c (OPENVASD_PORT): Set to 9391.
+	(OPENVASMD_PORT): Set to 9390.
+	(server_context): Remove.  Rename to ovas_server_context.
+	(ovas_server_context): New variable.  Was server_context.
+	(accept_and_maybe_fork): Note use of save_tasks.
+	(main): Set manager_port instead of manager_address.sin_port when
+	generating the port, otherwise the value is overwritten later.  Set
+	SO_REUSEADDR on manager socket.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS and
 	CLIENT_GET_TARGETS add status attributes to responses.
 

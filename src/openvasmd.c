@@ -167,16 +167,16 @@
 /**
  * @brief Server port.
  *
- * Used if /etc/services "openvas" and -port missing.
+ * Used if /etc/services "otp" and --port missing.
  */
-#define OPENVASD_PORT 1241
+#define OPENVASD_PORT 9391
 
 /**
  * @brief Manager port.
  *
- * Used if /etc/services "omp" and -sport are missing.
+ * Used if /etc/services "omp" and --sport are missing.
  */
-#define OPENVASMD_PORT 1241
+#define OPENVASMD_PORT 9390
 
 /**
  * @brief Second argument to `listen'.
@@ -200,11 +200,10 @@ struct sockaddr_in manager_address;
 FILE* log_stream = NULL;
 #endif
 
-// FIX rename ~manager_ovas_context
 /**
  * @brief The server context.
  */
-static ovas_server_context_t server_context = NULL;
+static ovas_server_context_t ovas_server_context = NULL;
 
 
 /* Forking, serving the client. */
@@ -371,7 +370,7 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
           int secure_client_socket
-            = ovas_server_context_attach (server_context, client_socket);
+            = ovas_server_context_attach (ovas_server_context, client_socket);
           if (secure_client_socket == -1)
             {
               g_critical ("%s: failed to attach server context to socket %i\n",
@@ -386,9 +385,11 @@ accept_and_maybe_fork ()
            * secure_client_socket. */
 #if FORK
           int ret = serve_client (secure_client_socket);
+          /** @todo This should be done through libomp. */
           save_tasks ();
 #else
           serve_client (secure_client_socket);
+          /** @todo This should be done through libomp. */
           save_tasks ();
           cleanup_manage_process ();
 #endif
@@ -438,8 +439,8 @@ cleanup ()
 #endif
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
-  ovas_server_context_free (server_context);
-  // Delete pidfile
+  ovas_server_context_free (ovas_server_context);
+  /* Delete pidfile. */
   gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
   g_unlink (pidfile_name);
   g_free (pidfile_name);
@@ -700,14 +701,14 @@ main (int argc, char** argv)
           g_critical ("%s: failed to initialise security\n", __FUNCTION__);
           exit (EXIT_FAILURE);
         }
-      server_context
+      ovas_server_context
         = ovas_server_context_new (NESSUS_ENCAPS_TLSv1,
                                    SERVERCERT,
                                    SERVERKEY,
                                    NULL,
                                    CACERT,
                                    0);
-      if (server_context == NULL)
+      if (ovas_server_context == NULL)
         {
           g_critical ("%s: failed to create server context\n", __FUNCTION__);
           exit (EXIT_FAILURE);
@@ -763,12 +764,12 @@ main (int argc, char** argv)
     }
   else
     {
-      struct servent *servent = getservbyname ("openvas", "tcp");
+      struct servent *servent = getservbyname ("otp", "tcp");
       if (servent)
         // FIX free servent?
-        manager_address.sin_port = servent->s_port;
+        manager_port = servent->s_port;
       else
-        manager_address.sin_port = htons (OPENVASMD_PORT);
+        manager_port = htons (OPENVASMD_PORT);
     }
 
 #if 0
@@ -897,14 +898,14 @@ main (int argc, char** argv)
       g_critical ("%s: failed to initialise security\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
-  server_context
+  ovas_server_context
     = ovas_server_context_new (NESSUS_ENCAPS_TLSv1,
                                SERVERCERT,
                                SERVERKEY,
                                NULL,
                                CACERT,
                                0);
-  if (server_context == NULL)
+  if (ovas_server_context == NULL)
     {
       g_critical ("%s: failed to create server context\n", __FUNCTION__);
       exit (EXIT_FAILURE);
@@ -920,6 +921,19 @@ main (int argc, char** argv)
                   strerror (errno));
       exit (EXIT_FAILURE);
     }
+
+  {
+    int optval = 1;
+    if (setsockopt (manager_socket,
+                    SOL_SOCKET, SO_REUSEADDR,
+                    &optval, sizeof (int)))
+      {
+        g_critical ("%s: failed to set SO_REUSEADDR on manager socket: %s\n",
+                    __FUNCTION__,
+                    strerror (errno));
+        exit (EXIT_FAILURE);
+      }
+  }
 
   /* Bind the manager socket to a port. */
 
