@@ -74,10 +74,17 @@ main ()
 
   if (compare_entities (entity, expected))
     {
-      free_entity (entity);
-      free_entity (expected);
-      close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      if (strcmp (entity_name (entity), "get_nvt_feed_checksum_response")
+          || entity_attribute (entity, "status") == NULL
+          || strcmp (entity_attribute (entity, "status"), "200")
+          || entity_attribute (entity, "status_text") == NULL
+          || strcmp (entity_attribute (entity, "status_text"), "OK"))
+        {
+          free_entity (entity);
+          free_entity (expected);
+          close_manager_connection (socket, session);
+          return EXIT_FAILURE;
+        }
     }
 
   free_entity (expected);

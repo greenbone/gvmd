@@ -58,7 +58,7 @@ main ()
                            "<name>omp_create_task_3 task</name>"
                            "<comment>Task for omp_create_task_3.</comment>"
                            "<target>Localhost</target>"
-                           "<config>Full</config>"
+                           "<config>Full and fast</config>"
                            "</create_task>")
       == -1)
     {

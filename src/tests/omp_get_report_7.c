@@ -1,6 +1,6 @@
 /* Test 7 of getting a report.
  * $Id$
- * Description: Test getting an PDF report.
+ * Description: Test getting a PDF report.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>

@@ -84,7 +84,7 @@ main ()
             break;
           hosts = entity_child (config, "hosts");
           if (hosts == NULL
-              || strcmp (entity_text (hosts), "localhost"))
+              || strcmp (entity_text (hosts), "tomato4.rgb"))
             break;
           found = 1;
           break;

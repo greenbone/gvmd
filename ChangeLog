@@ -1,5 +1,27 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/common.c (setup_test): Set g_log_default_log_handler to
+	openvas_log_func.
+
+	* src/tests/omp_get_nvt_all_0.c, src/tests/omp_get_nvt_details_0.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c,
+	src/tests/omp_get_nvt_feed_checksum_2.c: Add checks for successful
+	responses.
+
+	* src/tests/omp_create_task_3.c, src/tests/omp_start_task_3.c,
+	src/tests/omp_delete_target_1.c: Correct predefined config names.
+
+	* src/tests/omp_get_report_7.c: Correct heading typo.
+
+	* src/tests/omp_get_rules_0.c: Update expected result.
+
+	* src/tests/omp_create_task_4.c: Match expected target to RC.
+
+	* src/tests/new_task_small__many_plugins_yes_rc: New file.  Missing RC
+	for omp_create_task_4.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_delete_target_0.c, src/tests/omp_get_targets_1.c,
 	src/tests/omp_modify_task_0.c, src/tests/omp_get_nvt_details_0.c,
 	src/tests/omp_get_nvt_feed_checksum_1.c, src/tests/omp_get_nvt_details_2.c,

@@ -56,7 +56,7 @@ main ()
                            "<name>omp_start_task_4 task</name>"
                            "<comment>Task for omp_create_task_4.</comment>"
                            "<target>Localhost</target>"
-                           "<config>Full</config>"
+                           "<config>Full and fast</config>"
                            "</create_task>")
       == -1)
     goto fail;

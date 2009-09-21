@@ -69,7 +69,7 @@ main ()
 
   if (omp_create_task (&session,
                        "omp_delete_target_1",
-                       "Full",
+                       "Full and fast",
                        "omp_delete_target_1",
                        "Comment",
                        &id))

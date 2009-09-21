@@ -67,8 +67,8 @@ main ()
   /* Compare to expected response. */
 
   entity_t expected = add_entity (NULL, "get_rules_response", NULL);
-  add_attribute (expected, "status", "500");
-  add_attribute (expected, "status_text", "Internal error");
+  add_attribute (expected, "status", "503");
+  add_attribute (expected, "status_text", "Service temporarily down");
 
   if (compare_entities (entity, expected))
     {

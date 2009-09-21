@@ -56,12 +56,14 @@ int verbose = 0;
 
 #include "common.h"
 
-#include <openvas/openvas_server.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <openvas/openvas_server.h>
+#include <openvas/openvas_logging.h>
 
 /**
  * @brief Manager address.
@@ -158,4 +160,6 @@ setup_test ()
   char* env_verbose = getenv ("OPENVAS_TEST_VERBOSE");
   if (env_verbose) verbose = strcmp (env_verbose, "0");
   signal (SIGPIPE, SIG_IGN);
+  g_log_set_default_handler ((GLogFunc) openvas_log_func,
+                             NULL);
 }
