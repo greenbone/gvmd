@@ -1,5 +1,9 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_create_task_2.c: Update predefined config name.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/common.c (setup_test): Set g_log_default_log_handler to
 	openvas_log_func.
 
