@@ -1,5 +1,11 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Ensure that before every
+	g_base64_encode call there is a check that prevents passing NULL or an
+	empty string to g_base64_encode.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd_log_conf.cmake_in: Match time prepend formats to
 	openvas-libraries.
 	(md string, libopenvas, libnasl, openvasd): Remove.

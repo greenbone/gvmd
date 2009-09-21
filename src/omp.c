@@ -2726,7 +2726,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             report_t report;
             iterator_t results, hosts;
             GString *nbe;
-            gchar *content, *base64_content;
+            gchar *content;
 
             if (find_report (current_uuid, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -2908,16 +2908,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " status_text=\"" STATUS_OK_TEXT "\">"
                                         "<report format=\"nbe\">");
                 content = g_string_free (nbe, FALSE);
-                base64_content = g_base64_encode ((guchar*) content,
-                                                  strlen (content));
-                g_free (content);
-                if (send_to_client (base64_content))
+                if (content && strlen (content))
                   {
+                    gchar *base64_content;
+                    base64_content = g_base64_encode ((guchar*) content,
+                                                      strlen (content));
+                    if (send_to_client (base64_content))
+                      {
+                        g_free (content);
+                        g_free (base64_content);
+                        error_send_to_client (error);
+                        return;
+                      }
                     g_free (base64_content);
-                    error_send_to_client (error);
-                    return;
                   }
-                g_free (base64_content);
+                g_free (content);
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
               }
@@ -3039,8 +3044,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             else
                               {
-                                gchar *base64;
-
                                 /* Encode and send the HTML. */
 
                                 SEND_TO_CLIENT_OR_FAIL
@@ -3048,18 +3051,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">"
                                   "<report format=\"html\">");
-                                base64 = g_base64_encode ((guchar*) html,
-                                                          html_len);
-                                g_free (html);
-                                if (send_to_client (base64))
+                                if (html && strlen (html))
                                   {
+                                    gchar *base64;
+                                    base64 = g_base64_encode ((guchar*) html,
+                                                              html_len);
+                                    if (send_to_client (base64))
+                                      {
+                                        g_free (html);
+                                        g_free (base64);
+                                        error_send_to_client (error);
+                                        return;
+                                      }
                                     g_free (base64);
-                                    error_send_to_client (error);
-                                    return;
                                   }
-                                g_free (base64);
-                                SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                                        "</get_report_response>");
+                                g_free (html);
+                                SEND_TO_CLIENT_OR_FAIL
+                                 ("</report>"
+                                  "</get_report_response>");
                               }
                           }
                       }
@@ -3189,8 +3198,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             else
                               {
-                                gchar *base64;
-
                                 /* Encode and send the HTML. */
 
                                 SEND_TO_CLIENT_OR_FAIL
@@ -3198,16 +3205,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">"
                                   "<report format=\"pdf\">");
-                                base64 = g_base64_encode ((guchar*) pdf,
-                                                          pdf_len);
-                                g_free (pdf);
-                                if (send_to_client (base64))
+                                if (pdf && strlen (pdf))
                                   {
+                                    gchar *base64;
+                                    base64 = g_base64_encode ((guchar*) pdf,
+                                                              pdf_len);
+                                    if (send_to_client (base64))
+                                      {
+                                        g_free (pdf);
+                                        g_free (base64);
+                                        error_send_to_client (error);
+                                        return;
+                                      }
                                     g_free (base64);
-                                    error_send_to_client (error);
-                                    return;
                                   }
-                                g_free (base64);
+                                g_free (pdf);
                                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                                         "</get_report_response>");
                               }
@@ -3322,8 +3334,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else
                           {
-                            gchar *base64;
-
                             /* Encode and send the PDF. */
 
                             SEND_TO_CLIENT_OR_FAIL
@@ -3331,16 +3341,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"pdf\">");
-                            base64 = g_base64_encode ((guchar*) pdf,
-                                                      pdf_len);
-                            g_free (pdf);
-                            if (send_to_client (base64))
+                            if (pdf && strlen (pdf))
                               {
+                                gchar *base64;
+                                base64 = g_base64_encode ((guchar*) pdf,
+                                                          pdf_len);
+                                if (send_to_client (base64))
+                                  {
+                                    g_free (pdf);
+                                    g_free (base64);
+                                    error_send_to_client (error);
+                                    return;
+                                  }
                                 g_free (base64);
-                                error_send_to_client (error);
-                                return;
                               }
-                            g_free (base64);
+                            g_free (pdf);
                             SEND_TO_CLIENT_OR_FAIL ("</report>"
                                                     "</get_report_response>");
                           }
@@ -4404,12 +4419,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (current_int_1)
                       {
                         description = task_description (task);
-                        if (description)
+                        if (description && strlen (description))
                           {
                             gchar *d64;
                             d64 = g_base64_encode ((guchar*) description,
                                                    strlen (description));
-                            free (description);
                             description64 = g_strdup_printf ("<rcfile>"
                                                              "%s"
                                                              "</rcfile>",
@@ -4418,6 +4432,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else
                           description64 = g_strdup ("<rcfile></rcfile>");
+                        free (description);
                       }
                     else
                       description64 = g_strdup ("");
@@ -4611,12 +4626,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (current_int_1)
                   {
                     description = task_description (index);
-                    if (description)
+                    if (description && strlen (description))
                       {
                         gchar *d64;
                         d64 = g_base64_encode ((guchar*) description,
                                                strlen (description));
-                        free (description);
                         description64 = g_strdup_printf ("<rcfile>"
                                                          "%s"
                                                          "</rcfile>",
@@ -4625,6 +4639,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     else
                       description64 = g_strdup ("<rcfile></rcfile>");
+                    free (description);
                   }
                 else
                   description64 = g_strdup ("");
