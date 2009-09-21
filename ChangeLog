@@ -1,5 +1,16 @@
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd_log_conf.cmake_in: Match time prepend formats to
+	openvas-libraries.
+	(md string, libopenvas, libnasl, openvasd): Remove.
+	(*): Add %t to prepend, to match other entries.
+
+	* src/openvasmd.c (main): Remove g_log_set_handler calls, as that's what
+	setup_log_handlers does.  Rename NESSUS_ENCAPS_TLSv1 to
+	OPENVAS_ENCAPS_TLSv1.
+
+2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_create_task_2.c: Update predefined config name.
 
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>

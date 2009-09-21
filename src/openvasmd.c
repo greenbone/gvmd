@@ -560,26 +560,6 @@ main (int argc, char** argv)
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
-  g_log_set_handler (G_LOG_DOMAIN,
-                     ALL_LOG_LEVELS,
-                     openvas_log_func,
-                     log_config);
-  g_log_set_handler ("md   file",
-                     ALL_LOG_LEVELS,
-                     openvas_log_func,
-                     log_config);
-  g_log_set_handler ("md string",
-                     ALL_LOG_LEVELS,
-                     openvas_log_func,
-                     log_config);
-  g_log_set_handler ("md   comm",
-                     ALL_LOG_LEVELS,
-                     openvas_log_func,
-                     log_config);
-  g_log_set_handler ("md    otp",
-                     ALL_LOG_LEVELS,
-                     openvas_log_func,
-                     log_config);
 
   tracef ("   OpenVAS Manager\n");
 
@@ -709,7 +689,7 @@ main (int argc, char** argv)
           exit (EXIT_FAILURE);
         }
       ovas_server_context
-        = ovas_server_context_new (NESSUS_ENCAPS_TLSv1,
+        = ovas_server_context_new (OPENVAS_ENCAPS_TLSv1,
                                    SERVERCERT,
                                    SERVERKEY,
                                    NULL,
@@ -912,7 +892,7 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
   ovas_server_context
-    = ovas_server_context_new (NESSUS_ENCAPS_TLSv1,
+    = ovas_server_context_new (OPENVAS_ENCAPS_TLSv1,
                                SERVERCERT,
                                SERVERKEY,
                                NULL,
