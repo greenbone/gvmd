@@ -2,6 +2,12 @@
 
 	Remove the file library, which is out of use.
 
+	* src/file.c, src/file.h: Remove.
+
+2009-09-22  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Remove the file library, which is out of use.
+
 	* doc/Doxyfile, doc/Doxyfile_full: Remove file.c.
 
 	* src/tests/CMakeLists.txt: Remove linkage to libfile.
