@@ -93,6 +93,8 @@ static int ompd_nvt_cache_mode = 0;
 /**
  * @brief Initialise the OMP library for the OMP daemon.
  *
+ * @param[in]  log_config  Log configuration
+ *
  * @return 0 success, -1 error, -2 database is wrong version.
  */
 int
@@ -446,10 +448,17 @@ recreate_session (int server_socket,
  * the input, and writing any results to the appropriate socket.
  * Exit the loop on reaching end of file on the client socket.
  *
- * Read input with \ref read_from_client and \ref read_from_server.
+ * Read input from the client and server.
  * Process the input with \ref process_omp_client_input and
- * \ref process_otp_server_input.  Write the results with
- * \ref write_to_client and \ref write_to_server.
+ * \ref process_otp_server_input.  Write the results to the client.
+ *
+ * \if STATIC
+ *
+ * Read input with \ref read_from_client and \ref read_from_server.
+ * Write the results with \ref write_to_client.  Write to the server
+ * with \ref write_to_server.
+ *
+ * \endif
  *
  * If compiled with logging (\ref LOG) then log all input and output
  * with \ref logf.

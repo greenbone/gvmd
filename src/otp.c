@@ -1231,13 +1231,19 @@ parse_server_server (/*@dependent@*/ char** messages)
  * @brief Process any lines available in \ref from_server.
  *
  * Update server information according to the input from the server.
+ *
+ * \if STATIC
+ *
  * This includes updating the server state with \ref set_server_state
  * and \ref set_server_init_state, and updating server records with functions
  * like \ref add_server_preference and \ref append_task_open_port.
  *
+ * \endif
+ *
  * This function simply records input from the server.  Output to the server
- * or client is always done via \ref process_omp_client_input in reaction to
- * client requests.
+ * or client is almost always done via \ref process_omp_client_input in
+ * reaction to client requests, the only exception being stop requests
+ * initiated in other processes.
  *
  * @return 0 success, 1 received server BYE, 2 bad login, -1 error.
  */

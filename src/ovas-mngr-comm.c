@@ -62,10 +62,14 @@
  */
 #define G_LOG_DOMAIN "md   comm"
 
+/** @cond STATIC */
+
 /**
  * @brief The size of the \ref to_server data buffer.
  */
 #define TO_SERVER_BUFFER_SIZE 26214400
+
+/** @endcond */
 
 // FIX This is the definition for the entire module.
 /**
@@ -80,6 +84,8 @@ int verbose = 0;
  * @brief Logging parameters, as passed to setup_log_handlers.
  */
 GSList *log_config = NULL;
+
+/** @cond STATIC */
 
 /**
  * @brief Buffer of output to the server.
@@ -96,10 +102,12 @@ static int to_server_end = 0;
  */
 static int to_server_start = 0;
 
+/** @endcond */
+
 /**
- * @brief Get the number of characters free in the \ref to_server buffer.
+ * @brief Get the number of characters free in the server output buffer.
  *
- * @return Number of characters free in \ref to_server.  0 when full.
+ * @return Number of characters free in server output buffer.  0 when full.
  */
 unsigned int
 to_server_buffer_space ()

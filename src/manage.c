@@ -563,14 +563,15 @@ send_config_rules (const char* config)
 /**
  * @brief Start a task.
  *
- * Use \ref send_to_server to queue the task start sequence in \ref to_server.
+ * Use \ref send_to_server to queue the task start sequence in server
+ * output buffer.
  *
  * Only one task can run at a time in a process.
  *
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, 1 task is active already,
- *         -1 if out of space in \ref to_server buffer, -2 if the
+ *         -1 if out of space in server output buffer, -2 if the
  *         task is missing a target, -3 if creating the report fails, -4 target
  *         missing hosts, -5 task missing config, -6 if there's already a task
  *         running in this process.
@@ -738,12 +739,12 @@ start_task (task_t task)
  * @brief Initiate stopping a task.
  *
  * Use \ref send_to_server to queue the task stop sequence in
- * \ref to_server.
+ * server output buffer.
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, 1 if stop requested, -1 if out of space in \ref
- *         to_server buffer.
+ * @return 0 on success, 1 if stop requested, -1 if out of space in server
+ *         output buffer.
  */
 int
 stop_task (task_t task)
@@ -769,7 +770,7 @@ stop_task (task_t task)
 /**
  * @brief Request the list of certificates from the server.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in server output buffer.
  */
 int
 request_certificates ()
@@ -782,7 +783,7 @@ request_certificates ()
 /**
  * @brief Acknowledge a server BYE.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in server output buffer.
  */
 int
 acknowledge_bye ()
@@ -795,7 +796,7 @@ acknowledge_bye ()
 /**
  * @brief Acknowledge the server PLUGINS_MD5 message.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in server output buffer.
  */
 int
 acknowledge_md5sum ()
@@ -808,7 +809,7 @@ acknowledge_md5sum ()
 /**
  * @brief Acknowledge server PLUGINS_MD5 message, requesting plugin md5sums.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in server output buffer.
  */
 int
 acknowledge_md5sum_sums ()
@@ -821,7 +822,7 @@ acknowledge_md5sum_sums ()
 /**
  * @brief Acknowledge server PLUGINS_MD5 message, requesting all plugin info.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer.
+ * @return 0 on success, -1 if out of space in server output buffer.
  */
 int
 acknowledge_md5sum_info ()
@@ -834,7 +835,7 @@ acknowledge_md5sum_info ()
 /**
  * @brief Handle state changes to current task made by other processes.
  *
- * @return 0 on success, -1 if out of space in \ref to_server buffer, 1 if
+ * @return 0 on success, -1 if out of space in server output buffer, 1 if
  *         queued to server.
  */
 int

@@ -64,13 +64,9 @@
  * library is defined in src/\ref manage.c and src/\ref tasks_sql.h.
  *
  * The OTP and Manage libraries both use the Comm library to communication
- * with the OTP server (src/\ref ovas-mngr-comm.c).  There are also two
- * general libraries at src/\ref string.c and src/\ref file.c, which provide
- * string and file utilities.
+ * with the OTP server (src/\ref ovas-mngr-comm.c).
  *
- * The Manager tests share the code in src/tests/\ref common.c.  This code
- * enables a client to communicate with the manager, and may become a
- * general interface for programming manager clients.
+ * The Manager tests share some code in src/tests/\ref common.c.
  *
  * \section copying License Information
  * \verbinclude COPYING
@@ -324,6 +320,11 @@ serve_client (int client_socket)
 }
 
 /**
+ * @brief Experimental flag for turning off forking.
+ */
+#define FORK 1
+
+/**
  * @brief Accept and fork.
  *
  * Accept the client connection and fork a child process to serve the client.
@@ -353,7 +354,6 @@ accept_and_maybe_fork ()
       exit (EXIT_FAILURE);
     }
 
-#define FORK 1
 #if FORK
   /* Fork a child to serve the client. */
   pid_t pid = fork ();

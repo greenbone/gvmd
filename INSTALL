@@ -1,4 +1,4 @@
-The reference system used by the developers is Debian GNU Linux 'Etch' 4.0.
+The reference system used by the developers is Debian GNU Linux 'Lenny' 5.0.
 The build might fail on any other systems.  Also it is necessary to install
 dependent development packages.
 
@@ -28,7 +28,7 @@ or (if you want to use the default installation path /usr/local)
     $ cmake .
 
 This only needs to be done once.  Note: It is assumed that the other
-OpenVAS components are installed to the same path. If not, you need to set
+OpenVAS components are installed to the same path.  If not, you need to set
 some paths separately, see below for details.
 
 Thereafter, the following commands are useful.

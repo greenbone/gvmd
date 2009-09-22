@@ -149,8 +149,8 @@ close_manager_connection (int socket, gnutls_session_t session)
 /**
  * @brief Setup a test.
  *
- * Set up the verbosity flag according the the OPENVAS_TEST_VERBOSE
- * environment variable and prepare signal handling.
+ * Set up the verbosity flag according to the OPENVAS_TEST_VERBOSE
+ * environment variable, prepare signal handling and setup the log handler.
  *
  * Each test should call this at the very beginning of the test.
  */

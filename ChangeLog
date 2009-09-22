@@ -1,5 +1,21 @@
 2009-09-22  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* doc/CMakeLists.txt (DOC_FILES): Remove string.c and file.c.
+
+	* INSTALL: Update reference system to Lenny.  Add space after fullstop.
+
+	* README, src/tests/common.c: Correct doc typos.
+
+	* src/omp.c, src/ompd.c, src/ovas-mngr-comm.c, src/otp.c, src/manage.c: In
+	doc comments, put conditionals around macro function definitions and
+	references to static functions.  Doc a missing param.  Refer to
+	to_server more generically.
+
+	* src/openvasmd.c (\mainpage): Update.
+	(FORK): Doc.
+
+2009-09-22  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Remove the file library, which is out of use.
 
 	* src/file.c, src/file.h: Remove.

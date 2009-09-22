@@ -636,6 +636,8 @@ find_attribute (const gchar **attribute_names,
   return 0;
 }
 
+/** @cond STATIC */
+
 /**
  * @brief Send response message to client, returning on fail.
  *
@@ -677,6 +679,8 @@ find_attribute (const gchar **attribute_names,
       g_free (msg);                                                          \
     }                                                                        \
   while (0)
+
+/** @endcond */
 
 /**
  * @brief Handle the start of an OMP XML element.
@@ -5048,6 +5052,8 @@ init_omp_process (int update_nvt_cache)
 /**
  * @brief Process any XML available in \ref from_client.
  *
+ * \if STATIC
+ *
  * Call the XML parser and let the callback functions do the work
  * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
  * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
@@ -5056,8 +5062,10 @@ init_omp_process (int update_nvt_cache)
  * \ref to_server (using \ref send_to_server) and any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
+ * \endif
+ *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or \ref to_server (respectively), -4 XML syntax error.
+ *         or the server output buffer (respectively), -4 XML syntax error.
  */
 int
 process_omp_client_input ()
