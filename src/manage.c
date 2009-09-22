@@ -37,7 +37,6 @@
  */
 
 #include "manage.h"
-#include "file.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 

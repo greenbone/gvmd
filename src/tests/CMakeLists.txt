@@ -65,27 +65,12 @@ set_target_properties (common PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CF
 ## Tests of support libraries
 
 include_directories (${COMMON_SOURCE_DIRECTORY}/common)
-link_directories (${COMMON_BINARY_DIRECTORY}/file)
 
 add_executable (make_report_uuid_0 make_report_uuid_0.c)
-target_link_libraries (make_report_uuid_0 manage ovas-mngr-comm file)
+target_link_libraries (make_report_uuid_0 manage ovas-mngr-comm)
 set_target_properties (make_report_uuid_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (make_report_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
 ADD_TEST (make_report_uuid_0 make_report_uuid_0)
-
-add_executable (rmdir_recursively_0 rmdir_recursively_0.c)
-target_link_libraries (rmdir_recursively_0 file)
-set_target_properties (rmdir_recursively_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
-set_target_properties (rmdir_recursively_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
-target_link_libraries (rmdir_recursively_0 common)
-ADD_TEST (rmdir_recursively_0 rmdir_recursively_0)
-
-add_executable (rmdir_recursively_1 rmdir_recursively_1.c)
-target_link_libraries (rmdir_recursively_1 file)
-set_target_properties (rmdir_recursively_1 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
-set_target_properties (rmdir_recursively_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
-target_link_libraries (rmdir_recursively_1 common)
-ADD_TEST (rmdir_recursively_1 rmdir_recursively_1)
 
 add_executable (strip_space_0 strip_space_0.c)
 set_target_properties (strip_space_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")

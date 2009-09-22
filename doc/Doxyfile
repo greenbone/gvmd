@@ -459,8 +459,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = src/file.c \
-                         src/tests/common.c \
+INPUT                  = src/tests/common.c \
                          src/logf.h \
                          src/tracef.h \
                          src/manage.c \

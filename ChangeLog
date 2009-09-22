@@ -1,3 +1,18 @@
+2009-09-22  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Remove the file library, which is out of use.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Remove file.c.
+
+	* src/tests/CMakeLists.txt: Remove linkage to libfile.
+	(rmdir_recursively_0, rmdir_recursively_1): Remove.
+
+	* src/manage.c: Remove file.h include.
+
+	* src/CMakeLists.txt: Remove file and string linkage.
+	(libfile): Remove.
+	(C_FILES): Remove file.c.
+
 2009-09-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Ensure that before every
