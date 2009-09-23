@@ -29,7 +29,7 @@
  *
  * This file defines an OpenVAS Transfer Protocol (OTP) gateway server for
  * the OpenVAS Manager, a daemon that is layered between the real OpenVAS
- * Server (openvasd) and a client (such as OpenVAS-Client).
+ * Scanner (openvassd) and a client (such as OpenVAS-Client).
  *
  * The library provides a single function, \ref serve_otp.
  * This function serves OTP from a real OTP server to a single client.

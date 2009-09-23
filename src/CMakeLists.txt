@@ -53,24 +53,8 @@ else (OPENVAS_LIB_INSTALL_DIR)
   set (LIB_TEMP "")
 endif (OPENVAS_LIB_INSTALL_DIR)
 
-## Libraries
 
-add_library (ovas-mngr-comm ovas-mngr-comm.c)
-set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
-
-add_library (manage manage.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
-
-add_library (omp omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
-
-add_library (otp otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${GLIB_CFLAGS}")
-
-## Program
-
-add_executable (openvasmd openvasmd.c oxpd.c ompd.c otpd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage)
+## Gather flags from libopenvas
 
 exec_program (libopenvas-config
               ARGS --cflags
@@ -78,6 +62,25 @@ exec_program (libopenvas-config
 exec_program (libopenvas-config
               ARGS --libs
 			  OUTPUT_VARIABLE OPENVAS_LDFLAGS)
+
+## Libraries
+
+add_library (ovas-mngr-comm ovas-mngr-comm.c)
+set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+
+add_library (manage manage.c)
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+
+add_library (omp omp.c)
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+
+add_library (otp otp.c)
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+
+## Program
+
+add_executable (openvasmd openvasmd.c oxpd.c ompd.c otpd.c)
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage)
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 

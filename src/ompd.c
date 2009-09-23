@@ -28,8 +28,8 @@
  * @brief The OpenVAS Manager OMP daemon.
  *
  * This file defines the OpenVAS Manager Protocol (OMP) server for the OpenVAS
- * Manager, a daemon that is layered between the real OpenVAS Server
- * (openvasd) and a client (such as OpenVAS-Client).
+ * Manager, a daemon that is layered between the real OpenVAS Scanner
+ * (openvassd) and a client (such as OpenVAS-Client).
  *
  * The library provides two functions: \ref init_ompd and \ref serve_omp.
  * \ref init_ompd initialises the daemon.

@@ -83,7 +83,7 @@ buffer_size_t from_client_end = 0;
 buffer_size_t from_server_end = 0;
 
 /**
- * @brief The IP address of openvasd, "the server".
+ * @brief The IP address of openvassd, the "scanner".
  */
 struct sockaddr_in server_address;
 
