@@ -28,7 +28,7 @@
  * @brief The OpenVAS Manager daemon.
  *
  * This file defines the OpenVAS Manager, a daemon that is layered between
- * the real OpenVAS Server (openvasd) and a client (such as
+ * the real OpenVAS Scanner (openvassd) and a client (such as
  * OpenVAS-Client).
  *
  * The entry point to the daemon is the \ref main function.  From there
@@ -136,9 +136,9 @@
 #endif
 
 /**
- * @brief Server (openvasd) address.
+ * @brief Scanner (openvassd) address.
  */
-#define OPENVASD_ADDRESS "127.0.0.1"
+#define OPENVASSD_ADDRESS "127.0.0.1"
 
 /**
  * @brief Location of server certificate.
@@ -166,7 +166,7 @@
  *
  * Used if /etc/services "otp" and --port missing.
  */
-#define OPENVASD_PORT 9391
+#define OPENVASSD_PORT 9391
 
 /**
  * @brief Manager port.
@@ -200,7 +200,7 @@ FILE* log_stream = NULL;
 /**
  * @brief The server context.
  */
-static ovas_server_context_t ovas_server_context = NULL;
+static ovas_scanner_context_t ovas_scanner_context = NULL;
 
 
 /* Forking, serving the client. */
@@ -208,7 +208,7 @@ static ovas_server_context_t ovas_server_context = NULL;
 /**
  * @brief Serve the client.
  *
- * Connect to the openvasd server, then call either \ref serve_otp or \ref
+ * Connect to the openvassd scanner, then call either \ref serve_otp or \ref
  * serve_omp to serve the protocol, depending on the first message that
  * the client sends.  Read the first message with \ref read_protocol.
  *
@@ -377,7 +377,7 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
           int secure_client_socket
-            = ovas_server_context_attach (ovas_server_context, client_socket);
+            = ovas_scanner_context_attach (ovas_scanner_context, client_socket);
           if (secure_client_socket == -1)
             {
               g_critical ("%s: failed to attach server context to socket %i\n",
@@ -446,7 +446,7 @@ cleanup ()
 #endif
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
-  ovas_server_context_free (ovas_server_context);
+  ovas_scanner_context_free (ovas_scanner_context);
   /* Delete pidfile. */
   gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
   g_unlink (pidfile_name);
@@ -524,8 +524,8 @@ main (int argc, char** argv)
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
-        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Server (openvasd) address.", "<address>" },
-        { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Server (openvasd) port number.", "<number>" },
+        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Scanner (openvassd) address.", "<address>" },
+        { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
         { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
@@ -596,7 +596,7 @@ main (int argc, char** argv)
   /* Complete option processing. */
 
   if (server_address_string == NULL)
-    server_address_string = OPENVASD_ADDRESS;
+    server_address_string = OPENVASSD_ADDRESS;
 
   if (server_port_string)
     {
@@ -617,7 +617,7 @@ main (int argc, char** argv)
         // FIX free servent?
         server_port = servent->s_port;
       else
-        server_port = htons (OPENVASD_PORT);
+        server_port = htons (OPENVASSD_PORT);
     }
 
   if (update_nvt_cache)
@@ -688,14 +688,14 @@ main (int argc, char** argv)
           g_critical ("%s: failed to initialise security\n", __FUNCTION__);
           exit (EXIT_FAILURE);
         }
-      ovas_server_context
-        = ovas_server_context_new (OPENVAS_ENCAPS_TLSv1,
+      ovas_scanner_context
+        = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
                                    SERVERCERT,
                                    SERVERKEY,
                                    NULL,
                                    CACERT,
                                    0);
-      if (ovas_server_context == NULL)
+      if (ovas_scanner_context == NULL)
         {
           g_critical ("%s: failed to create server context\n", __FUNCTION__);
           exit (EXIT_FAILURE);
@@ -891,14 +891,14 @@ main (int argc, char** argv)
       g_critical ("%s: failed to initialise security\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
-  ovas_server_context
-    = ovas_server_context_new (OPENVAS_ENCAPS_TLSv1,
+  ovas_scanner_context
+    = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
                                SERVERCERT,
                                SERVERKEY,
                                NULL,
                                CACERT,
                                0);
-  if (ovas_server_context == NULL)
+  if (ovas_scanner_context == NULL)
     {
       g_critical ("%s: failed to create server context\n", __FUNCTION__);
       exit (EXIT_FAILURE);

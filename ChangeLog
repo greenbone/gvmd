@@ -1,5 +1,10 @@
 2009-09-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/openvasmd.c: Replaced server by scanner, openvasd by openvassd.
+	Reflect API change (openvas_server_context -> openvas_scanner_context).
+
+2009-09-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/CMakeLists.txt: All libraries depend on libopenvas(base), added
 	the 'libopenvas-config --cflag' to the compile flags.
 
