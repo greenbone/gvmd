@@ -1126,10 +1126,10 @@ cleanup_manage_process ()
 {
   if (task_db)
     {
-      if (current_server_task)
+      if (current_scanner_task)
         {
-          if (task_run_status (current_server_task) == TASK_STATUS_REQUESTED)
-            set_task_run_status (current_server_task, TASK_STATUS_STOPPED);
+          if (task_run_status (current_scanner_task) == TASK_STATUS_REQUESTED)
+            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
         }
       sqlite3_close (task_db);
       task_db = NULL;
@@ -1374,7 +1374,7 @@ task_run_status (task_t task)
 void
 set_task_run_status (task_t task, task_status_t status)
 {
-  if ((task == current_server_task) && current_report)
+  if ((task == current_scanner_task) && current_report)
     sql ("UPDATE reports SET scan_run_status = %u WHERE ROWID = %llu;",
          status,
          current_report);
@@ -1585,7 +1585,7 @@ make_task_rcfile (task_t task)
   // FIX how know if scanner?
   g_string_append (buffer, "end(SCANNER_SET)\n\n");
 
-  /* Server preferences. */
+  /* Scanner preferences. */
 
   g_string_append (buffer, "begin(SERVER_PREFS)\n");
   init_preference_iterator (&prefs, config, "SERVER_PREFS");
@@ -1661,7 +1661,7 @@ make_task_rcfile (task_t task)
   }
   g_string_append (buffer, "end(PLUGIN_SET)\n\n");
 
-  /* Server info. */
+  /* Scanner info. */
 
   g_string_append (buffer, "begin(SERVER_INFO)\n");
   g_string_append (buffer, "end(SERVER_INFO)\n");

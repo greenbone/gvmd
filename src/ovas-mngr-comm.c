@@ -56,6 +56,8 @@
 #include "splint.h"
 #endif
 
+/** @todo Consider moving to libs (so please leave "server" in the names). */
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

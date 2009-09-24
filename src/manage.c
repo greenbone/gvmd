@@ -32,8 +32,8 @@
  *
  * This library provides facilities for storing and manipulating credential
  * and task information, and manipulating reports.  Task manipulation
- * includes sending task commands to the OTP server that is running the
- * tasks.
+ * includes sending task commands to the OTP server (the "scanner") that is
+ * running the tasks.
  */
 
 #include "manage.h"
@@ -63,9 +63,9 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Information about the server.
+ * @brief Information about the scanner.
  */
-server_t server;
+scanner_t scanner;
 
 
 /* Functions defined in task_*.h and used before the include. */
@@ -230,19 +230,19 @@ delete_reports (task_t task)
 /* Task globals. */
 
 /**
- * @brief Server active flag.
+ * @brief Scanner active flag.
  *
- * This indicates whether the server is doing something that the manager
+ * This indicates whether the scanner is doing something that the manager
  * must wait for.  Set, for example, by \ref start_task.  If this variable
  * is true then the manager keeps the management process alive until the
- * server closes its connection, even if the client closes its connection.
+ * scanner closes its connection, even if the client closes its connection.
  */
-short server_active = 0;
+short scanner_active = 0;
 
 /**
- * @brief The task currently running on the server.
+ * @brief The task currently running on the scanner.
  */
-/*@null@*/ task_t current_server_task = (task_t) 0;
+/*@null@*/ task_t current_scanner_task = (task_t) 0;
 
 /**
  * @brief The report of the current task.
@@ -319,7 +319,7 @@ task_run_status_name (task_t task)
 #if 0
 #if TRACE
 /**
- * @brief Print the server tasks.
+ * @brief Print the scanner tasks.
  */
 static void
 print_tasks ()
@@ -487,7 +487,7 @@ nvt_selector_plugins (const char* selector)
 }
 
 /**
- * @brief Send the preferences from a config to the server.
+ * @brief Send the preferences from a config to the scanner.
  *
  * @param[in]  task  Task.
  * @param[in]  name  Name of preference section to send.
@@ -531,7 +531,7 @@ send_config_preferences (const char* config, const char* name)
 }
 
 /**
- * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the server.
+ * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the scanner.
  *
  * @param[in]  config  Config.
  *
@@ -563,7 +563,7 @@ send_config_rules (const char* config)
 /**
  * @brief Start a task.
  *
- * Use \ref send_to_server to queue the task start sequence in server
+ * Use \ref send_to_server to queue the task start sequence in the scanner
  * output buffer.
  *
  * Only one task can run at a time in a process.
@@ -571,7 +571,7 @@ send_config_rules (const char* config)
  * @param[in]  task  A pointer to the task.
  *
  * @return 0 on success, 1 task is active already,
- *         -1 if out of space in server output buffer, -2 if the
+ *         -1 if out of space in scanner output buffer, -2 if the
  *         task is missing a target, -3 if creating the report fails, -4 target
  *         missing hosts, -5 task missing config, -6 if there's already a task
  *         running in this process.
@@ -594,7 +594,7 @@ start_task (task_t task)
       || run_status == TASK_STATUS_DELETE_REQUESTED)
     return 1;
 
-  if (current_server_task) return -6;
+  if (current_scanner_task) return -6;
 
   target = task_target (task);
   if (target == NULL)
@@ -675,7 +675,7 @@ start_task (task_t task)
       return -1;
     }
 
-  /* Send the server and plugins preferences. */
+  /* Send the scanner and plugins preferences. */
 
   if (send_config_preferences (config, "SERVER_PREFS"))
     {
@@ -718,7 +718,7 @@ start_task (task_t task)
                           hosts);
   free (hosts);
   if (fail) return -1;
-  server_active = 1;
+  scanner_active = 1;
 
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
@@ -730,7 +730,7 @@ start_task (task_t task)
   // FIX
 #endif
 
-  current_server_task = task;
+  current_scanner_task = task;
 
   return 0;
 }
@@ -738,12 +738,12 @@ start_task (task_t task)
 /**
  * @brief Initiate stopping a task.
  *
- * Use \ref send_to_server to queue the task stop sequence in
- * server output buffer.
+ * Use \ref send_to_server to queue the task stop sequence in the
+ * scanner output buffer.
  *
  * @param[in]  task  A pointer to the task.
  *
- * @return 0 on success, 1 if stop requested, -1 if out of space in server
+ * @return 0 on success, 1 if stop requested, -1 if out of space in scanner
  *         output buffer.
  */
 int
@@ -755,7 +755,7 @@ stop_task (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (current_server_task == task
+      if (current_scanner_task == task
           && send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
@@ -765,12 +765,12 @@ stop_task (task_t task)
 }
 
 
-/* Server messaging. */
+/* Scanner messaging. */
 
 /**
- * @brief Request the list of certificates from the server.
+ * @brief Request the list of certificates from the scanner.
  *
- * @return 0 on success, -1 if out of space in server output buffer.
+ * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
 request_certificates ()
@@ -781,9 +781,9 @@ request_certificates ()
 }
 
 /**
- * @brief Acknowledge a server BYE.
+ * @brief Acknowledge a scanner BYE.
  *
- * @return 0 on success, -1 if out of space in server output buffer.
+ * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
 acknowledge_bye ()
@@ -794,9 +794,9 @@ acknowledge_bye ()
 }
 
 /**
- * @brief Acknowledge the server PLUGINS_MD5 message.
+ * @brief Acknowledge the scanner PLUGINS_MD5 message.
  *
- * @return 0 on success, -1 if out of space in server output buffer.
+ * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
 acknowledge_md5sum ()
@@ -807,9 +807,9 @@ acknowledge_md5sum ()
 }
 
 /**
- * @brief Acknowledge server PLUGINS_MD5 message, requesting plugin md5sums.
+ * @brief Acknowledge scanner PLUGINS_MD5 message, requesting plugin md5sums.
  *
- * @return 0 on success, -1 if out of space in server output buffer.
+ * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
 acknowledge_md5sum_sums ()
@@ -820,9 +820,9 @@ acknowledge_md5sum_sums ()
 }
 
 /**
- * @brief Acknowledge server PLUGINS_MD5 message, requesting all plugin info.
+ * @brief Acknowledge scanner PLUGINS_MD5 message, requesting all plugin info.
  *
- * @return 0 on success, -1 if out of space in server output buffer.
+ * @return 0 on success, -1 if out of space in scanner output buffer.
  */
 int
 acknowledge_md5sum_info ()
@@ -835,23 +835,23 @@ acknowledge_md5sum_info ()
 /**
  * @brief Handle state changes to current task made by other processes.
  *
- * @return 0 on success, -1 if out of space in server output buffer, 1 if
- *         queued to server.
+ * @return 0 on success, -1 if out of space in scanner output buffer, 1 if
+ *         queued to scanner.
  */
 int
 manage_check_current_task ()
 {
-  if (current_server_task)
+  if (current_scanner_task)
     {
       task_status_t run_status;
 
 #if 0
       // FIX should prevent this from repeating somehow
-      if (current_server_task_stop_requested) return;
+      if (current_scanner_task_stop_requested) return;
 #endif
 
       // FIX something should check safety credential before this
-      run_status = task_run_status (current_server_task);
+      run_status = task_run_status (current_scanner_task);
       if (run_status == TASK_STATUS_STOP_REQUESTED)
         {
           /* Some other process changed to this status, so request the stop. */

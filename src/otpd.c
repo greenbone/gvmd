@@ -27,14 +27,14 @@
  * @file  otpd.c
  * @brief The OpenVAS Manager OTP daemon.
  *
- * This file defines an OpenVAS Transfer Protocol (OTP) gateway server for
- * the OpenVAS Manager, a daemon that is layered between the real OpenVAS
+ * This file defines an OpenVAS Transfer Protocol (OTP) port-forwarding server
+ * for the OpenVAS Manager, a daemon that is layered between the OpenVAS
  * Scanner (openvassd) and a client (such as OpenVAS-Client).
  *
  * The library provides a single function, \ref serve_otp.
- * This function serves OTP from a real OTP server to a single client.
+ * This function serves OTP from an OTP server (a "scanner") to a single client.
  * If compiled with \ref LOG, the daemon logs all communication between
- * client and server.
+ * client and scanner.
  */
 
 #include "types.h"
@@ -60,40 +60,40 @@
  */
 #define FD_CLIENT_WRITE 2
 /**
- * @brief File descriptor set mask: selecting on server read.
+ * @brief File descriptor set mask: selecting on scanner read.
  */
-#define FD_SERVER_READ  4
+#define FD_SCANNER_READ  4
 /**
- * @brief File descriptor set mask: selecting on server write.
+ * @brief File descriptor set mask: selecting on scanner write.
  */
-#define FD_SERVER_WRITE 8
+#define FD_SCANNER_WRITE 8
 
 /**
  * @brief Serve the OpenVAS Transfer Protocol (OTP).
  *
  * Loop reading input from the sockets, and writing client input to the
- * server socket and server input to the client socket.  Exit the loop
+ * scanner socket and scanner input to the client socket.  Exit the loop
  * on reaching end of file on either of the sockets.
  *
  * If compiled with logging (\ref LOG) then log all output with \ref logf.
  *
  * @param[in]  client_session  The TLS session with the client.
- * @param[in]  server_session  The TLS session with the server.
+ * @param[in]  scanner_session  The TLS session with the scanner.
  * @param[in]  client_socket   The socket connected to the client.
- * @param[in]  server_socket   The socket connected to the server.
+ * @param[in]  scanner_socket   The socket connected to the scanner.
  *
  * @return 0 on success, -1 on error.
  */
 int
 serve_otp (gnutls_session_t* client_session,
-           gnutls_session_t* server_session,
-           int client_socket, int server_socket)
+           gnutls_session_t* scanner_session,
+           int client_socket, int scanner_socket)
 {
   int nfds, interrupted = 0;
   fd_set readfds, exceptfds, writefds;
 
-  /* Connect to the server. */
-  nfds = 1 + server_socket;
+  /* Connect to the scanner. */
+  nfds = 1 + scanner_socket;
   while (1)
     {
       int ret;
@@ -101,8 +101,8 @@ serve_otp (gnutls_session_t* client_session,
       /* Setup for select. */
       FD_ZERO (&exceptfds);
       FD_ZERO (&writefds);
-      FD_SET (server_socket, &exceptfds);
-      FD_SET (server_socket, &writefds);
+      FD_SET (scanner_socket, &exceptfds);
+      FD_SET (scanner_socket, &writefds);
 
       /* Select, then handle result. */
       ret = select (nfds, NULL, &writefds, &exceptfds, NULL);
@@ -117,18 +117,18 @@ serve_otp (gnutls_session_t* client_session,
         }
       if (ret > 0)
         {
-          if (FD_ISSET (server_socket, &exceptfds))
+          if (FD_ISSET (scanner_socket, &exceptfds))
             {
-              g_warning ("%s: exception on server in child connect select\n",
+              g_warning ("%s: exception on scanner in child connect select\n",
                          __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
             }
-          if (FD_ISSET (server_socket, &writefds))
+          if (FD_ISSET (scanner_socket, &writefds))
             {
-              ret = openvas_server_connect (server_socket,
-                                            &server_address,
-                                            server_session,
+              ret = openvas_server_connect (scanner_socket,
+                                            &scanner_address,
+                                            scanner_session,
                                             interrupted);
               if (ret == 0)
                 break;
@@ -144,8 +144,8 @@ serve_otp (gnutls_session_t* client_session,
     }
 
   /* Loop handling input from the sockets. */
-  nfds = 1 + (client_socket > server_socket
-              ? client_socket : server_socket);
+  nfds = 1 + (client_socket > scanner_socket
+              ? client_socket : scanner_socket);
   while (1)
     {
       int ret;
@@ -156,26 +156,26 @@ serve_otp (gnutls_session_t* client_session,
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
       FD_SET (client_socket, &exceptfds);
-      FD_SET (server_socket, &exceptfds);
+      FD_SET (scanner_socket, &exceptfds);
       if (from_client_end < from_buffer_size)
         {
           FD_SET (client_socket, &readfds);
           fds |= FD_CLIENT_READ;
         }
-      if (from_server_end < from_buffer_size)
+      if (from_scanner_end < from_buffer_size)
         {
-          FD_SET (server_socket, &readfds);
-          fds |= FD_SERVER_READ;
+          FD_SET (scanner_socket, &readfds);
+          fds |= FD_SCANNER_READ;
         }
-      if (from_server_start < from_server_end)
+      if (from_scanner_start < from_scanner_end)
         {
           FD_SET (client_socket, &writefds);
           fds |= FD_CLIENT_WRITE;
         }
       if (from_client_start < from_client_end)
         {
-          FD_SET (server_socket, &writefds);
-          fds |= FD_SERVER_WRITE;
+          FD_SET (scanner_socket, &writefds);
+          fds |= FD_SCANNER_WRITE;
         }
 
       /* Select, then handle result. */
@@ -199,9 +199,9 @@ serve_otp (gnutls_session_t* client_session,
               return -1;
             }
 
-          if (FD_ISSET (server_socket, &exceptfds))
+          if (FD_ISSET (scanner_socket, &exceptfds))
             {
-              g_warning ("%s: exception on server in child select\n",
+              g_warning ("%s: exception on scanner in child select\n",
                          __FUNCTION__);
               close_stream_connection (client_socket);
               return -1;
@@ -266,22 +266,22 @@ serve_otp (gnutls_session_t* client_session,
 #endif /* TRACE || LOG */
             }
 
-          if ((fds & FD_SERVER_WRITE) == FD_SERVER_WRITE
-              && FD_ISSET (server_socket, &writefds))
+          if ((fds & FD_SCANNER_WRITE) == FD_SCANNER_WRITE
+              && FD_ISSET (scanner_socket, &writefds))
             {
               int wrote_all = 1;
-              /* Write as much as possible to the server. */
+              /* Write as much as possible to the scanner. */
               while (from_client_start < from_client_end)
                 {
                   ssize_t count;
-                  count = gnutls_record_send (*server_session,
+                  count = gnutls_record_send (*scanner_session,
                                               from_client + from_client_start,
                                               from_client_end - from_client_start);
                   if (count < 0)
                     {
                       if (count == GNUTLS_E_AGAIN)
                         {
-                          /* Wrote as much server would accept, return to
+                          /* Wrote as much scanner would accept, return to
                            * `select'. */
                           wrote_all = 0;
                           break;
@@ -292,36 +292,36 @@ serve_otp (gnutls_session_t* client_session,
                       if (count == GNUTLS_E_REHANDSHAKE)
                         /* Return to select. TODO Rehandshake. */
                         break;
-                      g_warning ("%s: failed to write to server: %s\n",
+                      g_warning ("%s: failed to write to scanner: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
                       return -1;
                     }
                   from_client_start += count;
-                  tracef ("=> server  %zi bytes\n", count);
+                  tracef ("=> scanner  %zi bytes\n", count);
                 }
               if (wrote_all)
                 {
-                  tracef ("=> server  done\n");
+                  tracef ("=> scanner  done\n");
                   from_client_start = from_client_end = 0;
                 }
             }
 
-          if ((fds & FD_SERVER_READ) == FD_SERVER_READ
-              && FD_ISSET (server_socket, &readfds))
+          if ((fds & FD_SCANNER_READ) == FD_SCANNER_READ
+              && FD_ISSET (scanner_socket, &readfds))
             {
 #if TRACE
-              buffer_size_t initial_start = from_server_end;
+              buffer_size_t initial_start = from_scanner_end;
 #endif
-              /* Read as much as possible from the server. */
-              while (from_server_end < from_buffer_size)
+              /* Read as much as possible from the scanner. */
+              while (from_scanner_end < from_buffer_size)
                 {
                   ssize_t count;
-                  count = gnutls_record_recv (*server_session,
-                                              from_server + from_server_end,
+                  count = gnutls_record_recv (*scanner_session,
+                                              from_scanner + from_scanner_end,
                                               from_buffer_size
-                                              - from_server_end);
+                                              - from_scanner_end);
                   if (count < 0)
                     {
                       if (count == GNUTLS_E_AGAIN)
@@ -337,13 +337,13 @@ serve_otp (gnutls_session_t* client_session,
                           && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
                               || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
                         {
-                          int alert = gnutls_alert_get (*server_session);
+                          int alert = gnutls_alert_get (*scanner_session);
                           g_warning ("%s: tls Alert %d: %s\n",
                                      __FUNCTION__,
                                      alert,
                                      gnutls_alert_get_name (alert));
                         }
-                      g_warning ("%s: failed to read from server: %s\n",
+                      g_warning ("%s: failed to read from scanner: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
                       close_stream_connection (client_socket);
@@ -355,20 +355,20 @@ serve_otp (gnutls_session_t* client_session,
                       close_stream_connection (client_socket);
                       return 0;
                     }
-                  from_server_end += count;
+                  from_scanner_end += count;
                 }
 #if TRACE
               /* This check prevents output in the "asynchronous network
                * error" case. */
-              if (from_server_end > initial_start)
+              if (from_scanner_end > initial_start)
                 {
 #if TRACE_TEXT
-                  tracef ("<= server  \"%.*s\"\n",
-                          from_server_end - initial_start,
-                          from_server + initial_start);
+                  tracef ("<= scanner  \"%.*s\"\n",
+                          from_scanner_end - initial_start,
+                          from_scanner + initial_start);
 #else
-                  tracef ("<= server  %i bytes\n",
-                          from_server_end - initial_start);
+                  tracef ("<= scanner  %i bytes\n",
+                          from_scanner_end - initial_start);
 #endif
                 }
 #endif /* TRACE */
@@ -380,12 +380,12 @@ serve_otp (gnutls_session_t* client_session,
               int wrote_all = 1;
 
               /* Write as much as possible to the client. */
-              while (from_server_start < from_server_end)
+              while (from_scanner_start < from_scanner_end)
                 {
                   ssize_t count;
                   count = gnutls_record_send (*client_session,
-                                              from_server + from_server_start,
-                                              from_server_end - from_server_start);
+                                              from_scanner + from_scanner_start,
+                                              from_scanner_end - from_scanner_start);
                   if (count < 0)
                     {
                       if (count == GNUTLS_E_AGAIN)
@@ -407,15 +407,15 @@ serve_otp (gnutls_session_t* client_session,
                       return -1;
                     }
                   logf ("=> client %.*s\n",
-                        from_server_end - from_server_start,
-                        from_server + from_server_start);
-                  from_server_start += count;
+                        from_scanner_end - from_scanner_start,
+                        from_scanner + from_scanner_start);
+                  from_scanner_start += count;
                   tracef ("=> client  %zi bytes\n", count);
                 }
               if (wrote_all)
                 {
                   tracef ("=> client  done\n");
-                  from_server_start = from_server_end = 0;
+                  from_scanner_start = from_scanner_end = 0;
                 }
             }
         }

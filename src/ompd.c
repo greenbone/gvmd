@@ -27,9 +27,9 @@
  * @file  ompd.c
  * @brief The OpenVAS Manager OMP daemon.
  *
- * This file defines the OpenVAS Manager Protocol (OMP) server for the OpenVAS
- * Manager, a daemon that is layered between the real OpenVAS Scanner
- * (openvassd) and a client (such as OpenVAS-Client).
+ * This file defines the OpenVAS Manager daemon.  The Manager serves the OpenVAS
+ * Management Protocol (OMP) to clients such as OpenVAS-Client.  The Manager
+ * and OMP give clients full access to an OpenVAS Scanner.
  *
  * The library provides two functions: \ref init_ompd and \ref serve_omp.
  * \ref init_ompd initialises the daemon.
@@ -41,7 +41,7 @@
 #include "oxpd.h"
 #include "logf.h"
 #include "omp.h"
-#include "otp.h" // FIX for server_init_state
+#include "otp.h" // FIX for scanner_init_state
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
@@ -77,13 +77,13 @@ int socket(int domain, int type, int protocol);
  */
 #define FD_CLIENT_WRITE 2
 /**
- * @brief File descriptor set mask: selecting on server read.
+ * @brief File descriptor set mask: selecting on scanner read.
  */
-#define FD_SERVER_READ  4
+#define FD_SCANNER_READ  4
 /**
- * @brief File descriptor set mask: selecting on server write.
+ * @brief File descriptor set mask: selecting on scanner write.
  */
-#define FD_SERVER_WRITE 8
+#define FD_SCANNER_WRITE 8
 
 /**
  * @brief Flag for running in NVT cache mode.
@@ -168,18 +168,18 @@ read_from_client (gnutls_session_t* client_session,
  * @param[in]  server_socket   The socket connected to the server.
  *
  * @return 0 on reading everything available, -1 on error, -2 if
- * from_server buffer is full or -3 on reaching end of file.
+ * from_scanner buffer is full or -3 on reaching end of file.
  */
 static int
 read_from_server (gnutls_session_t* server_session,
                   /*@unused@*/ int server_socket)
 {
-  while (from_server_end < from_buffer_size)
+  while (from_scanner_end < from_buffer_size)
     {
       ssize_t count;
       count = gnutls_record_recv (*server_session,
-                                  from_server + from_server_end,
-                                  from_buffer_size - from_server_end);
+                                  from_scanner + from_scanner_end,
+                                  from_buffer_size - from_scanner_end);
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
@@ -213,19 +213,20 @@ read_from_server (gnutls_session_t* server_session,
         /* End of file. */
         return -3;
       assert (count > 0);
-      from_server_end += count;
+      from_scanner_end += count;
     }
 
   /* Buffer full. */
   return -2;
 }
 
+// @todo libs?
 /**
  * @brief Write as much as possible from \ref to_client to the client.
  *
  * @param[in]  client_session  The client session.
  *
- * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted.
+ * @return 0 wrote everything, -1 error, -2 wrote as much as client accepted.
  */
 static int
 write_to_client (gnutls_session_t* client_session)
@@ -239,7 +240,7 @@ write_to_client (gnutls_session_t* client_session)
       if (count < 0)
         {
           if (count == GNUTLS_E_AGAIN)
-            /* Wrote as much as server would accept. */
+            /* Wrote as much as client would accept. */
             return -2;
           if (count == GNUTLS_E_INTERRUPTED)
             /* Interrupted, try write again. */
@@ -266,137 +267,137 @@ write_to_client (gnutls_session_t* client_session)
 }
 
 /**
- * @brief Write as much as possible from \ref to_server to the server.
+ * @brief Write as much as possible from \ref to_scanner to the scanner.
  *
  * @param[in]  server_socket   The server socket.
  * @param[in]  server_session  The server session.
  *
- * @return 0 wrote everything, -1 error, -2 wrote as much as server accepted,
+ * @return 0 wrote everything, -1 error, -2 wrote as much as scanner accepted,
  *         -3 did an initialisation step.
  */
 static int
-write_to_server (int server_socket, gnutls_session_t* server_session)
+write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
 {
-  switch (server_init_state)
+  switch (scanner_init_state)
     {
-      case SERVER_INIT_CONNECT_INTR:
-      case SERVER_INIT_TOP:
-        switch (openvas_server_connect (server_socket,
-                                        &server_address,
-                                        server_session,
-                                        server_init_state
-                                        == SERVER_INIT_CONNECT_INTR))
+      case SCANNER_INIT_CONNECT_INTR:
+      case SCANNER_INIT_TOP:
+        switch (openvas_server_connect (scanner_socket,
+                                        &scanner_address,
+                                        scanner_session,
+                                        scanner_init_state
+                                        == SCANNER_INIT_CONNECT_INTR))
           {
             case 0:
-              set_server_init_state (SERVER_INIT_CONNECTED);
-              /* Fall through to SERVER_INIT_CONNECTED case below, to write
+              set_scanner_init_state (SCANNER_INIT_CONNECTED);
+              /* Fall through to SCANNER_INIT_CONNECTED case below, to write
                * version string. */
               break;
             case -2:
-              set_server_init_state (SERVER_INIT_CONNECT_INTR);
+              set_scanner_init_state (SCANNER_INIT_CONNECT_INTR);
               return -3;
             default:
               return -1;
           }
         /*@fallthrough@*/
-      case SERVER_INIT_CONNECTED:
+      case SCANNER_INIT_CONNECTED:
         {
           char* string = "< OTP/1.0 >\n";
-          server_init_offset = write_string_to_server (server_session,
-                                                       string
-                                                       + server_init_offset);
-          if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_SENT_VERSION);
+          scanner_init_offset = write_string_to_server (scanner_session,
+                                                        string
+                                                        + scanner_init_offset);
+          if (scanner_init_offset == 0)
+            set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
           else
             {
-              if (server_init_offset == -1)
+              if (scanner_init_offset == -1)
                 {
-                  server_init_offset = 0;
+                  scanner_init_offset = 0;
                   return -1;
                 }
             }
           break;
         }
-      case SERVER_INIT_SENT_VERSION:
-      case SERVER_INIT_GOT_VERSION:
+      case SCANNER_INIT_SENT_VERSION:
+      case SCANNER_INIT_GOT_VERSION:
         assert (0);
         break;
-      case SERVER_INIT_GOT_USER:
+      case SCANNER_INIT_GOT_USER:
         {
           char* const user = "om\n";
-          server_init_offset = write_string_to_server (server_session,
-                                                       user + server_init_offset);
-          if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_SENT_USER);
-          else if (server_init_offset == -1)
+          scanner_init_offset = write_string_to_server (scanner_session,
+                                                        user + scanner_init_offset);
+          if (scanner_init_offset == 0)
+            set_scanner_init_state (SCANNER_INIT_SENT_USER);
+          else if (scanner_init_offset == -1)
             {
-              server_init_offset = 0;
+              scanner_init_offset = 0;
               return -1;
             }
           break;
         }
-      case SERVER_INIT_SENT_USER:
+      case SCANNER_INIT_SENT_USER:
         assert (0);
         break;
-      case SERVER_INIT_GOT_PASSWORD:
+      case SCANNER_INIT_GOT_PASSWORD:
         {
           char* const password = "om\n";
-          server_init_offset = write_string_to_server (server_session,
-                                                       password + server_init_offset);
-          if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_SENT_PASSWORD);
+          scanner_init_offset = write_string_to_server (scanner_session,
+                                                        password + scanner_init_offset);
+          if (scanner_init_offset == 0)
+            set_scanner_init_state (SCANNER_INIT_SENT_PASSWORD);
             /* Fall through to send any available output. */
-          else if (server_init_offset == -1)
+          else if (scanner_init_offset == -1)
             {
-              server_init_offset = 0;
+              scanner_init_offset = 0;
               return -1;
             }
         }
         break;
-      case SERVER_INIT_SENT_PASSWORD:
+      case SCANNER_INIT_SENT_PASSWORD:
         assert (0);
         break;
-      case SERVER_INIT_SENT_COMPLETE_LIST:
+      case SCANNER_INIT_SENT_COMPLETE_LIST:
         assert (0);
         break;
-      case SERVER_INIT_GOT_MD5SUM:
+      case SCANNER_INIT_GOT_MD5SUM:
         if (ompd_nvt_cache_mode)
           {
             static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
-            server_init_offset = write_string_to_server
-                                  (server_session,
-                                   ack + server_init_offset);
-            if (server_init_offset == 0)
-              set_server_init_state (SERVER_INIT_SENT_COMPLETE_LIST);
-            else if (server_init_offset == -1)
+            scanner_init_offset = write_string_to_server
+                                   (scanner_session,
+                                    ack + scanner_init_offset);
+            if (scanner_init_offset == 0)
+              set_scanner_init_state (SCANNER_INIT_SENT_COMPLETE_LIST);
+            else if (scanner_init_offset == -1)
               {
-                server_init_offset = 0;
+                scanner_init_offset = 0;
                 return -1;
               }
             break;
           }
         /*@fallthrough@*/
-      case SERVER_INIT_GOT_PLUGINS:
+      case SCANNER_INIT_GOT_PLUGINS:
         {
           static char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
                                    "CLIENT <|> CERTIFICATES <|> CLIENT\n";
-          server_init_offset = write_string_to_server
-                                (server_session,
-                                 ack + server_init_offset);
-          if (server_init_offset == 0)
-            set_server_init_state (SERVER_INIT_DONE);
-          else if (server_init_offset == -1)
+          scanner_init_offset = write_string_to_server
+                                 (scanner_session,
+                                  ack + scanner_init_offset);
+          if (scanner_init_offset == 0)
+            set_scanner_init_state (SCANNER_INIT_DONE);
+          else if (scanner_init_offset == -1)
             {
-              server_init_offset = 0;
+              scanner_init_offset = 0;
               return -1;
             }
           else
             break;
         }
         /*@fallthrough@*/
-      case SERVER_INIT_DONE:
+      case SCANNER_INIT_DONE:
         while (1)
-          switch (write_to_server_buffer (server_session))
+          switch (write_to_server_buffer (scanner_session))
             {
               case  0: return 0;
               case -1: return -1;
@@ -408,7 +409,7 @@ write_to_server (int server_socket, gnutls_session_t* server_session)
 }
 
 /**
- * @brief Recreate the server session.
+ * @brief Recreate a server session.
  *
  * @param  server_socket       Server socket.
  * @param  server_session      Server session.
@@ -448,15 +449,15 @@ recreate_session (int server_socket,
  * the input, and writing any results to the appropriate socket.
  * Exit the loop on reaching end of file on the client socket.
  *
- * Read input from the client and server.
+ * Read input from the client and scanner.
  * Process the input with \ref process_omp_client_input and
- * \ref process_otp_server_input.  Write the results to the client.
+ * \ref process_otp_scanner_input.  Write the results to the client.
  *
  * \if STATIC
  *
  * Read input with \ref read_from_client and \ref read_from_server.
  * Write the results with \ref write_to_client.  Write to the server
- * with \ref write_to_server.
+ * with \ref write_to_scanner.
  *
  * \endif
  *
@@ -465,32 +466,32 @@ recreate_session (int server_socket,
  *
  * If client_socket is 0 or less, then update the NVT cache and exit.
  *
- * @param[in]  client_session      The TLS session with the client.
- * @param[in]  server_session      The TLS session with the server.
- * @param[in]  server_credentials  The TSL server credentials.
- * @param[in]  client_socket       The socket connected to the client, if any.
- * @param[in]  server_socket_addr  The socket connected to the server.
+ * @param[in]  client_session       The TLS session with the client.
+ * @param[in]  scanner_session      The TLS session with the scanner.
+ * @param[in]  scanner_credentials  The TSL server credentials.
+ * @param[in]  client_socket        The socket connected to the client, if any.
+ * @param[in]  scanner_socket_addr  The socket connected to the scanner.
  *
  * @return 0 on success, -1 on error.
  */
 int
 serve_omp (gnutls_session_t* client_session,
-           gnutls_session_t* server_session,
-           gnutls_certificate_credentials_t* server_credentials,
-           int client_socket, int* server_socket_addr)
+           gnutls_session_t* scanner_session,
+           gnutls_certificate_credentials_t* scanner_credentials,
+           int client_socket, int* scanner_socket_addr)
 {
   int nfds, ret;
   time_t last_client_activity_time;
   fd_set readfds, exceptfds, writefds;
-  int server_socket = *server_socket_addr;
+  int scanner_socket = *scanner_socket_addr;
   /* True if processing of the client input is waiting for space in the
-   * to_server or to_client buffer. */
+   * to_scanner or to_client buffer. */
   short client_input_stalled;
-  /* True if processing of the server input is waiting for space in the
+  /* True if processing of the scanner input is waiting for space in the
    * to_client buffer. */
-  gboolean server_input_stalled = FALSE;
+  gboolean scanner_input_stalled = FALSE;
   /* Client status flag.  Set to 0 when the client closes the connection
-   * while the server is active. */
+   * while the scanner is active. */
   short client_active = client_socket > 0;
 
   ompd_nvt_cache_mode = client_socket <= 0;
@@ -500,7 +501,7 @@ serve_omp (gnutls_session_t* client_session,
   else
     tracef ("   Serving OMP.\n");
 
-  /* Initialise server information. */
+  /* Initialise scanner information. */
   init_otp_data ();
 
   /* Initialise the XML parser and the manage library. */
@@ -508,16 +509,16 @@ serve_omp (gnutls_session_t* client_session,
 #if 0
   // FIX consider free_omp_data (); on return
   if (tasks) free_tasks ();
-  if (current_server_preference) free (current_server_preference);
+  if (current_scanner_preference) free (current_scanner_preference);
   free_credentials (&current_credentials);
-  maybe_free_current_server_plugin_dependency ();
-  maybe_free_server_preferences (); // old
-  maybe_free_server_rules ();
-  maybe_free_server_plugins_dependencies (); // old
+  maybe_free_current_scanner_plugin_dependency ();
+  maybe_free_scanner_preferences (); // old
+  maybe_free_scanner_rules ();
+  maybe_free_scanner_plugins_dependencies (); // old
 #endif
 
-  /* Initiate connection (to_server is empty so this will just init). */
-  write_to_server (server_socket, server_session);
+  /* Initiate connection (to_scanner is empty so this will just init). */
+  write_to_scanner (scanner_socket, scanner_session);
 
   if (client_active)
     {
@@ -542,7 +543,7 @@ serve_omp (gnutls_session_t* client_session,
         }
       else if (ret == -2)
         {
-          /* to_server buffer full. */
+          /* to_scanner buffer full. */
           tracef ("   client input stalled 0\n");
           client_input_stalled = 1;
         }
@@ -574,15 +575,15 @@ serve_omp (gnutls_session_t* client_session,
    *
    * That is, select on all the socket fds and then, as necessary
    *   - read from the client into buffer from_client
-   *   - write to the server from buffer to_server
-   *   - read from the server into buffer from_server
+   *   - write to the scanner from buffer to_scanner
+   *   - read from the scanner into buffer from_scanner
    *   - write to the client from buffer to_client.
    *
    * On reading from an fd, immediately try react to the input.  On reading
    * from the client call process_omp_client_input, which parses OMP
-   * commands and may write to to_server and to_client.  On reading from
-   * the server call process_otp_server_input, which updates information
-   * kept about the server.
+   * commands and may write to to_scanner and to_client.  On reading from
+   * the scanner call process_otp_scanner_input, which updates information
+   * kept about the scanner.
    *
    * There are a few complications here
    *   - the program must read from or write to an fd returned by select
@@ -591,16 +592,16 @@ serve_omp (gnutls_session_t* client_session,
    *     something to write,
    *   - similarly, the program need only select on the fds for reading
    *     if there is buffer space available,
-   *   - the buffers from_client and from_server can become full during
+   *   - the buffers from_client and from_scanner can become full during
    *     reading
-   *   - a read from the client can be stalled by the to_server buffer
+   *   - a read from the client can be stalled by the to_scanner buffer
    *     filling up, or the to_client buffer filling up,
-   *   - FIX a read from the server can, theoretically, be stalled by the
-   *     to_server buffer filling up (during initialisation).
+   *   - FIX a read from the scanner can, theoretically, be stalled by the
+   *     to_scanner buffer filling up (during initialisation).
    */
 
-  nfds = 1 + (client_socket > server_socket
-              ? client_socket : server_socket);
+  nfds = 1 + (client_socket > scanner_socket
+              ? client_socket : scanner_socket);
   while (1)
     {
       int ret;
@@ -613,7 +614,7 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
-      FD_SET (server_socket, &exceptfds);
+      FD_SET (scanner_socket, &exceptfds);
 
       // FIX shutdown if any eg read fails
 
@@ -627,7 +628,7 @@ serve_omp (gnutls_session_t* client_session,
             {
               tracef ("client timeout (1)\n");
               close_stream_connection (client_socket);
-              if (server_is_active ())
+              if (scanner_is_active ())
                 {
                   client_active = 0;
                 }
@@ -650,30 +651,30 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if ((server_init_state == SERVER_INIT_DONE
-           || server_init_state == SERVER_INIT_GOT_VERSION
-           || server_init_state == SERVER_INIT_SENT_COMPLETE_LIST
-           || server_init_state == SERVER_INIT_SENT_PASSWORD
-           || server_init_state == SERVER_INIT_SENT_USER
-           || server_init_state == SERVER_INIT_SENT_VERSION)
-          && from_server_end < from_buffer_size)
+      if ((scanner_init_state == SCANNER_INIT_DONE
+           || scanner_init_state == SCANNER_INIT_GOT_VERSION
+           || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
+           || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
+           || scanner_init_state == SCANNER_INIT_SENT_USER
+           || scanner_init_state == SCANNER_INIT_SENT_VERSION)
+          && from_scanner_end < from_buffer_size)
         {
-          FD_SET (server_socket, &readfds);
-          fds |= FD_SERVER_READ;
+          FD_SET (scanner_socket, &readfds);
+          fds |= FD_SCANNER_READ;
         }
 
-      if (((server_init_state == SERVER_INIT_TOP
-            || server_init_state == SERVER_INIT_DONE)
+      if (((scanner_init_state == SCANNER_INIT_TOP
+            || scanner_init_state == SCANNER_INIT_DONE)
            && to_server_buffer_space () > 0)
-          || server_init_state == SERVER_INIT_CONNECT_INTR
-          || server_init_state == SERVER_INIT_CONNECTED
-          || server_init_state == SERVER_INIT_GOT_MD5SUM
-          || server_init_state == SERVER_INIT_GOT_PASSWORD
-          || server_init_state == SERVER_INIT_GOT_PLUGINS
-          || server_init_state == SERVER_INIT_GOT_USER)
+          || scanner_init_state == SCANNER_INIT_CONNECT_INTR
+          || scanner_init_state == SCANNER_INIT_CONNECTED
+          || scanner_init_state == SCANNER_INIT_GOT_MD5SUM
+          || scanner_init_state == SCANNER_INIT_GOT_PASSWORD
+          || scanner_init_state == SCANNER_INIT_GOT_PLUGINS
+          || scanner_init_state == SCANNER_INIT_GOT_USER)
         {
-          FD_SET (server_socket, &writefds);
-          fds |= FD_SERVER_WRITE;
+          FD_SET (scanner_socket, &writefds);
+          fds |= FD_SCANNER_WRITE;
         }
 
       /* Select, then handle result. */
@@ -699,9 +700,9 @@ serve_omp (gnutls_session_t* client_session,
           return -1;
         }
 
-      if (FD_ISSET (server_socket, &exceptfds))
+      if (FD_ISSET (scanner_socket, &exceptfds))
         {
-          g_warning ("%s: exception on server in child select\n",
+          g_warning ("%s: exception on scanner in child select\n",
                      __FUNCTION__);
           close_stream_connection (client_socket);
           return -1;
@@ -728,7 +729,7 @@ serve_omp (gnutls_session_t* client_session,
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
                 close_stream_connection (client_socket);
-                if (server_is_active ())
+                if (scanner_is_active ())
                   client_active = 0;
                 else
                   return 0;
@@ -780,10 +781,10 @@ serve_omp (gnutls_session_t* client_session,
             }
           else if (ret == -2)
             {
-              /* to_server buffer full. */
+              /* to_scanner buffer full. */
               tracef ("   client input stalled 1\n");
               client_input_stalled = 1;
-              /* Break to write to_server. */
+              /* Break to write to_scanner. */
               break;
             }
           else if (ret == -3)
@@ -799,28 +800,28 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if ((fds & FD_SERVER_READ) == FD_SERVER_READ
-          && FD_ISSET (server_socket, &readfds))
+      if ((fds & FD_SCANNER_READ) == FD_SCANNER_READ
+          && FD_ISSET (scanner_socket, &readfds))
         {
 #if TRACE || LOG
-          buffer_size_t initial_start = from_server_end;
+          buffer_size_t initial_start = from_scanner_end;
 #endif
-          tracef ("   FD_SERVER_READ\n");
+          tracef ("   FD_SCANNER_READ\n");
 
-          switch (read_from_server (server_session, server_socket))
+          switch (read_from_server (scanner_session, scanner_socket))
             {
               case  0:       /* Read everything. */
                 break;
               case -1:       /* Error. */
-                /* This may be because the server closed the connection
+                /* This may be because the scanner closed the connection
                  * at the end of a command. */ // FIX then should get eof (-3)
-                set_server_init_state (SERVER_INIT_TOP);
+                set_scanner_init_state (SCANNER_INIT_TOP);
                 break;
-              case -2:       /* from_server buffer full. */
+              case -2:       /* from_scanner buffer full. */
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
-                set_server_init_state (SERVER_INIT_TOP);
+                set_scanner_init_state (SCANNER_INIT_TOP);
                 if (client_active == 0)
                   /* The client has closed the connection, so exit. */
                   return 0;
@@ -832,48 +833,48 @@ serve_omp (gnutls_session_t* client_session,
 #if TRACE || LOG
           /* This check prevents output in the "asynchronous network
            * error" case. */
-          if (from_server_end > initial_start)
+          if (from_scanner_end > initial_start)
             {
-              logf ("<= server %.*s\n",
-                    from_server_end - initial_start,
-                    from_server + initial_start);
+              logf ("<= scanner %.*s\n",
+                    from_scanner_end - initial_start,
+                    from_scanner + initial_start);
 #if TRACE_TEXT
-              tracef ("<= server  \"%.*s\"\n",
-                      from_server_end - initial_start,
-                      from_server + initial_start);
+              tracef ("<= scanner  \"%.*s\"\n",
+                      from_scanner_end - initial_start,
+                      from_scanner + initial_start);
 #else
-              tracef ("<= server  %i bytes\n",
-                      from_server_end - initial_start);
+              tracef ("<= scanner  %i bytes\n",
+                      from_scanner_end - initial_start);
 #endif
             }
 #endif /* TRACE || LOG */
 
-          ret = process_otp_server_input ();
+          ret = process_otp_scanner_input ();
           if (ret == 0)
             /* Processed all input. */
-            server_input_stalled = FALSE;
+            scanner_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE.  Write out the rest of to_server (the
+              /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).  If the client is still connected then recreate the
-               * server session, else exit. */
-              write_to_server (server_socket, server_session);
-              set_server_init_state (SERVER_INIT_TOP);
+               * scanner session, else exit. */
+              write_to_scanner (scanner_socket, scanner_session);
+              set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 return 0;
-              server_socket = recreate_session (server_socket,
-                                                server_session,
-                                                server_credentials);
-              if (server_socket == -1)
+              scanner_socket = recreate_session (scanner_socket,
+                                                 scanner_session,
+                                                 scanner_credentials);
+              if (scanner_socket == -1)
                 {
                   close_stream_connection (client_socket);
                   return -1;
                 }
-              *server_socket_addr = server_socket;
+              *scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)
             {
-              /* Bad login to server. */
+              /* Bad login to scanner. */
               if (client_active == 0)
                 return 0;
               close_stream_connection (client_socket);
@@ -887,10 +888,10 @@ serve_omp (gnutls_session_t* client_session,
            }
           else if (ret == -3)
             {
-              /* to_server buffer full. */
-              tracef ("   server input stalled\n");
-              server_input_stalled = TRUE;
-              /* Break to write to server. */
+              /* to_scanner buffer full. */
+              tracef ("   scanner input stalled\n");
+              scanner_input_stalled = TRUE;
+              /* Break to write to scanner. */
               break;
             }
           else
@@ -898,22 +899,22 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if ((fds & FD_SERVER_WRITE) == FD_SERVER_WRITE
-          && FD_ISSET (server_socket, &writefds))
+      if ((fds & FD_SCANNER_WRITE) == FD_SCANNER_WRITE
+          && FD_ISSET (scanner_socket, &writefds))
         {
-          /* Write as much as possible to the server. */
+          /* Write as much as possible to the scanner. */
 
-          switch (write_to_server (server_socket, server_session))
+          switch (write_to_scanner (scanner_socket, scanner_session))
             {
-              case  0:      /* Wrote everything in to_server. */
+              case  0:      /* Wrote everything in to_scanner. */
                 break;
               case -1:      /* Error. */
-                /* FIX This may be because the server closed the connection
+                /* FIX This may be because the scanner closed the connection
                  * at the end of a command? */
                 if (client_active)
                   close_stream_connection (client_socket);
                 return -1;
-              case -2:      /* Wrote as much as server was willing to accept. */
+              case -2:      /* Wrote as much as scanner was willing to accept. */
                 break;
               case -3:      /* Did an initialisation step. */
                 break;
@@ -952,8 +953,8 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_input_stalled)
         {
-          /* Try process the client input, in case writing to the server
-           * or client has freed some space in to_server or to_client. */
+          /* Try process the client input, in case writing to the scanner
+           * or client has freed some space in to_scanner or to_client. */
 
           ret = process_omp_client_input ();
           if (ret == 0)
@@ -970,7 +971,7 @@ serve_omp (gnutls_session_t* client_session,
             }
           else if (ret == -2)
             {
-              /* to_server buffer full. */
+              /* to_scanner buffer full. */
               tracef ("   client input still stalled (1)\n");
               client_input_stalled = 1;
             }
@@ -985,37 +986,37 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      if (server_input_stalled)
+      if (scanner_input_stalled)
         {
-          /* Try process the server input, in case writing to the server
-           * has freed some space in to_server. */
+          /* Try process the scanner input, in case writing to the scanner
+           * has freed some space in to_scanner. */
 
-          ret = process_otp_server_input ();
+          ret = process_otp_scanner_input ();
           if (ret == 0)
             /* Processed all input. */
-            server_input_stalled = FALSE;
+            scanner_input_stalled = FALSE;
           else if (ret == 1)
             {
-              /* Received server BYE.  Write out the rest of to_server (the
+              /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).  If the client is still connected then recreate the
-               * server session, else exit. */
-              write_to_server (server_socket, server_session);
-              set_server_init_state (SERVER_INIT_TOP);
+               * scanner session, else exit. */
+              write_to_scanner (scanner_socket, scanner_session);
+              set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 return 0;
-              server_socket = recreate_session (server_socket,
-                                                server_session,
-                                                server_credentials);
-              if (server_socket == -1)
+              scanner_socket = recreate_session (scanner_socket,
+                                                 scanner_session,
+                                                 scanner_credentials);
+              if (scanner_socket == -1)
                 {
                   close_stream_connection (client_socket);
                   return -1;
                 }
-              *server_socket_addr = server_socket;
+              *scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)
             {
-              /* Bad login to server. */
+              /* Bad login to scanner. */
               if (client_active == 0)
                 return 0;
               close_stream_connection (client_socket);
@@ -1029,8 +1030,8 @@ serve_omp (gnutls_session_t* client_session,
               return -1;
             }
           else if (ret == -3)
-            /* to_server buffer still full. */
-            tracef ("   server input stalled\n");
+            /* to_scanner buffer still full. */
+            tracef ("   scanner input stalled\n");
           else
             /* Programming error. */
             assert (0);
@@ -1052,7 +1053,7 @@ serve_omp (gnutls_session_t* client_session,
             {
               tracef ("client timeout (1)\n");
               close_stream_connection (client_socket);
-              if (server_is_active ())
+              if (scanner_is_active ())
                 client_active = 0;
               else
                 return 0;

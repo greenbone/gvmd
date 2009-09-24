@@ -37,7 +37,7 @@
 
 #include "omp.h"
 #include "manage.h"
-#include "otp.h"      // FIX for access to server_t server
+#include "otp.h"      // FIX for access to scanner_t scanner
 #include "tracef.h"
 
 #include <arpa/inet.h>
@@ -2388,7 +2388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 default:  /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_server is full. */
+                  /* to_scanner is full. */
                   // FIX revert parsing for retry
                   // process_omp_client_input must return -2
                   abort ();
@@ -2469,12 +2469,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_PREFERENCES:
-        if (server.preferences)
+        if (scanner.preferences)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">");
-            if (g_hash_table_find (server.preferences, send_preference, NULL))
+            if (g_hash_table_find (scanner.preferences, send_preference, NULL))
               {
                 error_send_to_client (error);
                 return;
@@ -2487,12 +2487,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_CERTIFICATES:
-        if (server.certificates)
+        if (scanner.certificates)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_certificates_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">");
-            if (certificates_find (server.certificates,
+            if (certificates_find (scanner.certificates,
                                    send_certificate,
                                    NULL))
               {
@@ -2507,12 +2507,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_DEPENDENCIES:
-        if (server.plugins_dependencies)
+        if (scanner.plugins_dependencies)
           {
             SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">");
-            if (g_hash_table_find (server.plugins_dependencies,
+            if (g_hash_table_find (scanner.plugins_dependencies,
                                    send_dependency,
                                    NULL))
               {
@@ -3377,14 +3377,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_RULES:
-        if (server.rules)
+        if (scanner.rules)
           {
             int index;
             SEND_TO_CLIENT_OR_FAIL ("<get_rules_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">");
-            for (index = 0; index < server.rules_size; index++)
-              if (send_rule (g_ptr_array_index (server.rules, index)))
+            for (index = 0; index < scanner.rules_size; index++)
+              if (send_rule (g_ptr_array_index (scanner.rules, index)))
                 {
                   error_send_to_client (error);
                   return;
@@ -3510,7 +3510,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 default:   /* Programming error. */
                   assert (0);
                 case -1:
-                  /* to_server is full. */
+                  /* to_scanner is full. */
                   // FIX or some other error
                   // FIX revert parsing for retry
                   // process_omp_client_input must return -2
@@ -4156,7 +4156,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "Task is active already"));
                     break;
                   case -1:
-                    /* to_server is full. */
+                    /* to_scanner is full. */
                     // FIX or other error
                     // FIX revert parsing for retry
                     // process_omp_client_input must return -2
@@ -5058,14 +5058,14 @@ init_omp_process (int update_nvt_cache)
  * (\ref omp_xml_handle_start_element, \ref omp_xml_handle_end_element,
  * \ref omp_xml_handle_text and \ref omp_xml_handle_error).
  *
- * The callback functions will queue any resulting server commands in
- * \ref to_server (using \ref send_to_server) and any replies for
+ * The callback functions will queue any resulting scanner commands in
+ * \ref to_scanner (using \ref send_to_server) and any replies for
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
- *         or the server output buffer (respectively), -4 XML syntax error.
+ *         or the scanner output buffer (respectively), -4 XML syntax error.
  */
 int
 process_omp_client_input ()
@@ -5073,8 +5073,8 @@ process_omp_client_input ()
   gboolean success;
   GError* error = NULL;
 
-  /* In the XML parser handlers all writes to the to_server buffer must be
-   * complete OTP commands, because the caller may also write into to_server
+  /* In the XML parser handlers all writes to the to_scanner buffer must be
+   * complete OTP commands, because the caller may also write into to_scanner
    * between calls to this function (via manage_check_current_task). */
 
   if (xml_context == NULL) return -1;
@@ -5118,13 +5118,13 @@ process_omp_client_input ()
 }
 
 /**
- * @brief Return whether the server is active.
+ * @brief Return whether the scanner is active.
  *
- * @return 1 if the server is doing something that the manager
+ * @return 1 if the scanner is doing something that the manager
  *         must wait for, else 0.
  */
 short
-server_is_active ()
+scanner_is_active ()
 {
-  return server_active;
+  return scanner_active;
 }

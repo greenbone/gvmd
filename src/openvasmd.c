@@ -27,9 +27,9 @@
  * @file  openvasmd.c
  * @brief The OpenVAS Manager daemon.
  *
- * This file defines the OpenVAS Manager, a daemon that is layered between
- * the real OpenVAS Scanner (openvassd) and a client (such as
- * OpenVAS-Client).
+ * This file defines the OpenVAS Manager daemon.  The Manager serves the OpenVAS
+ * Management Protocol (OMP) to clients such as OpenVAS-Client.  The Manager
+ * and OMP give clients full access to an OpenVAS Scanner.
  *
  * The entry point to the daemon is the \ref main function.  From there
  * the references in the function documentation describe the flow of
@@ -51,10 +51,10 @@
  * \section Implementation
  *
  * The command line entry to the manager is defined in
- * src/\ref openvasmd.c.  The manager can run as an OTP logger or an
+ * src/\ref openvasmd.c.  The manager can run as an OTP port forwarder or an
  * OMP server.
  *
- * The OTP logger is defined in src/\ref otpd.c.
+ * The OTP port forwarder is defined in src/\ref otpd.c.
  *
  * The OMP server is defined in src/\ref ompd.c.  It uses the OTP library
  * to handle the OTP server and the OMP library to handle the OMP client.
@@ -141,17 +141,17 @@
 #define OPENVASSD_ADDRESS "127.0.0.1"
 
 /**
- * @brief Location of server certificate.
+ * @brief Location of scanner certificate.
  */
-#ifndef SERVERCERT
-#define SERVERCERT "/var/lib/openvas/CA/servercert.pem"
+#ifndef SCANNERCERT
+#define SCANNERCERT "/var/lib/openvas/CA/servercert.pem"
 #endif
 
 /**
- * @brief Location of server certificate private key.
+ * @brief Location of scanner certificate private key.
  */
-#ifndef SERVERKEY
-#define SERVERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
+#ifndef SCANNERKEY
+#define SCANNERKEY  "/var/lib/openvas/private/CA/serverkey.pem"
 #endif
 
 /**
@@ -162,7 +162,7 @@
 #endif
 
 /**
- * @brief Server port.
+ * @brief Scanner port.
  *
  * Used if /etc/services "otp" and --port missing.
  */
@@ -198,7 +198,7 @@ FILE* log_stream = NULL;
 #endif
 
 /**
- * @brief The server context.
+ * @brief The server context of the manager.
  */
 static ovas_scanner_context_t ovas_scanner_context = NULL;
 
@@ -221,24 +221,24 @@ static ovas_scanner_context_t ovas_scanner_context = NULL;
 int
 serve_client (int client_socket)
 {
-  int server_socket;
-  gnutls_session_t server_session;
-  gnutls_certificate_credentials_t server_credentials;
+  int scanner_socket;
+  gnutls_session_t scanner_session;
+  gnutls_certificate_credentials_t scanner_credentials;
 
-  /* Make the server socket. */
-  server_socket = socket (PF_INET, SOCK_STREAM, 0);
-  if (server_socket == -1)
+  /* Make the scanner socket. */
+  scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
+  if (scanner_socket == -1)
     {
-      g_warning ("%s: failed to create server socket: %s\n",
+      g_warning ("%s: failed to create scanner socket: %s\n",
                  __FUNCTION__,
                  strerror (errno));
       close_stream_connection (client_socket);
       return EXIT_FAILURE;
     }
 
-  if (openvas_server_session_new (server_socket,
-                                  &server_session,
-                                  &server_credentials))
+  if (openvas_server_session_new (scanner_socket,
+                                  &scanner_session,
+                                  &scanner_credentials))
     {
       close_stream_connection (client_socket);
       return EXIT_FAILURE;
@@ -285,14 +285,14 @@ serve_client (int client_socket)
     {
       case PROTOCOL_OTP:
         /* It's up to serve_otp to close_stream_connection on client_socket. */
-        if (serve_otp (client_session, &server_session,
-                       client_socket, server_socket))
+        if (serve_otp (client_session, &scanner_session,
+                       client_socket, scanner_socket))
           goto fail;
         break;
       case PROTOCOL_OMP:
         /* It's up to serve_omp to close_stream_connection on client_socket. */
-        if (serve_omp (client_session, &server_session, &server_credentials,
-                       client_socket, &server_socket))
+        if (serve_omp (client_session, &scanner_session, &scanner_credentials,
+                       client_socket, &scanner_socket))
           goto fail;
         break;
       case PROTOCOL_CLOSE:
@@ -306,16 +306,16 @@ serve_client (int client_socket)
         g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
     }
 
-  openvas_server_session_free (server_socket,
-                               server_session,
-                               server_credentials);
+  openvas_server_session_free (scanner_socket,
+                               scanner_session,
+                               scanner_credentials);
   return EXIT_SUCCESS;
 
  fail:
   close_stream_connection (client_socket); // FIX why close only on fail?
-  openvas_server_session_free (server_socket,
-                               server_session,
-                               server_credentials);
+  openvas_server_session_free (scanner_socket,
+                               scanner_session,
+                               scanner_credentials);
   return EXIT_FAILURE;
 }
 
@@ -380,14 +380,14 @@ accept_and_maybe_fork ()
             = ovas_scanner_context_attach (ovas_scanner_context, client_socket);
           if (secure_client_socket == -1)
             {
-              g_critical ("%s: failed to attach server context to socket %i\n",
+              g_critical ("%s: failed to attach scanner context to socket %i\n",
                           __FUNCTION__,
                           client_socket);
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
               exit (EXIT_FAILURE);
             }
-          tracef ("   Server context attached.\n");
+          tracef ("   Scanner context attached.\n");
           /* It's up to serve_client to close_stream_connection on
            * secure_client_socket. */
 #if FORK
@@ -503,7 +503,7 @@ handle_sigint (int signal)
 int
 main (int argc, char** argv)
 {
-  int server_port, manager_port;
+  int scanner_port, manager_port;
 
   /* Process options. */
 
@@ -513,8 +513,8 @@ main (int argc, char** argv)
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
   static gchar *manager_port_string = NULL;
-  static gchar *server_address_string = NULL;
-  static gchar *server_port_string = NULL;
+  static gchar *scanner_address_string = NULL;
+  static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
@@ -524,8 +524,8 @@ main (int argc, char** argv)
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
-        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &server_address_string, "Scanner (openvassd) address.", "<address>" },
-        { "sport", 's', 0, G_OPTION_ARG_STRING, &server_port_string, "Scanner (openvassd) port number.", "<number>" },
+        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
+        { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
         { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
@@ -595,38 +595,38 @@ main (int argc, char** argv)
 
   /* Complete option processing. */
 
-  if (server_address_string == NULL)
-    server_address_string = OPENVASSD_ADDRESS;
+  if (scanner_address_string == NULL)
+    scanner_address_string = OPENVASSD_ADDRESS;
 
-  if (server_port_string)
+  if (scanner_port_string)
     {
-      server_port = atoi (server_port_string);
-      if (server_port <= 0 || server_port >= 65536)
+      scanner_port = atoi (scanner_port_string);
+      if (scanner_port <= 0 || scanner_port >= 65536)
         {
-          g_critical ("%s: Server port must be a number between 0 and 65536\n",
+          g_critical ("%s: Scanner port must be a number between 0 and 65536\n",
                       __FUNCTION__);
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
-      server_port = htons (server_port);
+      scanner_port = htons (scanner_port);
     }
   else
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
         // FIX free servent?
-        server_port = servent->s_port;
+        scanner_port = servent->s_port;
       else
-        server_port = htons (OPENVASSD_PORT);
+        scanner_port = htons (OPENVASSD_PORT);
     }
 
   if (update_nvt_cache)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
 
-      int server_socket;
-      gnutls_session_t server_session;
-      gnutls_certificate_credentials_t server_credentials;
+      int scanner_socket;
+      gnutls_session_t scanner_session;
+      gnutls_certificate_credentials_t scanner_credentials;
 
       /* Initialise OMP daemon. */
 
@@ -669,15 +669,15 @@ main (int argc, char** argv)
           exit (EXIT_FAILURE);
         }
 
-      /* Setup the server address. */
+      /* Setup the scanner address. */
 
-      server_address.sin_family = AF_INET;
-      server_address.sin_port = server_port;
-      if (!inet_aton (server_address_string, &server_address.sin_addr))
+      scanner_address.sin_family = AF_INET;
+      scanner_address.sin_port = scanner_port;
+      if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
         {
-          g_critical ("%s: failed to create server address %s\n",
+          g_critical ("%s: failed to create scanner address %s\n",
                       __FUNCTION__,
-                      server_address_string);
+                      scanner_address_string);
           exit (EXIT_FAILURE);
         }
 
@@ -690,11 +690,11 @@ main (int argc, char** argv)
         }
       ovas_scanner_context
         = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
-                                   SERVERCERT,
-                                   SERVERKEY,
-                                   NULL,
-                                   CACERT,
-                                   0);
+                                    SCANNERCERT,
+                                    SCANNERKEY,
+                                    NULL,
+                                    CACERT,
+                                    0);
       if (ovas_scanner_context == NULL)
         {
           g_critical ("%s: failed to create server context\n", __FUNCTION__);
@@ -702,41 +702,41 @@ main (int argc, char** argv)
         }
 
       tracef ("   Set to connect to address %s port %i\n",
-              server_address_string,
-              ntohs (server_address.sin_port));
+              scanner_address_string,
+              ntohs (scanner_address.sin_port));
 
-      /* Make the server socket. */
-      server_socket = socket (PF_INET, SOCK_STREAM, 0);
-      if (server_socket == -1)
+      /* Make the scanner socket. */
+      scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
+      if (scanner_socket == -1)
         {
-          g_warning ("%s: failed to create server socket: %s\n",
+          g_warning ("%s: failed to create scanner socket: %s\n",
                      __FUNCTION__,
                      strerror (errno));
           return EXIT_FAILURE;
         }
 
-      if (openvas_server_session_new (server_socket,
-                                      &server_session,
-                                      &server_credentials))
+      if (openvas_server_session_new (scanner_socket,
+                                      &scanner_session,
+                                      &scanner_credentials))
         return EXIT_FAILURE;
 
       /* Call the OMP client serving function with client -1.  This invokes a
        * scanner-only manager loop.  As nvt_cache_mode is true, the manager
        * loop will request and cache the plugins, then exit. */
 
-      if (serve_omp (NULL, &server_session, &server_credentials,
-                     -1, &server_socket))
+      if (serve_omp (NULL, &scanner_session, &scanner_credentials,
+                     -1, &scanner_socket))
         {
-          openvas_server_session_free (server_socket,
-                                       server_session,
-                                       server_credentials);
+          openvas_server_session_free (scanner_socket,
+                                       scanner_session,
+                                       scanner_credentials);
           return EXIT_FAILURE;
         }
       else
         {
-          openvas_server_session_free (server_socket,
-                                       server_session,
-                                       server_credentials);
+          openvas_server_session_free (scanner_socket,
+                                       scanner_session,
+                                       scanner_credentials);
           return EXIT_SUCCESS;
         }
     }
@@ -766,10 +766,10 @@ main (int argc, char** argv)
     }
 
 #if 0
-  /* Initialise server information needed by `cleanup'. */
+  /* Initialise scanner information needed by `cleanup'. */
 
-  server.preferences = NULL;
-  server.rules = NULL;
+  scanner.preferences = NULL;
+  scanner.rules = NULL;
 #endif
 
   if (foreground == FALSE)
@@ -872,15 +872,15 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-  /* Setup the server address. */
+  /* Setup the scanner address. */
 
-  server_address.sin_family = AF_INET;
-  server_address.sin_port = server_port;
-  if (!inet_aton (server_address_string, &server_address.sin_addr))
+  scanner_address.sin_family = AF_INET;
+  scanner_address.sin_port = scanner_port;
+  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
     {
-      g_critical ("%s: failed to create server address %s\n",
+      g_critical ("%s: failed to create scanner address %s\n",
                   __FUNCTION__,
-                  server_address_string);
+                  scanner_address_string);
       exit (EXIT_FAILURE);
     }
 
@@ -893,14 +893,14 @@ main (int argc, char** argv)
     }
   ovas_scanner_context
     = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
-                               SERVERCERT,
-                               SERVERKEY,
-                               NULL,
-                               CACERT,
-                               0);
+                                SCANNERCERT,
+                                SCANNERKEY,
+                                NULL,
+                                CACERT,
+                                0);
   if (ovas_scanner_context == NULL)
     {
-      g_critical ("%s: failed to create server context\n", __FUNCTION__);
+      g_critical ("%s: failed to create scanner context\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
 
@@ -961,8 +961,8 @@ main (int argc, char** argv)
           manager_address_string ? manager_address_string : "*",
           ntohs (manager_address.sin_port));
   tracef ("   Set to connect to address %s port %i\n",
-          server_address_string,
-          ntohs (server_address.sin_port));
+          scanner_address_string,
+          ntohs (scanner_address.sin_port));
 
   /* Enable connections to the socket. */
 
@@ -997,7 +997,7 @@ main (int argc, char** argv)
    * `accept_and_maybe_fork'.
    *
    * FIX This could just loop accept_and_maybe_fork.  Might the manager
-   *     want to communicate with anything else here, like the server?
+   *     want to communicate with anything else here, like the scanner?
    */
 
   int ret, nfds;

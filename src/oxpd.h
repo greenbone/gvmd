@@ -38,7 +38,7 @@
 #endif
 
 /**
- * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
+ * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
  */
 #define FROM_BUFFER_SIZE 1048576
 
@@ -47,12 +47,12 @@ buffer_size_t from_buffer_size;
 extern char from_client[];
 extern buffer_size_t from_client_start;
 extern buffer_size_t from_client_end;
-extern char from_server[];
-extern buffer_size_t from_server_start;
-extern buffer_size_t from_server_end;
+extern char from_scanner[];
+extern buffer_size_t from_scanner_start;
+extern buffer_size_t from_scanner_end;
 
 /*@-exportlocal@*/
-extern struct sockaddr_in server_address;
+extern struct sockaddr_in scanner_address;
 /*@=exportlocal@*/
 
 /**

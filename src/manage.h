@@ -34,23 +34,23 @@
 #include <openvas/nvti.h>
 
 /**
- * @brief Structure of information about the server.
+ * @brief Structure of information about the scanner.
  */
 typedef struct
 {
   certificates_t* certificates;      ///< List of certificates.
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
-  GHashTable* preferences;           ///< Server preference.
-  GPtrArray* rules;                  ///< Server rules.
+  GHashTable* preferences;           ///< Scanner preference.
+  GPtrArray* rules;                  ///< Scanner rules.
   int rules_size;                    ///< Number of rules.
-} server_t;
+} scanner_t;
 
 // FIX for omp.c,manage.c,otp.c access to server info (rules, prefs, ...)
 /**
  * @brief Information about the server.
  */
-extern server_t server;
+extern scanner_t scanner;
 
 int
 init_manage (GSList*);
@@ -102,7 +102,7 @@ manage_migrate (GSList *log_config);
 
 /* Task structures. */
 
-short server_active;
+short scanner_active;
 
 // FIX should be in otp.c/h
 /**
@@ -177,9 +177,9 @@ typedef struct
 /* Task global variables. */
 
 /**
- * @brief The task currently running on the server.
+ * @brief The task currently running on the scanner.
  */
-extern /*@null@*/ task_t current_server_task;
+extern /*@null@*/ task_t current_scanner_task;
 
 extern /*@null@*/ report_t current_report;
 
@@ -635,7 +635,7 @@ int
 nvt_selector_nvt_count (const char*, const char*);
 
 
-/* Server messaging. */
+/* Scanner messaging. */
 
 int
 request_certificates ();

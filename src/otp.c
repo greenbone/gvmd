@@ -30,7 +30,7 @@
  * This file defines an OpenVAS Transfer Protocol (OTP) library, for
  * implementing OpenVAS managers such as the OpenVAS Manager daemon.
  *
- * The library provides a single function, \ref process_otp_server_input.
+ * The library provides a single function, \ref process_otp_scanner_input.
  * This function parses a given string of OTP text and adjusts local
  * task records according to the OTP messages in the string.
  */
@@ -59,7 +59,7 @@
  */
 #define G_LOG_DOMAIN "md    otp"
 
-// FIX Should probably be passed into process_otp_server_input.
+// FIX Should probably be passed into process_otp_scanner_input.
 extern buffer_size_t from_buffer_size;
 
 
@@ -402,29 +402,29 @@ append_note_message (task_t task, message_t* message)
 }
 
 
-/* Server preferences. */
+/* Scanner preferences. */
 
 /**
- * @brief The current server preference, during reading of server preferences.
+ * @brief The current scanner preference, during reading of scanner preferences.
  */
 /*@null@*/ /*@only@*/
-static char* current_server_preference = NULL;
+static char* current_scanner_preference = NULL;
 
 /**
- * @brief Create the server preferences.
+ * @brief Create the scanner preferences.
  */
 static void
-make_server_preferences ()
+make_scanner_preferences ()
 {
-  if (server.preferences) g_hash_table_destroy (server.preferences);
-  server.preferences = g_hash_table_new_full (g_str_hash,
-                                              g_str_equal,
-                                              g_free,
-                                              g_free);
+  if (scanner.preferences) g_hash_table_destroy (scanner.preferences);
+  scanner.preferences = g_hash_table_new_full (g_str_hash,
+                                               g_str_equal,
+                                               g_free,
+                                               g_free);
 }
 
 /**
- * @brief Add a preference to the server preferences.
+ * @brief Add a preference to the scanner preferences.
  *
  * Both parameters are used directly, and are freed when the
  * preferences are freed.
@@ -433,80 +433,80 @@ make_server_preferences ()
  * @param[in]  value       The value of the preference.
  */
 static void
-add_server_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
+add_scanner_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
 {
-  g_hash_table_insert (server.preferences, preference, value);
+  g_hash_table_insert (scanner.preferences, preference, value);
 }
 
 
-/* Server plugins. */
+/* Scanner plugins. */
 
 /**
- * @brief The current plugin, during reading of server plugin list.
+ * @brief The current plugin, during reading of scanner plugin list.
  */
 /*@only@*/
 static nvti_t* current_plugin = NULL;
 
 
-/* Server plugin dependencies. */
+/* Scanner plugin dependencies. */
 
 /**
- * @brief The current server plugin, during reading of server plugin dependencies.
+ * @brief The current scanner plugin, during reading of scanner plugin dependencies.
  */
 /*@only@*/
-static char* current_server_plugin_dependency_name = NULL;
+static char* current_scanner_plugin_dependency_name = NULL;
 
 /**
- * @brief The plugins required by the current server plugin.
+ * @brief The plugins required by the current scanner plugin.
  */
 /*@only@*/
-static GSList* current_server_plugin_dependency_dependencies = NULL;
+static GSList* current_scanner_plugin_dependency_dependencies = NULL;
 
 /**
- * @brief Make the server plugins dependencies.
+ * @brief Make the scanner plugins dependencies.
  */
 static void
-make_server_plugins_dependencies ()
+make_scanner_plugins_dependencies ()
 {
-  if (server.plugins_dependencies)
+  if (scanner.plugins_dependencies)
     {
-      g_hash_table_destroy (server.plugins_dependencies);
-      server.plugins_dependencies = NULL;
+      g_hash_table_destroy (scanner.plugins_dependencies);
+      scanner.plugins_dependencies = NULL;
     }
-  server.plugins_dependencies = g_hash_table_new_full (g_str_hash,
-                                                       g_str_equal,
-                                                       g_free,
-                                                       free_g_slist);
+  scanner.plugins_dependencies = g_hash_table_new_full (g_str_hash,
+                                                        g_str_equal,
+                                                        g_free,
+                                                        free_g_slist);
 }
 
 /**
- * @brief Add a plugin to the server dependencies.
+ * @brief Add a plugin to the scanner dependencies.
  *
  * @param[in]  name          The name of the plugin.
  * @param[in]  requirements  The plugins required by the plugin.
  */
 static void
-add_server_plugins_dependency (/*@keep@*/ char* name,
-                               /*@keep@*/ GSList* requirements)
+add_scanner_plugins_dependency (/*@keep@*/ char* name,
+                                /*@keep@*/ GSList* requirements)
 {
-  assert (server.plugins_dependencies != NULL);
-  tracef ("   server new dependency name: %s\n", name);
-  g_hash_table_insert (server.plugins_dependencies, name, requirements);
+  assert (scanner.plugins_dependencies != NULL);
+  tracef ("   scanner new dependency name: %s\n", name);
+  g_hash_table_insert (scanner.plugins_dependencies, name, requirements);
 }
 
 /**
  * @brief Set the current plugin.
  *
  * @param[in]  name  The name of the plugin.  Used directly, freed by
- *                   maybe_free_current_server_plugin_dependency.
+ *                   maybe_free_current_scanner_plugin_dependency.
  */
 static void
-make_current_server_plugin_dependency (/*@only@*/ char* name)
+make_current_scanner_plugin_dependency (/*@only@*/ char* name)
 {
-  assert (current_server_plugin_dependency_name == NULL);
-  assert (current_server_plugin_dependency_dependencies == NULL);
-  current_server_plugin_dependency_name = name;
-  current_server_plugin_dependency_dependencies = NULL; /* Empty list. */
+  assert (current_scanner_plugin_dependency_name == NULL);
+  assert (current_scanner_plugin_dependency_dependencies == NULL);
+  current_scanner_plugin_dependency_name = name;
+  current_scanner_plugin_dependency_dependencies = NULL; /* Empty list. */
 }
 
 /**
@@ -514,37 +514,37 @@ make_current_server_plugin_dependency (/*@only@*/ char* name)
  *
  * @param[in]  requirement  The name of the required plugin.  Used directly,
  *                          freed when the dependencies are freed in
- *                          make_server_plugins_dependencies.
+ *                          make_scanner_plugins_dependencies.
  */
 static void
-append_to_current_server_plugin_dependency (/*@keep@*/ char* requirement)
+append_to_current_scanner_plugin_dependency (/*@keep@*/ char* requirement)
 {
-  tracef ("   server appending plugin requirement: %s\n", requirement);
-  current_server_plugin_dependency_dependencies
-    = g_slist_append (current_server_plugin_dependency_dependencies,
+  tracef ("   scanner appending plugin requirement: %s\n", requirement);
+  current_scanner_plugin_dependency_dependencies
+    = g_slist_append (current_scanner_plugin_dependency_dependencies,
                       requirement);
 }
 
 /**
- * @brief Add the current plugin to the server dependencies.
+ * @brief Add the current plugin to the scanner dependencies.
  */
 static void
-finish_current_server_plugin_dependency ()
+finish_current_scanner_plugin_dependency ()
 {
-  assert (current_server_plugin_dependency_name != NULL);
-  add_server_plugins_dependency (current_server_plugin_dependency_name,
-                                 current_server_plugin_dependency_dependencies);
-  current_server_plugin_dependency_name = NULL;
-  current_server_plugin_dependency_dependencies = NULL;
+  assert (current_scanner_plugin_dependency_name != NULL);
+  add_scanner_plugins_dependency (current_scanner_plugin_dependency_name,
+                                  current_scanner_plugin_dependency_dependencies);
+  current_scanner_plugin_dependency_name = NULL;
+  current_scanner_plugin_dependency_dependencies = NULL;
 }
 
 
-/* Server rules. */
+/* Scanner rules. */
 
 /**
- * @brief Free a server rule.
+ * @brief Free a scanner rule.
  *
- * @param[in]  rule   The server rule.
+ * @param[in]  rule   The scanner rule.
  * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
  */
 static void
@@ -554,176 +554,176 @@ free_rule (/*@only@*/ /*@out@*/ void* rule, /*@unused@*/ void* dummy)
 }
 
 /**
- * @brief Free any server rules.
+ * @brief Free any scanner rules.
  */
 static void
-maybe_free_server_rules ()
+maybe_free_scanner_rules ()
 {
-  if (server.rules)
+  if (scanner.rules)
     {
-      g_ptr_array_foreach (server.rules, free_rule, NULL);
-      (void) g_ptr_array_free (server.rules, TRUE);
-      server.rules_size = 0;
+      g_ptr_array_foreach (scanner.rules, free_rule, NULL);
+      (void) g_ptr_array_free (scanner.rules, TRUE);
+      scanner.rules_size = 0;
     }
 }
 
 /**
- * @brief Create the server rules.
+ * @brief Create the scanner rules.
  */
 static void
-make_server_rules ()
+make_scanner_rules ()
 {
-  server.rules = g_ptr_array_new ();
-  server.rules_size = 0;
+  scanner.rules = g_ptr_array_new ();
+  scanner.rules_size = 0;
 }
 
 /**
- * @brief Add a rule to the server rules.
+ * @brief Add a rule to the scanner rules.
  *
- * The rule is used directly and is freed with the other server rules.
+ * The rule is used directly and is freed with the other scanner rules.
  *
  * @param[in]  rule  The rule.
  */
 static void
-add_server_rule (/*@keep@*/ char* rule)
+add_scanner_rule (/*@keep@*/ char* rule)
 {
-  g_ptr_array_add (server.rules, rule);
-  server.rules_size++;
+  g_ptr_array_add (scanner.rules, rule);
+  scanner.rules_size++;
 }
 
 
-/* Server state. */
+/* Scanner state. */
 
 /**
  * @brief Initialise OTP library data.
  *
- * This must run once, before the first call to \ref process_otp_server_input.
+ * This must run once, before the first call to \ref process_otp_scanner_input.
  */
 void
 init_otp_data ()
 {
-  server.certificates = NULL;
-  server.preferences = NULL;
-  server.rules = NULL;
-  server.plugins_md5 = NULL;
+  scanner.certificates = NULL;
+  scanner.preferences = NULL;
+  scanner.rules = NULL;
+  scanner.plugins_md5 = NULL;
 }
 
 /**
- * @brief Possible states of the server.
+ * @brief Possible states of the scanner.
  */
 typedef enum
 {
-  SERVER_BYE,
-  SERVER_CERTIFICATE_FINGERPRINT,
-  SERVER_CERTIFICATE_LENGTH,
-  SERVER_CERTIFICATE_OWNER,
-  SERVER_CERTIFICATE_PUBLIC_KEY,
-  SERVER_CERTIFICATE_TRUST_LEVEL,
-  SERVER_DONE,
-  SERVER_DEBUG_DESCRIPTION,
-  SERVER_DEBUG_HOST,
-  SERVER_DEBUG_NUMBER,
-  SERVER_DEBUG_OID,
-  SERVER_ERROR,
-  SERVER_HOLE_DESCRIPTION,
-  SERVER_HOLE_HOST,
-  SERVER_HOLE_NUMBER,
-  SERVER_HOLE_OID,
-  SERVER_INFO_DESCRIPTION,
-  SERVER_INFO_HOST,
-  SERVER_INFO_NUMBER,
-  SERVER_INFO_OID,
-  SERVER_LOG_DESCRIPTION,
-  SERVER_LOG_HOST,
-  SERVER_LOG_NUMBER,
-  SERVER_LOG_OID,
-  SERVER_NOTE_DESCRIPTION,
-  SERVER_NOTE_HOST,
-  SERVER_NOTE_NUMBER,
-  SERVER_NOTE_OID,
-  SERVER_PLUGINS_MD5,
-  SERVER_PLUGIN_LIST_BUGTRAQ_ID,
-  SERVER_PLUGIN_LIST_CATEGORY,
-  SERVER_PLUGIN_LIST_COPYRIGHT,
-  SERVER_PLUGIN_LIST_CVE_ID,
-  SERVER_PLUGIN_LIST_DESCRIPTION,
-  SERVER_PLUGIN_LIST_FAMILY,
-  SERVER_PLUGIN_LIST_FPRS,
-  SERVER_PLUGIN_LIST_NAME,
-  SERVER_PLUGIN_LIST_OID,
-  SERVER_PLUGIN_LIST_PLUGIN_VERSION,
-  SERVER_PLUGIN_LIST_SUMMARY,
-  SERVER_PLUGIN_LIST_TAGS,
-  SERVER_PLUGIN_LIST_XREFS,
-  SERVER_PLUGIN_DEPENDENCY_NAME,
-  SERVER_PLUGIN_DEPENDENCY_DEPENDENCY,
-  SERVER_PORT_HOST,
-  SERVER_PORT_NUMBER,
-  SERVER_PREFERENCE_NAME,
-  SERVER_PREFERENCE_VALUE,
-  SERVER_RULE,
-  SERVER_SERVER,
-  SERVER_STATUS,
-  SERVER_STATUS_ATTACK_STATE,
-  SERVER_STATUS_HOST,
-  SERVER_STATUS_PORTS,
-  SERVER_STATUS_PROGRESS,
-  SERVER_TIME,
-  SERVER_TIME_HOST_START_HOST,
-  SERVER_TIME_HOST_START_TIME,
-  SERVER_TIME_HOST_END_HOST,
-  SERVER_TIME_HOST_END_TIME,
-  SERVER_TIME_SCAN_START,
-  SERVER_TIME_SCAN_END,
-  SERVER_TOP
-} server_state_t;
+  SCANNER_BYE,
+  SCANNER_CERTIFICATE_FINGERPRINT,
+  SCANNER_CERTIFICATE_LENGTH,
+  SCANNER_CERTIFICATE_OWNER,
+  SCANNER_CERTIFICATE_PUBLIC_KEY,
+  SCANNER_CERTIFICATE_TRUST_LEVEL,
+  SCANNER_DONE,
+  SCANNER_DEBUG_DESCRIPTION,
+  SCANNER_DEBUG_HOST,
+  SCANNER_DEBUG_NUMBER,
+  SCANNER_DEBUG_OID,
+  SCANNER_ERROR,
+  SCANNER_HOLE_DESCRIPTION,
+  SCANNER_HOLE_HOST,
+  SCANNER_HOLE_NUMBER,
+  SCANNER_HOLE_OID,
+  SCANNER_INFO_DESCRIPTION,
+  SCANNER_INFO_HOST,
+  SCANNER_INFO_NUMBER,
+  SCANNER_INFO_OID,
+  SCANNER_LOG_DESCRIPTION,
+  SCANNER_LOG_HOST,
+  SCANNER_LOG_NUMBER,
+  SCANNER_LOG_OID,
+  SCANNER_NOTE_DESCRIPTION,
+  SCANNER_NOTE_HOST,
+  SCANNER_NOTE_NUMBER,
+  SCANNER_NOTE_OID,
+  SCANNER_PLUGINS_MD5,
+  SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
+  SCANNER_PLUGIN_LIST_CATEGORY,
+  SCANNER_PLUGIN_LIST_COPYRIGHT,
+  SCANNER_PLUGIN_LIST_CVE_ID,
+  SCANNER_PLUGIN_LIST_DESCRIPTION,
+  SCANNER_PLUGIN_LIST_FAMILY,
+  SCANNER_PLUGIN_LIST_FPRS,
+  SCANNER_PLUGIN_LIST_NAME,
+  SCANNER_PLUGIN_LIST_OID,
+  SCANNER_PLUGIN_LIST_PLUGIN_VERSION,
+  SCANNER_PLUGIN_LIST_SUMMARY,
+  SCANNER_PLUGIN_LIST_TAGS,
+  SCANNER_PLUGIN_LIST_XREFS,
+  SCANNER_PLUGIN_DEPENDENCY_NAME,
+  SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY,
+  SCANNER_PORT_HOST,
+  SCANNER_PORT_NUMBER,
+  SCANNER_PREFERENCE_NAME,
+  SCANNER_PREFERENCE_VALUE,
+  SCANNER_RULE,
+  SCANNER_SERVER,
+  SCANNER_STATUS,
+  SCANNER_STATUS_ATTACK_STATE,
+  SCANNER_STATUS_HOST,
+  SCANNER_STATUS_PORTS,
+  SCANNER_STATUS_PROGRESS,
+  SCANNER_TIME,
+  SCANNER_TIME_HOST_START_HOST,
+  SCANNER_TIME_HOST_START_TIME,
+  SCANNER_TIME_HOST_END_HOST,
+  SCANNER_TIME_HOST_END_TIME,
+  SCANNER_TIME_SCAN_START,
+  SCANNER_TIME_SCAN_END,
+  SCANNER_TOP
+} scanner_state_t;
 
 /**
- * @brief The state of the server.
+ * @brief The state of the scanner.
  */
-static server_state_t server_state = SERVER_TOP;
+static scanner_state_t scanner_state = SCANNER_TOP;
 
 /**
- * @brief Set the server state, \ref server_state.
+ * @brief Set the scanner state, \ref scanner_state.
  */
 static void
-set_server_state (server_state_t state)
+set_scanner_state (scanner_state_t state)
 {
-  server_state = state;
-  tracef ("   server state set: %i\n", server_state);
+  scanner_state = state;
+  tracef ("   scanner state set: %i\n", scanner_state);
 }
 
 /**
- * @brief The initialisation state of the server.
+ * @brief The initialisation state of the scanner.
  */
-server_init_state_t server_init_state = SERVER_INIT_TOP;
+scanner_init_state_t scanner_init_state = SCANNER_INIT_TOP;
 
 /**
- * @brief Offset into initialisation string being sent to server.
+ * @brief Offset into initialisation string being sent to scanner.
  */
-int server_init_offset = 0;
+int scanner_init_offset = 0;
 
 /**
- * @brief Set the server initialisation state, \ref server_init_state.
+ * @brief Set the scanner initialisation state, \ref scanner_init_state.
  */
 void
-set_server_init_state (server_init_state_t state)
+set_scanner_init_state (scanner_init_state_t state)
 {
-  server_init_state = state;
-  tracef ("   server init state set: %i\n", server_init_state);
+  scanner_init_state = state;
+  tracef ("   scanner init state set: %i\n", scanner_init_state);
 }
 
 
-/* Server certificates. */
+/* Scanner certificates. */
 
 /**
- * @brief The current certificates, during reading of server certificates.
+ * @brief The current certificates, during reading of scanner certificates.
  */
 /*@only@*/
 static certificates_t* current_certificates = NULL;
 
 /**
- * @brief The current certificate, during reading of server certificates.
+ * @brief The current certificate, during reading of scanner certificates.
  */
 /*@only@*/
 static certificate_t* current_certificate = NULL;
@@ -732,38 +732,38 @@ static certificate_t* current_certificate = NULL;
 /* OTP input processor. */
 
 // FIX probably should pass to process_omp_client_input
-extern char from_server[];
-extern buffer_size_t from_server_start;
-extern buffer_size_t from_server_end;
+extern char from_scanner[];
+extern buffer_size_t from_scanner_start;
+extern buffer_size_t from_scanner_end;
 
 /**
- * @brief "Synchronise" the \ref from_server buffer.
+ * @brief "Synchronise" the \ref from_scanner buffer.
  *
- * Move any OTP in the \ref from_server buffer to the front of the buffer.
+ * Move any OTP in the \ref from_scanner buffer to the front of the buffer.
  *
- * @return 0 success, -1 \ref from_server is full.
+ * @return 0 success, -1 \ref from_scanner is full.
  */
 static int
 sync_buffer ()
 {
-  if (from_server_start > 0 && from_server_start == from_server_end)
+  if (from_scanner_start > 0 && from_scanner_start == from_scanner_end)
     {
-      from_server_start = from_server_end = 0;
-      tracef ("   server start caught end\n");
+      from_scanner_start = from_scanner_end = 0;
+      tracef ("   scanner start caught end\n");
     }
-  else if (from_server_start == 0)
+  else if (from_scanner_start == 0)
     {
-      if (from_server_end == from_buffer_size)
+      if (from_scanner_end == from_buffer_size)
         {
           // FIX if the buffer is entirely full here then exit
           //     (or will hang waiting for buffer to empty)
-          //     this could happen if the server sends a field with length >= buffer length
+          //     this could happen if the scanner sends a field with length >= buffer length
           //         could realloc buffer
           //             which may eventually use all mem and bring down manager
           //                 would only bring down the process serving the client
           //                 may lead to out of mem in other processes?
           //                 could realloc to an upper limit within avail mem
-          tracef ("   server buffer full\n");
+          tracef ("   scanner buffer full\n");
           return -1;
         }
     }
@@ -772,17 +772,17 @@ sync_buffer ()
       /* Move the remaining partial line to the front of the buffer.  This
        * ensures that there is space after the partial line into which
        * serve_omp can read the rest of the line. */
-      char* start = from_server + from_server_start;
-      from_server_end -= from_server_start;
-      memmove (from_server, start, from_server_end);
-      from_server_start = 0;
+      char* start = from_scanner + from_scanner_start;
+      from_scanner_end -= from_scanner_start;
+      memmove (from_scanner, start, from_scanner_end);
+      from_scanner_start = 0;
 #if TRACE
-      from_server[from_server_end] = '\0';
-      //tracef ("   new from_server: %s\n", from_server);
-      tracef ("   new from_server_start: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_server_start);
-      tracef ("   new from_server_end: %" BUFFER_SIZE_T_FORMAT "\n",
-              from_server_end);
+      from_scanner[from_scanner_end] = '\0';
+      //tracef ("   new from_scanner: %s\n", from_scanner);
+      tracef ("   new from_scanner_start: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_scanner_start);
+      tracef ("   new from_scanner_end: %" BUFFER_SIZE_T_FORMAT "\n",
+              from_scanner_end);
 #endif
     }
   return 0;
@@ -796,17 +796,17 @@ sync_buffer ()
  * @return 0 success, -2 too few characters (need more input).
  */
 static int
-parse_server_certificate_public_key (char** messages)
+parse_scanner_certificate_public_key (char** messages)
 {
   gchar *value;
   char *end, *match;
   assert (current_certificate != NULL);
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
       if (current_certificates && current_certificate)
@@ -817,8 +817,8 @@ parse_server_certificate_public_key (char** messages)
           current_certificate = NULL;
           g_free (value);
         }
-      set_server_state (SERVER_CERTIFICATE_FINGERPRINT);
-      from_server_start += match + 1 - *messages;
+      set_scanner_state (SCANNER_CERTIFICATE_FINGERPRINT);
+      from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
       return 0;
     }
@@ -833,51 +833,51 @@ parse_server_certificate_public_key (char** messages)
  * @return 0 success, -1 fail, -2 too few characters (need more input).
  */
 static int
-parse_server_done (char** messages)
+parse_scanner_done (char** messages)
 {
-  char *end = *messages + from_server_end - from_server_start;
+  char *end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' ' || (*messages)[0] == '\n'))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((int) (end - *messages) < 6)
     /* Too few characters to be the end marker, return to select to
      * wait for more input. */
     return -2;
   if (strncasecmp ("SERVER", *messages, 6))
     {
-      tracef ("   server fail: expected final \"SERVER\"\n");
+      tracef ("   scanner fail: expected final \"SERVER\"\n");
       return -1;
     }
-  set_server_state (SERVER_TOP);
-  from_server_start += 6;
+  set_scanner_state (SCANNER_TOP);
+  from_scanner_start += 6;
   (*messages) += 6;
   return 0;
 }
 
 /**
- * @brief Check for a bad login response from the server.
+ * @brief Check for a bad login response from the scanner.
  *
  * @param  messages  A pointer into the OTP input buffer.
  *
  * @return 0 if there is a bad login response, else 1.
  */
 static int
-parse_server_bad_login (char** messages)
+parse_scanner_bad_login (char** messages)
 {
   /*@dependent@*/ char *end, *match;
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       // FIX 19 available?
       if (strncasecmp ("Bad login attempt !", *messages, 19) == 0)
         {
           tracef ("match bad login\n");
-          from_server_start += match + 1 - *messages;
+          from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
-          set_server_init_state (SERVER_INIT_TOP);
+          set_scanner_init_state (SCANNER_INIT_TOP);
           return 0;
         }
     }
@@ -892,27 +892,27 @@ parse_server_bad_login (char** messages)
  * @return 0 success, -1 fail, -2 too few characters (need more input).
  */
 static int
-parse_server_error (char** messages)
+parse_scanner_error (char** messages)
 {
   char err;
-  char *end = *messages + from_server_end - from_server_start;
+  char *end = *messages + from_scanner_end - from_scanner_start;
 
   /* OTP has two error messages.  One ends with a newline, the other ends
    * with a "<|> SERVER" field (and a newline).  The GTK client is
    * hardcoded to handle these two error types. */
 
   while (*messages < end && ((*messages)[0] == ' ' || (*messages)[0] == '\n'))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((int) (end - *messages) < 5)
     /* Too few characters to be the error number, return to select to
      * wait for more input. */
     return -2;
   if (sscanf (*messages, "E00%c ", &err) != 1)
     {
-      tracef ("   server fail: failed to parse error message number\n");
+      tracef ("   scanner fail: failed to parse error message number\n");
       return -1;
     }
-  from_server_start += 5;
+  from_scanner_start += 5;
   (*messages) += 5;
   switch (err)
     {
@@ -928,8 +928,8 @@ parse_server_error (char** messages)
 
           if (strncmp (*messages, "- Invalid port range <|>", length))
             {
-              tracef ("   server fail: failed to parse error description\n");
-              tracef ("   server fail: messages was: %.*s\n",
+              tracef ("   scanner fail: failed to parse error description\n");
+              tracef ("   scanner fail: messages was: %.*s\n",
                       length,
                       *messages);
               return -1;
@@ -938,15 +938,15 @@ parse_server_error (char** messages)
           g_warning ("%s: Received \"invalid port range\" ERROR message\n",
                      __FUNCTION__);
 
-          from_server_start += length;
+          from_scanner_start += length;
           (*messages) += length;
 
-          if (current_server_task)
-            set_task_run_status (current_server_task,
+          if (current_scanner_task)
+            set_task_run_status (current_scanner_task,
                                  TASK_STATUS_INTERNAL_ERROR);
 
-          set_server_state (SERVER_DONE);
-          switch (parse_server_done (messages))
+          set_scanner_state (SCANNER_DONE);
+          switch (parse_scanner_done (messages))
             {
               case -1: return -1;
               case -2:
@@ -962,15 +962,15 @@ parse_server_error (char** messages)
           char *match;
           if ((match = memchr (*messages,
                                (int) '\n',
-                               from_server_end - from_server_start)))
+                               from_scanner_end - from_scanner_start)))
             {
-              from_server_start += match - *messages;
+              from_scanner_start += match - *messages;
               *messages = match;
 
               /* TODO: Parse the list of hosts and note that permissions
                *       prevented those scans. */
 
-              set_server_state (SERVER_TOP);
+              set_scanner_state (SCANNER_TOP);
             }
           else
             /* Need more input for a newline. */
@@ -990,22 +990,22 @@ parse_server_error (char** messages)
  * @return 0 success, -2 too few characters (need more input).
  */
 static int
-parse_server_preference_value (char** messages)
+parse_scanner_preference_value (char** messages)
 {
   char *value, *end, *match;
-  assert (current_server_preference != NULL);
-  end = *messages + from_server_end - from_server_start;
+  assert (current_scanner_preference != NULL);
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      add_server_preference (current_server_preference, value);
-      set_server_state (SERVER_PREFERENCE_NAME);
-      from_server_start += match + 1 - *messages;
+      add_scanner_preference (current_scanner_preference, value);
+      set_scanner_state (SCANNER_PREFERENCE_NAME);
+      from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
       return 0;
     }
@@ -1020,16 +1020,16 @@ parse_server_preference_value (char** messages)
  * @return 0 success, -2 too few characters (need more input).
  */
 static int
-parse_server_plugin_list_tags (char** messages)
+parse_scanner_plugin_list_tags (char** messages)
 {
   char *value, *end, *match;
   assert (current_plugin != NULL);
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
       value = g_strdup (*messages);
@@ -1039,8 +1039,8 @@ parse_server_plugin_list_tags (char** messages)
           make_nvt_from_nvti (current_plugin);
           current_plugin = NULL;
         }
-      set_server_state (SERVER_PLUGIN_LIST_OID);
-      from_server_start += match + 1 - *messages;
+      set_scanner_state (SCANNER_PLUGIN_LIST_OID);
+      from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
       return 0;
     }
@@ -1056,14 +1056,14 @@ parse_server_plugin_list_tags (char** messages)
  *         more input).
  */
 static int
-parse_server_rule (char** messages)
+parse_scanner_rule (char** messages)
 {
   char *end, *match;
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == '\n'))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   /* Check for the end marker. */
   if (end - *messages > 2
       && (*messages)[0] == '<'
@@ -1074,13 +1074,13 @@ parse_server_rule (char** messages)
   /* There may be a rule ending in a semicolon. */
   if ((match = memchr (*messages,
                        (int) ';',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       char* rule;
       match[0] = '\0';
       rule = g_strdup (*messages);
-      add_server_rule (rule);
-      from_server_start += match + 1 - *messages;
+      add_scanner_rule (rule);
+      from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
       return 0;
     }
@@ -1088,14 +1088,14 @@ parse_server_rule (char** messages)
 }
 
 /**
- * @brief Parse the dependency of a server plugin.
+ * @brief Parse the dependency of a scanner plugin.
  *
  * @param  messages  A pointer into the OTP input buffer.
  *
  * @return TRUE if a <|> follows in the buffer, otherwise FALSE.
  */
 static gboolean
-parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
+parse_scanner_plugin_dependency_dependency (/*@dependent@*/ char** messages)
 {
   /* Look for the end of dependency marker: a newline that comes before
    * the next <|>. */
@@ -1104,8 +1104,8 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
   separator = NULL;
   /* Look for <|>. */
   input = *messages;
-  from_start = from_server_start;
-  from_end = from_server_end;
+  from_start = from_scanner_start;
+  from_end = from_scanner_end;
   while (from_start < from_end
          && (match = memchr (input, (int) '<', from_end - from_start))
             != NULL)
@@ -1122,20 +1122,20 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
       input = match + 1;
     }
   /* Look for newline. */
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       /* Compare newline position to <|> position. */
       if ((separator == NULL) || (match < separator))
         {
-          finish_current_server_plugin_dependency ();
-          from_server_start += match + 1 - *messages;
+          finish_current_scanner_plugin_dependency ();
+          from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
-          set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+          set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_NAME);
         }
     }
   return separator == NULL;
@@ -1151,15 +1151,15 @@ parse_server_plugin_dependency_dependency (/*@dependent@*/ char** messages)
  *         field follows), -4 failed to find a newline (may be a <|>)
  */
 static int
-parse_server_server (/*@dependent@*/ char** messages)
+parse_scanner_server (/*@dependent@*/ char** messages)
 {
   /*@dependent@*/ char *end, *match;
-  end = *messages + from_server_end - from_server_start;
+  end = *messages + from_scanner_end - from_scanner_start;
   while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_server_start++; }
+    { (*messages)++; from_scanner_start++; }
   if ((match = memchr (*messages,
                        (int) '\n',
-                       from_server_end - from_server_start)))
+                       from_scanner_end - from_scanner_start)))
     {
       /*@dependent@*/ char* newline;
       /*@dependent@*/ char* input;
@@ -1167,40 +1167,40 @@ parse_server_server (/*@dependent@*/ char** messages)
       match[0] = '\0';
       // FIX is there ever whitespace before the newline?
       while (*messages < end && ((*messages)[0] == ' '))
-        { (*messages)++; from_server_start++; }
+        { (*messages)++; from_scanner_start++; }
       // FIX 20 available?
       if (strncasecmp ("PLUGINS_DEPENDENCIES", *messages, 20) == 0)
         {
-          from_server_start += match + 1 - *messages;
+          from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
-          make_server_plugins_dependencies ();
-          set_server_state (SERVER_PLUGIN_DEPENDENCY_NAME);
+          make_scanner_plugins_dependencies ();
+          set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_NAME);
           return 0;
         }
       // FIX 12 available?
       if (strncasecmp ("CERTIFICATES", *messages, 12) == 0)
         {
-          from_server_start += match + 1 - *messages;
+          from_scanner_start += match + 1 - *messages;
           *messages = match + 1;
           /* current_certificates may be allocated already due to a
            * request for the list before the end of the previous
            * request.  In this case just let the responses mix.
-           * FIX depends what server does on multiple requests
+           * FIX depends what scanner does on multiple requests
            */
           if (current_certificates == NULL)
             {
               current_certificates = certificates_create ();
               if (current_certificates == NULL) abort (); // FIX
             }
-          set_server_state (SERVER_CERTIFICATE_FINGERPRINT);
+          set_scanner_state (SCANNER_CERTIFICATE_FINGERPRINT);
           return 0;
         }
       newline = match;
       newline[0] = '\n';
       /* Check for a <|>. */
       input = *messages;
-      from_start = from_server_start;
-      from_end = from_server_end;
+      from_start = from_scanner_start;
+      from_end = from_scanner_end;
       while (from_start < from_end
              && ((match = memchr (input,
                                   (int) '<',
@@ -1228,57 +1228,57 @@ parse_server_server (/*@dependent@*/ char** messages)
 }
 
 /**
- * @brief Process any lines available in \ref from_server.
+ * @brief Process any lines available in \ref from_scanner.
  *
- * Update server information according to the input from the server.
+ * Update scanner information according to the input from the scanner.
  *
  * \if STATIC
  *
- * This includes updating the server state with \ref set_server_state
- * and \ref set_server_init_state, and updating server records with functions
- * like \ref add_server_preference and \ref append_task_open_port.
+ * This includes updating the scanner state with \ref set_scanner_state
+ * and \ref set_scanner_init_state, and updating scanner records with functions
+ * like \ref add_scanner_preference and \ref append_task_open_port.
  *
  * \endif
  *
- * This function simply records input from the server.  Output to the server
+ * This function simply records input from the scanner.  Output to the scanner
  * or client is almost always done via \ref process_omp_client_input in
  * reaction to client requests, the only exception being stop requests
  * initiated in other processes.
  *
- * @return 0 success, 1 received server BYE, 2 bad login, -1 error.
+ * @return 0 success, 1 received scanner BYE, 2 bad login, -1 error.
  */
 int
-process_otp_server_input ()
+process_otp_scanner_input ()
 {
   /*@dependent@*/ char* match = NULL;
-  /*@dependent@*/ char* messages = from_server + from_server_start;
+  /*@dependent@*/ char* messages = from_scanner + from_scanner_start;
   /*@dependent@*/ char* input;
   buffer_size_t from_start, from_end;
-  //tracef ("   consider %.*s\n", from_server_end - from_server_start, messages);
+  //tracef ("   consider %.*s\n", from_scanner_end - from_scanner_start, messages);
 
   /* Before processing the input, check if another manager process has stopped
-   * the current task.  If so, send the stop request to the server.  This is
-   * the only place in this file that writes to the to_server buffer, and hence
-   * the only place that requires that the writes to to_server in the OMP XML
+   * the current task.  If so, send the stop request to the scanner.  This is
+   * the only place in this file that writes to the to_scanner buffer, and hence
+   * the only place that requires that the writes to to_scanner in the OMP XML
    * handlers must be whole OTP commands. */
 
   if (manage_check_current_task () == -1)
     {
-      /* Out of space in to_server.  Just treat it as an error for now. */
+      /* Out of space in to_scanner.  Just treat it as an error for now. */
       return -1;
     }
 
-  /* First, handle special server states where the input from the server
+  /* First, handle special scanner states where the input from the scanner
    * ends in something other than <|> (usually a newline). */
 
-  switch (server_init_state)
+  switch (scanner_init_state)
     {
-      case SERVER_INIT_SENT_VERSION:
+      case SCANNER_INIT_SENT_VERSION:
         /* Read over any whitespace left by the previous session. */
-        while (from_server_start < from_server_end
+        while (from_scanner_start < from_scanner_end
                && (messages[0] == ' ' || messages[0] == '\n'))
-          from_server_start++, messages++;
-        if (from_server_end - from_server_start < 12)
+          from_scanner_start++, messages++;
+        if (from_scanner_end - from_scanner_start < 12)
           {
             /* Need more input. */
             if (sync_buffer ()) return -1;
@@ -1286,17 +1286,17 @@ process_otp_server_input ()
           }
         if (strncasecmp ("< OTP/1.0 >\n", messages, 12))
           {
-            tracef ("   server fail: expected \"< OTP/1.0 >, got \"%.12s\"\n\"\n",
+            tracef ("   scanner fail: expected \"< OTP/1.0 >, got \"%.12s\"\n\"\n",
                     messages);
             return -1;
           }
-        from_server_start += 12;
+        from_scanner_start += 12;
         messages += 12;
-        set_server_init_state (SERVER_INIT_GOT_VERSION);
+        set_scanner_init_state (SCANNER_INIT_GOT_VERSION);
         /* Fall through to attempt next step. */
         /*@fallthrough@*/
-      case SERVER_INIT_GOT_VERSION:
-        if (from_server_end - from_server_start < 7)
+      case SCANNER_INIT_GOT_VERSION:
+        if (from_scanner_end - from_scanner_start < 7)
           {
             /* Need more input. */
             if (sync_buffer ()) return -1;
@@ -1304,20 +1304,20 @@ process_otp_server_input ()
           }
         if (strncasecmp ("User : ", messages, 7))
           {
-            tracef ("   server fail: expected \"User : \", got \"%7s\"\n",
+            tracef ("   scanner fail: expected \"User : \", got \"%7s\"\n",
                     messages);
             return -1;
           }
-        from_server_start += 7;
+        from_scanner_start += 7;
         messages += 7;
-        set_server_init_state (SERVER_INIT_GOT_USER);
+        set_scanner_init_state (SCANNER_INIT_GOT_USER);
         if (sync_buffer ()) return -1;
         return 0;
-      case SERVER_INIT_GOT_USER:
-        /* Input from server after "User : " and before user name sent. */
+      case SCANNER_INIT_GOT_USER:
+        /* Input from scanner after "User : " and before user name sent. */
         return -1;
-      case SERVER_INIT_SENT_USER:
-        if (from_server_end - from_server_start < 11)
+      case SCANNER_INIT_SENT_USER:
+        if (from_scanner_end - from_scanner_start < 11)
           {
             /* Need more input. */
             if (sync_buffer ()) return -1;
@@ -1325,56 +1325,56 @@ process_otp_server_input ()
           }
         if (strncasecmp ("Password : ", messages, 11))
           {
-            tracef ("   server fail: expected \"Password : \", got \"%11s\"\n",
+            tracef ("   scanner fail: expected \"Password : \", got \"%11s\"\n",
                     messages);
             return -1;
           }
-        from_server_start += 11;
+        from_scanner_start += 11;
         messages += 11;
-        set_server_init_state (SERVER_INIT_GOT_PASSWORD);
+        set_scanner_init_state (SCANNER_INIT_GOT_PASSWORD);
         if (sync_buffer ()) return -1;
         return 0;
-      case SERVER_INIT_GOT_PASSWORD:
-        /* Input from server after "Password : " and before password sent. */
+      case SCANNER_INIT_GOT_PASSWORD:
+        /* Input from scanner after "Password : " and before password sent. */
         return -1;
-      case SERVER_INIT_GOT_MD5SUM:
-        /* Somehow called to process the input from the server that followed
+      case SCANNER_INIT_GOT_MD5SUM:
+        /* Somehow called to process the input from the scanner that followed
          * the initial md5sum, before the initial response to the md5sum has
          * been sent.  A programming error, most likely in setting up for
          * select in serve_omp. */
         assert (0);
         return -1;
-      case SERVER_INIT_GOT_PLUGINS:
-        /* Somehow called to process the input from the server that followed
+      case SCANNER_INIT_GOT_PLUGINS:
+        /* Somehow called to process the input from the scanner that followed
          * the initial plugin list, before the initial response to the list has
          * been sent.  A programming error, most likely in setting up for
          * select in serve_omp. */
         assert (0);
         return -1;
-      case SERVER_INIT_CONNECT_INTR:
-      case SERVER_INIT_CONNECTED:
-        /* Input from server before version string sent. */
+      case SCANNER_INIT_CONNECT_INTR:
+      case SCANNER_INIT_CONNECTED:
+        /* Input from scanner before version string sent. */
         return -1;
-      case SERVER_INIT_SENT_COMPLETE_LIST:
-      case SERVER_INIT_SENT_PASSWORD:
-      case SERVER_INIT_DONE:
-      case SERVER_INIT_TOP:
-        if (server_state == SERVER_TOP)
-          switch (parse_server_bad_login (&messages))
+      case SCANNER_INIT_SENT_COMPLETE_LIST:
+      case SCANNER_INIT_SENT_PASSWORD:
+      case SCANNER_INIT_DONE:
+      case SCANNER_INIT_TOP:
+        if (scanner_state == SCANNER_TOP)
+          switch (parse_scanner_bad_login (&messages))
             {
               case 0: return 2;    /* Found bad login response. */
               case 1: break;
             }
-        else if (server_state == SERVER_CERTIFICATE_PUBLIC_KEY)
-          switch (parse_server_certificate_public_key (&messages))
+        else if (scanner_state == SCANNER_CERTIFICATE_PUBLIC_KEY)
+          switch (parse_scanner_certificate_public_key (&messages))
             {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
                 return 0;
             }
-        else if (server_state == SERVER_DONE)
-          switch (parse_server_done (&messages))
+        else if (scanner_state == SCANNER_DONE)
+          switch (parse_scanner_done (&messages))
             {
               case -1: return -1;
               case -2:
@@ -1382,26 +1382,26 @@ process_otp_server_input ()
                 if (sync_buffer ()) return -1;
                 return 0;
             }
-        else if (server_state == SERVER_PLUGIN_LIST_TAGS)
-          switch (parse_server_plugin_list_tags (&messages))
+        else if (scanner_state == SCANNER_PLUGIN_LIST_TAGS)
+          switch (parse_scanner_plugin_list_tags (&messages))
             {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
                 return 0;
             }
-        else if (server_state == SERVER_PREFERENCE_VALUE)
-          switch (parse_server_preference_value (&messages))
+        else if (scanner_state == SCANNER_PREFERENCE_VALUE)
+          switch (parse_scanner_preference_value (&messages))
             {
               case -2:
                 /* Need more input. */
                 if (sync_buffer ()) return -1;
                 return 0;
             }
-        else if (server_state == SERVER_RULE)
+        else if (scanner_state == SCANNER_RULE)
           while (1)
             {
-              switch (parse_server_rule (&messages))
+              switch (parse_scanner_rule (&messages))
                 {
                   case  0: continue;     /* Read a rule. */
                   case -1: break;        /* At final <|>. */
@@ -1412,9 +1412,9 @@ process_otp_server_input ()
                 }
               break;
             }
-        else if (server_state == SERVER_SERVER)
-          /* Look for any newline delimited server commands. */
-          switch (parse_server_server (&messages))
+        else if (scanner_state == SCANNER_SERVER)
+          /* Look for any newline delimited scanner commands. */
+          switch (parse_scanner_server (&messages))
             {
               case  0: break;        /* Found newline delimited command. */
               case -1: return -1;    /* Error. */
@@ -1425,21 +1425,21 @@ process_otp_server_input ()
               case -3: break;        /* Next <|> is before next \n. */
               case -4: break;        /* Failed to find \n, try for <|>. */
             }
-        else if (server_state == SERVER_PLUGIN_DEPENDENCY_DEPENDENCY
-                 && parse_server_plugin_dependency_dependency (&messages))
+        else if (scanner_state == SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY
+                 && parse_scanner_plugin_dependency_dependency (&messages))
           {
             /* Need more input for a <|>. */
             if (sync_buffer ()) return -1;
             return 0;
           }
         break;
-    } /* switch (server_init_state) */
+    } /* switch (scanner_init_state) */
 
   /* Parse and handle any fields ending in <|>. */
 
   input = messages;
-  from_start = from_server_start;
-  from_end = from_server_end;
+  from_start = from_scanner_start;
+  from_end = from_scanner_end;
   while (from_start < from_end
          && ((match = memchr (input,
                               (int) '<',
@@ -1455,38 +1455,38 @@ process_otp_server_input ()
           char* field;
           /* Found a full field, process the field. */
 #if 1
-          tracef ("   server messages: %.*s...\n",
-                  from_server_end - from_server_start < 200
-                  ? from_server_end - from_server_start
+          tracef ("   scanner messages: %.*s...\n",
+                  from_scanner_end - from_scanner_start < 200
+                  ? from_scanner_end - from_scanner_start
                   : 200,
                   messages);
 #endif
           message = messages;
           *match = '\0';
-          from_server_start += match + 3 - messages;
-          from_start = from_server_start;
+          from_scanner_start += match + 3 - messages;
+          from_start = from_scanner_start;
           messages = match + 3;
           input = messages;
-          tracef ("   server message: %s\n", message);
+          tracef ("   scanner message: %s\n", message);
 
           /* Strip leading and trailing whitespace. */
           field = openvas_strip_space (message, match);
 
-          tracef ("   server old state %i\n", server_state);
-          tracef ("   server field: %s\n", field);
-          switch (server_state)
+          tracef ("   scanner old state %i\n", scanner_state);
+          tracef ("   scanner field: %s\n", field);
+          switch (scanner_state)
             {
-              case SERVER_BYE:
+              case SCANNER_BYE:
                 if (strcasecmp ("BYE", field))
                   return -1;
                 /* It's up to the caller to set the init state, as the
                  * caller must flush the ACK. */
-                set_server_state (SERVER_DONE);
-                switch (parse_server_done (&messages))
+                set_scanner_state (SCANNER_DONE);
+                switch (parse_scanner_done (&messages))
                   {
                     case  0:
                       if (sync_buffer ()) return -1;
-                      server_active = 0;
+                      scanner_active = 0;
                       if (acknowledge_bye ()) return -1;
                       return 1;
                     case -1: return -1;
@@ -1496,15 +1496,15 @@ process_otp_server_input ()
                       return 0;
                   }
                 break;
-              case SERVER_CERTIFICATE_FINGERPRINT:
+              case SCANNER_CERTIFICATE_FINGERPRINT:
                 {
                   if (strlen (field) == 0 && field[1] == '|')
                     {
-                      certificates_free (server.certificates);
-                      server.certificates = current_certificates;
+                      certificates_free (scanner.certificates);
+                      scanner.certificates = current_certificates;
                       current_certificates = NULL;
-                      set_server_state (SERVER_DONE);
-                      switch (parse_server_done (&messages))
+                      set_scanner_state (SCANNER_DONE);
+                      switch (parse_scanner_done (&messages))
                         {
                           case -1: return -1;
                           case -2:
@@ -1518,15 +1518,15 @@ process_otp_server_input ()
                   if (current_certificate == NULL) abort (); // FIX
                   if (certificate_set_fingerprint (current_certificate, field))
                     abort (); // FIX
-                  set_server_state (SERVER_CERTIFICATE_OWNER);
+                  set_scanner_state (SCANNER_CERTIFICATE_OWNER);
                   break;
                 }
-              case SERVER_CERTIFICATE_LENGTH:
+              case SCANNER_CERTIFICATE_LENGTH:
                 {
                   /* Read over the length. */
                   // \todo TODO consider using this to read next field
-                  set_server_state (SERVER_CERTIFICATE_PUBLIC_KEY);
-                  switch (parse_server_certificate_public_key (&messages))
+                  set_scanner_state (SCANNER_CERTIFICATE_PUBLIC_KEY);
+                  switch (parse_scanner_certificate_public_key (&messages))
                     {
                       case -2:
                         /* Need more input. */
@@ -1535,21 +1535,21 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_CERTIFICATE_OWNER:
+              case SCANNER_CERTIFICATE_OWNER:
                 {
                   if (certificate_set_owner (current_certificate, field))
                     abort ();
-                  set_server_state (SERVER_CERTIFICATE_TRUST_LEVEL);
+                  set_scanner_state (SCANNER_CERTIFICATE_TRUST_LEVEL);
                   break;
                 }
-              case SERVER_CERTIFICATE_TRUST_LEVEL:
+              case SCANNER_CERTIFICATE_TRUST_LEVEL:
                 {
                   certificate_set_trusted (current_certificate,
                                            strcasecmp (field, "trusted") == 0);
-                  set_server_state (SERVER_CERTIFICATE_LENGTH);
+                  set_scanner_state (SCANNER_CERTIFICATE_LENGTH);
                   break;
                 }
-              case SERVER_DEBUG_DESCRIPTION:
+              case SCANNER_DEBUG_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1557,17 +1557,17 @@ process_otp_server_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_server_state (SERVER_DEBUG_OID);
+                  set_scanner_state (SCANNER_DEBUG_OID);
                   break;
                 }
-              case SERVER_DEBUG_HOST:
+              case SCANNER_DEBUG_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_server_state (SERVER_DEBUG_NUMBER);
+                  set_scanner_state (SCANNER_DEBUG_NUMBER);
                   break;
                 }
-              case SERVER_DEBUG_NUMBER:
+              case SCANNER_DEBUG_NUMBER:
                 {
                   // FIX field could be "general"
                   int number;
@@ -1586,30 +1586,30 @@ process_otp_server_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   server got debug port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got debug port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_server_state (SERVER_DEBUG_DESCRIPTION);
+                  set_scanner_state (SCANNER_DEBUG_DESCRIPTION);
                   break;
                 }
-              case SERVER_DEBUG_OID:
+              case SCANNER_DEBUG_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) 0)
+                      && current_scanner_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_debug_message (current_server_task, current_message);
+                      append_debug_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -1619,10 +1619,10 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_ERROR:
+              case SCANNER_ERROR:
                 assert (0);
                 break;
-              case SERVER_HOLE_DESCRIPTION:
+              case SCANNER_HOLE_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1630,17 +1630,17 @@ process_otp_server_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_server_state (SERVER_HOLE_OID);
+                  set_scanner_state (SCANNER_HOLE_OID);
                   break;
                 }
-              case SERVER_HOLE_HOST:
+              case SCANNER_HOLE_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_server_state (SERVER_HOLE_NUMBER);
+                  set_scanner_state (SCANNER_HOLE_NUMBER);
                   break;
                 }
-              case SERVER_HOLE_NUMBER:
+              case SCANNER_HOLE_NUMBER:
                 {
                   // FIX field could be "general"
                   int number;
@@ -1659,30 +1659,30 @@ process_otp_server_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   server got hole port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got hole port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_server_state (SERVER_HOLE_DESCRIPTION);
+                  set_scanner_state (SCANNER_HOLE_DESCRIPTION);
                   break;
                 }
-              case SERVER_HOLE_OID:
+              case SCANNER_HOLE_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) 0)
+                      && current_scanner_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_hole_message (current_server_task, current_message);
+                      append_hole_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -1692,7 +1692,7 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_INFO_DESCRIPTION:
+              case SCANNER_INFO_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1700,17 +1700,17 @@ process_otp_server_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_server_state (SERVER_INFO_OID);
+                  set_scanner_state (SCANNER_INFO_OID);
                   break;
                 }
-              case SERVER_INFO_HOST:
+              case SCANNER_INFO_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_server_state (SERVER_INFO_NUMBER);
+                  set_scanner_state (SCANNER_INFO_NUMBER);
                   break;
                 }
-              case SERVER_INFO_NUMBER:
+              case SCANNER_INFO_NUMBER:
                 {
                   // FIX field could be "general"
                   int number;
@@ -1729,30 +1729,30 @@ process_otp_server_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   server got info port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got info port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_server_state (SERVER_INFO_DESCRIPTION);
+                  set_scanner_state (SCANNER_INFO_DESCRIPTION);
                   break;
                 }
-              case SERVER_INFO_OID:
+              case SCANNER_INFO_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) 0)
+                      && current_scanner_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_info_message (current_server_task, current_message);
+                      append_info_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -1762,7 +1762,7 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_LOG_DESCRIPTION:
+              case SCANNER_LOG_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1770,17 +1770,17 @@ process_otp_server_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_server_state (SERVER_LOG_OID);
+                  set_scanner_state (SCANNER_LOG_OID);
                   break;
                 }
-              case SERVER_LOG_HOST:
+              case SCANNER_LOG_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_server_state (SERVER_LOG_NUMBER);
+                  set_scanner_state (SCANNER_LOG_NUMBER);
                   break;
                 }
-              case SERVER_LOG_NUMBER:
+              case SCANNER_LOG_NUMBER:
                 {
                   // FIX field could be "general"
                   int number;
@@ -1799,30 +1799,30 @@ process_otp_server_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   server got log port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got log port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_server_state (SERVER_LOG_DESCRIPTION);
+                  set_scanner_state (SCANNER_LOG_DESCRIPTION);
                   break;
                 }
-              case SERVER_LOG_OID:
+              case SCANNER_LOG_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) 0)
+                      && current_scanner_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_log_message (current_server_task, current_message);
+                      append_log_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -1832,7 +1832,7 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_NOTE_DESCRIPTION:
+              case SCANNER_NOTE_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1840,17 +1840,17 @@ process_otp_server_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_server_state (SERVER_NOTE_OID);
+                  set_scanner_state (SCANNER_NOTE_OID);
                   break;
                 }
-              case SERVER_NOTE_HOST:
+              case SCANNER_NOTE_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_server_state (SERVER_NOTE_NUMBER);
+                  set_scanner_state (SCANNER_NOTE_NUMBER);
                   break;
                 }
-              case SERVER_NOTE_NUMBER:
+              case SCANNER_NOTE_NUMBER:
                 {
                   // FIX field could be "general"
                   int number;
@@ -1869,30 +1869,30 @@ process_otp_server_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   server got note port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got note port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
                   set_message_port_protocol (current_message, protocol);
                   set_message_port_string (current_message, g_strdup (field));
 
-                  set_server_state (SERVER_NOTE_DESCRIPTION);
+                  set_scanner_state (SCANNER_NOTE_DESCRIPTION);
                   break;
                 }
-              case SERVER_NOTE_OID:
+              case SCANNER_NOTE_OID:
                 {
                   if (current_message != NULL
-                      && current_server_task != (task_t) 0)
+                      && current_scanner_task != (task_t) 0)
                     {
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_note_message (current_server_task, current_message);
+                      append_note_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -1902,12 +1902,12 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_PLUGIN_DEPENDENCY_NAME:
+              case SCANNER_PLUGIN_DEPENDENCY_NAME:
                 {
                   if (strlen (field) == 0 && field[1] == '|')
                     {
-                      set_server_state (SERVER_DONE);
-                      switch (parse_server_done (&messages))
+                      set_scanner_state (SCANNER_DONE);
+                      switch (parse_scanner_done (&messages))
                         {
                           case -1: return -1;
                           case -2:
@@ -1919,9 +1919,9 @@ process_otp_server_input ()
                     }
                   {
                     char* name = g_strdup (field);
-                    make_current_server_plugin_dependency (name);
-                    set_server_state (SERVER_PLUGIN_DEPENDENCY_DEPENDENCY);
-                    if (parse_server_plugin_dependency_dependency (&messages))
+                    make_current_scanner_plugin_dependency (name);
+                    set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY);
+                    if (parse_scanner_plugin_dependency_dependency (&messages))
                       {
                         /* Need more input for a <|>. */
                         if (sync_buffer ()) return -1;
@@ -1930,11 +1930,11 @@ process_otp_server_input ()
                   }
                   break;
                 }
-              case SERVER_PLUGIN_DEPENDENCY_DEPENDENCY:
+              case SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY:
                 {
                   char* dep = g_strdup (field);
-                  append_to_current_server_plugin_dependency (dep);
-                  if (parse_server_plugin_dependency_dependency (&messages))
+                  append_to_current_scanner_plugin_dependency (dep);
+                  if (parse_scanner_plugin_dependency_dependency (&messages))
                     {
                       /* Need more input for a <|>. */
                       if (sync_buffer ()) return -1;
@@ -1942,23 +1942,23 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_PLUGIN_LIST_OID:
+              case SCANNER_PLUGIN_LIST_OID:
                 {
                   if (strlen (field) == 0 && field[1] == '|')
                     {
-                      set_server_state (SERVER_DONE);
-                      switch (parse_server_done (&messages))
+                      set_scanner_state (SCANNER_DONE);
+                      switch (parse_scanner_done (&messages))
                         {
                           case  0:
-                            if (server_init_state == SERVER_INIT_SENT_COMPLETE_LIST)
+                            if (scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST)
                               {
-                                set_server_init_state (SERVER_INIT_GOT_PLUGINS);
+                                set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
                                 /* Initialisation only sends COMPLETE_LIST when
                                  * caching plugins, so return 1 (as though the
-                                 * server sent BYE). */
+                                 * scanner sent BYE). */
                                 // FIX should perhaps exit more formally with
-                                //     server
-                                set_nvts_md5sum (server.plugins_md5);
+                                //     scanner
+                                set_nvts_md5sum (scanner.plugins_md5);
                                 return 1;
                               }
                             break;
@@ -1974,75 +1974,75 @@ process_otp_server_input ()
                   current_plugin = nvti_new ();
                   if (current_plugin == NULL) abort (); // FIX
                   nvti_set_oid (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_NAME);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_NAME);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_NAME:
+              case SCANNER_PLUGIN_LIST_NAME:
                 {
                   nvti_set_name (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_CATEGORY);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_CATEGORY);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_CATEGORY:
+              case SCANNER_PLUGIN_LIST_CATEGORY:
                 {
                   // FIX parse category number from field
                   nvti_set_category (current_plugin, 0);
-                  set_server_state (SERVER_PLUGIN_LIST_COPYRIGHT);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_COPYRIGHT);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_COPYRIGHT:
+              case SCANNER_PLUGIN_LIST_COPYRIGHT:
                 {
                   nvti_set_copyright (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_DESCRIPTION);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_DESCRIPTION);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_DESCRIPTION:
+              case SCANNER_PLUGIN_LIST_DESCRIPTION:
                 {
                   nvti_set_description (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_SUMMARY);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_SUMMARY);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_SUMMARY:
+              case SCANNER_PLUGIN_LIST_SUMMARY:
                 {
                   nvti_set_summary (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_FAMILY);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_FAMILY);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_FAMILY:
+              case SCANNER_PLUGIN_LIST_FAMILY:
                 {
                   nvti_set_family (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_PLUGIN_VERSION);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_PLUGIN_VERSION);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_PLUGIN_VERSION:
+              case SCANNER_PLUGIN_LIST_PLUGIN_VERSION:
                 {
                   nvti_set_version (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_CVE_ID);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_CVE_ID);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_CVE_ID:
+              case SCANNER_PLUGIN_LIST_CVE_ID:
                 {
                   nvti_set_cve (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_BUGTRAQ_ID);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_BUGTRAQ_ID);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_BUGTRAQ_ID:
+              case SCANNER_PLUGIN_LIST_BUGTRAQ_ID:
                 {
                   nvti_set_bid (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_XREFS);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_XREFS);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_XREFS:
+              case SCANNER_PLUGIN_LIST_XREFS:
                 {
                   nvti_set_xref (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_FPRS);
+                  set_scanner_state (SCANNER_PLUGIN_LIST_FPRS);
                   break;
                 }
-              case SERVER_PLUGIN_LIST_FPRS:
+              case SCANNER_PLUGIN_LIST_FPRS:
                 {
                   nvti_set_sign_key_ids (current_plugin, field);
-                  set_server_state (SERVER_PLUGIN_LIST_TAGS);
-                  switch (parse_server_plugin_list_tags (&messages))
+                  set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
+                  switch (parse_scanner_plugin_list_tags (&messages))
                     {
                       case -2:
                         /* Need more input. */
@@ -2051,18 +2051,18 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_PLUGINS_MD5:
+              case SCANNER_PLUGINS_MD5:
                 {
                   char* md5 = g_strdup (field);
-                  tracef ("   server got plugins_md5: %s\n", md5);
-                  if (server.plugins_md5) g_free (server.plugins_md5);
-                  server.plugins_md5 = md5;
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  tracef ("   scanner got plugins_md5: %s\n", md5);
+                  if (scanner.plugins_md5) g_free (scanner.plugins_md5);
+                  scanner.plugins_md5 = md5;
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case  0:
-                        if (server_init_state == SERVER_INIT_SENT_PASSWORD)
-                          set_server_init_state (SERVER_INIT_GOT_MD5SUM);
+                        if (scanner_init_state == SCANNER_INIT_SENT_PASSWORD)
+                          set_scanner_init_state (SCANNER_INIT_GOT_MD5SUM);
                         else if (acknowledge_md5sum_info ())
                           return -1;
                         break;
@@ -2074,15 +2074,15 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_PORT_HOST:
+              case SCANNER_PORT_HOST:
                 {
                   //if (strcasecmp ("chiles", field) == 0) // FIX
-                  set_server_state (SERVER_PORT_NUMBER);
+                  set_scanner_state (SCANNER_PORT_NUMBER);
                   break;
                 }
-              case SERVER_PORT_NUMBER:
+              case SCANNER_PORT_NUMBER:
                 {
-                  if (current_server_task)
+                  if (current_scanner_task)
                     {
                       int number;
                       char *name = g_malloc0 (strlen (field));
@@ -2095,16 +2095,16 @@ process_otp_server_input ()
                           number = atoi (field);
                           protocol[0] = '\0';
                         }
-                      tracef ("   server got open port, number: %i, protocol: %s\n",
+                      tracef ("   scanner got open port, number: %i, protocol: %s\n",
                               number, protocol);
-                      append_task_open_port (current_server_task,
+                      append_task_open_port (current_scanner_task,
                                              number,
                                              protocol);
                       g_free (name);
                       g_free (protocol);
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2114,12 +2114,12 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_PREFERENCE_NAME:
+              case SCANNER_PREFERENCE_NAME:
                 {
                   if (strlen (field) == 0 && field[1] == '|')
                     {
-                      set_server_state (SERVER_DONE);
-                      switch (parse_server_done (&messages))
+                      set_scanner_state (SCANNER_DONE);
+                      switch (parse_scanner_done (&messages))
                         {
                           case -1: return -1;
                           case -2:
@@ -2130,9 +2130,9 @@ process_otp_server_input ()
                       break;
                     }
                   {
-                    current_server_preference = g_strdup (field);
-                    set_server_state (SERVER_PREFERENCE_VALUE);
-                    switch (parse_server_preference_value (&messages))
+                    current_scanner_preference = g_strdup (field);
+                    set_scanner_state (SCANNER_PREFERENCE_VALUE);
+                    switch (parse_scanner_preference_value (&messages))
                       {
                         case -2:
                           /* Need more input. */
@@ -2142,10 +2142,10 @@ process_otp_server_input ()
                   }
                   break;
                 }
-              case SERVER_RULE:
+              case SCANNER_RULE:
                 /* A <|> following a rule. */
-                set_server_state (SERVER_DONE);
-                switch (parse_server_done (&messages))
+                set_scanner_state (SCANNER_DONE);
+                switch (parse_scanner_done (&messages))
                   {
                     case -1: return -1;
                     case -2:
@@ -2154,18 +2154,18 @@ process_otp_server_input ()
                       return 0;
                   }
                 break;
-              case SERVER_SERVER:
+              case SCANNER_SERVER:
                 if (strcasecmp ("BYE", field) == 0)
-                  set_server_state (SERVER_BYE);
+                  set_scanner_state (SCANNER_BYE);
                 else if (strcasecmp ("DEBUG", field) == 0)
-                  set_server_state (SERVER_HOLE_HOST);
+                  set_scanner_state (SCANNER_HOLE_HOST);
                 else if (strcasecmp ("ERROR", field) == 0)
                   {
-                    set_server_state (SERVER_ERROR);
-                    switch (parse_server_error (&messages))
+                    set_scanner_state (SCANNER_ERROR);
+                    switch (parse_scanner_error (&messages))
                       {
                         case 0:
-                          /* parse_server_error can read across a <|>,
+                          /* parse_scanner_error can read across a <|>,
                            * because one ERROR case is newline terminated
                            * while the other is "<|> SERVER" terminated,
                            * so adjust input. */
@@ -2179,34 +2179,34 @@ process_otp_server_input ()
                       }
                   }
                 else if (strcasecmp ("HOLE", field) == 0)
-                  set_server_state (SERVER_HOLE_HOST);
+                  set_scanner_state (SCANNER_HOLE_HOST);
                 else if (strcasecmp ("INFO", field) == 0)
-                  set_server_state (SERVER_INFO_HOST);
+                  set_scanner_state (SCANNER_INFO_HOST);
                 else if (strcasecmp ("LOG", field) == 0)
-                  set_server_state (SERVER_LOG_HOST);
+                  set_scanner_state (SCANNER_LOG_HOST);
                 else if (strcasecmp ("NOTE", field) == 0)
-                  set_server_state (SERVER_NOTE_HOST);
+                  set_scanner_state (SCANNER_NOTE_HOST);
                 else if (strcasecmp ("PLUGINS_MD5", field) == 0)
-                  set_server_state (SERVER_PLUGINS_MD5);
+                  set_scanner_state (SCANNER_PLUGINS_MD5);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)
                   {
-                    set_server_state (SERVER_PLUGIN_LIST_OID);
+                    set_scanner_state (SCANNER_PLUGIN_LIST_OID);
                   }
                 else if (strcasecmp ("PORT", field) == 0)
-                  set_server_state (SERVER_PORT_HOST);
+                  set_scanner_state (SCANNER_PORT_HOST);
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
-                    make_server_preferences ();
-                    set_server_state (SERVER_PREFERENCE_NAME);
+                    make_scanner_preferences ();
+                    set_scanner_state (SCANNER_PREFERENCE_NAME);
                   }
                 else if (strcasecmp ("RULES", field) == 0)
                   {
-                    maybe_free_server_rules ();
-                    make_server_rules ();
-                    set_server_state (SERVER_RULE);
+                    maybe_free_scanner_rules ();
+                    make_scanner_rules ();
+                    set_scanner_state (SCANNER_RULE);
                     while (1)
                       {
-                        switch (parse_server_rule (&messages))
+                        switch (parse_scanner_rule (&messages))
                           {
                             case  0: continue;     /* Read a rule. */
                             case -1: break;        /* At final <|>. */
@@ -2221,20 +2221,20 @@ process_otp_server_input ()
                   }
                 else if (strcasecmp ("TIME", field) == 0)
                   {
-                    set_server_state (SERVER_TIME);
+                    set_scanner_state (SCANNER_TIME);
                   }
                 else if (strcasecmp ("STATUS", field) == 0)
                   {
-                    set_server_state (SERVER_STATUS_HOST);
+                    set_scanner_state (SCANNER_STATUS_HOST);
                   }
                 else
                   {
-                    tracef ("New server command to implement: %s\n",
+                    tracef ("New scanner command to implement: %s\n",
                             field);
                     return -1;
                   }
                 break;
-              case SERVER_STATUS_ATTACK_STATE:
+              case SCANNER_STATUS_ATTACK_STATE:
                 {
                   if (current_report && current_host)
                     {
@@ -2244,23 +2244,23 @@ process_otp_server_input ()
                           set_scan_attack_state (current_report,
                                                  current_host,
                                                  state);
-                          set_server_state (SERVER_STATUS_PROGRESS);
+                          set_scanner_state (SCANNER_STATUS_PROGRESS);
                         }
                       else
-                        set_server_state (SERVER_STATUS_PORTS);
+                        set_scanner_state (SCANNER_STATUS_PORTS);
                     }
                   else
-                    set_server_state (SERVER_STATUS_PORTS);
+                    set_scanner_state (SCANNER_STATUS_PORTS);
                   break;
                 }
-              case SERVER_STATUS_HOST:
+              case SCANNER_STATUS_HOST:
                 {
                   assert (current_host == NULL);
                   current_host = g_strdup (field);
-                  set_server_state (SERVER_STATUS_ATTACK_STATE);
+                  set_scanner_state (SCANNER_STATUS_ATTACK_STATE);
                   break;
                 }
-              case SERVER_STATUS_PORTS:
+              case SCANNER_STATUS_PORTS:
                 {
                   /* For now, just read over the ports. */
                   if (current_host)
@@ -2268,8 +2268,8 @@ process_otp_server_input ()
                       g_free (current_host);
                       current_host = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2279,14 +2279,14 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_STATUS_PROGRESS:
+              case SCANNER_STATUS_PROGRESS:
                 {
                   /* Store the progress in the ports slots in the db. */
                   assert (current_report);
                   if (current_report && current_host)
                     {
                       unsigned int current, max;
-                      tracef ("   server got ports: %s\n", field);
+                      tracef ("   scanner got ports: %s\n", field);
                       if (sscanf (field, "%u/%u", &current, &max) == 2)
                         set_scan_ports (current_report,
                                         current_host,
@@ -2298,8 +2298,8 @@ process_otp_server_input ()
                       g_free (current_host);
                       current_host = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2309,30 +2309,30 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_TIME:
+              case SCANNER_TIME:
                 {
                   if (strcasecmp ("HOST_START", field) == 0)
-                    set_server_state (SERVER_TIME_HOST_START_HOST);
+                    set_scanner_state (SCANNER_TIME_HOST_START_HOST);
                   else if (strcasecmp ("HOST_END", field) == 0)
-                    set_server_state (SERVER_TIME_HOST_END_HOST);
+                    set_scanner_state (SCANNER_TIME_HOST_END_HOST);
                   else if (strcasecmp ("SCAN_START", field) == 0)
-                    set_server_state (SERVER_TIME_SCAN_START);
+                    set_scanner_state (SCANNER_TIME_SCAN_START);
                   else if (strcasecmp ("SCAN_END", field) == 0)
-                    set_server_state (SERVER_TIME_SCAN_END);
+                    set_scanner_state (SCANNER_TIME_SCAN_END);
                   else
                     abort (); // FIX read all fields up to <|> SERVER?
                   break;
                 }
-              case SERVER_TIME_HOST_START_HOST:
+              case SCANNER_TIME_HOST_START_HOST:
                 {
                   assert (current_host == NULL);
                   current_host = g_strdup (field);
-                  set_server_state (SERVER_TIME_HOST_START_TIME);
+                  set_scanner_state (SCANNER_TIME_HOST_START_TIME);
                   break;
                 }
-              case SERVER_TIME_HOST_START_TIME:
+              case SCANNER_TIME_HOST_START_TIME:
                 {
-                  if (current_server_task)
+                  if (current_scanner_task)
                     {
                       assert (current_host);
                       set_scan_host_start_time (current_report,
@@ -2341,8 +2341,8 @@ process_otp_server_input ()
                       g_free (current_host);
                       current_host = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2352,16 +2352,16 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_TIME_HOST_END_HOST:
+              case SCANNER_TIME_HOST_END_HOST:
                 {
                   assert (current_host == NULL);
                   current_host = g_strdup (field);
-                  set_server_state (SERVER_TIME_HOST_END_TIME);
+                  set_scanner_state (SCANNER_TIME_HOST_END_TIME);
                   break;
                 }
-              case SERVER_TIME_HOST_END_TIME:
+              case SCANNER_TIME_HOST_END_TIME:
                 {
-                  if (current_server_task)
+                  if (current_scanner_task)
                     {
                       assert (current_host);
                       set_scan_host_end_time (current_report,
@@ -2370,8 +2370,8 @@ process_otp_server_input ()
                       g_free (current_host);
                       current_host = NULL;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2381,22 +2381,22 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_TIME_SCAN_START:
+              case SCANNER_TIME_SCAN_START:
                 {
-                  if (current_server_task)
+                  if (current_scanner_task)
                     {
-                      if (task_run_status (current_server_task)
+                      if (task_run_status (current_scanner_task)
                           == TASK_STATUS_REQUESTED)
                         {
-                          set_task_run_status (current_server_task,
+                          set_task_run_status (current_scanner_task,
                                                TASK_STATUS_RUNNING);
-                          set_task_start_time (current_server_task,
+                          set_task_start_time (current_scanner_task,
                                                g_strdup (field));
                           set_scan_start_time (current_report, field);
                         }
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2406,26 +2406,26 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_TIME_SCAN_END:
+              case SCANNER_TIME_SCAN_END:
                 {
-                  if (current_server_task)
+                  if (current_scanner_task)
                     {
-                      switch (task_run_status (current_server_task))
+                      switch (task_run_status (current_scanner_task))
                         {
                           case TASK_STATUS_INTERNAL_ERROR:
                             break;
                           case TASK_STATUS_STOP_REQUESTED:
-                            set_task_run_status (current_server_task,
+                            set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
-                            delete_task (current_server_task);
+                            delete_task (current_scanner_task);
                             current_report = (report_t) 0;
                             break;
                           default:
-                            set_task_run_status (current_server_task,
+                            set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_DONE);
-                            set_task_end_time (current_server_task,
+                            set_task_end_time (current_scanner_task,
                                                g_strdup (field));
                         }
                       if (current_report)
@@ -2433,10 +2433,10 @@ process_otp_server_input ()
                           set_scan_end_time (current_report, field);
                           current_report = (report_t) 0;
                         }
-                      current_server_task = (task_t) 0;
+                      current_scanner_task = (task_t) 0;
                     }
-                  set_server_state (SERVER_DONE);
-                  switch (parse_server_done (&messages))
+                  set_scanner_state (SCANNER_DONE);
+                  switch (parse_scanner_done (&messages))
                     {
                       case -1: return -1;
                       case -2:
@@ -2446,15 +2446,15 @@ process_otp_server_input ()
                     }
                   break;
                 }
-              case SERVER_TOP:
+              case SCANNER_TOP:
               default:
                 tracef ("   switch t\n");
                 tracef ("   cmp %i\n", strcasecmp ("SERVER", field));
                 if (strcasecmp ("SERVER", field))
                   return -1;
-                set_server_state (SERVER_SERVER);
-                /* Look for any newline delimited server commands. */
-                switch (parse_server_server (&messages))
+                set_scanner_state (SCANNER_SERVER);
+                /* Look for any newline delimited scanner commands. */
+                switch (parse_scanner_server (&messages))
                   {
                     case  0: break;        /* Found newline delimited command. */
                     case -1: return -1;    /* Error. */
@@ -2468,7 +2468,7 @@ process_otp_server_input ()
                 break;
             }
 
-          tracef ("   server new state: %i\n", server_state);
+          tracef ("   scanner new state: %i\n", scanner_state);
         }
       else
         {

@@ -51,12 +51,12 @@
 char from_client[FROM_BUFFER_SIZE];
 
 /**
- * @brief Buffer of input from the server.
+ * @brief Buffer of input from the scanner.
  */
-char from_server[FROM_BUFFER_SIZE];
+char from_scanner[FROM_BUFFER_SIZE];
 
 /**
- * @brief Size of \ref from_client and \ref from_server data buffers, in bytes.
+ * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
  */
 buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 
@@ -68,9 +68,9 @@ buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 buffer_size_t from_client_start = 0;
 
 /**
- * @brief The start of the data in the \ref from_server buffer.
+ * @brief The start of the data in the \ref from_scanner buffer.
  */
-buffer_size_t from_server_start = 0;
+buffer_size_t from_scanner_start = 0;
 
 /**
  * @brief The end of the data in the \ref from_client buffer.
@@ -78,14 +78,14 @@ buffer_size_t from_server_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
- * @brief The end of the data in the \ref from_server buffer.
+ * @brief The end of the data in the \ref from_scanner buffer.
  */
-buffer_size_t from_server_end = 0;
+buffer_size_t from_scanner_end = 0;
 
 /**
  * @brief The IP address of openvassd, the "scanner".
  */
-struct sockaddr_in server_address;
+struct sockaddr_in scanner_address;
 
 /**
  * @brief The OTP initialisation string.

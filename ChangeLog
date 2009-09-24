@@ -1,3 +1,10 @@
+2009-09-24  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/ompd.c, src/omp.h, src/otp.c, src/ovas-mngr-comm.c,
+	src/otpd.c, src/otp.h, src/tasks_sql.h, src/oxpd.c, src/oxpd.h,
+	src/manage.c, src/omp.c, src/openvasmd.c, src/manage.h: Replace "server"
+	with "scanner" everywhere.
+
 2009-09-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/openvasmd.c: Replaced server by scanner, openvasd by openvassd.

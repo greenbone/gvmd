@@ -33,36 +33,36 @@ void
 init_otp_data ();
 
 int
-process_otp_server_input ();
+process_otp_scanner_input ();
 
 // FIX for next 2
 /**
- * @brief Possible initialisation states of the server.
+ * @brief Possible initialisation states of the scanner.
  */
 typedef enum
 {
-  SERVER_INIT_CONNECT_INTR,    /* `connect' to server was interrupted. */
-  SERVER_INIT_CONNECTED,
-  SERVER_INIT_DONE,
-  SERVER_INIT_GOT_MD5SUM,
-  SERVER_INIT_GOT_PASSWORD,
-  SERVER_INIT_GOT_PLUGINS,
-  SERVER_INIT_GOT_USER,
-  SERVER_INIT_GOT_VERSION,
-  SERVER_INIT_SENT_COMPLETE_LIST,
-  SERVER_INIT_SENT_PASSWORD,
-  SERVER_INIT_SENT_USER,
-  SERVER_INIT_SENT_VERSION,
-  SERVER_INIT_TOP
-} server_init_state_t;
+  SCANNER_INIT_CONNECT_INTR,    /* `connect' to scanner was interrupted. */
+  SCANNER_INIT_CONNECTED,
+  SCANNER_INIT_DONE,
+  SCANNER_INIT_GOT_MD5SUM,
+  SCANNER_INIT_GOT_PASSWORD,
+  SCANNER_INIT_GOT_PLUGINS,
+  SCANNER_INIT_GOT_USER,
+  SCANNER_INIT_GOT_VERSION,
+  SCANNER_INIT_SENT_COMPLETE_LIST,
+  SCANNER_INIT_SENT_PASSWORD,
+  SCANNER_INIT_SENT_USER,
+  SCANNER_INIT_SENT_VERSION,
+  SCANNER_INIT_TOP
+} scanner_init_state_t;
 
 // FIX for ompd.c
-extern server_init_state_t server_init_state;
+extern scanner_init_state_t scanner_init_state;
 
 // FIX for otpd.c,ompd.c
 void
-set_server_init_state (server_init_state_t state);
+set_scanner_init_state (scanner_init_state_t state);
 
 // FIX for ompd.c
-extern int server_init_offset;
+extern int scanner_init_offset;
 #endif
