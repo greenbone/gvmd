@@ -75,7 +75,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Wait for the task to start on the server. */
+  /* Wait for the task to start on the scanner. */
 
   if (omp_wait_for_task_start (&session, id))
     {

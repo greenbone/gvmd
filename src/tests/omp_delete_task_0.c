@@ -147,7 +147,7 @@ main ()
 
       free_entity (expected);
 
-      /* It may be that the server is still busy stopping the task. */
+      /* It may be that the scanner is still busy stopping the task. */
       if (running && status && strcmp (status, "Delete Requested") == 0)
         {
           free_entity (entity);

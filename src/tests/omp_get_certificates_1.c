@@ -53,7 +53,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Request certificates, and give the server some time to send other
+  /* Request certificates, and give the scanner some time to send other
    * cruft first. */
 
   if (openvas_server_send (&session, "<get_certificates/>") == -1)

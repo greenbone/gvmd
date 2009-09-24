@@ -55,7 +55,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Request feed information once, so manager requests it from server. */
+  /* Request feed information once, so manager requests it from scanner. */
 
   if (openvas_server_send (&session, "<get_nvt_all/>") == -1)
     {
@@ -92,7 +92,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Wait for the task to start on the server. */
+  /* Wait for the task to start on the scanner. */
 
   if (omp_wait_for_task_start (&session, id))
     {

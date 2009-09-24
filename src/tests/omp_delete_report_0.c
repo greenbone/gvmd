@@ -61,7 +61,7 @@ main ()
 
   if (omp_start_task (&session, id)) goto delete_fail;
 
-  /* Wait for the task to finish on the server. */
+  /* Wait for the task to finish on the scanner. */
 
   if (omp_wait_for_task_end (&session, id)) goto delete_fail;
 

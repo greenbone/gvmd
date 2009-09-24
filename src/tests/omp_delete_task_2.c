@@ -137,7 +137,7 @@ main ()
     {
       const char* status_text = omp_task_status (entity);
 
-      /* It may be that the server is still busy stopping the task. */
+      /* It may be that the scanner is still busy stopping the task. */
       if (status_text && strcmp (status_text, "Delete Requested") == 0)
         {
           free_entity (entity);

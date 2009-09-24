@@ -1,6 +1,6 @@
 /* Test 2 of getting the configs.
  * $Id$
- * Description: Test OMP get_configs, waiting for the server NVT info.
+ * Description: Test OMP get_configs, waiting for the scanner NVT info.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@intevation.de>

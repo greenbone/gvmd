@@ -73,7 +73,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* Wait for the task to start on the server. */
+  /* Wait for the task to start on the scanner. */
 
   if (omp_wait_for_task_start (&session, id))
     {
@@ -118,7 +118,7 @@ main ()
   if (compare_entities (entity, expected))
     {
       free_entity (expected);
-      /* The server may still be busy stopping the task. */
+      /* The scanner may still be busy stopping the task. */
       expected = add_entity (NULL, "abort_task_response", NULL);
       add_attribute (expected, "status", "202");
       add_attribute (expected, "status_text", "OK, request submitted");
@@ -134,7 +134,7 @@ main ()
         }
     }
 
-  /* Wait for the task to stop on the server. */
+  /* Wait for the task to stop on the scanner. */
 
   if (omp_wait_for_task_stop (&session, id) == -1)
     {
