@@ -480,6 +480,7 @@ recreate_session (int server_socket,
  *
  * @param[in]  client_session       The TLS session with the client.
  * @param[in]  scanner_session      The TLS session with the scanner.
+ * @param[in]  client_credentials   The TSL client credentials.
  * @param[in]  scanner_credentials  The TSL server credentials.
  * @param[in]  client_socket        The socket connected to the client, if any.
  * @param[in]  scanner_socket_addr  The socket connected to the scanner.

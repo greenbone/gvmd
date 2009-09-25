@@ -1,3 +1,7 @@
+2009-09-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/ompd.c, src/otpd.c: Add missing arg docs.
+
 2009-09-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP commands CREATE_LSC_CREDENTIAL, DELETE_LSC_CREDENTIAL and

@@ -76,10 +76,11 @@
  *
  * If compiled with logging (\ref LOG) then log all output with \ref logf.
  *
- * @param[in]  client_session  The TLS session with the client.
- * @param[in]  scanner_session  The TLS session with the scanner.
- * @param[in]  client_socket   The socket connected to the client.
- * @param[in]  scanner_socket   The socket connected to the scanner.
+ * @param[in]  client_session      The TLS session with the client.
+ * @param[in]  scanner_session     The TLS session with the scanner.
+ * @param[in]  client_credentials  The TSL server credentials.
+ * @param[in]  client_socket       The socket connected to the client.
+ * @param[in]  scanner_socket      The socket connected to the scanner.
  *
  * @return 0 on success, -1 on error.
  */
