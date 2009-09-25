@@ -75,16 +75,19 @@ static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
 "    COMMANDS               Run a list of commands.\n"
-"    CREATE_CONFIG          Create a new config.\n"
-"    CREATE_TARGET          Create a new target.\n"
-"    CREATE_TASK            Create a new task.\n"
-"    DELETE_CONFIG          Delete an existing config.\n"
-"    DELETE_REPORT          Delete an existing report.\n"
-"    DELETE_TARGET          Delete an existing target.\n"
-"    DELETE_TASK            Delete an existing task.\n"
+"    CREATE_CONFIG          Create a config.\n"
+"    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
+"    CREATE_TARGET          Create a target.\n"
+"    CREATE_TASK            Create a task.\n"
+"    DELETE_CONFIG          Delete a config.\n"
+"    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
+"    DELETE_REPORT          Delete a report.\n"
+"    DELETE_TARGET          Delete a target.\n"
+"    DELETE_TASK            Delete a task.\n"
 "    GET_CERTIFICATES       Get all available certificates.\n"
 "    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
+"    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
@@ -306,6 +309,9 @@ typedef enum
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_NAME,
   CLIENT_CREATE_CONFIG_RCFILE,
+  CLIENT_CREATE_LSC_CREDENTIAL,
+  CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
+  CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -321,6 +327,8 @@ typedef enum
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_CONFIG_NAME,
+  CLIENT_DELETE_LSC_CREDENTIAL,
+  CLIENT_DELETE_LSC_CREDENTIAL_NAME,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
@@ -328,6 +336,7 @@ typedef enum
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
+  CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_FEED_CHECKSUM,
@@ -777,6 +786,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_CONFIG);
           }
+        else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
+          {
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_name, "");
+            set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
+          }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
             const gchar* attribute;
@@ -805,6 +820,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_CONFIGS);
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
+        else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
+          set_client_state (CLIENT_GET_LSC_CREDENTIALS);
         else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
@@ -878,6 +895,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_task_name, "");
             openvas_append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_CONFIG);
+          }
+        else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
+          {
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
@@ -991,6 +1016,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_DELETE_LSC_CREDENTIAL:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_DELETE_LSC_CREDENTIAL_NAME);
+        else
+          {
+            if (send_element_error_to_client ("delete_lsc_credential",
+                                              element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_DELETE_REPORT:
         if (send_element_error_to_client ("delete_report", element_name))
           {
@@ -1068,6 +1112,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_DEPENDENCIES:
           {
             if (send_element_error_to_client ("get_dependencies", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_LSC_CREDENTIALS:
+          {
+            if (send_element_error_to_client ("get_lsc_credentials",
+                                              element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -1284,6 +1344,27 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_LSC_CREDENTIAL:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
+        else
+          {
+            if (send_element_error_to_client ("create_lsc_credential",
+                                              element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -3441,6 +3522,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_DELETE_CONFIG);
         break;
 
+      case CLIENT_DELETE_LSC_CREDENTIAL:
+        {
+          assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              openvas_free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                                  "DELETE_LSC_CREDENTIAL name must be at least"
+                                  " one character long"));
+            }
+          else switch (delete_lsc_credential (modify_task_name))
+            {
+              case 0:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
+                break;
+              case 1:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                                    "LSC credential is in use"));
+                break;
+              default:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("delete_lsc_credential"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
+        break;
+
       case CLIENT_DELETE_TARGET:
         {
           assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
@@ -3829,6 +3948,47 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_CONFIG_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
+        break;
+
+      case CLIENT_CREATE_LSC_CREDENTIAL:
+        {
+          assert (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                  "CREATE_LSC_CREDENTIAL name must both be at"
+                                  " least one character long"));
+            }
+          else if (create_lsc_credential (modify_task_name,
+                                          modify_task_comment))
+            {
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                  "LSC Credential exists already"));
+            }
+          else
+            {
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
         break;
 
       case CLIENT_CREATE_TARGET:
@@ -4845,6 +5005,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_LSC_CREDENTIALS:
+        {
+          iterator_t targets;
+          assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          init_lsc_credential_iterator (&targets);
+          while (next (&targets))
+            SENDF_TO_CLIENT_OR_FAIL ("<lsc_credential>"
+                                     "<name>%s</name>"
+                                     "<comment>%s</comment>"
+                                     "</lsc_credential>",
+                                     lsc_credential_iterator_name (&targets),
+                                     lsc_credential_iterator_comment
+                                      (&targets));
+          cleanup_iterator (&targets);
+          SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_TARGETS:
         {
           iterator_t targets;
@@ -4941,6 +5124,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&modify_task_value, text, text_len);
         break;
 
+      case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
+        openvas_append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
+        openvas_append_text (&modify_task_name, text, text_len);
+        break;
+
       case CLIENT_CREATE_TARGET_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
         break;
@@ -4972,6 +5162,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_CONFIG_NAME:
+      case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
       case CLIENT_DELETE_TARGET_NAME:
         openvas_append_text (&modify_task_name, text, text_len);
         break;

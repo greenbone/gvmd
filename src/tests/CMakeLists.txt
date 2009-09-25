@@ -140,6 +140,18 @@ set_target_properties (omp_create_config_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG}
 target_link_libraries (omp_create_config_1 common)
 ADD_TEST (omp_create_config_1 omp_create_config_1)
 
+add_executable (omp_create_lsc_credential_0 omp_create_lsc_credential_0.c)
+set_target_properties (omp_create_lsc_credential_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (omp_create_lsc_credential_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_create_lsc_credential_0 common)
+ADD_TEST (omp_create_lsc_credential_0 omp_create_lsc_credential_0)
+
+add_executable (omp_create_lsc_credential_1 omp_create_lsc_credential_1.c)
+set_target_properties (omp_create_lsc_credential_1 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (omp_create_lsc_credential_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_create_lsc_credential_1 common)
+ADD_TEST (omp_create_lsc_credential_1 omp_create_lsc_credential_1)
+
 add_executable (omp_create_target_0 omp_create_target_0.c)
 set_target_properties (omp_create_target_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (omp_create_target_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
@@ -193,6 +205,12 @@ set_target_properties (omp_delete_config_1 PROPERTIES COMPILE_FLAGS "${GLIB_CFLA
 set_target_properties (omp_delete_config_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
 target_link_libraries (omp_delete_config_1 common)
 ADD_TEST (omp_delete_config_1 omp_delete_config_1)
+
+add_executable (omp_delete_lsc_credential_0 omp_delete_lsc_credential_0.c)
+set_target_properties (omp_delete_lsc_credential_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (omp_delete_lsc_credential_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_delete_lsc_credential_0 common)
+ADD_TEST (omp_delete_lsc_credential_0 omp_delete_lsc_credential_0)
 
 add_executable (omp_delete_report_0 omp_delete_report_0.c)
 set_target_properties (omp_delete_report_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
@@ -283,6 +301,12 @@ set_target_properties (omp_get_dependencies_1 PROPERTIES COMPILE_FLAGS "${GLIB_C
 set_target_properties (omp_get_dependencies_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
 target_link_libraries (omp_get_dependencies_1 common)
 ADD_TEST (omp_get_dependencies_1 omp_get_dependencies_1)
+
+add_executable (omp_get_lsc_credentials_0 omp_get_lsc_credentials_0.c)
+set_target_properties (omp_get_lsc_credentials_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (omp_get_lsc_credentials_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_lsc_credentials_0 common)
+ADD_TEST (omp_get_lsc_credentials_0 omp_get_lsc_credentials_0)
 
 add_executable (omp_get_targets_0 omp_get_targets_0.c)
 set_target_properties (omp_get_targets_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")

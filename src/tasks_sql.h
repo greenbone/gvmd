@@ -927,6 +927,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, comment, rpm, deb, dog);");
 
   /* Ensure the version is set. */
 
@@ -3139,7 +3140,6 @@ create_target (const char* name, const char* hosts, const char* comment)
   if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
                quoted_name))
     {
-      tracef ("   failed to find target\n");
       g_free (quoted_name);
       sql ("END;");
       return 1;
@@ -4411,6 +4411,103 @@ nvt_selector_nvt_count (const char* selector, const char* config)
                     " WHERE name = '%s'"
                     " LIMIT 1;",
                     config);
+}
+
+
+/* LSC Credentials. */
+
+/**
+ * @brief Create an LSC credential.
+ *
+ * @param[in]  name     Name of LSC credential.
+ * @param[in]  comment  Comment on LSC credential.
+ *
+ * @return 0 success, 1 LSC credential exists already.
+ */
+int
+create_lsc_credential (const char* name, const char* comment)
+{
+  gchar *quoted_name = sql_nquote (name, strlen (name));
+  gchar *quoted_comment;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM lsc_credentials WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
+
+  if (comment)
+    {
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO lsc_credentials (name, comment)"
+           " VALUES ('%s', '%s');",
+           quoted_name, quoted_comment);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO lsc_credentials (name, comment)"
+         " VALUES ('%s', '');",
+         quoted_name);
+
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete an LSC credential.
+ *
+ * @param[in]  name   Name of LSC credential.
+ *
+ * @return 0 success, 1 fail because a task refers to the LSC credential, -1 error.
+ */
+int
+delete_lsc_credential (const char* name)
+{
+  gchar* quoted_name = sql_quote (name);
+  sql ("BEGIN IMMEDIATE;");
+#if 0
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE lsc_credential = '%s'",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
+#endif
+  sql ("DELETE FROM lsc_credentials WHERE name = '%s';", quoted_name);
+  sql ("COMMIT;");
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Initialise an LSC Credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_lsc_credential_iterator (iterator_t* iterator)
+{
+  init_table_iterator (iterator, "lsc_credentials");
+}
+
+DEF_ACCESS (lsc_credential_iterator_name, 0);
+
+const char*
+lsc_credential_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret ? ret : "";
 }
 
 #undef DEF_ACCESS

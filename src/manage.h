@@ -635,6 +635,24 @@ int
 nvt_selector_nvt_count (const char*, const char*);
 
 
+/* Lsc_Credentials. */
+
+int
+create_lsc_credential (const char*, const char*);
+
+int
+delete_lsc_credential (const char*);
+
+void
+init_lsc_credential_iterator (iterator_t*);
+
+const char*
+lsc_credential_iterator_name (iterator_t*);
+
+const char*
+lsc_credential_iterator_comment (iterator_t*);
+
+
 /* Scanner messaging. */
 
 int
