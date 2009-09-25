@@ -30,8 +30,8 @@
 #include <glib.h>
 #include <ossp/uuid.h>
 
-#include <openvas/certificate.h>
-#include <openvas/nvti.h>
+#include <openvas/base/certificate.h> /* for certificate_t */
+#include <openvas/base/nvti.h> /* for nvti_t */
 
 /**
  * @brief Structure of information about the scanner.

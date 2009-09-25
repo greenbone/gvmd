@@ -47,7 +47,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openvas/openvas_string.h>
+#include <openvas/base/openvas_string.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

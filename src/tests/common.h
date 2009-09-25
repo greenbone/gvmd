@@ -31,9 +31,9 @@
 #include <stdio.h>
 
 /* @todo Only include these in tests that use them. */
+#include <openvas/base/openvas_string.h>
 #include <openvas/omp.h>
 #include <openvas/openvas_server.h>
-#include <openvas/openvas_string.h>
 
 /* Communication. */
 

@@ -53,10 +53,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <openvas/certificate.h>
-#include <openvas/nvti.h>
+#include <openvas/base/certificate.h>
+#include <openvas/base/nvti.h>
+#include <openvas/base/openvas_string.h>
 #include <openvas/openvas_logging.h>
-#include <openvas/openvas_string.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

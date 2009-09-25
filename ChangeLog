@@ -1,3 +1,9 @@
+2009-09-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/manage.c, src/manage.h, src/omp.c, src/otp.c, src/tests/common.h:
+	Adjusted includes to recent changes in trunk (headers from
+	openvas-libraries/base get installed to openvas/base/).
+
 2009-09-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/rmdir_recursively_0.c,
