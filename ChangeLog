@@ -1,5 +1,10 @@
 2009-09-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd_log_conf.cmake_in (*): Send logs to openvasmd.log
+	instead of openvas.log.
+
+2009-09-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Switch entirely to the openvas_server library interface for handling the
 	client and scanner sessions.
 
