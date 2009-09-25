@@ -47,13 +47,13 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <network.h>
 #include <openvas_server.h>
 
 #ifdef S_SPLINT_S
@@ -422,9 +422,9 @@ recreate_session (int server_socket,
                   gnutls_session_t* server_session,
                   gnutls_certificate_credentials_t* server_credentials)
 {
-  if (openvas_server_session_free (server_socket,
-                                   *server_session,
-                                   *server_credentials))
+  if (openvas_server_free (server_socket,
+                           *server_session,
+                           *server_credentials))
     return -1;
   /* Make the server socket. */
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -435,10 +435,22 @@ recreate_session (int server_socket,
                  strerror (errno));
       return -1;
     }
-  if (openvas_server_session_new (server_socket,
-                                  server_session,
-                                  server_credentials))
+  if (openvas_server_new (GNUTLS_CLIENT,
+                          NULL,
+                          NULL,
+                          NULL,
+                          server_session,
+                          server_credentials))
     return -1;
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the data between `select' and `read'. */
+  if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("%s: failed to set scanner socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
   return server_socket;
 }
 
@@ -478,6 +490,7 @@ int
 serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* scanner_session,
            gnutls_certificate_credentials_t* scanner_credentials,
+           gnutls_certificate_credentials_t* client_credentials,
            int client_socket, int* scanner_socket_addr)
 {
   int nfds, ret;
@@ -538,7 +551,9 @@ serve_omp (gnutls_session_t* client_session,
            * client gets any buffered output and the response to the
            * error. */
           write_to_client (client_session);
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
       else if (ret == -2)
@@ -566,7 +581,9 @@ serve_omp (gnutls_session_t* client_session,
           g_warning ("%s: failed to get current time: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
     }
@@ -627,7 +644,9 @@ serve_omp (gnutls_session_t* client_session,
           if (timeout.tv_sec <= 0)
             {
               tracef ("client timeout (1)\n");
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               if (scanner_is_active ())
                 {
                   client_active = 0;
@@ -687,7 +706,9 @@ serve_omp (gnutls_session_t* client_session,
           g_warning ("%s: child select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
       if (ret == 0) continue;
@@ -696,7 +717,9 @@ serve_omp (gnutls_session_t* client_session,
         {
           g_warning ("%s: exception on client in child select\n",
                      __FUNCTION__);
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
 
@@ -704,7 +727,9 @@ serve_omp (gnutls_session_t* client_session,
         {
           g_warning ("%s: exception on scanner in child select\n",
                      __FUNCTION__);
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
 
@@ -721,14 +746,18 @@ serve_omp (gnutls_session_t* client_session,
               case  0:       /* Read everything. */
                 break;
               case -1:       /* Error. */
-                close_stream_connection (client_socket);
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
                 return -1;
               case -2:       /* from_client buffer full. */
                 /* There may be more to read. */
                 break;
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
-                close_stream_connection (client_socket);
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
                 if (scanner_is_active ())
                   client_active = 0;
                 else
@@ -743,7 +772,9 @@ serve_omp (gnutls_session_t* client_session,
               g_warning ("%s: failed to get current time (1): %s\n",
                          __FUNCTION__,
                          strerror (errno));
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
 
@@ -776,7 +807,9 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           else if (ret == -2)
@@ -867,7 +900,9 @@ serve_omp (gnutls_session_t* client_session,
                                                  scanner_credentials);
               if (scanner_socket == -1)
                 {
-                  close_stream_connection (client_socket);
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                   return -1;
                 }
               *scanner_socket_addr = scanner_socket;
@@ -877,13 +912,17 @@ serve_omp (gnutls_session_t* client_session,
               /* Bad login to scanner. */
               if (client_active == 0)
                 return 0;
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           else if (ret == -1)
            {
              /* Error. */
-             close_stream_connection (client_socket);
+             openvas_server_free (client_socket,
+                                  *client_session,
+                                  *client_credentials);
              return -1;
            }
           else if (ret == -3)
@@ -912,7 +951,9 @@ serve_omp (gnutls_session_t* client_session,
                 /* FIX This may be because the scanner closed the connection
                  * at the end of a command? */
                 if (client_active)
-                  close_stream_connection (client_socket);
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                 return -1;
               case -2:      /* Wrote as much as scanner was willing to accept. */
                 break;
@@ -933,7 +974,9 @@ serve_omp (gnutls_session_t* client_session,
               case  0:      /* Wrote everything in to_client. */
                 break;
               case -1:      /* Error. */
-                close_stream_connection (client_socket);
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
                 return -1;
               case -2:      /* Wrote as much as client was willing to accept. */
                 break;
@@ -946,7 +989,9 @@ serve_omp (gnutls_session_t* client_session,
               g_warning ("%s: failed to get current time (2): %s\n",
                          __FUNCTION__,
                          strerror (errno));
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
         }
@@ -966,7 +1011,9 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           else if (ret == -2)
@@ -1009,7 +1056,9 @@ serve_omp (gnutls_session_t* client_session,
                                                  scanner_credentials);
               if (scanner_socket == -1)
                 {
-                  close_stream_connection (client_socket);
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                   return -1;
                 }
               *scanner_socket_addr = scanner_socket;
@@ -1019,14 +1068,18 @@ serve_omp (gnutls_session_t* client_session,
               /* Bad login to scanner. */
               if (client_active == 0)
                 return 0;
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           else if (ret == -1)
             {
               /* Error. */
               if (client_active)
-                close_stream_connection (client_socket);
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
               return -1;
             }
           else if (ret == -3)
@@ -1046,13 +1099,17 @@ serve_omp (gnutls_session_t* client_session,
               g_warning ("%s: failed to get current time (3): %s\n",
                          __FUNCTION__,
                          strerror (errno));
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
             {
               tracef ("client timeout (1)\n");
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               if (scanner_is_active ())
                 client_active = 0;
               else
@@ -1062,6 +1119,8 @@ serve_omp (gnutls_session_t* client_session,
 
     } /* while (1) */
 
-  close_stream_connection (client_socket);
+  openvas_server_free (client_socket,
+                       *client_session,
+                       *client_credentials);
   return 0;
 }

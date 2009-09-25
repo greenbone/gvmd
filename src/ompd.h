@@ -36,6 +36,7 @@ init_ompd (GSList*);
 int
 serve_omp (gnutls_session_t*, gnutls_session_t*,
            gnutls_certificate_credentials_t*,
+           gnutls_certificate_credentials_t*,
            int, int*);
 
 // FIX Temporarily, for omp.c SEND_TO_CLIENT.

@@ -101,8 +101,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <network.h>
-#include <plugutils.h>
 #include <openvas_logging.h>
 #include <openvas_server.h>
 
@@ -198,9 +196,14 @@ FILE* log_stream = NULL;
 #endif
 
 /**
- * @brief The server context of the manager.
+ * @brief The client session.
  */
-static ovas_scanner_context_t ovas_scanner_context = NULL;
+gnutls_session_t client_session;
+
+/**
+ * @brief The client credentials.
+ */
+gnutls_certificate_credentials_t client_credentials;
 
 
 /* Forking, serving the client. */
@@ -232,39 +235,42 @@ serve_client (int client_socket)
       g_warning ("%s: failed to create scanner socket: %s\n",
                  __FUNCTION__,
                  strerror (errno));
-      close_stream_connection (client_socket);
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
       return EXIT_FAILURE;
     }
 
-  if (openvas_server_session_new (scanner_socket,
-                                  &scanner_session,
-                                  &scanner_credentials))
+  if (openvas_server_new (GNUTLS_CLIENT,
+                          NULL,
+                          NULL,
+                          NULL,
+                          &scanner_session,
+                          &scanner_credentials))
     {
-      close_stream_connection (client_socket);
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
       return EXIT_FAILURE;
     }
 
-  /* Get client socket and session from libopenvas. */
-
-  int real_socket = openvas_get_socket_from_connection (client_socket);
-  if (real_socket == -1 || real_socket == client_socket)
+  if (openvas_server_attach (client_socket, &client_session))
     {
-      g_warning ("%s: failed to get client socket from libopenvas: %s\n",
+      g_critical ("%s: failed to attach client session to socket %i\n",
+                  __FUNCTION__,
+                  client_socket);
+      goto fail;
+    }
+
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the data between `select' and `read'. */
+  if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("%s: failed to set scanner socket flag: %s\n",
                  __FUNCTION__,
                  strerror (errno));
       goto fail;
     }
-
-  gnutls_session_t* client_session;
-  client_session = ovas_get_tlssession_from_connection (client_socket);
-  if (client_session == NULL)
-    {
-      g_warning ("%s: failed to get connection from client socket: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      goto fail;
-    }
-  client_socket = real_socket;
 
   // FIX get flags first
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
@@ -281,41 +287,47 @@ serve_client (int client_socket)
    * handler. */
 
   // FIX some of these are client errs, all EXIT_FAILURE
-  switch (read_protocol (client_session, client_socket))
+  switch (read_protocol (&client_session, client_socket))
     {
       case PROTOCOL_OTP:
-        /* It's up to serve_otp to close_stream_connection on client_socket. */
-        if (serve_otp (client_session, &scanner_session,
+        /* It's up to serve_otp to openvas_server_free client_*. */
+        if (serve_otp (&client_session, &scanner_session,
+                       &client_credentials,
                        client_socket, scanner_socket))
-          goto fail;
+          goto server_fail;
         break;
       case PROTOCOL_OMP:
-        /* It's up to serve_omp to close_stream_connection on client_socket. */
-        if (serve_omp (client_session, &scanner_session, &scanner_credentials,
+        /* It's up to serve_omp to openvas_server_free client_*. */
+        if (serve_omp (&client_session, &scanner_session,
+                       &client_credentials, &scanner_credentials,
                        client_socket, &scanner_socket))
-          goto fail;
+          goto server_fail;
         break;
       case PROTOCOL_CLOSE:
-        close_stream_connection (client_socket);
         g_message ("   EOF while trying to read protocol\n");
         goto fail;
       case PROTOCOL_TIMEOUT:
-        close_stream_connection (client_socket);
+        openvas_server_free (client_socket,
+                             client_session,
+                             client_credentials);
         break;
       default:
         g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
     }
 
-  openvas_server_session_free (scanner_socket,
-                               scanner_session,
-                               scanner_credentials);
+  openvas_server_free (scanner_socket,
+                       scanner_session,
+                       scanner_credentials);
   return EXIT_SUCCESS;
 
  fail:
-  close_stream_connection (client_socket); // FIX why close only on fail?
-  openvas_server_session_free (scanner_socket,
-                               scanner_session,
-                               scanner_credentials);
+  openvas_server_free (client_socket,
+                       client_session,
+                       client_credentials);
+ server_fail:
+  openvas_server_free (scanner_socket,
+                       scanner_session,
+                       scanner_credentials);
   return EXIT_FAILURE;
 }
 
@@ -376,26 +388,12 @@ accept_and_maybe_fork ()
               close (client_socket);
               exit (EXIT_FAILURE);
             }
-          int secure_client_socket
-            = ovas_scanner_context_attach (ovas_scanner_context, client_socket);
-          if (secure_client_socket == -1)
-            {
-              g_critical ("%s: failed to attach scanner context to socket %i\n",
-                          __FUNCTION__,
-                          client_socket);
-              shutdown (client_socket, SHUT_RDWR);
-              close (client_socket);
-              exit (EXIT_FAILURE);
-            }
-          tracef ("   Scanner context attached.\n");
-          /* It's up to serve_client to close_stream_connection on
-           * secure_client_socket. */
 #if FORK
-          int ret = serve_client (secure_client_socket);
+          int ret = serve_client (client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
 #else
-          serve_client (secure_client_socket);
+          serve_client (client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
           cleanup_manage_process ();
@@ -426,7 +424,7 @@ accept_and_maybe_fork ()
 /**
  * @brief Clean up for exit.
  *
- * Close sockets and streams, free the ovas context.
+ * Close sockets and streams.
  */
 void
 cleanup ()
@@ -446,7 +444,6 @@ cleanup ()
 #endif
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
-  ovas_scanner_context_free (ovas_scanner_context);
   /* Delete pidfile. */
   gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
   g_unlink (pidfile_name);
@@ -683,24 +680,6 @@ main (int argc, char** argv)
 
       /* Setup security. */
 
-      if (openvas_SSL_init () < 0)
-        {
-          g_critical ("%s: failed to initialise security\n", __FUNCTION__);
-          exit (EXIT_FAILURE);
-        }
-      ovas_scanner_context
-        = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
-                                    SCANNERCERT,
-                                    SCANNERKEY,
-                                    NULL,
-                                    CACERT,
-                                    0);
-      if (ovas_scanner_context == NULL)
-        {
-          g_critical ("%s: failed to create server context\n", __FUNCTION__);
-          exit (EXIT_FAILURE);
-        }
-
       tracef ("   Set to connect to address %s port %i\n",
               scanner_address_string,
               ntohs (scanner_address.sin_port));
@@ -715,28 +694,42 @@ main (int argc, char** argv)
           return EXIT_FAILURE;
         }
 
-      if (openvas_server_session_new (scanner_socket,
-                                      &scanner_session,
-                                      &scanner_credentials))
+      if (openvas_server_new (GNUTLS_CLIENT,
+                              NULL,
+                              NULL,
+                              NULL,
+                              &scanner_session,
+                              &scanner_credentials))
         return EXIT_FAILURE;
 
-      /* Call the OMP client serving function with client -1.  This invokes a
-       * scanner-only manager loop.  As nvt_cache_mode is true, the manager
-       * loop will request and cache the plugins, then exit. */
+      /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+       * error" removes the data between `select' and `read'. */
+      if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+        {
+          g_warning ("%s: failed to set scanner socket flag: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return EXIT_FAILURE;
+        }
 
-      if (serve_omp (NULL, &scanner_session, &scanner_credentials,
+      /* Call the OMP client serving function with client socket -1.  This
+       * invokes a scanner-only manager loop.  As nvt_cache_mode is true, the
+       * manager loop will request and cache the plugins, then exit. */
+
+      if (serve_omp (NULL, &scanner_session,
+                     NULL, &scanner_credentials,
                      -1, &scanner_socket))
         {
-          openvas_server_session_free (scanner_socket,
-                                       scanner_session,
-                                       scanner_credentials);
+          openvas_server_free (scanner_socket,
+                               scanner_session,
+                               scanner_credentials);
           return EXIT_FAILURE;
         }
       else
         {
-          openvas_server_session_free (scanner_socket,
-                                       scanner_session,
-                                       scanner_credentials);
+          openvas_server_free (scanner_socket,
+                               scanner_session,
+                               scanner_credentials);
           return EXIT_SUCCESS;
         }
     }
@@ -886,21 +879,15 @@ main (int argc, char** argv)
 
   /* Setup security. */
 
-  if (openvas_SSL_init () < 0)
+  if (openvas_server_new (GNUTLS_SERVER,
+                          CACERT,
+                          SCANNERCERT,
+                          SCANNERKEY,
+                          &client_session,
+                          &client_credentials))
     {
-      g_critical ("%s: failed to initialise security\n", __FUNCTION__);
-      exit (EXIT_FAILURE);
-    }
-  ovas_scanner_context
-    = ovas_scanner_context_new (OPENVAS_ENCAPS_TLSv1,
-                                SCANNERCERT,
-                                SCANNERKEY,
-                                NULL,
-                                CACERT,
-                                0);
-  if (ovas_scanner_context == NULL)
-    {
-      g_critical ("%s: failed to create scanner context\n", __FUNCTION__);
+      g_critical ("%s: client server initialisation failed\n",
+                  __FUNCTION__);
       exit (EXIT_FAILURE);
     }
 

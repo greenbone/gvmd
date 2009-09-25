@@ -1,3 +1,33 @@
+2009-09-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Switch entirely to the openvas_server library interface for handling the
+	client and scanner sessions.
+
+	* src/openvasmd.c (client_session, client_credentials): New variables.
+	(serve_client, accept_and_maybe_fork, main): Use openvas_server interface
+	instead of ovas_scanner interface for the client session.  Switch to
+	openvas_server_new for the scanner session.  Ensure that O_NONBLOCK is
+	set on the scanner socket (as this was previously done in
+	openvas_server_session_new).  Remove initialisation of client session in
+	NVT cache updating mode.
+	(cleanup): Remove ovas_scanner_context cleanup.
+
+	* src/otpd.c (serve_otp): Add credentials arg.  Call openvas_server_free
+	instead of close_stream_connection.
+
+	* src/otpd.h: Add include.
+	(serve_otp): Add args.
+
+	* src/ompd.c (serve_omp): Add credentials arg.  Call openvas_server_free
+	instead of close_stream_connection.
+	(recreate_session): Switch to openvas_server_free and openvas_server_new.
+	Ensure O_NONBLOCK is set on the socket.
+
+	* src/ompd.h (serve_omp): Add credential arg.
+
+	* src/CMakeLists.txt (openvasmd): Remove LINK_FLAGS symbol hack for
+	openvas_get_socket_from_connection.
+
 2009-09-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/tests/common.h: Adjusted include.

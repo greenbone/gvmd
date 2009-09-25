@@ -48,7 +48,6 @@
 #include <gnutls/gnutls.h>
 #include <string.h>
 
-#include <network.h>
 #include <openvas_server.h>
 
 /**
@@ -87,6 +86,7 @@
 int
 serve_otp (gnutls_session_t* client_session,
            gnutls_session_t* scanner_session,
+           gnutls_certificate_credentials_t* client_credentials,
            int client_socket, int scanner_socket)
 {
   int nfds, interrupted = 0;
@@ -112,7 +112,9 @@ serve_otp (gnutls_session_t* client_session,
           g_warning ("%s: child connect select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
       if (ret > 0)
@@ -121,7 +123,9 @@ serve_otp (gnutls_session_t* client_session,
             {
               g_warning ("%s: exception on scanner in child connect select\n",
                          __FUNCTION__);
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
           if (FD_ISSET (scanner_socket, &writefds))
@@ -136,7 +140,9 @@ serve_otp (gnutls_session_t* client_session,
                 interrupted = 1;
               else
                 {
-                  close_stream_connection (client_socket);
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                   return -1;
                 }
             }
@@ -186,7 +192,9 @@ serve_otp (gnutls_session_t* client_session,
           g_warning ("%s: child select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          close_stream_connection (client_socket);
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
           return -1;
         }
       if (ret > 0)
@@ -195,7 +203,9 @@ serve_otp (gnutls_session_t* client_session,
             {
               g_warning ("%s: exception on client in child select\n",
                          __FUNCTION__);
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
 
@@ -203,7 +213,9 @@ serve_otp (gnutls_session_t* client_session,
             {
               g_warning ("%s: exception on scanner in child select\n",
                          __FUNCTION__);
-              close_stream_connection (client_socket);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
               return -1;
             }
 
@@ -235,13 +247,17 @@ serve_otp (gnutls_session_t* client_session,
                       g_warning ("%s: failed to read from client: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return -1;
                     }
                   if (count == 0)
                     {
                       /* End of file. */
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return 0;
                     }
                   from_client_end += count;
@@ -295,7 +311,9 @@ serve_otp (gnutls_session_t* client_session,
                       g_warning ("%s: failed to write to scanner: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return -1;
                     }
                   from_client_start += count;
@@ -346,13 +364,17 @@ serve_otp (gnutls_session_t* client_session,
                       g_warning ("%s: failed to read from scanner: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return -1;
                     }
                   if (count == 0)
                     {
                       /* End of file. */
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return 0;
                     }
                   from_scanner_end += count;
@@ -403,7 +425,9 @@ serve_otp (gnutls_session_t* client_session,
                       g_warning ("%s: failed to write to client: %s\n",
                                  __FUNCTION__,
                                  gnutls_strerror ((int) count));
-                      close_stream_connection (client_socket);
+                      openvas_server_free (client_socket,
+                                           *client_session,
+                                           *client_credentials);
                       return -1;
                     }
                   logf ("=> client %.*s\n",

@@ -26,7 +26,10 @@
 #ifndef OPENVAS_MANAGER_OTPD_H
 #define OPENVAS_MANAGER_OTPD_H
 
+#include <gnutls/gnutls.h>
+
 int
-serve_otp ();
+serve_otp (gnutls_session_t*, gnutls_session_t*,
+           gnutls_certificate_credentials_t*, int, int);
 
 #endif
