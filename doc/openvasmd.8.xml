@@ -36,7 +36,7 @@
   <description>
 	<p>
 	  The OpenVAS security scanner consists of a server and client.  The
-	  server, openvasd(8), does the actual scanning, and the client,
+	  scanner, openvassd(8), does the actual scanning, and the client,
 	  OpenVAS-Client(1), provides a user interface to the server.
 	</p>
 
@@ -56,7 +56,7 @@
 	<option>
 	  <p><opt>-l, --slisten=<arg>ADDRESS</arg></opt></p>
 	  <optdesc>
-		<p>Connect to server (openvasd) at address ADDRESS.</p>
+		<p>Connect to server (openvassd) at address ADDRESS.</p>
 	  </optdesc>
 	</option>
 
@@ -70,7 +70,7 @@
 	<option>
 	  <p><opt>-s, --sport=<arg>NUMBER</arg></opt></p>
 	  <optdesc>
-		<p>Connect to server (openvasd) on port number <arg>NUMBER</arg>.</p>
+		<p>Connect to server (openvassd) on port number <arg>NUMBER</arg>.</p>
 	  </optdesc>
 	</option>
 
@@ -93,7 +93,7 @@
   <section name="SEE ALSO">
 	<p>
 	  <manref name="openvas"  section="1"/>,
-	  <manref name="openvasd" section="8"/>
+	  <manref name="openvassd" section="8"/>
 	</p>
   </section>
 

@@ -1,3 +1,7 @@
+2009-09-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/openvasmd.8.xml, README: Renaming openvasd to openvassd.
+
 2009-09-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ompd.c, src/otpd.c: Add missing arg docs.

@@ -16,9 +16,9 @@ All parts of OpenVAS-Manager are Copyright (C) by Greenbone Networks GmbH
 Howto use
 ---------
 
-For example, if openvasd is running on port 9391, the following command
+For example, if openvassd is running on port 9391, the following command
 starts the Manager on port 9390.  The client can then connect to port 9390
-as though it was connecting to openvasd.
+as though it was connecting to openvassd.
 
     openvasmd --port 9390 --sport 9391
 
@@ -40,8 +40,8 @@ The program usage message follows.
       -f, --foreground            Run in foreground.
       -a, --listen=<address>      Listen on <address>.
       -p, --port=<number>         Use port number <number>.
-      -l, --slisten=<address>     Server (openvasd) address.
-      -s, --sport=<number>        Server (openvasd) port number.
+      -l, --slisten=<address>     Server (openvassd) address.
+      -s, --sport=<number>        Server (openvassd) port number.
       -u, --update                Update the NVT cache and exit.
       -v, --verbose               Print progress messages.
       --version                   Print version and exit.
