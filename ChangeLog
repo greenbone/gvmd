@@ -1,5 +1,9 @@
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* CMakeLists.txt: Set minimum cmake version to 2.6.
+
+2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* doc/db_postgres.sql (meta, nvts, lsc_credentials): New tables.
 	(configs): Move up to match manager.
 
