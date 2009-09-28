@@ -1,3 +1,8 @@
+2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* doc/db_postgres.sql (meta, nvts, lsc_credentials): New tables.
+	(configs): Move up to match manager.
+
 2009-09-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/openvasmd.8.xml, README: Renaming openvasd to openvassd.

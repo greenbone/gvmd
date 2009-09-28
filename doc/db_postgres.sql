@@ -1,3 +1,7 @@
+CREATE TABLE meta (
+	name UNIQUE NOT NULL,
+	value text);
+
 CREATE TABLE users (
 	id integer PRIMARY KEY,
     name text UNIQUE NOT NULL,
@@ -13,15 +17,16 @@ CREATE TABLE targets (
 	name text PRIMARY KEY,
 	hosts text);
 
+CREATE TABLE configs (
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
+	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT);
+
 CREATE TABLE config_preferences (
 	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
 	type text PRIMARY KEY, -- openvasrc section name or NULL for top-level prefs
 	name text PRIMARY KEY,
 	value text);
-
-CREATE TABLE configs (
-	name text PRIMARY KEY,
-	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT);
 
 CREATE TABLE tasks (
 	id integer PRIMARY KEY,
@@ -62,3 +67,27 @@ CREATE TABLE report_hosts (
 CREATE TABLE report_results (
 	report integer PRIMARY KEY REFERENCES reports (id) ON DELETE RESTRICT,
 	result integer PRIMARY KEY REFERENCES results (id) ON DELETE RESTRICT);
+
+CREATE TABLE nvts (
+    id integer PRIMARY KEY,
+	oid text UNIQUE NOT NULL,
+	version text,
+    name text,
+    summary text,
+    description text,
+    copyright text,
+    cve text,
+    bid text,
+    xref text,
+    tag text,
+    sign_key_ids text,
+    category text,
+    family text);
+
+CREATE TABLE lsc_credentials (
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
+	comment text,
+	rpm bytea,
+	deb bytea,
+	dog bytea);
