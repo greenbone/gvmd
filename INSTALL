@@ -38,6 +38,8 @@ Thereafter, the following commands are useful.
     $ make install        # install the build
     $ make rebuild_cache  # rebuild the make system cache
 
+Note that the manager always connects to the scanner as user "om" with
+password "om", so that user must exist on the scanner.
 
 In case you install openvas-manager to a different path from the other
 OpenVAS modules, you might need to set some paths explicitly before running
