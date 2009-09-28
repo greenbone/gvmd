@@ -918,6 +918,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
@@ -925,7 +926,6 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, comment, rpm, deb, dog);");
 
@@ -3742,7 +3742,15 @@ create_config (const char* name, const char* comment, char* rc)
 int
 delete_config (const char* name)
 {
-  gchar* quoted_name = sql_nquote (name, strlen (name));
+  gchar* quoted_name;
+
+  if (strcmp (name, "Full and fast") == 0
+      || strcmp (name, "Full and fast ultimate") == 0
+      || strcmp (name, "Full and very deep") == 0
+      || strcmp (name, "Full and very deep ultimate") == 0)
+    return 1;
+
+  quoted_name = sql_nquote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
                "SELECT count(*) FROM tasks WHERE config = '%s'",
@@ -3807,6 +3815,8 @@ config_iterator_nvts_growing (iterator_t* iterator)
 /**
  * @brief Return whether a config is referenced by a task
  *
+ * The predefined configs are always in use.
+ *
  * @param[in]  name   Name of config.
  *
  * @return 1 if in use, else 0.
@@ -3814,7 +3824,15 @@ config_iterator_nvts_growing (iterator_t* iterator)
 int
 config_in_use (const char* name)
 {
-  gchar* quoted_name = sql_quote (name);
+  gchar* quoted_name;
+
+  if (strcmp (name, "Full and fast") == 0
+      || strcmp (name, "Full and fast ultimate") == 0
+      || strcmp (name, "Full and very deep") == 0
+      || strcmp (name, "Full and very deep ultimate") == 0)
+    return 1;
+
+  quoted_name = sql_quote (name);
   int ret = sql_int (0, 0,
                      "SELECT count(*) FROM tasks WHERE config = '%s'",
                      quoted_name);

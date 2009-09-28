@@ -1,5 +1,10 @@
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Move targets table creation up.
+	(delete_config, config_in_use): Special case predefined configs.
+
+2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* INSTALL: Note need for om user.
 
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
