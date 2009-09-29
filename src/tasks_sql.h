@@ -30,7 +30,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 0
+#define DATABASE_VERSION 1
 
 /**
  * @brief NVT selector type for "all" rule.

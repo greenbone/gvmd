@@ -1,3 +1,7 @@
+2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase, for row added 2009-08-28.
+
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt: Rename server to scanner in defs, to match code.
