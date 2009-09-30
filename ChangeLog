@@ -1,3 +1,15 @@
+2009-09-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Preparing the openvas-manager 0.9.0 release.
+
+	* VERSION: Set to 0.9.0.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* CHANGES: Updated.
+
 2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (DATABASE_VERSION): Increase, for row added 2009-08-28.

@@ -1,3 +1,19 @@
+openvas-manager 0.9.0 (2009-09-30)
+
+This is the sixth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Mattew Mundell, Felix Wolfsteller and Jan-Oliver Wagner.
+
+Main changes since 0.8.1:
+
+* Moved OMP library to openvas-libraries
+* openvas-libraries >= 3.0 now required
+* Add support of OMP commands CREATE_LSC_CREDENTIAL,
+  DELETE_LSC_CREDENTIAL and GET_LSC_CREDENTIALS.
+* Many fixes and improvements
+
 openvas-manager 0.8.1 (2009-09-14)
 
 This is a maintenance release of the openvas-manager module for the Open
