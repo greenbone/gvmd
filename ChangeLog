@@ -1,3 +1,22 @@
+2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
+
+	When parsing the OTP PREFERENCES, read in all the preferences before
+	enabling them, otherwise OMP GET_PREFERENCES might return a partial
+	set of preferences.
+
+	* src/otp.c (current_scanner_preferences): New variable.
+	(make_scanner_preferences): Return preferences instead of setting scanner.
+	(add_scanner_preference): Set preference on a given preference table
+	instead of on scanner.preferences.  Update caller.
+	(process_otp_scanner_input): Initialise current_scanner_preferences
+	with the make_scanner_preferences return.  In SCANNER_PREFERENCE_NAME set
+	scanner.preferences to current_scanner_preferences.
+
+	* src/tests/omp_get_preferences_2.c: New file.  Tests that first two
+	successful returns from GET_PREFERENCES are identical.
+
+	* src/tests/CMakeLists.txt: Add omp_get_preferences_2.
+
 2009-09-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post-release version bump.

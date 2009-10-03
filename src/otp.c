@@ -35,6 +35,13 @@
  * task records according to the OTP messages in the string.
  */
 
+/**
+ * @todo
+ * Ensure that the globals used to store information across the XML
+ * parser callbacks (for example, current_scanner_preferences) are freed in
+ * the failure cases.
+ */
+
 #include "otp.h"
 #include "manage.h"
 #include "tracef.h"
@@ -411,16 +418,20 @@ append_note_message (task_t task, message_t* message)
 static char* current_scanner_preference = NULL;
 
 /**
+ * @brief The current scanner preferences, during reading of scanner preferences.
+ */
+static GHashTable* current_scanner_preferences = NULL;
+
+/**
  * @brief Create the scanner preferences.
  */
-static void
+static GHashTable*
 make_scanner_preferences ()
 {
-  if (scanner.preferences) g_hash_table_destroy (scanner.preferences);
-  scanner.preferences = g_hash_table_new_full (g_str_hash,
-                                               g_str_equal,
-                                               g_free,
-                                               g_free);
+  return g_hash_table_new_full (g_str_hash,
+                                g_str_equal,
+                                g_free,
+                                g_free);
 }
 
 /**
@@ -433,9 +444,11 @@ make_scanner_preferences ()
  * @param[in]  value       The value of the preference.
  */
 static void
-add_scanner_preference (/*@keep@*/ char* preference, /*@keep@*/ char* value)
+add_scanner_preference (GHashTable* preferences,
+                        /*@keep@*/ char* preference,
+                        /*@keep@*/ char* value)
 {
-  g_hash_table_insert (scanner.preferences, preference, value);
+  g_hash_table_insert (preferences, preference, value);
 }
 
 
@@ -1003,7 +1016,9 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      add_scanner_preference (current_scanner_preference, value);
+      add_scanner_preference (current_scanner_preferences,
+                              current_scanner_preference,
+                              value);
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
@@ -2127,6 +2142,10 @@ process_otp_scanner_input ()
                             if (sync_buffer ()) return -1;
                             return 0;
                         }
+                      if (scanner.preferences)
+                        g_hash_table_destroy (scanner.preferences);
+                      scanner.preferences = current_scanner_preferences;
+                      current_scanner_preferences = NULL;
                       break;
                     }
                   {
@@ -2196,7 +2215,8 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_PORT_HOST);
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
-                    make_scanner_preferences ();
+                    assert (current_scanner_preference == NULL);
+                    current_scanner_preferences = make_scanner_preferences ();
                     set_scanner_state (SCANNER_PREFERENCE_NAME);
                   }
                 else if (strcasecmp ("RULES", field) == 0)

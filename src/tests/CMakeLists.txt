@@ -410,6 +410,12 @@ set_target_properties (omp_get_preferences_1 PROPERTIES LINK_FLAGS "${OVAS_LDFLA
 target_link_libraries (omp_get_preferences_1 common)
 ADD_TEST (omp_get_preferences_1 omp_get_preferences_1)
 
+add_executable (omp_get_preferences_2 omp_get_preferences_2.c)
+set_target_properties (omp_get_preferences_2 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
+set_target_properties (omp_get_preferences_2 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
+target_link_libraries (omp_get_preferences_2 common)
+ADD_TEST (omp_get_preferences_2 omp_get_preferences_2)
+
 add_executable (omp_get_report_0 omp_get_report_0.c)
 set_target_properties (omp_get_report_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (omp_get_report_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
