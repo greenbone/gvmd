@@ -417,40 +417,6 @@ append_note_message (task_t task, message_t* message)
 /*@null@*/ /*@only@*/
 static char* current_scanner_preference = NULL;
 
-/**
- * @brief The current scanner preferences, during reading of scanner preferences.
- */
-static GHashTable* current_scanner_preferences = NULL;
-
-/**
- * @brief Create the scanner preferences.
- */
-static GHashTable*
-make_scanner_preferences ()
-{
-  return g_hash_table_new_full (g_str_hash,
-                                g_str_equal,
-                                g_free,
-                                g_free);
-}
-
-/**
- * @brief Add a preference to the scanner preferences.
- *
- * Both parameters are used directly, and are freed when the
- * preferences are freed.
- *
- * @param[in]  preference  The preference.
- * @param[in]  value       The value of the preference.
- */
-static void
-add_scanner_preference (GHashTable* preferences,
-                        /*@keep@*/ char* preference,
-                        /*@keep@*/ char* value)
-{
-  g_hash_table_insert (preferences, preference, value);
-}
-
 
 /* Scanner plugins. */
 
@@ -616,7 +582,6 @@ void
 init_otp_data ()
 {
   scanner.certificates = NULL;
-  scanner.preferences = NULL;
   scanner.rules = NULL;
   scanner.plugins_md5 = NULL;
 }
@@ -1016,9 +981,7 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      add_scanner_preference (current_scanner_preferences,
-                              current_scanner_preference,
-                              value);
+      manage_nvt_preference_add (current_scanner_preference, value);
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
@@ -1251,7 +1214,7 @@ parse_scanner_server (/*@dependent@*/ char** messages)
  *
  * This includes updating the scanner state with \ref set_scanner_state
  * and \ref set_scanner_init_state, and updating scanner records with functions
- * like \ref add_scanner_preference and \ref append_task_open_port.
+ * like \ref manage_nvt_preference_add and \ref append_task_open_port.
  *
  * \endif
  *
@@ -1373,6 +1336,7 @@ process_otp_scanner_input ()
       case SCANNER_INIT_SENT_COMPLETE_LIST:
       case SCANNER_INIT_SENT_PASSWORD:
       case SCANNER_INIT_DONE:
+      case SCANNER_INIT_DONE_CACHE_MODE:
       case SCANNER_INIT_TOP:
         if (scanner_state == SCANNER_TOP)
           switch (parse_scanner_bad_login (&messages))
@@ -1968,13 +1932,7 @@ process_otp_scanner_input ()
                             if (scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST)
                               {
                                 set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
-                                /* Initialisation only sends COMPLETE_LIST when
-                                 * caching plugins, so return 1 (as though the
-                                 * scanner sent BYE). */
-                                // FIX should perhaps exit more formally with
-                                //     scanner
                                 set_nvts_md5sum (scanner.plugins_md5);
-                                return 1;
                               }
                             break;
                           case -1: return -1;
@@ -2142,10 +2100,15 @@ process_otp_scanner_input ()
                             if (sync_buffer ()) return -1;
                             return 0;
                         }
-                      if (scanner.preferences)
-                        g_hash_table_destroy (scanner.preferences);
-                      scanner.preferences = current_scanner_preferences;
-                      current_scanner_preferences = NULL;
+                      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+                        {
+                          set_scanner_init_state (SCANNER_INIT_DONE);
+                          manage_nvt_preferences_enable ();
+                          /* Return 1, as though the scanner sent BYE. */
+                          // FIX should perhaps exit more formally with scanner
+                          scanner_active = 0;
+                          return 1;
+                        }
                       break;
                     }
                   {
@@ -2216,7 +2179,6 @@ process_otp_scanner_input ()
                 else if (strcasecmp ("PREFERENCES", field) == 0)
                   {
                     assert (current_scanner_preference == NULL);
-                    current_scanner_preferences = make_scanner_preferences ();
                     set_scanner_state (SCANNER_PREFERENCE_NAME);
                   }
                 else if (strcasecmp ("RULES", field) == 0)

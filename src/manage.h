@@ -41,7 +41,6 @@ typedef struct
   certificates_t* certificates;      ///< List of certificates.
   char* plugins_md5;                 ///< MD5 sum over all tests.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
-  GHashTable* preferences;           ///< Scanner preference.
   GPtrArray* rules;                  ///< Scanner rules.
   int rules_size;                    ///< Number of rules.
 } scanner_t;
@@ -635,7 +634,25 @@ int
 nvt_selector_nvt_count (const char*, const char*);
 
 
-/* Lsc_Credentials. */
+/* NVT preferences. */
+
+void
+manage_nvt_preference_add (char*, char*);
+
+void
+manage_nvt_preferences_enable ();
+
+void
+init_nvt_preference_iterator (iterator_t*);
+
+const char*
+nvt_preference_iterator_name (iterator_t*);
+
+const char*
+nvt_preference_iterator_value (iterator_t*);
+
+
+/* LSC credentials. */
 
 int
 create_lsc_credential (const char*, const char*);

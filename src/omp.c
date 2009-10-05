@@ -1690,38 +1690,6 @@ send_nvt (iterator_t *nvts, int details)
 }
 
 /**
- * @brief Send XML for a preference.
- *
- * @param[in]  key    The preferences hashtable key.
- * @param[in]  value  The preferences hashtable value.
- * @param[in]  dummy  Dummy variable for g_hash_table_find.
- *
- * @return TRUE if out of space in to_client buffer, else FALSE.
- */
-static gboolean
-send_preference (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
-{
-  /* \todo Do these reallocations affect performance? */
-  gchar* key_text = g_markup_escape_text ((char*) key,
-                                          strlen ((char*) key));
-  gchar* value_text = g_markup_escape_text ((char*) value,
-                                            strlen ((char*) value));
-  gchar* msg = g_strdup_printf ("<preference>"
-                                "<name>%s</name><value>%s</value>"
-                                "</preference>",
-                                key_text, value_text);
-  g_free (key_text);
-  g_free (value_text);
-  if (send_to_client (msg))
-    {
-      g_free (msg);
-      return TRUE;
-    }
-  g_free (msg);
-  return FALSE;
-}
-
-/**
  * @brief Send XML for a rule.
  *
  * @param[in]  rule  The rule.
@@ -2550,22 +2518,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_PREFERENCES:
-        if (scanner.preferences)
-          {
-            SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            if (g_hash_table_find (scanner.preferences, send_preference, NULL))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_preferences"));
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
+        {
+          iterator_t prefs;
+          SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+          init_nvt_preference_iterator (&prefs);
+          while (next (&prefs))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<preference>"
+                                       "<name>%s</name>"
+                                       "<value>%s</value>"
+                                       "</preference>",
+                                       nvt_preference_iterator_name (&prefs),
+                                       nvt_preference_iterator_value (&prefs));
+            }
+          cleanup_iterator (&prefs);
+          SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_CERTIFICATES:
         if (scanner.certificates)
@@ -5203,7 +5175,8 @@ extern buffer_size_t from_client_end;
  *
  * @param[in]  log_config  Logging configuration list.
  *
- * @return 0 success, -1 error, -2 database is wrong version.
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database
+ *         needs to be initialized from server.
  */
 int
 init_omp (GSList *log_config)

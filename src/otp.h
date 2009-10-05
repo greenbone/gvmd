@@ -44,6 +44,7 @@ typedef enum
   SCANNER_INIT_CONNECT_INTR,    /* `connect' to scanner was interrupted. */
   SCANNER_INIT_CONNECTED,
   SCANNER_INIT_DONE,
+  SCANNER_INIT_DONE_CACHE_MODE, /* Done state when in NVT caching mode. */
   SCANNER_INIT_GOT_MD5SUM,
   SCANNER_INIT_GOT_PASSWORD,
   SCANNER_INIT_GOT_PLUGINS,

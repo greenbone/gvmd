@@ -715,6 +715,7 @@ init_manage_process (int update_nvt_cache)
         {
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
+          sql ("DELETE FROM nvt_preferences;");
           sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
           sql ("COMMIT;");
         }
@@ -746,6 +747,7 @@ init_manage_process (int update_nvt_cache)
     {
       sql ("BEGIN EXCLUSIVE;");
       sql ("DELETE FROM nvts;");
+      sql ("DELETE FROM nvt_preferences;");
       sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
       sql ("COMMIT;");
     }
@@ -887,7 +889,8 @@ setup_full_config_prefs (config_t config, int safe_checks,
  * Beware that calling this function while tasks are running may lead to
  * problems.
  *
- * @return 0 success, -1 error, -2 database is wrong version.
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server.
  */
 int
 init_manage (GSList *log_config)
@@ -912,6 +915,22 @@ init_manage (GSList *log_config)
       && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
     return -2;
 
+#if 0
+  /** @todo Skip this when in NVT caching mode. */
+
+  /* Check that the database was initialised from the scanner. */
+
+  {
+    long long int count;
+    if (sql_int64 (&count, 0, 0,
+                   "SELECT count(*) FROM meta"
+                   " WHERE name = 'nvt_md5sum'"
+                   " OR name = 'nvt_preferences_enabled';")
+        || count < 2)
+      return -3;
+  }
+#endif
+
   /* Ensure the tables exist. */
 
   sql ("CREATE TABLE IF NOT EXISTS meta    (name UNIQUE, value);");
@@ -927,6 +946,7 @@ init_manage (GSList *log_config)
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (name, value);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, comment, rpm, deb, dog);");
 
   /* Ensure the version is set. */
@@ -4430,6 +4450,54 @@ nvt_selector_nvt_count (const char* selector, const char* config)
                     " LIMIT 1;",
                     config);
 }
+
+
+/* NVT preferences. */
+
+/**
+ * @brief Add an NVT preference.
+ *
+ * @param[in]  name   The name of the preference.
+ * @param[in]  value  The value of the preference.
+ */
+void
+manage_nvt_preference_add (char* name, char* value)
+{
+  gchar* quoted_name = sql_quote (name);
+  gchar* quoted_value = sql_quote (value);
+  sql ("INSERT into nvt_preferences (name, value)"
+       " VALUES ('%s', '%s');",
+       quoted_name, quoted_value);
+  g_free (quoted_name);
+  g_free (quoted_value);
+}
+
+/**
+ * @brief Add an NVT preference.
+ *
+ * @param[in]  name   The name of the preference.
+ * @param[in]  value  The value of the preference.
+ */
+void
+manage_nvt_preferences_enable ()
+{
+  sql ("INSERT OR REPLACE INTO meta (name, value)"
+       " VALUES ('nvt_preferences_enabled', 1);");
+}
+
+/**
+ * @brief Initialise an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+init_nvt_preference_iterator (iterator_t* iterator)
+{
+  init_table_iterator (iterator, "nvt_preferences");
+}
+
+DEF_ACCESS (nvt_preference_iterator_name, 0);
+DEF_ACCESS (nvt_preference_iterator_value, 1);
 
 
 /* LSC Credentials. */

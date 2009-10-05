@@ -95,7 +95,8 @@ static int ompd_nvt_cache_mode = 0;
  *
  * @param[in]  log_config  Log configuration
  *
- * @return 0 success, -1 error, -2 database is wrong version.
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database
+ *         needs to be initialized from server.
  */
 int
 init_ompd (GSList *log_config)
@@ -385,7 +386,12 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
                                  (scanner_session,
                                   ack + scanner_init_offset);
           if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_DONE);
+            {
+              if (ompd_nvt_cache_mode)
+                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
+              else
+                set_scanner_init_state (SCANNER_INIT_DONE);
+            }
           else if (scanner_init_offset == -1)
             {
               scanner_init_offset = 0;
@@ -396,6 +402,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         }
         /*@fallthrough@*/
       case SCANNER_INIT_DONE:
+      case SCANNER_INIT_DONE_CACHE_MODE:
         while (1)
           switch (write_to_server_buffer (scanner_session))
             {
@@ -675,6 +682,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       if ((scanner_init_state == SCANNER_INIT_DONE
+           || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
            || scanner_init_state == SCANNER_INIT_GOT_VERSION
            || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
            || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
@@ -687,7 +695,8 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       if (((scanner_init_state == SCANNER_INIT_TOP
-            || scanner_init_state == SCANNER_INIT_DONE)
+            || scanner_init_state == SCANNER_INIT_DONE
+            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
            && to_server_buffer_space () > 0)
           || scanner_init_state == SCANNER_INIT_CONNECT_INTR
           || scanner_init_state == SCANNER_INIT_CONNECTED

@@ -1,5 +1,39 @@
 2009-10-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Move caching of NVT preferences to the database.
+
+	* src/otp.h (scanner_init_state_t): Add SCANNER_INIT_DONE_CACHE_MODE.
+
+	* src/ompd.c (init_ompd): In SCANNER_INIT_GOT_PLUGINS set scanner init to
+	special cache done state when in cache mode.  Add
+	SCANNER_INIT_DONE_CACHE_MODE to error check.
+	(serve_omp): Add SCANNER_INIT_DONE_CACHE_MODE to select setup.
+
+	* src/otp.c (current_scanner_preferences, make_scanner_preferences)
+	(add_scanner_preference): Remove.
+	(init_otp_data): Remove scanner.preferences init.
+	(parse_scanner_preference_value): Call manage_nvt_preference_add instead
+	of add_scanner_preference.
+	(process_otp_scanner_input): Add SCANNER_INIT_DONE_CACHE_MODE alongside
+	SCANNER_INIT_DONE.  In NVT cache mode, instead of exiting when the
+	NVTs are cached, continue to read the preferences and exit after that.
+
+	* src/tasks_sql.h (init_manage_process): Also clear NVT prefs.
+	(init_manage): Add outline for database initialisation check.  Add table
+	nvt_preferences.
+	(manage_nvt_preference_add, manage_nvt_preferences_enable)
+	(init_nvt_preference_iterator, nvt_preference_iterator_name)
+	(nvt_preference_iterator_value): New functions.
+
+	* src/manage.h: Add headers.
+	(scanner_t): Remove preferences slot.
+
+	* src/omp.c (send_preference): Remove.
+	(omp_xml_handle_end_element): In CLIENT_GET_PREFERENCES use new
+	preferences iterator to send preferences.
+
+2009-10-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ompd.c (recreate_session): Add openvas_server_free to fnctl fail.
 	(serve_omp): Put the credential args the right way round.
 
