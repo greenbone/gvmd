@@ -449,6 +449,9 @@ recreate_session (int server_socket,
       g_warning ("%s: failed to set scanner socket flag: %s\n",
                  __FUNCTION__,
                  strerror (errno));
+      openvas_server_free (server_socket,
+                           *server_session,
+                           *server_credentials);
       return -1;
     }
   return server_socket;
@@ -490,8 +493,8 @@ recreate_session (int server_socket,
 int
 serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* scanner_session,
-           gnutls_certificate_credentials_t* scanner_credentials,
            gnutls_certificate_credentials_t* client_credentials,
+           gnutls_certificate_credentials_t* scanner_credentials,
            int client_socket, int* scanner_socket_addr)
 {
   int nfds, ret;

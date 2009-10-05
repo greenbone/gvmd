@@ -1,4 +1,9 @@
-2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-05  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/ompd.c (recreate_session): Add openvas_server_free to fnctl fail.
+	(serve_omp): Put the credential args the right way round.
+
+2009-10-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	When parsing the OTP PREFERENCES, read in all the preferences before
 	enabling them, otherwise OMP GET_PREFERENCES might return a partial
