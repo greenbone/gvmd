@@ -1,3 +1,7 @@
+2009-10-06  Tim Brown <timb@openvas.org>
+
+	* src/otp.c: Fixed memoey leak.
+
 2009-10-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Log database versions on version failure.

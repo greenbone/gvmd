@@ -1020,6 +1020,7 @@ parse_scanner_plugin_list_tags (char** messages)
       set_scanner_state (SCANNER_PLUGIN_LIST_OID);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
+      g_free (value);
       return 0;
     }
   return -2;
