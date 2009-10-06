@@ -1,5 +1,9 @@
 2009-10-06  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Log database versions on version failure.
+
+2009-10-06  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Complete database initialisation check started yesterday.
 
 	* src/tasks_sql.h (init_manage): Add nvt_cache_mode arg.  Update caller.

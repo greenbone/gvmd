@@ -918,7 +918,15 @@ init_manage (GSList *log_config, int nvt_cache_mode)
     {
       if (database_version
           && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
-        return -2;
+        {
+          g_message ("%s: database version of database: %s\n",
+                     __FUNCTION__,
+                     database_version);
+          g_message ("%s: database version supported by manager: %s\n",
+                     __FUNCTION__,
+                     G_STRINGIFY (DATABASE_VERSION));
+          return -2;
+        }
 
       /* If database_version was NULL then meta was missing, so assume
        * that the database is missing, which is OK. */
@@ -928,7 +936,15 @@ init_manage (GSList *log_config, int nvt_cache_mode)
       if (database_version)
         {
           if (strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
-            return -2;
+            {
+              g_message ("%s: database version of database: %s\n",
+                         __FUNCTION__,
+                         database_version);
+              g_message ("%s: database version supported by manager: %s\n",
+                         __FUNCTION__,
+                         G_STRINGIFY (DATABASE_VERSION));
+              return -2;
+            }
         }
       else
         /* Assume database is missing. */
