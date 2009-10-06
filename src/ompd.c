@@ -93,15 +93,16 @@ static int ompd_nvt_cache_mode = 0;
 /**
  * @brief Initialise the OMP library for the OMP daemon.
  *
- * @param[in]  log_config  Log configuration
+ * @param[in]  log_config      Log configuration
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server.
  */
 int
-init_ompd (GSList *log_config)
+init_ompd (GSList *log_config, int nvt_cache_mode)
 {
-  return init_omp (log_config);
+  return init_omp (log_config, nvt_cache_mode);
 }
 
 /**

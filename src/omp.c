@@ -5174,18 +5174,19 @@ extern buffer_size_t from_client_end;
  * @brief Initialise OMP library.
  *
  * @param[in]  log_config  Logging configuration list.
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server.
  */
 int
-init_omp (GSList *log_config)
+init_omp (GSList *log_config, int nvt_cache_mode)
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
                      (GLogFunc) openvas_log_func,
                      log_config);
-  return init_manage (log_config);
+  return init_manage (log_config, nvt_cache_mode);
 }
 
 /**

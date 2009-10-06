@@ -889,11 +889,14 @@ setup_full_config_prefs (config_t config, int safe_checks,
  * Beware that calling this function while tasks are running may lead to
  * problems.
  *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server.
  */
 int
-init_manage (GSList *log_config)
+init_manage (GSList *log_config, int nvt_cache_mode)
 {
   const char *database_version;
   task_t index;
@@ -911,25 +914,36 @@ init_manage (GSList *log_config)
   database_version = sql_string (0, 0,
                                  "SELECT value FROM meta"
                                  " WHERE name = 'database_version';");
-  if (database_version
-      && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
-    return -2;
+  if (nvt_cache_mode)
+    {
+      if (database_version
+          && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
+        return -2;
 
-#if 0
-  /** @todo Skip this when in NVT caching mode. */
+      /* If database_version was NULL then meta was missing, so assume
+       * that the database is missing, which is OK. */
+    }
+  else
+    {
+      if (database_version)
+        {
+          if (strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
+            return -2;
+        }
+      else
+        /* Assume database is missing. */
+        return -3;
 
-  /* Check that the database was initialised from the scanner. */
+      /* Check that the database was initialised from the scanner. */
 
-  {
-    long long int count;
-    if (sql_int64 (&count, 0, 0,
-                   "SELECT count(*) FROM meta"
-                   " WHERE name = 'nvt_md5sum'"
-                   " OR name = 'nvt_preferences_enabled';")
-        || count < 2)
-      return -3;
-  }
-#endif
+      long long int count;
+      if (sql_int64 (&count, 0, 0,
+                     "SELECT count(*) FROM meta"
+                     " WHERE name = 'nvts_md5sum'"
+                     " OR name = 'nvt_preferences_enabled';")
+          || count < 2)
+        return -3;
+    }
 
   /* Ensure the tables exist. */
 

@@ -52,7 +52,7 @@ typedef struct
 extern scanner_t scanner;
 
 int
-init_manage (GSList*);
+init_manage (GSList*, int);
 
 void
 init_manage_process ();

@@ -1,3 +1,20 @@
+2009-10-06  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Complete database initialisation check started yesterday.
+
+	* src/tasks_sql.h (init_manage): Add nvt_cache_mode arg.  Update caller.
+	Enable and complete database initialisation check.
+	* src/manage.h: Update header.
+
+	* src/omp.c (init_omp): Add nvt_cache_mode arg.  Update caller.
+	* src/omp.h: Update header.
+
+	* src/ompd.c (init_ompd): Add nvt_cache_mode arg.  Update caller.
+	* src/ompd.h: Update header.
+
+	* src/openvasmd.c (main): Add "must init" failure to init_ompd return
+	checks.
+
 2009-10-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move caching of NVT preferences to the database.

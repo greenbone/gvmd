@@ -31,7 +31,7 @@
 #include <gnutls/gnutls.h>
 
 int
-init_ompd (GSList*);
+init_ompd (GSList*, int);
 
 int
 serve_omp (gnutls_session_t*, gnutls_session_t*,
