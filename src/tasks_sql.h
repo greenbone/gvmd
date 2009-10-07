@@ -1612,8 +1612,6 @@ make_task_rcfile (task_t task)
                             preference_iterator_value (&prefs));
   cleanup_iterator (&prefs);
 
-  g_string_append_printf (buffer, "name = %s\n", name);
-
   /* Targets for general preferences. */
 
   hosts = target_hosts (target);

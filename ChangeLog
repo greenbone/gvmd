@@ -1,6 +1,10 @@
+2009-10-07  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (make_task_rcfile): Remove append of name.
+
 2009-10-06  Tim Brown <timb@openvas.org>
 
-	* src/otp.c: Fixed memoey leak.
+	* src/otp.c: Fixed memory leak.
 
 2009-10-06  Matthew Mundell <matthew.mundell@intevation.de>
 
