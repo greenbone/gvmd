@@ -487,6 +487,29 @@ nvt_selector_plugins (const char* selector)
 }
 
 /**
+ * @brief Return the real value of a preference.
+ *
+ * Take care of radio button options.
+ *
+ * @param[in]  name        Name of preference.
+ * @param[in]  full_value  Entire value of preference.
+ *
+ * @return Real value of the preference.
+ */
+static gchar*
+preference_value (const char* name, const char* full_value)
+{
+  char *bracket = strchr (name, '[');
+  if (bracket && strncmp (bracket, "[radio]:", strlen ("[radio]:")) == 0)
+    {
+      char *semicolon = strchr (full_value, ';');
+      if (semicolon)
+        return g_strndup (full_value, semicolon - full_value);
+    }
+  return g_strdup (full_value);
+}
+
+/**
  * @brief Send the preferences from a config to the scanner.
  *
  * @param[in]  task  Task.
@@ -502,7 +525,10 @@ send_config_preferences (const char* config, const char* name)
   init_preference_iterator (&prefs, config, name);
   while (next (&prefs))
     {
-      if (send_to_server (preference_iterator_name (&prefs)))
+      const char *name = preference_iterator_name (&prefs);
+      char *value;
+
+      if (send_to_server (name))
         {
           cleanup_iterator (&prefs);
           return -1;
@@ -514,11 +540,14 @@ send_config_preferences (const char* config, const char* name)
           return -1;
         }
 
-      if (send_to_server (preference_iterator_value (&prefs)))
+      value = preference_value (name, preference_iterator_value (&prefs));
+      if (send_to_server (value))
         {
+          g_free (value);
           cleanup_iterator (&prefs);
           return -1;
         }
+      g_free (value);
 
       if (sendn_to_server ("\n", 1))
         {

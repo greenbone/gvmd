@@ -1,5 +1,12 @@
 2009-10-08  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (preference_value): New function.  Handles radio
+	preference type parsing.
+	(send_config_preferences): Get actual value of preference with
+	preference_value.
+
+2009-10-08  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (set_task_parameter): Free rc on fail.  Moving setting
 	the task description and targets to precede filling the config, as
 	insert_rc_into_config modifies its rc argument.
