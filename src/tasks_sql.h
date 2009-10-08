@@ -2766,6 +2766,8 @@ save_tasks ()
 int
 set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 {
+  /** @todo Free value consistently. */
+
   tracef ("   set_task_parameter %u %s\n",
           task_id (task),
           parameter ? parameter : "(null)");
@@ -2785,6 +2787,14 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 
       sql ("BEGIN IMMEDIATE;");
 
+      /* Update task description (rcfile). */
+
+      quoted_rc = sql_quote ((gchar*) rc);
+      sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
+           quoted_rc,
+           task);
+      g_free (quoted_rc);
+
       /* Update task config. */
 
       {
@@ -2795,6 +2805,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         config_name = task_config (task);
         if (config_name == NULL)
           {
+            g_free (rc);
             sql ("END");
             return -1;
           }
@@ -2803,6 +2814,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         if (target == NULL)
           {
             free (config_name);
+            g_free (rc);
             sql ("END");
             return -1;
           }
@@ -2812,6 +2824,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           {
             free (config_name);
             free (target);
+            g_free (rc);
             sql ("END");
             return -1;
           }
@@ -2823,6 +2836,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             free (quoted_selector);
             free (config_name);
             free (target);
+            g_free (rc);
             sql ("END");
             return -1;
           }
@@ -2831,6 +2845,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             free (quoted_selector);
             free (config_name);
             free (target);
+            g_free (rc);
             sql ("END");
             return -1;
           }
@@ -2849,39 +2864,35 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
                  quoted_selector);
             free (quoted_selector);
 
-            /* Fill config from RC. */
-
-            quoted_config_name = sql_quote (config_name);
-            free (config_name);
-            if (insert_rc_into_config (config, quoted_config_name, (gchar*) rc))
-              {
-                sql ("END");
-                return -1;
-              }
-
             /* Replace targets. */
 
             hosts = rc_preference ((gchar*) rc, "targets");
             if (hosts == NULL)
               {
+                free (config_name);
+                g_free (rc);
                 sql ("END");
                 return -1;
               }
             set_target_hosts (target, hosts);
             free (hosts);
+
+            /* Fill config from RC. */
+
+            quoted_config_name = sql_quote (config_name);
+            free (config_name);
+            /* This modifies rc. */
+            if (insert_rc_into_config (config, quoted_config_name, (gchar*) rc))
+              {
+                g_free (rc);
+                sql ("END");
+                return -1;
+              }
+            g_free (rc);
           }
+
+        sql ("COMMIT");
       }
-
-      /* Update task description (rcfile). */
-
-      quoted_rc = sql_quote ((gchar*) rc);
-      g_free (rc);
-      sql ("UPDATE tasks SET description = '%s' WHERE ROWID = %llu;",
-           quoted_rc,
-           task);
-      g_free (quoted_rc);
-
-      sql ("COMMIT");
     }
   else if (strcasecmp ("NAME", parameter) == 0)
     {

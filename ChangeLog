@@ -1,3 +1,9 @@
+2009-10-08  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (set_task_parameter): Free rc on fail.  Moving setting
+	the task description and targets to precede filling the config, as
+	insert_rc_into_config modifies its rc argument.
+
 2009-10-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (make_task_rcfile): Remove append of name.
