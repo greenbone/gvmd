@@ -1915,7 +1915,8 @@ report_holes (report_t report, const char* host, int* holes)
                       " AND results.ROWID = report_results.result"
                       " AND report_results.report = %llu"
                       " AND results.host = '%s';",
-                      report);
+                      report,
+                      host);
   else
     *holes = sql_int (0, 0,
                       "SELECT count(*) FROM results, report_results"
