@@ -1,3 +1,20 @@
+2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add support for storing files referenced in preferences, and sending
+	of the files to the scanner.
+
+	* src/tasks_sql.h (init_manage): Add table config_files.
+	(init_config_file_iterator, config_file_iterator_content)
+	(config_file_iterator_length): New functions.
+
+	* src/manage.c (preference_value): Add file type parsing, which pushes
+	file onto new arg "files".
+	(send_config_preferences): Pass files list through.
+	(send_config_file): New function.
+	(start_task): Send files gathered with sending preferences.
+
+	* src/manage.h: Add new headers.
+
 2009-10-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (preference_value): New function.  Handles radio

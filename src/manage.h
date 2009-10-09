@@ -558,6 +558,15 @@ config_nvt_selector (const char*);
 int
 config_in_use (const char*);
 
+void
+init_config_file_iterator (iterator_t*, const char*, const char*);
+
+const char*
+config_file_iterator_content (iterator_t*);
+
+int
+config_file_iterator_length (iterator_t*);
+
 
 /* NVT's. */
 

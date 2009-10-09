@@ -969,6 +969,7 @@ init_manage (GSList *log_config, int nvt_cache_mode)
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS config_files (config INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
@@ -4005,6 +4006,73 @@ find_config (const char* name, task_t* task)
     }
 
   return FALSE;
+}
+
+/**
+ * @brief Initialise a config file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  config    Config name.
+ * @param[in]  file      File name, NULL for all files.
+ */
+void
+init_config_file_iterator (iterator_t* iterator, const char* config, const char* file)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+  gchar *quoted_config = sql_nquote (config, strlen (config));
+
+  iterator->done = FALSE;
+  if (file)
+    {
+      gchar *quoted_file = sql_nquote (file, strlen (file));
+      formatted = g_strdup_printf ("SELECT *, length(content) FROM config_files"
+                                   " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                                   " AND name = '%s';",
+                                   quoted_config, quoted_file);
+      g_free (quoted_file);
+    }
+  else
+    formatted = g_strdup_printf ("SELECT *, length(content) FROM config_files"
+                                 " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')",
+                                 quoted_config);
+  g_free (quoted_config);
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+DEF_ACCESS (config_file_iterator_content, 2);
+
+int
+config_file_iterator_length (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
 }
 
 

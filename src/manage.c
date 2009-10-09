@@ -497,14 +497,21 @@ nvt_selector_plugins (const char* selector)
  * @return Real value of the preference.
  */
 static gchar*
-preference_value (const char* name, const char* full_value)
+preference_value (const char* name, const char* full_value, GSList** files)
 {
   char *bracket = strchr (name, '[');
-  if (bracket && strncmp (bracket, "[radio]:", strlen ("[radio]:")) == 0)
+  if (bracket)
     {
-      char *semicolon = strchr (full_value, ';');
-      if (semicolon)
-        return g_strndup (full_value, semicolon - full_value);
+      if (strncmp (bracket, "[radio]:", strlen ("[radio]:")) == 0)
+        {
+          char *semicolon = strchr (full_value, ';');
+          if (semicolon)
+            return g_strndup (full_value, semicolon - full_value);
+        }
+      else if ((strncmp (bracket, "[file]:", strlen ("[file]:")) == 0)
+               && full_value
+               && strlen (full_value))
+        *files = g_slist_append (*files, g_strdup (full_value));
     }
   return g_strdup (full_value);
 }
@@ -518,7 +525,9 @@ preference_value (const char* name, const char* full_value)
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_preferences (const char* config, const char* name)
+send_config_preferences (const char* config,
+                         const char* name,
+                         GSList** files)
 {
   iterator_t prefs;
 
@@ -540,7 +549,9 @@ send_config_preferences (const char* config, const char* name)
           return -1;
         }
 
-      value = preference_value (name, preference_iterator_value (&prefs));
+      value = preference_value (name,
+                                preference_iterator_value (&prefs),
+                                files);
       if (send_to_server (value))
         {
           g_free (value);
@@ -590,6 +601,50 @@ send_config_rules (const char* config)
 }
 
 /**
+ * @brief Send a file from a config to the scanner.
+ *
+ * @param[in]  config  Config.
+ * @param[in]  file    File name.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_config_file (const char* config, const char* file)
+{
+  iterator_t files;
+
+  init_config_file_iterator (&files, config, file);
+  while (next (&files))
+    {
+      int length = config_file_iterator_length (&files);
+
+      if (length == -1)
+        {
+          cleanup_iterator (&files);
+          return -1;
+        }
+
+      if (sendf_to_server ("CLIENT <|> ATTACHED_FILE\n"
+                           "name: %s\n"
+                           "content: octet/stream\n"
+                           "bytes: %i\n",
+                           file,
+                           length))
+        {
+          cleanup_iterator (&files);
+          return -1;
+        }
+      if (sendn_to_server (config_file_iterator_content (&files), length))
+        {
+          cleanup_iterator (&files);
+          return -1;
+        }
+    }
+  cleanup_iterator (&files);
+  return 0;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -611,6 +666,7 @@ start_task (task_t task)
   char *hosts, *target, *config, *selector;
   gchar *plugins;
   int fail;
+  GSList *files = NULL;
 
   tracef ("   start task %u\n", task_id (task));
 
@@ -706,12 +762,12 @@ start_task (task_t task)
 
   /* Send the scanner and plugins preferences. */
 
-  if (send_config_preferences (config, "SERVER_PREFS"))
+  if (send_config_preferences (config, "SERVER_PREFS", &files))
     {
       free (config);
       return -1;
     }
-  if (send_config_preferences (config, "PLUGINS_PREFS"))
+  if (send_config_preferences (config, "PLUGINS_PREFS", &files))
     {
       free (config);
       return -1;
@@ -721,6 +777,29 @@ start_task (task_t task)
     {
       free (config);
       return -1;
+    }
+
+  /* Send any files. */
+
+  while (files)
+    {
+      GSList *last = files;
+      if (send_config_file (config, files->data))
+        {
+          free (config);
+          /* Free the data. */
+          while (files)
+            {
+              g_free (files->data);
+              files = g_slist_next (files);
+            }
+          /* Free the list. */
+          g_slist_free (last);
+          return -1;
+        }
+      files = g_slist_next (files);
+      g_free (last->data);
+      g_slist_free_1 (last);
     }
 
   /* Send the rules. */
