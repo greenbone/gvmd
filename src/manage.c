@@ -609,36 +609,38 @@ send_config_rules (const char* config)
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_file (const char* config, const char* file)
+send_task_file (task_t task, const char* file)
 {
   iterator_t files;
 
-  init_config_file_iterator (&files, config, file);
+  init_task_file_iterator (&files, task, file);
   while (next (&files))
     {
-      int length = config_file_iterator_length (&files);
+      gsize content_len;
+      guchar *content;
+      const char *content_64 = task_file_iterator_content (&files);
 
-      if (length == -1)
-        {
-          cleanup_iterator (&files);
-          return -1;
-        }
+      content = g_base64_decode (content_64, &content_len);
 
       if (sendf_to_server ("CLIENT <|> ATTACHED_FILE\n"
                            "name: %s\n"
                            "content: octet/stream\n"
                            "bytes: %i\n",
                            file,
-                           length))
+                           content_len))
         {
+          g_free (content);
           cleanup_iterator (&files);
           return -1;
         }
-      if (sendn_to_server (config_file_iterator_content (&files), length))
+
+      if (sendn_to_server (content, content_len))
         {
+          g_free (content);
           cleanup_iterator (&files);
           return -1;
         }
+      g_free (content);
     }
   cleanup_iterator (&files);
   return 0;
@@ -784,7 +786,7 @@ start_task (task_t task)
   while (files)
     {
       GSList *last = files;
-      if (send_config_file (config, files->data))
+      if (send_task_file (task, files->data))
         {
           free (config);
           /* Free the data. */

@@ -240,6 +240,12 @@ static /*@null@*/ /*@only@*/ char*
 current_uuid = NULL;
 
 /**
+ * @brief Current name of file, during MODIFY_TASK.
+ */
+static /*@null@*/ /*@only@*/ char*
+current_name = NULL;
+
+/**
  * @brief Current format of report, during GET_REPORT.
  */
 static /*@null@*/ /*@only@*/ char*
@@ -256,6 +262,12 @@ modify_task_parameter = NULL;
  */
 static /*@null@*/ /*@only@*/ char*
 modify_task_comment = NULL;
+
+/**
+ * @brief File during OMP MODIFY_TASK.
+ */
+static /*@null@*/ /*@only@*/ char*
+modify_task_file = NULL;
 
 /**
  * @brief Name during OMP MODIFY_TASK.
@@ -350,6 +362,7 @@ typedef enum
   CLIENT_MODIFY_REPORT_PARAMETER,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
+  CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
@@ -1296,6 +1309,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
+        else if (strcasecmp ("FILE", element_name) == 0)
+          {
+            const gchar* attribute;
+            assert (current_format == NULL);
+            assert (current_name == NULL);
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "action", &attribute))
+              openvas_append_string (&current_format, attribute);
+            else
+              openvas_append_string (&current_format, "update");
+            set_client_state (CLIENT_MODIFY_TASK_FILE);
+          }
         else
           {
             if (send_element_error_to_client ("modify_task", element_name))
@@ -3717,6 +3745,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
+            else if (current_format
+                     && (modify_task_comment
+                         || modify_task_name
+                         || modify_task_parameter
+                         || modify_task_rcfile))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "Too many parameters at once"));
+            else if (current_format)
+              {
+                if (current_name == NULL)
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "MODIFY_TASK requires a name attribute"));
+                else if (strcmp (current_format, "update") == 0)
+                  {
+                    manage_task_update_file (task,
+                                             current_name,
+                                             modify_task_file
+                                             ? modify_task_file : "");
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                  }
+                else if (strcmp (current_format, "remove") == 0)
+                  {
+                    manage_task_remove_file (task, current_name);
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                  }
+                else
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "MODIFY_TASK action must be"
+                                      " \"update\" or \"remove\""));
+              }
             else
               {
                 int fail = 0, first = 1;
@@ -3833,6 +3894,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             openvas_free_string_var (&current_uuid);
+            openvas_free_string_var (&current_format);
+            openvas_free_string_var (&current_name);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -3850,6 +3913,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_FILE:
+        assert (strcasecmp ("FILE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
 
@@ -5080,6 +5147,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         openvas_append_text (&modify_task_rcfile, text, text_len);
+        break;
+      case CLIENT_MODIFY_TASK_FILE:
+        openvas_append_text (&modify_task_file, text, text_len);
         break;
 
       case CLIENT_CREDENTIALS_USERNAME:

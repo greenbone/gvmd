@@ -969,7 +969,7 @@ init_manage (GSList *log_config, int nvt_cache_mode)
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS config_files (config INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files (task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
@@ -3181,6 +3181,143 @@ reset_task (task_t task)
        task);
 }
 
+/**
+ * @brief Add a file to a task, or update the file on the task.
+ *
+ * @param[in]  task     Task.
+ * @param[in]  name     Name of file.
+ * @param[in]  content  Content for file in base64 encoding.
+ * @param[in]  content  Length of content.
+ */
+void
+manage_task_update_file (task_t task, const char *name,
+                         const void *content)
+{
+  gchar* quoted_name = sql_quote (name);
+  gchar* quoted_content = sql_quote (content);
+
+  /** @todo Probably better to save ASCII instead of base64. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM task_files"
+               " WHERE task = %llu AND name = '%s';",
+               task))
+    {
+      /* Update the existing file. */
+
+      sql ("UPDATE task_files SET content = '%s'"
+           " WHERE task = %llu AND name = '%s';",
+           quoted_content,
+           task,
+           quoted_name);
+    }
+  else
+    {
+      /* Insert the file. */
+
+      sql ("INSERT INTO task_files (task, name, content)"
+           " VALUES (%llu, '%s', '%s');",
+           task,
+           quoted_name,
+           quoted_content);
+    }
+
+  g_free (quoted_name);
+  g_free (quoted_content);
+}
+
+/**
+ * @brief Remove a file on a task.
+ *
+ * @param[in]  task     Task.
+ * @param[in]  name     Name of file.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_task_remove_file (task_t task, const char *name)
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM task_files"
+               " WHERE task = %llu AND name = '%s';",
+               task))
+    {
+      gchar* quoted_name = sql_quote (name);
+      sql ("DELETE FROM task_files WHERE task = %llu AND name = '%s';",
+           task,
+           quoted_name);
+      g_free (quoted_name);
+      return 0;
+    }
+  return -1;
+}
+
+
+/**
+ * @brief Initialise a task file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ * @param[in]  file      File name, NULL for all files.
+ */
+void
+init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (file)
+    {
+      gchar *quoted_file = sql_nquote (file, strlen (file));
+      formatted = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+                                   " WHERE task = %llu"
+                                   " AND name = '%s';",
+                                   task, quoted_file);
+      g_free (quoted_file);
+    }
+  else
+    formatted = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+                                 " WHERE task = %llu;",
+                                 task);
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+DEF_ACCESS (task_file_iterator_content, 2);
+
+int
+task_file_iterator_length (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
+}
+
 
 /* Targets. */
 
@@ -4009,73 +4146,6 @@ find_config (const char* name, task_t* task)
     }
 
   return FALSE;
-}
-
-/**
- * @brief Initialise a config file iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  config    Config name.
- * @param[in]  file      File name, NULL for all files.
- */
-void
-init_config_file_iterator (iterator_t* iterator, const char* config, const char* file)
-{
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-  gchar *quoted_config = sql_nquote (config, strlen (config));
-
-  iterator->done = FALSE;
-  if (file)
-    {
-      gchar *quoted_file = sql_nquote (file, strlen (file));
-      formatted = g_strdup_printf ("SELECT *, length(content) FROM config_files"
-                                   " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                   " AND name = '%s';",
-                                   quoted_config, quoted_file);
-      g_free (quoted_file);
-    }
-  else
-    formatted = g_strdup_printf ("SELECT *, length(content) FROM config_files"
-                                 " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')",
-                                 quoted_config);
-  g_free (quoted_config);
-
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-}
-
-DEF_ACCESS (config_file_iterator_content, 2);
-
-int
-config_file_iterator_length (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 3);
-  return ret;
 }
 
 

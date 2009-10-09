@@ -1,5 +1,33 @@
 2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add FILE to OMP MODIFY_TASK, for clients to send files referenced by
+	preferences.  Associate files with tasks instead of with configs.
+
+	* src/otp.c (process_otp_scanner_input): Handle OTP FILE_ACCEPTED.
+
+	* src/ovas-mngr-comm.c (sendn_to_server): Switch message type to void.
+	* src/ovas-mngr-comm.h: Update header.
+
+	* src/omp.c (current_name, modify_task_file): New variables.
+	(client_state_t): Add CLIENT_MODIFY_TASK_FILE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_TASK FILE handling.
+
+	* src/tasks_sql.h (init_manage): Rename table config_files to task_files,
+	associating the file with a task instead of a config.
+	(manage_task_update_file, manage_task_remove_file)
+	(init_task_file_iterator, task_file_iterator_content)
+	(task_file_iterator_length): New functions.
+	(init_config_file_iterator, config_file_iterator_content)
+	(config_file_iterator_length): Remove.
+
+	* src/manage.c (send_task_file): New function.  Renamed from
+	send_config_file.  Adjust for new task-file association.
+
+	* src/manage.h: Update headers.
+
+2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (latex_escape_text): Replace $\backslash with $\\backslash in
 	string literals.  Adjust the backslash case to move the correct portion
 	of the string forward, and to move the character pointer to the correct

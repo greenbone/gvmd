@@ -329,6 +329,21 @@ append_task_open_port (task_t, unsigned int, char*);
 int
 make_task_rcfile (task_t);
 
+void
+manage_task_update_file (task_t, const char *, const void *);
+
+int
+manage_task_remove_file (task_t, const char *);
+
+void
+init_config_file_iterator (iterator_t*, const char*, const char*);
+
+const char*
+config_file_iterator_content (iterator_t*);
+
+int
+config_file_iterator_length (iterator_t*);
+
 
 /* General task facilities. */
 
@@ -557,15 +572,6 @@ config_nvt_selector (const char*);
 
 int
 config_in_use (const char*);
-
-void
-init_config_file_iterator (iterator_t*, const char*, const char*);
-
-const char*
-config_file_iterator_content (iterator_t*);
-
-int
-config_file_iterator_length (iterator_t*);
 
 
 /* NVT's. */

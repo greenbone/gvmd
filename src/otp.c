@@ -2161,6 +2161,18 @@ process_otp_scanner_input ()
                           return 0;
                       }
                   }
+                else if (strcasecmp ("FILE_ACCEPTED", field) == 0)
+                  {
+                    set_scanner_state (SCANNER_DONE);
+                    switch (parse_scanner_done (&messages))
+                      {
+                        case -1: return -1;
+                        case -2:
+                          /* Need more input. */
+                          if (sync_buffer ()) return -1;
+                          return 0;
+                      }
+                  }
                 else if (strcasecmp ("HOLE", field) == 0)
                   set_scanner_state (SCANNER_HOLE_HOST);
                 else if (strcasecmp ("INFO", field) == 0)

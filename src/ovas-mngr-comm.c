@@ -121,13 +121,13 @@ to_server_buffer_space ()
 /**
  * @brief Send a number of bytes to the server.
  *
- * @param[in]  msg  The message, a string.
+ * @param[in]  msg  The message, a sequence of bytes.
  * @param[in]  n    The number of bytes from msg to send.
  *
  * @return 0 for success, any other value for failure.
  */
 int
-sendn_to_server (const char * msg, size_t n)
+sendn_to_server (const void * msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
@@ -137,7 +137,7 @@ sendn_to_server (const char * msg, size_t n)
     }
 
   memmove (to_server + to_server_end, msg, n);
-  tracef ("-> server: %.*s\n", n, msg);
+  tracef ("=> server  %zi bytes\n", n);
   to_server_end += n;
 
   return 0;
