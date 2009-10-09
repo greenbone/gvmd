@@ -1,5 +1,10 @@
 2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (report_notes, report_warnings): Add missing args to
+	calls.
+
+2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (report_holes): Add missing arg to call.
 
 2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>

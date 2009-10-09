@@ -1946,7 +1946,8 @@ report_notes (report_t report, const char* host, int* notes)
                       " AND results.ROWID = report_results.result"
                       " AND report_results.report = %llu"
                       " AND results.host = '%s';",
-                      report);
+                      report,
+                      host);
   else
     *notes = sql_int (0, 0,
                       "SELECT count(*) FROM results, report_results"
@@ -1976,7 +1977,8 @@ report_warnings (report_t report, const char* host, int* warnings)
                          " AND results.ROWID = report_results.result"
                          " AND report_results.report = %llu"
                          " AND results.host = '%s';",
-                         report);
+                         report,
+                         host);
   else
     *warnings = sql_int (0, 0,
                          "SELECT count(*) FROM results, report_results"
