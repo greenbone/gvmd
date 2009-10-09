@@ -1913,7 +1913,7 @@ latex_escape_text (const char *text)
     const char *c = text;
     while (*c) { if (*c == '\\') bs++; c++; }
     new = g_strndup (text,
-                     (left - bs) * 2 + bs * (strlen ("$\backslash$") - 1) + 1);
+                     (left - bs) * 2 + bs * (strlen ("$\\backslash$") - 1) + 1);
   }
 
   ch = new;
@@ -1944,9 +1944,12 @@ latex_escape_text (const char *text)
               default:
                 {
                   /* \ becomes $\backslash$ */
-                  memmove (ch - 1 + strlen ("$\backslash$"), ch - 1, left);
-                  strncpy (ch - 1, "$\backslash$", strlen ("$\backslash$"));
-                  ch += (strlen ("$\backslash$") - 1);
+                  memmove (ch - 1 + strlen ("$\\backslash$"), ch, left);
+                  strncpy (ch - 1, "$\\backslash$", strlen ("$\\backslash$"));
+                  /* Get back to the position of the original backslash. */
+                  ch--;
+                  /* Move over the newly inserted characters. */
+                  ch += (strlen ("$\\backslash$") - 1);
                   break;
                 }
             }

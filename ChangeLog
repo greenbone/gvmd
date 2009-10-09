@@ -1,5 +1,12 @@
 2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (latex_escape_text): Replace $\backslash with $\\backslash in
+	string literals.  Adjust the backslash case to move the correct portion
+	of the string forward, and to move the character pointer to the correct
+	final location.
+
+2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (report_notes, report_warnings): Add missing args to
 	calls.
 
