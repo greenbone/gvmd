@@ -3208,7 +3208,8 @@ manage_task_update_file (task_t task, const char *name,
   if (sql_int (0, 0,
                "SELECT count(*) FROM task_files"
                " WHERE task = %llu AND name = '%s';",
-               task))
+               task,
+               quoted_name))
     {
       /* Update the existing file. */
 
