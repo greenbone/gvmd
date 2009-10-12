@@ -2999,6 +2999,7 @@ delete_task (task_t task)
 
   sql ("DELETE FROM results WHERE task = %llu;", task);
   sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
+  sql ("DELETE FROM task_files WHERE task = %llu;", task);
 
   return 0;
 }

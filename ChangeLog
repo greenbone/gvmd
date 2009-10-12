@@ -1,5 +1,9 @@
 2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (delete_task): Delete task files too.
+
+2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (manage_task_update_file): Add missing arg to sql call.
 
 2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
