@@ -95,14 +95,15 @@ static int ompd_nvt_cache_mode = 0;
  *
  * @param[in]  log_config      Log configuration
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of manage database.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server.
  */
 int
-init_ompd (GSList *log_config, int nvt_cache_mode)
+init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database)
 {
-  return init_omp (log_config, nvt_cache_mode);
+  return init_omp (log_config, nvt_cache_mode, database);
 }
 
 /**
@@ -495,6 +496,7 @@ recreate_session (int server_socket,
  * @param[in]  scanner_credentials  The TSL server credentials.
  * @param[in]  client_socket        The socket connected to the client, if any.
  * @param[in]  scanner_socket_addr  The socket connected to the scanner.
+ * @param[in]  database             Location of manage database.
  *
  * @return 0 on success, -1 on error.
  */
@@ -503,7 +505,8 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_session_t* scanner_session,
            gnutls_certificate_credentials_t* client_credentials,
            gnutls_certificate_credentials_t* scanner_credentials,
-           int client_socket, int* scanner_socket_addr)
+           int client_socket, int* scanner_socket_addr,
+           const gchar* database)
 {
   int nfds, ret;
   time_t last_client_activity_time;
@@ -530,7 +533,7 @@ serve_omp (gnutls_session_t* client_session,
   init_otp_data ();
 
   /* Initialise the XML parser and the manage library. */
-  init_omp_process (ompd_nvt_cache_mode);
+  init_omp_process (ompd_nvt_cache_mode, database);
 #if 0
   // FIX consider free_omp_data (); on return
   if (tasks) free_tasks ();

@@ -476,10 +476,13 @@ migrate_is_available (int old_version, int new_version)
 /**
  * @brief Migrate database to version supported by this manager.
  *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
  * @return 0 success, 1 already on supported version, 2 too hard, -1 error.
  */
 int
-manage_migrate (GSList *log_config)
+manage_migrate (GSList *log_config, const gchar *database)
 {
   gchar *backup_file;
   migrator_t *migrators;
@@ -493,7 +496,7 @@ manage_migrate (GSList *log_config)
                      (GLogFunc) openvas_log_func,
                      log_config);
 
-  init_manage_process (0);
+  init_manage_process (0, database);
 
   old_version = manage_db_version ();
   new_version = manage_db_supported_version ();
@@ -702,9 +705,10 @@ next_task (task_iterator_t* iterator, task_t* task)
  * Open the SQL database.
  *
  * @param[in]  update_nvt_cache  If true, clear the NVT cache.
+ * @param[in]  database          Location of manage database.
  */
 void
-init_manage_process (int update_nvt_cache)
+init_manage_process (int update_nvt_cache, const gchar *database)
 {
   gchar *mgr_dir;
   int ret;
@@ -735,7 +739,9 @@ init_manage_process (int update_nvt_cache)
     }
 
   /* Open the database. */
-  if (sqlite3_open (OPENVAS_STATE_DIR "/mgr/tasks.db", &task_db))
+  if (sqlite3_open (database ? database
+                             : OPENVAS_STATE_DIR "/mgr/tasks.db",
+                    &task_db))
     {
       g_warning ("%s: sqlite3_open failed: %s\n",
                  __FUNCTION__,
@@ -891,12 +897,13 @@ setup_full_config_prefs (config_t config, int safe_checks,
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of database.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server.
  */
 int
-init_manage (GSList *log_config, int nvt_cache_mode)
+init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 {
   const char *database_version;
   task_t index;
@@ -907,7 +914,7 @@ init_manage (GSList *log_config, int nvt_cache_mode)
                      (GLogFunc) openvas_log_func,
                      log_config);
 
-  init_manage_process (0);
+  init_manage_process (0, database);
 
   /* Check that the version of the database is correct. */
 

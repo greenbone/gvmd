@@ -205,6 +205,11 @@ gnutls_session_t client_session;
  */
 gnutls_certificate_credentials_t client_credentials;
 
+/**
+ * @brief Location of the manage database.
+ */
+static gchar *database = NULL;
+
 
 /* Forking, serving the client. */
 
@@ -300,7 +305,8 @@ serve_client (int client_socket)
         /* It's up to serve_omp to openvas_server_free client_*. */
         if (serve_omp (&client_session, &scanner_session,
                        &client_credentials, &scanner_credentials,
-                       client_socket, &scanner_socket))
+                       client_socket, &scanner_socket,
+                       database))
           goto server_fail;
         break;
       case PROTOCOL_CLOSE:
@@ -517,6 +523,7 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
@@ -565,7 +572,7 @@ main (int argc, char** argv)
       tracef ("   Migrating database.\n");
 
       /* Migrate the database to the version supported by this manager. */
-      switch (manage_migrate (log_config))
+      switch (manage_migrate (log_config, database))
         {
           case 0:
             tracef ("   Migration succeeded.\n");
@@ -627,7 +634,7 @@ main (int argc, char** argv)
 
       /* Initialise OMP daemon. */
 
-      switch (init_ompd (log_config, 1))
+      switch (init_ompd (log_config, 1, database))
         {
           case 0:
             break;
@@ -720,7 +727,8 @@ main (int argc, char** argv)
 
       if (serve_omp (NULL, &scanner_session,
                      NULL, &scanner_credentials,
-                     -1, &scanner_socket))
+                     -1, &scanner_socket,
+                     database))
         {
           openvas_server_free (scanner_socket,
                                scanner_session,
@@ -794,7 +802,7 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  switch (init_ompd (log_config, 0))
+  switch (init_ompd (log_config, 0, database))
     {
       case 0:
         break;

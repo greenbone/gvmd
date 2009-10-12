@@ -1,5 +1,23 @@
 2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a --database option.
+
+	* src/tasks_sql.h (manage_migrate, init_manage_process, init_manage): Add
+	database arg.  Use to init database.  Update callers.
+	* src/manage.h: Update headers.
+
+	* src/omp.c (init_omp, init_omp_process): Add database arg.  Update
+	callers.
+	* src/omp.h: Update headers.
+
+	* src/ompd.c (init_ompd, serve_omp): Add database arg.  Update callers.
+	* src/ompd.h: Update headers.
+
+	* src/openvasmd.c (database): New variable.
+	(main): Add --database.
+
+2009-10-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add FILE to OMP MODIFY_TASK, for clients to send files referenced by
 	preferences.  Associate files with tasks instead of with configs.
 

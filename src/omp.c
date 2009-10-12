@@ -5246,34 +5246,36 @@ extern buffer_size_t from_client_end;
 /**
  * @brief Initialise OMP library.
  *
- * @param[in]  log_config  Logging configuration list.
+ * @param[in]  log_config      Logging configuration list.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of manage database.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server.
  */
 int
-init_omp (GSList *log_config, int nvt_cache_mode)
+init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
                      (GLogFunc) openvas_log_func,
                      log_config);
-  return init_manage (log_config, nvt_cache_mode);
+  return init_manage (log_config, nvt_cache_mode, database);
 }
 
 /**
  * @brief Initialise OMP library data for a process.
  *
  * @param[in]  update_nvt_cache  If true, process will just update NVT cache.
+ * @param[in]  database          Location of manage database.
  *
  * This should run once per process, before the first call to \ref
  * process_omp_client_input.
  */
 void
-init_omp_process (int update_nvt_cache)
+init_omp_process (int update_nvt_cache, const gchar *database)
 {
-  init_manage_process (update_nvt_cache);
+  init_manage_process (update_nvt_cache, database);
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
   xml_parser.end_element = omp_xml_handle_end_element;

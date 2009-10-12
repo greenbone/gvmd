@@ -52,10 +52,10 @@ typedef struct
 extern scanner_t scanner;
 
 int
-init_manage (GSList*, int);
+init_manage (GSList*, int, const gchar*);
 
 void
-init_manage_process ();
+init_manage_process (int, const gchar*);
 
 void
 cleanup_manage_process ();
@@ -96,7 +96,7 @@ int
 manage_db_version ();
 
 int
-manage_migrate (GSList *log_config);
+manage_migrate (GSList*, const gchar*);
 
 
 /* Task structures. */
