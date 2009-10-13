@@ -1,5 +1,9 @@
 2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): Free modify_task_file.
+
+2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (delete_task): Delete task files too.
 
 2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>

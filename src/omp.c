@@ -3896,6 +3896,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_free_string_var (&current_uuid);
             openvas_free_string_var (&current_format);
             openvas_free_string_var (&current_name);
+            openvas_free_string_var (&modify_task_file);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
