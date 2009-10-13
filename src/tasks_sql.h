@@ -30,7 +30,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 1
+#define DATABASE_VERSION 2
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -983,7 +983,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (name, value);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, comment, rpm, deb, dog);");
 
@@ -4289,7 +4289,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', '%i', '%s');",
+       " '%s', %i, '%s');",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
@@ -4382,8 +4382,16 @@ DEF_ACCESS (nvt_iterator_bid, 7);
 DEF_ACCESS (nvt_iterator_xref, 8);
 DEF_ACCESS (nvt_iterator_tag, 9);
 DEF_ACCESS (nvt_iterator_sign_key_ids, 10);
-DEF_ACCESS (nvt_iterator_category, 11);
 DEF_ACCESS (nvt_iterator_family, 12);
+
+int
+nvt_iterator_category (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 11);
+  return ret;
+}
 
 
 /* NVT selectors. */

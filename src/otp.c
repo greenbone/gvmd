@@ -55,6 +55,7 @@
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
+#include <openvas/nvt_categories.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -83,6 +84,23 @@ static void
 free_g_slist (gpointer list)
 {
   g_slist_free ((GSList*) list);
+}
+
+/** @brief Return the number associated with a category name.
+ *
+ * @param  category  The category name.
+ *
+ * @return The number of the category.
+ */
+static int
+category_number (const char *category)
+{
+  static const char *categories[] = { ACT_STRING_LIST_ALL };
+  int index;
+  for (index = ACT_FIRST; index <= ACT_END; index++)
+    if (strcmp (category, categories[index]) == 0)
+      return index;
+  return ACT_UNKNOWN;
 }
 
 
@@ -1959,8 +1977,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_CATEGORY:
                 {
-                  // FIX parse category number from field
-                  nvti_set_category (current_plugin, 0);
+                  nvti_set_category (current_plugin, category_number (field));
                   set_scanner_state (SCANNER_PLUGIN_LIST_COPYRIGHT);
                   break;
                 }

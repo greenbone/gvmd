@@ -56,6 +56,7 @@
 #include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
+#include <openvas/nvt_categories.h>
 #include <openvas/openvas_logging.h>
 
 #ifdef S_SPLINT_S
@@ -67,6 +68,26 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md    omp"
+
+
+/* Helper functions. */
+
+/** @brief Return the name of a category.
+ *
+ * @param  category  The number of the category.
+ *
+ * @return The name of the category.
+ */
+static const char*
+category_name (int category)
+{
+  static const char *categories[] = { ACT_STRING_LIST_ALL };
+  if (category >= ACT_FIRST && category <= ACT_END)
+    {
+      return categories[category];
+    }
+  return categories[ACT_UNKNOWN];
+}
 
 
 /* Help message. */
@@ -1677,7 +1698,7 @@ send_nvt (iterator_t *nvts, int details)
                              "</nvt>",
                              oid,
                              name_text,
-                             nvt_iterator_category (nvts),
+                             category_name (nvt_iterator_category (nvts)),
                              copyright_text,
                              description_text,
                              summary_text,

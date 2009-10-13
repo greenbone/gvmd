@@ -1,4 +1,25 @@
-2009-10-12  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-13  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add parsing of NVT category from OTP.
+
+	* src/otp.c: Include openvas/nvt_categories.h.
+	(category_number): New function.
+	(process_otp_scanner_input): In SCANNER_PLUGIN_LIST_CATEGORY set the
+	category number according to the OTP field.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increment, due to nvts category
+	column type specification.
+	(init_manage): Specify type for category column in table nvts.
+	(make_nvt_from_nvti): Insert category as int.
+	(nvt_iterator_category): Change return to int.
+
+	* src/manage.h: Update header.
+
+	* src/omp.c: Include openvas/nvt_categories.h.
+	(category_name): New function.
+	(send_nvt): Convert category number into name.
+
+2009-10-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Free modify_task_file.
 
