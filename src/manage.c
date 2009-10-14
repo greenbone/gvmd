@@ -51,6 +51,7 @@
 
 #include <openvas/openvas_auth.h>
 #include <openvas/base/openvas_string.h>
+#include <openvas/hash_table_file.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -420,6 +421,49 @@ rc_preference (const char* desc, const char* name)
 }
 
 /**
+ * @brief Append files that receive some special handling and are needed for
+ * @brief local security checks to a list of files.
+ *
+ * @todo Code is similar to code in openvas-scanner/openvassd/ntp_11.c
+ * (ntp_11_recv_file, build_global_sshlogin_info_map,
+ * build_global_host_sshlogins_map) and openvas-client/openvas/comm.c
+ * (send_ssh_credential_files). Consider refactoring to openvas-libraries.
+ *
+ * @param task          Task of interest.
+ * @param files[in,out] List to append filepaths to.
+ */
+static void
+files_append_lsc (task_t task, GSList** filelist)
+{
+  iterator_t files;
+  GHashTable* logins  = NULL;
+  GHashTable* mapping = NULL;
+
+  init_task_file_iterator (&files, task, NULL);
+  while (next (&files))
+    {
+      gsize content_len;
+      guchar *content;
+      const char *content_64 = task_file_iterator_content (&files);
+      const gchar* file_path = task_file_iterator_name (&files);
+
+      content = g_base64_decode (content_64, &content_len);
+
+      gchar* file_name = g_path_get_basename (file_path);
+      if (!strcmp (file_name, ".host_sshlogins"))
+        mapping = hash_table_file_read_text (content, content_len);
+      if (!strcmp (file_name, ".logins"))
+        ;
+
+      g_free (content);
+    }
+  cleanup_iterator (&files);
+
+  // If found mappings, add pub and private key files to filelist
+}
+
+
+/**
  * @brief Return the plugins of a task, as a semicolon separated string.
  *
  * @param[in]  task  Task.
@@ -780,6 +824,9 @@ start_task (task_t task)
       free (config);
       return -1;
     }
+
+  /* Append lsc configuration to list of files to send */
+  //files_append_lsc (task, &files);
 
   /* Send any files. */
 

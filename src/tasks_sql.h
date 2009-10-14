@@ -3316,6 +3316,15 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
     }
 }
 
+/**
+ * @brief Get the name of a file from an task_file_iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the file or NULL if iteration is complete.
+ */
+static DEF_ACCESS (task_file_iterator_name, 1);
+
 DEF_ACCESS (task_file_iterator_content, 2);
 
 int
@@ -3453,7 +3462,15 @@ init_target_iterator (iterator_t* iterator)
   init_table_iterator (iterator, "targets");
 }
 
+/**
+ * @brief Get the name of a target from an target_iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the target or NULL if iteration is complete.
+ */
 DEF_ACCESS (target_iterator_name, 0);
+
 DEF_ACCESS (target_iterator_hosts, 1);
 
 const char*
