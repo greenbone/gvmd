@@ -1,3 +1,17 @@
+2009-10-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Do not do any logic when sending files, just send all we have in the
+	db.
+
+	* src/manage.c (files_append_lsc): Removed, replaced by
+	get_files_to_send.
+	(get_files_to_send): New, creates a list of files to send.
+	(preference_value, send_config_preferences): Do not modify list of
+	files to send.
+	(start_task): Do not collect list of files to send via calls to
+	preference_value and files_append_lsc, but use new get_files_to_send
+	instead.
+
 2009-10-15  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Make sure the parent pidfile is only removed when the parent exits.

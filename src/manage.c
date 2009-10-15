@@ -51,7 +51,6 @@
 
 #include <openvas/openvas_auth.h>
 #include <openvas/base/openvas_string.h>
-#include <openvas/hash_table_file.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -421,45 +420,28 @@ rc_preference (const char* desc, const char* name)
 }
 
 /**
- * @brief Append files that receive some special handling and are needed for
- * @brief local security checks to a list of files.
- *
- * @todo Code is similar to code in openvas-scanner/openvassd/ntp_11.c
- * (ntp_11_recv_file, build_global_sshlogin_info_map,
- * build_global_host_sshlogins_map) and openvas-client/openvas/comm.c
- * (send_ssh_credential_files). Consider refactoring to openvas-libraries.
+ * @brief Get files to send.
  *
  * @param task          Task of interest.
- * @param files[in,out] List to append filepaths to.
+ *
+ * @return List of files to send, (NULL if none), data has to be freed with
+ *         g_free.
  */
-static void
-files_append_lsc (task_t task, GSList** filelist)
+static GSList*
+get_files_to_send  (task_t task)
 {
   iterator_t files;
-  GHashTable* logins  = NULL;
-  GHashTable* mapping = NULL;
+  GSList* filelist = NULL;
 
   init_task_file_iterator (&files, task, NULL);
   while (next (&files))
     {
-      gsize content_len;
-      guchar *content;
-      const char *content_64 = task_file_iterator_content (&files);
       const gchar* file_path = task_file_iterator_name (&files);
-
-      content = g_base64_decode (content_64, &content_len);
-
-      gchar* file_name = g_path_get_basename (file_path);
-      if (!strcmp (file_name, ".host_sshlogins"))
-        mapping = hash_table_file_read_text (content, content_len);
-      if (!strcmp (file_name, ".logins"))
-        ;
-
-      g_free (content);
+      filelist = g_slist_append (filelist, g_strdup (file_path));
     }
   cleanup_iterator (&files);
 
-  // If found mappings, add pub and private key files to filelist
+  return filelist;
 }
 
 
@@ -541,7 +523,7 @@ nvt_selector_plugins (const char* selector)
  * @return Real value of the preference.
  */
 static gchar*
-preference_value (const char* name, const char* full_value, GSList** files)
+preference_value (const char* name, const char* full_value)
 {
   char *bracket = strchr (name, '[');
   if (bracket)
@@ -552,10 +534,6 @@ preference_value (const char* name, const char* full_value, GSList** files)
           if (semicolon)
             return g_strndup (full_value, semicolon - full_value);
         }
-      else if ((strncmp (bracket, "[file]:", strlen ("[file]:")) == 0)
-               && full_value
-               && strlen (full_value))
-        *files = g_slist_append (*files, g_strdup (full_value));
     }
   return g_strdup (full_value);
 }
@@ -570,8 +548,7 @@ preference_value (const char* name, const char* full_value, GSList** files)
  */
 static int
 send_config_preferences (const char* config,
-                         const char* name,
-                         GSList** files)
+                         const char* name)
 {
   iterator_t prefs;
 
@@ -594,8 +571,7 @@ send_config_preferences (const char* config,
         }
 
       value = preference_value (name,
-                                preference_iterator_value (&prefs),
-                                files);
+                                preference_iterator_value (&prefs));
       if (send_to_server (value))
         {
           g_free (value);
@@ -808,12 +784,12 @@ start_task (task_t task)
 
   /* Send the scanner and plugins preferences. */
 
-  if (send_config_preferences (config, "SERVER_PREFS", &files))
+  if (send_config_preferences (config, "SERVER_PREFS"))
     {
       free (config);
       return -1;
     }
-  if (send_config_preferences (config, "PLUGINS_PREFS", &files))
+  if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
       free (config);
       return -1;
@@ -826,7 +802,7 @@ start_task (task_t task)
     }
 
   /* Append lsc configuration to list of files to send */
-  //files_append_lsc (task, &files);
+  files = get_files_to_send (task);
 
   /* Send any files. */
 
