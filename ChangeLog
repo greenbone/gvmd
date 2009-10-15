@@ -1,5 +1,10 @@
 2009-10-15  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (set_task_parameter): Remove all task files when
+	setting RC file.
+
+2009-10-15  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (get_files_to_send): Cleanup a little formatting.
 	(start_task): Update LSC comment.
 

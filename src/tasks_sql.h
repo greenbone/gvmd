@@ -2798,6 +2798,10 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 
       sql ("BEGIN IMMEDIATE;");
 
+      /* Remove all files from the task. */
+
+      sql ("DELETE FROM task_files WHERE task = %llu;", task);
+
       /* Update task description (rcfile). */
 
       quoted_rc = sql_quote ((gchar*) rc);
