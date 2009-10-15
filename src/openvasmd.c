@@ -210,6 +210,11 @@ gnutls_certificate_credentials_t client_credentials;
  */
 static gchar *database = NULL;
 
+/**
+ * @brief Is this process parent or child?
+ */
+int is_parent = 1;
+
 
 /* Forking, serving the client. */
 
@@ -380,6 +385,7 @@ accept_and_maybe_fork ()
       case 0:
         /* Child. */
         {
+          is_parent = 0;
 #endif /* FORK */
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
@@ -450,10 +456,13 @@ cleanup ()
 #endif
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
-  /* Delete pidfile. */
-  gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
-  g_unlink (pidfile_name);
-  g_free (pidfile_name);
+  /* Delete pidfile if this process is the parent. */
+  if (is_parent == 1)
+    {
+      gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
+      g_unlink (pidfile_name);
+      g_free (pidfile_name);
+    }
 }
 
 /**

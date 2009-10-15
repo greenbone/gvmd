@@ -1,3 +1,13 @@
+2009-10-15  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Make sure the parent pidfile is only removed when the parent exits.
+
+	* src/openvasmd.c: Introduce global is_parent indicator.
+	(accept_and_maybe_fork): Set is_parent to 0 in the child immediately
+	after forking.
+	(cleanup): Check if this process is the parent before removing the
+	pidfile.
+
 2009-10-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add parsing of NVT category from OTP.
