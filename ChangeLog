@@ -1,3 +1,8 @@
+2009-10-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.c (get_files_to_send): Cleanup a little formatting.
+	(start_task): Update LSC comment.
+
 2009-10-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Do not do any logic when sending files, just send all we have in the

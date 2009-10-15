@@ -422,13 +422,13 @@ rc_preference (const char* desc, const char* name)
 /**
  * @brief Get files to send.
  *
- * @param task          Task of interest.
+ * @param  task  Task of interest.
  *
  * @return List of files to send, (NULL if none), data has to be freed with
  *         g_free.
  */
 static GSList*
-get_files_to_send  (task_t task)
+get_files_to_send (task_t task)
 {
   iterator_t files;
   GSList* filelist = NULL;
@@ -443,7 +443,6 @@ get_files_to_send  (task_t task)
 
   return filelist;
 }
-
 
 /**
  * @brief Return the plugins of a task, as a semicolon separated string.
@@ -801,7 +800,8 @@ start_task (task_t task)
       return -1;
     }
 
-  /* Append lsc configuration to list of files to send */
+  /* Collect files to send. */
+
   files = get_files_to_send (task);
 
   /* Send any files. */
