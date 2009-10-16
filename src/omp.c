@@ -4369,47 +4369,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
             else
-              switch (start_task (task))
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("start_task"));
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("start_task",
-                                        "Task is active already"));
-                    break;
-                  case -1:
-                    /* to_scanner is full. */
-                    // FIX or other error
-                    // FIX revert parsing for retry
-                    // process_omp_client_input must return -2
-                    abort ();
-                    break;
-                  case -6:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("start_task",
-                                        "There is already a task running in"
-                                        " this process"));
-                    break;
-                  case -2:
-                    /* Task target lacks hosts.  This is checked when the
-                     * target is created. */
-                    assert (0);
-                    /*@fallthrough@*/
-                  case -4:
-                    /* Task lacks target.  This is checked when the task is
-                     * created anyway. */
-                    assert (0);
-                    /*@fallthrough@*/
-                  case -3: /* Failed to create report. */
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                    break;
-                  default: /* Programming error. */
-                    assert (0);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
-                    break;
-                }
+              {
+                char *report_id;
+                switch (start_task (task, &report_id))
+                  {
+                    case 0:
+                      {
+                        gchar *msg;
+                        msg = g_strdup_printf
+                               ("<start_task_response"
+                                " status=\"" STATUS_OK_REQUESTED "\""
+                                " status_text=\""
+                                STATUS_OK_REQUESTED_TEXT
+                                "\">"
+                                "<report_id>%s</report_id>"
+                                "</start_task_response>",
+                                report_id);
+                        free (report_id);
+                        if (send_to_client (msg))
+                          {
+                            g_free (msg);
+                            error_send_to_client (error);
+                            return;
+                          }
+                        g_free (msg);
+                      }
+                      break;
+                    case 1:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task",
+                                          "Task is active already"));
+                      break;
+                    case -1:
+                      /* to_scanner is full. */
+                      // FIX or other error
+                      // FIX revert parsing for retry
+                      // process_omp_client_input must return -2
+                      abort ();
+                      break;
+                    case -6:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task",
+                                          "There is already a task running in"
+                                          " this process"));
+                      break;
+                    case -2:
+                      /* Task target lacks hosts.  This is checked when the
+                       * target is created. */
+                      assert (0);
+                      /*@fallthrough@*/
+                    case -4:
+                      /* Task lacks target.  This is checked when the task is
+                       * created anyway. */
+                      assert (0);
+                      /*@fallthrough@*/
+                    case -3: /* Failed to create report. */
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                      break;
+                    default: /* Programming error. */
+                      assert (0);
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                      break;
+                  }
+              }
             openvas_free_string_var (&current_uuid);
           }
         else

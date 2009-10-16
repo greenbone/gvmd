@@ -1,3 +1,16 @@
+2009-10-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Include report ID in OMP START_TASK response.
+
+	* src/tasks_sql.h (create_report): Add report_id output arg.
+
+	* src/manage.c (start_task): Add report_id output arg.  Pass to
+	create_report.
+	* src/manage.h: Update header.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK add report
+	ID to OK response.
+
 2009-10-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (set_task_parameter): Remove all task files when

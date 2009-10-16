@@ -357,7 +357,7 @@ const char*
 task_run_status_name (task_t task);
 
 int
-start_task (task_t);
+start_task (task_t, char**);
 
 int
 stop_task (task_t);

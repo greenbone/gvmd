@@ -673,7 +673,8 @@ send_task_file (task_t task, const char* file)
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
  *
  * @return 0 on success, 1 task is active already,
  *         -1 if out of space in scanner output buffer, -2 if the
@@ -682,7 +683,7 @@ send_task_file (task_t task, const char* file)
  *         running in this process.
  */
 int
-start_task (task_t task)
+start_task (task_t task, char **report_id)
 {
   char *hosts, *target, *config, *selector;
   gchar *plugins;
@@ -719,7 +720,7 @@ start_task (task_t task)
 
   /* Create the report. */
 
-  if (create_report (task)) return -3;
+  if (create_report (task, report_id)) return -3;
 
   /* Reset any running information. */
 

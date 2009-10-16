@@ -1835,26 +1835,27 @@ make_report (task_t task, const char* uuid)
 /**
  * @brief Create the current report for a task.
  *
- * @param[in]  task   The task.
+ * @param[in]   task       The task.
+ * @param[out]  report_id  Report ID.
  *
  * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
  */
 static int
-create_report (task_t task)
+create_report (task_t task, char **report_id)
 {
-  char* report_id;
-
   assert (current_report == (report_t) 0);
   if (current_report) return -1;
 
+  if (report_id == NULL) return -1;
+
   /* Generate report UUID. */
 
-  report_id = make_report_uuid ();
-  if (report_id == NULL) return -2;
+  *report_id = make_report_uuid ();
+  if (*report_id == NULL) return -2;
 
   /* Create the report. */
 
-  current_report = make_report (task, report_id);
+  current_report = make_report (task, *report_id);
 
   return 0;
 }
