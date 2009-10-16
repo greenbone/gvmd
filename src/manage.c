@@ -352,7 +352,7 @@ print_tasks ()
 #endif
 #endif
 
-// TODO: Test these RC parsing functions.
+/** @todo Test these RC parsing functions. */
 
 /**
  * @brief Return a preference from an RC.
@@ -388,8 +388,11 @@ rc_preference (const char* desc, const char* name)
           if (strncmp (desc, name, eq - desc - 1) == 0)
             {
               gchar* ret;
-              ret = g_strndup (eq + 2,
-                               seek ? seek - (eq + 2) : strlen (seek));
+              if (seek > eq + 1)
+                ret = g_strndup (eq + 2,
+                                 seek ? seek - (eq + 2) : strlen (seek));
+              else
+                ret = g_strdup ("");
               return ret;
             }
         }

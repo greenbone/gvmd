@@ -1,3 +1,8 @@
+2009-10-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.c (rc_preference): Check whether there is a value to
+	duplicate after an equal sign.
+
 2009-10-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Include report ID in OMP START_TASK response.
