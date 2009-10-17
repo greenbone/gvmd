@@ -1,5 +1,10 @@
 2009-10-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (send_to_client): Temporarily add conversion of msg from
+	iso_8859-1 to utf-8, to catch iso chars originating from the OTP messages.
+
+2009-10-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (rc_preference): Check whether there is a value to
 	duplicate after an equal sign.
 

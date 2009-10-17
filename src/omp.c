@@ -430,9 +430,24 @@ send_to_client (char* msg)
               strlen (msg));
       return TRUE;
     }
+
+#if 1
+  /** @todo FIX Temp hack to catch ISO chars sent by scanner. */
+  gsize size_dummy;
+  gchar* msg_utf8 = msg ? g_convert (msg, strlen (msg),
+                                     "UTF-8", "ISO_8859-1",
+                                     NULL, &size_dummy, NULL)
+                        : NULL;
+  memmove (to_client + to_client_end, msg_utf8, strlen (msg_utf8));
+  tracef ("-> client: %s\n", msg_utf8);
+  to_client_end += strlen (msg_utf8);
+  g_free (msg_utf8);
+#else /* 1 */
   memmove (to_client + to_client_end, msg, strlen (msg));
   tracef ("-> client: %s\n", msg);
   to_client_end += strlen (msg);
+  g_free (msg_utf8);
+#endif /* not 1 */
   return FALSE;
 }
 
