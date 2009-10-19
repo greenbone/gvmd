@@ -1,5 +1,10 @@
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_get_status_5.c: Add FINISHED to REPORT_COUNT in
+	expected response.
+
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (cleanup): Add comment to #endif.
 
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>

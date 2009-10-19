@@ -40,7 +40,7 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
-  entity_t entity, expected, task, messages;
+  entity_t entity, expected, task, messages, report_count;
 
   setup_test ();
 
@@ -100,7 +100,8 @@ main ()
   add_entity (&messages->entities, "info", "0");
   add_entity (&messages->entities, "log", "0");
   add_entity (&messages->entities, "warning", "0");
-  add_entity (&task->entities, "report_count", "0");
+  report_count = add_entity (&task->entities, "report_count", "0");
+  add_entity (&report_count->entities, "finished", "0");
 
   if (compare_entities (entity, expected))
     {
