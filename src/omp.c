@@ -2099,6 +2099,11 @@ convert_to_newlines (const char *text)
                   ch--;
                   break;
                 }
+              default:
+                {
+                  ch--;
+                  break;
+                }
             }
         }
       ch++; left--;
