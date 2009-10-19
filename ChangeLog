@@ -1,3 +1,10 @@
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/otp.c (parse_scanner_preference_value): Only add the preference when
+	in caching mode.
+	(process_otp_scanner_input): After successfully parsing a preference, free
+	current_scanner_preference and set it NULL.
+
 2009-10-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.

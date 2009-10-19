@@ -999,7 +999,8 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      manage_nvt_preference_add (current_scanner_preference, value);
+      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+        manage_nvt_preference_add (current_scanner_preference, value);
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
@@ -1389,13 +1390,17 @@ process_otp_scanner_input ()
                 return 0;
             }
         else if (scanner_state == SCANNER_PREFERENCE_VALUE)
-          switch (parse_scanner_preference_value (&messages))
-            {
-              case -2:
-                /* Need more input. */
-                if (sync_buffer ()) return -1;
-                return 0;
-            }
+          {
+            switch (parse_scanner_preference_value (&messages))
+              {
+                case -2:
+                  /* Need more input. */
+                  if (sync_buffer ()) return -1;
+                  return 0;
+              }
+            g_free (current_scanner_preference);
+            current_scanner_preference = NULL;
+          }
         else if (scanner_state == SCANNER_RULE)
           while (1)
             {
@@ -2139,6 +2144,8 @@ process_otp_scanner_input ()
                           if (sync_buffer ()) return -1;
                           return 0;
                       }
+                    g_free (current_scanner_preference);
+                    current_scanner_preference = NULL;
                   }
                   break;
                 }
