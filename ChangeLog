@@ -1,3 +1,14 @@
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (report_counts): Swap infos and warnings.
+	(task_infos_size): Count Notes instead of Warnings.
+	(task_notes_size): Remove.
+	(task_warnings_size): New function.
+	* src/manage.h: Update header.
+
+	* src/omp.c (omp_xml_handle_end_element): Call task_warnings_size instead
+	of task_notes_size.
+
 2009-10-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/omp.c (convert_to_newlines): Handle backslashes not followed by

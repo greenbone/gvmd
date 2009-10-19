@@ -2509,9 +2509,9 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 {
   REPORT_COUNT (debugs,   "Debug Message");
   REPORT_COUNT (holes,    "Security Hole");
-  REPORT_COUNT (infos,    "Security Warning");
+  REPORT_COUNT (infos,    "Security Note");
   REPORT_COUNT (logs,     "Log Message");
-  REPORT_COUNT (warnings, "Security Note");
+  REPORT_COUNT (warnings, "Security Warning");
   return 0;
 }
 
@@ -2660,7 +2660,7 @@ task_infos_size (task_t task)
 {
   return sql_int (0, 0,
                   "SELECT count(*) FROM results"
-                  " WHERE task = %llu AND results.type = 'Security Warning';",
+                  " WHERE task = %llu AND results.type = 'Security Notes';",
                   task);
 }
 
@@ -2688,11 +2688,11 @@ task_logs_size (task_t task)
  * @return Number of note messages.
  */
 int
-task_notes_size (task_t task)
+task_warnings_size (task_t task)
 {
   return sql_int (0, 0,
                   "SELECT count(*) FROM results"
-                  " WHERE task = %llu AND results.type = 'Security Note';",
+                  " WHERE task = %llu AND results.type = 'Security Warning';",
                   task);
 }
 

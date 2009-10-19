@@ -270,7 +270,7 @@ int
 task_logs_size (task_t);
 
 int
-task_notes_size (task_t);
+task_warnings_size (task_t);
 
 void
 free_tasks ();
