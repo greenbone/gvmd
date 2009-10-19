@@ -1,5 +1,9 @@
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd.c (cleanup): Add comment to #endif.
+
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (manage_nvt_preference_add): Make args const.
 	* src/manage.h: Update header.
 

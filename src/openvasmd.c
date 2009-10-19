@@ -453,7 +453,7 @@ cleanup ()
                     __FUNCTION__,
                     strerror (errno));
     }
-#endif
+#endif /* LOG */
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
   /* Delete pidfile if this process is the parent. */
