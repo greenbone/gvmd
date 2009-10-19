@@ -1,5 +1,9 @@
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_start_task_0.c: Also expect REPORT_ID in response.
+
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_get_status_5.c: Add FINISHED to REPORT_COUNT in
 	expected response.
 

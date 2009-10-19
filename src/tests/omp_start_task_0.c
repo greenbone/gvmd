@@ -71,13 +71,19 @@ main ()
 
   /* Compare response to expected response. */
 
-  entity_t expected = add_entity (NULL, "start_task_response", NULL);
-  add_attribute (expected, "status", "202");
-  add_attribute (expected, "status_text", "OK, request submitted");
-
-  if (compare_entities (entity, expected))
+  if (strcmp (entity_name (entity), "start_task_response")
+      || (entity_attribute (entity, "status") == NULL)
+      || strcmp (entity_attribute (entity, "status"), "202")
+      || (entity_attribute (entity, "status_text") == NULL)
+      || strcmp (entity_attribute (entity, "status_text"),
+                 "OK, request submitted")
+      || (entity_child (entity, "report_id") == NULL)
+#if 0
+      /** @todo Add is_uuid to common.c. */
+      || is_uuid (entity_text (entity_child (entity, "report_id"))) == 0
+#endif
+      )
     {
-      free_entity (expected);
       free_entity (entity);
  delete_fail:
       omp_delete_task (&session, id);
@@ -87,7 +93,6 @@ main ()
       return EXIT_FAILURE;
     }
 
-  free_entity (expected);
   free_entity (entity);
   omp_delete_task (&session, id);
   free (id);
