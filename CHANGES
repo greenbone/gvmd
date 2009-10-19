@@ -1,3 +1,22 @@
+openvas-manager 0.9.1 (2009-10-19)
+
+This is the seventh development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Tim Brown, Matthew Mundell, Felix Wolfsteller, Jan-Oliver Wagner and Michael
+Wiegand.
+
+Main changes since 0.9.0:
+
+* NVT preferences are now cached in the database.
+* Support for storing and sending files has been added.
+* Parsing of the NVT category has been fixed.
+* Premature pidfile deletion has been fixed.
+* The START_TASK response now contains the id of the report for this scan.
+* Many more fixes and improvements.
+
+
 openvas-manager 0.9.0 (2009-09-30)
 
 This is the sixth development release of the openvas-manager module
