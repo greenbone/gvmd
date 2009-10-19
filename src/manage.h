@@ -652,7 +652,7 @@ nvt_selector_nvt_count (const char*, const char*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (char*, char*);
+manage_nvt_preference_add (const char*, const char*);
 
 void
 manage_nvt_preferences_enable ();

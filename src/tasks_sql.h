@@ -4680,7 +4680,7 @@ nvt_selector_nvt_count (const char* selector, const char* config)
  * @param[in]  value  The value of the preference.
  */
 void
-manage_nvt_preference_add (char* name, char* value)
+manage_nvt_preference_add (const char* name, const char* value)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_value = sql_quote (value);

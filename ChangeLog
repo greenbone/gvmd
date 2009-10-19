@@ -1,5 +1,10 @@
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (manage_nvt_preference_add): Make args const.
+	* src/manage.h: Update header.
+
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/otp.c (parse_scanner_preference_value): Only add the preference when
 	in caching mode.
 	(process_otp_scanner_input): After successfully parsing a preference, free
