@@ -1,3 +1,9 @@
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (result_type_threat): New function.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT change the XML report
+	TYPE to THREAT.
+
 2009-10-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (send_to_client): Temporarily add conversion of msg from

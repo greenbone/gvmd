@@ -89,6 +89,24 @@ category_name (int category)
   return categories[ACT_UNKNOWN];
 }
 
+/** @brief Return the threat associated with a result type.
+ *
+ * @param  type  Result type.
+ *
+ * @return Threat name.
+ */
+static const char*
+result_type_threat (const char* type)
+{
+  if (strcasecmp (type, "Security Hole") == 0)
+    return "High";
+  if (strcasecmp (type, "Security Warning") == 0)
+    return "Medium";
+  if (strcasecmp (type, "Security Note") == 0)
+    return "Low";
+  return "Log";
+}
+
 
 /* Help message. */
 
@@ -2945,14 +2963,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              "<host>%s</host>"
                                              "<port>%s</port>"
                                              "<nvt>%s</nvt>"
-                                             "<type>%s</type>"
+                                             "<threat>%s</threat>"
                                              "<description>%s</description>"
                                              "</result>",
                                              result_iterator_subnet (&results),
                                              result_iterator_host (&results),
                                              result_iterator_port (&results),
                                              result_iterator_nvt (&results),
-                                             result_iterator_type (&results),
+                                             result_type_threat
+                                              (result_iterator_type (&results)),
                                              descr ? nl_descr : "");
                     if (descr) g_free (nl_descr);
                   }
