@@ -1,5 +1,10 @@
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_get_preferences_0.c: Expect success always, now that the
+	manager only loads if the preferences are cached.
+
+2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_start_task_0.c: Also expect REPORT_ID in response.
 
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
