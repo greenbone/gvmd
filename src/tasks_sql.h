@@ -393,9 +393,9 @@ manage_db_supported_version ()
 }
 
 /**
- * @brief Return the database version supported by this manager.
+ * @brief Return the database version of the actual database.
  *
- * @return Database version supported by this manager if found, else -1.
+ * @return Database version read from database if possible, else -1.
  */
 int
 manage_db_version ()
@@ -414,6 +414,20 @@ manage_db_version ()
 }
 
 /**
+ * @brief Set the database version of the actual database.
+ *
+ * @param  version  New version number.
+ */
+static void
+set_db_version (int version)
+{
+  assert (version >= DATABASE_VERSION);
+  sql ("INSERT OR REPLACE INTO meta (name, value)"
+       " VALUES ('database_version', '%i');",
+       version);
+}
+
+/**
  * @brief A migrator.
  */
 typedef struct
@@ -422,7 +436,6 @@ typedef struct
   int (*function) ();  ///< Function that does the migration.  NULL if too hard.
 } migrator_t;
 
-#if 0
 /**
  * @brief Migrate the database from version 0 to version 1.
  *
@@ -432,21 +445,53 @@ int
 migrate_0_to_1 ()
 {
   /* Ensure that the database is currently version 0. */
+
   if (manage_db_version () != 0) return -1;
 
   /* Update the database. */
 
+  /* In SVN the database version flag changed from 0 to 1 on 2009-09-30,
+   * while the database changed to the version 1 schema on 2009-08-29.  This
+   * means the database could be flagged as version 0 while it has a version
+   * 1 schema.  In this case the ADD COLUMN below would fail.  A work around
+   * would be simply to update the version number in the database by hand. */
+
+  sql ("ALTER TABLE reports ADD COLUMN scan_run_status INTEGER;");
+
+  /* SQLite 3.1.3 and earlier require a VACUUM before they can read
+   * from the new column.  However, vacuuming might change the ROWIDs,
+   * which would screw up the data.  Debian 5.0 (Lenny) is 3.5.9-6
+   * already. */
+
+  sql ("UPDATE reports SET scan_run_status = '%u';",
+       TASK_STATUS_INTERNAL_ERROR);
+
+  sql ("UPDATE reports SET scan_run_status = '%u'"
+       " WHERE start_time IS NULL OR end_time IS NULL;",
+       TASK_STATUS_STOPPED);
+
+  sql ("UPDATE reports SET scan_run_status = '%u'"
+       " WHERE end_time IS NOT NULL;",
+       TASK_STATUS_DONE);
+
+  /* Set the database version to 1. */
+
+  set_db_version (1);
+
   return 0;
 }
-#endif
 
 /**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
  = {{0, NULL},
-#if 0
     {1, migrate_0_to_1},
+#if 0
+    {2, migrate_1_to_2},
+    {3, migrate_2_to_3},
+    {4, migrate_3_to_4},
+    {5, migrate_4_to_5},
 #endif
     /* End marker. */
     {-1, NULL}};
@@ -989,8 +1034,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the version is set. */
 
-  sql ("INSERT OR REPLACE INTO meta (name, value)"
-       " VALUES ('database_version', '" G_STRINGIFY (DATABASE_VERSION) "');");
+  set_db_version (DATABASE_VERSION);
 
   /* Ensure the special "om" user exists. */
 

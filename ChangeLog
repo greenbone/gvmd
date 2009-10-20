@@ -1,5 +1,18 @@
 2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 0 to 1.
+
+	* src/tasks_sql.h (manage_db_version): Correct doc.
+	(set_db_version): New function.
+	(migrate_0_to_1): Enable, and add implementation.
+	(database_migrators): Enable 0 to 1 migration.
+	(init_manage): Use set_db_version.
+
+	* ChangeLog: Add actual versions at DATABASE_VERSION changes.  Replace
+	indent spaces with tabs.
+
+2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: Bring docs up to date.  Remove docs from DEF_ACCESS
 	invocations so that they're all the same.
 
@@ -143,7 +156,7 @@
 	(process_otp_scanner_input): In SCANNER_PLUGIN_LIST_CATEGORY set the
 	category number according to the OTP field.
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increment, due to nvts category
+	* src/tasks_sql.h (DATABASE_VERSION): Increment to 2, due to nvts category
 	column type specification.
 	(init_manage): Specify type for category column in table nvts.
 	(make_nvt_from_nvti): Insert category as int.
@@ -370,7 +383,8 @@
 
 2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increase, for row added 2009-08-28.
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 1, for row added
+	2009-08-28.
 
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
 
@@ -1090,7 +1104,7 @@
 
 	Add a database version check.
 
-	* src/tasks_sql.h (DATABASE_VERSION): New define.
+	* src/tasks_sql.h (DATABASE_VERSION): New define.  Version 0.
 	(init_manage): Check database version.  Ensure version is set.
 
 	* src/omp.c (init_omp): Add version return to doc.
@@ -1174,17 +1188,17 @@
 
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
-    * src/tasks_sql.h (init_manage): Ensure that the predefined database
+	* src/tasks_sql.h (init_manage): Ensure that the predefined database
 	entries always exists.
 
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
-    * src/tasks_sql.h (scan_start_time, scan_end_time): Return an empty string
+	* src/tasks_sql.h (scan_start_time, scan_end_time): Return an empty string
 	if the field is NULL, so that the resulting XML entity is empty.
 
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
 
-    * src/omp.c: Always free the returns from scan_start_time and
+	* src/omp.c: Always free the returns from scan_start_time and
 	scan_end_time.
 
 2009-08-26  Matthew Mundell <matthew.mundell@intevation.de>
