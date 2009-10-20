@@ -1,3 +1,8 @@
+2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h: Bring docs up to date.  Remove docs from DEF_ACCESS
+	invocations so that they're all the same.
+
 2009-10-19  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_preferences_0.c: Expect success always, now that the

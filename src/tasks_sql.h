@@ -196,11 +196,11 @@ sql (char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query.
  *
- * @param  col          Column.
- * @param  row          Row.
- * @param  sql          Format string for SQL query.
- * @param  args         Arguments for format string.
- * @param  stmt_return  Return from statement.
+ * @param[in]   col          Column.
+ * @param[in]   row          Row.
+ * @param[in]   sql          Format string for SQL query.
+ * @param[in]   args         Arguments for format string.
+ * @param[out]  stmt_return  Return from statement.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
@@ -317,9 +317,11 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query, as an int64.
  *
- * @param  ret    Return value.
- * @param  sql    Format string for SQL query.
- * @param  args   Arguments for format string.
+ * @param[in]  ret    Return value.
+ * @param[in]  col    Column.
+ * @param[in]  row    Row.
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
@@ -369,8 +371,6 @@ backup_db ()
 
 /**
  * @brief Restore the database from a file.
- *
- * @param Name of backup file.
  *
  * @return 0 success, -1 fail.
  */
@@ -1787,7 +1787,7 @@ next (iterator_t* iterator)
  *
  * @param[in]  task         The task associated with the result.
  * @param[in]  subnet       Subnet.
- * @param[in]  subnet       Host.
+ * @param[in]  host         Host.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  type         Type of result.  "Security Hole", etc.
@@ -2058,10 +2058,10 @@ init_report_iterator (iterator_t* iterator, task_t task)
 }
 
 /**
- * @brief Read the next task from an iterator.
+ * @brief Read the next report from an iterator.
  *
  * @param[in]   iterator  Task iterator.
- * @param[out]  task      Task.
+ * @param[out]  report    Report.
  *
  * @return TRUE if there was a next task, else FALSE.
  */
@@ -2449,7 +2449,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
  * @brief Return the run status of the scan associated with a report.
  *
  * @param[in]   report  Report.
- * @param[out]  state   Scan run status.
+ * @param[out]  status  Scan run status.
  *
  * @return 0 on success, -1 on error.
  */
@@ -2520,7 +2520,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 /**
  * @brief Delete a report.
  *
- * @param[in]  report_id  ID of report.
+ * @param[in]  report  Report.
  *
  * @return 0 success, 1 report is hidden.
  */
@@ -2539,7 +2539,7 @@ delete_report (report_t report)
 /**
  * @brief Set a report parameter.
  *
- * @param[in]  report_id  The ID of the report.
+ * @param[in]  report     The report.
  * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
  * @param[in]  value      The value of the parameter.
  *
@@ -2601,10 +2601,11 @@ task_finished_report_count (task_t task)
 }
 
 /**
- * @brief Set the attack state of a task.
+ * @brief Set the attack state of a scan (given by a report).
  *
- * @param[in]  task   Task.
- * @param[in]  state  New state.
+ * @param[in]  report  Report.
+ * @param[in]  host    Host to which the state refers.
+ * @param[in]  state   New state.
  */
 void
 set_scan_attack_state (report_t report, const char* host, const char* state)
@@ -3347,8 +3348,9 @@ task_file_iterator_length (iterator_t* iterator)
 /**
  * @brief Create a target.
  *
- * @param[in]  name   Name of target.
- * @param[in]  hosts  Host list of target.
+ * @param[in]  name     Name of target.
+ * @param[in]  hosts    Host list of target.
+ * @param[in]  comment  Comment on target.
  *
  * @return 0 success, 1 target exists already.
  */
@@ -3467,15 +3469,7 @@ init_target_iterator (iterator_t* iterator)
   init_table_iterator (iterator, "targets");
 }
 
-/**
- * @brief Get the name of a target from an target_iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the target or NULL if iteration is complete.
- */
 DEF_ACCESS (target_iterator_name, 0);
-
 DEF_ACCESS (target_iterator_hosts, 1);
 
 const char*
@@ -4385,15 +4379,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
     }
 }
 
-/**
- * @brief Get the NVT or family from an NVT selector iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return NVT selector, or NULL if iteration is complete.
- */
 DEF_ACCESS (nvt_iterator_oid, 0);
-
 DEF_ACCESS (nvt_iterator_version, 1);
 DEF_ACCESS (nvt_iterator_name, 2);
 DEF_ACCESS (nvt_iterator_summary, 3);
@@ -4692,10 +4678,7 @@ manage_nvt_preference_add (const char* name, const char* value)
 }
 
 /**
- * @brief Add an NVT preference.
- *
- * @param[in]  name   The name of the preference.
- * @param[in]  value  The value of the preference.
+ * @brief Enable the NVT preferences.
  */
 void
 manage_nvt_preferences_enable ()
