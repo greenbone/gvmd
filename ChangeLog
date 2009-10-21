@@ -1,3 +1,7 @@
+2009-10-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/openvasmd.c (cleanup, main): Factored out pidfile management.
+
 2009-10-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add database migration from version 1 to 2.

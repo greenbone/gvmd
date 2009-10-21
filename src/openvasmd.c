@@ -103,6 +103,7 @@
 
 #include <openvas_logging.h>
 #include <openvas_server.h>
+#include <openvas/base/pidfile.h>
 
 #include "logf.h"
 #include "manage.h"
@@ -456,13 +457,9 @@ cleanup ()
 #endif /* LOG */
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
+
   /* Delete pidfile if this process is the parent. */
-  if (is_parent == 1)
-    {
-      gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
-      g_unlink (pidfile_name);
-      g_free (pidfile_name);
-    }
+  if (is_parent == 1) pidfile_remove("openvasmd");
 }
 
 /**
@@ -989,22 +986,7 @@ main (int argc, char** argv)
     }
 
   /* Set our pidfile. */
-
-  gchar *pidfile_name = g_strdup (OPENVAS_PID_DIR "/openvasmd.pid");
-  FILE *pidfile = g_fopen (pidfile_name, "w");
-  if (pidfile == NULL)
-    {
-      g_critical ("%s: failed to open pidfile: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-  else
-    {
-      g_fprintf (pidfile, "%d\n", getpid());
-      fclose (pidfile);
-      g_free (pidfile_name);
-    }
+  if (pidfile_create("openvasmd")) exit (EXIT_FAILURE);
 
   /* Loop waiting for connections and passing the work to
    * `accept_and_maybe_fork'.
