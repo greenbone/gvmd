@@ -68,7 +68,7 @@ exec_program (libopenvas-config
 add_library (ovas-mngr-comm ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
-add_library (manage manage.c)
+add_library (manage manage.c lsc_user.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 add_library (omp omp.c)

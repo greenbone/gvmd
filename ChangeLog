@@ -1,3 +1,33 @@
+2009-10-22  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add generation of LSC user keys and packages (RPM and Debian).  Extend OMP
+	GET_LSC_CREDENTIALS for retrieving packages.
+
+	* src/lsc_user.c, src/lsc_user.h: New files.  Key and package generation.
+
+	* src/CMakeLists.txt (manage): Add lsc_user.c.
+
+	* src/openvasmd.c (main): Enable SIGCHLD.  Neaten some formatting.
+	(serve_client): Goto fail case if read_protocol failed completely.
+	(cleanup): Neaten some formatting.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 3 for changes to
+	lsc_credentials table.
+	(init_manage): Add password column to table lsc_credentials, rename column
+	dog to exe, make the package columns of type text.
+	(clude): Change sqlite3_bind_text free function to SQLITE_TRANSIENT.
+	(create_lsc_credential): Create keys and packages.
+	(init_lsc_credential_iterator): New function.
+	(lsc_credential_iterator_password, lsc_credential_iterator_public_key)
+	(lsc_credential_iterator_private_key, lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): New functions.
+	(lsc_credential_iterator_comment): Update column number.
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_start_element, omp_xml_handle_end_element):
+	Add name and format flags to GET_LSC_CREDENTIALS.
+
 2009-10-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (cleanup, main): Factored out pidfile management.

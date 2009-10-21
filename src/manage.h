@@ -676,13 +676,28 @@ int
 delete_lsc_credential (const char*);
 
 void
-init_lsc_credential_iterator (iterator_t*);
+init_lsc_credential_iterator (iterator_t*, const char*);
 
 const char*
 lsc_credential_iterator_name (iterator_t*);
 
 const char*
 lsc_credential_iterator_comment (iterator_t*);
+
+const char*
+lsc_credential_iterator_public_key (iterator_t*);
+
+const char*
+lsc_credential_iterator_private_key (iterator_t*);
+
+const char*
+lsc_credential_iterator_rpm (iterator_t*);
+
+const char*
+lsc_credential_iterator_deb (iterator_t*);
+
+const char*
+lsc_credential_iterator_exe (iterator_t*);
 
 
 /* Scanner messaging. */

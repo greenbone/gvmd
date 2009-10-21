@@ -888,7 +888,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
-          set_client_state (CLIENT_GET_LSC_CREDENTIALS);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "format", &attribute))
+              openvas_append_string (&current_format, attribute);
+            set_client_state (CLIENT_GET_LSC_CREDENTIALS);
+          }
         else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
@@ -4067,20 +4076,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_LSC_CREDENTIAL name must both be at"
                                   " least one character long"));
             }
-          else if (create_lsc_credential (modify_task_name,
-                                          modify_task_comment))
+          else switch (create_lsc_credential (modify_task_name,
+                                              modify_task_comment))
             {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "LSC Credential exists already"));
-            }
-          else
-            {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
+              case 0:
+                openvas_free_string_var (&modify_task_comment);
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
+                break;
+              case 1:
+                openvas_free_string_var (&modify_task_comment);
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                    "LSC Credential exists already"));
+                break;
+              default:
+                assert (0);
+              case -1:
+                openvas_free_string_var (&modify_task_comment);
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_lsc_credential"));
+                break;
             }
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -5133,22 +5151,103 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_LSC_CREDENTIALS:
         {
           iterator_t targets;
+          int format;
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          init_lsc_credential_iterator (&targets);
-          while (next (&targets))
-            SENDF_TO_CLIENT_OR_FAIL ("<lsc_credential>"
-                                     "<name>%s</name>"
-                                     "<comment>%s</comment>"
-                                     "</lsc_credential>",
-                                     lsc_credential_iterator_name (&targets),
-                                     lsc_credential_iterator_comment
-                                      (&targets));
-          cleanup_iterator (&targets);
-          SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
+          if (current_format)
+            {
+              if (strlen (current_format))
+                {
+                  if (strcasecmp (current_format, "key") == 0)
+                    format = 1;
+                  else if (strcasecmp (current_format, "rpm") == 0)
+                    format = 2;
+                  else if (strcasecmp (current_format, "deb") == 0)
+                    format = 3;
+                  else if (strcasecmp (current_format, "exe") == 0)
+                    format = 4;
+                  else
+                    format = -1;
+                }
+              else
+                format = 0;
+              openvas_free_string_var (&current_format);
+            }
+          else
+            format = 0;
+          if (format == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_lsc_credentials",
+                                "GET_LSC_CREDENTIALS format attribute should"
+                                " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_lsc_credential_iterator (&targets, current_uuid);
+              while (next (&targets))
+                {
+                  switch (format)
+                    {
+                      case 1: /* key */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<lsc_credential>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<public_key>%s</public_key>"
+                          "</lsc_credential>",
+                          lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_public_key (&targets));
+                        break;
+                      case 2: /* rpm */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<lsc_credential>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"rpm\">%s</package>"
+                          "</lsc_credential>",
+                          lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_rpm (&targets));
+                        break;
+                      case 3: /* deb */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<lsc_credential>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"deb\">%s</package>"
+                          "</lsc_credential>",
+                          lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_deb (&targets));
+                        break;
+                      case 4: /* exe */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<lsc_credential>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"exe\">%s</package>"
+                          "</lsc_credential>",
+                          lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_exe (&targets));
+                        break;
+                      default:
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<lsc_credential>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "</lsc_credential>",
+                          lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_comment (&targets));
+                        break;
+                    }
+                }
+              cleanup_iterator (&targets);
+              SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
+            }
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

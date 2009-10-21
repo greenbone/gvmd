@@ -325,6 +325,7 @@ serve_client (int client_socket)
         break;
       default:
         g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
+        goto fail;
     }
 
   openvas_server_free (scanner_socket,
@@ -459,7 +460,7 @@ cleanup ()
   if (log_config) free_log_configuration (log_config);
 
   /* Delete pidfile if this process is the parent. */
-  if (is_parent == 1) pidfile_remove("openvasmd");
+  if (is_parent == 1) pidfile_remove ("openvasmd");
 }
 
 /**
@@ -882,7 +883,13 @@ main (int argc, char** argv)
   if (signal (SIGTERM, handle_sigterm) == SIG_ERR  /* RATS: ignore */
       || signal (SIGINT, handle_sigint) == SIG_ERR /* RATS: ignore */
       || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)     /* RATS: ignore */
+#if 0
+      /**
+       * @todo lsc_user_all_create needs this signal to get child return
+       *       statuses. */
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR     /* RATS: ignore */
+#endif
+      )
     {
       g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
       exit (EXIT_FAILURE);
@@ -986,7 +993,8 @@ main (int argc, char** argv)
     }
 
   /* Set our pidfile. */
-  if (pidfile_create("openvasmd")) exit (EXIT_FAILURE);
+
+  if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
   /* Loop waiting for connections and passing the work to
    * `accept_and_maybe_fork'.
