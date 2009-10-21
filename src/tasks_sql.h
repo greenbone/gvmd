@@ -454,7 +454,8 @@ migrate_0_to_1 ()
    * while the database changed to the version 1 schema on 2009-08-29.  This
    * means the database could be flagged as version 0 while it has a version
    * 1 schema.  In this case the ADD COLUMN below would fail.  A work around
-   * would be simply to update the version number in the database by hand. */
+   * would be simply to update the version number to 1 in the database by
+   * hand. */
 
   sql ("ALTER TABLE reports ADD COLUMN scan_run_status INTEGER;");
 
@@ -482,13 +483,63 @@ migrate_0_to_1 ()
 }
 
 /**
+ * @brief Migrate the database from version 1 to version 2.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_1_to_2 ()
+{
+  iterator_t nvts;
+
+  /* Ensure that the database is currently version 1. */
+
+  if (manage_db_version () != 1) return -1;
+
+  /* Update the database. */
+
+  /* The category column in nvts changed type from string to int.  This
+   * may be a redundant conversion, as SQLite may have converted these
+   * values automatically in each query anyway. */
+
+  init_nvt_iterator (&nvts, (nvt_t) 0);
+  while (next (&nvts))
+    {
+      int category;
+      const char *category_string;
+
+      /* The category must be accessed with sqlite3_column_text because
+       * nvt_iterator_category returns an int now. */
+
+      if (nvts.done)
+        {
+          cleanup_iterator (&nvts);
+          return -1;
+        }
+      category_string = (const char*) sqlite3_column_text (nvts.stmt, 11);
+
+      category = atoi (category_string);
+      sql ("UPDATE nvts SET category = %i WHERE category = '%s';",
+           category,
+           category_string);
+    }
+  cleanup_iterator (&nvts);
+
+  /* Set the database version to 2. */
+
+  set_db_version (2);
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
  = {{0, NULL},
     {1, migrate_0_to_1},
-#if 0
     {2, migrate_1_to_2},
+#if 0
     {3, migrate_2_to_3},
     {4, migrate_3_to_4},
     {5, migrate_4_to_5},
@@ -969,6 +1020,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   database_version = sql_string (0, 0,
                                  "SELECT value FROM meta"
                                  " WHERE name = 'database_version';");
+  /** @todo Free database_version. */
   if (nvt_cache_mode)
     {
       if (database_version
@@ -1005,7 +1057,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
         /* Assume database is missing. */
         return -3;
 
-      /* Check that the database was initialised from the scanner. */
+      /* Check that the database was initialised from the scanner.
+       *
+       * This can also fail after a migration, for example if the database
+       * was created before NVT preferences were cached in the database.
+       */
 
       long long int count;
       if (sql_int64 (&count, 0, 0,

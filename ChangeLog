@@ -1,4 +1,13 @@
-2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add database migration from version 1 to 2.
+
+	* src/tasks_sql.h (manage_0_to_1): Clarify note slightly.
+	(migrate_1_to_2): New function.
+	(database_migrators): Enable 1 to 2 migration.
+	(init_manage): Note that db may still need an update after migration.
+
+2009-10-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Init current_credentials.
 
