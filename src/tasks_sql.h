@@ -959,6 +959,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                      (GLogFunc) openvas_log_func,
                      log_config);
 
+  current_credentials.username = NULL;
+  current_credentials.password = NULL;
+
   init_manage_process (0, database);
 
   /* Check that the version of the database is correct. */

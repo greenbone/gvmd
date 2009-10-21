@@ -1,5 +1,9 @@
 2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Init current_credentials.
+
+2009-10-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 0 to 1.
 
 	* src/tasks_sql.h (manage_db_version): Correct doc.
@@ -383,7 +387,7 @@
 
 2009-09-30  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increase to 1, for row added
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 1, for column added
 	2009-08-28.
 
 2009-09-28  Matthew Mundell <matthew.mundell@intevation.de>
