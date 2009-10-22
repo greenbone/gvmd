@@ -884,7 +884,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
           set_client_state (CLIENT_GET_CERTIFICATES);
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
-          set_client_state (CLIENT_GET_CONFIGS);
+          {
+            const gchar* attribute;
+            assert (current_name == NULL);
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "families", &attribute))
+              current_int_1 = atoi (attribute);
+            else
+              current_int_1 = 0;
+            set_client_state (CLIENT_GET_CONFIGS);
+          }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
           set_client_state (CLIENT_GET_DEPENDENCIES);
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
@@ -5115,12 +5127,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
-          init_config_iterator (&configs);
+          init_config_iterator (&configs, current_name);
           while (next (&configs))
             {
+              int config_nvts_growing;
               const char *selector, *config_name;
+
               selector = config_iterator_nvt_selector (&configs);
               config_name = config_iterator_name (&configs);
+              config_nvts_growing = config_iterator_nvts_growing (&configs);
+
               SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                        "<name>%s</name>"
                                        "<comment>%s</comment>"
@@ -5130,8 +5146,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
                                        "</nvt_count>"
-                                       "<in_use>%i</in_use>"
-                                       "</config>",
+                                       "<in_use>%i</in_use>",
                                        config_name,
                                        config_iterator_comment (&configs),
                                        nvt_selector_family_count (selector,
@@ -5139,9 +5154,68 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_iterator_families_growing (&configs),
                                        nvt_selector_nvt_count (selector,
                                                                config_name),
-                                       config_iterator_nvts_growing (&configs),
+                                       config_nvts_growing,
                                        config_in_use (config_name));
+
+              if (current_int_1)
+                {
+                  iterator_t families;
+                  int selected_count = 0;
+
+                  /* The "families" attribute was true. */
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<families>");
+                  init_family_iterator (&families,
+                                        config_nvts_growing,
+                                        selector);
+                  while (next (&families))
+                    {
+                      int family_growing, nvt_count, family_selected_count;
+                      const char *family;
+
+                      family = family_iterator_name (&families);
+                      /* family can be NULL if the selector was created
+                       * from an RC file, as it's currently too slow to lookup
+                       * each family when inserting the selector. */
+                      if (family == NULL) continue;
+
+                      family_growing = nvt_selector_family_growing
+                                        (selector,
+                                         family,
+                                         config_nvts_growing);
+                      nvt_count = family_nvt_count (family);
+                      if (family_growing)
+                        family_selected_count = nvt_count;
+                      else
+                        family_selected_count
+                          = nvt_selector_family_selected_count
+                             (selector,
+                              family,
+                              family_growing);
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<family>"
+                        "<name>%s</name>"
+                        "<selected_count>%i</selected_count>"
+                        "<nvt_count>%i</nvt_count>"
+                        "<growing>%i</growing>"
+                        "</family>",
+                        family,
+                        family_selected_count,
+                        nvt_count,
+                        family_growing);
+                      selected_count += family_selected_count;
+                    }
+                  cleanup_iterator (&families);
+                  SENDF_TO_CLIENT_OR_FAIL ("</families>"
+                                           "<selected_count>%i</selected_count>"
+                                           "</config>",
+                                           selected_count);
+                }
+              else
+                SENDF_TO_CLIENT_OR_FAIL ("</config>");
             }
+          openvas_free_string_var (&current_name);
           cleanup_iterator (&configs);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);

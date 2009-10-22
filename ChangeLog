@@ -1,3 +1,21 @@
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Extend OMP GET_CONFIGS for retrieving a single config with a summary
+	of the selected families.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 4, for change to
+	nvt_selectors.
+	(init_manage): Add row family to nvt_selectors.
+	(init_config_iterator): Add name arg.
+	(family_nvt_count, init_family_iterator, family_iterator_name)
+	(nvt_selector_family_growing, nvt_selector_family_selected_count): New
+	functions.
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_start_element, omp_xml_handle_end_element):
+	Add name and families attributes to GET_CONFIGS.
+
 2009-10-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add generation of LSC user keys and packages (RPM and Debian).  Extend OMP

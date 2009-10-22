@@ -31,7 +31,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 3
+#define DATABASE_VERSION 4
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -1078,7 +1078,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   sql ("CREATE TABLE IF NOT EXISTS meta    (name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
-  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
   sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
   sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (task INTEGER, name, content);");
@@ -4105,11 +4105,48 @@ delete_config (const char* name)
  * @brief Initialise a config iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  name      Name of config.  NULL for all.
  */
 void
-init_config_iterator (iterator_t* iterator)
+init_config_iterator (iterator_t* iterator, const char *name)
 {
-  init_table_iterator (iterator, "configs");
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (name)
+    {
+      gchar *quoted_name = sql_quote (name);
+      formatted = g_strdup_printf ("SELECT * FROM configs WHERE name = '%s';",
+                                   quoted_name);
+      g_free (quoted_name);
+    }
+  else
+    formatted = g_strdup ("SELECT * FROM configs;");
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
 }
 
 DEF_ACCESS (config_iterator_name, 0);
@@ -4506,6 +4543,24 @@ nvt_iterator_category (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the number of NVTs in a family.
+ *
+ * @param[in]  family  Family name.
+ *
+ * @return Number of NVTs in family.
+ */
+int
+family_nvt_count (const char *family)
+{
+  gchar *quoted_family = sql_quote (family);
+  int ret = sql_int (0, 0,
+                     "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
+                     quoted_family);
+  g_free (quoted_family);
+  return ret;
+}
+
 
 /* NVT selectors. */
 
@@ -4759,6 +4814,130 @@ nvt_selector_nvt_count (const char* selector, const char* config)
                     " WHERE name = '%s'"
                     " LIMIT 1;",
                     config);
+}
+
+/**
+ * @brief Initialise an NVT selector family iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  all       True for an "all" selector, else 0.
+ * @param[in]  selector  Name of NVT selector.
+ */
+void
+init_family_iterator (iterator_t* iterator, int all, const char* selector)
+{
+  int ret;
+  const char* tail;
+  gchar* formatted;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  if (all)
+    formatted = g_strdup_printf ("SELECT distinct family FROM nvts;");
+  else
+    {
+      gchar *quoted_selector = sql_quote (selector);
+      formatted = g_strdup_printf ("SELECT distinct family FROM nvt_selectors"
+                                   " WHERE (type = 1 OR type = 2) AND name = '%s';",
+                                   quoted_selector);
+      g_free (quoted_selector);
+    }
+
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+DEF_ACCESS (family_iterator_name, 0);
+
+/**
+ * @brief Get whether an NVT selector family is growing.
+ *
+ * @param[in]  selector  NVT selector.
+ * @param[in]  family    Family name.
+ * @param[in]  all       True if selector is an "all" selector, else 0.
+ *
+ * @return 1 growing, 0 static.
+ */
+int
+nvt_selector_family_growing (const char *selector,
+                             const char *family,
+                             int all)
+{
+  int ret;
+
+  if (all) return 1;
+
+  gchar *quoted_selector = sql_quote (selector);
+  gchar *quoted_family = sql_quote (family);
+
+  ret = sql_int (0, 0,
+                 "SELECT COUNT(*) FROM nvt_selectors"
+                 " WHERE name = '%s' AND type = 1 AND nvt_or_family = '%s'"
+                 " LIMIT 1;",
+                 quoted_selector, quoted_family);
+
+  g_free (quoted_selector);
+  g_free (quoted_family);
+
+  return ret == 0 ? 0 : 1;
+}
+
+/**
+ * @brief Get the number of NVTs selected in an NVT selector family.
+ *
+ * @param[in]  selector  NVT selector.
+ * @param[in]  family    Family name.
+ * @param[in]  growing   True if the family is growing, else 0.
+ *
+ * @return Number of NVTs selected in family.
+ */
+int
+nvt_selector_family_selected_count (const char *selector,
+                                    const char *family,
+                                    int growing)
+{
+  int ret;
+
+  gchar *quoted_family = sql_quote (family);
+
+  if (growing)
+    ret = sql_int (0, 0,
+                   "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
+                   quoted_family);
+  else
+    {
+      gchar *quoted_selector = sql_quote (selector);
+      ret = sql_int (0, 0,
+                     "SELECT COUNT(*) FROM nvt_selectors"
+                     " WHERE name = '%s' AND type = 2 AND family = '%s';",
+                     quoted_selector,
+                     quoted_family);
+      g_free (quoted_selector);
+    }
+
+  g_free (quoted_family);
+
+  return ret;
 }
 
 

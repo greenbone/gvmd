@@ -170,7 +170,7 @@ typedef struct
   sqlite3_stmt* stmt;
   gboolean done;
 } iterator_t;
-#endif
+#endif /* TASKS_SQL */
 
 
 /* Task global variables. */
@@ -550,7 +550,7 @@ int
 delete_config (const char*);
 
 void
-init_config_iterator (iterator_t*);
+init_config_iterator (iterator_t*, const char*);
 
 const char*
 config_iterator_name (iterator_t*);
@@ -633,6 +633,9 @@ nvt_iterator_category (iterator_t*);
 const char*
 nvt_iterator_family (iterator_t*);
 
+int
+family_nvt_count (const char *);
+
 
 /* NVT selectors. */
 
@@ -647,6 +650,18 @@ nvt_selector_family_count (const char*, const char*);
 
 int
 nvt_selector_nvt_count (const char*, const char*);
+
+void
+init_family_iterator (iterator_t*, int, const char*);
+
+const char*
+family_iterator_name (iterator_t*);
+
+int
+nvt_selector_family_growing (const char *, const char *, int);
+
+int
+nvt_selector_family_selected_count (const char *, const char *, int);
 
 
 /* NVT preferences. */
