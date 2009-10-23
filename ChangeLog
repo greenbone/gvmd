@@ -1,3 +1,8 @@
+2009-10-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/omp.c (print_report_latex): Better avoidance of
+	overlong pages.
+
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Cleanup LSC package generation a bit.

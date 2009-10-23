@@ -2437,8 +2437,7 @@ print_report_latex (report_t report, gchar* latex_file)
                        "\\subsubsection{%s}\n"
                        "\\label{port:%s %s}\n\n"
                        "\\begin{tabular}{l}\n"
-                       "\\begin{tabularx}{\\textwidth * 1}{|X|}\n"
-                       "\\hline\n",
+                       "\\begin{tabularx}{\\textwidth * 1}{|X|}\n",
                        result_iterator_port (&results),
                        host_iterator_host (&hosts),
                        result_iterator_port (&results));
@@ -2447,11 +2446,17 @@ print_report_latex (report_t report, gchar* latex_file)
             last_port = g_strdup (result_iterator_port (&results));
           severity = result_iterator_type (&results);
           fprintf (out,
+                   "\\hline\n"
                    "\\rowcolor%s%s\\\\\n"
                    "\\hline\n"
                    "%s\\\\\n"
                    "OID of test routine: %s\\\\\n"
-                   "\\hline\n",
+                   "\\hline\n"
+                   "\\end{tabularx}\n"
+                   "\\end{tabular}\n"
+                   "\n"
+                   "\\begin{tabular}{l}\n"
+                   "\\begin{tabularx}{\\textwidth * 1}{|X|}\n",
                    latex_severity_colour (severity),
                    latex_severity_heading (severity),
                    descr,
