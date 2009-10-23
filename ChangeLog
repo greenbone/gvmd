@@ -1,5 +1,10 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/lsc_user.c: Remove alternate sections.  Add missing __FUNCTION__
+	args to g_debug's.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/lsc_user.c: Replace show_error with g_debug, remove gettext _.
 
 2009-10-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>

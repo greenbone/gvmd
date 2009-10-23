@@ -278,19 +278,6 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
     }
 
   /* Sanity check files */
-#if 0
-  if(check_exists(pubkey_file) != 1)
-    {
-      g_debug ("%s: failed to find public key %s",
-               __FUNCTION__, pubkey_file);
-      return FALSE;
-    }
-  if(check_exists(privkey_file) != 0 )
-    {
-      g_debug ("%s: file already exists", __FUNCTION__);
-      return FALSE;
-    }
-#else
   if (g_file_test (pubkey_file, G_FILE_TEST_EXISTS) == FALSE)
     {
       g_debug ("%s: failed to find public key %s",
@@ -302,23 +289,13 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
       g_debug ("%s: file already exists.", __FUNCTION__);
       return FALSE;
     }
-#endif
   dir = g_path_get_dirname(privkey_file);
-#if 0
-  if(file_utils_ensure_dir(dir) != TRUE)
-    {
-      g_debug ("%s: failed to access dir %s", __FUNCTION__, dir);
-      g_free (dir);
-      return FALSE;
-    }
-#else
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
       g_debug ("%s: failed to access dir folder %s", __FUNCTION__, dir);
       g_free (dir);
       return FALSE;
     }
-#endif
   g_free (dir);
 
   // Strip ".pub" of public key filename, if any.
@@ -391,21 +368,12 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
     }
   /* Sanity check files */
   dir = g_path_get_dirname (filepath);
-#if 0
-  if (file_utils_ensure_dir(dir) != TRUE)
-    {
-      g_debug ("%s: failed to access %s", __FUNCTION__, filepath);
-      g_free (dir);
-      return FALSE;
-    }
-#else
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
       g_debug ("%s: failed to access %s", __FUNCTION__, dir);
       g_free (dir);
       return FALSE;
     }
-#endif
   g_free (dir);
 
   // Strip ".pub" off filename, if any.
@@ -437,7 +405,7 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
           g_error_free (err);
         }
       else
-        g_debug ("%s: failed to create public key\n");
+        g_debug ("%s: failed to create public key\n", __FUNCTION__);
       g_debug ("\tSpawned key-gen process returned with %d (WIF %i, WEX %i).\n",
                exit_status, WIFEXITED (exit_status), WEXITSTATUS (exit_status));
       g_debug ("\t\t stdout: %s", astdout);
@@ -579,7 +547,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
                     NULL                 ) == FALSE
       || exit_status != 0)
     {
-      g_debug ("%s: failed to creating the rpm: %d", exit_status);
+      g_debug ("%s: failed to creating the rpm: %d", __FUNCTION__, exit_status);
       g_debug ("%s: sout: %s\n", __FUNCTION__, standard_out);
       g_debug ("%s: serr: %s\n", __FUNCTION__, standard_err);
       success =  FALSE;
