@@ -44,10 +44,7 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-// FIX Munge helpers.
-
-#define show_error g_debug
-#define _(string) string
+/* Helpers. */
 
 /** @todo Copied check_is_file and check_is_dir from administrator. */
 
@@ -184,7 +181,8 @@ file_utils_copy_file (const gchar* source_file, const gchar* dest_file)
   g_file_get_contents (source_file, &src_file_content, &src_file_size, &error);
   if (error)
     {
-      show_error (_("Error reading file %s: %s"), source_file, error->message);
+      g_debug ("%s: failed to read %s: %s",
+               __FUNCTION__, source_file, error->message);
       g_error_free (error);
       return FALSE;
     }
@@ -193,7 +191,7 @@ file_utils_copy_file (const gchar* source_file, const gchar* dest_file)
   fd = fopen (dest_file, "wb");
   if (fd == NULL)
     {
-      show_error (_("Error opening file %s."), dest_file);
+      g_debug ("%s: failed to open %s", __FUNCTION__, dest_file);
       g_free (src_file_content);
       return FALSE;
     }
@@ -204,7 +202,8 @@ file_utils_copy_file (const gchar* source_file, const gchar* dest_file)
 
   if (bytes_written != src_file_size)
     {
-      show_error (_("Error writing to file %s. (%d/%d)"), dest_file, bytes_written, src_file_size);
+      g_debug ("%s: failed to write to %s (%d/%d)",
+               __FUNCTION__, dest_file, bytes_written, src_file_size);
       g_free (src_file_content);
       return FALSE;
     }
@@ -234,7 +233,7 @@ file_utils_move_file (const gchar* source_file, const gchar* dest_file)
   // Remove source file
   if (remove (source_file) != 0)
     {
-      show_error (_("Error removing file %s."), source_file);
+      g_debug ("%s: failed to remove %s", __FUNCTION__, source_file);
       return FALSE;
     }
 
@@ -274,7 +273,7 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
   /* Sanity-check essential parameters */
   if(!passphrase_pub || !passphrase_priv)
     {
-      show_error(_("Error creating private key file:\nPlease provide all information."));
+      g_debug ("%s: parameter error", __FUNCTION__);
       return FALSE;
     }
 
@@ -282,23 +281,25 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
 #if 0
   if(check_exists(pubkey_file) != 1)
     {
-      show_error(_("Error creating private key file:\nPublic key %s not found."), pubkey_file);
+      g_debug ("%s: failed to find public key %s",
+               __FUNCTION__, pubkey_file);
       return FALSE;
     }
   if(check_exists(privkey_file) != 0 )
     {
-      show_error(_("Error creating private key file:\nFile already exists."));
+      g_debug ("%s: file already exists", __FUNCTION__);
       return FALSE;
     }
 #else
   if (g_file_test (pubkey_file, G_FILE_TEST_EXISTS) == FALSE)
     {
-      show_error(_("Error creating private key file:\nPublic key %s not found."), pubkey_file);
+      g_debug ("%s: failed to find public key %s",
+               __FUNCTION__, pubkey_file);
       return FALSE;
     }
   if (g_file_test (privkey_file, G_FILE_TEST_EXISTS))
     {
-      show_error(_("Error creating private key file:\nFile already exists."));
+      g_debug ("%s: file already exists.", __FUNCTION__);
       return FALSE;
     }
 #endif
@@ -306,14 +307,14 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
 #if 0
   if(file_utils_ensure_dir(dir) != TRUE)
     {
-      show_error(_("Error creating private key file:\nfolder %s not accessible."), dir);
+      g_debug ("%s: failed to access dir %s", __FUNCTION__, dir);
       g_free (dir);
       return FALSE;
     }
 #else
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
-      show_error(_("Error creating private key file:\nfolder %s not accessible."), dir);
+      g_debug ("%s: failed to access dir folder %s", __FUNCTION__, dir);
       g_free (dir);
       return FALSE;
     }
@@ -344,7 +345,6 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
       || WIFEXITED (exit_status) == 0
       || WEXITSTATUS (exit_status))
     {
-      show_error (_("Error creating private key file.\nFor further information consult your shell."));
       printf ("Error creating private key file.");
       printf ("\tSpawned openssl process returned with %d.\n", exit_status);
       printf ("\t\t stdout: %s\n", astdout);
@@ -380,12 +380,13 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
   /* Sanity-check essential parameters */
   if (!comment || comment[0] == '\0')
     {
-      show_error (_("Error creating public key file:\ncomment has to be set."));
+      g_debug ("%s: comment must be set", __FUNCTION__);
       return FALSE;
     }
   if (!passphrase || strlen(passphrase) < 5)
     {
-      show_error (_("Error creating public key file:\npassword must be longer than 4 characters."));
+      g_debug ("%s: password must be longer than 4 characters",
+               __FUNCTION__);
       return FALSE;
     }
   /* Sanity check files */
@@ -393,14 +394,14 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
 #if 0
   if (file_utils_ensure_dir(dir) != TRUE)
     {
-      show_error (_("Error creating public key file:\n%s is not accessable."), filepath);
+      g_debug ("%s: failed to access %s", __FUNCTION__, filepath);
       g_free (dir);
       return FALSE;
     }
 #else
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
-      show_error(_("Error creating public key file:\n %s not accessible."), dir);
+      g_debug ("%s: failed to access %s", __FUNCTION__, dir);
       g_free (dir);
       return FALSE;
     }
@@ -429,14 +430,14 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
       || WIFEXITED (exit_status) == 0
       || WEXITSTATUS (exit_status))
     {
-      show_error (_("Error creating public key file.\nFor further information consult your shell."));
       if (err)
         {
-          g_debug ("Error creating public key file: %s\n", err->message);
+          g_debug ("%s: failed to create public key: %s\n",
+                   __FUNCTION__, err->message);
           g_error_free (err);
         }
       else
-        g_debug ("Error creating public key file.\n");
+        g_debug ("%s: failed to create public key\n");
       g_debug ("\tSpawned key-gen process returned with %d (WIF %i, WEX %i).\n",
                exit_status, WIFEXITED (exit_status), WEXITSTATUS (exit_status));
       g_debug ("\t\t stdout: %s", astdout);
@@ -542,8 +543,10 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
   if (file_utils_copy_file (loginfo->public_key_path, new_pubkey_filename) == FALSE)
     {
-      show_error ("Could not copy key file %s to %s.",
-                  loginfo->public_key_path, new_pubkey_filename);
+      g_debug ("%s: failed to copy key file %s to %s",
+               __FUNCTION__,
+               loginfo->public_key_path,
+               new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -576,8 +579,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
                     NULL                 ) == FALSE
       || exit_status != 0)
     {
-      show_error(_("Error (%d) creating the rpm.\n"
-                   "For further information consult your shell."), exit_status);
+      g_debug ("%s: failed to creating the rpm: %d", exit_status);
       g_debug ("%s: sout: %s\n", __FUNCTION__, standard_out);
       g_debug ("%s: serr: %s\n", __FUNCTION__, standard_err);
       success =  FALSE;
@@ -609,8 +611,8 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   if (file_utils_move_file (rpm_path, to_filename) == FALSE
       && success == TRUE)
     {
-      show_error (_("RPM- File %s couldn't be moved to %s.\nFile will be deleted."),
-                  rpm_path, to_filename);
+      g_debug ("%s: failed to move RPM %s to %s",
+               __FUNCTION__, rpm_path, to_filename);
       success = FALSE;
     }
 
@@ -619,9 +621,9 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   if (file_utils_rmdir_rf (tmpdir) != 0
       && success == TRUE)
     {
-      show_error (_("Temporary directory (%s) which contains private"
-                    "information could not be deleted."),
-                  tmpdir);
+      g_debug ("%s: failed to remove temporary directory %s",
+               __FUNCTION__,
+               tmpdir);
       success = FALSE;
     }
 
