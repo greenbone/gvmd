@@ -1,5 +1,12 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Make return int.
+	(ssh_key_create): Remove.
+	(lsc_user_all_create): Call key create functions directly.  Access paths
+	with variables.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/lsc_user.c: Remove alternate sections.  Add missing __FUNCTION__
 	args to g_debug's.
 

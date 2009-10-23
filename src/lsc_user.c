@@ -257,9 +257,9 @@ file_utils_move_file (const gchar* source_file, const gchar* dest_file)
  * @param passphrase_pub The passphrase for the public key.
  * @param passphrase_priv Passhprase for the private key.
  *
- * @return TRUE if successfull, FALSE otherwise.
+ * @return 0 if successful, -1 otherwise.
  */
-static gboolean
+static int
 ssh_privkey_create (char* pubkey_file, char* privkey_file,
                     char* passphrase_pub, char* passphrase_priv)
 {
@@ -274,7 +274,7 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
   if(!passphrase_pub || !passphrase_priv)
     {
       g_debug ("%s: parameter error", __FUNCTION__);
-      return FALSE;
+      return -1;
     }
 
   /* Sanity check files */
@@ -282,19 +282,19 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
     {
       g_debug ("%s: failed to find public key %s",
                __FUNCTION__, pubkey_file);
-      return FALSE;
+      return -1;
     }
   if (g_file_test (privkey_file, G_FILE_TEST_EXISTS))
     {
       g_debug ("%s: file already exists.", __FUNCTION__);
-      return FALSE;
+      return -1;
     }
   dir = g_path_get_dirname(privkey_file);
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
     {
       g_debug ("%s: failed to access dir folder %s", __FUNCTION__, dir);
       g_free (dir);
-      return FALSE;
+      return -1;
     }
   g_free (dir);
 
@@ -326,10 +326,10 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
       printf ("\tSpawned openssl process returned with %d.\n", exit_status);
       printf ("\t\t stdout: %s\n", astdout);
       printf ("\t\t stderr: %s\n", astderr);
-      return FALSE;
+      return -1;
     }
 
-  return TRUE;
+  return 0;
 }
 
 /**
@@ -342,9 +342,9 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
  *                     than 4 characters.
  * @param  filepath    Path to file of public key (a trailing .pub will be stripped).
  *
- * @return TRUE if successfull, FALSE otherwise.
+ * @return 0 if successful, -1 otherwise.
  */
-static gboolean
+static int
 ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
 {
   gchar* astdout = NULL;
@@ -358,13 +358,13 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
   if (!comment || comment[0] == '\0')
     {
       g_debug ("%s: comment must be set", __FUNCTION__);
-      return FALSE;
+      return -1;
     }
   if (!passphrase || strlen(passphrase) < 5)
     {
       g_debug ("%s: password must be longer than 4 characters",
                __FUNCTION__);
-      return FALSE;
+      return -1;
     }
   /* Sanity check files */
   dir = g_path_get_dirname (filepath);
@@ -372,7 +372,7 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
     {
       g_debug ("%s: failed to access %s", __FUNCTION__, dir);
       g_free (dir);
-      return FALSE;
+      return -1;
     }
   g_free (dir);
 
@@ -410,37 +410,9 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
                exit_status, WIFEXITED (exit_status), WEXITSTATUS (exit_status));
       g_debug ("\t\t stdout: %s", astdout);
       g_debug ("\t\t stderr: %s", astderr);
-      return FALSE;
+      return -1;
     }
-  return TRUE;
-}
-
-
-/**
- * @brief Creates the public and private key files.
- *
- * @param loginfo.
- *
- * @return TRUE if things went good, FALSE if things went bad.
- */
-static gboolean
-ssh_key_create (openvas_ssh_login* loginfo)
-{
-  /* Create pubkey */
-  gboolean success = ssh_pubkey_create (loginfo->comment,
-                                        loginfo->ssh_key_passphrase,
-                                        loginfo->public_key_path);
-
-  /* Eventually report failure */
-  if (success == FALSE)
-    return FALSE;
-
-  /* Create private key */
-  success = ssh_privkey_create (loginfo->public_key_path,
-                                loginfo->private_key_path,
-                                loginfo->ssh_key_passphrase,
-                                loginfo->ssh_key_passphrase);
-  return success;
+  return 0;
 }
 
 
@@ -788,9 +760,18 @@ lsc_user_all_create (const gchar *name,
                                                     user_name,
                                                     user_password);
 
-  /* Create keys. */
+  /* Create public key. */
 
-  if (ssh_key_create (login) == FALSE) goto rm_key_exit;
+  if (ssh_pubkey_create (comment, key_password, public_key_path))
+    goto rm_key_exit;
+
+  /* Create private key */
+
+  if (ssh_privkey_create (public_key_path,
+                          private_key_path,
+                          key_password,
+                          key_password))
+    goto rm_key_exit;
 
   /* Create RPM package. */
 
@@ -831,7 +812,7 @@ lsc_user_all_create (const gchar *name,
   /* Read the packages and key into memory. */
 
   error = NULL;
-  g_file_get_contents (login->public_key_path,
+  g_file_get_contents (public_key_path,
                        public_key,
                        &length,
                        &error);
@@ -844,7 +825,7 @@ lsc_user_all_create (const gchar *name,
     }
 
   error = NULL;
-  g_file_get_contents (login->private_key_path,
+  g_file_get_contents (private_key_path,
                        private_key,
                        &length,
                        &error);
