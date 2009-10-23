@@ -2144,11 +2144,11 @@ const char*
 latex_severity_heading (const char *severity)
 {
   if (strcmp (severity, "Security Hole") == 0)
-    return "Vulnerability";
+    return "Severity: High";
   if (strcmp (severity, "Security Note") == 0)
-    return "Informational";
+    return "Severity: Low";
   if (strcmp (severity, "Security Warning") == 0)
-    return "Warning";
+    return "Severity: Medium";
   return severity;
 }
 
@@ -2313,12 +2313,12 @@ print_report_latex (report_t report, gchar* latex_file)
                "\\hyperref[host:%s]{%s}&%s&%i&%i&%i&0\\\\\n",
                host,
                host,
-               ((holes > 1) ? "Security Holes found"
-                : ((holes == 1) ? "Security Hole found"
-                   : ((warnings > 1) ? "Security Warnings found"
-                      : ((warnings == 1) ? "Security Warning found"
-                         : ((notes > 1) ? "Security Notes found"
-                            : ((notes == 1) ? "Security Note found"
+               ((holes > 1) ? "Severity: High"
+                : ((holes == 1) ? "Severity: High"
+                   : ((warnings > 1) ? "Severity: Medium"
+                      : ((warnings == 1) ? "Severity: Medium"
+                         : ((notes > 1) ? "Severity: Low"
+                            : ((notes == 1) ? "Severity: Low"
                                : "")))))),
                holes,
                warnings,
@@ -2368,7 +2368,7 @@ print_report_latex (report_t report, gchar* latex_file)
       fprintf (out,
                "\\begin{tabular}{|l|l|}\n"
                "\\hline\n"
-               "\\rowcolor{openvas_report}Service (Port)&Issue regarding port\\\\\n"
+               "\\rowcolor{openvas_report}Service (Port)&Threat Level\\\\\n"
                "\\hline\n");
 
       init_result_iterator (&results, report, host,
@@ -2385,12 +2385,12 @@ print_report_latex (report_t report, gchar* latex_file)
           if (last_port) g_free (last_port);
           last_port = g_strdup (result_iterator_port (&results));
           fprintf (out,
-                   "\\hyperref[port:%s %s]{%s}&%s(s) found\\\\\n"
+                   "\\hyperref[port:%s %s]{%s}&%s\\\\\n"
                    "\\hline\n",
                    host_iterator_host (&hosts),
                    last_port,
                    last_port,
-                   result_iterator_type (&results));
+                   result_type_threat(result_iterator_type (&results)));
         }
       cleanup_iterator (&results);
       if (last_port) g_free (last_port);
