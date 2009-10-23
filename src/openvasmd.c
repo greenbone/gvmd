@@ -388,6 +388,17 @@ accept_and_maybe_fork ()
         /* Child. */
         {
           is_parent = 0;
+
+          if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+            {
+              g_critical ("%s: failed to set client SIGCHLD handler: %s\n",
+                          __FUNCTION__,
+                          strerror (errno));
+              shutdown (client_socket, SHUT_RDWR);
+              close (client_socket);
+              exit (EXIT_FAILURE);
+            }
+
 #endif /* FORK */
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
@@ -880,16 +891,10 @@ main (int argc, char** argv)
 
   /* Warning from RATS heeded (signals now use small, separate handlers)
    * hence annotations. */
-  if (signal (SIGTERM, handle_sigterm) == SIG_ERR  /* RATS: ignore */
-      || signal (SIGINT, handle_sigint) == SIG_ERR /* RATS: ignore */
-      || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
-#if 0
-      /**
-       * @todo lsc_user_all_create needs this signal to get child return
-       *       statuses. */
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR     /* RATS: ignore */
-#endif
-      )
+  if (signal (SIGTERM, handle_sigterm) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGINT, handle_sigint) == SIG_ERR  /* RATS: ignore */
+      || signal (SIGHUP, handle_sighup) == SIG_ERR  /* RATS: ignore */
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)      /* RATS: ignore */
     {
       g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
       exit (EXIT_FAILURE);
