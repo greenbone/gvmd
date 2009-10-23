@@ -1,5 +1,24 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Cleanup LSC package generation a bit.
+
+	* src/lsc_user.c: Cleanup some indenting and comments.  Add some tracing.
+	(ssh_pubkey_create): Remove existence check.  Quote some command args.
+	Free GError.
+	(ssh_key_create_unlink_files): Remove.
+	(get_rpm_generator_path): Use new location and name for RPM generator.
+	Just search in one place.
+	(lsc_user_rpm_create): Create temp dir with mkdtemp.  Use new name for
+	RPM generator.  Make rmdir failure an error.
+	(lsc_user_all_create): Create temp dir for keys.  Free mem and remove dirs
+	on exit.
+
+	* CMakeLists.txt (DATADIR, OPENVAS_DATA_DIR): New variables.
+
+	* src/CMakeLists.txt: Define OPENVAS_DATA_DIR if possible.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (accept_and_maybe_fork): Set SIGCHLD handler to
 	SIG_DFL in child.
 	(main): Revert SIGCHLD handler to SIG_IGN.

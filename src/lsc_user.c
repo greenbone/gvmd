@@ -4,7 +4,7 @@
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@intevation.de>
- * Michael Wiegand   <michael.wiegand@intevation.de>
+ * Michael Wiegand <michael.wiegand@intevation.de>
  * Felix Wolfsteller <felix.wolfsteller@intevation.de>
  *
  * Copyright:
@@ -333,10 +333,12 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
 
   /* Fire openssl */
   const gchar* command = g_strconcat ("openssl pkcs8 -topk8 -v2 des3 -in ", pubkey_stripped,
-                                     " -passin pass:", passphrase_pub, " -out ",
-                                     privkey_file, " -passout pass:",
-                                     passphrase_priv, NULL);
+                                      " -passin pass:", passphrase_pub, " -out ",
+                                      privkey_file, " -passout pass:",
+                                      passphrase_priv, NULL);
   g_free (pubkey_stripped);
+
+  g_debug ("command: %s", command);
 
   if (g_spawn_command_line_sync(command, &astdout, &astderr, &exit_status, &err) == FALSE
       || WIFEXITED (exit_status) == 0
@@ -358,10 +360,10 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
  * "ssh-keygen -t rsa -f filepath -C comment -P passhprase -q"
  * A directory will be created if it does not exist.
  *
- * @param comment Comment to use (will be freed).
- * @param passphrase The passphrase for the key (will be freed), must be longer
- *                   than 4 characters (+nul).
- * @param filepath Path to file of public key (a trailing .pub will be stripped).
+ * @param  comment     Comment to use.
+ * @param  passphrase  The passphrase for the key, must be longer
+ *                     than 4 characters.
+ * @param  filepath    Path to file of public key (a trailing .pub will be stripped).
  *
  * @return TRUE if successfull, FALSE otherwise.
  */
@@ -404,21 +406,8 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
     }
 #endif
   g_free (dir);
-#if 0
-  if (check_exists(filepath) == 1)
-  {
-    show_error (_("Error creating public key file:\n%s already exists."), filepath);
-    return FALSE;
-  }
-#else
-  if (g_file_test (filepath, G_FILE_TEST_EXISTS))
-  {
-    show_error (_("Error creating public key file:\n%s already exists."), filepath);
-    return FALSE;
-  }
-#endif
 
-  // Strip ".pub" of filename, if any.
+  // Strip ".pub" off filename, if any.
   if (g_str_has_suffix(filepath, ".pub") == TRUE)
     {
       file_pubstripped = g_malloc(strlen(filepath) -
@@ -430,19 +419,24 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
     file_pubstripped = g_strdup(filepath);
 
   /* Fire ssh-keygen */
-  const char* command = g_strconcat("ssh-keygen -t rsa -f ", file_pubstripped, " -C ",
-                                    comment, " -P ", passphrase, NULL);
+  const char* command = g_strconcat("ssh-keygen -t rsa -f ", file_pubstripped, " -C \"",
+                                    comment, "\" -P \"", passphrase, "\"", NULL);
   g_free (file_pubstripped);
 
   g_debug ("command: %s", command);
 
-  if (g_spawn_command_line_sync(command, &astdout, &astderr, &exit_status, &err) == FALSE
+  if (g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status, &err) == FALSE
       || WIFEXITED (exit_status) == 0
       || WEXITSTATUS (exit_status))
     {
-      // FIX should free err
       show_error (_("Error creating public key file.\nFor further information consult your shell."));
-      g_debug ("Error creating public key file.\n");
+      if (err)
+        {
+          g_debug ("Error creating public key file: %s\n", err->message);
+          g_error_free (err);
+        }
+      else
+        g_debug ("Error creating public key file.\n");
       g_debug ("\tSpawned key-gen process returned with %d (WIF %i, WEX %i).\n",
                exit_status, WIFEXITED (exit_status), WEXITSTATUS (exit_status));
       g_debug ("\t\t stdout: %s", astdout);
@@ -457,6 +451,7 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
  * @brief Creates the public and private key files.
  *
  * @param loginfo.
+ *
  * @return TRUE if things went good, FALSE if things went bad.
  */
 static gboolean
@@ -479,45 +474,12 @@ ssh_key_create (openvas_ssh_login* loginfo)
   return success;
 }
 
-/**
- * @brief Unlinks pub. and private key files + identity file.
- *
- * @param loginfo Login of which to unlink files.
- */
-static void
-ssh_key_create_unlink_files (openvas_ssh_login* loginfo)
-{
-  char* identity_file = NULL;
-
-  if (loginfo == NULL)
-    return;
-
-  // Create identity file path
-  if (loginfo->public_key_path != NULL)
-    {
-      int len = (strlen(loginfo->public_key_path) -
-                 strlen (".pub") + 1); /* RATS: ignore, string literal is nul-terminated */
-      if (len > 0)
-        {
-          identity_file = emalloc (len);
-          g_strlcpy (identity_file, loginfo->public_key_path, len);
-        }
-
-      // Delete all the files
-      unlink (identity_file);
-      unlink (loginfo->private_key_path);
-      unlink (loginfo->public_key_path);
-    }
-
-  efree (&identity_file);
-}
-
 
 /* RPM package generation. */
 
 /**
  * @brief Returns the path to the directory where the rpm generator
- * @brief ("openvas-ssh-client-rpm-creator.sh") is located.
+ * @brief ("openvas-lsc-rpm-creator.sh") is located.
  *
  * The search will be performed just once.
  *
@@ -531,26 +493,16 @@ get_rpm_generator_path ()
 
   if (rpm_generator_path == NULL)
     {
-      // Search in two location
-      gchar* path_exec = g_build_filename ("/home/mattm/share/openvas",
-                                           "openvas-ssh-client-rpm-creator.sh",
+      gchar* path_exec = g_build_filename (OPENVAS_DATA_DIR,
+                                           "openvas-lsc-rpm-creator.sh",
                                            NULL);
       if (check_is_file (path_exec) == 0)
         {
           g_free (path_exec);
-          path_exec = g_build_filename ("tools", "openvas-ssh-client-rpm-creator.sh", NULL);
-          if (check_is_file (path_exec) == 0)
-            {
-              // Could not be found at all
-               g_free (path_exec);
-            }
-          else
-            g_free (path_exec);
-            // FIX indented with else, should other brn return NULL?
-            rpm_generator_path = g_strdup ("tools");
+          return NULL;
         }
-      else
-        rpm_generator_path = g_strdup ("/home/mattm/share/openvas");
+      g_free (path_exec);
+      rpm_generator_path = g_strdup (OPENVAS_DATA_DIR);
     }
 
   return rpm_generator_path;
@@ -566,15 +518,13 @@ get_rpm_generator_path ()
 static gboolean
 lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
 {
-  // The scripts to create rpms are currently in trunk/tools/openvas-lsc-target-preparation.
-  // Move to trunk/openvas-client/tools will be done when function is stable.
   gchar* oltap_path;
   gchar* rpm_path = NULL;
   gint exit_status;
   gchar* new_pubkey_filename = NULL;
   gchar* pubkey_basename = NULL;
   gchar** cmd;
-  gchar* tmpdir = NULL;
+  char tmpdir[] = "/tmp/lsc_user_rpm_create_XXXXXX";
   gboolean success = TRUE;
 
   oltap_path = get_rpm_generator_path ();
@@ -582,24 +532,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   /* Create a temporary directory. */
 
   g_debug ("%s: create temporary directory", __FUNCTION__);
-#if 0
-  tmpdir = openvas_lsc_target_prep_create_tmp_dir();
-  if (tmpdir == NULL)
-    {
-      return FALSE;
-    }
-#else /* not 0 */
-  // FIX create unique name
-  tmpdir = g_build_filename ("/tmp/",
-                             "lsc-mngt",
-                             "tmp",
-                             NULL);
-  if (g_mkdir_with_parents (tmpdir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_free (tmpdir);
-      return FALSE;
-    }
-#endif /* not 0 */
+  if (mkdtemp (tmpdir) == NULL) return FALSE;
   g_debug ("%s: temporary directory: %s\n", __FUNCTION__, tmpdir);
 
   /* Copy the public key into the temporary directory. */
@@ -613,7 +546,6 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
                   loginfo->public_key_path, new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
-      g_free (tmpdir);
       return FALSE;
     }
 
@@ -622,7 +554,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
 
   g_debug ("%s: Attempting RPM build\n", __FUNCTION__);
   cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
-  cmd[0] = g_strdup ("./openvas-ssh-client-rpm-creator.sh");
+  cmd[0] = g_strdup ("./openvas-lsc-rpm-creator.sh");
   cmd[1] = g_strdup ("--target");
   cmd[2] = g_strdup (tmpdir);
   cmd[3] = g_build_filename (tmpdir, pubkey_basename, NULL);
@@ -687,13 +619,12 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   if (file_utils_rmdir_rf (tmpdir) != 0
       && success == TRUE)
     {
-      // FIX just make this an error
       show_error (_("Temporary directory (%s) which contains private"
                     "information could not be deleted."),
                   tmpdir);
+      success = FALSE;
     }
 
-  g_free (tmpdir);
   g_free (rpm_path);
   g_free (rpmfile);
 
@@ -717,7 +648,6 @@ execute_alien (const gchar* rpmdir, const gchar* rpmfile)
   gchar** cmd;
   gint exit_status = 0;
 
-  /* FIX Why allocate all of this? */
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
 
   cmd[0] = g_strdup ("fakeroot");
@@ -828,7 +758,6 @@ alien_found ()
 
 /* Generation of all packages. */
 
-// FIX adapted from openvas-client/src/util/openvas_ssh_key_create.c
 /**
  * @brief Create local security check (LSC) packages.
  *
@@ -859,20 +788,25 @@ lsc_user_all_create (const gchar *name,
   char *key_name, *comment, *key_password, *public_key_path;
   char *private_key_path, *user_name, *user_password;
   char rpm_dir[] = "/tmp/rpm_XXXXXX";
+  char key_dir[] = "/tmp/key_XXXXXX";
   gchar *rpm_path, *deb_path;
+  int ret = -1;
 
-  // FIX just skip deb
-  if (alien_found () == FALSE)
-    return -1;
+  if (alien_found () == FALSE) return -1;
 
-  // FIX free?
+  /* Make a directory for the keys. */
+
+  if (mkdtemp (key_dir) == NULL) return -1;
+
+  /* Setup the login structure. */
+
+  /* These are freed by openvas_ssh_login_free with efree. */
+  // FIX emalloc
+  public_key_path = g_build_filename (key_dir, "key.pub", NULL);
+  private_key_path = g_build_filename (key_dir, "key.priv", NULL);
   key_name = estrdup ("key_name");
-  comment = estrdup ("comment");
-  key_password = estrdup ("password");
-  // FIX get temp file
-  public_key_path = estrdup ("/tmp/key.pub");
-  // FIX get temp file
-  private_key_path = estrdup ("/tmp/key.priv");
+  comment = estrdup ("Key generated by OpenVAS Manager");
+  key_password = estrdup (password);
   user_name = estrdup (name);
   user_password = estrdup (password);
 
@@ -886,24 +820,17 @@ lsc_user_all_create (const gchar *name,
 
   /* Create keys. */
 
-  ssh_key_create_unlink_files (login);
-  if (ssh_key_create (login) == FALSE)
-    {
-      openvas_ssh_login_free (login);
-      return -1;
-    }
+  if (ssh_key_create (login) == FALSE) goto rm_key_exit;
 
   /* Create RPM package. */
 
-  // FIX close rpm_dir?
-  if (mkdtemp (rpm_dir) == NULL) return -1;
+  if (mkdtemp (rpm_dir) == NULL) goto rm_key_exit;
   rpm_path = g_build_filename (rpm_dir, "p.rpm", NULL);
   g_debug ("%s: rpm_path: %s", __FUNCTION__, rpm_path);
   if (lsc_user_rpm_create (login, rpm_path) == FALSE)
     {
       g_free (rpm_path);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
 
   /* Create Debian package. */
@@ -913,13 +840,12 @@ lsc_user_all_create (const gchar *name,
     {
       g_free (rpm_path);
       g_free (deb_path);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
   g_debug ("%s: deb_path: %s", __FUNCTION__, deb_path);
 
 #if 0
-  /* Create NSIS installer. */
+  /** @todo Create NSIS installer. */
 
   exe_path = lsc_user_exe_create (login);
   if (exe_path == NULL)
@@ -927,11 +853,12 @@ lsc_user_all_create (const gchar *name,
       g_free (rpm_path);
       g_free (deb_path);
       g_free (exe_path);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
   g_debug ("%s: exe_path: %s", __FUNCTION__, deb_path);
 #endif
+
+  /* Read the packages and key into memory. */
 
   error = NULL;
   g_file_get_contents (login->public_key_path,
@@ -943,8 +870,7 @@ lsc_user_all_create (const gchar *name,
       g_free (rpm_path);
       g_free (deb_path);
       g_error_free (error);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
 
   error = NULL;
@@ -957,8 +883,7 @@ lsc_user_all_create (const gchar *name,
       g_free (rpm_path);
       g_free (deb_path);
       g_error_free (error);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
 
   error = NULL;
@@ -966,14 +891,12 @@ lsc_user_all_create (const gchar *name,
                        (gchar**) rpm,
                        rpm_size,
                        &error);
-  // FIX remove rpm file
   g_free (rpm_path);
   if (error)
     {
       g_error_free (error);
       g_free (deb_path);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
 
   error = NULL;
@@ -981,19 +904,29 @@ lsc_user_all_create (const gchar *name,
                        (gchar**) deb,
                        deb_size,
                        &error);
-  // FIX remove deb file (just remove rpm dir)
   g_free (deb_path);
   if (error)
     {
       g_error_free (error);
-      openvas_ssh_login_free (login);
-      return -1;
+      goto rm_exit;
     }
 
   *exe = g_strdup ("");
   *exe_size = 0;
 
+  /* Return. */
+
+  ret = 0;
+
+ rm_exit:
+
+  file_utils_rmdir_rf (rpm_dir);
+
+ rm_key_exit:
+
+  file_utils_rmdir_rf (key_dir);
+
   openvas_ssh_login_free (login);
 
-  return 0;
+  return ret;
 }

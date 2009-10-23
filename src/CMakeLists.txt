@@ -119,6 +119,10 @@ if (OPENVAS_SYSCONF_DIR)
   add_definitions (-DOPENVAS_SYSCONF_DIR=\\\"${OPENVAS_SYSCONF_DIR}\\\")
 endif (OPENVAS_SYSCONF_DIR)
 
+if (OPENVAS_DATA_DIR)
+  add_definitions (-DOPENVAS_DATA_DIR=\\\"${OPENVAS_DATA_DIR}\\\")
+endif (OPENVAS_DATA_DIR)
+
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG} ${OPENVAS_LDFLAGS}")
 
