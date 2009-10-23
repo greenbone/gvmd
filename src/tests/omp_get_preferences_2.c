@@ -1,4 +1,4 @@
-/* Test 1 of OMP GET_PREFERENCES.
+/* Test 2 of OMP GET_PREFERENCES.
  * $Id$
  * Description: Test the OMP GET_PREFERENCES command.
  *

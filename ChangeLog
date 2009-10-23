@@ -1,5 +1,9 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_get_preferences_2.c: Correct test number.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add families to NVT selectors in database when creating selectors from
 	RC file.
 
