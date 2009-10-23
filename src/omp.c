@@ -2379,6 +2379,10 @@ print_report_latex (report_t report, gchar* latex_file)
        * before less severe). */
       while (next (&results))
         {
+          const char *type = result_iterator_type (&results);
+          if (strcmp (type, "Log Message") == 0
+              || strcmp (type, "Debug Message") == 0)
+            continue;
           if (last_port
               && (strcmp (last_port, result_iterator_port (&results)) == 0))
             continue;
@@ -2414,6 +2418,11 @@ print_report_latex (report_t report, gchar* latex_file)
         {
           gchar *descr;
           const char *severity;
+          const char *type = result_iterator_type (&results);
+
+          if (strcmp (type, "Log Message") == 0
+              || strcmp (type, "Debug Message") == 0)
+            continue;
 
           descr = latex_escape_text (result_iterator_descr (&results));
 
@@ -5204,6 +5213,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        ("<family>"
                         "<name>%s</name>"
                         "<selected_count>%i</selected_count>"
+                        /**
+                         * @todo This is total NVTs in family, whereas in
+                         * config above it's total number of selected NVTs.
+                         */
                         "<nvt_count>%i</nvt_count>"
                         "<growing>%i</growing>"
                         "</family>",

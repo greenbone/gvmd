@@ -1,3 +1,7 @@
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (print_report_latex): Skip Log and Debug messages.
+
 2009-10-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/omp.c (latex_severity_heading, print_report_latex): Use
