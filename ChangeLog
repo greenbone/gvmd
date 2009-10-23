@@ -1,5 +1,15 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add families to NVT selectors in database when creating selectors from
+	RC file.
+
+	* src/tasks_sql.h (clude): Add a families arg.  Insert the NVT family in
+	families and the database.
+	(insert_rc_into_config): Let clude do the families inserting.
+	(nvt_selector_family_growing): Correct column name in SQL.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Extend OMP GET_CONFIGS for retrieving a single config with a summary
 	of the selected families.
 

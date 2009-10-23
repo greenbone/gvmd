@@ -3675,7 +3675,8 @@ config_preference (config_t config, const char *type, const char *preference)
  * @param[in]  exclude      If true exclude, else include.
  */
 static void
-clude (const char *config_name, GArray *array, int array_size, int exclude)
+clude (const char *config_name, GArray *array, int array_size, int exclude,
+       GHashTable *families)
 {
   gint index;
   const char* tail;
@@ -3683,11 +3684,18 @@ clude (const char *config_name, GArray *array, int array_size, int exclude)
   sqlite3_stmt* stmt;
   gchar* formatted;
 
-  formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
-                               " (name, exclude, type, family_or_nvt)"
-                               " VALUES ('%s', %i, 2, $value);",
-                               config_name,
-                               exclude);
+  if (families)
+    formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
+                                 " (name, exclude, type, family_or_nvt, family)"
+                                 " VALUES ('%s', %i, 2, $value, $family);",
+                                 config_name,
+                                 exclude);
+  else
+    formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
+                                 " (name, exclude, type, family_or_nvt, family)"
+                                 " VALUES ('%s', %i, 2, $value, NULL);",
+                                 config_name,
+                                 exclude);
 
   tracef ("   sql: %s\n", formatted);
 
@@ -3731,6 +3739,37 @@ clude (const char *config_name, GArray *array, int array_size, int exclude)
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
           abort ();
+        }
+
+      /* Bind the family name to the "$family" in the SQL statement. */
+
+      if (families)
+        {
+          char *family = NULL;
+          nvti_t *nvti = nvtis_lookup (nvti_cache, id);
+
+          if (nvti)
+            {
+              family = nvti_family (nvti);
+
+              if (family)
+                g_hash_table_insert (families, family, (gpointer) 1);
+            }
+
+          while (1)
+            {
+              if (family)
+                ret = sqlite3_bind_text (stmt, 2, family, -1,
+                                         SQLITE_TRANSIENT);
+              else
+                ret = sqlite3_bind_null (stmt, 2);
+              if (ret == SQLITE_BUSY) continue;
+              if (ret == SQLITE_OK) break;
+              g_warning ("%s: sqlite3_prepare failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
         }
 
       /* Run the statement. */
@@ -3873,16 +3912,8 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
                       if ((value_len == 3)
                           && strncasecmp (eq2 + 2, "yes", 3) == 0)
                         {
-                          nvti_t * nvti;
-
-                          g_array_append_val (yes, rc);
                           yes_size++;
-
-                          nvti = nvtis_lookup (nvti_cache, rc);
-                          if (nvti)
-                            g_hash_table_insert (families,
-                                                 nvti_family (nvti),
-                                                 (gpointer) 1);
+                          g_array_append_val (yes, rc);
                         }
                       else
                         {
@@ -3965,7 +3996,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
         /* Explicitly exclude any nos. */
 
-        clude (config_name, no, no_size, 1);
+        clude (config_name, no, no_size, 1, NULL);
 
         /* Cache the growth types. */
 
@@ -3979,8 +4010,8 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         /* Explictly include the yeses and exclude the nos.  Keep the nos
          * because the config may change to auto enable new plugins. */
 
-        clude (config_name, yes, yes_size, 0);
-        clude (config_name, no, no_size, 1);
+        clude (config_name, yes, yes_size, 0, families);
+        clude (config_name, no, no_size, 1, NULL);
 
         /* Cache the family and NVT count and selector types. */
 
@@ -4892,7 +4923,7 @@ nvt_selector_family_growing (const char *selector,
 
   ret = sql_int (0, 0,
                  "SELECT COUNT(*) FROM nvt_selectors"
-                 " WHERE name = '%s' AND type = 1 AND nvt_or_family = '%s'"
+                 " WHERE name = '%s' AND type = 1 AND family_or_nvt = '%s'"
                  " LIMIT 1;",
                  quoted_selector, quoted_family);
 
