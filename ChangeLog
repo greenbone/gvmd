@@ -1,3 +1,9 @@
+2009-10-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/omp.c (latex_header, latex_footer, print_report_latex):
+	Generalized LaTeX-based PDF Report (not "OpenVAS"-specific).
+	Also added table of contents.
+
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_preferences_2.c: Correct test number.
