@@ -654,6 +654,73 @@ manage_migrate (GSList *log_config, const gchar *database)
 }
 
 
+/* Collation. */
+
+/**
+ * @brief Collate two message type strings.
+ *
+ * Callback for SQLite "collate_message_type" collation.
+ *
+ * @param[in]  data     Dummy for callback.
+ * @param[in]  one_len  Length of first string.
+ * @param[in]  arg_one  First string.
+ * @param[in]  two_len  Length of second string.
+ * @param[in]  arg_two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+int
+collate_message_type (void* data,
+                      int one_len, const void* arg_one,
+                      int two_len, const void* arg_two)
+{
+  const char* one = (const char*) arg_one;
+  const char* two = (const char*) arg_two;
+
+  if (strcmp (one, "Security Hole") == 0)
+    {
+      if (strcmp (two, "Security Hole") == 0)
+        return 0;
+      return -1;
+    }
+  if (strcmp (two, "Security Hole") == 0) return 1;
+
+  if (strcmp (one, "Security Warning") == 0)
+    {
+      if (strcmp (two, "Security Warning") == 0)
+        return 0;
+      return -1;
+    }
+  if (strcmp (two, "Security Warning") == 0) return 1;
+
+  if (strcmp (one, "Security Note") == 0)
+    {
+      if (strcmp (two, "Security Note") == 0)
+        return 0;
+      return -1;
+    }
+  if (strcmp (two, "Security Note") == 0) return 1;
+
+  if (strcmp (one, "Log Message") == 0)
+    {
+      if (strcmp (two, "Log Message") == 0)
+        return 0;
+      return -1;
+    }
+  if (strcmp (two, "Log Message") == 0) return 1;
+
+  if (strcmp (one, "Debug Message") == 0)
+    {
+      if (strcmp (two, "Debug Message") == 0)
+        return 0;
+      return -1;
+    }
+  if (strcmp (two, "Debug Message") == 0) return 1;
+
+  return strcmp (one, two);
+}
+
+
 /* Task functions. */
 
 void
@@ -853,6 +920,21 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       sql ("DELETE FROM nvt_preferences;");
       sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
       sql ("COMMIT;");
+    }
+  else
+    {
+      /* Create the collate functions. */
+
+      if (sqlite3_create_collation (task_db,
+                                    "collate_message_type",
+                                    SQLITE_UTF8,
+                                    NULL,
+                                    collate_message_type)
+          != SQLITE_OK)
+        {
+          g_message ("%s: failed to create collate_message_type", __FUNCTION__);
+          abort ();
+        }
     }
 }
 
@@ -2226,7 +2308,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                " WHERE report_results.report = %llu"
                                " AND report_results.result = results.ROWID"
                                " AND results.host = '%s'"
-                               " ORDER BY port, type"
+                               " ORDER BY port,"
+                               " type COLLATE collate_message_type DESC"
                                " LIMIT %i OFFSET %i;",
                                report, host, max_results, first_result);
       else
@@ -2234,7 +2317,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                " AND report_results.result = results.ROWID"
-                               " ORDER BY host, port, type"
+                               " ORDER BY host, port,"
+                               " type COLLATE collate_message_type DESC"
                                " LIMIT %i OFFSET %i;",
                                report, max_results, first_result);
     }
