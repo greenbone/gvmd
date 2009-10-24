@@ -1,5 +1,13 @@
 2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_lsc_credential): Check that name is all
+	alphanumeric.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_LSC_CREDENTIAL
+	handle name error.
+
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	In LSC generator, improve command exit checking and pass args around
 	directly instead of via a structure.
 

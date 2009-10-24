@@ -4119,6 +4119,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
                                     "LSC Credential exists already"));
                 break;
+              case 2:
+                openvas_free_string_var (&modify_task_comment);
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                    "Name may only contain alphanumeric"
+                                    " characters"));
+                break;
               default:
                 assert (0);
               case -1:

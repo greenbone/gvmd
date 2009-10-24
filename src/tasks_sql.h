@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <ctype.h>
 #include <sqlite3.h>
 
 #include <openvas/openvas_logging.h>
@@ -5106,10 +5107,11 @@ DEF_ACCESS (nvt_preference_iterator_value, 1);
 /**
  * @brief Create an LSC credential.
  *
- * @param[in]  name     Name of LSC credential.
+ * @param[in]  name     Name of LSC credential.  Must be at least one character.
  * @param[in]  comment  Comment on LSC credential.
  *
- * @return 0 success, 1 LSC credential exists already, -1 error.
+ * @return 0 success, 1 LSC credential exists already, 2 name contains space,
+ *         -1 error.
  */
 int
 create_lsc_credential (const char* name, const char* comment)
@@ -5122,6 +5124,11 @@ create_lsc_credential (const char* name, const char* comment)
   GRand *rand;
 #define PASSWORD_LENGTH 10
   gchar password[PASSWORD_LENGTH];
+  const char *s = name;
+
+  assert (strlen (name) > 0);
+
+  while (*s) if (!isalnum (*s++)) return 2;
 
   sql ("BEGIN IMMEDIATE;");
 
