@@ -1,17 +1,32 @@
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
+
+	In LSC generator, improve command exit checking and pass args around
+	directly instead of via a structure.
+
+	* src/lsc_user.c (ssh_privkey_create): Make args const.
+	(ssh_pubkey_create): Make args const.  Add function to tracing.
+	(lsc_user_rpm_create): Take user name and public key path directly.
+	Check command exit status properly.
+	(execute_alien): Check command exit status properly.  Separate function
+	exit variable from command exit.
+	(lsc_user_deb_create): Take user name directly.  Free the lowercased name.
+	(lsc_user_all_create): Pass parameters to functions directly, instead of
+	using a login structure.
+
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/lsc_user.c: Add fullstops to a few comments.  Convert printfs to
 	g_debugs.
 
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/lsc_user.c: Make docs and comments consistent.
 
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/lsc_user.c: Tidy.  Match formatting to standard.
 
-2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (collate_message_type): New function.
 	(init_manage_process): Create collate_message_type collation.
