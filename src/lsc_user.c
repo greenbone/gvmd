@@ -62,7 +62,7 @@
  * exist or could not be accessed.
  */
 static int
-check_is_file (const char* name)
+check_is_file (const char *name)
 {
   struct stat sb;
 
@@ -90,7 +90,7 @@ check_is_file (const char* name)
  * exist or could not be accessed.
  */
 static int
-check_is_dir (const char* name)
+check_is_dir (const char *name)
 {
   struct stat sb;
 
@@ -142,7 +142,9 @@ file_utils_rmdir_rf (const gchar * pathname)
 
           while ((entry = g_dir_read_name (directory)) && (ret == 0))
             {
-              ret = file_utils_rmdir_rf (g_build_filename (pathname, entry, NULL));
+              ret = file_utils_rmdir_rf (g_build_filename (pathname,
+                                                           entry,
+                                                           NULL));
               if (ret != 0)
                 {
                   g_warning ("Failed to remove %s from %s!", entry, pathname);
@@ -168,12 +170,12 @@ file_utils_rmdir_rf (const gchar * pathname)
  *          clean up).
  */
 static gboolean
-file_utils_copy_file (const gchar* source_file, const gchar* dest_file)
+file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
 {
-  gchar* src_file_content = NULL;
-  gsize  src_file_size = 0;
-  int    bytes_written = 0;
-  FILE*  fd = NULL;
+  gchar *src_file_content = NULL;
+  gsize src_file_size = 0;
+  int bytes_written = 0;
+  FILE *fd = NULL;
   GError *error;
 
   // Read file content into memory
@@ -224,7 +226,7 @@ file_utils_copy_file (const gchar* source_file, const gchar* dest_file)
  *          clean up).
  */
 static gboolean
-file_utils_move_file (const gchar* source_file, const gchar* dest_file)
+file_utils_move_file (const gchar *source_file, const gchar *dest_file)
 {
   // Copy file (will displays errors itself)
   if (file_utils_copy_file (source_file, dest_file) == FALSE)
@@ -260,18 +262,18 @@ file_utils_move_file (const gchar* source_file, const gchar* dest_file)
  * @return 0 if successful, -1 otherwise.
  */
 static int
-ssh_privkey_create (char* pubkey_file, char* privkey_file,
-                    char* passphrase_pub, char* passphrase_priv)
+ssh_privkey_create (char *pubkey_file, char *privkey_file,
+                    char *passphrase_pub, char *passphrase_priv)
 {
-  gchar* astdout = NULL;
-  gchar* astderr = NULL;
-  GError* err    = NULL;
+  gchar *astdout = NULL;
+  gchar *astderr = NULL;
+  GError *err = NULL;
   gint exit_status;
-  gchar* dir = NULL;
-  gchar* pubkey_stripped = NULL;
+  gchar *dir = NULL;
+  gchar *pubkey_stripped = NULL;
 
   /* Sanity-check essential parameters */
-  if(!passphrase_pub || !passphrase_priv)
+  if (!passphrase_pub || !passphrase_priv)
     {
       g_debug ("%s: parameter error", __FUNCTION__);
       return -1;
@@ -280,8 +282,7 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
   /* Sanity check files */
   if (g_file_test (pubkey_file, G_FILE_TEST_EXISTS) == FALSE)
     {
-      g_debug ("%s: failed to find public key %s",
-               __FUNCTION__, pubkey_file);
+      g_debug ("%s: failed to find public key %s", __FUNCTION__, pubkey_file);
       return -1;
     }
   if (g_file_test (privkey_file, G_FILE_TEST_EXISTS))
@@ -289,8 +290,8 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
       g_debug ("%s: file already exists.", __FUNCTION__);
       return -1;
     }
-  dir = g_path_get_dirname(privkey_file);
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+  dir = g_path_get_dirname (privkey_file);
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
     {
       g_debug ("%s: failed to access dir folder %s", __FUNCTION__, dir);
       g_free (dir);
@@ -299,27 +300,33 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
   g_free (dir);
 
   // Strip ".pub" of public key filename, if any.
-  if (g_str_has_suffix(pubkey_file, ".pub") == TRUE)
+  if (g_str_has_suffix (pubkey_file, ".pub") == TRUE)
     {
-      pubkey_stripped = g_malloc (strlen(pubkey_file) -
-                                  strlen(".pub") +1); /* RATS: ignore, string literal is nul-terminated */
-      g_strlcpy (pubkey_stripped, pubkey_file, strlen(pubkey_file) -
-                 strlen(".pub") + 1); /* RATS: ignore, string literal is nul-terminated */
+      /* RATS: ignore, string literal is nul-terminated */
+      pubkey_stripped = g_malloc (strlen (pubkey_file) - strlen (".pub") + 1);
+      g_strlcpy (pubkey_stripped,
+                 pubkey_file,
+                 strlen (pubkey_file) - strlen (".pub") + 1);
     }
   else
-    pubkey_stripped = g_strdup(pubkey_file);
+    pubkey_stripped = g_strdup (pubkey_file);
 
   /* Fire openssl */
-  const gchar* command = g_strconcat ("openssl pkcs8 -topk8 -v2 des3 -in ", pubkey_stripped,
-                                      " -passin pass:", passphrase_pub, " -out ",
-                                      privkey_file, " -passout pass:",
-                                      passphrase_priv, NULL);
+  const gchar *command =
+    g_strconcat ("openssl pkcs8 -topk8 -v2 des3"
+                 " -in ", pubkey_stripped,
+                 " -passin pass:", passphrase_pub,
+                 " -out ", privkey_file,
+                 " -passout pass:", passphrase_priv,
+                 NULL);
   g_free (pubkey_stripped);
 
   g_debug ("command: %s", command);
 
-  if (g_spawn_command_line_sync(command, &astdout, &astderr, &exit_status, &err) == FALSE
-      || WIFEXITED (exit_status) == 0
+  if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
+                                  &err)
+       == FALSE)
+      || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
       printf ("Error creating private key file.");
@@ -345,14 +352,15 @@ ssh_privkey_create (char* pubkey_file, char* privkey_file,
  * @return 0 if successful, -1 otherwise.
  */
 static int
-ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
+ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
 {
-  gchar* astdout = NULL;
-  gchar* astderr = NULL;
-  GError* err = NULL;
+  gchar *astdout = NULL;
+  gchar *astderr = NULL;
+  GError *err = NULL;
   gint exit_status = 0;
-  gchar* dir;
-  gchar* file_pubstripped;
+  gchar *dir;
+  gchar *file_pubstripped;
+  const char *command;
 
   /* Sanity-check essential parameters */
   if (!comment || comment[0] == '\0')
@@ -360,15 +368,14 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
       g_debug ("%s: comment must be set", __FUNCTION__);
       return -1;
     }
-  if (!passphrase || strlen(passphrase) < 5)
+  if (!passphrase || strlen (passphrase) < 5)
     {
-      g_debug ("%s: password must be longer than 4 characters",
-               __FUNCTION__);
+      g_debug ("%s: password must be longer than 4 characters", __FUNCTION__);
       return -1;
     }
   /* Sanity check files */
   dir = g_path_get_dirname (filepath);
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
     {
       g_debug ("%s: failed to access %s", __FUNCTION__, dir);
       g_free (dir);
@@ -377,25 +384,31 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
   g_free (dir);
 
   // Strip ".pub" off filename, if any.
-  if (g_str_has_suffix(filepath, ".pub") == TRUE)
+  if (g_str_has_suffix (filepath, ".pub") == TRUE)
     {
-      file_pubstripped = g_malloc(strlen(filepath) -
-                                  strlen(".pub") +1); /* RATS: ignore, string literal is nul-terminated */
-      g_strlcpy (file_pubstripped, filepath, strlen(filepath) -
-                 strlen(".pub") + 1); /* RATS: ignore, string literal is nul-terminated */
+      /* RATS: ignore, string literal is nul-terminated */
+      file_pubstripped = g_malloc (strlen (filepath) - strlen (".pub") + 1);
+      g_strlcpy (file_pubstripped,
+                 filepath,
+                 strlen (filepath) - strlen (".pub") + 1);
     }
   else
-    file_pubstripped = g_strdup(filepath);
+    file_pubstripped = g_strdup (filepath);
 
   /* Fire ssh-keygen */
-  const char* command = g_strconcat("ssh-keygen -t rsa -f ", file_pubstripped, " -C \"",
-                                    comment, "\" -P \"", passphrase, "\"", NULL);
+  command = g_strconcat ("ssh-keygen -t rsa"
+                         " -f ", file_pubstripped,
+                         " -C \"", comment, "\""
+                         " -P \"", passphrase, "\"",
+                         NULL);
   g_free (file_pubstripped);
 
   g_debug ("command: %s", command);
 
-  if (g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status, &err) == FALSE
-      || WIFEXITED (exit_status) == 0
+  if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
+                                  &err)
+       == FALSE)
+      || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
       if (err)
@@ -427,14 +440,14 @@ ssh_pubkey_create (const char* comment, char* passphrase, char* filepath)
  * @return Path to the directory with the rpm generator or NULL (shall not be
  *         freed!).
  */
-static gchar*
+static gchar *
 get_rpm_generator_path ()
 {
-  static gchar* rpm_generator_path = NULL;
+  static gchar *rpm_generator_path = NULL;
 
   if (rpm_generator_path == NULL)
     {
-      gchar* path_exec = g_build_filename (OPENVAS_DATA_DIR,
+      gchar *path_exec = g_build_filename (OPENVAS_DATA_DIR,
                                            "openvas-lsc-rpm-creator.sh",
                                            NULL);
       if (check_is_file (path_exec) == 0)
@@ -457,14 +470,14 @@ get_rpm_generator_path ()
  * @return Path to rpm file if successfull, NULL otherwise.
  */
 static gboolean
-lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
+lsc_user_rpm_create (openvas_ssh_login *loginfo, const gchar *to_filename)
 {
-  gchar* oltap_path;
-  gchar* rpm_path = NULL;
+  gchar *oltap_path;
+  gchar *rpm_path = NULL;
   gint exit_status;
-  gchar* new_pubkey_filename = NULL;
-  gchar* pubkey_basename = NULL;
-  gchar** cmd;
+  gchar *new_pubkey_filename = NULL;
+  gchar *pubkey_basename = NULL;
+  gchar **cmd;
   char tmpdir[] = "/tmp/lsc_user_rpm_create_XXXXXX";
   gboolean success = TRUE;
 
@@ -473,7 +486,8 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   /* Create a temporary directory. */
 
   g_debug ("%s: create temporary directory", __FUNCTION__);
-  if (mkdtemp (tmpdir) == NULL) return FALSE;
+  if (mkdtemp (tmpdir) == NULL)
+    return FALSE;
   g_debug ("%s: temporary directory: %s\n", __FUNCTION__, tmpdir);
 
   /* Copy the public key into the temporary directory. */
@@ -481,12 +495,11 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   g_debug ("%s: copy key to temporary directory\n", __FUNCTION__);
   pubkey_basename = g_strdup_printf ("%s.pub", loginfo->username);
   new_pubkey_filename = g_build_filename (tmpdir, pubkey_basename, NULL);
-  if (file_utils_copy_file (loginfo->public_key_path, new_pubkey_filename) == FALSE)
+  if (file_utils_copy_file (loginfo->public_key_path, new_pubkey_filename)
+      == FALSE)
     {
       g_debug ("%s: failed to copy key file %s to %s",
-               __FUNCTION__,
-               loginfo->public_key_path,
-               new_pubkey_filename);
+               __FUNCTION__, loginfo->public_key_path, new_pubkey_filename);
       g_free (pubkey_basename);
       g_free (new_pubkey_filename);
       return FALSE;
@@ -503,26 +516,26 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
   cmd[3] = g_build_filename (tmpdir, pubkey_basename, NULL);
   cmd[4] = NULL;
   g_debug ("%s: Spawning in %s: %s %s %s %s\n",
-           __FUNCTION__,
-           oltap_path, cmd[0], cmd[1], cmd[2], cmd[3]);
+           __FUNCTION__, oltap_path, cmd[0], cmd[1], cmd[2], cmd[3]);
   gchar *standard_out;
   gchar *standard_err;
-  if (g_spawn_sync (oltap_path,
-                    cmd,
-                    NULL, // env
-                    G_SPAWN_SEARCH_PATH,
-                    NULL, // setup func
-                    NULL,
-                    &standard_out,
-                    &standard_err,
-                    &exit_status,
-                    NULL                 ) == FALSE
-      || exit_status != 0)
+  if ((g_spawn_sync (oltap_path,
+                     cmd,
+                     NULL,                  // env
+                     G_SPAWN_SEARCH_PATH,
+                     NULL,                  // setup func
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL)
+       == FALSE)
+      || exit_status)
     {
       g_debug ("%s: failed to creating the rpm: %d", __FUNCTION__, exit_status);
       g_debug ("%s: sout: %s\n", __FUNCTION__, standard_out);
       g_debug ("%s: serr: %s\n", __FUNCTION__, standard_err);
-      success =  FALSE;
+      success = FALSE;
     }
 
   g_free (cmd[0]);
@@ -539,7 +552,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
    * for example RPMS/noarch/openvas-lsc-target-example_user-0.5-1.noarch.rpm.
    */
 
-  gchar* rpmfile = g_strconcat ("openvas-lsc-target-",
+  gchar *rpmfile = g_strconcat ("openvas-lsc-target-",
                                 loginfo->username,
                                 "-0.5-1.noarch.rpm",
                                 NULL);
@@ -548,8 +561,7 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
 
   /* Move the RPM from the temporary directory to the given destination. */
 
-  if (file_utils_move_file (rpm_path, to_filename) == FALSE
-      && success == TRUE)
+  if (file_utils_move_file (rpm_path, to_filename) == FALSE && success == TRUE)
     {
       g_debug ("%s: failed to move RPM %s to %s",
                __FUNCTION__, rpm_path, to_filename);
@@ -558,12 +570,10 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
 
   /* Remove the copy of the public key and the temporary directory. */
 
-  if (file_utils_rmdir_rf (tmpdir) != 0
-      && success == TRUE)
+  if (file_utils_rmdir_rf (tmpdir) != 0 && success == TRUE)
     {
       g_debug ("%s: failed to remove temporary directory %s",
-               __FUNCTION__,
-               tmpdir);
+               __FUNCTION__, tmpdir);
       success = FALSE;
     }
 
@@ -585,9 +595,9 @@ lsc_user_rpm_create (openvas_ssh_login* loginfo, const gchar* to_filename)
  * @return 0 success, -1 error.
  */
 static int
-execute_alien (const gchar* rpmdir, const gchar* rpmfile)
+execute_alien (const gchar *rpmdir, const gchar *rpmfile)
 {
-  gchar** cmd;
+  gchar **cmd;
   gint exit_status = 0;
 
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
@@ -612,9 +622,8 @@ execute_alien (const gchar* rpmdir, const gchar* rpmfile)
                      NULL,
                      NULL,
                      &exit_status,
-                     NULL)
-       == FALSE)
-      || exit_status != 0)
+                     NULL) == FALSE)
+      || exit_status)
     {
       exit_status = -1;
     }
@@ -640,15 +649,14 @@ execute_alien (const gchar* rpmdir, const gchar* rpmfile)
  *
  * @return deb package file name on success, else NULL.
  */
-gchar*
-lsc_user_deb_create (openvas_ssh_login* loginfo,
-                     const gchar* rpm_file)
+gchar *
+lsc_user_deb_create (openvas_ssh_login *loginfo, const gchar *rpm_file)
 {
-  gchar* dirname = g_path_get_dirname (rpm_file);
-  gchar* dir = g_strconcat (dirname, "/", NULL);
-  gchar* basename = g_path_get_basename (rpm_file);
-  gchar* username = g_strdup (loginfo->username ? loginfo->username : "user");
-  gchar* deb_name = g_strdup_printf ("%s/openvas-lsc-target-%s_0.5-1_all.deb",
+  gchar *dirname = g_path_get_dirname (rpm_file);
+  gchar *dir = g_strconcat (dirname, "/", NULL);
+  gchar *basename = g_path_get_basename (rpm_file);
+  gchar *username = g_strdup (loginfo->username ? loginfo->username : "user");
+  gchar *deb_name = g_strdup_printf ("%s/openvas-lsc-target-%s_0.5-1_all.deb",
                                      dirname,
                                      g_ascii_strdown (username, -1));
 
@@ -680,12 +688,12 @@ static gboolean
 alien_found ()
 {
   static gboolean searched = FALSE;
-  static gboolean found    = FALSE;
+  static gboolean found = FALSE;
 
   if (searched == FALSE)
     {
       // Check if alien is found in path
-      gchar* alien_path = g_find_program_in_path ("alien");
+      gchar *alien_path = g_find_program_in_path ("alien");
       if (alien_path != NULL)
         {
           found = TRUE;
@@ -734,11 +742,13 @@ lsc_user_all_create (const gchar *name,
   gchar *rpm_path, *deb_path;
   int ret = -1;
 
-  if (alien_found () == FALSE) return -1;
+  if (alien_found () == FALSE)
+    return -1;
 
   /* Make a directory for the keys. */
 
-  if (mkdtemp (key_dir) == NULL) return -1;
+  if (mkdtemp (key_dir) == NULL)
+    return -1;
 
   /* Setup the login structure. */
 
@@ -775,7 +785,8 @@ lsc_user_all_create (const gchar *name,
 
   /* Create RPM package. */
 
-  if (mkdtemp (rpm_dir) == NULL) goto rm_key_exit;
+  if (mkdtemp (rpm_dir) == NULL)
+    goto rm_key_exit;
   rpm_path = g_build_filename (rpm_dir, "p.rpm", NULL);
   g_debug ("%s: rpm_path: %s", __FUNCTION__, rpm_path);
   if (lsc_user_rpm_create (login, rpm_path) == FALSE)
@@ -812,10 +823,7 @@ lsc_user_all_create (const gchar *name,
   /* Read the packages and key into memory. */
 
   error = NULL;
-  g_file_get_contents (public_key_path,
-                       public_key,
-                       &length,
-                       &error);
+  g_file_get_contents (public_key_path, public_key, &length, &error);
   if (error)
     {
       g_free (rpm_path);
@@ -825,10 +833,7 @@ lsc_user_all_create (const gchar *name,
     }
 
   error = NULL;
-  g_file_get_contents (private_key_path,
-                       private_key,
-                       &length,
-                       &error);
+  g_file_get_contents (private_key_path, private_key, &length, &error);
   if (error)
     {
       g_free (rpm_path);
@@ -838,10 +843,7 @@ lsc_user_all_create (const gchar *name,
     }
 
   error = NULL;
-  g_file_get_contents (rpm_path,
-                       (gchar**) rpm,
-                       rpm_size,
-                       &error);
+  g_file_get_contents (rpm_path, (gchar **) rpm, rpm_size, &error);
   g_free (rpm_path);
   if (error)
     {
@@ -851,10 +853,7 @@ lsc_user_all_create (const gchar *name,
     }
 
   error = NULL;
-  g_file_get_contents (deb_path,
-                       (gchar**) deb,
-                       deb_size,
-                       &error);
+  g_file_get_contents (deb_path, (gchar **) deb, deb_size, &error);
   g_free (deb_path);
   if (error)
     {

@@ -1,5 +1,9 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/lsc_user.c: Tidy.  Match formatting to standard.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (collate_message_type): New function.
 	(init_manage_process): Create collate_message_type collation.
 	(init_result_iterator): Order types with collation collate_message_type.
