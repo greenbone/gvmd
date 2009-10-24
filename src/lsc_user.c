@@ -58,8 +58,10 @@
  * @todo FIXME: handle symbolic links
  * @todo Move to libs?
  *
+ * @param[in]  name  File name.
+ *
  * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
- * exist or could not be accessed.
+ *         exist or could not be accessed.
  */
 static int
 check_is_file (const char *name)
@@ -86,8 +88,10 @@ check_is_file (const char *name)
  * @todo FIXME: handle symbolic links
  * @todo Move to libs?
  *
+ * @param[in]  name  File name.
+ *
  * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
- * exist or could not be accessed.
+ *         exist or could not be accessed.
  */
 static int
 check_is_dir (const char *name)
@@ -105,7 +109,7 @@ check_is_dir (const char *name)
 }
 
 
-/** @todo Copied verbatim from openvas-client/src/util/file_utils.c. */
+/* Modified copy of openvas-client/src/util/file_utils.c. */
 
 /**
  * @brief Recursively removes files and directories.
@@ -113,11 +117,9 @@ check_is_dir (const char *name)
  * This function will recursively call itself to delete a path and any
  * contents of this path.
  *
- * @param pathname The name of the file to be deleted from the filesystem.
+ * @param[in]  pathname  Name of file to be deleted from filesystem.
  *
  * @return 0 if the name was successfully deleted, -1 if an error occurred.
- * Please note that errno is currently not guaranteed to contain the correct
- * value if -1 is returned.
  */
 static int
 file_utils_rmdir_rf (const gchar * pathname)
@@ -131,8 +133,6 @@ file_utils_rmdir_rf (const gchar * pathname)
         {
           g_warning ("g_dir_open(%s) failed - %s\n", pathname, error->message);
           g_error_free (error);
-          // errno should be set when we return -1 to maintain remove()
-          // compatibility.
           return -1;
         }
       else
@@ -164,10 +164,13 @@ file_utils_rmdir_rf (const gchar * pathname)
  *
  * The source file is read into memory, so it is inefficient and likely to fail
  * for really big files.
+ *
  * If the destination file does exist already, it will be overwritten.
  *
- * @returns TRUE if successfull, FALSE otherwise (displays error but does not
- *          clean up).
+ * @param[in]  source_file  Source file name.
+ * @param[in]  dest_file    Destination file name.
+ *
+ * @return TRUE if successful, FALSE otherwise.
  */
 static gboolean
 file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
@@ -178,7 +181,8 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
   FILE *fd = NULL;
   GError *error;
 
-  // Read file content into memory
+  /* Read file content into memory. */
+
   error = NULL;
   g_file_get_contents (source_file, &src_file_content, &src_file_size, &error);
   if (error)
@@ -189,7 +193,8 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
       return FALSE;
     }
 
-  // Open destination file
+  /* Open destination file. */
+
   fd = fopen (dest_file, "wb");
   if (fd == NULL)
     {
@@ -198,7 +203,8 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
       return FALSE;
     }
 
-  // Write content of src to dst and close it
+  /* Write content of src to dst and close it. */
+
   bytes_written = fwrite (src_file_content, 1, src_file_size, fd);
   fclose (fd);
 
@@ -220,19 +226,25 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
  *
  * The source file is read into memory, so it is inefficient and likely to fail
  * for really big files.
+ *
  * If the destination file does exist already, it will be overwritten.
  *
- * @returns TRUE if successfull, FALSE otherwise (displays error but does not
- *          clean up).
+ * @param[in]  source_file  Source file name.
+ * @param[in]  dest_file    Destination file name.
+ *
+ * @return TRUE if successful, FALSE otherwise (displays error but does not
+ *         clean up).
  */
 static gboolean
 file_utils_move_file (const gchar *source_file, const gchar *dest_file)
 {
-  // Copy file (will displays errors itself)
+  /* Copy file (will displays errors itself). */
+
   if (file_utils_copy_file (source_file, dest_file) == FALSE)
     return FALSE;
 
-  // Remove source file
+  /* Remove source file. */
+
   if (remove (source_file) != 0)
     {
       g_debug ("%s: failed to remove %s", __FUNCTION__, source_file);
@@ -246,18 +258,18 @@ file_utils_move_file (const gchar *source_file, const gchar *dest_file)
 /* Key creation. */
 
 /**
- * @brief Creates a private key for local checks.
+ * @brief Create a private key for local checks.
  *
  * Forks and creates a key for local checks by calling
  * "openssl pkcs8 -topk8 -v2 des3 -in filepath -passin pass:passphrase -out
  *          filepath.p8 -passout pass:passphrase"
  * Directories within privkey_file will be created if they do not exist.
  *
- * @param pubkey_file Path to file of public key (a trailing .pub will be stripped).
- * @param privkey_file Name of private key file to be created.
- *
- * @param passphrase_pub The passphrase for the public key.
- * @param passphrase_priv Passhprase for the private key.
+ * @param[in]  pubkey_file      Path to file of public key (a .pub will be
+ *                              stripped).
+ * @param[in]  privkey_file     Name of private key file to be created.
+ * @param[in]  passphrase_pub   The passphrase for the public key.
+ * @param[in]  passphrase_priv  Passhprase for the private key.
  *
  * @return 0 if successful, -1 otherwise.
  */
@@ -299,7 +311,8 @@ ssh_privkey_create (char *pubkey_file, char *privkey_file,
     }
   g_free (dir);
 
-  // Strip ".pub" of public key filename, if any.
+  /* Strip ".pub" of public key filename, if any. */
+
   if (g_str_has_suffix (pubkey_file, ".pub") == TRUE)
     {
       /* RATS: ignore, string literal is nul-terminated */
@@ -311,7 +324,8 @@ ssh_privkey_create (char *pubkey_file, char *privkey_file,
   else
     pubkey_stripped = g_strdup (pubkey_file);
 
-  /* Fire openssl */
+  /* Spawn openssl. */
+
   const gchar *command =
     g_strconcat ("openssl pkcs8 -topk8 -v2 des3"
                  " -in ", pubkey_stripped,
@@ -340,14 +354,15 @@ ssh_privkey_create (char *pubkey_file, char *privkey_file,
 }
 
 /**
+ * @brief Create a public key.
+ *
  * Forks and creates a key for local checks by calling
- * "ssh-keygen -t rsa -f filepath -C comment -P passhprase -q"
+ * "ssh-keygen -t rsa -f filepath -C comment -P passhprase -q".
  * A directory will be created if it does not exist.
  *
- * @param  comment     Comment to use.
- * @param  passphrase  The passphrase for the key, must be longer
- *                     than 4 characters.
- * @param  filepath    Path to file of public key (a trailing .pub will be stripped).
+ * @param[in]  comment     Comment to use.
+ * @param[in]  passphrase  Passphrase for key, must be longer than 4 characters.
+ * @param[in]  filepath    Path to file of public key (a .pub will be stripped).
  *
  * @return 0 if successful, -1 otherwise.
  */
@@ -362,7 +377,8 @@ ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
   gchar *file_pubstripped;
   const char *command;
 
-  /* Sanity-check essential parameters */
+  /* Sanity-check essential parameters. */
+
   if (!comment || comment[0] == '\0')
     {
       g_debug ("%s: comment must be set", __FUNCTION__);
@@ -373,7 +389,9 @@ ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
       g_debug ("%s: password must be longer than 4 characters", __FUNCTION__);
       return -1;
     }
-  /* Sanity check files */
+
+  /* Sanity check files. */
+
   dir = g_path_get_dirname (filepath);
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
     {
@@ -383,7 +401,8 @@ ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
     }
   g_free (dir);
 
-  // Strip ".pub" off filename, if any.
+  /* Strip ".pub" off filename, if any. */
+
   if (g_str_has_suffix (filepath, ".pub") == TRUE)
     {
       /* RATS: ignore, string literal is nul-terminated */
@@ -395,7 +414,8 @@ ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
   else
     file_pubstripped = g_strdup (filepath);
 
-  /* Fire ssh-keygen */
+  /* Spawn ssh-keygen. */
+
   command = g_strconcat ("ssh-keygen -t rsa"
                          " -f ", file_pubstripped,
                          " -C \"", comment, "\""
@@ -432,13 +452,12 @@ ssh_pubkey_create (const char *comment, char *passphrase, char *filepath)
 /* RPM package generation. */
 
 /**
- * @brief Returns the path to the directory where the rpm generator
- * @brief ("openvas-lsc-rpm-creator.sh") is located.
+ * @brief Return directory containing rpm generator script.
  *
  * The search will be performed just once.
  *
- * @return Path to the directory with the rpm generator or NULL (shall not be
- *         freed!).
+ * @return Newly allocated path to directory containing generator if found,
+ *         else NULL.
  */
 static gchar *
 get_rpm_generator_path ()
@@ -465,7 +484,7 @@ get_rpm_generator_path ()
 /**
  * @brief Attempts creation of RPM packages to install a users public key file.
  *
- * @param loginfo openvas_ssh_login struct to create rpm for.
+ * @param[in]  loginfo  openvas_ssh_login struct to create rpm for.
  *
  * @return Path to rpm file if successfull, NULL otherwise.
  */
@@ -521,9 +540,9 @@ lsc_user_rpm_create (openvas_ssh_login *loginfo, const gchar *to_filename)
   gchar *standard_err;
   if ((g_spawn_sync (oltap_path,
                      cmd,
-                     NULL,                  // env
+                     NULL,                  /* Environment. */
                      G_SPAWN_SEARCH_PATH,
-                     NULL,                  // setup func
+                     NULL,                  /* Setup function. */
                      NULL,
                      &standard_out,
                      &standard_err,
@@ -589,8 +608,8 @@ lsc_user_rpm_create (openvas_ssh_login *loginfo, const gchar *to_filename)
 /**
  * @brief Execute alien to create a deb package from an rpm package.
  *
- * @param  rpmdir   Directory to run the command in.
- * @param  rpmfile  .rpm file to transform with alien to a .deb.
+ * @param[in]  rpmdir   Directory to run the command in.
+ * @param[in]  rpmfile  .rpm file to transform with alien to a .deb.
  *
  * @return 0 success, -1 error.
  */
@@ -615,9 +634,9 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
            rpmdir, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
   if ((g_spawn_sync (rpmdir,
                      cmd,
-                     NULL, // env
+                     NULL,                 /* Environment. */
                      G_SPAWN_SEARCH_PATH,
-                     NULL, // setup func
+                     NULL,                 /* Setup func. */
                      NULL,
                      NULL,
                      NULL,
@@ -644,8 +663,8 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
 /**
  * @brief Create a deb packages from an rpm package.
  *
- * @param  loginfo   openvas_ssh_login struct to create rpm for.
- * @param  rpm_file  location of the rpm file.
+ * @param[in]  loginfo   openvas_ssh_login struct to create rpm for.
+ * @param[in]  rpm_file  location of the rpm file.
  *
  * @return deb package file name on success, else NULL.
  */
@@ -682,7 +701,7 @@ lsc_user_deb_create (openvas_ssh_login *loginfo, const gchar *rpm_file)
  *
  * The check itself will only be done once.
  *
- * @return true if alien could be found in the path, false otherwise.
+ * @return TRUE if alien could be found in the path, FALSE otherwise.
  */
 static gboolean
 alien_found ()
@@ -692,7 +711,7 @@ alien_found ()
 
   if (searched == FALSE)
     {
-      // Check if alien is found in path
+      /* Check if alien is found in path. */
       gchar *alien_path = g_find_program_in_path ("alien");
       if (alien_path != NULL)
         {
