@@ -1,5 +1,10 @@
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/lsc_user.c: Add fullstops to a few comments.  Convert printfs to
+	g_debugs.
+
+2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/lsc_user.c: Make docs and comments consistent.
 
 2009-10-23  Matthew Mundell <matthew.mundell@intevation.de>

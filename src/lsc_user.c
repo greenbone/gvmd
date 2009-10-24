@@ -284,14 +284,14 @@ ssh_privkey_create (char *pubkey_file, char *privkey_file,
   gchar *dir = NULL;
   gchar *pubkey_stripped = NULL;
 
-  /* Sanity-check essential parameters */
+  /* Sanity-check essential parameters. */
   if (!passphrase_pub || !passphrase_priv)
     {
       g_debug ("%s: parameter error", __FUNCTION__);
       return -1;
     }
 
-  /* Sanity check files */
+  /* Sanity check files. */
   if (g_file_test (pubkey_file, G_FILE_TEST_EXISTS) == FALSE)
     {
       g_debug ("%s: failed to find public key %s", __FUNCTION__, pubkey_file);
@@ -343,10 +343,9 @@ ssh_privkey_create (char *pubkey_file, char *privkey_file,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      printf ("Error creating private key file.");
-      printf ("\tSpawned openssl process returned with %d.\n", exit_status);
-      printf ("\t\t stdout: %s\n", astdout);
-      printf ("\t\t stderr: %s\n", astderr);
+      g_debug ("%s: openssl failed with %d", __FUNCTION__, exit_status);
+      g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
+      g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       return -1;
     }
 
@@ -794,7 +793,7 @@ lsc_user_all_create (const gchar *name,
   if (ssh_pubkey_create (comment, key_password, public_key_path))
     goto rm_key_exit;
 
-  /* Create private key */
+  /* Create private key. */
 
   if (ssh_privkey_create (public_key_path,
                           private_key_path,
