@@ -1,5 +1,9 @@
 2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/lsc_user.c (ssh_privkey_create): Quote passwords for openssl.
+
+2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_lsc_credential): Check that name is all
 	alphanumeric.
 

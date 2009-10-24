@@ -326,9 +326,9 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
   const gchar *command =
     g_strconcat ("openssl pkcs8 -topk8 -v2 des3"
                  " -in ", pubkey_stripped,
-                 " -passin pass:", passphrase_pub,
+                 " -passin pass:\"", passphrase_pub, "\"",
                  " -out ", privkey_file,
-                 " -passout pass:", passphrase_priv,
+                 " -passout pass:\"", passphrase_priv, "\"",
                  NULL);
   g_free (pubkey_stripped);
 
