@@ -53,10 +53,10 @@ main ()
       return EXIT_FAILURE;
     }
 
-  omp_delete_lsc_credential (&session, "omp_create_lsc_credential_0");
+  omp_delete_lsc_credential (&session, "ompcreatelsccredential0");
   if (openvas_server_send (&session,
                            "<create_lsc_credential>"
-                           "<name>omp_create_lsc_credential_0</name>"
+                           "<name>ompcreatelsccredential0</name>"
                            "</create_lsc_credential>")
       == -1)
     {
@@ -86,7 +86,7 @@ main ()
 
   /* Cleanup. */
 
-  omp_delete_lsc_credential (&session, "omp_create_lsc_credential_0");
+  omp_delete_lsc_credential (&session, "ompcreatelsccredential0");
   close_manager_connection (socket, session);
   free_entity (entity);
   free_entity (expected);

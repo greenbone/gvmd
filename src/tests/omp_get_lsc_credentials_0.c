@@ -33,8 +33,8 @@
 #include "common.h"
 #include "../tracef.h"
 
-#define NAME_1 "omp_get_lsc_credentials_0 1"
-#define NAME_2 "omp_get_lsc_credentials_0 2"
+#define NAME_1 "ompgetlsccredentials0name1"
+#define NAME_2 "ompgetlsccredentials0name2"
 #define COMMENT_1 "Test comment."
 
 int

@@ -1,3 +1,11 @@
+2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tests/omp_get_lsc_credentials_0.c,
+	src/tests/omp_create_lsc_credentials_0.c,
+	src/tests/omp_create_lsc_credentials_1.c,
+	src/tests/omp_delete_lsc_credential_0.c: Remove underscores and spaces
+	from LSC names.
+
 2009-10-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/lsc_user.c (ssh_privkey_create): Quote passwords for openssl.
