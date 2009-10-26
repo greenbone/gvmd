@@ -1,3 +1,10 @@
+2009-10-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/otp.c (process_otp_scanner_input): In OTP, NVT descriptions do
+	not contain newlines, they are instead replaced by semicolons.
+	Undo this before descriptions enter nvti structures and ultimately the
+	database.
+
 2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_get_lsc_credentials_0.c,

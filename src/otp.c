@@ -1994,6 +1994,14 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_DESCRIPTION:
                 {
+                  /* Un"escape" description (replace ';' by '\n') */
+                  if (field != NULL)
+                    {
+                      char* pos = field;
+                      while ((pos = strchr (pos, ';')))
+                        pos[0] = '\n';
+                    }
+
                   nvti_set_description (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_SUMMARY);
                   break;
