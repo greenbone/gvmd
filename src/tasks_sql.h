@@ -535,14 +535,46 @@ migrate_1_to_2 ()
 }
 
 /**
+ * @brief Migrate the database from version 2 to version 3.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_2_to_3 ()
+{
+  /* Ensure that the database is currently version 2. */
+
+  if (manage_db_version () != 2) return -1;
+
+  /* Update the database. */
+
+  /* The lsc_credentials table changed: package columns changed type from
+   * BLOB to string, a password column appeared and the dog column changed
+   * name to exe.
+   *
+   * Just remove all the LSC credentials, as credential generation only
+   * started working after version 3. */
+
+  sql ("DELETE from lsc_credentials;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN password;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN exe;");
+
+  /* Set the database version to 3. */
+
+  set_db_version (3);
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
  = {{0, NULL},
     {1, migrate_0_to_1},
     {2, migrate_1_to_2},
-#if 0
     {3, migrate_2_to_3},
+#if 0
     {4, migrate_3_to_4},
     {5, migrate_4_to_5},
 #endif

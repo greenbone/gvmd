@@ -1,3 +1,10 @@
+2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add database migration from version 2 to 3.
+
+	* src/tasks_sql.h (migrate_2_to_3): New function.
+	(database_migrators): Enable 2 to 3 migration.
+
 2009-10-26  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
@@ -212,7 +219,7 @@
 
 	Add database migration from version 1 to 2.
 
-	* src/tasks_sql.h (manage_0_to_1): Clarify note slightly.
+	* src/tasks_sql.h (migrate_0_to_1): Clarify note slightly.
 	(migrate_1_to_2): New function.
 	(database_migrators): Enable 1 to 2 migration.
 	(init_manage): Note that db may still need an update after migration.
