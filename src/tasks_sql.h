@@ -32,7 +32,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 4
+#define DATABASE_VERSION 5
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -610,6 +610,71 @@ migrate_3_to_4 ()
   return 0;
 }
 
+#if 0
+/**
+ * @brief Migrate the database from version 4 to version 5.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_4_to_5 ()
+{
+  iterator_t rows;
+
+  /* Ensure that the database is currently version 4. */
+
+  if (manage_db_version () != 4) return -1;
+
+  /* Update the database. */
+
+  /* Every table got an "id INTEGER PRIMARY KEY" column.  As the column is a
+   * primary key, every table must be recreated and the data transfered. */
+
+  /** @todo Add create_tables, init_row_iterator, row_iterator_* and COL_*. */
+
+  /** @todo Add every table. */
+
+  /* Move the tables away. */
+
+  sql ("ALTER TABLE meta RENAME TO meta_4;");
+
+  /* Create the new tables. */
+
+  create_tables ();
+
+  /* Copy the data into the new tables. */
+
+  init_row_iterator (&nvts, NULL, 2);
+  while (next (&nvts))
+    {
+      gchar *quoted_name = row_iterator_string (COL_META__NAME - 1);
+      gchar *quoted_value = row_iterator_string (COL_META__VALUE - 1);
+      sql ("INSERT into meta (id, name, value)"
+           " VALUES (%i, '%s', '%s');",
+           row_iterator_int (0),
+           quoted_name,
+           quoted_value);
+      g_free (quoted_name);
+      g_free (quoted_nvt);
+    }
+  cleanup_iterator (&nvts);
+
+  /* Drop the old tables. */
+
+  sql ("DROP TABLE meta_4;");
+
+  /* All the moving may have left much empty space, so vacuum. */
+
+  sql ("VACUUM");
+
+  /* Set the database version to 5. */
+
+  set_db_version (5);
+
+  return 0;
+}
+#endif /* 0 */
+
 /**
  * @brief Array of database version migrators.
  */
@@ -796,6 +861,61 @@ collate_message_type (void* data,
 
   return strcmp (one, two);
 }
+
+
+/* Database columns. */
+
+#define COL_CONFIG_PREFERENCES__NAME 3
+#define COL_CONFIG_PREFERENCES__VALUE 4
+
+#define COL_CONFIGS__NAME 1
+#define COL_CONFIGS__NVT_SELECTOR 2
+#define COL_CONFIGS__COMMENT 3
+#define COL_CONFIGS__FAMILIES_GROWING 6
+#define COL_CONFIGS__NVTS_GROWING 7
+
+#define COL_LSC_CREDENTIALS__NAME 1
+#define COL_LSC_CREDENTIALS__PASSWORD 2
+#define COL_LSC_CREDENTIALS__COMMENT 3
+#define COL_LSC_CREDENTIALS__PUBLIC_KEY 4
+#define COL_LSC_CREDENTIALS__PRIVATE_KEY 5
+#define COL_LSC_CREDENTIALS__RPM 6
+#define COL_LSC_CREDENTIALS__DEB 7
+#define COL_LSC_CREDENTIALS__EXE 8
+
+#define COL_NVT_PREFERENCES__NAME 1
+#define COL_NVT_PREFERENCES__VALUE 2
+
+#define COL_NVT_SELECTORS__NAME 1
+#define COL_NVT_SELECTORS__NVT 4
+
+#define COL_NVTS__OID 1
+#define COL_NVTS__VERSION 2
+#define COL_NVTS__NAME 3
+#define COL_NVTS__SUMMARY 4
+#define COL_NVTS__DESCRIPTION 5
+#define COL_NVTS__COPYRIGHT 6
+#define COL_NVTS__CVE 7
+#define COL_NVTS__BID 8
+#define COL_NVTS__XREF 9
+#define COL_NVTS__TAG 10
+#define COL_NVTS__SIGN_KEY_IDS 11
+#define COL_NVTS__CATEGORY 12
+#define COL_NVTS__FAMILY 13
+
+#define COL_REPORT_HOSTS__HOST 2
+#define COL_REPORT_HOSTS__START_TIME 3
+#define COL_REPORT_HOSTS__END_TIME 4
+#define COL_REPORT_HOSTS__ATTACK_STATE 5
+#define COL_REPORT_HOSTS__CURRENT_PORT 6
+#define COL_REPORT_HOSTS__MAX_PORT 7
+
+#define COL_TARGETS__NAME 1
+#define COL_TARGETS__HOSTS 2
+#define COL_TARGETS__COMMENT 3
+
+#define COL_TASK_FILES__NAME 2
+#define COL_TASK_FILES__CONTENT 3
 
 
 /* Task functions. */
@@ -1234,22 +1354,22 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the tables exist. */
 
-  sql ("CREATE TABLE IF NOT EXISTS meta    (name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (name UNIQUE, password);");
+  sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
-  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (name, hosts, comment);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS task_files (task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS config_preferences (config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
-  sql ("CREATE TABLE IF NOT EXISTS results (task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS reports (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS report_hosts (report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE TABLE IF NOT EXISTS report_results (report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
-  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
 
   /* Ensure the version is set. */
 
@@ -2543,17 +2663,18 @@ name (iterator_t* iterator) \
   return ret; \
 }
 
-DEF_ACCESS (host_iterator_host, 1);
-DEF_ACCESS (host_iterator_start_time, 2);
-DEF_ACCESS (host_iterator_end_time, 3);
-DEF_ACCESS (host_iterator_attack_state, 4);
+DEF_ACCESS (host_iterator_host, COL_REPORT_HOSTS__HOST);
+DEF_ACCESS (host_iterator_start_time, COL_REPORT_HOSTS__START_TIME);
+DEF_ACCESS (host_iterator_end_time, COL_REPORT_HOSTS__END_TIME);
+DEF_ACCESS (host_iterator_attack_state, COL_REPORT_HOSTS__ATTACK_STATE);
 
 int
 host_iterator_current_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  COL_REPORT_HOSTS__CURRENT_PORT);
   return ret;
 }
 
@@ -2562,7 +2683,7 @@ host_iterator_max_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt, COL_REPORT_HOSTS__MAX_PORT);
   return ret;
 }
 
@@ -3594,16 +3715,16 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
  *
  * @return Name of the file or NULL if iteration is complete.
  */
-static DEF_ACCESS (task_file_iterator_name, 1);
+static DEF_ACCESS (task_file_iterator_name, COL_TASK_FILES__NAME);
 
-DEF_ACCESS (task_file_iterator_content, 2);
+DEF_ACCESS (task_file_iterator_content, COL_TASK_FILES__CONTENT);
 
 int
 task_file_iterator_length (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  ret = (int) sqlite3_column_int (iterator->stmt, COL_TASK_FILES__CONTENT + 1);
   return ret;
 }
 
@@ -3734,15 +3855,16 @@ init_target_iterator (iterator_t* iterator)
   init_table_iterator (iterator, "targets");
 }
 
-DEF_ACCESS (target_iterator_name, 0);
-DEF_ACCESS (target_iterator_hosts, 1);
+DEF_ACCESS (target_iterator_name, COL_TARGETS__NAME);
+DEF_ACCESS (target_iterator_hosts, COL_TARGETS__HOSTS);
 
 const char*
 target_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           COL_TARGETS__COMMENT);
   return ret ? ret : "";
 }
 
@@ -4341,15 +4463,15 @@ init_config_iterator (iterator_t* iterator, const char *name)
     }
 }
 
-DEF_ACCESS (config_iterator_name, 0);
-DEF_ACCESS (config_iterator_nvt_selector, 1);
+DEF_ACCESS (config_iterator_name, COL_CONFIGS__NAME);
+DEF_ACCESS (config_iterator_nvt_selector, COL_CONFIGS__NVT_SELECTOR);
 
 const char*
 config_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, COL_CONFIGS__COMMENT);
   return ret ? ret : "";
 }
 
@@ -4358,7 +4480,7 @@ config_iterator_families_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt, COL_CONFIGS__FAMILIES_GROWING);
   return ret;
 }
 
@@ -4367,7 +4489,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt, COL_CONFIGS__NVTS_GROWING);
   return ret;
 }
 
@@ -4455,8 +4577,8 @@ init_preference_iterator (iterator_t* iterator, const char* config, const char* 
     }
 }
 
-static DEF_ACCESS (preference_iterator_name, 2);
-static DEF_ACCESS (preference_iterator_value, 3);
+static DEF_ACCESS (preference_iterator_name, COL_CONFIG_PREFERENCES__NAME);
+static DEF_ACCESS (preference_iterator_value, COL_CONFIG_PREFERENCES__VALUE);
 
 /**
  * @brief Return the NVT selector associated with a config.
@@ -4713,25 +4835,25 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
     }
 }
 
-DEF_ACCESS (nvt_iterator_oid, 0);
-DEF_ACCESS (nvt_iterator_version, 1);
-DEF_ACCESS (nvt_iterator_name, 2);
-DEF_ACCESS (nvt_iterator_summary, 3);
-DEF_ACCESS (nvt_iterator_description, 4);
-DEF_ACCESS (nvt_iterator_copyright, 5);
-DEF_ACCESS (nvt_iterator_cve, 6);
-DEF_ACCESS (nvt_iterator_bid, 7);
-DEF_ACCESS (nvt_iterator_xref, 8);
-DEF_ACCESS (nvt_iterator_tag, 9);
-DEF_ACCESS (nvt_iterator_sign_key_ids, 10);
-DEF_ACCESS (nvt_iterator_family, 12);
+DEF_ACCESS (nvt_iterator_oid, COL_NVTS__OID);
+DEF_ACCESS (nvt_iterator_version, COL_NVTS__VERSION);
+DEF_ACCESS (nvt_iterator_name, COL_NVTS__NAME);
+DEF_ACCESS (nvt_iterator_summary, COL_NVTS__SUMMARY);
+DEF_ACCESS (nvt_iterator_description, COL_NVTS__DESCRIPTION);
+DEF_ACCESS (nvt_iterator_copyright, COL_NVTS__COPYRIGHT);
+DEF_ACCESS (nvt_iterator_cve, COL_NVTS__CVE);
+DEF_ACCESS (nvt_iterator_bid, COL_NVTS__BID);
+DEF_ACCESS (nvt_iterator_xref, COL_NVTS__XREF);
+DEF_ACCESS (nvt_iterator_tag, COL_NVTS__TAG);
+DEF_ACCESS (nvt_iterator_sign_key_ids, COL_NVTS__SIGN_KEY_IDS);
+DEF_ACCESS (nvt_iterator_family, COL_NVTS__FAMILY);
 
 int
 nvt_iterator_category (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 11);
+  ret = (int) sqlite3_column_int (iterator->stmt, COL_NVTS__CATEGORY);
   return ret;
 }
 
@@ -4935,7 +5057,7 @@ nvt_selector_iterator_include (iterator_t* iterator)
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
+static DEF_ACCESS (nvt_selector_iterator_nvt, COL_NVT_SELECTORS__NVT);
 
 /**
  * @brief Get the name from an NVT selector iterator.
@@ -4944,7 +5066,7 @@ static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_name, 0);
+static DEF_ACCESS (nvt_selector_iterator_name, COL_NVT_SELECTORS__NAME);
 
 /**
  * @brief Get the number of families covered by a selector.
@@ -5189,8 +5311,8 @@ init_nvt_preference_iterator (iterator_t* iterator)
   init_table_iterator (iterator, "nvt_preferences");
 }
 
-DEF_ACCESS (nvt_preference_iterator_name, 0);
-DEF_ACCESS (nvt_preference_iterator_value, 1);
+DEF_ACCESS (nvt_preference_iterator_name, COL_NVT_PREFERENCES__NAME);
+DEF_ACCESS (nvt_preference_iterator_value, COL_NVT_PREFERENCES__VALUE);
 
 
 /* LSC Credentials. */
@@ -5546,20 +5668,23 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name)
     }
 }
 
-DEF_ACCESS (lsc_credential_iterator_name, 0);
-DEF_ACCESS (lsc_credential_iterator_password, 1);
-DEF_ACCESS (lsc_credential_iterator_public_key, 3);
-DEF_ACCESS (lsc_credential_iterator_private_key, 4);
-DEF_ACCESS (lsc_credential_iterator_rpm, 5);
-DEF_ACCESS (lsc_credential_iterator_deb, 6);
-DEF_ACCESS (lsc_credential_iterator_exe, 7);
+DEF_ACCESS (lsc_credential_iterator_name, COL_LSC_CREDENTIALS__NAME);
+DEF_ACCESS (lsc_credential_iterator_password, COL_LSC_CREDENTIALS__PASSWORD);
+DEF_ACCESS (lsc_credential_iterator_public_key,
+            COL_LSC_CREDENTIALS__PUBLIC_KEY);
+DEF_ACCESS (lsc_credential_iterator_private_key,
+            COL_LSC_CREDENTIALS__PRIVATE_KEY);
+DEF_ACCESS (lsc_credential_iterator_rpm, COL_LSC_CREDENTIALS__RPM);
+DEF_ACCESS (lsc_credential_iterator_deb, COL_LSC_CREDENTIALS__DEB);
+DEF_ACCESS (lsc_credential_iterator_exe, COL_LSC_CREDENTIALS__EXE);
 
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt,
+                                           COL_LSC_CREDENTIALS__COMMENT);
   return ret ? ret : "";
 }
 

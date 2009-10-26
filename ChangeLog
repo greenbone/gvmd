@@ -1,11 +1,39 @@
 2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add an id column to each table to force VACUUM to respect ROWID.  This
+	makes it safe to use ROWID as a foreign key.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increment to 5, for new id columns.
+	(init_manage): Add an id column to every table with constraints INTEGER
+	PRIMARY KEY.
+	[0] (migrate_4_to_5): Add outline of 4 to 5 migrator.
+	(COL_CONFIG_PREFERENCES__NAME, COL_CONFIG_PREFERENCES__VALUE)
+	(COL_CONFIGS__NAME, COL_CONFIGS__NVT_SELECTOR, COL_CONFIGS__COMMENT)
+	(COL_CONFIGS__FAMILIES_GROWING, COL_CONFIGS__NVTS_GROWING)
+	(COL_LSC_CREDENTIALS__NAME, COL_LSC_CREDENTIALS__PASSWORD)
+	(COL_LSC_CREDENTIALS__COMMENT, COL_LSC_CREDENTIALS__PUBLIC_KEY)
+	(COL_LSC_CREDENTIALS__PRIVATE_KEY, COL_LSC_CREDENTIALS__RPM)
+	(COL_LSC_CREDENTIALS__DEB, COL_LSC_CREDENTIALS__EXE)
+	(COL_NVT_PREFERENCES__NAME, COL_NVT_PREFERENCES__VALUE)
+	(COL_NVT_SELECTORS__NAME, COL_NVT_SELECTORS__NVT, COL_NVTS__OID)
+	(COL_NVTS__VERSION, COL_NVTS__NAME, COL_NVTS__SUMMARY)
+	(COL_NVTS__DESCRIPTION, COL_NVTS__COPYRIGHT, COL_NVTS__CVE, COL_NVTS__BID)
+	(COL_NVTS__XREF, COL_NVTS__TAG, COL_NVTS__SIGN_KEY_IDS)
+	(COL_NVTS__CATEGORY, COL_NVTS__FAMILY, COL_REPORT_HOSTS__HOST)
+	(COL_REPORT_HOSTS__START_TIME, COL_REPORT_HOSTS__END_TIME)
+	(COL_REPORT_HOSTS__ATTACK_STATE, COL_REPORT_HOSTS__CURRENT_PORT)
+	(COL_REPORT_HOSTS__MAX_PORT, COL_TARGETS__NAME, COL_TARGETS__HOSTS)
+	(COL_TARGETS__COMMENT, COL_TASK_FILES__NAME, COL_TASK_FILES__CONTENT): New
+	defines.  Use instead of integers in all iterator access functions.
+
+2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 3 to 4.
 
 	* src/tasks_sql.h (nvt_selector_iterator_name): New header.
 	(migrate_3_to_4, nvt_selector_iterator_name): New functions.
 	(database_migrators): Enable 3 to 4 migration.
-	(init_nvt_selector_iterator): If name is name do all selectors.
+	(init_nvt_selector_iterator): If name is NULL do all selectors.
 
 2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
 
