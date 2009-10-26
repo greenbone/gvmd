@@ -1,3 +1,15 @@
+2009-10-26  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 0.9.2 release.
+
+	* VERSION: Set to 0.9.2.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* CHANGES: Updated.
+
 2009-10-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/otp.c (process_otp_scanner_input): In OTP, NVT descriptions do
