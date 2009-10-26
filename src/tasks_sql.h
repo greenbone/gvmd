@@ -72,6 +72,9 @@ init_nvt_selector_iterator (iterator_t*, const char*, int);
 static const char*
 nvt_selector_iterator_nvt (iterator_t*);
 
+static const char*
+nvt_selector_iterator_name (iterator_t*);
+
 static int
 nvt_selector_iterator_include (iterator_t*);
 
@@ -567,6 +570,47 @@ migrate_2_to_3 ()
 }
 
 /**
+ * @brief Migrate the database from version 3 to version 4.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_3_to_4 ()
+{
+  iterator_t nvts;
+
+  /* Ensure that the database is currently version 3. */
+
+  if (manage_db_version () != 3) return -1;
+
+  /* Update the database. */
+
+  /* The nvt_selectors table got a family column. */
+
+  sql ("ALTER TABLE nvt_selectors ADD COLUMN family;");
+
+  init_nvt_selector_iterator (&nvts, NULL, 2);
+  while (next (&nvts))
+    {
+      gchar *quoted_name = sql_quote (nvt_selector_iterator_name (&nvts));
+      gchar *quoted_nvt = sql_quote (nvt_selector_iterator_nvt (&nvts));
+      sql ("UPDATE nvt_selectors SET family ="
+           " (SELECT family FROM nvts where oid = '%s')"
+           " WHERE name = '%s';",
+           quoted_nvt, quoted_name);
+      g_free (quoted_name);
+      g_free (quoted_nvt);
+    }
+  cleanup_iterator (&nvts);
+
+  /* Set the database version to 4. */
+
+  set_db_version (4);
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -574,8 +618,8 @@ static migrator_t database_migrators[]
     {1, migrate_0_to_1},
     {2, migrate_1_to_2},
     {3, migrate_2_to_3},
-#if 0
     {4, migrate_3_to_4},
+#if 0
     {5, migrate_4_to_5},
 #endif
     /* End marker. */
@@ -4835,9 +4879,15 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type
   assert (type >= 0 && type <= 2);
 
   iterator->done = FALSE;
-  formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
-                               " WHERE name = '%s' AND type = %i;",
-                               selector, type);
+  if (selector)
+    /** todo Quote selector. */
+    formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
+                                 " WHERE name = '%s' AND type = %i;",
+                                 selector, type);
+  else
+    formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
+                                 " WHERE type = %i;",
+                                 type);
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
@@ -4886,6 +4936,15 @@ nvt_selector_iterator_include (iterator_t* iterator)
  * @return NVT selector, or NULL if iteration is complete.
  */
 static DEF_ACCESS (nvt_selector_iterator_nvt, 3);
+
+/**
+ * @brief Get the name from an NVT selector iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT selector, or NULL if iteration is complete.
+ */
+static DEF_ACCESS (nvt_selector_iterator_name, 0);
 
 /**
  * @brief Get the number of families covered by a selector.

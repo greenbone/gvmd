@@ -1,5 +1,14 @@
 2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 3 to 4.
+
+	* src/tasks_sql.h (nvt_selector_iterator_name): New header.
+	(migrate_3_to_4, nvt_selector_iterator_name): New functions.
+	(database_migrators): Enable 3 to 4 migration.
+	(init_nvt_selector_iterator): If name is name do all selectors.
+
+2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 2 to 3.
 
 	* src/tasks_sql.h (migrate_2_to_3): New function.
