@@ -857,6 +857,8 @@ start_task (task_t task, char **report_id)
   if (fail) return -1;
   scanner_active = 1;
 
+  current_scanner_task = task;
+
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
 #if TASKS_FS
@@ -866,8 +868,6 @@ start_task (task_t task, char **report_id)
 #else
   // FIX
 #endif
-
-  current_scanner_task = task;
 
   return 0;
 }

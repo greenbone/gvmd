@@ -1,3 +1,8 @@
+2009-10-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.c (start_task): Set current_scanner_task before task run
+	status, so that report run status is set with task run status.
+
 2009-10-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an id column to each table to force VACUUM to respect ROWID.  This
