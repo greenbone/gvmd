@@ -3937,16 +3937,17 @@ target_in_use (const char* name)
 static char *
 config_preference (config_t config, const char *type, const char *preference)
 {
+  /** @todo Quote type and preference. */
   if (type)
     return sql_string (0, 0,
                        "SELECT value FROM config_preferences"
-                       " WHERE type = '%s' AND name = '%s';",
-                       type, preference);
+                       " WHERE ROWID = %llu AND  type = '%s' AND name = '%s';",
+                       config, type, preference);
   else
     return sql_string (0, 0,
                        "SELECT value FROM config_preferences"
-                       " WHERE type = NULL AND name = '%s';",
-                       preference);
+                       " WHERE ROWID = %llu AND type is NULL AND name = '%s';",
+                       config, preference);
 }
 
 /**
@@ -4549,7 +4550,7 @@ init_preference_iterator (iterator_t* iterator, const char* config, const char* 
   else
     formatted = g_strdup_printf ("SELECT * FROM config_preferences"
                                  " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                 " AND type = NULL;",
+                                 " AND type is NULL;",
                                  quoted_config);
   g_free (quoted_config);
 
@@ -5083,21 +5084,45 @@ nvt_selector_family_count (const char* selector, const char* config)
     {
       if (config_families_growing (config))
         {
-          if ((sql_int (0, 0,
+          /* The number of families can grow. */
+
+          if (sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                         selector)
-               == 1)
-              && (sql_int (0, 0,
+              == 1)
+            {
+              /* There is only one selector. */
+              if (sql_int (0, 0,
                            "SELECT COUNT(*) FROM nvt_selectors"
                            " WHERE name = '%s'"
                            " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                            ";",
                            selector)
-                  == 1))
-            return sql_int (0, 0, "SELECT COUNT(DISTINCT family) FROM nvts;");
-          return -1;
+                  == 1)
+                /* It is the all selector. */
+                return sql_int (0, 0,
+                                "SELECT COUNT(DISTINCT family) FROM nvts;");
+              /* An error somewhere. */
+              return -1;
+            }
+          else
+            {
+              /* There are multiple selectors. */
+              if (sql_int (0, 0,
+                           "SELECT COUNT(*) FROM nvt_selectors"
+                           " WHERE name = '%s' AND exclude = 1;",
+                           selector))
+                {
+                  /* There are excludes, so give up. */
+                  return -1;
+                }
+              /* It is equivalent to the all selector. */
+              return sql_int (0, 0,
+                              "SELECT COUNT(DISTINCT family) FROM nvts;");
+            }
         }
       else
+        /* The number of families is static. */
         return sql_int (0, 0,
                         "SELECT family_count FROM configs"
                         " WHERE name = '%s'"
@@ -5118,26 +5143,62 @@ nvt_selector_family_count (const char* selector, const char* config)
 int
 nvt_selector_nvt_count (const char* selector, const char* config)
 {
+  /** @todo sql_quote. */
   if (config_nvts_growing (config))
     {
+      /* The number of NVT's can increase. */
+
       if (nvt_cache_present ())
         {
-          if ((sql_int (0, 0,
+          int alls = sql_int (0, 0,
+                              "SELECT COUNT(*) FROM nvt_selectors"
+                              " WHERE name = '%s'"
+                              " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                              ";",
+                              selector);
+          if (sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                         selector)
-               == 1)
-              && (sql_int (0, 0,
-                           "SELECT COUNT(*) FROM nvt_selectors"
-                           " WHERE name = '%s'"
-                           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                           ";",
-                           selector)
-                  == 1))
-            return sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
+              == 1)
+            {
+              /* There is one selector. */
+              if (alls == 1)
+                /* It is the all selector. */
+                return sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
+              /* An error somewhere. */
+              return -1;
+            }
+          else
+            {
+              int excludes, includes;
+
+              /* There are multiple selectors. */
+
+              excludes = sql_int (0, 0,
+                                  "SELECT COUNT(*) FROM nvt_selectors"
+                                  " WHERE name = '%s' AND exclude = 1"
+                                  " AND type = "
+                                  G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                                  ";",
+                                  selector);
+              includes = sql_int (0, 0,
+                                  "SELECT COUNT(*) FROM nvt_selectors"
+                                  " WHERE name = '%s' AND exclude = 0"
+                                  " AND type = "
+                                  G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                                  ";",
+                                  selector);
+
+              return MAX ((alls ? sql_int (0, 0, "SELECT COUNT(*) FROM nvts;")
+                                  - excludes
+                                : includes - excludes),
+                          0);
+            }
         }
       return -1;
     }
   else
+    /* The number of NVT's is static. */
     return sql_int (0, 0,
                     "SELECT nvt_count FROM configs"
                     " WHERE name = '%s'"
@@ -5247,24 +5308,36 @@ nvt_selector_family_selected_count (const char *selector,
 {
   int ret;
 
-  gchar *quoted_family = sql_quote (family);
-
   if (growing)
-    ret = sql_int (0, 0,
-                   "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
-                   quoted_family);
+    {
+      gchar *quoted_family = sql_quote (family);
+      ret = sql_int (0, 0,
+                     "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
+                     quoted_family);
+      g_free (quoted_family);
+    }
   else
     {
       gchar *quoted_selector = sql_quote (selector);
-      ret = sql_int (0, 0,
-                     "SELECT COUNT(*) FROM nvt_selectors"
-                     " WHERE name = '%s' AND type = 2 AND family = '%s';",
-                     quoted_selector,
-                     quoted_family);
+      if (family)
+        {
+          gchar *quoted_family = sql_quote (family);
+          ret = sql_int (0, 0,
+                         "SELECT COUNT(*) FROM nvt_selectors"
+                         " WHERE exclude = 0 AND type = 2"
+                         " AND name = '%s' AND family = '%s';",
+                         quoted_selector,
+                         quoted_family);
+          g_free (quoted_family);
+        }
+      else
+        ret = sql_int (0, 0,
+                       "SELECT COUNT(*) FROM nvt_selectors"
+                       " WHERE exclude = 0 AND type = 2"
+                       " AND name = '%s' AND family is NULL;",
+                       quoted_selector);
       g_free (quoted_selector);
     }
-
-  g_free (quoted_family);
 
   return ret;
 }

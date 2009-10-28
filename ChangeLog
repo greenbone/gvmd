@@ -1,5 +1,21 @@
 2009-10-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (config_preference): Add the config to the query.
+	(init_preference_iterator): Use "is NULL" instead of "= NULL" in query.
+	(nvt_selector_family_count): Add the growing case where there is an "all"
+	selector with only "include" selectors.
+	(nvt_selector_nvt_count): Add naive handling of the growing case where
+	there is an "all" selector with other selectors.
+	(nvt_selector_family_selected_count): Handle NULL family for static
+	selection.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS handle the
+	NULL family, rename FAMILY/SELECTED_COUNT to FAMILY/NVT_COUNT and
+	FAMILY/NVT_COUNT to FAMILY/MAX_NVT_COUNT, and add MAX_NVT_COUNT and
+	KNOWN_NVT_COUNT to the config.
+
+2009-10-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (start_task): Set current_scanner_task before task run
 	status, so that report run status is set with task run status.
 

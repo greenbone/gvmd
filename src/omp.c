@@ -5167,6 +5167,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<family_count>"
                                        "%i<growing>%i</growing>"
                                        "</family_count>"
+                                       /* The number of NVT's selected by
+                                        * the selector. */
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
                                        "</nvt_count>"
@@ -5184,7 +5186,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (current_int_1)
                 {
                   iterator_t families;
-                  int selected_count = 0;
+                  int max_nvt_count = 0, known_nvt_count = 0;
 
                   /* The "families" attribute was true. */
 
@@ -5194,51 +5196,70 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         selector);
                   while (next (&families))
                     {
-                      int family_growing, nvt_count, family_selected_count;
+                      int family_growing, family_max, family_selected_count;
                       const char *family;
 
                       family = family_iterator_name (&families);
-                      /* family can be NULL if the selector was created
-                       * from an RC file, as it's currently too slow to lookup
-                       * each family when inserting the selector. */
-                      if (family == NULL) continue;
-
-                      family_growing = nvt_selector_family_growing
-                                        (selector,
-                                         family,
-                                         config_nvts_growing);
-                      nvt_count = family_nvt_count (family);
-                      if (family_growing)
-                        family_selected_count = nvt_count;
+                      if (family)
+                        {
+                          family_growing = nvt_selector_family_growing
+                                            (selector,
+                                             family,
+                                             config_nvts_growing);
+                          family_max = family_nvt_count (family);
+                          if (family_growing)
+                            family_selected_count = family_max;
+                          else
+                            family_selected_count
+                              = nvt_selector_family_selected_count
+                                 (selector,
+                                  family,
+                                  family_growing);
+                          known_nvt_count += family_selected_count;
+                        }
                       else
-                        family_selected_count
-                          = nvt_selector_family_selected_count
-                             (selector,
-                              family,
-                              family_growing);
+                        {
+                          /* The family can be NULL if an RC adds an NVT to a
+                           * config and the NVT is missing from the NVT
+                           * cache. */
+                          family_growing = 0;
+                          family_max = -1;
+                          family_selected_count
+                            = nvt_selector_family_selected_count
+                               (selector, NULL, 0);
+                        }
 
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<family>"
                         "<name>%s</name>"
-                        "<selected_count>%i</selected_count>"
-                        /**
-                         * @todo This is total NVTs in family, whereas in
-                         * config above it's total number of selected NVTs.
-                         */
+                        /* The number of selected NVT's. */
                         "<nvt_count>%i</nvt_count>"
+                        /* The total number of NVT's in the family. */
+                        "<max_nvt_count>%i</max_nvt_count>"
                         "<growing>%i</growing>"
                         "</family>",
-                        family,
+                        family ? family : "",
                         family_selected_count,
-                        nvt_count,
+                        family_max,
                         family_growing);
-                      selected_count += family_selected_count;
+                      if (family_max > 0)
+                        max_nvt_count += family_max;
                     }
                   cleanup_iterator (&families);
                   SENDF_TO_CLIENT_OR_FAIL ("</families>"
-                                           "<selected_count>%i</selected_count>"
+                                           /* The total number of NVT's in all
+                                            * the families for which the
+                                            * selector selects at least one
+                                            * NVT. */
+                                           "<max_nvt_count>%i</max_nvt_count>"
+                                           /* Total number of selected known
+                                            * NVT's. */
+                                           "<known_nvt_count>"
+                                           "%i"
+                                           "</known_nvt_count>"
                                            "</config>",
-                                           selected_count);
+                                           max_nvt_count,
+                                           known_nvt_count);
                 }
               else
                 SENDF_TO_CLIENT_OR_FAIL ("</config>");
