@@ -1582,6 +1582,7 @@ process_otp_scanner_input ()
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
+                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
                       != 3)
@@ -1655,6 +1656,7 @@ process_otp_scanner_input ()
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
+                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
                       != 3)
@@ -1725,6 +1727,7 @@ process_otp_scanner_input ()
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
+                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
                       != 3)
@@ -1795,6 +1798,7 @@ process_otp_scanner_input ()
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
+                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
                       != 3)
@@ -1865,6 +1869,7 @@ process_otp_scanner_input ()
                   name = g_newa (char, strlen (field));
                   protocol = g_newa (char, strlen (field));
 
+                  /* RATS: ignore, buffers are allocated to field length. */
                   if (sscanf (field, "%s (%i/%[^)])",
                               name, &number, protocol)
                       != 3)
@@ -1994,7 +1999,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PLUGIN_LIST_DESCRIPTION:
                 {
-                  /* Un"escape" description (replace ';' by '\n') */
+                  /* Un"escape" description (replace ';' by '\n'). */
                   if (field != NULL)
                     {
                       char* pos = field;
@@ -2092,6 +2097,7 @@ process_otp_scanner_input ()
                       char *name = g_malloc0 (strlen (field));
                       char *protocol = g_malloc0 (strlen (field));
 
+                      /* RATS: ignore, buffers are allocated to field length. */
                       if (sscanf (field, "%s (%i/%[^)])",
                                   name, &number, protocol)
                           != 3)

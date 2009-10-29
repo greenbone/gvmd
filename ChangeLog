@@ -1,3 +1,8 @@
+2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/otp.c (process_otp_scanner_input): Add RATS comments about sscanf
+	field lengths.  Put a fullstop on a comment.
+
 2009-10-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (config_preference): Add the config to the query.
