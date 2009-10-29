@@ -1,5 +1,12 @@
 2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/splint.h (g_strfreev, g_key_file_free, g_string_free)
+	(g_option_context_free): New headers, as in Administrator.
+
+	* src/openvasmd.c: Include splint.h.
+
+2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Cleanup after static analysis.
 
 	* src/ovas-mngr-comm.c (sendf_to_server): Declare variables at start of

@@ -112,6 +112,18 @@ g_rand_new (void);
 void
 g_rand_free (/*@only@*/ /*@out@*/ GRand *);
 
+void
+g_strfreev (/*@only@*/ /*@out@*/ gchar **);
+
+void
+g_key_file_free (/*@only@*/ /*@out@*/ GKeyFile *);
+
+void
+g_string_free (/*@only@*/ /*@out@*/ GString *, gboolean);
+
+void
+g_option_context_free (/*@only@*/ /*@out@*/ GOptionContext *);
+
 
 /* UUIDS. */
 

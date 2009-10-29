@@ -113,6 +113,10 @@
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
+
 /**
  * @brief The name of this program.
  *
