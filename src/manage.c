@@ -223,6 +223,7 @@ delete_reports (task_t task)
   // FIX wrap in transaction?
   init_report_iterator (&iterator, task);
   while (next_report (&iterator, &report)) delete_report (report);
+  cleanup_iterator (&iterator);
   return 0;
 }
 
@@ -692,12 +693,13 @@ start_task (task_t task, char **report_id)
   gchar *plugins;
   int fail;
   GSList *files = NULL;
+  task_status_t run_status;
 
   tracef ("   start task %u\n", task_id (task));
 
   // FIX atomic
 
-  task_status_t run_status = task_run_status (task);
+  run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
       || run_status == TASK_STATUS_STOP_REQUESTED
@@ -723,7 +725,11 @@ start_task (task_t task, char **report_id)
 
   /* Create the report. */
 
-  if (create_report (task, report_id)) return -3;
+  if (create_report (task, report_id))
+    {
+      free (hosts);
+      return -3;
+    }
 
   /* Reset any running information. */
 
@@ -731,13 +737,18 @@ start_task (task_t task, char **report_id)
 
   /* Send the preferences header. */
 
-  if (send_to_server ("CLIENT <|> PREFERENCES <|>\n")) return -1;
+  if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
+    {
+      free (hosts);
+      return -1;
+    }
 
   /* Get the config and selector. */
 
   config = task_config (task);
   if (config == NULL)
     {
+      free (hosts);
       tracef ("   task config is NULL.\n");
       return -5;
     }
@@ -745,6 +756,7 @@ start_task (task_t task, char **report_id)
   selector = config_nvt_selector (config);
   if (selector == NULL)
     {
+      free (hosts);
       free (config);
       tracef ("   task config is NULL.\n");
       return -5;
@@ -765,22 +777,26 @@ start_task (task_t task, char **report_id)
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
   if (send_to_server ("ntp_short_status <|> no\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
@@ -789,17 +805,20 @@ start_task (task_t task, char **report_id)
 
   if (send_config_preferences (config, "SERVER_PREFS"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
   if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
 
   if (send_to_server ("<|> CLIENT\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
@@ -815,6 +834,7 @@ start_task (task_t task, char **report_id)
       GSList *last = files;
       if (send_task_file (task, files->data))
         {
+          free (hosts);
           free (config);
           /* Free the data. */
           while (files)
@@ -835,18 +855,24 @@ start_task (task_t task, char **report_id)
 
   if (send_to_server ("CLIENT <|> RULES <|>\n"))
     {
+      free (hosts);
       free (config);
       return -1;
     }
 
   if (send_config_rules (config))
     {
+      free (hosts);
       free (config);
       return -1;
     }
 
   free (config);
-  if (send_to_server ("<|> CLIENT\n")) return -1;
+  if (send_to_server ("<|> CLIENT\n"))
+    {
+      free (hosts);
+      return -1;
+    }
 
   /* Send the attack command. */
 
@@ -886,9 +912,10 @@ start_task (task_t task, char **report_id)
 int
 stop_task (task_t task)
 {
+  task_status_t run_status;
   tracef ("   request task stop %u\n", task_id (task));
   // FIX something should check safety credential before this
-  task_status_t run_status = task_run_status (task);
+  run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {

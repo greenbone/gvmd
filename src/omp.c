@@ -451,15 +451,17 @@ send_to_client (char* msg)
 
 #if 1
   /** @todo FIX Temp hack to catch ISO chars sent by scanner. */
-  gsize size_dummy;
-  gchar* msg_utf8 = msg ? g_convert (msg, strlen (msg),
-                                     "UTF-8", "ISO_8859-1",
-                                     NULL, &size_dummy, NULL)
-                        : NULL;
-  memmove (to_client + to_client_end, msg_utf8, strlen (msg_utf8));
-  tracef ("-> client: %s\n", msg_utf8);
-  to_client_end += strlen (msg_utf8);
-  g_free (msg_utf8);
+  {
+    gsize size_dummy;
+    gchar* msg_utf8 = msg ? g_convert (msg, strlen (msg),
+                                       "UTF-8", "ISO_8859-1",
+                                       NULL, &size_dummy, NULL)
+                          : NULL;
+    memmove (to_client + to_client_end, msg_utf8, strlen (msg_utf8));
+    tracef ("-> client: %s\n", msg_utf8);
+    to_client_end += strlen (msg_utf8);
+    g_free (msg_utf8);
+  }
 #else /* 1 */
   memmove (to_client + to_client_end, msg, strlen (msg));
   tracef ("-> client: %s\n", msg);
@@ -1582,7 +1584,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
  * @return 0 if out of space in to_client buffer, else 1.
  */
 static gint
-send_certificate (gpointer cert_gp, gpointer dummy)
+send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
 {
   certificate_t* cert = (certificate_t*) cert_gp;
   gchar* msg;
@@ -1720,12 +1722,14 @@ send_nvt (iterator_t *nvts, int details)
     {
       gsize dummy;
 
+#ifndef S_SPLINT_S
       DEF (copyright);
       DEF (description);
       DEF (summary);
       DEF (family);
       DEF (version);
       DEF (tag);
+#endif /* not S_SPLINT_S */
 
 #undef DEF
 
@@ -1922,10 +1926,10 @@ print_report_xml (report_t report, gchar* xml_file)
       return -1;
     }
 
-  fprintf (out,
-           "<get_report_response"
-           " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
-           "<report>");
+  fputs ("<get_report_response"
+         " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
+         "<report>",
+         out);
 
   start_time = scan_start_time (report);
   fprintf (out,
@@ -2307,6 +2311,7 @@ print_report_latex (report_t report, gchar* latex_file)
       total_notes += notes;
 
       num_hosts++;
+      /* RATS: ignore, argument 2 is a constant string. */
       fprintf (out,
                "\\hline\n"
                // FIX 0 (false positives)
@@ -2326,6 +2331,7 @@ print_report_latex (report_t report, gchar* latex_file)
     }
   cleanup_iterator (&hosts);
 
+  /* RATS: ignore, argument 2 is a constant string. */
   fprintf (out,
            "\\hline\n"
            // FIX 0 (false positives)
@@ -3185,6 +3191,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("get_report"));
                           }
+                        /* RATS: ignore, command is defined above. */
                         else if (ret = system (command),
                                  // FIX ret is always -1
                                  0 && ((ret) == -1
@@ -3339,6 +3346,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("get_report"));
                           }
+                        /* RATS: ignore, command is defined above. */
                         else if (ret = system (command),
                                  // FIX ret is always -1
                                  0 && ((ret) == -1
@@ -3438,11 +3446,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     // TODO: Remove latex_file.
 
-                    close (latex_fd);
-
                     gchar *pdf_file, *command;
                     gint pdf_fd;
                     int ret;
+
+                    close (latex_fd);
 
                     // TODO: Remove pdf_file.
 
@@ -3475,6 +3483,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_report"));
                       }
+                    /* RATS: ignore, command is defined above. */
                     else if (ret = system (command),
                              // FIX ret is always -1
                              0 && ((ret) == -1
@@ -3699,8 +3708,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TASK:
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) 0);
             task_t task;
+            assert (current_client_task == (task_t) 0);
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
             else if (task == 0)
@@ -3828,8 +3837,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         // FIX update to match create_task (config, target)
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) 0);
             task_t task;
+            assert (current_client_task == (task_t) 0);
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
             else if (task == 0)
@@ -4322,7 +4331,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   g_free (target_name);
-                  g_free (description);
                   free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_task"));
@@ -4447,8 +4455,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_START_TASK:
         if (current_uuid)
           {
-            assert (current_client_task == (task_t) 0);
             task_t task;
+            assert (current_client_task == (task_t) 0);
             if (find_task (current_uuid, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
             else if (task == 0)

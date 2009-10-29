@@ -101,7 +101,7 @@ manage_migrate (GSList*, const gchar*);
 
 /* Task structures. */
 
-short scanner_active;
+extern short scanner_active;
 
 // FIX should be in otp.c/h
 /**
@@ -170,7 +170,24 @@ typedef struct
   sqlite3_stmt* stmt;
   gboolean done;
 } iterator_t;
-#endif /* TASKS_SQL */
+#else /* not TASKS_SQL */
+typedef long long int task_t;
+typedef long long int result_t;
+typedef long long int report_t;
+typedef long long int nvt_t;
+
+typedef struct
+{
+  void* stmt;
+  gboolean done;
+} task_iterator_t;
+
+typedef struct
+{
+  void* stmt;
+  gboolean done;
+} iterator_t;
+#endif /* not TASKS_SQL */
 
 
 /* Task global variables. */
@@ -491,9 +508,6 @@ host_iterator_host (iterator_t*);
 
 const char*
 host_iterator_start_time (iterator_t*);
-
-const char*
-host_iterator_end_time (iterator_t*);
 
 const char*
 host_iterator_end_time (iterator_t*);

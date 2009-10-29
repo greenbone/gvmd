@@ -1,5 +1,58 @@
 2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Cleanup after static analysis.
+
+	* src/ovas-mngr-comm.c (sendf_to_server): Declare variables at start of
+	block.
+
+	* src/tasks_sql.h: Include splint.h.  Move variable declarations to block
+	starts.  Mark /*@unused@*/ params.  Work around cpp string concatenation
+	for splint.
+	(init_manage): Free database_version.
+	(make_task_rcfile): Remove name variable.
+	(clude): Free formatted in same place as other prepare loops.
+	(create_lsc_credential): Free rand and formatted.
+
+	* src/splint.h: Include gnutls.h and uuid.h.
+	(g_malloc, g_malloc0): Update types.
+	(g_dir_read_name, g_dir_close, g_rand_new, g_rand_free): New headers.
+
+	* src/oxpd.h (from_buffer_size): Add extern.
+
+	* src/lsc_user.c: Include splint.h.  Move variable declarations to block
+	starts.
+	(file_utils_rmdir_rf): Check error before using it.  Free g_build_filename
+	return.
+	(file_utils_copy_file): Change bytes_written to a size_t.  Check error
+	before using it.
+	(ssh_privkey_create, ssh_pubkey_create): Free command.
+	(get_rpm_generator_path): Make return const.
+	(lsc_user_rpm_create): Make oltap_path const.
+
+	* src/lsc_user.h (lsc_user_all_create): Remove param names.
+
+	* src/manage.c: Move variable declarations to block starts.
+	(delete_reports): Cleanup iterator afterwards.
+	(start_task): Free hosts.
+
+	* src/manage.h [!TASKS_SQL]: Add dummy declarations for splint.
+	(host_iterator_end_time): Remove duplicate declaration.
+
+	* src/omp.c: Move variable declarations to block starts.  Mark
+	/*@unused@*/ params.
+	(send_nvt): Work around macro for splint.
+	(print_report_xml): Use fputs instead of fprintf for fixed string.
+	(print_report_latex): Add RATS comments about fprintf args.
+	(omp_xml_handle_end_element): Add RATS comments about system args.
+	Remove duplicate free of description.
+
+	* src/openvasmd.c: Move variable declarations to block starts.  Mark
+	/*@unused@*/ params.
+	(accept_and_maybe_fork): Add RATS comment about signal arg.
+	(main): Use char syntax for char literal 0.  Free option_context.
+
+2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/otp.c (process_otp_scanner_input): Add RATS comments about sscanf
 	field lengths.  Put a fullstop on a comment.
 

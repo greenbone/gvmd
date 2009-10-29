@@ -359,10 +359,11 @@ void
 accept_and_maybe_fork ()
 {
   /* Accept the client connection. */
+  pid_t pid;
   struct sockaddr_in client_address;
-  client_address.sin_family = AF_INET;
   socklen_t size = sizeof (client_address);
   int client_socket;
+  client_address.sin_family = AF_INET;
   while ((client_socket = accept (manager_socket,
                                   (struct sockaddr *) &client_address,
                                   &size))
@@ -381,14 +382,17 @@ accept_and_maybe_fork ()
 
 #if FORK
   /* Fork a child to serve the client. */
-  pid_t pid = fork ();
+  pid = fork ();
   switch (pid)
     {
       case 0:
         /* Child. */
         {
+          int ret;
+
           is_parent = 0;
 
+          /* RATS: ignore, this is SIG_DFL damnit. */
           if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
             {
               g_critical ("%s: failed to set client SIGCHLD handler: %s\n",
@@ -414,7 +418,7 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
 #if FORK
-          int ret = serve_client (client_socket);
+          ret = serve_client (client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
 #else
@@ -480,7 +484,7 @@ cleanup ()
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sigterm (int signal)
+handle_sigterm (/*@unused@*/ int signal)
 {
   exit (EXIT_SUCCESS);
 }
@@ -491,7 +495,7 @@ handle_sigterm (int signal)
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sighup (int signal)
+handle_sighup (/*@unused@*/ int signal)
 {
   exit (EXIT_SUCCESS);
 }
@@ -502,7 +506,7 @@ handle_sighup (int signal)
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sigint (int signal)
+handle_sigint (/*@unused@*/ int signal)
 {
   exit (EXIT_SUCCESS);
 }
@@ -550,7 +554,7 @@ main (int argc, char** argv)
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
-        { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
+        { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
       };
 
@@ -558,9 +562,11 @@ main (int argc, char** argv)
   g_option_context_add_main_entries (option_context, option_entries, NULL);
   if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
+      g_option_context_free (option_context);
       g_critical ("%s: %s\n\n", __FUNCTION__, error->message);
       exit (EXIT_FAILURE);
     }
+  g_option_context_free (option_context);
 
   if (print_version)
     {
@@ -1008,10 +1014,11 @@ main (int argc, char** argv)
    *     want to communicate with anything else here, like the scanner?
    */
 
-  int ret, nfds;
-  fd_set readfds, exceptfds;
   while (1)
     {
+      int ret, nfds;
+      fd_set readfds, exceptfds;
+
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
       FD_ZERO (&exceptfds);

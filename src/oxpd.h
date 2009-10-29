@@ -42,7 +42,7 @@
  */
 #define FROM_BUFFER_SIZE 1048576
 
-buffer_size_t from_buffer_size;
+extern buffer_size_t from_buffer_size;
 
 extern char from_client[];
 extern buffer_size_t from_client_start;

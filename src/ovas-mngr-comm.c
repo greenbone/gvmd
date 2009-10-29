@@ -167,9 +167,11 @@ int
 sendf_to_server (const char* format, ...)
 {
   va_list args;
+  gchar* msg;
+  int ret;
   va_start (args, format);
-  gchar* msg = g_strdup_vprintf (format, args);
-  int ret = send_to_server (msg);
+  msg = g_strdup_vprintf (format, args);
+  ret = send_to_server (msg);
   g_free (msg);
   va_end (args);
   return ret;

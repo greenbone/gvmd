@@ -35,11 +35,11 @@
 
 /*@only@*/
 gpointer
-g_malloc (gulong n_bytes);
+g_malloc (gsize n_bytes);
 
 /*@only@*/
 gpointer
-g_malloc0 (gulong n_bytes);
+g_malloc0 (gsize n_bytes);
 
 void
 g_free (/*@only@*/ /*@out@*/ /*@null@*/ gpointer mem);
@@ -100,8 +100,22 @@ g_file_set_contents (const gchar *filename,
 /*@notnull@*/ gchar*
 g_build_filename (const gchar *first, ...);
 
+/*@dependent@*/ const gchar*
+g_dir_read_name (GDir *dir);
+
+/*@dependent@*/ const gchar*
+g_dir_close (/*@only@*/ /*@out@*/ GDir *dir);
+
+/*@only@*/ GRand*
+g_rand_new (void);
+
+void
+g_rand_free (/*@only@*/ /*@out@*/ GRand *);
+
 
 /* UUIDS. */
+
+#include <ossp/uuid.h>
 
 /*@shared@*/ char*
 uuid_error (uuid_rc_t error);
@@ -118,6 +132,8 @@ uuid_export (const uuid_t *uuid,
 
 
 /* GNUTLS. */
+
+#include <gnutls/gnutls.h>
 
 /*@owned@*/ const char*
 gnutls_alert_get_name (gnutls_alert_description_t alert);

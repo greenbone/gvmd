@@ -35,6 +35,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -129,8 +133,11 @@ file_utils_rmdir_rf (const gchar * pathname)
 
       if (directory == NULL)
         {
-          g_warning ("g_dir_open(%s) failed - %s\n", pathname, error->message);
-          g_error_free (error);
+          if (error)
+            {
+              g_warning ("g_dir_open(%s) failed - %s\n", pathname, error->message);
+              g_error_free (error);
+            }
           return -1;
         }
       else
@@ -138,11 +145,11 @@ file_utils_rmdir_rf (const gchar * pathname)
           int ret = 0;
           const gchar *entry = NULL;
 
-          while ((entry = g_dir_read_name (directory)) && (ret == 0))
+          while ((entry = g_dir_read_name (directory)) != NULL && (ret == 0))
             {
-              ret = file_utils_rmdir_rf (g_build_filename (pathname,
-                                                           entry,
-                                                           NULL));
+              gchar *entry_path = g_build_filename (pathname, entry, NULL);
+              ret = file_utils_rmdir_rf (entry_path);
+              g_free (entry_path);
               if (ret != 0)
                 {
                   g_warning ("Failed to remove %s from %s!", entry, pathname);
@@ -175,19 +182,24 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
 {
   gchar *src_file_content = NULL;
   gsize src_file_size = 0;
-  int bytes_written = 0;
+  size_t bytes_written = 0;
   FILE *fd = NULL;
   GError *error;
 
   /* Read file content into memory. */
 
   error = NULL;
-  g_file_get_contents (source_file, &src_file_content, &src_file_size, &error);
-  if (error)
+  if (g_file_get_contents (source_file,
+                           &src_file_content,
+                           &src_file_size,
+                           &error))
     {
-      g_debug ("%s: failed to read %s: %s",
-               __FUNCTION__, source_file, error->message);
-      g_error_free (error);
+      if (error)
+        {
+          g_debug ("%s: failed to read %s: %s",
+                   __FUNCTION__, source_file, error->message);
+          g_error_free (error);
+        }
       return FALSE;
     }
 
@@ -203,10 +215,10 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
 
   /* Write content of src to dst and close it. */
 
-  bytes_written = fwrite (src_file_content, 1, src_file_size, fd);
+  bytes_written = fwrite (src_file_content, 1, (size_t) src_file_size, fd);
   fclose (fd);
 
-  if (bytes_written != src_file_size)
+  if (bytes_written != (size_t) src_file_size)
     {
       g_debug ("%s: failed to write to %s (%d/%d)",
                __FUNCTION__, dest_file, bytes_written, src_file_size);
@@ -281,6 +293,7 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
   gint exit_status;
   gchar *dir = NULL;
   gchar *pubkey_stripped = NULL;
+  gchar *command;
 
   /* Sanity-check essential parameters. */
   if (!passphrase_pub || !passphrase_priv)
@@ -309,7 +322,7 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
     }
   g_free (dir);
 
-  /* Strip ".pub" of public key filename, if any. */
+  /* Strip ".pub" off public key filename, if any. */
 
   if (g_str_has_suffix (pubkey_file, ".pub") == TRUE)
     {
@@ -323,7 +336,7 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
 
   /* Spawn openssl. */
 
-  const gchar *command =
+  command =
     g_strconcat ("openssl pkcs8 -topk8 -v2 des3"
                  " -in ", pubkey_stripped,
                  " -passin pass:\"", passphrase_pub, "\"",
@@ -343,9 +356,11 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
       g_debug ("%s: openssl failed with %d", __FUNCTION__, exit_status);
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_free (command);
       return -1;
     }
 
+  g_free (command);
   return 0;
 }
 
@@ -373,7 +388,7 @@ ssh_pubkey_create (const char *comment,
   gint exit_status = 0;
   gchar *dir;
   gchar *file_pubstripped;
-  const char *command;
+  char *command;
 
   /* Sanity-check essential parameters. */
 
@@ -443,8 +458,10 @@ ssh_pubkey_create (const char *comment,
                WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_free (command);
       return -1;
     }
+  g_free (command);
   return 0;
 }
 
@@ -459,7 +476,7 @@ ssh_pubkey_create (const char *comment,
  * @return Newly allocated path to directory containing generator if found,
  *         else NULL.
  */
-static gchar *
+static const gchar *
 get_rpm_generator_path ()
 {
   static gchar *rpm_generator_path = NULL;
@@ -495,7 +512,7 @@ lsc_user_rpm_create (const gchar *username,
                      const gchar *public_key_path,
                      const gchar *to_filename)
 {
-  gchar *oltap_path;
+  const gchar *oltap_path;
   gchar *rpm_path = NULL;
   gint exit_status;
   gchar *new_pubkey_filename = NULL;
@@ -503,6 +520,9 @@ lsc_user_rpm_create (const gchar *username,
   gchar **cmd;
   char tmpdir[] = "/tmp/lsc_user_rpm_create_XXXXXX";
   gboolean success = TRUE;
+  gchar *standard_out;
+  gchar *standard_err;
+  gchar *rpmfile;
 
   oltap_path = get_rpm_generator_path ();
 
@@ -540,8 +560,6 @@ lsc_user_rpm_create (const gchar *username,
   cmd[4] = NULL;
   g_debug ("%s: Spawning in %s: %s %s %s %s\n",
            __FUNCTION__, oltap_path, cmd[0], cmd[1], cmd[2], cmd[3]);
-  gchar *standard_out;
-  gchar *standard_err;
   if ((g_spawn_sync (oltap_path,
                      cmd,
                      NULL,                  /* Environment. */
@@ -579,10 +597,10 @@ lsc_user_rpm_create (const gchar *username,
    * for example RPMS/noarch/openvas-lsc-target-example_user-0.5-1.noarch.rpm.
    */
 
-  gchar *rpmfile = g_strconcat ("openvas-lsc-target-",
-                                username,
-                                "-0.5-1.noarch.rpm",
-                                NULL);
+  rpmfile = g_strconcat ("openvas-lsc-target-",
+                         username,
+                         "-0.5-1.noarch.rpm",
+                         NULL);
   rpm_path = g_build_filename (tmpdir, rpmfile, NULL);
   g_debug ("%s: new filename (rpm_path): %s\n", __FUNCTION__, rpm_path);
 

@@ -31,12 +31,12 @@
 #include "openvas_ssh_login.h"
 
 int
-lsc_user_all_create (const gchar *name,
-                     const gchar *password,
-                     gchar **public_key,
-                     gchar **private_key,
-                     void **rpm, gsize *rpm_size,
-                     void **deb, gsize *deb_size,
-                     void **exe, gsize *exe_size);
+lsc_user_all_create (const gchar *,
+                     const gchar *,
+                     gchar **,
+                     gchar **,
+                     void **, gsize *,
+                     void **, gsize *,
+                     void **, gsize *);
 
 #endif /* _OPENVASMD_LSC_USER_H */

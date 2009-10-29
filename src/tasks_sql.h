@@ -29,6 +29,10 @@
 #include <openvas/openvas_logging.h>
 #include "lsc_user.h"
 
+#ifdef S_SPLINT_S
+#include "splint.h"
+#endif
+
 /**
  * @brief Version of the database schema.
  */
@@ -210,8 +214,8 @@ sql (char* sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (unsigned int col, unsigned int row, char* sql, va_list args,
-       sqlite3_stmt** stmt_return)
+sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
+       va_list args, sqlite3_stmt** stmt_return)
 {
   const char* tail;
   int ret;
@@ -283,15 +287,18 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
   va_list args;
+  int ret;
+
+  int sql_x_ret;
   va_start (args, sql);
-  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
       abort ();
     }
-  int ret = sqlite3_column_int (stmt, col);
+  ret = sqlite3_column_int (stmt, col);
   sqlite3_finalize (stmt);
   return ret;
 }
@@ -302,9 +309,11 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   sqlite3_stmt* stmt;
   const unsigned char* ret2;
   char* ret;
+  int sql_x_ret;
+
   va_list args;
   va_start (args, sql);
-  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
@@ -334,9 +343,11 @@ int
 sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
+  int sql_x_ret;
   va_list args;
+
   va_start (args, sql);
-  int sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (col, row, sql, args, &stmt);
   va_end (args);
   switch (sql_x_ret)
     {
@@ -950,11 +961,11 @@ void
 append_to_task_string (task_t task, const char* field, const char* value)
 {
   char* current;
+  gchar* quote;
   current = sql_string (0, 0,
                         "SELECT %s FROM tasks WHERE ROWID = %llu;",
                         field,
                         task);
-  gchar* quote;
   if (current)
     {
       gchar* new = g_strconcat ((const gchar*) current, value, NULL);
@@ -1088,7 +1099,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   /* Ensure the mgr directory exists. */
-  mgr_dir = g_build_filename (OPENVAS_STATE_DIR "/mgr/", NULL);
+  mgr_dir = g_build_filename (OPENVAS_STATE_DIR, "mgr", NULL);
   ret = g_mkdir_with_parents (mgr_dir, 0755 /* "rwxr-xr-x" */);
   g_free (mgr_dir);
   if (ret == -1)
@@ -1099,6 +1110,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       abort (); // FIX
     }
 
+#ifndef S_SPLINT_S
   /* Open the database. */
   if (sqlite3_open (database ? database
                              : OPENVAS_STATE_DIR "/mgr/tasks.db",
@@ -1109,6 +1121,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                  sqlite3_errmsg (task_db));
       abort (); // FIX
     }
+#endif /* not S_SPLINT_S */
 
   if (update_nvt_cache)
     {
@@ -1281,7 +1294,7 @@ setup_full_config_prefs (config_t config, int safe_checks,
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 {
-  const char *database_version;
+  char *database_version;
   task_t index;
   task_iterator_t iterator;
 
@@ -1300,7 +1313,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   database_version = sql_string (0, 0,
                                  "SELECT value FROM meta"
                                  " WHERE name = 'database_version';");
-  /** @todo Free database_version. */
   if (nvt_cache_mode)
     {
       if (database_version
@@ -1312,14 +1324,18 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           g_message ("%s: database version supported by manager: %s\n",
                      __FUNCTION__,
                      G_STRINGIFY (DATABASE_VERSION));
+          g_free (database_version);
           return -2;
         }
+      g_free (database_version);
 
       /* If database_version was NULL then meta was missing, so assume
        * that the database is missing, which is OK. */
     }
   else
     {
+      long long int count;
+
       if (database_version)
         {
           if (strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
@@ -1330,8 +1346,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
               g_message ("%s: database version supported by manager: %s\n",
                          __FUNCTION__,
                          G_STRINGIFY (DATABASE_VERSION));
+              g_free (database_version);
               return -2;
             }
+          g_free (database_version);
         }
       else
         /* Assume database is missing. */
@@ -1343,7 +1361,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
        * was created before NVT preferences were cached in the database.
        */
 
-      long long int count;
       if (sql_int64 (&count, 0, 0,
                      "SELECT count(*) FROM meta"
                      " WHERE name = 'nvts_md5sum'"
@@ -1957,7 +1974,7 @@ task_second_last_report_id (task_t task)
 int
 make_task_rcfile (task_t task)
 {
-  char *config, *target, *selector, *name, *hosts, *rc;
+  char *config, *target, *selector, *hosts, *rc;
   iterator_t prefs;
   GString *buffer;
 
@@ -1976,15 +1993,6 @@ make_task_rcfile (task_t task)
     {
       free (config);
       free (target);
-      return -1;
-    }
-
-  name = task_name (task);
-  if (name == NULL)
-    {
-      free (config);
-      free (target);
-      free (selector);
       return -1;
     }
 
@@ -3989,6 +3997,7 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
       if (ret == SQLITE_OK)
         {
           if (stmt == NULL)
@@ -4091,7 +4100,6 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
     }
 
   sqlite3_finalize (stmt);
-  g_free (formatted);
 }
 
 /**
@@ -4506,6 +4514,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
 int
 config_in_use (const char* name)
 {
+  int ret;
   gchar* quoted_name;
 
   if (strcmp (name, "Full and fast") == 0
@@ -4515,9 +4524,9 @@ config_in_use (const char* name)
     return 1;
 
   quoted_name = sql_quote (name);
-  int ret = sql_int (0, 0,
-                     "SELECT count(*) FROM tasks WHERE config = '%s'",
-                     quoted_name);
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM tasks WHERE config = '%s'",
+                 quoted_name);
   g_free (quoted_name);
   return ret;
 }
@@ -5274,11 +5283,13 @@ nvt_selector_family_growing (const char *selector,
                              int all)
 {
   int ret;
+  gchar *quoted_family;
+  gchar *quoted_selector;
 
   if (all) return 1;
 
-  gchar *quoted_selector = sql_quote (selector);
-  gchar *quoted_family = sql_quote (family);
+  quoted_selector = sql_quote (selector);
+  quoted_family = sql_quote (family);
 
   ret = sql_int (0, 0,
                  "SELECT COUNT(*) FROM nvt_selectors"
@@ -5432,6 +5443,7 @@ create_lsc_credential (const char* name, const char* comment)
   for (i = 0; i < PASSWORD_LENGTH - 1; i++)
     password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
   password[PASSWORD_LENGTH - 1] = '\0';
+  g_rand_free (rand);
 
   if (lsc_user_all_create (name,
                            password,
@@ -5494,6 +5506,7 @@ create_lsc_credential (const char* name, const char* comment)
       {
         ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
         if (ret == SQLITE_BUSY) continue;
+        g_free (formatted);
         if (ret == SQLITE_OK)
           {
             if (stmt == NULL)
