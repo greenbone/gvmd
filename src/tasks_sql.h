@@ -729,10 +729,10 @@ migrate_2_to_3 ()
    * started working after version 3. */
 
   sql ("DELETE from lsc_credentials;");
-  /* Before revision 5733 this could have caused problems, because these
+  /* Before revision 5769 this could have caused problems, because these
    * columns are added on the end of the table, so columns referenced by
    * position in * queries may be wrong (for example, with the iterator
-   * returned by init_lsc_credential_iterator).  Since 5733 the queries
+   * returned by init_lsc_credential_iterator).  Since 5769 the queries
    * name all columns explicitly. */
   sql ("ALTER TABLE lsc_credentials ADD COLUMN password;");
   sql ("ALTER TABLE lsc_credentials ADD COLUMN exe;");

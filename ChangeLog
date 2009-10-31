@@ -1,5 +1,9 @@
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h: Correct revision number in comment.
+
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: Update migrator comments about appending columns.
 
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
