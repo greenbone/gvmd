@@ -1,3 +1,18 @@
+2009-10-30  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add database migration from version 4 to 5.
+
+	* src/tasks_sql.h: Move database column definitions up in file.
+	(create_tables): New function, body from init_manage.
+	(sql_insert, init_iterator, iterator_int64, iterator_string)
+	(migrate_4_to_5_copy_data): New functions.
+	(cleanup_iterator, next): Move up in file.
+	(migrate_0_to_1, migrate_1_to_2, migrate_2_to_3, migrate_3_to_4): Make
+	static.  Improve comments.
+	(migrate_4_to_5): Enable.  Make static.  Complete.
+	(database_migrators): Enable 4 to 5 migrator.
+	(init_manage): Move table creation to create_tables.
+
 2009-10-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/splint.h (g_strfreev, g_key_file_free, g_string_free)

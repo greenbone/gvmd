@@ -143,6 +143,27 @@ sql_quote (const char* string)
   return sql_nquote (string, strlen (string));
 }
 
+/**
+ * @brief Get the SQL insert expression for a string.
+ *
+ * @param[in]  string  The string, which may be NULL.
+ *
+ * @return Freshly allocated expression suitable for an INSERT statement,
+ *         including SQL quotation marks.
+ */
+static gchar *
+sql_insert (const char *value)
+{
+  if (value)
+    {
+      gchar *quoted_value = sql_quote (value);
+      gchar *insert = g_strdup_printf ("'%s'", quoted_value);
+      g_free (quoted_value);
+      return insert;
+    }
+  return g_strdup ("NULL");
+}
+
 void
 sql (char* sql, ...)
 {
@@ -371,6 +392,202 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
 }
 
 
+/* Database columns. */
+
+#define COL_CONFIG_PREFERENCES__NAME 3
+#define COL_CONFIG_PREFERENCES__VALUE 4
+
+#define COL_CONFIGS__NAME 1
+#define COL_CONFIGS__NVT_SELECTOR 2
+#define COL_CONFIGS__COMMENT 3
+#define COL_CONFIGS__FAMILIES_GROWING 6
+#define COL_CONFIGS__NVTS_GROWING 7
+
+#define COL_LSC_CREDENTIALS__NAME 1
+#define COL_LSC_CREDENTIALS__PASSWORD 2
+#define COL_LSC_CREDENTIALS__COMMENT 3
+#define COL_LSC_CREDENTIALS__PUBLIC_KEY 4
+#define COL_LSC_CREDENTIALS__PRIVATE_KEY 5
+#define COL_LSC_CREDENTIALS__RPM 6
+#define COL_LSC_CREDENTIALS__DEB 7
+#define COL_LSC_CREDENTIALS__EXE 8
+
+#define COL_META__NAME 1
+#define COL_META__VALUE 2
+
+#define COL_NVT_PREFERENCES__NAME 1
+#define COL_NVT_PREFERENCES__VALUE 2
+
+#define COL_NVT_SELECTORS__NAME 1
+#define COL_NVT_SELECTORS__NVT 4
+
+#define COL_NVTS__OID 1
+#define COL_NVTS__VERSION 2
+#define COL_NVTS__NAME 3
+#define COL_NVTS__SUMMARY 4
+#define COL_NVTS__DESCRIPTION 5
+#define COL_NVTS__COPYRIGHT 6
+#define COL_NVTS__CVE 7
+#define COL_NVTS__BID 8
+#define COL_NVTS__XREF 9
+#define COL_NVTS__TAG 10
+#define COL_NVTS__SIGN_KEY_IDS 11
+#define COL_NVTS__CATEGORY 12
+#define COL_NVTS__FAMILY 13
+
+#define COL_REPORT_HOSTS__HOST 2
+#define COL_REPORT_HOSTS__START_TIME 3
+#define COL_REPORT_HOSTS__END_TIME 4
+#define COL_REPORT_HOSTS__ATTACK_STATE 5
+#define COL_REPORT_HOSTS__CURRENT_PORT 6
+#define COL_REPORT_HOSTS__MAX_PORT 7
+
+#define COL_TARGETS__NAME 1
+#define COL_TARGETS__HOSTS 2
+#define COL_TARGETS__COMMENT 3
+
+#define COL_TASK_FILES__NAME 2
+#define COL_TASK_FILES__CONTENT 3
+
+
+/* Creation. */
+
+/**
+ * @brief Create all tables.
+ */
+static void
+create_tables ()
+{
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
+  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
+  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
+  sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
+}
+
+
+/* Iterators. */
+
+/**
+ * @brief Initialise an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+static void
+init_iterator (iterator_t* iterator, const char* sql)
+{
+  int ret;
+  const char* tail;
+  sqlite3_stmt* stmt;
+
+  iterator->done = FALSE;
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, sql, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      iterator->stmt = stmt;
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+}
+
+/**
+ * @brief Get an integer column from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Value of given column.
+ */
+long long int
+iterator_int64 (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return (long long int) sqlite3_column_int64 (iterator->stmt, col);
+}
+
+/**
+ * @brief Get a string column from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Value of given column.
+ */
+const char*
+iterator_string (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return (const char*) sqlite3_column_text (iterator->stmt, col);
+}
+
+/**
+ * @brief Cleanup an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+cleanup_iterator (iterator_t* iterator)
+{
+  sqlite3_finalize (iterator->stmt);
+}
+
+/**
+ * @brief Increment an iterator.
+ *
+ * @param[in]  iterator  Task iterator.
+ *
+ * @return TRUE if there was a next item, else FALSE.
+ */
+gboolean
+next (iterator_t* iterator)
+{
+  int ret;
+
+  if (iterator->done) return FALSE;
+
+  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
+  if (ret == SQLITE_DONE)
+    {
+      iterator->done = TRUE;
+      return FALSE;
+    }
+  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+    {
+      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
+      g_warning ("%s: sqlite3_step failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
+  return TRUE;
+}
+
+
 /* Migration. */
 
 /**
@@ -457,7 +674,7 @@ typedef struct
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 migrate_0_to_1 ()
 {
   /* Ensure that the database is currently version 0. */
@@ -473,9 +690,10 @@ migrate_0_to_1 ()
    * would be simply to update the version number to 1 in the database by
    * hand. */
 
+  /** @todo Only safe because scan_run_status is the last col in version 1. */
   sql ("ALTER TABLE reports ADD COLUMN scan_run_status INTEGER;");
 
-  /* SQLite 3.1.3 and earlier require a VACUUM before they can read
+  /* SQLite 3.1.3 and earlier requires a VACUUM before it can read
    * from the new column.  However, vacuuming might change the ROWIDs,
    * which would screw up the data.  Debian 5.0 (Lenny) is 3.5.9-6
    * already. */
@@ -503,7 +721,7 @@ migrate_0_to_1 ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 migrate_1_to_2 ()
 {
   iterator_t nvts;
@@ -553,7 +771,7 @@ migrate_1_to_2 ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 migrate_2_to_3 ()
 {
   /* Ensure that the database is currently version 2. */
@@ -570,6 +788,11 @@ migrate_2_to_3 ()
    * started working after version 3. */
 
   sql ("DELETE from lsc_credentials;");
+  /**
+   * @todo This is a problem, because these columns are added on the end
+   *       of the table, so columns referenced by position in * queries may
+   *       be wrong (for example, with the iterator returned by
+   *       init_lsc_credential_iterator). */
   sql ("ALTER TABLE lsc_credentials ADD COLUMN password;");
   sql ("ALTER TABLE lsc_credentials ADD COLUMN exe;");
 
@@ -585,7 +808,7 @@ migrate_2_to_3 ()
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 migrate_3_to_4 ()
 {
   iterator_t nvts;
@@ -598,6 +821,7 @@ migrate_3_to_4 ()
 
   /* The nvt_selectors table got a family column. */
 
+  /** @todo Only safe because family is the last column in version 3. */
   sql ("ALTER TABLE nvt_selectors ADD COLUMN family;");
 
   init_nvt_selector_iterator (&nvts, NULL, 2);
@@ -621,62 +845,515 @@ migrate_3_to_4 ()
   return 0;
 }
 
-#if 0
+/**
+ * @brief Move all the data to the new tables for the 4 to 5 migrator.
+ */
+static void
+migrate_4_to_5_copy_data ()
+{
+  iterator_t rows;
+
+  /* Table config_preferences. */
+  init_iterator (&rows,
+                 "SELECT rowid, config, type, name, value"
+                 " FROM config_preferences_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_type = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 3));
+      gchar *quoted_value = sql_insert (iterator_string (&rows, 4));
+      sql ("INSERT into config_preferences (id, config, type, name, value)"
+           " VALUES (%llu, %llu, %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           iterator_int64 (&rows, 1),
+           quoted_type,
+           quoted_name,
+           quoted_value);
+      g_free (quoted_type);
+      g_free (quoted_name);
+      g_free (quoted_value);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE config_preferences_4;");
+
+  /* Table configs. */
+  init_iterator (&rows,
+                 "SELECT rowid, name, nvt_selector, comment, family_count,"
+                 " nvt_count, families_growing, nvts_growing"
+                 " FROM configs_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_nvt_selector = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_comment = sql_insert (iterator_string (&rows, 3));
+      sql ("INSERT into configs"
+           " (id, name, nvt_selector, comment, family_count, nvt_count,"
+           "  families_growing, nvts_growing)"
+           " VALUES"
+           " (%llu, %s, %s, %s, %llu, %llu, %llu, %llu);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_nvt_selector,
+           quoted_comment,
+           iterator_int64 (&rows, 4),
+           iterator_int64 (&rows, 5),
+           iterator_int64 (&rows, 6),
+           iterator_int64 (&rows, 7));
+      g_free (quoted_name);
+      g_free (quoted_nvt_selector);
+      g_free (quoted_comment);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE configs_4;");
+
+  /* Table lsc_credentials. */
+  init_iterator (&rows,
+                 "SELECT rowid, name, password, comment, public_key,"
+                 " private_key, rpm, deb, exe"
+                 " FROM lsc_credentials_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_password = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_comment = sql_insert (iterator_string (&rows, 3));
+      gchar *quoted_public_key = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_private_key = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_rpm = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_deb = sql_insert (iterator_string (&rows, 7));
+      gchar *quoted_exe = sql_insert (iterator_string (&rows, 8));
+      sql ("INSERT into lsc_credentials"
+           " (id, name, password, comment, public_key, private_key, rpm, deb,"
+           "  exe)"
+           " VALUES"
+           " (%llu, %s, %s, %s, %s, %s, %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_password,
+           quoted_comment,
+           quoted_public_key,
+           quoted_private_key,
+           quoted_rpm,
+           quoted_deb,
+           quoted_exe);
+      g_free (quoted_name);
+      g_free (quoted_password);
+      g_free (quoted_comment);
+      g_free (quoted_public_key);
+      g_free (quoted_private_key);
+      g_free (quoted_rpm);
+      g_free (quoted_deb);
+      g_free (quoted_exe);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE lsc_credentials_4;");
+
+  /* Table meta. */
+  init_iterator (&rows, "SELECT rowid, name, value FROM meta_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_value = sql_insert (iterator_string (&rows, 2));
+      sql ("INSERT into meta (id, name, value)"
+           " VALUES (%llu, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_value);
+      g_free (quoted_name);
+      g_free (quoted_value);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE meta_4;");
+
+  /* Table nvt_preferences. */
+  init_iterator (&rows, "SELECT rowid, name, value FROM nvt_preferences_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_value = sql_insert (iterator_string (&rows, 2));
+      sql ("INSERT into nvt_preferences (id, name, value)"
+           " VALUES (%llu, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_value);
+      g_free (quoted_name);
+      g_free (quoted_value);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE nvt_preferences_4;");
+
+  /* Table nvt_selectors. */
+  init_iterator (&rows,
+                 "SELECT rowid, name, exclude, type, family_or_nvt, family"
+                 " FROM nvt_selectors_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_family_or_nvt = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_family = sql_insert (iterator_string (&rows, 5));
+      sql ("INSERT into nvt_selectors"
+           " (id, name, exclude, type, family_or_nvt, family)"
+           " VALUES"
+           " (%llu, %s, %llu, %llu, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           iterator_int64 (&rows, 2),
+           iterator_int64 (&rows, 3),
+           quoted_family_or_nvt,
+           quoted_family);
+      g_free (quoted_name);
+      g_free (quoted_family_or_nvt);
+      g_free (quoted_family);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE nvt_selectors_4;");
+
+  /* Table nvts. */
+  init_iterator (&rows,
+                 "SELECT rowid, oid, version, name, summary, description,"
+                 " copyright, cve, bid, xref, tag, sign_key_ids, category,"
+                 " family"
+                 " FROM nvts_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_oid = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_version = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 3));
+      gchar *quoted_summary = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_description = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_copyright = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_cve = sql_insert (iterator_string (&rows, 7));
+      gchar *quoted_bid = sql_insert (iterator_string (&rows, 8));
+      gchar *quoted_xref = sql_insert (iterator_string (&rows, 9));
+      gchar *quoted_tag = sql_insert (iterator_string (&rows, 10));
+      gchar *quoted_sign_key_ids = sql_insert (iterator_string (&rows, 11));
+      gchar *quoted_family = sql_insert (iterator_string (&rows, 13));
+
+      {
+        /* Starting from revision 5726 on 2009-10-26 (just before 0.9.2),
+         * the Manager converts semicolons in OTP NVT descriptions to newlines
+         * before entering them in the database.  Convert the existing
+         * semicolons here, because it is a convenient place to do it. */
+        gchar* pos = quoted_description;
+        while ((pos = strchr (pos, ';')))
+          pos[0] = '\n';
+      }
+
+      sql ("INSERT into nvts"
+           " (id, oid, version, name, summary, description, copyright, cve,"
+           "  bid, xref, tag, sign_key_ids, category, family)"
+           " VALUES"
+           " (%llu, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
+           "  %s, %s, %llu, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_oid,
+           quoted_version,
+           quoted_name,
+           quoted_summary,
+           quoted_description,
+           quoted_copyright,
+           quoted_cve,
+           quoted_bid,
+           quoted_xref,
+           quoted_tag,
+           quoted_sign_key_ids,
+           iterator_int64 (&rows, 12),
+           quoted_family);
+      g_free (quoted_oid);
+      g_free (quoted_version);
+      g_free (quoted_name);
+      g_free (quoted_summary);
+      g_free (quoted_description);
+      g_free (quoted_copyright);
+      g_free (quoted_cve);
+      g_free (quoted_bid);
+      g_free (quoted_xref);
+      g_free (quoted_tag);
+      g_free (quoted_sign_key_ids);
+      g_free (quoted_family);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE nvts_4;");
+
+  /* Table report_hosts. */
+  init_iterator (&rows,
+                 "SELECT rowid, report, host, start_time, end_time,"
+                 " attack_state, current_port, max_port"
+                 " FROM report_hosts_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_host = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_start_time = sql_insert (iterator_string (&rows, 3));
+      gchar *quoted_end_time = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_attack_state = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_current_port = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_max_port = sql_insert (iterator_string (&rows, 7));
+      sql ("INSERT into report_hosts"
+           " (id, report, host, start_time, end_time, attack_state,"
+           "  current_port, max_port)"
+           " VALUES"
+           " (%llu, %llu, %s, %s, %s, %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           iterator_int64 (&rows, 1),
+           quoted_host,
+           quoted_start_time,
+           quoted_end_time,
+           quoted_attack_state,
+           quoted_current_port,
+           quoted_max_port);
+      g_free (quoted_host);
+      g_free (quoted_start_time);
+      g_free (quoted_end_time);
+      g_free (quoted_attack_state);
+      g_free (quoted_current_port);
+      g_free (quoted_max_port);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE report_hosts_4;");
+
+  /* Table report_results. */
+  init_iterator (&rows, "SELECT rowid, report, result FROM report_results_4;");
+  while (next (&rows))
+    {
+      sql ("INSERT into report_results (id, report, result)"
+           " VALUES (%llu, %llu, %llu)",
+           iterator_int64 (&rows, 0),
+           iterator_int64 (&rows, 1),
+           iterator_int64 (&rows, 2));
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE report_results_4;");
+
+  /* Table reports. */
+  init_iterator (&rows,
+                 "SELECT rowid, uuid, hidden, task, date, start_time, end_time,"
+                 " nbefile, comment, scan_run_status"
+                 " FROM reports_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_uuid = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_start_time = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_end_time = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_nbefile = sql_insert (iterator_string (&rows, 7));
+      gchar *quoted_comment = sql_insert (iterator_string (&rows, 8));
+      sql ("INSERT into reports"
+           " (id, uuid, hidden, task, date, start_time, end_time, nbefile,"
+           "  comment, scan_run_status)"
+           " VALUES"
+           " (%llu, %s, %llu, %llu, %llu, %s, %s, %s, %s, %llu);",
+           iterator_int64 (&rows, 0),
+           quoted_uuid,
+           iterator_int64 (&rows, 2),
+           iterator_int64 (&rows, 3),
+           iterator_int64 (&rows, 4),
+           quoted_start_time,
+           quoted_end_time,
+           quoted_nbefile,
+           quoted_comment,
+           iterator_int64 (&rows, 9));
+      g_free (quoted_uuid);
+      g_free (quoted_start_time);
+      g_free (quoted_end_time);
+      g_free (quoted_nbefile);
+      g_free (quoted_comment);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE reports_4;");
+
+  /* Table results. */
+  init_iterator (&rows,
+                 "SELECT rowid, task, subnet, host, port, nvt, type,"
+                 " description"
+                 " FROM results_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_subnet = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_host = sql_insert (iterator_string (&rows, 3));
+      gchar *quoted_port = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_nvt = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_type = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_description = sql_insert (iterator_string (&rows, 7));
+      sql ("INSERT into results"
+           " (id, task, subnet, host, port, nvt, type, description)"
+           " VALUES"
+           " (%llu, %llu, %s, %s, %s, %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           iterator_int64 (&rows, 1),
+           quoted_subnet,
+           quoted_host,
+           quoted_port,
+           quoted_nvt,
+           quoted_type,
+           quoted_description);
+      g_free (quoted_subnet);
+      g_free (quoted_host);
+      g_free (quoted_port);
+      g_free (quoted_nvt);
+      g_free (quoted_type);
+      g_free (quoted_description);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE results_4;");
+
+  /* Table targets. */
+  init_iterator (&rows, "SELECT rowid, name, hosts, comment FROM targets_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_hosts = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_comment = sql_insert (iterator_string (&rows, 3));
+      sql ("INSERT into targets (id, name, hosts, comment)"
+           " VALUES (%llu, %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_hosts,
+           quoted_comment);
+      g_free (quoted_name);
+      g_free (quoted_hosts);
+      g_free (quoted_comment);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE targets_4;");
+
+  /* Table task_files. */
+  init_iterator (&rows, "SELECT rowid, task, name, content FROM task_files_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_content = sql_insert (iterator_string (&rows, 3));
+      sql ("INSERT into task_files (id, task, name, content)"
+           " VALUES (%llu, %llu, %s, %s);",
+           iterator_int64 (&rows, 0),
+           iterator_int64 (&rows, 1),
+           quoted_name,
+           quoted_content);
+      g_free (quoted_name);
+      g_free (quoted_content);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE task_files_4;");
+
+  /* Table tasks. */
+  init_iterator (&rows,
+                 "SELECT rowid, uuid, name, hidden, time, comment, description,"
+                 " owner, run_status, start_time, end_time, config, target"
+                 " FROM tasks_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_uuid = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 2));
+      gchar *quoted_time = sql_insert (iterator_string (&rows, 4));
+      gchar *quoted_comment = sql_insert (iterator_string (&rows, 5));
+      gchar *quoted_description = sql_insert (iterator_string (&rows, 6));
+      gchar *quoted_start_time = sql_insert (iterator_string (&rows, 9));
+      gchar *quoted_end_time = sql_insert (iterator_string (&rows, 10));
+      gchar *quoted_config = sql_insert (iterator_string (&rows, 11));
+      gchar *quoted_target = sql_insert (iterator_string (&rows, 12));
+      sql ("INSERT into tasks"
+           " (id, uuid, name, hidden, time, comment, description, owner,"
+           "  run_status, start_time, end_time, config, target)"
+           " VALUES"
+           " (%llu, %s, %s, %llu, %s, %s, %s, %llu, %llu, %s,"
+           "  %s, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_uuid,
+           quoted_name,
+           iterator_int64 (&rows, 3),
+           quoted_time,
+           quoted_comment,
+           quoted_description,
+           iterator_int64 (&rows, 7),
+           iterator_int64 (&rows, 8),
+           quoted_start_time,
+           quoted_end_time,
+           quoted_config,
+           quoted_target);
+      g_free (quoted_uuid);
+      g_free (quoted_name);
+      g_free (quoted_time);
+      g_free (quoted_comment);
+      g_free (quoted_description);
+      g_free (quoted_start_time);
+      g_free (quoted_end_time);
+      g_free (quoted_config);
+      g_free (quoted_target);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE tasks_4;");
+
+  /* Table users. */
+  init_iterator (&rows, "SELECT rowid, name, password FROM users_4;");
+  while (next (&rows))
+    {
+      gchar *quoted_name = sql_insert (iterator_string (&rows, 1));
+      gchar *quoted_password = sql_insert (iterator_string (&rows, 2));
+      sql ("INSERT into users (id, name, password)"
+           " VALUES (%llu, %s, %s);",
+           iterator_int64 (&rows, 0),
+           quoted_name,
+           quoted_password);
+      g_free (quoted_name);
+      g_free (quoted_password);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE users_4;");
+}
+
 /**
  * @brief Migrate the database from version 4 to version 5.
  *
  * @return 0 success, -1 error.
  */
-int
+static int
 migrate_4_to_5 ()
 {
-  iterator_t rows;
-
   /* Ensure that the database is currently version 4. */
 
   if (manage_db_version () != 4) return -1;
 
   /* Update the database. */
 
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Every table got an "id INTEGER PRIMARY KEY" column.  As the column is a
-   * primary key, every table must be recreated and the data transfered. */
-
-  /** @todo Add create_tables, init_row_iterator, row_iterator_* and COL_*. */
-
-  /** @todo Add every table. */
+   * primary key, every table must be recreated and the data transfered.
+   *
+   * Also, starting from revision 5726 on 2009-10-26 (just before 0.9.2),
+   * the Manager converts semicolons in OTP NVT descriptions to newlines
+   * before entering them in the database.  Convert the existing
+   * semicolons while transfering the data.  This should have been an
+   * entirely separate version and migration between the current 4 and 5. */
 
   /* Move the tables away. */
 
+  sql ("ALTER TABLE config_preferences RENAME TO config_preferences_4;");
+  sql ("ALTER TABLE configs RENAME TO configs_4;");
+  sql ("ALTER TABLE lsc_credentials RENAME TO lsc_credentials_4;");
   sql ("ALTER TABLE meta RENAME TO meta_4;");
+  sql ("ALTER TABLE nvt_preferences RENAME TO nvt_preferences_4;");
+  sql ("ALTER TABLE nvt_selectors RENAME TO nvt_selectors_4;");
+  sql ("ALTER TABLE nvts RENAME TO nvts_4;");
+  sql ("ALTER TABLE report_hosts RENAME TO report_hosts_4;");
+  sql ("ALTER TABLE report_results RENAME TO report_results_4;");
+  sql ("ALTER TABLE reports RENAME TO reports_4;");
+  sql ("ALTER TABLE results RENAME TO results_4;");
+  sql ("ALTER TABLE targets RENAME TO targets_4;");
+  sql ("ALTER TABLE task_files RENAME TO task_files_4;");
+  sql ("ALTER TABLE tasks RENAME TO tasks_4;");
+  sql ("ALTER TABLE users RENAME TO users_4;");
 
   /* Create the new tables. */
 
   create_tables ();
 
-  /* Copy the data into the new tables. */
+  /* Copy the data into the new tables, dropping the old tables. */
 
-  init_row_iterator (&nvts, NULL, 2);
-  while (next (&nvts))
-    {
-      gchar *quoted_name = row_iterator_string (COL_META__NAME - 1);
-      gchar *quoted_value = row_iterator_string (COL_META__VALUE - 1);
-      sql ("INSERT into meta (id, name, value)"
-           " VALUES (%i, '%s', '%s');",
-           row_iterator_int (0),
-           quoted_name,
-           quoted_value);
-      g_free (quoted_name);
-      g_free (quoted_nvt);
-    }
-  cleanup_iterator (&nvts);
+  migrate_4_to_5_copy_data ();
 
-  /* Drop the old tables. */
-
-  sql ("DROP TABLE meta_4;");
+  sql ("COMMIT;");
 
   /* All the moving may have left much empty space, so vacuum. */
 
-  sql ("VACUUM");
+  sql ("VACUUM;");
 
   /* Set the database version to 5. */
 
@@ -684,7 +1361,6 @@ migrate_4_to_5 ()
 
   return 0;
 }
-#endif /* 0 */
 
 /**
  * @brief Array of database version migrators.
@@ -695,9 +1371,7 @@ static migrator_t database_migrators[]
     {2, migrate_1_to_2},
     {3, migrate_2_to_3},
     {4, migrate_3_to_4},
-#if 0
     {5, migrate_4_to_5},
-#endif
     /* End marker. */
     {-1, NULL}};
 
@@ -872,61 +1546,6 @@ collate_message_type (void* data,
 
   return strcmp (one, two);
 }
-
-
-/* Database columns. */
-
-#define COL_CONFIG_PREFERENCES__NAME 3
-#define COL_CONFIG_PREFERENCES__VALUE 4
-
-#define COL_CONFIGS__NAME 1
-#define COL_CONFIGS__NVT_SELECTOR 2
-#define COL_CONFIGS__COMMENT 3
-#define COL_CONFIGS__FAMILIES_GROWING 6
-#define COL_CONFIGS__NVTS_GROWING 7
-
-#define COL_LSC_CREDENTIALS__NAME 1
-#define COL_LSC_CREDENTIALS__PASSWORD 2
-#define COL_LSC_CREDENTIALS__COMMENT 3
-#define COL_LSC_CREDENTIALS__PUBLIC_KEY 4
-#define COL_LSC_CREDENTIALS__PRIVATE_KEY 5
-#define COL_LSC_CREDENTIALS__RPM 6
-#define COL_LSC_CREDENTIALS__DEB 7
-#define COL_LSC_CREDENTIALS__EXE 8
-
-#define COL_NVT_PREFERENCES__NAME 1
-#define COL_NVT_PREFERENCES__VALUE 2
-
-#define COL_NVT_SELECTORS__NAME 1
-#define COL_NVT_SELECTORS__NVT 4
-
-#define COL_NVTS__OID 1
-#define COL_NVTS__VERSION 2
-#define COL_NVTS__NAME 3
-#define COL_NVTS__SUMMARY 4
-#define COL_NVTS__DESCRIPTION 5
-#define COL_NVTS__COPYRIGHT 6
-#define COL_NVTS__CVE 7
-#define COL_NVTS__BID 8
-#define COL_NVTS__XREF 9
-#define COL_NVTS__TAG 10
-#define COL_NVTS__SIGN_KEY_IDS 11
-#define COL_NVTS__CATEGORY 12
-#define COL_NVTS__FAMILY 13
-
-#define COL_REPORT_HOSTS__HOST 2
-#define COL_REPORT_HOSTS__START_TIME 3
-#define COL_REPORT_HOSTS__END_TIME 4
-#define COL_REPORT_HOSTS__ATTACK_STATE 5
-#define COL_REPORT_HOSTS__CURRENT_PORT 6
-#define COL_REPORT_HOSTS__MAX_PORT 7
-
-#define COL_TARGETS__NAME 1
-#define COL_TARGETS__HOSTS 2
-#define COL_TARGETS__COMMENT 3
-
-#define COL_TASK_FILES__NAME 2
-#define COL_TASK_FILES__CONTENT 3
 
 
 /* Task functions. */
@@ -1371,22 +1990,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the tables exist. */
 
-  sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
-  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
-  sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
-  sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner, run_status INTEGER, start_time, end_time, config, target);");
-  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
-  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  create_tables ();
 
   /* Ensure the version is set. */
 
@@ -2123,51 +2727,6 @@ make_task_rcfile (task_t task)
   free (rc);
 
   return 0;
-}
-
-
-/* Iterators. */
-
-/**
- * @brief Cleanup an iterator.
- *
- * @param[in]  iterator  Iterator.
- */
-void
-cleanup_iterator (iterator_t* iterator)
-{
-  sqlite3_finalize (iterator->stmt);
-}
-
-/**
- * @brief Increment an iterator.
- *
- * @param[in]   iterator  Task iterator.
- *
- * @return TRUE if there was a next item, else FALSE.
- */
-gboolean
-next (iterator_t* iterator)
-{
-  int ret;
-
-  if (iterator->done) return FALSE;
-
-  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
-  if (ret == SQLITE_DONE)
-    {
-      iterator->done = TRUE;
-      return FALSE;
-    }
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-    {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
-      g_warning ("%s: sqlite3_step failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-  return TRUE;
 }
 
 
@@ -4746,6 +5305,7 @@ nvt_family (nvt_t nvt)
 nvt_t
 make_nvt_from_nvti (const nvti_t *nvti)
 {
+  /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_sign_key_ids, *quoted_family;
