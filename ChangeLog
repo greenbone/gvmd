@@ -1,5 +1,22 @@
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add config and family attributes to OMP GET_NVT_DETAILS, for getting
+	NVT's in one family for a config.
+
+	* src/tasks_sql.h (select_config_nvts): New function.
+	(init_nvt_iterator): Add args for requesting from a family in a config
+	only.  Update all callers.
+
+	* src/manage.h: Update header.
+
+	* src/manage.c: Update call to init_nvt_iterator.
+
+	* src/omp.c (omp_xml_handle_start_element, omp_xml_handle_end_element):
+	Add config and family attributes to GET_NVT_DETAILS, to limit the list of
+	NVT's.
+
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: Correct revision number in comment.
 
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>

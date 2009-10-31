@@ -91,6 +91,9 @@ insert_rc_into_config (config_t, const char*, char*);
 static void
 set_target_hosts (const char *, const char *);
 
+static gchar*
+select_config_nvts (const char*, const char*);
+
 
 /* Variables. */
 
@@ -433,6 +436,8 @@ init_iterator (iterator_t* iterator, const char* sql)
   const char* tail;
   sqlite3_stmt* stmt;
 
+  tracef ("   sql: %s\n", sql);
+
   iterator->done = FALSE;
   while (1)
     {
@@ -677,7 +682,7 @@ migrate_1_to_2 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  init_nvt_iterator (&nvts, (nvt_t) 0);
+  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
   while (next (&nvts))
     {
       int category;
@@ -2105,7 +2110,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       nvti_cache = nvtis_new ();
 
-      init_nvt_iterator (&nvts, (nvt_t) 0);
+      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
       while (next (&nvts))
         {
           nvti_t *nvti = nvti_new ();
@@ -2628,7 +2633,7 @@ make_task_rcfile (task_t task)
           {
             iterator_t nvts;
 
-            init_nvt_iterator (&nvts, (nvt_t) 0);
+            init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
             while (next (&nvts))
               g_string_append_printf (buffer,
                                       " %s = yes\n",
@@ -5131,9 +5136,13 @@ make_nvt_from_nvti (const nvti_t *nvti)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  nvt       NVT to iterate over, all if 0.
+ * @param[in]  config    Config to limit selection to.  NULL for all NVTs.
+ *                       Overridden by \arg nvt.
+ * @param[in]  family    Family to limit selection to, if config given.
  */
 void
-init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
+init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
+                   const char* family)
 {
   if (nvt)
     {
@@ -5145,6 +5154,23 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
                              nvt);
       init_iterator (iterator, sql);
       g_free (sql);
+    }
+  else if (config)
+    {
+      gchar* sql;
+      if (family == NULL) abort ();
+      sql = select_config_nvts (config, family);
+      if (sql)
+        {
+          init_iterator (iterator, sql);
+          g_free (sql);
+        }
+      else
+        init_iterator (iterator,
+                       "SELECT oid, version, name, summary, description,"
+                       " copyright, cve, bid, xref, tag, sign_key_ids,"
+                       " category, family"
+                       " FROM nvts LIMIT 0;");
     }
   else
     init_iterator (iterator, "SELECT oid, version, name, summary, description,"
@@ -5616,6 +5642,77 @@ nvt_selector_family_selected_count (const char *selector,
     }
 
   return ret;
+}
+
+/**
+ * @brief Return a statement for selecting the NVT's of a config.
+ *
+ * @param[in]  config  Config.
+ * @param[in]  family  Family to limit selection to.
+ *
+ * @return Freshly allocated SELECT statement if possibly, else NULL.
+ */
+static gchar*
+select_config_nvts (const char* config, const char* family)
+{
+  /** @todo sql_quote. */
+  char *selector = config_nvt_selector (config);
+  if (selector == NULL)
+    /* The config should always have a selector. */
+    return NULL;
+  if (config_nvts_growing (config))
+    {
+      /* The number of NVT's can increase. */
+
+      int alls = sql_int (0, 0,
+                          "SELECT COUNT(*) FROM nvt_selectors"
+                          " WHERE name = '%s'"
+                          " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+                          ";",
+                          selector);
+      if (sql_int (0, 0,
+                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                    selector)
+          == 1)
+        {
+          /* There is one selector. */
+          if (alls == 1)
+            /* It is the all selector. */
+            return g_strdup_printf
+                    ("SELECT oid, version, name, summary, description,"
+                     " copyright, cve, bid, xref, tag, sign_key_ids,"
+                     " category, family"
+                     " FROM nvts WHERE family = '%s';",
+                     family);
+          /* An error somewhere. */
+          return NULL;
+        }
+      else
+        {
+#if 0
+          int excludes, includes;
+
+          /* There are multiple selectors. */
+
+          excludes = sql_int (0, 0,
+                              "SELECT COUNT(*) FROM nvt_selectors"
+                              " WHERE name = '%s' AND exclude = 1"
+                              " AND type = "
+                              G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                              ";",
+                              selector);
+          includes = sql_int (0, 0,
+                              "SELECT COUNT(*) FROM nvt_selectors"
+                              " WHERE name = '%s' AND exclude = 0"
+                              " AND type = "
+                              G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                              ";",
+                              selector);
+#endif
+          return NULL;
+        }
+    }
+  return NULL;
 }
 
 

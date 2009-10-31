@@ -928,6 +928,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "oid", &attribute))
               openvas_append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "config", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "family", &attribute))
+              openvas_append_string (&current_format, attribute);
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -2729,7 +2735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (md5sum);
               SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-              init_nvt_iterator (&nvts, (nvt_t) 0);
+              init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
               while (next (&nvts))
                 if (send_nvt (&nvts, 0))
                   {
@@ -2803,7 +2809,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         " status=\"" STATUS_OK "\""
                         " status_text=\"" STATUS_OK_TEXT "\">");
 
-                      init_nvt_iterator (&nvts, nvt);
+                      init_nvt_iterator (&nvts, nvt, NULL, NULL);
                       while (next (&nvts))
                         if (send_nvt (&nvts, 1))
                           {
@@ -2831,7 +2837,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (md5sum);
                   SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-                  init_nvt_iterator (&nvts, (nvt_t) 0);
+                  init_nvt_iterator (&nvts,
+                                     (nvt_t) 0,
+                                     current_name,     /* Attribute config. */
+                                     current_format);  /* Attribute family. */
                   while (next (&nvts))
                     if (send_nvt (&nvts, 1))
                       {

@@ -477,7 +477,7 @@ nvt_selector_plugins (const char* selector)
           gboolean first = TRUE;
 
           plugins = g_string_new ("");
-          init_nvt_iterator (&nvts, (nvt_t) 0);
+          init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
           while (next (&nvts))
             {
               if (first)

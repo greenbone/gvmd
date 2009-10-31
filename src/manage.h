@@ -606,7 +606,7 @@ gboolean
 find_nvt (const char*, nvt_t*);
 
 void
-init_nvt_iterator (iterator_t*, nvt_t);
+init_nvt_iterator (iterator_t*, nvt_t, const char*, const char*);
 
 const char*
 nvt_iterator_oid (iterator_t*);
