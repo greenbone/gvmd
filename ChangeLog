@@ -1,5 +1,37 @@
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Name columns explicitly in SELECT statements instead of using wildcards.
+	This makes it safe for a migrator to add a missing column to the end of
+	the table when create_table would have created the column somewhere
+	before the end.
+
+	* src/tasks_sql.h (init_result_iterator, init_host_iterator)
+	(init_task_file_iterator, init_target_iterator, init_config_iterator)
+	(init_preference_iterator, init_nvt_iterator, init_nvt_selector_iterator)
+	(init_nvt_preference_iterator, init_lsc_credential_iterator): Name columns
+	explicitly in SELECTs.
+	(config_nvt_selector): Break long string.
+	(COL_CONFIG_PREFERENCES__NAME, COL_CONFIG_PREFERENCES__VALUE)
+	(COL_CONFIGS__NAME, COL_CONFIGS__NVT_SELECTOR, COL_CONFIGS__COMMENT)
+	(COL_CONFIGS__FAMILIES_GROWING, COL_CONFIGS__NVTS_GROWING)
+	(COL_LSC_CREDENTIALS__NAME, COL_LSC_CREDENTIALS__PASSWORD)
+	(COL_LSC_CREDENTIALS__COMMENT, COL_LSC_CREDENTIALS__PUBLIC_KEY)
+	(COL_LSC_CREDENTIALS__PRIVATE_KEY, COL_LSC_CREDENTIALS__RPM)
+	(COL_LSC_CREDENTIALS__DEB, COL_LSC_CREDENTIALS__EXE)
+	(COL_NVT_PREFERENCES__NAME, COL_NVT_PREFERENCES__VALUE)
+	(COL_NVT_SELECTORS__NAME, COL_NVT_SELECTORS__NVT, COL_NVTS__OID)
+	(COL_NVTS__VERSION, COL_NVTS__NAME, COL_NVTS__SUMMARY)
+	(COL_NVTS__DESCRIPTION, COL_NVTS__COPYRIGHT, COL_NVTS__CVE, COL_NVTS__BID)
+	(COL_NVTS__XREF, COL_NVTS__TAG, COL_NVTS__SIGN_KEY_IDS)
+	(COL_NVTS__CATEGORY, COL_NVTS__FAMILY, COL_REPORT_HOSTS__HOST)
+	(COL_REPORT_HOSTS__START_TIME, COL_REPORT_HOSTS__END_TIME)
+	(COL_REPORT_HOSTS__ATTACK_STATE, COL_REPORT_HOSTS__CURRENT_PORT)
+	(COL_REPORT_HOSTS__MAX_PORT, COL_TARGETS__NAME, COL_TARGETS__HOSTS)
+	(COL_TARGETS__COMMENT, COL_TASK_FILES__NAME, COL_TASK_FILES__CONTENT):
+	Remove.  Revert to integers in all iterator access functions.
+
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_report_iterator, init_result_iterator)
 	(init_host_iterator, init_task_file_iterator, init_target_iterator)
 	(init_config_iterator, init_preference_iterator, init_nvt_iterator)

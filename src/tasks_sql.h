@@ -392,64 +392,6 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
 }
 
 
-/* Database columns. */
-
-#define COL_CONFIG_PREFERENCES__NAME 3
-#define COL_CONFIG_PREFERENCES__VALUE 4
-
-#define COL_CONFIGS__NAME 1
-#define COL_CONFIGS__NVT_SELECTOR 2
-#define COL_CONFIGS__COMMENT 3
-#define COL_CONFIGS__FAMILIES_GROWING 6
-#define COL_CONFIGS__NVTS_GROWING 7
-
-#define COL_LSC_CREDENTIALS__NAME 1
-#define COL_LSC_CREDENTIALS__PASSWORD 2
-#define COL_LSC_CREDENTIALS__COMMENT 3
-#define COL_LSC_CREDENTIALS__PUBLIC_KEY 4
-#define COL_LSC_CREDENTIALS__PRIVATE_KEY 5
-#define COL_LSC_CREDENTIALS__RPM 6
-#define COL_LSC_CREDENTIALS__DEB 7
-#define COL_LSC_CREDENTIALS__EXE 8
-
-#define COL_META__NAME 1
-#define COL_META__VALUE 2
-
-#define COL_NVT_PREFERENCES__NAME 1
-#define COL_NVT_PREFERENCES__VALUE 2
-
-#define COL_NVT_SELECTORS__NAME 1
-#define COL_NVT_SELECTORS__NVT 4
-
-#define COL_NVTS__OID 1
-#define COL_NVTS__VERSION 2
-#define COL_NVTS__NAME 3
-#define COL_NVTS__SUMMARY 4
-#define COL_NVTS__DESCRIPTION 5
-#define COL_NVTS__COPYRIGHT 6
-#define COL_NVTS__CVE 7
-#define COL_NVTS__BID 8
-#define COL_NVTS__XREF 9
-#define COL_NVTS__TAG 10
-#define COL_NVTS__SIGN_KEY_IDS 11
-#define COL_NVTS__CATEGORY 12
-#define COL_NVTS__FAMILY 13
-
-#define COL_REPORT_HOSTS__HOST 2
-#define COL_REPORT_HOSTS__START_TIME 3
-#define COL_REPORT_HOSTS__END_TIME 4
-#define COL_REPORT_HOSTS__ATTACK_STATE 5
-#define COL_REPORT_HOSTS__CURRENT_PORT 6
-#define COL_REPORT_HOSTS__MAX_PORT 7
-
-#define COL_TARGETS__NAME 1
-#define COL_TARGETS__HOSTS 2
-#define COL_TARGETS__COMMENT 3
-
-#define COL_TASK_FILES__NAME 2
-#define COL_TASK_FILES__CONTENT 3
-
-
 /* Creation. */
 
 /**
@@ -3058,7 +3000,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                report, max_results, first_result);
     }
   else
-    sql = g_strdup_printf ("SELECT * FROM results LIMIT %i OFFSET %i;",
+    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                           " FROM results LIMIT %i OFFSET %i;",
                            max_results, first_result);
   init_iterator (iterator, sql);
   g_free (sql);
@@ -3126,13 +3069,18 @@ init_host_iterator (iterator_t* iterator, report_t report)
   if (report)
     {
       gchar* sql;
-      sql = g_strdup_printf ("SELECT * FROM report_hosts WHERE report = %llu;",
+      sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
+                             " current_port, max_port"
+                             " FROM report_hosts WHERE report = %llu;",
                              report);
       init_iterator (iterator, sql);
       g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT * FROM report_hosts;");
+    init_iterator (iterator,
+                   "SELECT host, start_time, end_time, attack_state,"
+                   " current_port, max_port"
+                   " FROM report_hosts;");
 }
 
 #if 0
@@ -3156,18 +3104,17 @@ name (iterator_t* iterator) \
   return ret; \
 }
 
-DEF_ACCESS (host_iterator_host, COL_REPORT_HOSTS__HOST);
-DEF_ACCESS (host_iterator_start_time, COL_REPORT_HOSTS__START_TIME);
-DEF_ACCESS (host_iterator_end_time, COL_REPORT_HOSTS__END_TIME);
-DEF_ACCESS (host_iterator_attack_state, COL_REPORT_HOSTS__ATTACK_STATE);
+DEF_ACCESS (host_iterator_host, 0);
+DEF_ACCESS (host_iterator_start_time, 1);
+DEF_ACCESS (host_iterator_end_time, 2);
+DEF_ACCESS (host_iterator_attack_state, 3);
 
 int
 host_iterator_current_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt,
-                                  COL_REPORT_HOSTS__CURRENT_PORT);
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
   return ret;
 }
 
@@ -3176,7 +3123,7 @@ host_iterator_max_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, COL_REPORT_HOSTS__MAX_PORT);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
 
@@ -4161,14 +4108,16 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
   if (file)
     {
       gchar *quoted_file = sql_nquote (file, strlen (file));
-      sql = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+      sql = g_strdup_printf ("SELECT name, content, length(content)"
+                             " FROM task_files"
                              " WHERE task = %llu"
                              " AND name = '%s';",
                              task, quoted_file);
       g_free (quoted_file);
     }
   else
-    sql = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+    sql = g_strdup_printf ("SELECT name, content, length(content)"
+                           " FROM task_files"
                            " WHERE task = %llu;",
                            task);
   init_iterator (iterator, sql);
@@ -4182,16 +4131,16 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
  *
  * @return Name of the file or NULL if iteration is complete.
  */
-static DEF_ACCESS (task_file_iterator_name, COL_TASK_FILES__NAME);
+static DEF_ACCESS (task_file_iterator_name, 0);
 
-DEF_ACCESS (task_file_iterator_content, COL_TASK_FILES__CONTENT);
+DEF_ACCESS (task_file_iterator_content, 1);
 
 int
 task_file_iterator_length (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, COL_TASK_FILES__CONTENT + 1);
+  ret = (int) sqlite3_column_int (iterator->stmt, 2);
   return ret;
 }
 
@@ -4280,19 +4229,18 @@ delete_target (const char* name)
 void
 init_target_iterator (iterator_t* iterator)
 {
-  init_iterator (iterator, "SELECT * from targets;");
+  init_iterator (iterator, "SELECT name, hosts, comment from targets;");
 }
 
-DEF_ACCESS (target_iterator_name, COL_TARGETS__NAME);
-DEF_ACCESS (target_iterator_hosts, COL_TARGETS__HOSTS);
+DEF_ACCESS (target_iterator_name, 0);
+DEF_ACCESS (target_iterator_hosts, 1);
 
 const char*
 target_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           COL_TARGETS__COMMENT);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
 }
 
@@ -4857,25 +4805,29 @@ init_config_iterator (iterator_t* iterator, const char *name)
     {
       gchar* sql;
       gchar *quoted_name = sql_quote (name);
-      sql = g_strdup_printf ("SELECT * FROM configs WHERE name = '%s';",
+      sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
+                             " families_growing, nvts_growing"
+                             " FROM configs WHERE name = '%s';",
                              quoted_name);
       g_free (quoted_name);
       init_iterator (iterator, sql);
       g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT * FROM configs;");
+    init_iterator (iterator, "SELECT name, nvt_selector, comment,"
+                             " families_growing, nvts_growing"
+                             " FROM configs;");
 }
 
-DEF_ACCESS (config_iterator_name, COL_CONFIGS__NAME);
-DEF_ACCESS (config_iterator_nvt_selector, COL_CONFIGS__NVT_SELECTOR);
+DEF_ACCESS (config_iterator_name, 0);
+DEF_ACCESS (config_iterator_nvt_selector, 1);
 
 const char*
 config_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, COL_CONFIGS__COMMENT);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
 }
 
@@ -4884,7 +4836,7 @@ config_iterator_families_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, COL_CONFIGS__FAMILIES_GROWING);
+  ret = (int) sqlite3_column_int (iterator->stmt, 3);
   return ret;
 }
 
@@ -4893,7 +4845,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, COL_CONFIGS__NVTS_GROWING);
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
   return ret;
 }
 
@@ -4942,15 +4894,17 @@ init_preference_iterator (iterator_t* iterator,
   if (section)
     {
       gchar *quoted_section = sql_nquote (section, strlen (section));
-      sql = g_strdup_printf ("SELECT * FROM config_preferences"
-                             " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+      sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
+                             " WHERE config ="
+                             " (SELECT ROWID FROM configs WHERE name = '%s')"
                              " AND type = '%s';",
                              quoted_config, quoted_section);
       g_free (quoted_section);
     }
   else
-    sql = g_strdup_printf ("SELECT * FROM config_preferences"
-                           " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+    sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
+                           " WHERE config ="
+                           " (SELECT ROWID FROM configs WHERE name = '%s')"
                            " AND type is NULL;",
                            quoted_config);
   g_free (quoted_config);
@@ -4958,8 +4912,8 @@ init_preference_iterator (iterator_t* iterator,
   g_free (sql);
 }
 
-static DEF_ACCESS (preference_iterator_name, COL_CONFIG_PREFERENCES__NAME);
-static DEF_ACCESS (preference_iterator_value, COL_CONFIG_PREFERENCES__VALUE);
+static DEF_ACCESS (preference_iterator_name, 0);
+static DEF_ACCESS (preference_iterator_value, 1);
 
 /**
  * @brief Return the NVT selector associated with a config.
@@ -4974,7 +4928,8 @@ config_nvt_selector (const char *name)
 {
   gchar* quoted_name = sql_nquote (name, strlen (name));
   char* selector = sql_string (0, 0,
-                               "SELECT nvt_selector FROM configs WHERE name = '%s';",
+                               "SELECT nvt_selector FROM configs"
+                               " WHERE name = '%s';",
                                quoted_name);
   g_free (quoted_name);
   return selector;
@@ -5185,35 +5140,43 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
   if (nvt)
     {
       gchar* sql;
-      sql = g_strdup_printf ("SELECT * FROM nvts WHERE ROWID = %llu;", nvt);
+      sql = g_strdup_printf ("SELECT oid, version, name, summary, description,"
+                             " copyright, cve, bid, xref, tag, sign_key_ids,"
+                             " category, family"
+                             " FROM nvts WHERE ROWID = %llu;",
+                             nvt);
       init_iterator (iterator, sql);
       g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT * FROM nvts;");
+    init_iterator (iterator, "SELECT oid, version, name, summary, description,"
+                             " copyright, cve, bid, xref, tag, sign_key_ids,"
+                             " category, family"
+                             " FROM nvts;");
 }
 
-DEF_ACCESS (nvt_iterator_oid, COL_NVTS__OID);
-DEF_ACCESS (nvt_iterator_version, COL_NVTS__VERSION);
-DEF_ACCESS (nvt_iterator_name, COL_NVTS__NAME);
-DEF_ACCESS (nvt_iterator_summary, COL_NVTS__SUMMARY);
-DEF_ACCESS (nvt_iterator_description, COL_NVTS__DESCRIPTION);
-DEF_ACCESS (nvt_iterator_copyright, COL_NVTS__COPYRIGHT);
-DEF_ACCESS (nvt_iterator_cve, COL_NVTS__CVE);
-DEF_ACCESS (nvt_iterator_bid, COL_NVTS__BID);
-DEF_ACCESS (nvt_iterator_xref, COL_NVTS__XREF);
-DEF_ACCESS (nvt_iterator_tag, COL_NVTS__TAG);
-DEF_ACCESS (nvt_iterator_sign_key_ids, COL_NVTS__SIGN_KEY_IDS);
-DEF_ACCESS (nvt_iterator_family, COL_NVTS__FAMILY);
+DEF_ACCESS (nvt_iterator_oid, 0);
+DEF_ACCESS (nvt_iterator_version, 1);
+DEF_ACCESS (nvt_iterator_name, 2);
+DEF_ACCESS (nvt_iterator_summary, 3);
+DEF_ACCESS (nvt_iterator_description, 4);
+DEF_ACCESS (nvt_iterator_copyright, 5);
+DEF_ACCESS (nvt_iterator_cve, 6);
+DEF_ACCESS (nvt_iterator_bid, 7);
+DEF_ACCESS (nvt_iterator_xref, 8);
+DEF_ACCESS (nvt_iterator_tag, 9);
+DEF_ACCESS (nvt_iterator_sign_key_ids, 10);
 
 int
 nvt_iterator_category (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, COL_NVTS__CATEGORY);
+  ret = (int) sqlite3_column_int (iterator->stmt, 11);
   return ret;
 }
+
+DEF_ACCESS (nvt_iterator_family, 12);
 
 /**
  * @brief Get the number of NVTs in a family.
@@ -5358,14 +5321,16 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type
   if (selector)
     {
       gchar *quoted_selector = sql_quote (selector);
-      sql = g_strdup_printf ("SELECT * FROM nvt_selectors"
+      sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name"
+                             " FROM nvt_selectors"
                              " WHERE name = '%s' AND type = %i;",
                              quoted_selector,
                              type);
       g_free (quoted_selector);
     }
   else
-    sql = g_strdup_printf ("SELECT * FROM nvt_selectors"
+    sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name"
+                           " FROM nvt_selectors"
                            " WHERE type = %i;",
                            type);
   init_iterator (iterator, sql);
@@ -5384,7 +5349,7 @@ nvt_selector_iterator_include (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 1);
+  ret = (int) sqlite3_column_int (iterator->stmt, 0);
   return ret == 0;
 }
 
@@ -5395,7 +5360,7 @@ nvt_selector_iterator_include (iterator_t* iterator)
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_nvt, COL_NVT_SELECTORS__NVT);
+static DEF_ACCESS (nvt_selector_iterator_nvt, 1);
 
 /**
  * @brief Get the name from an NVT selector iterator.
@@ -5404,7 +5369,7 @@ static DEF_ACCESS (nvt_selector_iterator_nvt, COL_NVT_SELECTORS__NVT);
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_name, COL_NVT_SELECTORS__NAME);
+static DEF_ACCESS (nvt_selector_iterator_name, 2);
 
 /**
  * @brief Get the number of families covered by a selector.
@@ -5694,11 +5659,11 @@ manage_nvt_preferences_enable ()
 void
 init_nvt_preference_iterator (iterator_t* iterator)
 {
-  init_iterator (iterator, "SELECT * FROM nvt_preferences;");
+  init_iterator (iterator, "SELECT name, value FROM nvt_preferences;");
 }
 
-DEF_ACCESS (nvt_preference_iterator_name, COL_NVT_PREFERENCES__NAME);
-DEF_ACCESS (nvt_preference_iterator_value, COL_NVT_PREFERENCES__VALUE);
+DEF_ACCESS (nvt_preference_iterator_name, 0);
+DEF_ACCESS (nvt_preference_iterator_value, 1);
 
 
 /* LSC Credentials. */
@@ -6020,7 +5985,9 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name)
     {
       gchar *sql;
       gchar *quoted_name = sql_quote (name);
-      sql = g_strdup_printf ("SELECT * FROM lsc_credentials"
+      sql = g_strdup_printf ("SELECT name, password, comment, public_key,"
+                             " private_key, rpm, deb, exe"
+                             " FROM lsc_credentials"
                              " WHERE name = '%s';",
                              quoted_name);
       g_free (quoted_name);
@@ -6028,27 +5995,27 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name)
       g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT * FROM lsc_credentials;");
+    init_iterator (iterator, "SELECT name, password, comment, public_key,"
+                             " private_key, rpm, deb, exe"
+                             " FROM lsc_credentials;");
 }
 
-DEF_ACCESS (lsc_credential_iterator_name, COL_LSC_CREDENTIALS__NAME);
-DEF_ACCESS (lsc_credential_iterator_password, COL_LSC_CREDENTIALS__PASSWORD);
-DEF_ACCESS (lsc_credential_iterator_public_key,
-            COL_LSC_CREDENTIALS__PUBLIC_KEY);
-DEF_ACCESS (lsc_credential_iterator_private_key,
-            COL_LSC_CREDENTIALS__PRIVATE_KEY);
-DEF_ACCESS (lsc_credential_iterator_rpm, COL_LSC_CREDENTIALS__RPM);
-DEF_ACCESS (lsc_credential_iterator_deb, COL_LSC_CREDENTIALS__DEB);
-DEF_ACCESS (lsc_credential_iterator_exe, COL_LSC_CREDENTIALS__EXE);
+DEF_ACCESS (lsc_credential_iterator_name, 0);
+DEF_ACCESS (lsc_credential_iterator_password, 1);
 
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           COL_LSC_CREDENTIALS__COMMENT);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
 }
+
+DEF_ACCESS (lsc_credential_iterator_public_key, 3);
+DEF_ACCESS (lsc_credential_iterator_private_key, 4);
+DEF_ACCESS (lsc_credential_iterator_rpm, 5);
+DEF_ACCESS (lsc_credential_iterator_deb, 6);
+DEF_ACCESS (lsc_credential_iterator_exe, 7);
 
 #undef DEF_ACCESS
