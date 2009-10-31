@@ -2971,40 +2971,16 @@ report_add_result (report_t report, result_t result)
 void
 init_report_iterator (iterator_t* iterator, task_t task)
 {
-  int ret;
-  const char* tail;
-  gchar* sql;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (task)
-    sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
-                           task);
-  else
-    sql = g_strdup_printf ("SELECT ROWID FROM reports;");
-  tracef ("   sql (report iterator): %s\n", sql);
-  while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      gchar* sql;
+      sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
+                             task);
+      init_iterator (iterator, sql);
       g_free (sql);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
     }
+  else
+    init_iterator (iterator, "SELECT ROWID FROM reports;");
 }
 
 /**
@@ -3058,12 +3034,7 @@ void
 init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                       int first_result, int max_results)
 {
-  int ret;
-  const char* tail;
   gchar* sql;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (report)
     {
       if (host)
@@ -3089,29 +3060,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
   else
     sql = g_strdup_printf ("SELECT * FROM results LIMIT %i OFFSET %i;",
                            max_results, first_result);
-  tracef ("   sql (result iterator): %s\n", sql);
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (sql);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 #if 0
@@ -3173,40 +3123,16 @@ DEF_ACCESS (descr, 5);
 void
 init_host_iterator (iterator_t* iterator, report_t report)
 {
-  int ret;
-  const char* tail;
-  gchar* sql;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (report)
-    sql = g_strdup_printf ("SELECT * FROM report_hosts WHERE report = %llu;",
-                           report);
-  else
-    sql = g_strdup_printf ("SELECT * FROM report_hosts;");
-  tracef ("   sql (host iterator): %s\n", sql);
-  while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) sql, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      gchar* sql;
+      sql = g_strdup_printf ("SELECT * FROM report_hosts WHERE report = %llu;",
+                             report);
+      init_iterator (iterator, sql);
       g_free (sql);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
     }
+  else
+    init_iterator (iterator, "SELECT * FROM report_hosts;");
 }
 
 #if 0
@@ -4231,48 +4157,22 @@ manage_task_remove_file (task_t task, const char *name)
 void
 init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
+  gchar* sql;
   if (file)
     {
       gchar *quoted_file = sql_nquote (file, strlen (file));
-      formatted = g_strdup_printf ("SELECT *, length(content) FROM task_files"
-                                   " WHERE task = %llu"
-                                   " AND name = '%s';",
-                                   task, quoted_file);
+      sql = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+                             " WHERE task = %llu"
+                             " AND name = '%s';",
+                             task, quoted_file);
       g_free (quoted_file);
     }
   else
-    formatted = g_strdup_printf ("SELECT *, length(content) FROM task_files"
-                                 " WHERE task = %llu;",
-                                 task);
-
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+    sql = g_strdup_printf ("SELECT *, length(content) FROM task_files"
+                           " WHERE task = %llu;",
+                           task);
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 /**
@@ -4373,45 +4273,6 @@ delete_target (const char* name)
 }
 
 /**
- * @brief Initialise a table iterator.
- *
- * @param[in]  iterator  Iterator.
- */
-static void
-init_table_iterator (iterator_t* iterator, const char* table)
-{
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
-  formatted = g_strdup_printf ("SELECT * FROM %s;", table);
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-}
-
-/**
  * @brief Initialise a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -4419,7 +4280,7 @@ init_table_iterator (iterator_t* iterator, const char* table)
 void
 init_target_iterator (iterator_t* iterator)
 {
-  init_table_iterator (iterator, "targets");
+  init_iterator (iterator, "SELECT * from targets;");
 }
 
 DEF_ACCESS (target_iterator_name, COL_TARGETS__NAME);
@@ -4992,43 +4853,18 @@ delete_config (const char* name)
 void
 init_config_iterator (iterator_t* iterator, const char *name)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (name)
     {
+      gchar* sql;
       gchar *quoted_name = sql_quote (name);
-      formatted = g_strdup_printf ("SELECT * FROM configs WHERE name = '%s';",
-                                   quoted_name);
+      sql = g_strdup_printf ("SELECT * FROM configs WHERE name = '%s';",
+                             quoted_name);
       g_free (quoted_name);
+      init_iterator (iterator, sql);
+      g_free (sql);
     }
   else
-    formatted = g_strdup ("SELECT * FROM configs;");
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+    init_iterator (iterator, "SELECT * FROM configs;");
 }
 
 DEF_ACCESS (config_iterator_name, COL_CONFIGS__NAME);
@@ -5097,53 +4933,29 @@ config_in_use (const char* name)
  * @param[in]  section   Preference section, NULL for general preferences.
  */
 static void
-init_preference_iterator (iterator_t* iterator, const char* config, const char* section)
+init_preference_iterator (iterator_t* iterator,
+                          const char* config,
+                          const char* section)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
+  gchar* sql;
   gchar *quoted_config = sql_nquote (config, strlen (config));
-
-  iterator->done = FALSE;
   if (section)
     {
       gchar *quoted_section = sql_nquote (section, strlen (section));
-      formatted = g_strdup_printf ("SELECT * FROM config_preferences"
-                                   " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                   " AND type = '%s';",
-                                   quoted_config, quoted_section);
+      sql = g_strdup_printf ("SELECT * FROM config_preferences"
+                             " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                             " AND type = '%s';",
+                             quoted_config, quoted_section);
       g_free (quoted_section);
     }
   else
-    formatted = g_strdup_printf ("SELECT * FROM config_preferences"
-                                 " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
-                                 " AND type is NULL;",
-                                 quoted_config);
+    sql = g_strdup_printf ("SELECT * FROM config_preferences"
+                           " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                           " AND type is NULL;",
+                           quoted_config);
   g_free (quoted_config);
-
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 static DEF_ACCESS (preference_iterator_name, COL_CONFIG_PREFERENCES__NAME);
@@ -5370,39 +5182,15 @@ make_nvt_from_nvti (const nvti_t *nvti)
 void
 init_nvt_iterator (iterator_t* iterator, nvt_t nvt)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (nvt)
-    formatted = g_strdup_printf ("SELECT * FROM nvts WHERE ROWID = %llu;",
-                                 nvt);
-  else
-    formatted = g_strdup_printf ("SELECT * FROM nvts;");
-  while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
+      gchar* sql;
+      sql = g_strdup_printf ("SELECT * FROM nvts WHERE ROWID = %llu;", nvt);
+      init_iterator (iterator, sql);
+      g_free (sql);
     }
+  else
+    init_iterator (iterator, "SELECT * FROM nvts;");
 }
 
 DEF_ACCESS (nvt_iterator_oid, COL_NVTS__OID);
@@ -5563,45 +5351,25 @@ config_families_growing (const char* config)
 static void
 init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
+  gchar *sql;
 
   assert (type >= 0 && type <= 2);
 
-  iterator->done = FALSE;
   if (selector)
-    /** todo Quote selector. */
-    formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
-                                 " WHERE name = '%s' AND type = %i;",
-                                 selector, type);
-  else
-    formatted = g_strdup_printf ("SELECT * FROM nvt_selectors"
-                                 " WHERE type = %i;",
-                                 type);
-  while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
+      gchar *quoted_selector = sql_quote (selector);
+      sql = g_strdup_printf ("SELECT * FROM nvt_selectors"
+                             " WHERE name = '%s' AND type = %i;",
+                             quoted_selector,
+                             type);
+      g_free (quoted_selector);
     }
+  else
+    sql = g_strdup_printf ("SELECT * FROM nvt_selectors"
+                           " WHERE type = %i;",
+                           type);
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 /**
@@ -5785,44 +5553,18 @@ nvt_selector_nvt_count (const char* selector, const char* config)
 void
 init_family_iterator (iterator_t* iterator, int all, const char* selector)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (all)
-    formatted = g_strdup_printf ("SELECT distinct family FROM nvts;");
+    init_iterator (iterator, "SELECT distinct family FROM nvts;");
   else
     {
+      gchar *sql;
       gchar *quoted_selector = sql_quote (selector);
-      formatted = g_strdup_printf ("SELECT distinct family FROM nvt_selectors"
-                                   " WHERE (type = 1 OR type = 2) AND name = '%s';",
-                                   quoted_selector);
+      sql = g_strdup_printf ("SELECT distinct family FROM nvt_selectors"
+                             " WHERE (type = 1 OR type = 2) AND name = '%s';",
+                             quoted_selector);
       g_free (quoted_selector);
-    }
-
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
+      init_iterator (iterator, sql);
+      g_free (sql);
     }
 }
 
@@ -5952,7 +5694,7 @@ manage_nvt_preferences_enable ()
 void
 init_nvt_preference_iterator (iterator_t* iterator)
 {
-  init_table_iterator (iterator, "nvt_preferences");
+  init_iterator (iterator, "SELECT * FROM nvt_preferences;");
 }
 
 DEF_ACCESS (nvt_preference_iterator_name, COL_NVT_PREFERENCES__NAME);
@@ -6274,44 +6016,19 @@ delete_lsc_credential (const char* name)
 void
 init_lsc_credential_iterator (iterator_t* iterator, const char *name)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  iterator->done = FALSE;
   if (name && strlen (name))
     {
-      gchar* quoted_name = sql_quote (name);
-      formatted = g_strdup_printf ("SELECT * FROM lsc_credentials"
-                                   " WHERE name = '%s';",
-                                   quoted_name);
+      gchar *sql;
+      gchar *quoted_name = sql_quote (name);
+      sql = g_strdup_printf ("SELECT * FROM lsc_credentials"
+                             " WHERE name = '%s';",
+                             quoted_name);
       g_free (quoted_name);
+      init_iterator (iterator, sql);
+      g_free (sql);
     }
   else
-    formatted = g_strdup_printf ("SELECT * FROM lsc_credentials;");
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+    init_iterator (iterator, "SELECT * FROM lsc_credentials;");
 }
 
 DEF_ACCESS (lsc_credential_iterator_name, COL_LSC_CREDENTIALS__NAME);
