@@ -1,4 +1,10 @@
-2009-10-30  Matthew Mundell <matthew.mundell@intevation.de>
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/lsc_user.c (file_utils_copy_file): Correct check of
+	g_file_get_contents return.
+	(lsc_user_rpm_create): Rename oltap_path to generator_path.
+
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add database migration from version 4 to 5.
 

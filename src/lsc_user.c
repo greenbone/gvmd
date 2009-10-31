@@ -192,7 +192,8 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
   if (g_file_get_contents (source_file,
                            &src_file_content,
                            &src_file_size,
-                           &error))
+                           &error)
+      == FALSE)
     {
       if (error)
         {
@@ -512,7 +513,7 @@ lsc_user_rpm_create (const gchar *username,
                      const gchar *public_key_path,
                      const gchar *to_filename)
 {
-  const gchar *oltap_path;
+  const gchar *generator_path;
   gchar *rpm_path = NULL;
   gint exit_status;
   gchar *new_pubkey_filename = NULL;
@@ -524,7 +525,7 @@ lsc_user_rpm_create (const gchar *username,
   gchar *standard_err;
   gchar *rpmfile;
 
-  oltap_path = get_rpm_generator_path ();
+  generator_path = get_rpm_generator_path ();
 
   /* Create a temporary directory. */
 
@@ -559,8 +560,8 @@ lsc_user_rpm_create (const gchar *username,
   cmd[3] = g_build_filename (tmpdir, pubkey_basename, NULL);
   cmd[4] = NULL;
   g_debug ("%s: Spawning in %s: %s %s %s %s\n",
-           __FUNCTION__, oltap_path, cmd[0], cmd[1], cmd[2], cmd[3]);
-  if ((g_spawn_sync (oltap_path,
+           __FUNCTION__, generator_path, cmd[0], cmd[1], cmd[2], cmd[3]);
+  if ((g_spawn_sync (generator_path,
                      cmd,
                      NULL,                  /* Environment. */
                      G_SPAWN_SEARCH_PATH,
