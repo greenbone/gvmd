@@ -632,7 +632,6 @@ migrate_0_to_1 ()
    * would be simply to update the version number to 1 in the database by
    * hand. */
 
-  /** @todo Only safe because scan_run_status is the last col in version 1. */
   sql ("ALTER TABLE reports ADD COLUMN scan_run_status INTEGER;");
 
   /* SQLite 3.1.3 and earlier requires a VACUUM before it can read
@@ -730,11 +729,11 @@ migrate_2_to_3 ()
    * started working after version 3. */
 
   sql ("DELETE from lsc_credentials;");
-  /**
-   * @todo This is a problem, because these columns are added on the end
-   *       of the table, so columns referenced by position in * queries may
-   *       be wrong (for example, with the iterator returned by
-   *       init_lsc_credential_iterator). */
+  /* Before revision 5733 this could have caused problems, because these
+   * columns are added on the end of the table, so columns referenced by
+   * position in * queries may be wrong (for example, with the iterator
+   * returned by init_lsc_credential_iterator).  Since 5733 the queries
+   * name all columns explicitly. */
   sql ("ALTER TABLE lsc_credentials ADD COLUMN password;");
   sql ("ALTER TABLE lsc_credentials ADD COLUMN exe;");
 
@@ -763,7 +762,6 @@ migrate_3_to_4 ()
 
   /* The nvt_selectors table got a family column. */
 
-  /** @todo Only safe because family is the last column in version 3. */
   sql ("ALTER TABLE nvt_selectors ADD COLUMN family;");
 
   init_nvt_selector_iterator (&nvts, NULL, 2);

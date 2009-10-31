@@ -1,5 +1,9 @@
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h: Update migrator comments about appending columns.
+
+2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Name columns explicitly in SELECT statements instead of using wildcards.
 	This makes it safe for a migrator to add a missing column to the end of
 	the table when create_table would have created the column somewhere
