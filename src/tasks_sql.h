@@ -92,7 +92,7 @@ static void
 set_target_hosts (const char *, const char *);
 
 static gchar*
-select_config_nvts (const char*, const char*);
+select_config_nvts (const char*, const char*, int, const char*);
 
 
 /* Variables. */
@@ -428,21 +428,29 @@ create_tables ()
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  sql       Format string for SQL.
  */
 static void
-init_iterator (iterator_t* iterator, const char* sql)
+init_iterator (iterator_t* iterator, const char* sql, ...)
 {
   int ret;
   const char* tail;
   sqlite3_stmt* stmt;
+  va_list args;
+  gchar* formatted;
 
-  tracef ("   sql: %s\n", sql);
+  va_start (args, sql);
+  formatted = g_strdup_vprintf (sql, args);
+  va_end (args);
+
+  tracef ("   sql: %s\n", formatted);
 
   iterator->done = FALSE;
   while (1)
     {
-      ret = sqlite3_prepare (task_db, sql, -1, &stmt, &tail);
+      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
       iterator->stmt = stmt;
       if (ret == SQLITE_OK)
         {
@@ -682,7 +690,7 @@ migrate_1_to_2 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
+  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
   while (next (&nvts))
     {
       int category;
@@ -1549,10 +1557,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Initialise a task iterator.
  *
- * @param[in]  iterator  Task iterator.
+ * @param[in]  iterator    Task iterator.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_task_iterator (task_iterator_t* iterator)
+init_task_iterator (task_iterator_t* iterator,
+                    int ascending,
+                    const char *sort_field)
 {
   int ret;
   const char* tail;
@@ -1562,10 +1574,16 @@ init_task_iterator (task_iterator_t* iterator)
   iterator->done = FALSE;
   if (current_credentials.username)
     formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users WHERE name = '%s');",
-                                  current_credentials.username);
+                                 " (SELECT ROWID FROM users WHERE name = '%s')"
+                                 " ORDER BY %s %s;",
+                                 current_credentials.username,
+                                 sort_field ? sort_field : "ROWID",
+                                 ascending ? "ASC" : "DESC");
   else
-    formatted = g_strdup_printf ("SELECT ROWID FROM tasks;");
+    formatted = g_strdup_printf ("SELECT ROWID FROM tasks"
+                                 " ORDER BY %s %s;",
+                                 sort_field ? sort_field : "ROWID",
+                                 ascending ? "ASC" : "DESC");
   tracef ("   sql (iterator): %s\n", formatted);
   while (1)
     {
@@ -2085,7 +2103,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.username == NULL);
-  init_task_iterator (&iterator);
+  init_task_iterator (&iterator, 1, NULL);
   while (next_task (&iterator, &index))
     {
       switch (task_run_status (index))
@@ -2110,7 +2128,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       nvti_cache = nvtis_new ();
 
-      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
+      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
       while (next (&nvts))
         {
           nvti_t *nvti = nvti_new ();
@@ -2633,7 +2651,7 @@ make_task_rcfile (task_t task)
           {
             iterator_t nvts;
 
-            init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
+            init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
             while (next (&nvts))
               g_string_append_printf (buffer,
                                       " %s = yes\n",
@@ -4228,11 +4246,20 @@ delete_target (const char* name)
  * @brief Initialise a target iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_target_iterator (iterator_t* iterator)
+init_target_iterator (iterator_t* iterator, int ascending,
+                      const char* sort_field)
 {
-  init_iterator (iterator, "SELECT name, hosts, comment from targets;");
+  gchar* sql;
+  sql = g_strdup_printf ("SELECT name, hosts, comment from targets"
+                         " ORDER BY %s %s;",
+                         sort_field ? sort_field : "ROWID",
+                         ascending ? "ASC" : "DESC");
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 DEF_ACCESS (target_iterator_name, 0);
@@ -4798,28 +4825,38 @@ delete_config (const char* name)
 /**
  * @brief Initialise a config iterator.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  name      Name of config.  NULL for all.
+ * @param[in]  iterator    Iterator.
+ * @param[in]  name        Name of config.  NULL for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_config_iterator (iterator_t* iterator, const char *name)
+init_config_iterator (iterator_t* iterator, const char *name,
+                      int ascending, const char* sort_field)
+
 {
+  gchar* sql;
   if (name)
     {
-      gchar* sql;
       gchar *quoted_name = sql_quote (name);
       sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
                              " families_growing, nvts_growing"
-                             " FROM configs WHERE name = '%s';",
-                             quoted_name);
+                             " FROM configs WHERE name = '%s'"
+                             " ORDER BY %s %s;",
+                             quoted_name,
+                             sort_field ? sort_field : "ROWID",
+                             ascending ? "ASC" : "DESC");
       g_free (quoted_name);
-      init_iterator (iterator, sql);
-      g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT name, nvt_selector, comment,"
-                             " families_growing, nvts_growing"
-                             " FROM configs;");
+    sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
+                           " families_growing, nvts_growing"
+                           " FROM configs"
+                           " ORDER BY %s %s;",
+                           sort_field ? sort_field : "ROWID",
+                           ascending ? "ASC" : "DESC");
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 DEF_ACCESS (config_iterator_name, 0);
@@ -5134,15 +5171,17 @@ make_nvt_from_nvti (const nvti_t *nvti)
 /**
  * @brief Initialise an NVT iterator.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  nvt       NVT to iterate over, all if 0.
- * @param[in]  config    Config to limit selection to.  NULL for all NVTs.
- *                       Overridden by \arg nvt.
- * @param[in]  family    Family to limit selection to, if config given.
+ * @param[in]  iterator    Iterator.
+ * @param[in]  nvt         NVT to iterate over, all if 0.
+ * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
+ *                         Overridden by \arg nvt.
+ * @param[in]  family      Family to limit selection to, if config given.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
-                   const char* family)
+                   const char* family, int ascending, const char* sort_field)
 {
   if (nvt)
     {
@@ -5159,7 +5198,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
     {
       gchar* sql;
       if (family == NULL) abort ();
-      sql = select_config_nvts (config, family);
+      sql = select_config_nvts (config, family, ascending, sort_field);
       if (sql)
         {
           init_iterator (iterator, sql);
@@ -5173,10 +5212,13 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
                        " FROM nvts LIMIT 0;");
     }
   else
-    init_iterator (iterator, "SELECT oid, version, name, summary, description,"
-                             " copyright, cve, bid, xref, tag, sign_key_ids,"
-                             " category, family"
-                             " FROM nvts;");
+    init_iterator (iterator,
+                   "SELECT oid, version, name, summary, description,"
+                   " copyright, cve, bid, xref, tag, sign_key_ids,"
+                   " category, family"
+                   " FROM nvts;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
 }
 
 DEF_ACCESS (nvt_iterator_oid, 0);
@@ -5538,19 +5580,25 @@ nvt_selector_nvt_count (const char* selector, const char* config)
  * @param[in]  iterator  Iterator.
  * @param[in]  all       True for an "all" selector, else 0.
  * @param[in]  selector  Name of NVT selector.
+ * @param[in]  ascending   Whether to sort ascending or descending.
  */
 void
-init_family_iterator (iterator_t* iterator, int all, const char* selector)
+init_family_iterator (iterator_t* iterator, int all, const char* selector,
+                      int ascending)
 {
   if (all)
-    init_iterator (iterator, "SELECT distinct family FROM nvts;");
+    init_iterator (iterator,
+                   "SELECT distinct family FROM nvts ORDER BY family %s;",
+                   ascending ? "ASC" : "DESC");
   else
     {
       gchar *sql;
       gchar *quoted_selector = sql_quote (selector);
       sql = g_strdup_printf ("SELECT distinct family FROM nvt_selectors"
-                             " WHERE (type = 1 OR type = 2) AND name = '%s';",
-                             quoted_selector);
+                             " WHERE (type = 1 OR type = 2) AND name = '%s'"
+                             " ORDER BY family %s;",
+                             quoted_selector,
+                             ascending ? "ASC" : "DESC");
       g_free (quoted_selector);
       init_iterator (iterator, sql);
       g_free (sql);
@@ -5647,13 +5695,16 @@ nvt_selector_family_selected_count (const char *selector,
 /**
  * @brief Return a statement for selecting the NVT's of a config.
  *
- * @param[in]  config  Config.
- * @param[in]  family  Family to limit selection to.
+ * @param[in]  config      Config.
+ * @param[in]  family      Family to limit selection to.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  *
  * @return Freshly allocated SELECT statement if possibly, else NULL.
  */
 static gchar*
-select_config_nvts (const char* config, const char* family)
+select_config_nvts (const char* config, const char* family, int ascending,
+                    const char* sort_field)
 {
   /** @todo sql_quote. */
   char *selector = config_nvt_selector (config);
@@ -5682,8 +5733,11 @@ select_config_nvts (const char* config, const char* family)
                     ("SELECT oid, version, name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
                      " category, family"
-                     " FROM nvts WHERE family = '%s';",
-                     family);
+                     " FROM nvts WHERE family = '%s'"
+                     " ORDER BY %s %s;",
+                     family,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
           /* An error somewhere. */
           return NULL;
         }
@@ -6072,27 +6126,35 @@ delete_lsc_credential (const char* name)
  * @brief Initialise an LSC Credential iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_lsc_credential_iterator (iterator_t* iterator, const char *name)
+init_lsc_credential_iterator (iterator_t* iterator, const char *name,
+                              int ascending, const char* sort_field)
 {
   if (name && strlen (name))
     {
-      gchar *sql;
       gchar *quoted_name = sql_quote (name);
-      sql = g_strdup_printf ("SELECT name, password, comment, public_key,"
-                             " private_key, rpm, deb, exe"
-                             " FROM lsc_credentials"
-                             " WHERE name = '%s';",
-                             quoted_name);
+      init_iterator (iterator,
+                     "SELECT name, password, comment, public_key,"
+                     " private_key, rpm, deb, exe"
+                     " FROM lsc_credentials"
+                     " WHERE name = '%s'"
+                     " ORDER BY %s %s;",
+                     quoted_name,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
       g_free (quoted_name);
-      init_iterator (iterator, sql);
-      g_free (sql);
     }
   else
-    init_iterator (iterator, "SELECT name, password, comment, public_key,"
-                             " private_key, rpm, deb, exe"
-                             " FROM lsc_credentials;");
+    init_iterator (iterator,
+                   "SELECT name, password, comment, public_key,"
+                   " private_key, rpm, deb, exe"
+                   " FROM lsc_credentials"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
 }
 
 DEF_ACCESS (lsc_credential_iterator_name, 0);

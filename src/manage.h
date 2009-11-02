@@ -206,7 +206,7 @@ unsigned int
 task_count ();
 
 void
-init_task_iterator (task_iterator_t*);
+init_task_iterator (task_iterator_t*, int, const char*);
 
 void
 cleanup_task_iterator (task_iterator_t*);
@@ -537,7 +537,7 @@ int
 delete_target (const char*);
 
 void
-init_target_iterator (iterator_t*);
+init_target_iterator (iterator_t*, int, const char*);
 
 const char*
 target_iterator_name (iterator_t*);
@@ -564,7 +564,7 @@ int
 delete_config (const char*);
 
 void
-init_config_iterator (iterator_t*, const char*);
+init_config_iterator (iterator_t*, const char*, int, const char*);
 
 const char*
 config_iterator_name (iterator_t*);
@@ -606,7 +606,8 @@ gboolean
 find_nvt (const char*, nvt_t*);
 
 void
-init_nvt_iterator (iterator_t*, nvt_t, const char*, const char*);
+init_nvt_iterator (iterator_t*, nvt_t, const char*, const char*, int,
+                   const char*);
 
 const char*
 nvt_iterator_oid (iterator_t*);
@@ -666,7 +667,7 @@ int
 nvt_selector_nvt_count (const char*, const char*);
 
 void
-init_family_iterator (iterator_t*, int, const char*);
+init_family_iterator (iterator_t*, int, const char*, int);
 
 const char*
 family_iterator_name (iterator_t*);
@@ -705,7 +706,7 @@ int
 delete_lsc_credential (const char*);
 
 void
-init_lsc_credential_iterator (iterator_t*, const char*);
+init_lsc_credential_iterator (iterator_t*, const char*, int, const char*);
 
 const char*
 lsc_credential_iterator_name (iterator_t*);

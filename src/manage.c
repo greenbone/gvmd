@@ -328,7 +328,7 @@ print_tasks ()
   task_iterator_t iterator;
   task_t index;
 
-  init_task_iterator (&iterator);
+  init_task_iterator (&iterator, 1, NULL);
   if (next_task (&iterator, &index))
     {
       do
@@ -477,7 +477,7 @@ nvt_selector_plugins (const char* selector)
           gboolean first = TRUE;
 
           plugins = g_string_new ("");
-          init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
+          init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
           while (next (&nvts))
             {
               if (first)

@@ -897,6 +897,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_1 = atoi (attribute);
             else
               current_int_1 = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
@@ -910,6 +918,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
               openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
             set_client_state (CLIENT_GET_LSC_CREDENTIALS);
           }
         else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
@@ -934,6 +950,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "family", &attribute))
               openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&modify_task_value, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -963,7 +987,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_RULES", element_name) == 0)
           set_client_state (CLIENT_GET_RULES);
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
-          set_client_state (CLIENT_GET_TARGETS);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
+            set_client_state (CLIENT_GET_TARGETS);
+          }
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
@@ -1038,6 +1073,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_1 = atoi (attribute);
             else
               current_int_1 = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
             set_client_state (CLIENT_GET_STATUS);
           }
         else
@@ -2735,7 +2778,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (md5sum);
               SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-              init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL);
+              init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
               while (next (&nvts))
                 if (send_nvt (&nvts, 0))
                   {
@@ -2809,7 +2852,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         " status=\"" STATUS_OK "\""
                         " status_text=\"" STATUS_OK_TEXT "\">");
 
-                      init_nvt_iterator (&nvts, nvt, NULL, NULL);
+                      init_nvt_iterator (&nvts, nvt, NULL, NULL, 1, NULL);
                       while (next (&nvts))
                         if (send_nvt (&nvts, 1))
                           {
@@ -2839,8 +2882,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   init_nvt_iterator (&nvts,
                                      (nvt_t) 0,
-                                     current_name,     /* Attribute config. */
-                                     current_format);  /* Attribute family. */
+                                     current_name,    /* Attribute config. */
+                                     current_format,  /* Attribute family. */
+                                     /* Attribute sort_order. */
+                                     current_int_2,
+                                     /* Attribute sort_field. */
+                                     modify_task_value);
                   while (next (&nvts))
                     if (send_nvt (&nvts, 1))
                       {
@@ -4882,7 +4929,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             g_free (response);
 
-            init_task_iterator (&iterator);
+            init_task_iterator (&iterator,
+                                current_int_2,      /* Attribute sort_order. */
+                                current_format);    /* Attribute sort_field. */
             while (next_task (&iterator, &index))
               {
                 gchar *line, *progress_xml;
@@ -5168,7 +5217,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
-          init_config_iterator (&configs, current_name);
+          init_config_iterator (&configs,
+                                current_name,
+                                current_int_2,      /* Attribute sort_order. */
+                                current_format);    /* Attribute sort_field. */
           while (next (&configs))
             {
               int config_nvts_growing;
@@ -5210,7 +5262,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("<families>");
                   init_family_iterator (&families,
                                         config_nvts_growing,
-                                        selector);
+                                        selector,
+                                        /* Attribute sort_order. */
+                                        current_int_2);
                   while (next (&families))
                     {
                       int family_growing, family_max, family_selected_count;
@@ -5325,7 +5379,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              init_lsc_credential_iterator (&targets, current_uuid);
+              init_lsc_credential_iterator (&targets,
+                                            current_uuid,
+                                            /* Attribute sort_order. */
+                                            current_int_2,
+                                            /* Attribute sort_field. */
+                                            current_name);
               while (next (&targets))
                 {
                   switch (format)
@@ -5400,7 +5459,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
-          init_target_iterator (&targets);
+          init_target_iterator (&targets,
+                                current_int_2,   /* Attribute sort_order. */
+                                current_format); /* Attribute sort_field. */
           while (next (&targets))
             SENDF_TO_CLIENT_OR_FAIL ("<target>"
                                      "<name>%s</name>"

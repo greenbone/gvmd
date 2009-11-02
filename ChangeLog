@@ -1,3 +1,23 @@
+2009-11-02  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add sorting parameters to most OMP data retrieval commands, for very basic
+	sorting.
+
+	* src/tasks_sql.h (init_iterator): Make sql a printf style format string.
+	(select_config_nvts, init_task_iterator, init_target_iterator)
+	(init_config_iterator, init_nvt_iterator, init_family_iterator)
+	(select_config_nvts, init_lsc_credential_iterator): Add args that control
+	sorting.  Update all callers.
+
+	* src/manage.h: Update headers.
+
+	* src/manage.c: Update calls to init_task_iterator and init_nvt_iterator.
+
+	* src/omp.c: Update iterator calls with sorting args.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add sort_field
+	and sort_order attributes to GET_CONFIGS, GET_LSC_CREDENTIALS,
+	GET_NVT_DETAILS, GET_TARGETS and GET_STATUS.
+
 2009-10-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add config and family attributes to OMP GET_NVT_DETAILS, for getting
