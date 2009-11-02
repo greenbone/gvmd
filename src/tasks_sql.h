@@ -4956,6 +4956,41 @@ static DEF_ACCESS (preference_iterator_name, 0);
 static DEF_ACCESS (preference_iterator_value, 1);
 
 /**
+ * @brief Initialise a config preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  config    Config.
+ * @param[in]  nvt       Name of NVT whose preferences to iterator over.
+ */
+void
+init_config_pref_iterator (iterator_t* iterator,
+                           const char* config,
+                           const char* nvt)
+{
+  gchar *quoted_config = sql_nquote (config, strlen (config));
+  init_iterator (iterator,
+                 "SELECT name, value FROM config_preferences"
+                 " WHERE config ="
+                 " (SELECT ROWID FROM configs WHERE name = '%s')"
+                 " AND type = 'PLUGINS_PREFS'"
+                 " AND name LIKE '%s[%%';",
+                 quoted_config,
+                 nvt ? nvt : "");
+  g_free (quoted_config);
+}
+
+DEF_ACCESS (config_pref_iterator_name, 0);
+
+const char*
+config_pref_iterator_value (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret ? ret : (const char*) sqlite3_column_text (iterator->stmt, 2);
+}
+
+/**
  * @brief Return the NVT selector associated with a config.
  *
  * @param[in]  name  Config name.
@@ -5804,15 +5839,92 @@ manage_nvt_preferences_enable ()
  * @brief Initialise an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  name      Name of NVT, NULL for all preferences.
  */
 void
-init_nvt_preference_iterator (iterator_t* iterator)
+init_nvt_preference_iterator (iterator_t* iterator, const char *name)
 {
-  init_iterator (iterator, "SELECT name, value FROM nvt_preferences;");
+  if (name)
+    {
+      gchar *quoted_name = sql_quote (name);
+      init_iterator (iterator,
+                     "SELECT name, value FROM nvt_preferences"
+                     " WHERE name LIKE '%s[%%';",
+                     quoted_name);
+      g_free (quoted_name);
+    }
+  else
+    init_iterator (iterator, "SELECT name, value FROM nvt_preferences;");
 }
 
 DEF_ACCESS (nvt_preference_iterator_name, 0);
 DEF_ACCESS (nvt_preference_iterator_value, 1);
+
+char*
+nvt_preference_iterator_real_name (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  if (ret)
+    {
+      int value_start = -1, value_end = -1, count;
+      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[^:]%n", &value_start, &value_end);
+      if (count == 0 && value_start > 0 && value_end > 0)
+        {
+          ret += value_start;
+          return g_strndup (ret, value_end - value_start);
+        }
+      return NULL;
+    }
+  return NULL;
+}
+
+char*
+nvt_preference_iterator_type (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  if (ret)
+    {
+      int type_start = -1, type_end = -1, count;
+      count = sscanf (ret, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
+      if (count == 0 && type_start > 0 && type_end > 0)
+        {
+          ret += type_start;
+          return g_strndup (ret, type_end - type_start);
+        }
+      return NULL;
+    }
+  return NULL;
+}
+
+char*
+nvt_preference_iterator_config_value (iterator_t* iterator, const char* config)
+{
+  gchar *quoted_config, *quoted_name, *value;
+  const char *ret;
+  if (iterator->done) return NULL;
+
+  quoted_config = sql_quote (config);
+  quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
+  value = sql_string (0, 0,
+                      "SELECT value FROM config_preferences"
+                      " WHERE config ="
+                      " (SELECT ROWID FROM configs WHERE name = '%s')"
+                      " AND type = 'PLUGINS_PREFS'"
+                      " AND name = '%s';",
+                      quoted_config,
+                      quoted_name);
+  g_free (quoted_config);
+  g_free (quoted_name);
+  if (value) return value;
+
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  if (ret) return g_strdup (ret);
+  return NULL;
+}
 
 
 /* LSC Credentials. */

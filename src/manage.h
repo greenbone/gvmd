@@ -688,13 +688,31 @@ void
 manage_nvt_preferences_enable ();
 
 void
-init_nvt_preference_iterator (iterator_t*);
+init_nvt_preference_iterator (iterator_t*, const char*);
 
 const char*
 nvt_preference_iterator_name (iterator_t*);
 
 const char*
 nvt_preference_iterator_value (iterator_t*);
+
+char*
+nvt_preference_iterator_config_value (iterator_t*, const char*);
+
+char*
+nvt_preference_iterator_real_name (iterator_t*);
+
+char*
+nvt_preference_iterator_type (iterator_t*);
+
+void
+init_config_pref_iterator (iterator_t*, const char*, const char*);
+
+const char*
+config_pref_iterator_name (iterator_t*);
+
+const char*
+config_pref_iterator_value (iterator_t*);
 
 
 /* LSC credentials. */

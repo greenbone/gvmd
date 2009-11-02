@@ -1,5 +1,21 @@
 2009-11-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Send NVT preferences with OMP GET_NVT_DETAILS.
+
+	* src/tasks_sql.h (init_config_pref_iterator, config_pref_iterator_name)
+	(config_pref_iterator_value, nvt_preference_iterator_real_name)
+	(nvt_preference_iterator_type, nvt_preference_iterator_config_value): New
+	functions.
+	(init_nvt_preference_iterator): Add name arg for getting prefs for given
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_end_element): Update CLIENT_GET_PREFERENCES
+	init_nvt_preference_iterator call.  In CLIENT_GET_NVT_DETAILS send each
+	NVT's prefs with the NVT when the config attribute is present.
+
+2009-11-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add sorting parameters to most OMP data retrieval commands, for very basic
 	sorting.
 

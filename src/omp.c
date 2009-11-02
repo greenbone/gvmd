@@ -2705,7 +2705,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
-          init_nvt_preference_iterator (&prefs);
+          init_nvt_preference_iterator (&prefs, NULL);
           while (next (&prefs))
             {
               SENDF_TO_CLIENT_OR_FAIL ("<preference>"
@@ -2854,10 +2854,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       init_nvt_iterator (&nvts, nvt, NULL, NULL, 1, NULL);
                       while (next (&nvts))
-                        if (send_nvt (&nvts, 1))
-                          {
-                            error_send_to_client (error);
-                            return;
+                        {
+                          if (send_nvt (&nvts, 1))
+                            {
+                              error_send_to_client (error);
+                              return;
+                            }
+                          if (current_name) /* Attribute config. */
+                            {
+                              iterator_t prefs;
+                              const char *nvt_name = nvt_iterator_name (&nvts);
+
+                              /* Send the preferences for the NVT. */
+
+                              SEND_TO_CLIENT_OR_FAIL ("<preferences>");
+
+                              init_nvt_preference_iterator (&prefs, nvt_name);
+                              while (next (&prefs))
+                                {
+                                  char *real_name, *type, *value;
+                                  real_name
+                                   = nvt_preference_iterator_real_name (&prefs);
+                                  type = nvt_preference_iterator_type (&prefs);
+                                  value = nvt_preference_iterator_config_value
+                                           (&prefs, current_name);
+                                  if (strcmp (type, "radio") == 0)
+                                    {
+                                      /* Clip off the alternative values. */
+                                      char *pos = strchr (value, ';');
+                                      if (pos) *pos = '\0';
+                                    }
+                                  SENDF_TO_CLIENT_OR_FAIL
+                                   ("<preference>"
+                                    "<name>%s</name>"
+                                    "<type>%s</type>"
+                                    "<value>%s</value>"
+                                    "</preference>",
+                                    real_name,
+                                    type,
+                                    value);
+                                  free (real_name);
+                                  free (type);
+                                  free (value);
+                                }
+                              cleanup_iterator (&prefs);
+
+                              SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+
+                            }
                           }
                       cleanup_iterator (&nvts);
 
