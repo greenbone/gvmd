@@ -1,3 +1,22 @@
+2009-11-03  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Send preference counts with OMP GET_NVT_DETAILS and preferences with
+	OMP GET_CONFIGS.
+
+	* src/tasks_sql.h (nvt_preference_iterator_real_name): Return name anyway
+	if sscanf fails to match.
+	(nvt_preference_iterator_nvt, nvt_preference_count): New functions.
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (current_int_3): New variable.
+	(omp_xml_handle_start_element): Add "preferences" attribute to
+	GET_CONFIGS.
+	(send_nvt): Send preference count from new arg pref_count.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS check type exists
+	before strcmp and send preference count with each NVT.  In
+	CLIENT_GET_CONFIGS send preferences according to "preferences" attribute.
+
 2009-11-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Send NVT preferences with OMP GET_NVT_DETAILS.

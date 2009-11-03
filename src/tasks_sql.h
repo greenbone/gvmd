@@ -5875,7 +5875,7 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
           ret += value_start;
           return g_strndup (ret, value_end - value_start);
         }
-      return NULL;
+      return g_strdup (ret);
     }
   return NULL;
 }
@@ -5894,6 +5894,25 @@ nvt_preference_iterator_type (iterator_t* iterator)
         {
           ret += type_start;
           return g_strndup (ret, type_end - type_start);
+        }
+      return NULL;
+    }
+  return NULL;
+}
+
+char*
+nvt_preference_iterator_nvt (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  if (ret)
+    {
+      int type_start = -1, count;
+      count = sscanf (ret, "%*[^[]%n[%*[^]]]:", &type_start);
+      if (count == 0 && type_start > 0)
+        {
+          return g_strndup (ret, type_start);
         }
       return NULL;
     }
@@ -5924,6 +5943,25 @@ nvt_preference_iterator_config_value (iterator_t* iterator, const char* config)
   ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
   if (ret) return g_strdup (ret);
   return NULL;
+}
+
+/**
+ * @brief Get the number preferences available for an NVT.
+ *
+ * @param[in]  name  Name of NVT.
+ *
+ * @return Number of possible preferences on NVT.
+ */
+int
+nvt_preference_count (const char *name)
+{
+  gchar *quoted_name = sql_quote (name);
+  int ret = sql_int (0, 0,
+                     "SELECT COUNT(*) FROM nvt_preferences"
+                     " WHERE name LIKE '%s[%%';",
+                     quoted_name);
+  g_free (quoted_name);
+  return ret;
 }
 
 

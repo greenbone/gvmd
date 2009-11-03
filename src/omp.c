@@ -253,6 +253,11 @@ int current_int_1;
 int current_int_2;
 
 /**
+ * @brief Generic integer variable for communicating between the callbacks.
+ */
+int current_int_3;
+
+/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -905,6 +910,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_2 = strcmp (attribute, "descending");
             else
               current_int_2 = 1;
+            if (find_attribute (attribute_names, attribute_values,
+                                "preferences", &attribute))
+              current_int_3 = atoi (attribute);
+            else
+              current_int_3 = 0;
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
@@ -1754,13 +1764,14 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 /**
  * @brief Send XML for an NVT.
  *
- * @param[in]  key      The plugin OID.
- * @param[in]  details  If true, detailed XML, else simple XML.
+ * @param[in]  key         The plugin OID.
+ * @param[in]  details     If true, detailed XML, else simple XML.
+ * @param[in]  pref_count  Preference count.  Used if details is true.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_nvt (iterator_t *nvts, int details)
+send_nvt (iterator_t *nvts, int details, int pref_count)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -1797,6 +1808,7 @@ send_nvt (iterator_t *nvts, int details)
                              "<xrefs>%s</xrefs>"
                              "<fingerprints>%s</fingerprints>"
                              "<tags>%s</tags>"
+                             "<preference_count>%i</preference_count>"
                              "<checksum>"
                              "<algorithm>md5</algorithm>"
                              // FIX implement
@@ -1815,7 +1827,8 @@ send_nvt (iterator_t *nvts, int details)
                              nvt_iterator_bid (nvts),
                              nvt_iterator_xref (nvts),
                              nvt_iterator_sign_key_ids (nvts),
-                             tag_text);
+                             tag_text,
+                             pref_count);
       g_free (copyright_text);
       g_free (description_text);
       g_free (summary_text);
@@ -2780,7 +2793,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
               while (next (&nvts))
-                if (send_nvt (&nvts, 0))
+                if (send_nvt (&nvts, 0, -1))
                   {
                     error_send_to_client (error);
                     return;
@@ -2855,7 +2868,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       init_nvt_iterator (&nvts, nvt, NULL, NULL, 1, NULL);
                       while (next (&nvts))
                         {
-                          if (send_nvt (&nvts, 1))
+                          if (send_nvt (&nvts, 1, -1))
                             {
                               error_send_to_client (error);
                               return;
@@ -2878,7 +2891,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   type = nvt_preference_iterator_type (&prefs);
                                   value = nvt_preference_iterator_config_value
                                            (&prefs, current_name);
-                                  if (strcmp (type, "radio") == 0)
+                                  if (type && strcmp (type, "radio") == 0)
                                     {
                                       /* Clip off the alternative values. */
                                       char *pos = strchr (value, ';');
@@ -2933,11 +2946,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      /* Attribute sort_field. */
                                      modify_task_value);
                   while (next (&nvts))
-                    if (send_nvt (&nvts, 1))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                    {
+                      int pref_count = -1;
+                      if (current_name) /* Attribute config. */
+                        {
+                          const char *nvt_name = nvt_iterator_name (&nvts);
+                          pref_count = nvt_preference_count (nvt_name);
+                        }
+                      if (send_nvt (&nvts, 1, pref_count))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                    }
                   cleanup_iterator (&nvts);
 
                   SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
@@ -5371,13 +5392,59 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             * NVT's. */
                                            "<known_nvt_count>"
                                            "%i"
-                                           "</known_nvt_count>"
-                                           "</config>",
+                                           "</known_nvt_count>",
                                            max_nvt_count,
                                            known_nvt_count);
                 }
-              else
-                SENDF_TO_CLIENT_OR_FAIL ("</config>");
+
+              if (current_int_3)
+                {
+                  iterator_t prefs;
+
+                  /** @todo Similar to block in CLIENT_GET_NVT_DETAILS. */
+
+                  /* The "preferences" attribute was true. */
+
+                  SEND_TO_CLIENT_OR_FAIL ("<preferences>");
+
+                  init_nvt_preference_iterator (&prefs, NULL);
+                  while (next (&prefs))
+                    {
+                      char *real_name, *type, *value, *nvt;
+                      real_name
+                       = nvt_preference_iterator_real_name (&prefs);
+                      type = nvt_preference_iterator_type (&prefs);
+                      value = nvt_preference_iterator_config_value
+                               (&prefs, config_name);
+                      nvt = nvt_preference_iterator_nvt (&prefs);
+                      if (type && strcmp (type, "radio") == 0)
+                        {
+                          /* Clip off the alternative values. */
+                          char *pos = strchr (value, ';');
+                          if (pos) *pos = '\0';
+                        }
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<preference>"
+                        "<nvt>%s</nvt>"
+                        "<name>%s</name>"
+                        "<type>%s</type>"
+                        "<value>%s</value>"
+                        "</preference>",
+                        nvt ? nvt : "",
+                        real_name,
+                        type,
+                        value);
+                      free (real_name);
+                      free (type);
+                      free (value);
+                      free (nvt);
+                    }
+                  cleanup_iterator (&prefs);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+                }
+
+              SENDF_TO_CLIENT_OR_FAIL ("</config>");
             }
           openvas_free_string_var (&current_name);
           cleanup_iterator (&configs);
