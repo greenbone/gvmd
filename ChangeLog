@@ -1,3 +1,10 @@
+2009-11-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Made the nbe output of manager and openvas-client more similar.
+
+	* src/omp.c (omp_xml_handle_end_element): Do not put pipe symbol at
+	the end of "result" lines.
+
 2009-11-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (nvt_oid): New function.

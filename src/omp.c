@@ -3190,7 +3190,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       current_int_2); /* Max results. */
                 while (next (&results))
                   g_string_append_printf (nbe,
-                                          "results|%s|%s|%s|%s|%s|%s|\n",
+                                          "results|%s|%s|%s|%s|%s|%s\n",
                                           result_iterator_subnet (&results),
                                           result_iterator_host (&results),
                                           result_iterator_port (&results),
