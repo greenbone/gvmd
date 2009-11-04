@@ -107,6 +107,26 @@ result_type_threat (const char* type)
   return "Log";
 }
 
+static gint
+compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  return collate_message_type (NULL,
+                               strlen (one), one,
+                               strlen (two), two);
+}
+
+static gint
+compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  return collate_message_type (NULL,
+                               strlen (two), two,
+                               strlen (one), one);
+}
+
 
 /* Help message. */
 
@@ -978,20 +998,45 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
               openvas_append_string (&current_uuid, attribute);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
               openvas_append_string (&current_format, attribute);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
               /* Subtract 1 to switch from 1 to 0 indexing. */
               current_int_1 = atoi (attribute) - 1;
             else
               current_int_1 = 0;
+
             if (find_attribute (attribute_names, attribute_values,
                                 "max_results", &attribute))
               current_int_2 = atoi (attribute);
             else
               current_int_2 = -1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_name, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_3 = strcmp (attribute, "descending");
+            else
+              {
+                if (current_name == NULL
+                    || (strcmp (current_name, "type") == 0))
+                  /* Normally it makes more sense to order type descending. */
+                  current_int_3 = 0;
+                else
+                  current_int_3 = 1;
+              }
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "levels", &attribute))
+              openvas_append_string (&modify_task_value, attribute);
+
             set_client_state (CLIENT_GET_REPORT);
           }
         else if (strcasecmp ("GET_RULES", element_name) == 0)
@@ -1962,13 +2007,16 @@ send_reports (task_t task)
 /**
  * @brief Print the XML for a report to a file.
  *
- * @param[in]   report    The report.
- * @param[in]   xml_file  File name.
+ * @param[in]  report      The report.
+ * @param[in]  xml_file    File name.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
-print_report_xml (report_t report, gchar* xml_file)
+print_report_xml (report_t report, gchar* xml_file, int ascending,
+                  const char* sort_field)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -2009,7 +2057,11 @@ print_report_xml (report_t report, gchar* xml_file)
 
   init_result_iterator (&results, report, NULL,
                         current_int_1,  /* First result. */
-                        current_int_2); /* Max results. */
+                        current_int_2,  /* Max results. */
+                        ascending,
+                        sort_field,
+                        /* Attribute levels. */
+                        modify_task_value);
 
   while (next (&results))
     {
@@ -2305,13 +2357,16 @@ const char* latex_footer
 /**
  * @brief Print LaTeX for a report to a file.
  *
- * @param[in]   report      The report.
- * @param[in]   latex_file  File name.
+ * @param[in]  report      The report.
+ * @param[in]  latex_file  File name.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
-print_report_latex (report_t report, gchar* latex_file)
+print_report_latex (report_t report, gchar* latex_file, int ascending,
+                    const char* sort_field)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -2441,16 +2496,14 @@ print_report_latex (report_t report, gchar* latex_file)
 
       init_result_iterator (&results, report, host,
                             current_int_1,  /* First result. */
-                            current_int_2); /* Max results. */
+                            current_int_2,  /* Max results. */
+                            ascending,
+                            sort_field,
+                            /* Attribute levels. */
+                            modify_task_value);
       last_port = NULL;
-      /* Results are ordered by port, and then by severity (more severity
-       * before less severe). */
       while (next (&results))
         {
-          const char *type = result_iterator_type (&results);
-          if (strcmp (type, "Log Message") == 0
-              || strcmp (type, "Debug Message") == 0)
-            continue;
           if (last_port
               && (strcmp (last_port, result_iterator_port (&results)) == 0))
             continue;
@@ -2462,7 +2515,7 @@ print_report_latex (report_t report, gchar* latex_file)
                    host_iterator_host (&hosts),
                    last_port,
                    last_port,
-                   result_type_threat(result_iterator_type (&results)));
+                   result_type_threat (result_iterator_type (&results)));
         }
       cleanup_iterator (&results);
       if (last_port) g_free (last_port);
@@ -2477,7 +2530,11 @@ print_report_latex (report_t report, gchar* latex_file)
 
       init_result_iterator (&results, report, host,
                             current_int_1,  /* First result. */
-                            current_int_2); /* Max results. */
+                            current_int_2,  /* Max results. */
+                            ascending,
+                            sort_field,
+                            /* Attribute levels. */
+                            modify_task_value);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -2486,11 +2543,6 @@ print_report_latex (report_t report, gchar* latex_file)
         {
           gchar *descr;
           const char *severity;
-          const char *type = result_iterator_type (&results);
-
-          if (strcmp (type, "Log Message") == 0
-              || strcmp (type, "Debug Message") == 0)
-            continue;
 
           descr = latex_escape_text (result_iterator_descr (&results));
 
@@ -3057,6 +3109,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 task_t task;
                 char *tsk_uuid = NULL, *start_time, *end_time;
                 int result_count, run_status;
+                const char *levels;
+
+                /* Attribute levels. */
+                levels = modify_task_value ? modify_task_value : "hm";
 
                 if (report_task (report, &task))
                   {
@@ -3082,9 +3138,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   " status=\"" STATUS_OK "\""
                   " status_text=\"" STATUS_OK_TEXT "\">"
                   "<report id=\"%s\">"
+                  "<sort><field>%s<order>%s</order></field></sort>"
+                  "<filters>%s",
+                  current_uuid,
+                  /* Attribute sort_field. */
+                  current_name ? current_name : "type",
+                  /* Attribute sort_order. */
+                  current_int_3 ? "ascending" : "descending",
+                  levels);
+
+                if (strchr (levels, 'h'))
+                  SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
+                if (strchr (levels, 'm'))
+                  SEND_TO_CLIENT_OR_FAIL ("<filter>Medium</filter>");
+                if (strchr (levels, 'l'))
+                  SEND_TO_CLIENT_OR_FAIL ("<filter>Low</filter>");
+                if (strchr (levels, 'g'))
+                  SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
+
+                SENDF_TO_CLIENT_OR_FAIL
+                 ("</filters>"
                   "<scan_run_status>%s</scan_run_status>"
                   "<scan_result_count>%i</scan_result_count>",
-                  current_uuid,
                   run_status_name (run_status
                                    ? run_status
                                    : TASK_STATUS_INTERNAL_ERROR),
@@ -3114,9 +3189,114 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            host_iterator_start_time (&hosts));
                 cleanup_iterator (&hosts);
 
+                /* Port summary. */
+
+                {
+                  gchar *last_port;
+                  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+
+                  init_result_iterator (&results, report, NULL,
+                                        current_int_1,   /* First result. */
+                                        current_int_2,   /* Max results. */
+                                        /* Sort by port in order requested. */
+                                        ((current_name   /* "sort_field". */
+                                          && (strcmp (current_name, "port")
+                                              == 0))
+                                         ? current_int_3 /* "sort_order". */
+                                         : 1),
+                                        "port", /* Always desc. by threat. */
+                                        levels);
+
+                  /* Buffer the results. */
+
+                  last_port = NULL;
+                  while (next (&results))
+                    {
+                      const char *port = result_iterator_port (&results);
+
+                      if (last_port == NULL || strcmp (port, last_port))
+                        {
+                          const char *host, *type;
+                          gchar *item;
+                          int type_len, host_len;
+
+                          g_free (last_port);
+                          last_port = g_strdup (port);
+
+                          host = result_iterator_host (&results);
+                          type = result_iterator_type (&results);
+                          type_len = strlen (type);
+                          host_len = strlen (host);
+                          item = g_malloc (type_len
+                                           + host_len
+                                           + strlen (port)
+                                           + 3);
+                          g_array_append_val (ports, item);
+                          strcpy (item, type);
+                          strcpy (item + type_len + 1, host);
+                          strcpy (item + type_len + host_len + 2, port);
+                        }
+
+                    }
+                  g_free (last_port);
+
+                  /* Ensure the buffered results are sorted. */
+
+                  if (strcmp (current_name, /* Attribute sort_field. */
+                              "port"))
+                    {
+                      /* Sort by threat. */
+                      if (current_int_3) /* Attribute sort_order. */
+                        g_array_sort (ports, compare_ports_asc);
+                      else
+                        g_array_sort (ports, compare_ports_desc);
+                    }
+
+                  /* Send from the buffer. */
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<ports"
+                                           " start=\"%i\""
+                                           " max=\"%i\">",
+                                           /* Add 1 for 1 indexing. */
+                                           current_int_1 + 1,
+                                           current_int_2);
+                  {
+                    gchar *item;
+                    int index = 0;
+
+                    while ((item = g_array_index (ports, gchar*, index++)))
+                      {
+                        int type_len = strlen (item);
+                        int host_len = strlen (item + type_len + 1);
+                        SENDF_TO_CLIENT_OR_FAIL ("<port>"
+                                                 "<host>%s</host>"
+                                                 "%s"
+                                                 "<threat>%s</threat>"
+                                                 "</port>",
+                                                 item + type_len + 1,
+                                                 item + type_len
+                                                      + host_len
+                                                      + 2,
+                                                 result_type_threat (item));
+                        g_free (item);
+                      }
+                    g_array_free (ports, TRUE);
+                  }
+                  SENDF_TO_CLIENT_OR_FAIL ("</ports>");
+                  cleanup_iterator (&results);
+                }
+
+                /* Results. */
+
                 init_result_iterator (&results, report, NULL,
                                       current_int_1,  /* First result. */
-                                      current_int_2); /* Max results. */
+                                      current_int_2,  /* Max results. */
+                                      /* Attribute sort_order. */
+                                      current_int_3,
+                                      /* Attribute sort_field. */
+                                      current_name,
+                                      levels);
+
                 SENDF_TO_CLIENT_OR_FAIL ("<results"
                                          " start=\"%i\""
                                          " max=\"%i\">",
@@ -3187,7 +3367,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 init_result_iterator (&results, report, NULL,
                                       current_int_1,  /* First result. */
-                                      current_int_2); /* Max results. */
+                                      current_int_2,  /* Max results. */
+                                      /* Attribute sort_order. */
+                                      current_int_3,
+                                      /* Attribute sort_field. */
+                                      current_name,
+                                      /* Attribute levels. */
+                                      modify_task_value);
                 while (next (&results))
                   g_string_append_printf (nbe,
                                           "results|%s|%s|%s|%s|%s|%s\n",
@@ -3254,7 +3440,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (xml_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_xml (report, xml_file))
+                else if (print_report_xml (report,
+                                           xml_file,
+                                           /* Attribute sort_order. */
+                                           current_int_3,
+                                           /* Attribute sort_field. */
+                                           current_name))
                   {
                     g_free (xml_file);
                     close (xml_fd);
@@ -3405,7 +3596,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (xml_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_xml (report, xml_file))
+                else if (print_report_xml (report,
+                                           xml_file,
+                                           /* Attribute sort_order. */
+                                           current_int_3,
+                                           /* Attribute sort_field. */
+                                           current_name))
                   {
                     g_free (xml_file);
                     close (xml_fd);
@@ -3557,7 +3753,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (latex_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_latex (report, latex_file))
+                else if (print_report_latex (report,
+                                             latex_file,
+                                             /* Attribute sort_order. */
+                                             current_int_3,
+                                             /* Attribute sort_field. */
+                                             current_name))
                   {
                     g_free (latex_file);
                     close (latex_fd);

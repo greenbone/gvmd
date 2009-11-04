@@ -2982,7 +2982,8 @@ next_report (iterator_t* iterator, report_t* report)
 /**
  * @brief Initialise a result iterator.
  *
- * The results are ordered by host, then port, then type (severity).
+ * The results are ordered by host, then port and type (severity) according
+ * to sort_field.
  *
  * @param[in]  iterator      Iterator.
  * @param[in]  report        Report whose results the iterator loops over.
@@ -2992,33 +2993,136 @@ next_report (iterator_t* iterator, report_t* report)
  * @param[in]  first_result  The result to start from.  The results are 0
  *                           indexed.
  * @param[in]  max_results   The maximum number of results returned.
+ * @param[in]  ascending     Whether to sort ascending or descending.
+ * @param[in]  sort_field    Field to sort on, or NULL for "type".
+ * @param[in]  levels        String describing threat levels (message types)
+ *                           to include in report (for example, "hmlg" for
+ *                           High, Medium, Low and loG).
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, const char* host,
-                      int first_result, int max_results)
+                      int first_result, int max_results, int ascending,
+                      const char* sort_field, const char* levels)
 {
   gchar* sql;
+  if (sort_field == NULL) sort_field = "type";
+  if (levels == NULL) levels = "hm";
   if (report)
     {
+      GString *levels_sql = NULL;
+
+      /* Generate SQL for constraints on message type, according to levels. */
+
+      if (strlen (levels))
+        {
+          int first = 1;
+
+          /* High. */
+          if (strchr (levels, 'h'))
+            {
+              first = 0;
+              levels_sql = g_string_new (" AND (type = 'Security Hole'");
+            }
+
+          /* Medium. */
+          if (strchr (levels, 'm'))
+            {
+              if (first)
+                {
+                  levels_sql = g_string_new (" AND (type = 'Security Warning'");
+                  first = 0;
+                }
+              else
+                levels_sql = g_string_append (levels_sql,
+                                              " OR type = 'Security Warning'");
+            }
+
+          /* Low. */
+          if (strchr (levels, 'l'))
+            {
+              if (first)
+                {
+                  levels_sql = g_string_new (" AND (type = 'Security Note'");
+                  first = 0;
+                }
+              else
+                levels_sql = g_string_append (levels_sql,
+                                              " OR type = 'Security Note'");
+            }
+
+          /* loG. */
+          if (strchr (levels, 'g'))
+            {
+              if (first)
+                levels_sql = g_string_new (" AND (type = 'Log Message')");
+              else
+                levels_sql = g_string_append (levels_sql,
+                                              " OR type = 'Log Message')");
+            }
+          else if (first == 0)
+            levels_sql = g_string_append (levels_sql, ")");
+        }
+
+      /* Allocate the query. */
+
       if (host)
         sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
+                               "%s"
                                " AND report_results.result = results.ROWID"
                                " AND results.host = '%s'"
-                               " ORDER BY port,"
-                               " type COLLATE collate_message_type DESC"
+                               "%s"
                                " LIMIT %i OFFSET %i;",
-                               report, host, max_results, first_result);
+                               report,
+                               levels_sql ? levels_sql->str : "",
+                               host,
+                               ascending
+                                ? ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY"
+                                      " port,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY"
+                                      " type COLLATE collate_message_type,"
+                                      " port")
+                                : ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY"
+                                      " port DESC,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY"
+                                      " type COLLATE collate_message_type DESC,"
+                                      " port"),
+                               max_results,
+                               first_result);
       else
         sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
+                               "%s"
                                " AND report_results.result = results.ROWID"
-                               " ORDER BY host, port,"
-                               " type COLLATE collate_message_type DESC"
+                               "%s"
                                " LIMIT %i OFFSET %i;",
-                               report, max_results, first_result);
+                               report,
+                               levels_sql ? levels_sql->str : "",
+                               ascending
+                                ? ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host,"
+                                      " port,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY host,"
+                                      " type COLLATE collate_message_type,"
+                                      " port")
+                                : ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host,"
+                                      " port DESC,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY host,"
+                                      " type COLLATE collate_message_type DESC,"
+                                      " port"),
+                               max_results,
+                               first_result);
+
+      if (levels_sql) g_string_free (levels_sql, TRUE);
     }
   else
     sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"

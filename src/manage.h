@@ -477,7 +477,8 @@ void
 init_report_iterator (iterator_t*, task_t);
 
 void
-init_result_iterator (iterator_t*, task_t, const char*, int, int);
+init_result_iterator (iterator_t*, task_t, const char*, int, int, int,
+                      const char *, const char *);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -520,6 +521,9 @@ host_iterator_current_port (iterator_t*);
 
 int
 host_iterator_max_port (iterator_t*);
+
+int
+collate_message_type (void* data, int, const void*, int, const void*);
 
 
 /* RC's. */
