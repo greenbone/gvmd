@@ -5044,6 +5044,24 @@ find_config (const char* name, task_t* task)
 /* NVT's. */
 
 /**
+ * @brief Guess the OID of an NVT given a name.
+ *
+ * @param[in]  name  Name of NVT.
+ *
+ * @return OID of NVT if possible, else NULL.
+ */
+char *
+nvt_oid (const char *name)
+{
+  gchar *quoted_name = sql_quote (name);
+  char *ret = sql_string (0, 0,
+                          "SELECT oid FROM nvts WHERE name = '%s' LIMIT 1;",
+                          quoted_name);
+  g_free (quoted_name);
+  return ret;
+}
+
+/**
  * @brief Return whether the NVT cache is present.
  *
  * @return 1 if a cache of NVTs is present, else 0.

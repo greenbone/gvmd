@@ -590,6 +590,9 @@ config_in_use (const char*);
 
 /* NVT's. */
 
+char *
+nvt_oid (const char *);
+
 int
 nvts_size ();
 

@@ -1,5 +1,14 @@
 2009-11-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (nvt_oid): New function.
+
+	* src/manage.h: Add header.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS send OID
+	with NVT in PREFERENCE.
+
+2009-11-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_nvt_preference_iterator): Filter out
 	client-specific and server_info preferences.
 

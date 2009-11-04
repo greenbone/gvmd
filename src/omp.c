@@ -5410,13 +5410,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_nvt_preference_iterator (&prefs, NULL);
                   while (next (&prefs))
                     {
-                      char *real_name, *type, *value, *nvt;
+                      char *real_name, *type, *value, *nvt, *oid = NULL;
                       real_name
                        = nvt_preference_iterator_real_name (&prefs);
                       type = nvt_preference_iterator_type (&prefs);
                       value = nvt_preference_iterator_config_value
                                (&prefs, config_name);
                       nvt = nvt_preference_iterator_nvt (&prefs);
+                      if (nvt) oid = nvt_oid (nvt);
                       if (type && strcmp (type, "radio") == 0)
                         {
                           /* Clip off the alternative values. */
@@ -5425,11 +5426,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         }
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preference>"
-                        "<nvt>%s</nvt>"
+                        "<nvt oid=\"%s\"><name>%s</name></nvt>"
                         "<name>%s</name>"
                         "<type>%s</type>"
                         "<value>%s</value>"
                         "</preference>",
+                        oid ? oid : "",
                         nvt ? nvt : "",
                         real_name,
                         type,
@@ -5438,6 +5440,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       free (type);
                       free (value);
                       free (nvt);
+                      free (oid);
                     }
                   cleanup_iterator (&prefs);
 
