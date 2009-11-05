@@ -2291,7 +2291,7 @@ latex_severity_colour (const char *severity)
     return "{openvas_note}";
   if (strcmp (severity, "Security Warning") == 0)
     return "{openvas_warning}";
-  return "{openvas_text}";
+  return "{openvas_report}";
 }
 
 /**
@@ -2315,13 +2315,16 @@ const char* latex_header
     "% must come last\n"
     "\\usepackage{hyperref}\n"
     "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
-    "\\definecolor{openvas_text}{rgb}{0,0,0}\n"
     "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
-    "\\definecolor{openvas_log}{rgb}{0.49,0.49,0.49}\n"
-    "\\definecolor{openvas_hole}{rgb}{0.80,0,0}\n"
-    "\\definecolor{openvas_note}{rgb}{0.93,0.86,0.5}\n"
+    /* Log: #FFFFFF (@todo #3A3A3A 0.2275,0.2275,0.2275 with white text). */
+    "\\definecolor{openvas_log}{rgb}{1,1,1}\n"
+    /* High: #CB1D17 */
+    "\\definecolor{openvas_hole}{rgb}{0.7960,0.1137,0.0902}\n"
+    /* Low: #539DCB */
+    "\\definecolor{openvas_note}{rgb}{0.3255,0.6157,0.7961}\n"
     "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
-    "\\definecolor{openvas_warning}{rgb}{0.93,0.60,0}\n"
+    /* Medium: #F99F31 */
+    "\\definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}\n"
     "\\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}\n"
     "\\usepackage[all]{hypcap}\n"
     "\n"
@@ -2349,7 +2352,7 @@ const char* latex_footer
     "\\medskip\n"
     "\\rule{\\textwidth}{0.1pt}\n"
     "\n"
-    "This file was automactically generated.\n"
+    "This file was automatically generated.\n"
     "\\end{center}\n"
     "\n"
     "\\end{document}\n";
