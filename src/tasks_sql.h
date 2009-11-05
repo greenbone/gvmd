@@ -2996,8 +2996,9 @@ next_report (iterator_t* iterator, report_t* report)
  * @param[in]  ascending     Whether to sort ascending or descending.
  * @param[in]  sort_field    Field to sort on, or NULL for "type".
  * @param[in]  levels        String describing threat levels (message types)
- *                           to include in report (for example, "hmlg" for
- *                           High, Medium, Low and loG).
+ *                           to include in report (for example, "hmlgd" for
+ *                           High, Medium, Low, loG and Debug).  All levels if
+ *                           NULL.
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, const char* host,
@@ -3006,7 +3007,7 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
 {
   gchar* sql;
   if (sort_field == NULL) sort_field = "type";
-  if (levels == NULL) levels = "hm";
+  if (levels == NULL) levels = "hmlgd";
   if (report)
     {
       GString *levels_sql = NULL;
@@ -3015,52 +3016,67 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
 
       if (strlen (levels))
         {
-          int first = 1;
+          int count = 0;
 
           /* High. */
           if (strchr (levels, 'h'))
             {
-              first = 0;
+              count = 1;
               levels_sql = g_string_new (" AND (type = 'Security Hole'");
             }
 
           /* Medium. */
           if (strchr (levels, 'm'))
             {
-              if (first)
-                {
-                  levels_sql = g_string_new (" AND (type = 'Security Warning'");
-                  first = 0;
-                }
+              if (count == 0)
+                levels_sql = g_string_new (" AND (type = 'Security Warning'");
               else
                 levels_sql = g_string_append (levels_sql,
                                               " OR type = 'Security Warning'");
+              count++;
             }
 
           /* Low. */
           if (strchr (levels, 'l'))
             {
-              if (first)
-                {
-                  levels_sql = g_string_new (" AND (type = 'Security Note'");
-                  first = 0;
-                }
+              if (count == 0)
+                levels_sql = g_string_new (" AND (type = 'Security Note'");
               else
                 levels_sql = g_string_append (levels_sql,
                                               " OR type = 'Security Note'");
+              count++;
             }
 
           /* loG. */
           if (strchr (levels, 'g'))
             {
-              if (first)
-                levels_sql = g_string_new (" AND (type = 'Log Message')");
+              if (count == 0)
+                levels_sql = g_string_new (" AND (type = 'Log Message'");
               else
                 levels_sql = g_string_append (levels_sql,
-                                              " OR type = 'Log Message')");
+                                              " OR type = 'Log Message'");
+              count++;
             }
-          else if (first == 0)
+
+          /* Debug. */
+          if (strchr (levels, 'd'))
+            {
+              if (count == 0)
+                levels_sql = g_string_new (" AND (type = 'Debug Message')");
+              else
+                levels_sql = g_string_append (levels_sql,
+                                              " OR type = 'Debug Message')");
+              count++;
+            }
+          else if (count)
             levels_sql = g_string_append (levels_sql, ")");
+
+          if (count == 5)
+            {
+              /* All levels. */
+              g_string_free (levels_sql, TRUE);
+              levels_sql = NULL;
+            }
         }
 
       /* Allocate the query. */

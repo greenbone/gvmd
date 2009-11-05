@@ -1,5 +1,17 @@
 2009-11-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (init_result_iterator): Include all levels if levels is NULL.
+	Add level 'd' for type "Debug Message".  Simplify the SQL if all levels are
+	requested.
+
+	* src/tasks_sql.h (omp_xml_handle_end_element): Ensure globals used for
+	sort_field and levels attributes are cleared after commands.  In
+	CLIENT_GET_REPORT correct attribute name in error response, set levels
+	to all levels if the attribute is NULL, add a 'd' entry in FILTERS and
+	add a NULL check on current_name.
+
+2009-11-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (latex_severity_colour): Replace openvas_text with
 	openvas_report.
 	(latex_header): Remove openvas_text.  Match threat colours to GSA.

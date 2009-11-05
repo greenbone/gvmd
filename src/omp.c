@@ -3023,6 +3023,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
         }
         openvas_free_string_var (&current_uuid);
+        openvas_free_string_var (&modify_task_value);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -3083,10 +3084,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (current_uuid == NULL)
+        if (current_uuid == NULL) /* Attribute report_id. */
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("get_report",
-                              "GET_REPORT must have a current_uuid attribute"));
+                              "GET_REPORT must have a report_id attribute"));
         else
           {
             report_t report;
@@ -3115,7 +3116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 const char *levels;
 
                 /* Attribute levels. */
-                levels = modify_task_value ? modify_task_value : "hm";
+                levels = modify_task_value ? modify_task_value : "hmlgd";
 
                 if (report_task (report, &task))
                   {
@@ -3158,6 +3159,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("<filter>Low</filter>");
                 if (strchr (levels, 'g'))
                   SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
+                if (strchr (levels, 'd'))
+                  SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
 
                 SENDF_TO_CLIENT_OR_FAIL
                  ("</filters>"
@@ -3245,8 +3248,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   /* Ensure the buffered results are sorted. */
 
-                  if (strcmp (current_name, /* Attribute sort_field. */
-                              "port"))
+                  if (current_name
+                      && strcmp (current_name, /* Attribute sort_field. */
+                                 "port"))
                     {
                       /* Sort by threat. */
                       if (current_int_3) /* Attribute sort_order. */
@@ -3888,6 +3892,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         openvas_free_string_var (&current_uuid);
         openvas_free_string_var (&current_format);
+        openvas_free_string_var (&modify_task_value);
+        openvas_free_string_var (&current_name);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -5475,6 +5481,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             cleanup_task_iterator (&iterator);
             SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
           }
+        openvas_free_string_var (&current_format);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -5654,6 +5661,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("</config>");
             }
           openvas_free_string_var (&current_name);
+          openvas_free_string_var (&current_format);
           cleanup_iterator (&configs);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);
@@ -5765,6 +5773,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
             }
+          openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -5797,6 +5806,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       (target_iterator_name (&targets)));
           cleanup_iterator (&targets);
           SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
+          openvas_free_string_var (&current_format);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
