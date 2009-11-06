@@ -1,3 +1,10 @@
+2009-11-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/omp.c (latex_print_text): New, extracted from latex_escape_text.
+	Writes to file directly (bufferless) in contrast to memory.
+	(latex_escape_text): Added todo, function might be obsolete.
+	(print_report_latex): Use (new) latex_print_text.
+
 2009-11-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (init_result_iterator): Include all levels if levels is NULL.
@@ -33,8 +40,7 @@
 	(omp_xml_handle_end_element): For the XML report, include the filtering
 	and sorting info in the response, add a port summary section.  Pass
 	sorting and filtering attributes to init_result_iterator.
-
-omp_xml_handle_end_element): In CLIENT_GET_CONFIGS send OID
+	(omp_xml_handle_end_element): In CLIENT_GET_CONFIGS send OID
 	with NVT in PREFERENCE.
 
 2009-11-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>

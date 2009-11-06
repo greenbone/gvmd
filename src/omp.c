@@ -2119,6 +2119,8 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
  * Replace LaTeX special characters with LaTeX equivalents.
  *
  * @return A newly allocated version of text.
+ *
+ * @todo Evaluate whether there will be use for this function.
  */
 static gchar*
 latex_escape_text (const char *text)
@@ -2194,6 +2196,81 @@ latex_escape_text (const char *text)
     }
   return new;
 }
+
+/**
+ * @brief Writes \ref text to \ref file, escaping characters on the fly.
+ *
+ * @param[in]   file  File descriptor to write to.
+ * @param[out]  text  Text to write to file, while escaping 'special'
+ *                    characters.
+ */
+static void
+latex_print_text (FILE* file, const char* text)
+{
+  const char* pos = text;
+  while (*pos)
+    {
+      switch (*pos)
+        {
+          case '\\':
+            // Look ahead
+            ++pos;
+            // Skip "\r"
+            if (*pos && *pos == 'r')
+              break; /* skip */
+            // Replace "\n" by '\n''\n'
+            else if (*pos && *pos == 'n')
+              {
+                fputc ('\n', file);
+                fputc ('\n', file);
+                break;
+              }
+            --pos;
+            // No escaped special char. 
+            fputs ("$\\backslash$", file);
+            break;
+          /** @todo following cases simply place a backslash ('\') in front of
+           *        the character to be escaped. simplification possible?
+           *        case '%':
+           *        //...
+           *        case '$':
+           *          fputc ('&', file);
+           *          fputc (*pos, file);
+           *          break;
+           *        default: //...
+           */
+          case '#':
+            fputs ("\\#", file);
+            break;
+          case '$':
+            fputs ("\\$", file);
+            break;
+          case '%':
+            fputs ("\\%", file);
+            break;
+          case '&':
+            fputs ("\\&", file);
+            break;
+          case '{':
+            fputs ("\\{", file);
+            break;
+          case '}':
+            fputs ("\\}", file);
+            break;
+          case '_':
+            fputs ("\\_", file);
+            break;
+          case '^':
+            fputs ("\\^", file);
+            break;
+          default:
+            fputc (*pos, file);
+            break;
+        }
+      ++pos;
+    }
+}
+
 
 /**
  * @brief Convert \n's to real newline's.
@@ -2544,10 +2621,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
       // FIX severity ordering is alphabetical on severity name
       while (next (&results))
         {
-          gchar *descr;
           const char *severity;
-
-          descr = latex_escape_text (result_iterator_descr (&results));
 
           if (last_port == NULL
               || strcmp (last_port, result_iterator_port (&results)))
@@ -2580,8 +2654,12 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
           fprintf (out,
                    "\\hline\n"
                    "\\rowcolor%s%s\\\\\n"
-                   "\\hline\n"
-                   "%s\\\\\n"
+                   "\\hline\n",
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity));
+          latex_print_text (out, result_iterator_descr (&results));
+          fprintf (out,
+                   "\\\\\n"
                    "OID of test routine: %s\\\\\n"
                    "\\hline\n"
                    "\\end{tabularx}\n"
@@ -2589,12 +2667,8 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                    "\n"
                    "\\begin{tabular}{l}\n"
                    "\\begin{tabularx}{\\textwidth * 1}{|X|}\n",
-                   latex_severity_colour (severity),
-                   latex_severity_heading (severity),
-                   descr,
                    result_iterator_nvt (&results));
 
-          g_free (descr);
         }
       if (last_port)
         {
