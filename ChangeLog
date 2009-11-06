@@ -1,5 +1,18 @@
 2009-11-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	Improved pdf report generation: Use longtable environment for issues
+	(like security hole, security warning etc.) to allow for tables across
+	multiple pages. For tables to break across pages, text in the tables
+	has to be put in multiple rows.
+	Some issues persist, added respective todos.
+
+	* src/omp.c (latex_print_text): Replace "\n" by linebreak/
+	row-termination "\\" instead of two newlines
+	(print_report_latex): Use longtable instead of tabularx environment,
+	added todos.
+
+2009-11-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/omp.c (latex_print_text): New, extracted from latex_escape_text.
 	Writes to file directly (bufferless) in contrast to memory.
 	(latex_escape_text): Added todo, function might be obsolete.

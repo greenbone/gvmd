@@ -2200,6 +2200,11 @@ latex_escape_text (const char *text)
 /**
  * @brief Writes \ref text to \ref file, escaping characters on the fly.
  *
+ * Function to be used to print text to latex documents in a longtable
+ * environment.
+ * Newlines will be replaced by row/line breaks, thus might cause trouble in
+ * non- tabular environments.
+ *
  * @param[in]   file  File descriptor to write to.
  * @param[out]  text  Text to write to file, while escaping 'special'
  *                    characters.
@@ -2217,12 +2222,11 @@ latex_print_text (FILE* file, const char* text)
             ++pos;
             // Skip "\r"
             if (*pos && *pos == 'r')
-              break; /* skip */
-            // Replace "\n" by '\n''\n'
+              break;
+            // Replace "\n" by row/line break
             else if (*pos && *pos == 'n')
               {
-                fputc ('\n', file);
-                fputc ('\n', file);
+                fputs ("\\\\", file);
                 break;
               }
             --pos;
@@ -2382,6 +2386,7 @@ const char* latex_header
     "\\usepackage{tabularx}\n"
     "\\usepackage{geometry}\n"
     "\\usepackage{comment}\n"
+    "\\usepackage{longtable}\n"
     "\\usepackage{titlesec}\n"
     "\\usepackage{chngpage}\n"
     "\\usepackage{calc}\n"
@@ -2443,6 +2448,14 @@ const char* latex_footer
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  *
  * @return 0 on success, else -1 with errno set.
+ *
+ * @todo Lines of issue texts (descriptions of message like "security hole")
+ *       are printed as rows. This will lead to trouble if a single issue line
+ *       does not fit on a whole page, because page breaks can only be inserted
+ *       _between_ rows. Consider using the verbatim environment with manually
+ *       added row breaks after a certain number of characters.
+ * @todo Use more features of the longtable environment, e.g. declare table
+ *       headings and "continues/d on/from next/previous page" texts.
  */
 static int
 print_report_latex (report_t report, gchar* latex_file, int ascending,
@@ -2629,11 +2642,10 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
               if (last_port)
                 {
                   fprintf (out,
-                           "\\end{tabularx}\\\\\n"
+                           "\\end{longtable}\n"
                            "\\begin{footnotesize}"
                            "\\hyperref[host:%s]{[ return to %s ]}\n"
-                           "\\end{footnotesize}"
-                           "\\end{tabular}\n",
+                           "\\end{footnotesize}\n",
                            host,
                            host);
                   g_free (last_port);
@@ -2642,8 +2654,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
               fprintf (out,
                        "\\subsubsection{%s}\n"
                        "\\label{port:%s %s}\n\n"
-                       "\\begin{tabular}{l}\n"
-                       "\\begin{tabularx}{\\textwidth * 1}{|X|}\n",
+                       "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
                        result_iterator_port (&results),
                        host_iterator_host (&hosts),
                        result_iterator_port (&results));
@@ -2662,11 +2673,9 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                    "\\\\\n"
                    "OID of test routine: %s\\\\\n"
                    "\\hline\n"
-                   "\\end{tabularx}\n"
-                   "\\end{tabular}\n"
+                   "\\end{longtable}\n"
                    "\n"
-                   "\\begin{tabular}{l}\n"
-                   "\\begin{tabularx}{\\textwidth * 1}{|X|}\n",
+                   "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
                    result_iterator_nvt (&results));
 
         }
@@ -2675,11 +2684,10 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
           g_free (last_port);
 
           fprintf (out,
-                   "\\end{tabularx}\n\\\\"
+                   "\\end{longtable}\n"
                    "\\begin{footnotesize}"
                    "\\hyperref[host:%s]{[ return to %s ]}"
-                   "\\end{footnotesize}\n"
-                   "\\end{tabular}\n",
+                   "\\end{footnotesize}\n",
                    host,
                    host);
         }
