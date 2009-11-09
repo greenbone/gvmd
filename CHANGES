@@ -1,3 +1,24 @@
+openvas-manager 0.9.3 (2009-11-09)
+
+This is the ninth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Felix Wolfsteller and Michael Wiegand.
+
+Main changes since 0.9.2:
+
+* Database handling and migration has been improved.
+* Code cleanup.
+* NVT selection based on the family attributed has been introduced.
+* Sorting parameters have been added to most data retrieval commands.
+* Support for retrieving NVT preferences has been introduced.
+* The NBE output has been harmonized with the NBE output of openvas-client.
+* Support for filtering results has been added.
+* The layout of the LaTeX reports has been improved.
+* The layout of the PDF reports has been improved.
+
+
 openvas-manager 0.9.2 (2009-10-26)
 
 This is the eigth development release of the openvas-manager module

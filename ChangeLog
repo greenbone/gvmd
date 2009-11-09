@@ -1,3 +1,15 @@
+2009-11-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 0.9.3 release.
+
+	* VERSION: Set to 0.9.3.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* CHANGES: Updated.
+
 2009-11-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Improved pdf report generation: Use longtable environment for issues
