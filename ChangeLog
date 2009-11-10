@@ -1,3 +1,18 @@
+2009-11-10    Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Improved pdf reports. Text of issues like "security warning" is printed
+	verbatim. To allow for page breaks in issue tables, put one verbatim
+	line into one row of the table. Break lines at 80 characters and do
+	word wrapping. Indicate "artificial" line breaks with a special symbol.
+	Indicate that tables were broken over pages.
+
+	* src/omp.c (print_report_latex): Use more features of the longtable
+	environment in latex/pdf report.
+	(next_break): New. Used for the line and word wrapping in
+	latex_print_verbatim_text.
+	(latex_print_verbatim_text): New. Prints verbatim text, doing line and
+	word wrapping.
+
 2009-11-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.

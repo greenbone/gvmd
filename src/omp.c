@@ -2198,6 +2198,133 @@ latex_escape_text (const char *text)
 }
 
 /**
+ * @brief Returns next good position to wrap text. Only space is considered a
+ * @brief word boundary.
+ *
+ * @param[in]  text        Text to inspect.
+ * @param[in]  line_width  Line width before or at which to wrap.
+ *
+ * @return Good position to insert a line break in printable characters in the
+ *         sense of latex_print_verbatim_text.
+ *
+ * @todo Test special cases.
+ * @todo Do this a bit better.
+ */
+static int
+next_break (const char* text, int line_width)
+{
+  const char* pos = text;
+  int last_space = 0;
+  int nchars     = 0;
+
+  while (*pos && nchars < line_width)
+    {
+      switch (*pos)
+        {
+          case '\\':
+            ++pos;
+            if (*pos && *pos == 'n')
+              {
+                return nchars + 1;
+              }
+            if (*pos && *pos == 'r')
+              {
+                --nchars;
+                --nchars;
+                break;
+              }
+            --pos;
+            break;
+          case '\n':
+            return nchars;
+            break;
+          case ' ':
+            last_space = nchars;
+            break;
+          default:
+            break;
+        } /* switch (*pos) */
+
+      ++pos;
+      ++nchars;
+    }
+
+  if (nchars == line_width && last_space != 0)
+    return last_space;
+  else
+    return nchars;
+}
+
+/**
+ * @brief Writes \ref text to \ref file, doing line wraps at 80 chars and
+ * @brief putting a symbol to indicate line wrap.
+ *
+ * Function to be used to print verbatim text to latex documents in a longtable
+ * environment.
+ * Newlines will be replaced by row/line breaks, thus might cause trouble in
+ * non- tabular environments.
+ *
+ * @param[in]   file  File descriptor to write to.
+ * @param[out]  text  Text to write to file.
+ *
+ * @todo Do this better. Word wrapping has problems with first line.
+ */
+static void
+latex_print_verbatim_text (FILE* file, const char* text)
+{
+  const char* pos = text;
+  int nchars      = 0;
+  int line_width  = 80;
+  int break_pos   = next_break (pos, line_width);
+
+  fputs ("\\verb=", file);
+  while (*pos)
+    {
+      if (nchars == break_pos)
+        {
+          fputs ("=\\\\\n", file);
+          fputs ("$\\hookrightarrow$\\verb=", file);
+          nchars = 0;
+          break_pos = next_break (pos, line_width - 2);
+          continue;
+        }
+      switch (*pos)
+        {
+          case '\\':
+            ++pos;
+            if (*pos && *pos == 'n')
+              {
+                fputs ("=\\\\\n\\verb=", file);
+                nchars = -1;
+                break_pos = next_break (pos, line_width);
+                break;
+              }
+            else if (*pos && *pos == 'r')
+              {
+                --nchars;
+                break;
+              }
+            --pos;
+            fputc (*pos, file);
+            break;
+          case '\n':
+            fputs ("=\\\\\n\\verb=", file);
+            nchars = -1;
+            break_pos = next_break (pos, line_width);
+            break;
+          default:
+            fputc (*pos, file);
+            break;
+        } /* switch (*pos) */
+      ++nchars;
+      ++pos;
+    }
+  /** @todo Handle special situations (empty string, newline at end etc)
+    *       more clever, break at word boundaries */
+  fputs ("=\\\\\n", file);
+}
+
+/**
  * @brief Writes \ref text to \ref file, escaping characters on the fly.
  *
  * Function to be used to print text to latex documents in a longtable
@@ -2226,11 +2353,11 @@ latex_print_text (FILE* file, const char* text)
             // Replace "\n" by row/line break
             else if (*pos && *pos == 'n')
               {
-                fputs ("\\\\", file);
+                fputs ("\\\\\n", file);
                 break;
               }
             --pos;
-            // No escaped special char. 
+            // No escaped special char.
             fputs ("$\\backslash$", file);
             break;
           /** @todo following cases simply place a backslash ('\') in front of
@@ -2454,8 +2581,9 @@ const char* latex_footer
  *       does not fit on a whole page, because page breaks can only be inserted
  *       _between_ rows. Consider using the verbatim environment with manually
  *       added row breaks after a certain number of characters.
- * @todo Use more features of the longtable environment, e.g. declare table
- *       headings and "continues/d on/from next/previous page" texts.
+ * @todo Also, this code produces empty tables (probably because of the
+ *       'if (last_port == )' code).
+ * @todo Escape all text that should appear as text in latex.
  */
 static int
 print_report_latex (report_t report, gchar* latex_file, int ascending,
@@ -2664,15 +2792,24 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
           severity = result_iterator_type (&results);
           fprintf (out,
                    "\\hline\n"
-                   "\\rowcolor%s%s\\\\\n"
-                   "\\hline\n",
+                   "\\rowcolor%s{\\color{white}{%s}}\\\\\n"
+                   "\\hline\n"
+                   "\\endfirsthead\n"
+                   "\\hfill\\ldots continued from previous page \\ldots \\\\\n"
+                   "\\hline\n"
+                   "\\endhead\n"
+                   "\\hline\n"
+                   "\\ldots continues on next page \\ldots \\\\\n"
+                   "\\endfoot\n"
+                   "\\hline\n"
+                   "\\endlastfoot\n",
                    latex_severity_colour (severity),
                    latex_severity_heading (severity));
-          latex_print_text (out, result_iterator_descr (&results));
+          latex_print_verbatim_text (out, result_iterator_descr (&results));
           fprintf (out,
                    "\\\\\n"
                    "OID of test routine: %s\\\\\n"
-                   "\\hline\n"
+                   //"\\hline\n"
                    "\\end{longtable}\n"
                    "\n"
                    "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
