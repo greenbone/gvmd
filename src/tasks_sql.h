@@ -592,7 +592,7 @@ manage_db_version ()
   char *version = sql_string (0, 0,
                               "SELECT value FROM meta"
                               " WHERE name = 'database_version' LIMIT 1;");
-  if (number)
+  if (version)
     {
       number = atoi (version);
       free (version);

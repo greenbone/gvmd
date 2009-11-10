@@ -1,4 +1,8 @@
-2009-11-10    Felix Wolfsteller <felix.wolfsteller@intevation.de>
+2009-11-10  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (manage_db_version): Check version instead of number.
+
+2009-11-10  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Improved pdf reports. Text of issues like "security warning" is printed
 	verbatim. To allow for page breaks in issue tables, put one verbatim
