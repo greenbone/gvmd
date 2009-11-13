@@ -565,6 +565,9 @@ int
 create_config (const char*, const char*, char*);
 
 int
+copy_config (const char*, const char*, const char*);
+
+int
 delete_config (const char*);
 
 void
@@ -590,6 +593,16 @@ config_nvt_selector (const char*);
 
 int
 config_in_use (const char*);
+
+int
+manage_set_config_preference (const char*, const char*, const char*,
+                              const char*);
+
+int
+manage_set_config_nvts (const char*, const char*, GArray*);
+
+int
+manage_set_config_families (const char*, GArray*, GArray*, GArray*, int);
 
 
 /* NVT's. */

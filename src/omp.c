@@ -127,6 +127,16 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
                                strlen (one), one);
 }
 
+static void
+free_array (GArray *array)
+{
+  int index = 0;
+  void* item;
+  while ((item = g_array_index (array, void*, index++)))
+    g_free (item);
+  g_array_free (array, TRUE);
+}
+
 
 /* Help message. */
 
@@ -149,6 +159,7 @@ static char* help_text = "\n"
 "    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
+"    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
@@ -157,6 +168,7 @@ static char* help_text = "\n"
 "    GET_TARGETS            Get all targets.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
+"    MODIFY_CONFIG          Update an existing config.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    START_TASK             Manually start an existing task.\n";
@@ -261,6 +273,21 @@ static char* help_text = "\n"
 
 
 /* Global variables. */
+
+/**
+ * @brief Generic array variable for communicating between the callbacks.
+ */
+GArray *current_array_1;
+
+/**
+ * @brief Generic array variable for communicating between the callbacks.
+ */
+GArray *current_array_2;
+
+/**
+ * @brief Generic array variable for communicating between the callbacks.
+ */
+GArray *current_array_3;
 
 /**
  * @brief Generic integer variable for communicating between the callbacks.
@@ -383,6 +410,7 @@ typedef enum
   CLIENT_COMMANDS,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
+  CLIENT_CREATE_CONFIG_COPY,
   CLIENT_CREATE_CONFIG_NAME,
   CLIENT_CREATE_CONFIG_RCFILE,
   CLIENT_CREATE_LSC_CREDENTIAL,
@@ -415,6 +443,7 @@ typedef enum
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
+  CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
@@ -424,6 +453,21 @@ typedef enum
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
+  CLIENT_MODIFY_CONFIG,
+  CLIENT_MODIFY_CONFIG_NAME,
+  CLIENT_MODIFY_CONFIG_PREFERENCE,
+  CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
+  CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
+  CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
+  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
+  CLIENT_MODIFY_CONFIG_NVT_SELECTION,
+  CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
+  CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_FILE,
@@ -784,6 +828,7 @@ find_attribute (const gchar **attribute_names,
 
 /** @endcond */
 
+/** @todo Free globals when tags open, in case of duplicate tags. */
 /**
  * @brief Handle the start of an OMP XML element.
  *
@@ -989,6 +1034,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_2 = 1;
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
+        else if (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
+            set_client_state (CLIENT_GET_NVT_FAMILIES);
+          }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           set_client_state (CLIENT_GET_PREFERENCES);
         else if (strcasecmp ("GET_REPORT", element_name) == 0)
@@ -1055,6 +1110,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
+        else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG);
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
             const gchar* attribute;
@@ -1078,7 +1135,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (modify_task_value == NULL);
             openvas_append_string (&modify_task_comment, "");
             openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_CONFIG);
           }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
@@ -1377,6 +1433,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
+      case CLIENT_GET_NVT_FAMILIES:
+        if (send_element_error_to_client ("get_nvt_families", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_GET_PREFERENCES:
           {
             if (send_element_error_to_client ("get_preferences", element_name))
@@ -1448,6 +1517,151 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                        G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                        "Error");
         }
+        break;
+
+      case CLIENT_MODIFY_CONFIG:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_NAME);
+        else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
+          {
+            assert (current_array_1 == NULL);
+            assert (current_array_2 == NULL);
+            current_array_1 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            current_array_2 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            current_array_3 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            current_int_3 = 0; /* For GROWING entity, in case missing. */
+            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
+          }
+        else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
+          {
+            assert (current_array_1 == NULL);
+            current_array_1 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
+          }
+        else if (strcasecmp ("PREFERENCE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        else
+          {
+            if (send_element_error_to_client ("modify_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
+        if (strcasecmp ("FAMILY", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_task_comment);
+            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
+          }
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "oid", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
+          }
+        else
+          {
+            if (send_element_error_to_client ("modify_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
+        if (strcasecmp ("FAMILY", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_task_comment);
+            current_int_2 = 0; /* For ALL entity, in case missing. */
+            current_int_1 = 0; /* For GROWING entity, in case missing. */
+            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+          }
+        else if (strcasecmp ("GROWING", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_task_comment);
+            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
+          }
+        else
+          {
+            if (send_element_error_to_client ("modify_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
+        if (strcasecmp ("ALL", element_name) == 0)
+          set_client_state
+           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL);
+        else if (strcasecmp ("GROWING", element_name) == 0)
+          set_client_state
+           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
+        else
+          {
+            if (send_element_error_to_client ("modify_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_CONFIG_PREFERENCE:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "oid", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NVT);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
+        else
+          {
+            if (send_element_error_to_client ("modify_config", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_MODIFY_REPORT:
@@ -1545,6 +1759,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_COPY);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
         else if (strcasecmp ("RCFILE", element_name) == 0)
@@ -3005,30 +3221,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               init_nvt_preference_iterator (&prefs, nvt_name);
                               while (next (&prefs))
                                 {
-                                  char *real_name, *type, *value;
+                                  char *real_name, *type, *value, *nvt;
+                                  char *oid = NULL;
                                   real_name
                                    = nvt_preference_iterator_real_name (&prefs);
                                   type = nvt_preference_iterator_type (&prefs);
                                   value = nvt_preference_iterator_config_value
                                            (&prefs, current_name);
-                                  if (type && strcmp (type, "radio") == 0)
-                                    {
-                                      /* Clip off the alternative values. */
-                                      char *pos = strchr (value, ';');
-                                      if (pos) *pos = '\0';
-                                    }
+                                  nvt = nvt_preference_iterator_nvt (&prefs);
+                                  if (nvt) oid = nvt_oid (nvt);
+
                                   SENDF_TO_CLIENT_OR_FAIL
                                    ("<preference>"
+                                    "<nvt oid=\"%s\"><name>%s</name></nvt>"
                                     "<name>%s</name>"
-                                    "<type>%s</type>"
-                                    "<value>%s</value>"
-                                    "</preference>",
-                                    real_name,
-                                    type,
-                                    value);
-                                  free (real_name);
-                                  free (type);
-                                  free (value);
+                                    "<type>%s</type>",
+                                    oid ? oid : "",
+                                    nvt ? nvt : "",
+                                    real_name ? real_name : "",
+                                    type ? type : "");
+
+                                  if (value
+                                      && type
+                                      && (strcmp (type, "radio") == 0))
+                                    {
+                                      /* Handle the other possible values. */
+                                      char *pos = strchr (value, ';');
+                                      if (pos) *pos = '\0';
+                                      SENDF_TO_CLIENT_OR_FAIL
+                                       ("<value>%s</value>", value);
+                                      while (pos)
+                                        {
+                                          char *pos2 = strchr (++pos, ';');
+                                          if (pos2) *pos2 = '\0';
+                                          SENDF_TO_CLIENT_OR_FAIL
+                                           ("<alt>%s</alt>", pos);
+                                          pos = pos2;
+                                        }
+                                    }
+                                  else
+                                    SENDF_TO_CLIENT_OR_FAIL
+                                     ("<value>%s</value>", value ? value : "");
+
+                                  SEND_TO_CLIENT_OR_FAIL ("</preference>");
+
                                 }
                               cleanup_iterator (&prefs);
 
@@ -3068,7 +3304,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   while (next (&nvts))
                     {
                       int pref_count = -1;
-                      if (current_name) /* Attribute config. */
+                      if (current_name       /* Attribute config. */
+                          || current_format) /* Attribute family. */
                         {
                           const char *nvt_name = nvt_iterator_name (&nvts);
                           pref_count = nvt_preference_count (nvt_name);
@@ -3088,7 +3325,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
         }
         openvas_free_string_var (&current_uuid);
+        openvas_free_string_var (&current_name);
+        openvas_free_string_var (&current_format);
         openvas_free_string_var (&modify_task_value);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_GET_NVT_FAMILIES:
+        {
+          iterator_t families;
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_nvt_families_response"
+                                  " status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">"
+                                  "<families>");
+
+          init_family_iterator (&families,
+                                1,
+                                NULL,
+                                /* Attribute sort_order. */
+                                current_int_2);
+          while (next (&families))
+            {
+              int family_max;
+              const char *family;
+
+              family = family_iterator_name (&families);
+              if (family)
+                family_max = family_nvt_count (family);
+              else
+                family_max = -1;
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<family>"
+                "<name>%s</name>"
+                /* The total number of NVT's in the family. */
+                "<max_nvt_count>%i</max_nvt_count>"
+                "</family>",
+                family ? family : "",
+                family_max);
+            }
+          cleanup_iterator (&families);
+
+          SEND_TO_CLIENT_OR_FAIL ("</families>"
+                                  "</get_nvt_families_response>");
+        }
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -4160,6 +4441,227 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_MODIFY_CONFIG:
+        /** @todo find_config */
+        if (current_name == NULL || strlen (current_name) == 0)
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_config",
+                              "MODIFY_CONFIG requires a NAME element"));
+        else if ((current_format         /* NVT_SELECTION family. */
+                  && current_array_2)    /* Implies FAMILY_SELECTION. */
+                 || ((current_format || current_array_2)
+                     && (modify_task_name
+                         || modify_task_value
+                         || current_uuid)))
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_config",
+                              "MODIFY_CONFIG requires either a PREFERENCE or"
+                              " an NVT_SELECTION or a FAMILY_SELECTION"));
+        else if (current_format)
+          {
+            gchar *item;
+            int index = 0;
+
+            assert (current_array_1);
+
+            switch (manage_set_config_nvts (current_name,
+                                            current_format,
+                                            current_array_1))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+#if 0
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG PREFERENCE requires at least"
+                                      " one of the VALUE and NVT elements"));
+                  break;
+#endif
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_report"));
+                  break;
+              }
+
+            while ((item = g_array_index (current_array_1, gchar*, index++)))
+              g_free (item);
+
+            g_array_free (current_array_1, TRUE);
+            current_array_1 = NULL;
+          }
+        else if (current_array_2)    /* Implies FAMILY_SELECTION. */
+          {
+            assert (current_array_1);
+            assert (current_array_3);
+
+            switch (manage_set_config_families (current_name,
+                                                current_array_1,
+                                                current_array_2,
+                                                current_array_3,
+                                                current_int_3))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+#if 0
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config",
+                                      "MODIFY_CONFIG PREFERENCE requires at least"
+                                      " one of the VALUE and NVT elements"));
+                  break;
+#endif
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("modify_report"));
+                  break;
+              }
+
+            free_array (current_array_1);
+            free_array (current_array_2);
+            free_array (current_array_3);
+            current_array_1 = NULL;
+            current_array_2 = NULL;
+            current_array_3 = NULL;
+          }
+        else if (modify_task_name == NULL || strlen (modify_task_name) == 0)
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("modify_config",
+                              "MODIFY_CONFIG PREFERENCE requires a NAME"
+                              " element"));
+        else switch (manage_set_config_preference (current_name,
+                                                   current_uuid,
+                                                   modify_task_name,
+                                                   modify_task_value))
+          {
+            case 0:
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+              break;
+            case -1:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_config",
+                                  "MODIFY_CONFIG PREFERENCE requires at least"
+                                  " one of the VALUE and NVT elements"));
+              break;
+            default:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_INTERNAL_ERROR ("modify_report"));
+              break;
+          }
+        openvas_free_string_var (&current_format);
+        openvas_free_string_var (&current_name);
+        openvas_free_string_var (&modify_task_name);
+        openvas_free_string_var (&modify_task_value);
+        openvas_free_string_var (&current_uuid);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_CONFIG_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
+        assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
+        assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+      case CLIENT_MODIFY_CONFIG_PREFERENCE:
+        assert (strcasecmp ("PREFERENCE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
+        assert (strcasecmp ("FAMILY", element_name) == 0);
+        if (current_uuid)
+          {
+            if (current_int_1)
+              {
+                if (current_int_2)
+                  /* Growing 1 and select all 1. */
+                  g_array_append_val (current_array_1, current_uuid);
+                else
+                  /* Growing 1 and select all 0. */
+                  g_array_append_val (current_array_3, current_uuid);
+              }
+            else
+              {
+                if (current_int_2)
+                  /* Growing 0 and select all 1. */
+                  g_array_append_val (current_array_2, current_uuid);
+                /* Else growing 0 and select all 0. */
+              }
+          }
+        current_uuid = NULL;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
+        assert (strcasecmp ("GROWING", element_name) == 0);
+        if (modify_task_rcfile)
+          {
+            current_int_3 = atoi (modify_task_rcfile);
+            openvas_free_string_var (&modify_task_rcfile);
+          }
+        else
+          current_int_3 = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
+        assert (strcasecmp ("ALL", element_name) == 0);
+        if (modify_task_rcfile)
+          {
+            current_int_2 = atoi (modify_task_rcfile);
+            openvas_free_string_var (&modify_task_rcfile);
+          }
+        else
+          current_int_2 = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
+        assert (strcasecmp ("GROWING", element_name) == 0);
+        if (modify_task_rcfile)
+          {
+            current_int_1 = atoi (modify_task_rcfile);
+            openvas_free_string_var (&modify_task_rcfile);
+          }
+        else
+          current_int_1 = 0;
+        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
+        assert (strcasecmp ("FAMILY", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
+        break;
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        if (current_uuid)
+          g_array_append_val (current_array_1, current_uuid);
+        current_uuid = NULL;
+        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        break;
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        break;
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        break;
+
       case CLIENT_MODIFY_REPORT:
         if (modify_task_parameter != NULL
             && modify_task_value != NULL)
@@ -4427,21 +4929,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (modify_task_name != NULL);
-          assert (modify_task_value != NULL);
 
-          if (strlen (modify_task_name) == 0
-              || strlen (modify_task_value) == 0)
+          if (strlen (modify_task_name) == 0)
             {
               openvas_free_string_var (&modify_task_comment);
               openvas_free_string_var (&modify_task_name);
               openvas_free_string_var (&modify_task_value);
+              openvas_free_string_var (&current_name);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
                                   // FIX could pass an empty rcfile?
                                   "CREATE_CONFIG name and rcfile must be at"
                                   " least one character long"));
             }
-          else
+          else if ((modify_task_value && current_name)
+                   || (modify_task_value == NULL && current_name == NULL))
+            {
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&modify_task_value);
+              openvas_free_string_var (&current_name);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_config",
+                                  "CREATE_CONFIG requires either a COPY or an"
+                                  " RCFILE element"));
+            }
+          else if (modify_task_value)
             {
               int ret;
               gsize base64_len;
@@ -4479,11 +4992,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
+          else
+            {
+              int ret;
+
+              assert (current_name);
+
+              ret = copy_config (modify_task_name,
+                                 modify_task_comment,
+                                 current_name);
+              openvas_free_string_var (&modify_task_comment);
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_name);
+              switch (ret)
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Config exists already"));
+                    break;
+                  case 2:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Copied config must exist"));
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_config"));
+                    break;
+                }
+            }
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
       case CLIENT_CREATE_CONFIG_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_CONFIG);
+        break;
+      case CLIENT_CREATE_CONFIG_COPY:
+        assert (strcasecmp ("COPY", element_name) == 0);
         set_client_state (CLIENT_CREATE_CONFIG);
         break;
       case CLIENT_CREATE_CONFIG_NAME:
@@ -5564,12 +6114,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 current_format);    /* Attribute sort_field. */
           while (next (&configs))
             {
-              int config_nvts_growing;
+              int config_nvts_growing, config_families_growing;
               const char *selector, *config_name;
 
               selector = config_iterator_nvt_selector (&configs);
               config_name = config_iterator_name (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
+              config_families_growing
+                = config_iterator_families_growing (&configs);
 
               SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                        "<name>%s</name>"
@@ -5587,7 +6139,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_iterator_comment (&configs),
                                        nvt_selector_family_count (selector,
                                                                   config_name),
-                                       config_iterator_families_growing (&configs),
+                                       config_families_growing,
                                        nvt_selector_nvt_count (selector,
                                                                config_name),
                                        config_nvts_growing,
@@ -5602,7 +6154,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SENDF_TO_CLIENT_OR_FAIL ("<families>");
                   init_family_iterator (&families,
-                                        config_nvts_growing,
+                                        config_families_growing,
                                         selector,
                                         /* Attribute sort_order. */
                                         current_int_2);
@@ -5617,16 +6169,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           family_growing = nvt_selector_family_growing
                                             (selector,
                                              family,
-                                             config_nvts_growing);
+                                             config_families_growing);
                           family_max = family_nvt_count (family);
-                          if (family_growing)
-                            family_selected_count = family_max;
-                          else
-                            family_selected_count
-                              = nvt_selector_family_selected_count
-                                 (selector,
-                                  family,
-                                  family_growing);
+                          family_selected_count
+                            = nvt_selector_family_selected_count
+                               (selector,
+                                family,
+                                family_growing);
                           known_nvt_count += family_selected_count;
                         }
                       else
@@ -5694,24 +6243,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                (&prefs, config_name);
                       nvt = nvt_preference_iterator_nvt (&prefs);
                       if (nvt) oid = nvt_oid (nvt);
-                      if (type && strcmp (type, "radio") == 0)
-                        {
-                          /* Clip off the alternative values. */
-                          char *pos = strchr (value, ';');
-                          if (pos) *pos = '\0';
-                        }
+
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preference>"
                         "<nvt oid=\"%s\"><name>%s</name></nvt>"
                         "<name>%s</name>"
-                        "<type>%s</type>"
-                        "<value>%s</value>"
-                        "</preference>",
+                        "<type>%s</type>",
                         oid ? oid : "",
                         nvt ? nvt : "",
-                        real_name,
-                        type,
-                        value);
+                        real_name ? real_name : "",
+                        type ? type : "");
+
+                      if (value && type && (strcmp (type, "radio") == 0))
+                        {
+                          /* Handle the other possible values. */
+                          char *pos = strchr (value, ';');
+                          if (pos) *pos = '\0';
+                          SENDF_TO_CLIENT_OR_FAIL ("<value>%s</value>", value);
+                          while (pos)
+                            {
+                              char *pos2 = strchr (++pos, ';');
+                              if (pos2) *pos2 = '\0';
+                              SENDF_TO_CLIENT_OR_FAIL ("<alt>%s</alt>", pos);
+                              pos = pos2;
+                            }
+                        }
+                      else
+                        SENDF_TO_CLIENT_OR_FAIL ("<value>%s</value>",
+                                                 value ? value : "");
+
+                      SEND_TO_CLIENT_OR_FAIL ("</preference>");
+
                       free (real_name);
                       free (type);
                       free (value);
@@ -5908,6 +6470,32 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
+      case CLIENT_MODIFY_CONFIG_NAME:
+        openvas_append_text (&current_name, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
+        openvas_append_text (&current_format, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
+        openvas_append_text (&modify_task_rcfile, text, text_len);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
+        openvas_append_text (&current_uuid, text, text_len);
+        break;
+      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
+        openvas_append_text (&modify_task_rcfile, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
+        openvas_append_text (&modify_task_name, text, text_len);
+        break;
+      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
+        openvas_append_text (&modify_task_value, text, text_len);
+        break;
+
       case CLIENT_MODIFY_REPORT_PARAMETER:
         openvas_append_text (&modify_task_value, text, text_len);
         break;
@@ -5937,6 +6525,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_CONFIG_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_CREATE_CONFIG_COPY:
+        openvas_append_text (&current_name, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_NAME:
         openvas_append_text (&modify_task_name, text, text_len);

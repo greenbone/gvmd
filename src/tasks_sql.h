@@ -36,7 +36,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 5
+#define DATABASE_VERSION 6
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -52,6 +52,11 @@
  * @brief NVT selector type for "NVT" rule.
  */
 #define NVT_SELECTOR_TYPE_NVT 2
+
+/**
+ * @brief Special NVT selector type for selecting all types in interfaces.
+ */
+#define NVT_SELECTOR_TYPE_ANY 999
 
 
 /* Types. */
@@ -93,6 +98,9 @@ set_target_hosts (const char *, const char *);
 
 static gchar*
 select_config_nvts (const char*, const char*, int, const char*);
+
+int
+family_count ();
 
 
 /* Variables. */
@@ -395,6 +403,28 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
 }
 
 
+/* General helpers. */
+
+/** @todo Duplicated in gsa. */
+/**
+ * @brief Test whether a string equal to a given string exists in an array.
+ *
+ * @param[in]  array   Array of gchar* pointers.
+ * @param[in]  string  String.
+ *
+ * @return 1 if a string equal to \arg string exists in \arg array, else 0.
+ */
+static int
+member (GArray *array, const char *string)
+{
+  const gchar *item;
+  int index = 0;
+  while ((item = g_array_index (array, gchar*, index++)))
+    if (strcmp (item, string) == 0) return 1;
+  return 0;
+}
+
+
 /* Creation. */
 
 /**
@@ -610,6 +640,7 @@ static void
 set_db_version (int version)
 {
   assert (version >= DATABASE_VERSION);
+  /** @todo Check that this (and others) still works with id column. */
   sql ("INSERT OR REPLACE INTO meta (name, value)"
        " VALUES ('database_version', '%i');",
        version);
@@ -1571,6 +1602,8 @@ init_task_iterator (task_iterator_t* iterator,
   gchar* formatted;
   sqlite3_stmt* stmt;
 
+  /** @todo Use init_iterator. */
+
   iterator->done = FALSE;
   if (current_credentials.username)
     formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
@@ -1978,11 +2011,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
-           " families_growing)"
-           " VALUES ('Full and fast', 'All',"
+      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " VALUES (1, 'Full and fast', 'All',"
            " 'All NVT''s; optimized by using previously collected information.',"
-           " 1, 1);");
+           " %i, %i, 1, 1);",
+           family_nvt_count (NULL),
+           family_count ());
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
@@ -1996,12 +2031,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
-           " families_growing)"
-           " VALUES ('Full and fast ultimate', 'All',"
+      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " VALUES (2, 'Full and fast ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
-           " 1, 1);");
+           " %i, %i, 1, 1);",
+           family_nvt_count (NULL),
+           family_count ());
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
@@ -2015,11 +2052,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
-           " families_growing)"
-           " VALUES ('Full and very deep', 'All',"
+      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " VALUES (3, 'Full and very deep', 'All',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
-           " 1, 1);");
+           " %i, %i, 1, 1);",
+           family_nvt_count (NULL),
+           family_count ());
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
@@ -2033,16 +2072,38 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, nvt_selector, comment, nvts_growing,"
-           " families_growing)"
-           " VALUES ('Full and very deep ultimate', 'All',"
+      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " VALUES (4, 'Full and very deep ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
-           " 1, 1);");
+           " %i, %i, 1, 1);",
+           family_nvt_count (NULL),
+           family_count ());
 
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
       setup_full_config_prefs (config, 0, 0, 1);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'Empty and fast';")
+      == 0)
+    {
+      config_t config;
+
+      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           // FIX nvt selector "Empty and fast" must stay empty
+           //         (maybe set to NULL instead and add handling everywhere)
+           " VALUES (5, 'Empty and fast', 'Empty and fast',"
+           " 'Empty NVT set; optimized by using previously collected information.',"
+           " 0, 0, 0, 0);");
+
+      /* Setup preferences for the config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config, 1, 1, 0);
     }
 
   /* Ensure the predefined target exists. */
@@ -2635,8 +2696,10 @@ make_task_rcfile (task_t task)
   {
     /* This block is a modified copy of nvt_selector_plugins (from
      * manage.c). */
+    /* FIX config_families_growing (config) */
     if (nvt_selector_nvts_growing (selector))
       {
+        // FIX do other cases
         if ((sql_int (0, 0,
                       "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                       selector)
@@ -2658,7 +2721,6 @@ make_task_rcfile (task_t task)
                                       nvt_iterator_oid (&nvts));
             cleanup_iterator (&nvts);
           }
-        // FIX finalise selector implementation
       }
     else
       {
@@ -4904,6 +4966,115 @@ create_config (const char* name, const char* comment, char* rc)
 }
 
 /**
+ * @brief Create a config from an existing config.
+ *
+ * @param[in]  name     Name of new config and NVT selector.
+ * @param[in]  comment  Comment on new config.
+ * @param[in]  config   Existing config.
+ *
+ * @return 0 success, 1 config exists already, 2 failed to find existing
+ *         config, -1 error.
+ */
+int
+copy_config (const char* name, const char* comment, const char* config)
+{
+  char* config_selector;
+  config_t id;
+  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_config = sql_quote (config);
+  gchar *quoted_comment, *quoted_config_selector;
+
+  config_selector = config_nvt_selector (config);
+  if (config_selector == NULL)
+    return -1;
+  quoted_config_selector = sql_quote (config_selector);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+               quoted_name))
+    {
+      tracef ("   config \"%s\" already exists\n", name);
+      sql ("END;");
+      g_free (quoted_name);
+      g_free (quoted_config);
+      g_free (quoted_config_selector);
+      return 1;
+    }
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+               quoted_config)
+      == 0)
+    {
+      sql ("END;");
+      g_free (quoted_name);
+      g_free (quoted_config);
+      g_free (quoted_config_selector);
+      return 2;
+    }
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
+               quoted_name))
+    {
+      tracef ("   NVT selector \"%s\" already exists\n", name);
+      sql ("END;");
+      g_free (quoted_name);
+      g_free (quoted_config);
+      g_free (quoted_config_selector);
+      return -1;
+    }
+
+  /* Copy the existing config. */
+
+  if (comment)
+    {
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO configs"
+           " (name, nvt_selector, comment, family_count, nvt_count,"
+           "  families_growing, nvts_growing)"
+           " SELECT '%s', '%s', '%s', family_count, nvt_count,"
+           " families_growing, nvts_growing"
+           " FROM configs WHERE name = '%s'",
+           quoted_name,
+           quoted_name,
+           quoted_comment,
+           quoted_config);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO configs"
+         " (name, nvt_selector, comment, family_count, nvt_count,"
+         "  families_growing, nvts_growing)"
+         " SELECT '%s', '%s', '', family_count, nvt_count,"
+         " families_growing, nvts_growing"
+         " FROM configs WHERE name = '%s'",
+         quoted_name,
+         quoted_name,
+         quoted_config);
+
+  id = sqlite3_last_insert_rowid (task_db);
+
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT %i, type, name, value FROM config_preferences"
+       " WHERE config = (SELECT ROWID from configs where name = '%s');",
+       id,
+       quoted_config);
+
+  sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+       " SELECT '%s', exclude, type, family_or_nvt, family FROM nvt_selectors"
+       " WHERE name = '%s';",
+       quoted_name,
+       quoted_config_selector);
+
+  sql ("COMMIT;");
+  g_free (quoted_name);
+  g_free (quoted_config);
+  g_free (quoted_config_selector);
+  return 0;
+}
+
+/**
  * @brief Delete a config.
  *
  * @param[in]  name   Name of config.
@@ -5160,6 +5331,309 @@ find_config (const char* name, task_t* task)
   return FALSE;
 }
 
+/**
+ * @brief Set a preference of a config.
+ *
+ * @param[in]  config    Config name.
+ * @param[in]  nvt       UUID of NVT.  NULL for scanner preference.
+ * @param[in]  name      Preference name, including NVT name and preference
+ *                       type.
+ * @param[in]  value_64  Preference value in base64.  NULL for an NVT
+ *                       preference removes the preference from the config.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_set_config_preference (const char* config, const char* nvt, const char* name,
+                              const char* value_64)
+{
+  gchar *quoted_config, *quoted_name, *quoted_value, *value;
+  int type_start = -1, type_end = -1, count;
+
+  quoted_config = sql_quote (config);
+  quoted_name = sql_quote (name);
+
+#if 0
+  /**
+   * @todo The OMP parsing keeps value_64 NULL when VALUE is empty, so do
+   *       this some other way. */
+  if (value_64 == NULL)
+    {
+      if (nvt == NULL) return -1;
+      sql ("DELETE FROM config_preferences"
+           " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+           " AND name = '%s';",
+           quoted_config,
+           quoted_name);
+      g_free (quoted_config);
+      g_free (quoted_name);
+      return 0;
+    }
+#endif
+
+  if (value_64 && strlen (value_64))
+    {
+      gsize value_len;
+      value = (gchar*) g_base64_decode (value_64, &value_len);
+    }
+  else
+    value = g_strdup ("");
+
+  /* LDAPsearch[entry]:Timeout value */
+  count = sscanf (name, "%*[^[][%n%*[^]]%n]:", &type_start, &type_end);
+  if (count == 0 && type_start > 0 && type_end > 0
+      && strncmp (name + type_start, "radio", type_end - type_start) == 0)
+    {
+      char *old_value;
+      gchar **split, **point;
+      GString *string;
+
+      /* A radio.  Put the new value on the front of the list of options. */
+
+      old_value = sql_string (0, 0,
+                              "SELECT value FROM config_preferences"
+                              " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                              " AND type %s"
+                              " AND name = '%s'",
+                              quoted_config,
+                              nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
+                              quoted_name);
+      if (old_value == NULL)
+        old_value = sql_string (0, 0,
+                                "SELECT value FROM nvt_preferences"
+                                " WHERE name = '%s'",
+                                quoted_name);
+      if (old_value)
+        {
+          string = g_string_new (value);
+          split = g_strsplit (old_value, ";", 0);
+          free (old_value);
+          point = split;
+          while (*point)
+            {
+              if (strcmp (*point, value))
+                {
+                  g_string_append_c (string, ';');
+                  g_string_append (string, *point);
+                }
+              point++;
+            }
+          g_strfreev (split);
+          g_free (value);
+          value = g_string_free (string, FALSE);
+        }
+    }
+
+  quoted_value = sql_quote ((gchar*) value);
+  g_free (value);
+
+  sql ("BEGIN IMMEDIATE;");
+  sql ("DELETE FROM config_preferences"
+       " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+       " AND type %s"
+       " AND name = '%s'",
+       quoted_config,
+       nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
+       quoted_name);
+  sql ("INSERT INTO config_preferences"
+       " (config, type, name, value)"
+       " VALUES ((SELECT ROWID FROM configs WHERE name = '%s'),"
+       " %s, '%s', '%s');",
+       quoted_config,
+       nvt ? "'PLUGINS_PREFS'" : "NULL",
+       quoted_name,
+       quoted_value);
+  sql ("COMMIT;");
+
+  g_free (quoted_config);
+  g_free (quoted_name);
+  g_free (quoted_value);
+  return 0;
+}
+
+/**
+ * @brief Set the NVT's selected for a single family of a config.
+ *
+ * @param[in]  config         Config name.
+ * @param[in]  family         Family name.
+ * @param[in]  selected_nvts  NVT's.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_set_config_nvts (const char* config, const char* family,
+                        GArray* selected_nvts)
+{
+  char *selector;
+  gchar *quoted_config, *quoted_family;
+
+  quoted_config = sql_quote (config);
+  quoted_family = sql_quote (family);
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    /* The config should always have a selector. */
+    return -1;
+
+  /* If there is an "include all" or an "include family" selector in the
+   * config, then exclude all no's, otherwise include all yes'es. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors"
+               " WHERE name = '%s'"
+               " AND exclude = 0"
+               " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
+               " OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+               " AND family_or_nvt = '%s'))"
+               " LIMIT 1;",
+               quoted_config,
+               quoted_family))
+    {
+      iterator_t nvts;
+      int new_nvt_count, old_nvt_count;
+
+      old_nvt_count = nvt_selector_family_selected_count (selector,
+                                                          family,
+                                                          1);
+
+      free (selector);
+
+      /* Clear any NVT selectors for this family from the configs. */
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
+           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND family = '%s';",
+           quoted_config,
+           quoted_family);
+
+      /* Exclude all no's. */
+
+      new_nvt_count = family_nvt_count (family);
+
+      init_nvt_iterator (&nvts, (nvt_t) 0, config, family, 1, NULL);
+      while (next (&nvts))
+        {
+          const char *oid = nvt_iterator_oid (&nvts);
+          gchar *quoted_oid;
+
+          if (member (selected_nvts, oid)) continue;
+
+          quoted_oid = sql_quote (oid);
+          sql ("INSERT INTO nvt_selectors"
+               " (name, exclude, type, family_or_nvt, family)"
+               " VALUES ('%s', 1, "
+               G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               ", '%s', '%s');",
+               quoted_config,
+               quoted_oid,
+               quoted_family);
+          g_free (quoted_oid);
+
+          new_nvt_count--;
+        }
+      cleanup_iterator (&nvts);
+
+      /* Update the cached config info. */
+
+      sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
+           " WHERE name = '%s';",
+           old_nvt_count,
+           MAX (new_nvt_count, 0),
+           quoted_config);
+    }
+  else
+    {
+      int old_nvt_count;
+
+      old_nvt_count = nvt_selector_family_selected_count (selector,
+                                                          family,
+                                                          0);
+
+      free (selector);
+
+      /* Clear any NVT selectors for this family from the configs. */
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
+           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND family = '%s';",
+           quoted_config,
+           quoted_family);
+
+      /* Include all yes's. */
+
+      if (selected_nvts)
+        {
+          gchar *nvt;
+          int index = 0;
+
+          while ((nvt = g_array_index (selected_nvts, gchar*, index)))
+            {
+              gchar *quoted_nvt = sql_quote (nvt);
+              sql ("INSERT INTO nvt_selectors"
+                   " (name, exclude, type, family_or_nvt, family)"
+                   " VALUES ('%s', 0, "
+                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                   ", '%s', '%s');",
+                   quoted_config,
+                   quoted_nvt,
+                   quoted_family);
+              g_free (quoted_nvt);
+              index++;
+            }
+
+          /* Update the cached config info. */
+
+          sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
+               " WHERE name = '%s';",
+               old_nvt_count,
+               index,
+               quoted_config);
+        }
+    }
+
+  sql ("COMMIT;");
+
+  g_free (quoted_config);
+  g_free (quoted_family);
+  return 0;
+}
+
+/**
+ * @brief Switch between constraining and generating representation.
+ *
+ * @param[in]  config                Config name.
+ * @param[in]  growing_all_families  Growing families.
+ * @param[in]  static_all_families   Static families.
+ * @param[in]  growing_families      Growing families.
+ * @param[in]  constraining          1 constraining universe, 0 generating from empty.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+switch_representation (const char* config,
+                       GArray* growing_all_families,
+                       GArray* static_all_families,
+                       GArray* growing_families,
+                       int constraining)
+{
+  gchar *quoted_config;
+
+  quoted_config = sql_quote (config);
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  // FIX
+
+  sql ("COMMIT;");
+
+  g_free (quoted_config);
+  return -1;
+}
+
 
 /* NVT's. */
 
@@ -5179,19 +5653,6 @@ nvt_oid (const char *name)
                           quoted_name);
   g_free (quoted_name);
   return ret;
-}
-
-/**
- * @brief Return whether the NVT cache is present.
- *
- * @return 1 if a cache of NVTs is present, else 0.
- */
-static int
-nvt_cache_present ()
-{
-  return sql_int (0, 0,
-                  "SELECT count(value) FROM meta"
-                  " WHERE name = 'nvts_md5sum' LIMIT 1;");
 }
 
 /**
@@ -5348,7 +5809,7 @@ make_nvt_from_nvti (const nvti_t *nvti)
  * @param[in]  nvt         NVT to iterate over, all if 0.
  * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg nvt.
- * @param[in]  family      Family to limit selection to, if config given.
+ * @param[in]  family      Family to limit selection to.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
@@ -5384,12 +5845,28 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
                        " category, family"
                        " FROM nvts LIMIT 0;");
     }
+  else if (family)
+    {
+      gchar *quoted_family = sql_quote (family);
+      init_iterator (iterator,
+                     "SELECT oid, version, name, summary, description,"
+                     " copyright, cve, bid, xref, tag, sign_key_ids,"
+                     " category, family"
+                     " FROM nvts"
+                     " WHERE family = '%s'"
+                     " ORDER BY %s %s;",
+                     quoted_family,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
+      g_free (quoted_family);
+    }
   else
     init_iterator (iterator,
                    "SELECT oid, version, name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
                    " category, family"
-                   " FROM nvts;",
+                   " FROM nvts"
+                   " ORDER BY %s %s;",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
 }
@@ -5418,16 +5895,26 @@ nvt_iterator_category (iterator_t* iterator)
 DEF_ACCESS (nvt_iterator_family, 12);
 
 /**
- * @brief Get the number of NVTs in a family.
+ * @brief Get the number of NVTs in one or all families.
  *
- * @param[in]  family  Family name.
+ * @param[in]  family  Family name.  NULL for all families.
  *
- * @return Number of NVTs in family.
+ * @return Number of NVTs in family, or total number of nvts.
  */
 int
 family_nvt_count (const char *family)
 {
-  gchar *quoted_family = sql_quote (family);
+  gchar *quoted_family;
+
+  if (family == NULL)
+    {
+      static int nvt_count = -1;
+      if (nvt_count == -1)
+        nvt_count = sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
+      return nvt_count;
+    }
+
+  quoted_family = sql_quote (family);
   int ret = sql_int (0, 0,
                      "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
                      quoted_family);
@@ -5435,11 +5922,26 @@ family_nvt_count (const char *family)
   return ret;
 }
 
+/**
+ * @brief Get the number of families.
+ *
+ * @return Total number of families.
+ */
+int
+family_count ()
+{
+  static int count = -1;
+  if (count == -1)
+    count = sql_int (0, 0, "SELECT COUNT(distinct family) FROM nvts;");
+  return count;
+}
+
 
 /* NVT selectors. */
 
-/* TODO: These need to handle strange cases, like when a family is
- * included then excluded, or all is included then later excluded. */
+/* These could handle strange cases, like when a family is
+ * included then excluded, or all is included then later excluded.
+ * However, OMP prevents those cases from occuring. */
 
 /**
  * @brief Get the family growth status of an NVT selector.
@@ -5451,6 +5953,7 @@ family_nvt_count (const char *family)
 int
 nvt_selector_families_growing (const char* selector)
 {
+  /** @todo Quote selector. */
   /* The number of families can only grow if there is selector that includes
    * all. */
 #if 0
@@ -5479,38 +5982,52 @@ nvt_selector_families_growing (const char* selector)
 /**
  * @brief Get the NVT growth status of an NVT selector.
  *
- * @param[in]  selector  NVT selector.
+ * @param[in]  quoted_selector   SQL-quoted selector name.
+ * @param[in]  families_growing  1 if families are growing, else 0.
+ *
+ * @return 1 growing, 0 static.
+ */
+static int
+nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
+{
+  if (families_growing)
+    /* Assume the only family selectors are excludes. */
+    return (family_count ()
+            - sql_int (0, 0,
+                       "SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
+                       " WHERE name = '%s'"
+                       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                       " AND exclude = 0"
+                       " LIMIT 1;",
+                       quoted_selector))
+           > 0;
+
+  /* Assume the only family selectors are includes. */
+  return sql_int (0, 0,
+                  "SELECT COUNT(*) FROM nvt_selectors"
+                  " WHERE name = '%s'"
+                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                  " AND exclude = 0"
+                  " LIMIT 1;",
+                  quoted_selector);
+}
+
+/**
+ * @brief Get the NVT growth status of an NVT selector.
+ *
+ * @param[in]  selector   Selector name.
  *
  * @return 1 growing, 0 static.
  */
 int
 nvt_selector_nvts_growing (const char* selector)
 {
-  /* The number of NVTs can grow if there is a selector that includes all,
-   * or if there is a selector that includes a family. */
-#if 0
-  return sql_int (0, 0,
-                  "SELECT COUNT(*) FROM nvt_selectors"
-                  " WHERE name = '%s'"
-                  " AND exclude = 0"
-                  " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                  " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ")"
-                  " LIMIT 1;",
-                  selector);
-#else
-  char *string;
-  string = sql_string (0, 0,
-                       "SELECT name FROM nvt_selectors"
-                       " WHERE name = '%s'"
-                       " AND exclude = 0"
-                       " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                         " OR type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ")"
-                       " LIMIT 1;",
-                       selector);
-  if (string == NULL) return 0;
-  free (string);
-  return 1;
-#endif
+  int ret;
+  gchar *quoted_selector = sql_quote (selector);
+  ret = nvt_selector_nvts_growing_2 (quoted_selector,
+                                     nvt_selector_families_growing (selector));
+  g_free (quoted_selector);
+  return ret;
 }
 
 /**
@@ -5539,6 +6056,7 @@ config_nvts_growing (const char* config)
 int
 config_families_growing (const char* config)
 {
+  /** @todo Quote. */
   return sql_int (0, 0,
                   "SELECT families_growing FROM configs"
                   " WHERE name = '%s' LIMIT 1;",
@@ -5621,56 +6139,11 @@ static DEF_ACCESS (nvt_selector_iterator_name, 2);
 int
 nvt_selector_family_count (const char* selector, const char* config)
 {
-  if (nvt_cache_present ())
-    {
-      if (config_families_growing (config))
-        {
-          /* The number of families can grow. */
-
-          if (sql_int (0, 0,
-                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                        selector)
-              == 1)
-            {
-              /* There is only one selector. */
-              if (sql_int (0, 0,
-                           "SELECT COUNT(*) FROM nvt_selectors"
-                           " WHERE name = '%s'"
-                           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                           ";",
-                           selector)
-                  == 1)
-                /* It is the all selector. */
-                return sql_int (0, 0,
-                                "SELECT COUNT(DISTINCT family) FROM nvts;");
-              /* An error somewhere. */
-              return -1;
-            }
-          else
-            {
-              /* There are multiple selectors. */
-              if (sql_int (0, 0,
-                           "SELECT COUNT(*) FROM nvt_selectors"
-                           " WHERE name = '%s' AND exclude = 1;",
-                           selector))
-                {
-                  /* There are excludes, so give up. */
-                  return -1;
-                }
-              /* It is equivalent to the all selector. */
-              return sql_int (0, 0,
-                              "SELECT COUNT(DISTINCT family) FROM nvts;");
-            }
-        }
-      else
-        /* The number of families is static. */
-        return sql_int (0, 0,
-                        "SELECT family_count FROM configs"
-                        " WHERE name = '%s'"
-                        " LIMIT 1;",
-                        config);
-    }
-  return -1;
+  return sql_int (0, 0,
+                  "SELECT family_count FROM configs"
+                  " WHERE name = '%s'"
+                  " LIMIT 1;",
+                  config);
 }
 
 /**
@@ -5684,98 +6157,64 @@ nvt_selector_family_count (const char* selector, const char* config)
 int
 nvt_selector_nvt_count (const char* selector, const char* config)
 {
-  /** @todo sql_quote. */
-  if (config_nvts_growing (config))
-    {
-      /* The number of NVT's can increase. */
-
-      if (nvt_cache_present ())
-        {
-          int alls = sql_int (0, 0,
-                              "SELECT COUNT(*) FROM nvt_selectors"
-                              " WHERE name = '%s'"
-                              " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                              ";",
-                              selector);
-          if (sql_int (0, 0,
-                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                        selector)
-              == 1)
-            {
-              /* There is one selector. */
-              if (alls == 1)
-                /* It is the all selector. */
-                return sql_int (0, 0, "SELECT COUNT(*) FROM nvts;");
-              /* An error somewhere. */
-              return -1;
-            }
-          else
-            {
-              int excludes, includes;
-
-              /* There are multiple selectors. */
-
-              excludes = sql_int (0, 0,
-                                  "SELECT COUNT(*) FROM nvt_selectors"
-                                  " WHERE name = '%s' AND exclude = 1"
-                                  " AND type = "
-                                  G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                                  ";",
-                                  selector);
-              includes = sql_int (0, 0,
-                                  "SELECT COUNT(*) FROM nvt_selectors"
-                                  " WHERE name = '%s' AND exclude = 0"
-                                  " AND type = "
-                                  G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                                  ";",
-                                  selector);
-
-              return MAX ((alls ? sql_int (0, 0, "SELECT COUNT(*) FROM nvts;")
-                                  - excludes
-                                : includes - excludes),
-                          0);
-            }
-        }
-      return -1;
-    }
-  else
-    /* The number of NVT's is static. */
-    return sql_int (0, 0,
-                    "SELECT nvt_count FROM configs"
-                    " WHERE name = '%s'"
-                    " LIMIT 1;",
-                    config);
+  return sql_int (0, 0,
+                  "SELECT nvt_count FROM configs"
+                  " WHERE name = '%s'"
+                  " LIMIT 1;",
+                  config);
 }
 
 /**
  * @brief Initialise an NVT selector family iterator.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  all       True for an "all" selector, else 0.
- * @param[in]  selector  Name of NVT selector.
- * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  iterator   Iterator.
+ * @param[in]  all        True if families are growing in the selector, else 0.
+ * @param[in]  selector   Name of NVT selector.  NULL for all families.
+ * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
 init_family_iterator (iterator_t* iterator, int all, const char* selector,
                       int ascending)
 {
+  gchar *quoted_selector;
+
+  if (selector == NULL)
+    {
+      init_iterator (iterator,
+                     "SELECT distinct family FROM nvts ORDER BY family %s;",
+                     ascending ? "ASC" : "DESC");
+      return;
+    }
+
+  quoted_selector = sql_quote (selector);
   if (all)
+    /* Constraining the universe.  Presume there is a family exclude for
+     * every NVT include. */
     init_iterator (iterator,
-                   "SELECT distinct family FROM nvts ORDER BY family %s;",
+                   "SELECT distinct family FROM nvts"
+                   " EXCEPT"
+                   " SELECT distinct family FROM nvt_selectors"
+                   " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                   " AND exclude = 1"
+                   " AND name = '%s'"
+                   " UNION"
+                   " SELECT distinct family FROM nvt_selectors"
+                   " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                   " AND exclude = 0"
+                   " AND name = '%s'"
+                   " ORDER BY family %s;",
+                   quoted_selector,
+                   quoted_selector,
                    ascending ? "ASC" : "DESC");
   else
-    {
-      gchar *sql;
-      gchar *quoted_selector = sql_quote (selector);
-      sql = g_strdup_printf ("SELECT distinct family FROM nvt_selectors"
-                             " WHERE (type = 1 OR type = 2) AND name = '%s'"
-                             " ORDER BY family %s;",
-                             quoted_selector,
-                             ascending ? "ASC" : "DESC");
-      g_free (quoted_selector);
-      init_iterator (iterator, sql);
-      g_free (sql);
-    }
+    /* Generating from empty.  Presume any exclude is covered by an include. */
+    init_iterator (iterator,
+                   "SELECT distinct family FROM nvt_selectors"
+                   " WHERE (type = 1 OR type = 2) AND name = '%s'"
+                   " ORDER BY family %s;",
+                   quoted_selector,
+                   ascending ? "ASC" : "DESC");
+  g_free (quoted_selector);
 }
 
 DEF_ACCESS (family_iterator_name, 0);
@@ -5798,21 +6237,46 @@ nvt_selector_family_growing (const char *selector,
   gchar *quoted_family;
   gchar *quoted_selector;
 
-  if (all) return 1;
-
   quoted_selector = sql_quote (selector);
   quoted_family = sql_quote (family);
 
+  if (all)
+    {
+      /* Constraining the universe.  It's static if there is a family
+       * exclude. */
+
+      ret = sql_int (0, 0,
+                    "SELECT COUNT(*) FROM nvt_selectors"
+                    " WHERE name = '%s'"
+                    " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                    " AND family_or_nvt = '%s'"
+                    " AND exclude = 1"
+                    " LIMIT 1;",
+                    quoted_selector,
+                    quoted_family);
+
+      g_free (quoted_selector);
+      g_free (quoted_family);
+
+      return ret ? 0 : 1;
+    }
+
+  /* Generating from empty.  It's growing if there is a family include. */
+
   ret = sql_int (0, 0,
                  "SELECT COUNT(*) FROM nvt_selectors"
-                 " WHERE name = '%s' AND type = 1 AND family_or_nvt = '%s'"
+                 " WHERE name = '%s'"
+                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                 " AND family_or_nvt = '%s'"
+                 " AND exclude = 0"
                  " LIMIT 1;",
-                 quoted_selector, quoted_family);
+                 quoted_selector,
+                 quoted_family);
 
   g_free (quoted_selector);
   g_free (quoted_family);
 
-  return ret == 0 ? 0 : 1;
+  return ret ? 1 : 0;
 }
 
 /**
@@ -5834,10 +6298,18 @@ nvt_selector_family_selected_count (const char *selector,
   if (growing)
     {
       gchar *quoted_family = sql_quote (family);
+      gchar *quoted_selector = sql_quote (selector);
       ret = sql_int (0, 0,
                      "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
                      quoted_family);
+      ret -= sql_int (0, 0,
+                      "SELECT COUNT(*) FROM nvt_selectors"
+                      " WHERE exclude = 1 AND type = 2"
+                      " AND name = '%s' AND family = '%s';",
+                      quoted_selector,
+                      quoted_family);
       g_free (quoted_family);
+      g_free (quoted_selector);
     }
   else
     {
@@ -5854,6 +6326,9 @@ nvt_selector_family_selected_count (const char *selector,
           g_free (quoted_family);
         }
       else
+        /* The family can be NULL if an RC adds an NVT to a
+         * config and the NVT is missing from the NVT
+         * cache. */
         ret = sql_int (0, 0,
                        "SELECT COUNT(*) FROM nvt_selectors"
                        " WHERE exclude = 0 AND type = 2"
@@ -5866,14 +6341,14 @@ nvt_selector_family_selected_count (const char *selector,
 }
 
 /**
- * @brief Return a statement for selecting the NVT's of a config.
+ * @brief Return SQL for selecting NVT's of a config from one family.
  *
  * @param[in]  config      Config.
  * @param[in]  family      Family to limit selection to.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  *
- * @return Freshly allocated SELECT statement if possibly, else NULL.
+ * @return Freshly allocated SELECT statement if possible, else NULL.
  */
 static gchar*
 select_config_nvts (const char* config, const char* family, int ascending,
@@ -5881,27 +6356,28 @@ select_config_nvts (const char* config, const char* family, int ascending,
 {
   /** @todo sql_quote. */
   char *selector = config_nvt_selector (config);
+  /** @todo Free. */
   if (selector == NULL)
     /* The config should always have a selector. */
     return NULL;
+
   if (config_nvts_growing (config))
     {
+      int constraining;
+
       /* The number of NVT's can increase. */
 
-      int alls = sql_int (0, 0,
-                          "SELECT COUNT(*) FROM nvt_selectors"
-                          " WHERE name = '%s'"
-                          " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                          ";",
-                          selector);
-      if (sql_int (0, 0,
-                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                    selector)
-          == 1)
+      constraining = config_families_growing (config);
+
+      if (constraining)
         {
-          /* There is one selector. */
-          if (alls == 1)
-            /* It is the all selector. */
+          /* Constraining the universe. */
+
+          if (sql_int (0, 0,
+                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                        selector)
+              == 1)
+            /* There is one selector, it should be the all selector. */
             return g_strdup_printf
                     ("SELECT oid, version, name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
@@ -5911,35 +6387,646 @@ select_config_nvts (const char* config, const char* family, int ascending,
                      family,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
-          /* An error somewhere. */
-          return NULL;
-        }
-      else
-        {
-#if 0
-          int excludes, includes;
 
           /* There are multiple selectors. */
 
-          excludes = sql_int (0, 0,
-                              "SELECT COUNT(*) FROM nvt_selectors"
-                              " WHERE name = '%s' AND exclude = 1"
-                              " AND type = "
-                              G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                              ";",
-                              selector);
-          includes = sql_int (0, 0,
-                              "SELECT COUNT(*) FROM nvt_selectors"
-                              " WHERE name = '%s' AND exclude = 0"
-                              " AND type = "
-                              G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-                              ";",
-                              selector);
-#endif
-          return NULL;
+          if (sql_int (0, 0,
+                       "SELECT COUNT(*) FROM nvt_selectors"
+                       " WHERE name = '%s' AND exclude = 1"
+                       " AND type = "
+                       G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                       " AND family_or_nvt = '%s'"
+                       ";",
+                       selector,
+                       family))
+            /* The family is excluded, just iterate the NVT includes. */
+            return g_strdup_printf
+                    ("SELECT oid, version, nvts.name, summary, description,"
+                     " copyright, cve, bid, xref, tag, sign_key_ids,"
+                     " category, nvts.family"
+                     " FROM nvts, nvt_selectors"
+                     " WHERE"
+                     " nvts.family = '%s'"
+                     " AND nvt_selectors.name = '%s'"
+                     " AND nvt_selectors.family = '%s'"
+                     " AND nvt_selectors.type = "
+                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                     " AND nvt_selectors.exclude = 0"
+                     " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                     family,
+                     config,
+                     family);
+
+          /* The family is included.  Iterate all NVT's minus excluded NVT's. */
+          return g_strdup_printf
+                  ("SELECT oid, version, name, summary, description,"
+                   " copyright, cve, bid, xref, tag, sign_key_ids,"
+                   " category, family"
+                   " FROM nvts"
+                   " WHERE family = '%s'"
+                   " EXCEPT"
+                   " SELECT oid, version, nvts.name, summary, description,"
+                   " copyright, cve, bid, xref, tag, sign_key_ids,"
+                   " category, nvts.family"
+                   " FROM nvts, nvt_selectors"
+                   " WHERE"
+                   " nvts.family = '%s'"
+                   " AND nvt_selectors.name = '%s'"
+                   " AND nvt_selectors.family = '%s'"
+                   " AND nvt_selectors.type = "
+                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                   " AND nvt_selectors.exclude = 1"
+                   " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                   family,
+                   family,
+                   config,
+                   family);
+        }
+      else
+        {
+          int all;
+
+          /* Generating from empty. */
+
+          all = sql_int (0, 0,
+                         "SELECT COUNT(*) FROM nvt_selectors"
+                         " WHERE name = '%s' AND exclude = 0"
+                         " AND type = "
+                         G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                         " AND family_or_nvt = '%s';",
+                         selector,
+                         family);
+
+          if (all)
+            /* There is a family include for this family. */
+            return g_strdup_printf
+                    ("SELECT oid, version, name, summary, description,"
+                     " copyright, cve, bid, xref, tag, sign_key_ids,"
+                     " category, family"
+                     " FROM nvts"
+                     " WHERE family = '%s'"
+                     " EXCEPT"
+                     " SELECT oid, version, nvts.name, summary, description,"
+                     " copyright, cve, bid, xref, tag, sign_key_ids,"
+                     " category, nvts.family"
+                     " FROM nvts, nvt_selectors"
+                     " WHERE"
+                     " nvts.family = '%s'"
+                     " AND nvt_selectors.name = '%s'"
+                     " AND nvt_selectors.family = '%s'"
+                     " AND nvt_selectors.type = "
+                     G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                     " AND nvt_selectors.exclude = 1"
+                     " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                     family,
+                     family,
+                     config,
+                     family);
+
+          return g_strdup_printf
+                  (" SELECT oid, version, nvts.name, summary, description,"
+                   " copyright, cve, bid, xref, tag, sign_key_ids,"
+                   " category, nvts.family"
+                   " FROM nvts, nvt_selectors"
+                   " WHERE"
+                   " nvts.family = '%s'"
+                   " AND nvt_selectors.name = '%s'"
+                   " AND nvt_selectors.family = '%s'"
+                   " AND nvt_selectors.type = "
+                   G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                   " AND nvt_selectors.exclude = 0"
+                   " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                   family,
+                   config,
+                   family);
         }
     }
-  return NULL;
+  else
+    {
+      gchar *sql, *quoted_config, *quoted_family;
+
+      /* The number of NVT's is static.  Assume a simple list of NVT
+       * includes. */
+
+      quoted_config = sql_quote (config);
+      quoted_family = sql_quote (family);
+      sql = g_strdup_printf
+             ("SELECT oid, version, nvts.name, summary, description,"
+              " copyright, cve, bid, xref, tag, sign_key_ids,"
+              " category, nvts.family"
+              " FROM nvts, nvt_selectors"
+              " WHERE nvts.family = '%s'"
+              " AND nvt_selectors.exclude = 0"
+              " AND nvt_selectors.type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+              " AND nvt_selectors.name ="
+              " (SELECT nvt_selector FROM configs WHERE configs.name = '%s')"
+              " AND nvts.oid = nvt_selectors.family_or_nvt"
+              " ORDER BY nvts.%s %s;",
+              quoted_family,
+              quoted_config,
+              sort_field ? sort_field : "ROWID",
+              ascending ? "ASC" : "DESC");
+      g_free (quoted_config);
+      g_free (quoted_family);
+
+      return sql;
+    }
+}
+
+/**
+ * @brief Remove all selectors of a certain family from a NVT selector.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  quoted_family    SQL-quoted family name.
+ * @param[in]  type             Selector type to remove.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+nvt_selector_remove (const char* quoted_selector,
+                     const char* quoted_family,
+                     int type)
+{
+  if (type == NVT_SELECTOR_TYPE_ANY)
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s'"
+         " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+         "      AND family = '%s')"
+         " OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+         "     AND family_or_nvt = '%s');",
+         quoted_selector,
+         quoted_family,
+         quoted_family);
+  else if (type == NVT_SELECTOR_TYPE_NVT)
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s'"
+         " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+         " AND family = '%s';",
+         quoted_selector,
+         quoted_family);
+  else if (type == NVT_SELECTOR_TYPE_FAMILY)
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s'"
+         " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+         " AND family_or_nvt = '%s';",
+         quoted_selector,
+         quoted_family);
+}
+
+/**
+ * @brief Remove all selectors of a certain type from a NVT selector.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  quoted_family    SQL-quoted family name or NVT UUID.
+ * @param[in]  type             Selector type to remove.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+nvt_selector_remove_selector (const char* quoted_selector,
+                              const char* family_or_nvt,
+                              int type)
+{
+  if (type == NVT_SELECTOR_TYPE_ANY)
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s' AND family_or_nvt = '%s');",
+         quoted_selector,
+         family_or_nvt);
+  else
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s'"
+         " AND type = %i"
+         " AND family_or_nvt = '%s';",
+         quoted_selector,
+         type,
+         family_or_nvt);
+}
+
+/**
+ * @brief Remove all selectors of a certain family from a NVT selector.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  quoted_family_or_nvt  SQL-quoted family or NVT name.
+ * @param[in]  quoted_family    SQL-quoted family name (NULL for families).
+ * @param[in]  exclude          1 exclude selector, 0 include selector.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+nvt_selector_add (const char* quoted_selector,
+                  const char* quoted_family_or_nvt,
+                  const char* quoted_family,
+                  int exclude)
+{
+  if (quoted_family == NULL)
+    sql ("INSERT INTO nvt_selectors"
+         " (name, exclude, type, family_or_nvt, family)"
+         " VALUES ('%s', %i, "
+         G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+         ", '%s', '%s');",
+         quoted_selector,
+         exclude,
+         quoted_family_or_nvt,
+         quoted_family_or_nvt);
+  else
+    sql ("INSERT INTO nvt_selectors"
+         " (name, exclude, type, family_or_nvt, family)"
+         " VALUES ('%s', %i, "
+         G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+         ", '%s', '%s');",
+         quoted_selector,
+         exclude,
+         quoted_family_or_nvt,
+         quoted_family);
+}
+
+/**
+ * @brief Check whether a family is selected.
+ *
+ * Only works for "generating from empty" selection.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  quoted_family    SQL-quoted family name (NULL for families).
+ *
+ * @return 1 if selected, else 0.
+ */
+static int
+family_is_selected (const char* quoted_selector, const char* quoted_family)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM nvt_selectors"
+                  " WHERE name = '%s'"
+                  " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                  "      AND family = '%s')"
+                  " OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                  "     AND family_or_nvt = '%s');",
+                  quoted_selector,
+                  quoted_family,
+                  quoted_family);
+}
+
+/**
+ * @brief Check whether an NVT selector has a particular selector.
+ *
+ * @param[in]  quoted_selector  SQL-quoted selector name.
+ * @param[in]  family_or_nvt    SQL-quoted UUID of NVT, or family name.
+ * @param[in]  type             Selector type.
+ * @param[in]  exclude          1 exclude, 0 include.
+ *
+ * @return 1 if contains include/exclude, else 0.
+ */
+static int
+nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
+                  int type, int exclude)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM nvt_selectors"
+                  " WHERE name = '%s'"
+                  " AND type = %i"
+                  " AND exclude = %i"
+                  " AND family_or_nvt = '%s'"
+                  " LIMIT 1;",
+                  quoted_selector,
+                  type,
+                  exclude,
+                  family_or_nvt);
+}
+
+/**
+ * @brief Refresh NVT selection of a config from given families.
+ *
+ * @param[in]  config                Config name.
+ * @param[in]  growing_all_families  Growing families with all selection.
+ * @param[in]  static_all_families   Static families with all selection.
+ * @param[in]  growing_families      The rest of the growing families.
+ * @param[in]  grow_families         1 if families should grow, else 0.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_set_config_families (const char* config,
+                            GArray* growing_all_families,
+                            GArray* static_all_families,
+                            GArray* growing_families,
+                            int grow_families)
+{
+  iterator_t families;
+  gchar *quoted_config, *quoted_selector;
+  int constraining;
+  char *selector;
+
+  constraining = config_families_growing (config);
+
+  if (constraining + grow_families == 1)
+    return switch_representation (config,
+                                  growing_all_families,
+                                  static_all_families,
+                                  growing_families,
+                                  constraining);
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    /* The config should always have a selector. */
+    return -1;
+  quoted_selector = sql_quote (selector);
+  free (selector);
+
+  quoted_config = sql_quote (config);
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Loop through all the known families. */
+
+  init_family_iterator (&families, 1, NULL, 1);
+  while (next (&families))
+    {
+      const char *family;
+
+      family = family_iterator_name (&families);
+      if (family)
+        {
+          int old_nvt_count, new_nvt_count = 0, was_selected, max_nvt_count;
+          int family_growing;
+          int growing_all = member (growing_all_families, family);
+          int static_all = member (static_all_families, family);
+          gchar *quoted_family = sql_quote (family);
+
+          assert ((growing_all && static_all) == 0);
+
+          family_growing = nvt_selector_family_growing (selector,
+                                                        family,
+                                                        constraining);
+
+          old_nvt_count
+            = nvt_selector_family_selected_count (selector,
+                                                  family,
+                                                  family_growing);
+
+          max_nvt_count = family_nvt_count (family);
+
+          if (growing_all || static_all)
+            {
+              if (old_nvt_count == max_nvt_count
+                  && ((growing_all && family_growing)
+                      || (static_all && family_growing == 0)))
+                {
+                  /* Already in required state. */
+                  g_free (quoted_family);
+                  continue;
+                }
+
+              was_selected = family_is_selected (quoted_selector,
+                                                 quoted_family);
+
+              /* Flush all selectors in the family from the config. */
+
+              nvt_selector_remove (quoted_selector,
+                                   quoted_family,
+                                   NVT_SELECTOR_TYPE_ANY);
+
+              if (static_all)
+                {
+                  iterator_t nvts;
+
+                  /* Static selection of all the NVT's currently in the
+                   * family. */
+
+                  if (constraining)
+                    {
+                      /* Constraining the universe. */
+
+                      /* Add an exclude for the family. */
+
+                      nvt_selector_add (quoted_selector,
+                                        quoted_family,
+                                        NULL,
+                                        1);
+                    }
+                  else
+                    {
+                      /* Generating from empty. */
+                    }
+
+                  /* Add an include for every NVT in the family. */
+
+                  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
+                                     NULL);
+                  while (next (&nvts))
+                    {
+                      nvt_selector_add (quoted_selector,
+                                        nvt_iterator_oid (&nvts),
+                                        quoted_family,
+                                        0);
+                      new_nvt_count++;
+                    }
+                  cleanup_iterator (&nvts);
+                }
+              else if (growing_all)
+                {
+                  /* Selection of an entire family, which grows with the family. */
+
+                  if (constraining)
+                    {
+                      /* Constraining the universe. */
+
+                      new_nvt_count = max_nvt_count;
+                    }
+                  else
+                    {
+                      /* Generating from empty.  Add an include for the
+                       * family. */
+
+                      nvt_selector_add (quoted_selector,
+                                        quoted_family,
+                                        NULL,
+                                        0);
+                    }
+                }
+
+              /* Update the cached config info. */
+
+              sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i,"
+                   " nvts_growing = %i, family_count = family_count + %i"
+                   " WHERE name = '%s';",
+                   old_nvt_count,
+                   new_nvt_count,
+                   growing_all ? 1 : 0,
+                   was_selected ? 1 : 0,
+                   quoted_config);
+            }
+          else
+            {
+              int must_grow = member (growing_families, family);
+
+              if (must_grow)
+                {
+                  /* The resulting family must be growing.  If currently
+                   * growing, leave as is, otherwise switch family to
+                   * growing. */
+
+                  if (old_nvt_count == max_nvt_count)
+                    {
+                      iterator_t nvts;
+
+                      /* All were selected.  Clear selection, ensuring that
+                       * the family is growing in the process.  */
+
+                      nvt_selector_remove (quoted_selector,
+                                           quoted_family,
+                                           NVT_SELECTOR_TYPE_ANY);
+
+                      if (constraining == 0)
+                        /* Generating. */
+                        nvt_selector_add (quoted_selector,
+                                          quoted_family,
+                                          NULL,
+                                          0);
+
+                      /* Add an exclude for every NVT in the family. */
+
+                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
+                                         NULL);
+                      while (next (&nvts))
+                        nvt_selector_add (quoted_selector,
+                                          nvt_iterator_oid (&nvts),
+                                          quoted_family,
+                                          1);
+                      cleanup_iterator (&nvts);
+
+                      /* Update the cached config info. */
+
+                      sql ("UPDATE configs SET nvt_count = nvt_count - %i,"
+                           " nvts_growing = 1"
+                           " WHERE name = '%s';",
+                           old_nvt_count,
+                           quoted_config);
+                    }
+                  else if (family_growing == 0)
+                    {
+                      iterator_t nvts;
+
+                      if (constraining == 0)
+                        nvt_selector_add (quoted_selector,
+                                          quoted_family,
+                                          NULL,
+                                          0);
+
+                      /* Remove any included NVT, add excludes for all
+                       * other NVT's. */
+
+                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
+                                         NULL);
+                      while (next (&nvts))
+                        if (nvt_selector_has (quoted_selector,
+                                              nvt_iterator_oid (&nvts),
+                                              NVT_SELECTOR_TYPE_NVT,
+                                              0))
+                          nvt_selector_remove_selector
+                           (quoted_selector,
+                            nvt_iterator_oid (&nvts),
+                            NVT_SELECTOR_TYPE_NVT);
+                        else
+                          nvt_selector_add (quoted_selector,
+                                            nvt_iterator_oid (&nvts),
+                                            quoted_family,
+                                            1);
+                      cleanup_iterator (&nvts);
+
+                      /* Update the cached config info. */
+
+                      sql ("UPDATE configs SET nvts_growing = 1"
+                           " WHERE name = '%s';",
+                           quoted_config);
+                    }
+                }
+              else
+                {
+                  /* The resulting family must be static.  If currently
+                   * static, leave as is, otherwise switch family to
+                   * static. */
+
+                  if (old_nvt_count == max_nvt_count)
+                    {
+                      /* All were selected, clear selection, ensuring the
+                       * family is static in the process. */
+
+                      nvt_selector_remove (quoted_selector,
+                                           quoted_family,
+                                           NVT_SELECTOR_TYPE_ANY);
+                      if (constraining)
+                        nvt_selector_add (quoted_selector,
+                                          quoted_family,
+                                          NULL,
+                                          1);
+
+                      /* Update the cached config info. */
+
+                      sql ("UPDATE configs SET nvts_growing = %i,"
+                           " nvt_count = nvt_count - %i,"
+                           " family_count = family_count - 1"
+                           " WHERE name = '%s';",
+                           /* Recalculate the NVT growing state. */
+                           nvt_selector_nvts_growing_2 (quoted_selector,
+                                                        constraining),
+                           old_nvt_count,
+                           quoted_config);
+                    }
+                  else if (family_growing)
+                    {
+                      iterator_t nvts;
+
+                      if (constraining)
+                        nvt_selector_add (quoted_selector,
+                                          quoted_family,
+                                          NULL,
+                                          1);
+                      else
+                        nvt_selector_remove (quoted_selector,
+                                             quoted_family,
+                                             NVT_SELECTOR_TYPE_FAMILY);
+
+                      /* Remove any excluded NVT; add includes for all
+                       * other NVT's. */
+
+                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
+                                         NULL);
+                      while (next (&nvts))
+                        if (nvt_selector_has (quoted_selector,
+                                              nvt_iterator_oid (&nvts),
+                                              NVT_SELECTOR_TYPE_NVT,
+                                              1))
+                          nvt_selector_remove_selector
+                            (quoted_selector,
+                             nvt_iterator_oid (&nvts),
+                             NVT_SELECTOR_TYPE_NVT);
+                        else
+                          nvt_selector_add (quoted_selector,
+                                            nvt_iterator_oid (&nvts),
+                                            quoted_family,
+                                            0);
+                      cleanup_iterator (&nvts);
+
+                      /* Update the cached config info. */
+
+                      sql ("UPDATE configs SET nvts_growing = %i"
+                           " WHERE name = '%s';",
+                           /* Recalculate the NVT growing state. */
+                           nvt_selector_nvts_growing_2 (quoted_selector,
+                                                        constraining),
+                           quoted_config);
+                    }
+                }
+            }
+
+          g_free (quoted_family);
+        }
+    }
+
+  sql ("COMMIT;");
+
+  g_free (quoted_selector);
+  g_free (quoted_config);
+  return 0;
 }
 
 
@@ -6018,7 +7105,8 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
   if (ret)
     {
       int value_start = -1, value_end = -1, count;
-      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[^:]%n", &value_start, &value_end);
+      /* LDAPsearch[entry]:Timeout value */
+      count = sscanf (ret, "%*[^[][%*[^]]]:%n%*[ -~]%n", &value_start, &value_end);
       if (count == 0 && value_start > 0 && value_end > 0)
         {
           ret += value_start;

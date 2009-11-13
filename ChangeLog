@@ -1,5 +1,56 @@
 2009-11-13  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP commands GET_NVT_FAMILIES and MODIFY_CONFIG.  Correct and
+	complete most of the NVT selector implementation.  Add a COPY_CONFIG
+	alternative to OMP's CREATE_CONFIG.  Extend and improve OMP's
+	CLIENT_GET_NVT_DETAILS and GET_CONFIGS.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 6, for predefined
+	config ID's and addition of count caching to growing configs.
+	(NVT_SELECTOR_TYPE_ANY): New define.
+	(member, copy_config, manage_set_config_preference)
+	(manage_set_config_nvts, switch_representation, family_count)
+	(nvt_selector_nvts_growing_2, nvt_selector_remove)
+	(nvt_selector_remove_selector, nvt_selector_add, family_is_selected)
+	(nvt_selector_has, manage_set_config_families): New functions.
+	(init_manage): Set predefined config ID's to fixed values.  Add new
+	config "Empty and fast".
+	(init_nvt_iterator): Add iteration of an entire family.  Add missing
+	ORDER BY.
+	(nvt_cache_present): Remove.  Cache is always present.  Remove from
+	callers.
+	(family_nvt_count): Add counting of all NVT's in all families.
+	(nvt_selector_nvts_growing): Call nvt_selector_nvts_growing_2.
+	(nvt_selector_family_count, nvt_selector_nvt_count): Simply read cached
+	value.
+	(init_family_iterator): Add iteration of all families.  Correct behaviour.
+	(nvt_selector_family_growing): Correct "all" case.
+	(nvt_selector_family_selected_count): Account for excluded NVT's in
+	growing case.
+	(select_config_nvts): Add missing cases and correct existing ones.
+	(nvt_preference_iterator_real_name): Add example.  Include any trailing
+	colon in the name for consistency.
+
+	* src/manage.h: Add headers for new functions.
+
+	* src/omp.c (free_array): New function.
+	(help_text): Add GET_NVT_FAMILIES and MODIFY_CONFIG.
+	(current_array_1, current_array_2, current_array_3): New variables.
+	(client_state_t): Add states for new commands.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add GET_NVT_FAMILIES and MODIFY_CONFIG handling.
+	Add a COPY_CONFIG alternative to CREATE_CONFIG.  Add NVT name and ID and
+	radio alternatives to CLIENT_GET_NVT_DETAILS when given an NVT.  In the
+	CLIENT_GET_NVT_DETAILS all case, also count preferences when just a family
+	is given.  In GET_CONFIGS pass family growth to init_family_iterator and
+	nvt_selector_family_growing instead of nvt growth, always call into
+	the library to get the family selected count, and send alternative values
+	for radios in separate entities.
+
+	* src/manage.c (nvt_selector_plugins): Add temporary notes.
+
+2009-11-13  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c: Make brief comments single lines.  Move todos out of doc
 	comments so the doc is easier to read.  Match some formatting to the rest
 	of the module.
@@ -75,11 +126,11 @@
 
 2009-11-05  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/omp.c (init_result_iterator): Include all levels if levels is NULL.
-	Add level 'd' for type "Debug Message".  Simplify the SQL if all levels are
-	requested.
+	* src/tasks_sql.h (init_result_iterator): Include all levels if levels is
+	NULL.  Add level 'd' for type "Debug Message".  Simplify the SQL if all
+	levels are requested.
 
-	* src/tasks_sql.h (omp_xml_handle_end_element): Ensure globals used for
+	* src/omp.c (omp_xml_handle_end_element): Ensure globals used for
 	sort_field and levels attributes are cleared after commands.  In
 	CLIENT_GET_REPORT correct attribute name in error response, set levels
 	to all levels if the attribute is NULL, add a 'd' entry in FILTERS and

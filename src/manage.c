@@ -458,8 +458,10 @@ get_files_to_send (task_t task)
 static gchar*
 nvt_selector_plugins (const char* selector)
 {
+  // FIX config_nvts_growing (config)?
   if (nvt_selector_nvts_growing (selector))
     {
+      // FIX do other cases
       if ((sql_int (0, 0,
                     "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                     selector)
