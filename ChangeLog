@@ -1,3 +1,9 @@
+2009-11-13  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/omp.c (send_to_client): Fixed currently not evaluated code,
+	declared parameter const.
+	(latex_header): Enabled color for log messages in latex/pdf report.
+
 2009-11-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (manage_db_version): Check version instead of number.

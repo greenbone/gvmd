@@ -462,7 +462,7 @@ set_client_state (client_state_t state)
  * @return TRUE if out of space in to_client, else FALSE.
  */
 static gboolean
-send_to_client (char* msg)
+send_to_client (const char* msg)
 {
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
   if (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
@@ -491,7 +491,6 @@ send_to_client (char* msg)
   memmove (to_client + to_client_end, msg, strlen (msg));
   tracef ("-> client: %s\n", msg);
   to_client_end += strlen (msg);
-  g_free (msg_utf8);
 #endif /* not 1 */
   return FALSE;
 }
@@ -2525,8 +2524,8 @@ const char* latex_header
     "\\usepackage{hyperref}\n"
     "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
     "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
-    /* Log: #FFFFFF (@todo #3A3A3A 0.2275,0.2275,0.2275 with white text). */
-    "\\definecolor{openvas_log}{rgb}{1,1,1}\n"
+    /* Log */
+    "\\definecolor{openvas_log}{rgb}{0.2275,0.2275,0.2275}\n"
     /* High: #CB1D17 */
     "\\definecolor{openvas_hole}{rgb}{0.7960,0.1137,0.0902}\n"
     /* Low: #539DCB */
