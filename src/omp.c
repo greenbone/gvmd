@@ -2113,108 +2113,27 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
 }
 
 /**
- * @brief Make text safe for LaTeX.
+ * @brief Return next good position to wrap text.
  *
- * Replace LaTeX special characters with LaTeX equivalents.
- *
- * @return A newly allocated version of text.
- *
- * @todo Evaluate whether there will be use for this function.
- */
-static gchar*
-latex_escape_text (const char *text)
-{
-  // TODO: Do this better.
-
-  gsize left = strlen (text);
-  gchar *new, *ch;
-
-  /* Allocate buffer of a safe length. */
-  {
-    int bs = 0;
-    const char *c = text;
-    while (*c) { if (*c == '\\') bs++; c++; }
-    new = g_strndup (text,
-                     (left - bs) * 2 + bs * (strlen ("$\\backslash$") - 1) + 1);
-  }
-
-  ch = new;
-  while (*ch)
-    {
-      /* FIX \~ becomes \verb{~} or \~{} */
-      if (*ch == '\\')
-        {
-          ch++;
-          switch (*ch)
-            {
-              case 'r':
-                {
-                  /* \r is flushed */
-                  memmove (ch - 1, ch + 1, left);
-                  left--;
-                  ch -= 2;
-                  break;
-                }
-              case 'n':
-                {
-                  /* \n becomes "\n\n" (two newlines) */
-                  left--;
-                  *(ch - 1) = '\n';
-                  *ch = '\n';
-                  break;
-                }
-              default:
-                {
-                  /* \ becomes $\backslash$ */
-                  memmove (ch - 1 + strlen ("$\\backslash$"), ch, left);
-                  strncpy (ch - 1, "$\\backslash$", strlen ("$\\backslash$"));
-                  /* Get back to the position of the original backslash. */
-                  ch--;
-                  /* Move over the newly inserted characters. */
-                  ch += (strlen ("$\\backslash$") - 1);
-                  break;
-                }
-            }
-        }
-      else if (   *ch == '#' || *ch == '$' || *ch == '%'
-               || *ch == '&' || *ch == '_' || *ch == '^'
-               || *ch == '{' || *ch == '}')
-        {
-          ch++;
-          switch (*ch)
-            {
-              case '\0':
-                break;
-              default:
-                /* & becomes \& */
-                memmove (ch, ch - 1, left);
-                *(ch - 1) = '\\';
-            }
-        }
-      ch++; left--;
-    }
-  return new;
-}
-
-/**
- * @brief Returns next good position to wrap text. Only space is considered a
- * @brief word boundary.
+ * Only space is considered a word boundary.
  *
  * @param[in]  text        Text to inspect.
  * @param[in]  line_width  Line width before or at which to wrap.
  *
  * @return Good position to insert a line break in printable characters in the
  *         sense of latex_print_verbatim_text.
- *
- * @todo Test special cases.
- * @todo Do this a bit better.
  */
 static int
 next_break (const char* text, int line_width)
 {
   const char* pos = text;
   int last_space = 0;
-  int nchars     = 0;
+  int nchars = 0;
+
+  /**
+   * @todo Test special cases.
+   * @todo Do this a bit better.
+   */
 
   while (*pos && nchars < line_width)
     {
@@ -2242,7 +2161,7 @@ next_break (const char* text, int line_width)
             break;
           default:
             break;
-        } /* switch (*pos) */
+        }
 
       ++pos;
       ++nchars;
@@ -2255,26 +2174,29 @@ next_break (const char* text, int line_width)
 }
 
 /**
- * @brief Writes \ref text to \ref file, doing line wraps at 80 chars and
- * @brief putting a symbol to indicate line wrap.
+ * @brief Write verbatim LaTeX text to a file, with wrapping.
  *
- * Function to be used to print verbatim text to latex documents in a longtable
+ * Write \ref text to \ref file, doing line wraps at 80 chars and adding a
+ * symbol to indicate each line wrap.
+ *
+ * Function to be used to print verbatim text to LaTeX documents in a longtable
  * environment.
+ *
  * Newlines will be replaced by row/line breaks, thus might cause trouble in
- * non- tabular environments.
+ * non-tabular environments.
  *
- * @param[in]   file  File descriptor to write to.
+ * @param[in]   file  Stream to write to.
  * @param[out]  text  Text to write to file.
- *
- * @todo Do this better. Word wrapping has problems with first line.
  */
 static void
 latex_print_verbatim_text (FILE* file, const char* text)
 {
   const char* pos = text;
-  int nchars      = 0;
-  int line_width  = 80;
-  int break_pos   = next_break (pos, line_width);
+  int nchars = 0;
+  int line_width = 80;
+  int break_pos = next_break (pos, line_width);
+
+  /** @todo Do this better.  Word wrapping has problems with first line. */
 
   fputs ("\\verb=", file);
   while (*pos)
@@ -2314,93 +2236,16 @@ latex_print_verbatim_text (FILE* file, const char* text)
           default:
             fputc (*pos, file);
             break;
-        } /* switch (*pos) */
+        }
       ++nchars;
       ++pos;
     }
-  /** @todo Handle special situations (empty string, newline at end etc)
-    *       more clever, break at word boundaries */
+  /**
+   * @todo Handle special situations (empty string, newline at end etc)
+   *       more clever, break at word boundaries.
+   */
   fputs ("=\\\\\n", file);
 }
-
-/**
- * @brief Writes \ref text to \ref file, escaping characters on the fly.
- *
- * Function to be used to print text to latex documents in a longtable
- * environment.
- * Newlines will be replaced by row/line breaks, thus might cause trouble in
- * non- tabular environments.
- *
- * @param[in]   file  File descriptor to write to.
- * @param[out]  text  Text to write to file, while escaping 'special'
- *                    characters.
- */
-static void
-latex_print_text (FILE* file, const char* text)
-{
-  const char* pos = text;
-  while (*pos)
-    {
-      switch (*pos)
-        {
-          case '\\':
-            // Look ahead
-            ++pos;
-            // Skip "\r"
-            if (*pos && *pos == 'r')
-              break;
-            // Replace "\n" by row/line break
-            else if (*pos && *pos == 'n')
-              {
-                fputs ("\\\\\n", file);
-                break;
-              }
-            --pos;
-            // No escaped special char.
-            fputs ("$\\backslash$", file);
-            break;
-          /** @todo following cases simply place a backslash ('\') in front of
-           *        the character to be escaped. simplification possible?
-           *        case '%':
-           *        //...
-           *        case '$':
-           *          fputc ('&', file);
-           *          fputc (*pos, file);
-           *          break;
-           *        default: //...
-           */
-          case '#':
-            fputs ("\\#", file);
-            break;
-          case '$':
-            fputs ("\\$", file);
-            break;
-          case '%':
-            fputs ("\\%", file);
-            break;
-          case '&':
-            fputs ("\\&", file);
-            break;
-          case '{':
-            fputs ("\\{", file);
-            break;
-          case '}':
-            fputs ("\\}", file);
-            break;
-          case '_':
-            fputs ("\\_", file);
-            break;
-          case '^':
-            fputs ("\\^", file);
-            break;
-          default:
-            fputc (*pos, file);
-            break;
-        }
-      ++pos;
-    }
-}
-
 
 /**
  * @brief Convert \n's to real newline's.
@@ -2574,15 +2419,6 @@ const char* latex_footer
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  *
  * @return 0 on success, else -1 with errno set.
- *
- * @todo Lines of issue texts (descriptions of message like "security hole")
- *       are printed as rows. This will lead to trouble if a single issue line
- *       does not fit on a whole page, because page breaks can only be inserted
- *       _between_ rows. Consider using the verbatim environment with manually
- *       added row breaks after a certain number of characters.
- * @todo Also, this code produces empty tables (probably because of the
- *       'if (last_port == )' code).
- * @todo Escape all text that should appear as text in latex.
  */
 static int
 print_report_latex (report_t report, gchar* latex_file, int ascending,
@@ -2592,6 +2428,17 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   iterator_t results, hosts;
   int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
   char *start_time, *end_time;
+
+  /**
+   * @todo Lines of issue texts (descriptions of message like "security hole")
+   *       are printed as rows. This will lead to trouble if a single issue line
+   *       does not fit on a whole page, because page breaks can only be inserted
+   *       _between_ rows. Consider using the verbatim environment with manually
+   *       added row breaks after a certain number of characters.
+   * @todo Also, this code produces empty tables (probably because of the
+   *       'if (last_port == )' code).
+   * @todo Escape all text that should appear as text in latex.
+   */
 
   out = fopen (latex_file, "w");
 

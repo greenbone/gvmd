@@ -1,3 +1,11 @@
+2009-11-13  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c: Make brief comments single lines.  Move todos out of doc
+	comments so the doc is easier to read.  Match some formatting to the rest
+	of the module.
+	(latex_print_text, latex_escape_text): Remove.  Can be added back if
+	needed.
+
 2009-11-13  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/omp.c (send_to_client): Fixed currently not evaluated code,
