@@ -651,7 +651,6 @@ manage_db_version ()
 static void
 set_db_version (int version)
 {
-  assert (version >= DATABASE_VERSION);
   /** @todo Check that this (and others) still works with id column. */
   sql ("INSERT OR REPLACE INTO meta (name, value)"
        " VALUES ('database_version', '%i');",
@@ -680,6 +679,8 @@ migrate_0_to_1 ()
   if (manage_db_version () != 0) return -1;
 
   /* Update the database. */
+
+  sql ("BEGIN EXCLUSIVE;");
 
   /* In SVN the database version flag changed from 0 to 1 on 2009-09-30,
    * while the database changed to the version 1 schema on 2009-08-29.  This
@@ -710,6 +711,8 @@ migrate_0_to_1 ()
 
   set_db_version (1);
 
+  sql ("COMMIT;");
+
   return 0;
 }
 
@@ -728,6 +731,8 @@ migrate_1_to_2 ()
   if (manage_db_version () != 1) return -1;
 
   /* Update the database. */
+
+  sql ("BEGIN EXCLUSIVE;");
 
   /* The category column in nvts changed type from string to int.  This
    * may be a redundant conversion, as SQLite may have converted these
@@ -760,6 +765,8 @@ migrate_1_to_2 ()
 
   set_db_version (2);
 
+  sql ("COMMIT;");
+
   return 0;
 }
 
@@ -776,6 +783,8 @@ migrate_2_to_3 ()
   if (manage_db_version () != 2) return -1;
 
   /* Update the database. */
+
+  sql ("BEGIN EXCLUSIVE;");
 
   /* The lsc_credentials table changed: package columns changed type from
    * BLOB to string, a password column appeared and the dog column changed
@@ -797,6 +806,8 @@ migrate_2_to_3 ()
 
   set_db_version (3);
 
+  sql ("COMMIT;");
+
   return 0;
 }
 
@@ -815,6 +826,8 @@ migrate_3_to_4 ()
   if (manage_db_version () != 3) return -1;
 
   /* Update the database. */
+
+  sql ("BEGIN EXCLUSIVE;");
 
   /* The nvt_selectors table got a family column. */
 
@@ -837,6 +850,8 @@ migrate_3_to_4 ()
   /* Set the database version to 4. */
 
   set_db_version (4);
+
+  sql ("COMMIT;");
 
   return 0;
 }
@@ -1345,15 +1360,15 @@ migrate_4_to_5 ()
 
   migrate_4_to_5_copy_data ();
 
+  /* Set the database version to 5. */
+
+  set_db_version (5);
+
   sql ("COMMIT;");
 
   /* All the moving may have left much empty space, so vacuum. */
 
   sql ("VACUUM;");
-
-  /* Set the database version to 5. */
-
-  set_db_version (5);
 
   return 0;
 }

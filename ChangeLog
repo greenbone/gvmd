@@ -1,5 +1,12 @@
 2009-11-14  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (set_db_version): Remove out of date assertion.
+	(migrate_0_to_1, migrate_1_to_2, migrate_2_to_3, migrate_3_to_4): Enclose
+	update in transaction.
+	(migrate_5_to_6): Move version number update into transaction.
+
+2009-11-14  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Update cached config counts after caching the NVT's.
 
 	* src/tasks_sql.h (manage_complete_nvt_cache_update): New function.
