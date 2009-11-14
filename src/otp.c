@@ -2140,6 +2140,7 @@ process_otp_scanner_input ()
                       if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
                         {
                           set_scanner_init_state (SCANNER_INIT_DONE);
+                          manage_complete_nvt_cache_update ();
                           manage_nvt_preferences_enable ();
                           /* Return 1, as though the scanner sent BYE. */
                           // FIX should perhaps exit more formally with scanner

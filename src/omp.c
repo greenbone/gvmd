@@ -6137,11 +6137,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<in_use>%i</in_use>",
                                        config_name,
                                        config_iterator_comment (&configs),
-                                       nvt_selector_family_count (selector,
-                                                                  config_name),
+                                       config_family_count (config_name),
                                        config_families_growing,
-                                       nvt_selector_nvt_count (selector,
-                                                               config_name),
+                                       config_nvt_count (config_name),
                                        config_nvts_growing,
                                        config_in_use (config_name));
 
@@ -6171,11 +6169,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              family,
                                              config_families_growing);
                           family_max = family_nvt_count (family);
-                          family_selected_count
-                            = nvt_selector_family_selected_count
-                               (selector,
-                                family,
-                                family_growing);
+                          family_selected_count = nvt_selector_nvt_count
+                                                   (selector,
+                                                    family,
+                                                    family_growing);
                           known_nvt_count += family_selected_count;
                         }
                       else
@@ -6185,9 +6182,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            * cache. */
                           family_growing = 0;
                           family_max = -1;
-                          family_selected_count
-                            = nvt_selector_family_selected_count
-                               (selector, NULL, 0);
+                          family_selected_count = nvt_selector_nvt_count
+                                                   (selector, NULL, 0);
                         }
 
                       SENDF_TO_CLIENT_OR_FAIL

@@ -595,6 +595,18 @@ int
 config_in_use (const char*);
 
 int
+config_families_growing (const char*);
+
+int
+config_nvts_growing (const char*);
+
+int
+config_family_count (const char*);
+
+int
+config_nvt_count (const char*);
+
+int
 manage_set_config_preference (const char*, const char*, const char*,
                               const char*);
 
@@ -671,20 +683,13 @@ nvt_iterator_family (iterator_t*);
 int
 family_nvt_count (const char *);
 
+void
+manage_complete_nvt_cache_update ();
+
 
 /* NVT selectors. */
 
-int
-nvt_selector_families_growing (const char*);
-
-int
-nvt_selector_nvts_growing (const char*);
-
-int
-nvt_selector_family_count (const char*, const char*);
-
-int
-nvt_selector_nvt_count (const char*, const char*);
+/** @todo Hide NVT selectors behind configs. */
 
 void
 init_family_iterator (iterator_t*, int, const char*, int);
@@ -696,7 +701,7 @@ int
 nvt_selector_family_growing (const char *, const char *, int);
 
 int
-nvt_selector_family_selected_count (const char *, const char *, int);
+nvt_selector_nvt_count (const char *, const char *, int);
 
 
 /* NVT preferences. */

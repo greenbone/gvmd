@@ -1,3 +1,33 @@
+2009-11-14  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Update cached config counts after caching the NVT's.
+
+	* src/tasks_sql.h (manage_complete_nvt_cache_update): New function.
+	(nvt_selector_family_count): Recalculate the count intead of returning
+	the cached value.
+	(config_family_count, config_nvt_count): New functions.  Return cached
+	values.
+	(nvt_selector_family_selected_count): Rename to nvt_selector_count.
+	Update callers.
+	(nvt_selector_nvt_count): Rename to config_nvt_count.  Now new function
+	renamed from nvt_selector_count.  If family is NULL return count for all
+	families.
+	(nvt_selector_families_growing, nvt_selector_nvts_growing): Make static.
+	(nvt_selector_nvts_growing_2): Ensure return is at most 1.
+	(init_family_iterator): Note when param is used in doc.
+	(select_config_nvts): Improve return doc.
+	(manage_set_config_families): Cleanup family iterator before exit.
+
+	* src/manage.h: Update headers.
+
+	* src/omp.c (omp_xml_handle_end_element): Call config_family_count,
+	config_nvt_count and nvt_selector_nvt_count instead of
+	nvt_selector_family_count, nvt_selector_nvt_count and
+	nvt_selector_family_selected_count.
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_PREFERENCE_NAME cache
+	mode exit, call manage_complete_nvt_cache_update.
+
 2009-11-13  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP commands GET_NVT_FAMILIES and MODIFY_CONFIG.  Correct and

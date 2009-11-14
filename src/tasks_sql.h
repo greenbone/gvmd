@@ -78,6 +78,12 @@ preference_iterator_value (iterator_t*);
 static void
 init_nvt_selector_iterator (iterator_t*, const char*, int);
 
+static int
+nvt_selector_families_growing (const char*);
+
+static int
+nvt_selector_family_count (const char*, int);
+
 static const char*
 nvt_selector_iterator_nvt (iterator_t*);
 
@@ -86,6 +92,12 @@ nvt_selector_iterator_name (iterator_t*);
 
 static int
 nvt_selector_iterator_include (iterator_t*);
+
+static int
+nvt_selector_nvts_growing (const char*);
+
+static int
+nvt_selector_nvts_growing_2 (const char*, int);
 
 gboolean
 find_config (const char*, task_t*);
@@ -4881,6 +4893,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
       {
         /* Explictly include the yeses and exclude the nos.  Keep the nos
          * because the config may change to auto enable new plugins. */
+        /** @todo The other selector manipulation functions may lose the nos. */
 
         clude (config_name, yes, yes_size, 0, families);
         clude (config_name, no, no_size, 1, NULL);
@@ -5494,9 +5507,7 @@ manage_set_config_nvts (const char* config, const char* family,
       iterator_t nvts;
       int new_nvt_count, old_nvt_count;
 
-      old_nvt_count = nvt_selector_family_selected_count (selector,
-                                                          family,
-                                                          1);
+      old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
 
       free (selector);
 
@@ -5548,9 +5559,7 @@ manage_set_config_nvts (const char* config, const char* family,
     {
       int old_nvt_count;
 
-      old_nvt_count = nvt_selector_family_selected_count (selector,
-                                                          family,
-                                                          0);
+      old_nvt_count = nvt_selector_nvt_count (selector, family, 0);
 
       free (selector);
 
@@ -5936,6 +5945,44 @@ family_count ()
   return count;
 }
 
+/**
+ * @brief Complete an update of the NVT cache.
+ */
+void
+manage_complete_nvt_cache_update ()
+{
+  iterator_t configs;
+
+  /* Update the cached count and growing information in every config. */
+
+  init_config_iterator (&configs, NULL, 1, NULL);
+  while (next (&configs))
+    {
+      const char *selector;
+      gchar *quoted_selector, *quoted_name;
+      int families_growing;
+
+      quoted_name = sql_quote (config_iterator_name (&configs));
+      selector = config_iterator_nvt_selector (&configs);
+      families_growing = nvt_selector_families_growing (selector);
+      quoted_selector = sql_quote (selector);
+
+      sql ("UPDATE configs"
+           " SET family_count = %i, nvt_count = %i,"
+           " families_growing = %i, nvts_growing = %i"
+           " WHERE name = '%s';",
+           nvt_selector_family_count (quoted_selector, families_growing),
+           nvt_selector_nvt_count (quoted_selector, NULL, families_growing),
+           families_growing,
+           nvt_selector_nvts_growing_2 (quoted_selector, families_growing),
+           quoted_name);
+
+      g_free (quoted_name);
+      g_free (quoted_selector);
+    }
+  cleanup_iterator (&configs);
+}
+
 
 /* NVT selectors. */
 
@@ -5944,13 +5991,57 @@ family_count ()
  * However, OMP prevents those cases from occuring. */
 
 /**
+ * @brief Get the number of families selected by an NVT selector.
+ *
+ * A growing family which has all current NVT's excluded is still
+ * considered as selected by the NVT selector.
+ *
+ * @param[in]  quoted_selector   SQL-quoted selector name.
+ * @param[in]  families_growing  1 if families are growing, else 0.
+ *
+ * @return 1 growing, 0 static.
+ */
+static int
+nvt_selector_family_count (const char* quoted_selector, int families_growing)
+{
+  if (families_growing)
+    /* Assume the only family selectors are excludes. */
+    return family_count ()
+           - sql_int (0, 0,
+                      "SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
+                      " WHERE name = '%s'"
+                      " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                      " AND exclude = 0"
+                      " LIMIT 1;",
+                      quoted_selector);
+
+  /* Assume that the only family selectors are includes, and that if a
+   * selection has any NVT includes then it only has NVT includes. */
+  return sql_int (0, 0,
+                  "SELECT COUNT(*) FROM nvt_selectors"
+                  " WHERE name = '%s'"
+                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                  " AND exclude = 0"
+                  " LIMIT 1;",
+                  quoted_selector)
+         + sql_int (0, 0,
+                    "SELECT COUNT(DISTINCT family) FROM nvt_selectors"
+                    " WHERE name = '%s'"
+                    " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                    " AND exclude = 0"
+                    " AND family NOT NULL"
+                    " LIMIT 1;",
+                    quoted_selector);
+}
+
+/**
  * @brief Get the family growth status of an NVT selector.
  *
  * @param[in]  selector  NVT selector.
  *
  * @return 1 growing, 0 static.
  */
-int
+static int
 nvt_selector_families_growing (const char* selector)
 {
   /** @todo Quote selector. */
@@ -6009,7 +6100,8 @@ nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                   " AND exclude = 0"
                   " LIMIT 1;",
-                  quoted_selector);
+                  quoted_selector)
+         > 0;
 }
 
 /**
@@ -6019,7 +6111,7 @@ nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
  *
  * @return 1 growing, 0 static.
  */
-int
+static int
 nvt_selector_nvts_growing (const char* selector)
 {
   int ret;
@@ -6129,15 +6221,14 @@ static DEF_ACCESS (nvt_selector_iterator_nvt, 1);
 static DEF_ACCESS (nvt_selector_iterator_name, 2);
 
 /**
- * @brief Get the number of families covered by a selector.
+ * @brief Get the number of families included in a config.
  *
- * @param[in]  selector  NVT selector.
- * @param[in]  config    Config selector is part of.
+ * @param[in]  config  Config selector is part of.
  *
  * @return Family count if known, else -1.
  */
 int
-nvt_selector_family_count (const char* selector, const char* config)
+config_family_count (const char* config)
 {
   return sql_int (0, 0,
                   "SELECT family_count FROM configs"
@@ -6147,15 +6238,14 @@ nvt_selector_family_count (const char* selector, const char* config)
 }
 
 /**
- * @brief Get the number of NVTs covered by a selector.
+ * @brief Get the number of NVTs included in a config.
  *
- * @param[in]  selector  NVT selector.
- * @param[in]  config    Config selector is part of.
+ * @param[in]  config  Config selector is part of.
  *
  * @return NVT count if known, else -1.
  */
 int
-nvt_selector_nvt_count (const char* selector, const char* config)
+config_nvt_count (const char* config)
 {
   return sql_int (0, 0,
                   "SELECT nvt_count FROM configs"
@@ -6169,6 +6259,7 @@ nvt_selector_nvt_count (const char* selector, const char* config)
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  all        True if families are growing in the selector, else 0.
+ *                        Only considered with a selector.
  * @param[in]  selector   Name of NVT selector.  NULL for all families.
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
@@ -6280,64 +6371,94 @@ nvt_selector_family_growing (const char *selector,
 }
 
 /**
- * @brief Get the number of NVTs selected in an NVT selector family.
+ * @brief Get the number of NVTs selected by an NVT selector.
  *
  * @param[in]  selector  NVT selector.
- * @param[in]  family    Family name.
- * @param[in]  growing   True if the family is growing, else 0.
+ * @param[in]  family    Family name.  NULL for all.
+ * @param[in]  growing   True if the given family is growing, else 0.
+ *                       If \param family is NULL, true if the the families
+ *                       are growing, else 0.
  *
- * @return Number of NVTs selected in family.
+ * @return Number of NVTs selected in one or all families.
  */
 int
-nvt_selector_family_selected_count (const char *selector,
-                                    const char *family,
-                                    int growing)
+nvt_selector_nvt_count (const char *selector,
+                        const char *family,
+                        int growing)
 {
-  int ret;
+  if (family)
+    {
+      int ret;
 
-  if (growing)
-    {
-      gchar *quoted_family = sql_quote (family);
-      gchar *quoted_selector = sql_quote (selector);
-      ret = sql_int (0, 0,
-                     "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
-                     quoted_family);
-      ret -= sql_int (0, 0,
-                      "SELECT COUNT(*) FROM nvt_selectors"
-                      " WHERE exclude = 1 AND type = 2"
-                      " AND name = '%s' AND family = '%s';",
-                      quoted_selector,
-                      quoted_family);
-      g_free (quoted_family);
-      g_free (quoted_selector);
-    }
-  else
-    {
-      gchar *quoted_selector = sql_quote (selector);
-      if (family)
+      /* Count in a single family. */
+
+      if (growing)
         {
           gchar *quoted_family = sql_quote (family);
+          gchar *quoted_selector = sql_quote (selector);
           ret = sql_int (0, 0,
-                         "SELECT COUNT(*) FROM nvt_selectors"
-                         " WHERE exclude = 0 AND type = 2"
-                         " AND name = '%s' AND family = '%s';",
-                         quoted_selector,
+                         "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
                          quoted_family);
+          ret -= sql_int (0, 0,
+                          "SELECT COUNT(*) FROM nvt_selectors"
+                          " WHERE exclude = 1 AND type = 2"
+                          " AND name = '%s' AND family = '%s';",
+                          quoted_selector,
+                          quoted_family);
           g_free (quoted_family);
+          g_free (quoted_selector);
         }
       else
-        /* The family can be NULL if an RC adds an NVT to a
-         * config and the NVT is missing from the NVT
-         * cache. */
-        ret = sql_int (0, 0,
-                       "SELECT COUNT(*) FROM nvt_selectors"
-                       " WHERE exclude = 0 AND type = 2"
-                       " AND name = '%s' AND family is NULL;",
-                       quoted_selector);
-      g_free (quoted_selector);
-    }
+        {
+          gchar *quoted_selector = sql_quote (selector);
+          if (family)
+            {
+              gchar *quoted_family = sql_quote (family);
+              ret = sql_int (0, 0,
+                             "SELECT COUNT(*) FROM nvt_selectors"
+                             " WHERE exclude = 0 AND type = 2"
+                             " AND name = '%s' AND family = '%s';",
+                             quoted_selector,
+                             quoted_family);
+              g_free (quoted_family);
+            }
+          else
+            /* The family can be NULL if an RC adds an NVT to a
+             * config and the NVT is missing from the NVT
+             * cache. */
+            /** @todo Probably should prevent adding these NVT's. */
+            ret = sql_int (0, 0,
+                           "SELECT COUNT(*) FROM nvt_selectors"
+                           " WHERE exclude = 0 AND type = 2"
+                           " AND name = '%s' AND family is NULL;",
+                           quoted_selector);
+          g_free (quoted_selector);
+        }
 
-  return ret;
+      return ret;
+   }
+ else
+   {
+     int count;
+     iterator_t families;
+
+     /* Count in each family. */
+
+     count = 0;
+     init_family_iterator (&families, 0, NULL, 1);
+     while (next (&families))
+       {
+         const char *family = family_iterator_name (&families);
+         if (family)
+           count += nvt_selector_nvt_count (selector,
+                                            family,
+                                            nvt_selector_family_growing
+                                             (selector, family, growing));
+       }
+     cleanup_iterator (&families);
+
+     return count;
+   }
 }
 
 /**
@@ -6348,7 +6469,7 @@ nvt_selector_family_selected_count (const char *selector,
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  *
- * @return Freshly allocated SELECT statement if possible, else NULL.
+ * @return Freshly allocated SELECT statement on success, or NULL on error.
  */
 static gchar*
 select_config_nvts (const char* config, const char* family, int ascending,
@@ -6758,9 +6879,7 @@ manage_set_config_families (const char* config,
                                                         constraining);
 
           old_nvt_count
-            = nvt_selector_family_selected_count (selector,
-                                                  family,
-                                                  family_growing);
+            = nvt_selector_nvt_count (selector, family, family_growing);
 
           max_nvt_count = family_nvt_count (family);
 
@@ -7021,6 +7140,7 @@ manage_set_config_families (const char* config,
           g_free (quoted_family);
         }
     }
+  cleanup_iterator (&families);
 
   sql ("COMMIT;");
 
