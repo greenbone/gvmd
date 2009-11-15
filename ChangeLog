@@ -1,3 +1,16 @@
+2009-11-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Implement toggling of whether new families are added.
+
+	* src/tasks_sql.h (copy_config): Free selector.
+	(switch_representation): Implement.
+	(nvt_selector_family_growing): Neaten formatting.
+	(nvt_selector_remove_selector): Add NVT_SELECTOR_TYPE_ALL case.
+	(nvt_selector_add): Correct comment.
+	(manage_set_config_families): Move BEGIN before representation switch.
+	Proceed with modification after switching.  Also set new_nvt_count for
+	the generating growing_all case.
+
 2009-11-14  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (set_db_version): Remove out of date assertion.

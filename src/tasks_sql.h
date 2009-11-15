@@ -78,6 +78,9 @@ preference_iterator_value (iterator_t*);
 static void
 init_nvt_selector_iterator (iterator_t*, const char*, int);
 
+static void
+nvt_selector_add (const char*, const char*, const char*, int);
+
 static int
 nvt_selector_families_growing (const char*);
 
@@ -98,6 +101,9 @@ nvt_selector_nvts_growing (const char*);
 
 static int
 nvt_selector_nvts_growing_2 (const char*, int);
+
+static void
+nvt_selector_remove_selector (const char*, const char*, int);
 
 gboolean
 find_config (const char*, task_t*);
@@ -5016,6 +5022,7 @@ copy_config (const char* name, const char* comment, const char* config)
   if (config_selector == NULL)
     return -1;
   quoted_config_selector = sql_quote (config_selector);
+  free (config_selector);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -5629,33 +5636,124 @@ manage_set_config_nvts (const char* config, const char* family,
 /**
  * @brief Switch between constraining and generating representation.
  *
- * @param[in]  config                Config name.
- * @param[in]  growing_all_families  Growing families.
- * @param[in]  static_all_families   Static families.
- * @param[in]  growing_families      Growing families.
- * @param[in]  constraining          1 constraining universe, 0 generating from empty.
+ * It's up to the caller to start and end a transaction.
+ *
+ * @param[in]  config        Config name.
+ * @param[in]  constraining  1 families currently growing, 0 families currently
+ *                           static.
  *
  * @return 0 success, -1 error.
  */
 int
-switch_representation (const char* config,
-                       GArray* growing_all_families,
-                       GArray* static_all_families,
-                       GArray* growing_families,
-                       int constraining)
+switch_representation (const char* config, int constraining)
 {
-  gchar *quoted_config;
+  char* selector;
+  gchar *quoted_selector;
 
-  quoted_config = sql_quote (config);
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    return -1;
+  quoted_selector = sql_quote (selector);
+  free (selector);
 
-  sql ("BEGIN EXCLUSIVE;");
+  if (constraining)
+    {
+      iterator_t families;
 
-  // FIX
+      /* Currently constraining the universe. */
 
-  sql ("COMMIT;");
+      /* Remove the all selector. */
 
-  g_free (quoted_config);
-  return -1;
+      nvt_selector_remove_selector (quoted_selector,
+                                    NULL,
+                                    NVT_SELECTOR_TYPE_ALL);
+
+      /* Convert each family. */
+
+      init_family_iterator (&families, 0, NULL, 1);
+      while (next (&families))
+        {
+          const char *family = family_iterator_name (&families);
+          if (family)
+            {
+              gchar *quoted_family = sql_quote (family);
+              if (nvt_selector_family_growing (selector, family, 1))
+                /* Add a family include. */
+                nvt_selector_add (quoted_selector,
+                                  quoted_family,
+                                  NULL,
+                                  0);
+              else
+                /* Remove the family exclude. */
+                nvt_selector_remove_selector (quoted_selector,
+                                              quoted_family,
+                                              NVT_SELECTOR_TYPE_FAMILY);
+              g_free (quoted_family);
+            }
+        }
+      cleanup_iterator (&families);
+
+      /* Update the cached config info. */
+
+      {
+        gchar *quoted_config = sql_quote (config);
+        sql ("UPDATE configs SET families_growing = 0 WHERE name = '%s';",
+             quoted_config);
+        free (quoted_config);
+      }
+    }
+  else
+    {
+      iterator_t families;
+      gchar *quoted_config;
+
+      /* Currently generating from empty. */
+
+      /* Add the all selector. */
+
+      quoted_config = sql_quote (config);
+      sql ("INSERT INTO nvt_selectors"
+           " (name, exclude, type, family_or_nvt)"
+           " VALUES ('%s', 0, 0, 0);",
+           quoted_config);
+      g_free (quoted_config);
+
+      /* Convert each family. */
+
+      init_family_iterator (&families, 0, NULL, 1);
+      while (next (&families))
+        {
+          const char *family = family_iterator_name (&families);
+          if (family)
+            {
+              gchar *quoted_family = sql_quote (family);
+              if (nvt_selector_family_growing (selector, family, 0))
+                /* Remove the family include. */
+                nvt_selector_remove_selector (quoted_selector,
+                                              quoted_family,
+                                              NVT_SELECTOR_TYPE_FAMILY);
+              else
+                /* Add a family exclude. */
+                nvt_selector_add (quoted_selector,
+                                  quoted_family,
+                                  NULL,
+                                  1);
+              g_free (quoted_family);
+            }
+        }
+      cleanup_iterator (&families);
+
+      /* Update the cached config info. */
+
+      {
+        gchar *quoted_config = sql_quote (config);
+        sql ("UPDATE configs SET families_growing = 1 WHERE name = '%s';",
+             quoted_config);
+        free (quoted_config);
+      }
+    }
+
+  return 0;
 }
 
 
@@ -6352,14 +6450,14 @@ nvt_selector_family_growing (const char *selector,
        * exclude. */
 
       ret = sql_int (0, 0,
-                    "SELECT COUNT(*) FROM nvt_selectors"
-                    " WHERE name = '%s'"
-                    " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-                    " AND family_or_nvt = '%s'"
-                    " AND exclude = 1"
-                    " LIMIT 1;",
-                    quoted_selector,
-                    quoted_family);
+                     "SELECT COUNT(*) FROM nvt_selectors"
+                     " WHERE name = '%s'"
+                     " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                     " AND family_or_nvt = '%s'"
+                     " AND exclude = 1"
+                     " LIMIT 1;",
+                     quoted_selector,
+                     quoted_family);
 
       g_free (quoted_selector);
       g_free (quoted_family);
@@ -6728,6 +6826,11 @@ nvt_selector_remove_selector (const char* quoted_selector,
          " WHERE name = '%s' AND family_or_nvt = '%s');",
          quoted_selector,
          family_or_nvt);
+  else if (type == NVT_SELECTOR_TYPE_ALL)
+    sql ("DELETE FROM nvt_selectors"
+         " WHERE name = '%s'"
+         " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ";",
+         quoted_selector);
   else
     sql ("DELETE FROM nvt_selectors"
          " WHERE name = '%s'"
@@ -6739,7 +6842,7 @@ nvt_selector_remove_selector (const char* quoted_selector,
 }
 
 /**
- * @brief Remove all selectors of a certain family from a NVT selector.
+ * @brief Add a selector to an NVT selector.
  *
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  quoted_family_or_nvt  SQL-quoted family or NVT name.
@@ -6853,23 +6956,29 @@ manage_set_config_families (const char* config,
 
   constraining = config_families_growing (config);
 
+  sql ("BEGIN EXCLUSIVE;");
+
   if (constraining + grow_families == 1)
-    return switch_representation (config,
-                                  growing_all_families,
-                                  static_all_families,
-                                  growing_families,
-                                  constraining);
+    {
+      if (switch_representation (config, constraining))
+        {
+          sql ("END;");
+          return -1;
+        }
+      constraining = constraining == 0;
+    }
 
   selector = config_nvt_selector (config);
   if (selector == NULL)
-    /* The config should always have a selector. */
-    return -1;
+    {
+      /* The config should always have a selector. */
+      sql ("END;");
+      return -1;
+    }
   quoted_selector = sql_quote (selector);
   free (selector);
 
   quoted_config = sql_quote (config);
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* Loop through all the known families. */
 
@@ -6962,8 +7071,6 @@ manage_set_config_families (const char* config,
                   if (constraining)
                     {
                       /* Constraining the universe. */
-
-                      new_nvt_count = max_nvt_count;
                     }
                   else
                     {
@@ -6974,7 +7081,10 @@ manage_set_config_families (const char* config,
                                         quoted_family,
                                         NULL,
                                         0);
+
                     }
+
+                  new_nvt_count = max_nvt_count;
                 }
 
               /* Update the cached config info. */
