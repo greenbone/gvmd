@@ -1,5 +1,10 @@
 2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (insert_rc_into_config): Also cache the config counts in
+	the growing case.
+
+2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (switch_representation): Free selector after last use.
 	Free quoted_selector.
 

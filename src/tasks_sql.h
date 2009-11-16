@@ -4903,11 +4903,14 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 
         clude (config_name, no, no_size, 1, NULL);
 
-        /* Cache the growth types. */
+        /* Cache the counts and growth types. */
 
         sql ("UPDATE configs"
-             " SET families_growing = 1, nvts_growing = 1"
+             " SET families_growing = 1, nvts_growing = 1,"
+             " family_count = %i, nvt_count = %i"
              " WHERE name = '%s';",
+             nvt_selector_family_count (config_name, 1),
+             nvt_selector_nvt_count (config_name, NULL, 1),
              config_name);
       }
     else
