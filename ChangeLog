@@ -1,3 +1,8 @@
+2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (switch_representation): Free selector after last use.
+	Free quoted_selector.
+
 2009-11-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Implement toggling of whether new families are added.

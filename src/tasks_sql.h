@@ -5654,7 +5654,6 @@ switch_representation (const char* config, int constraining)
   if (selector == NULL)
     return -1;
   quoted_selector = sql_quote (selector);
-  free (selector);
 
   if (constraining)
     {
@@ -5753,6 +5752,8 @@ switch_representation (const char* config, int constraining)
       }
     }
 
+  free (selector);
+  g_free (quoted_selector);
   return 0;
 }
 
