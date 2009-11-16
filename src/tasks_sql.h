@@ -112,6 +112,9 @@ static int
 insert_rc_into_config (config_t, const char*, char*);
 
 static void
+update_config_caches ();
+
+static void
 set_target_hosts (const char *, const char *);
 
 static gchar*
@@ -1380,6 +1383,68 @@ migrate_4_to_5 ()
 }
 
 /**
+ * @brief Migrate the database from version 5 to version 6.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_5_to_6 ()
+{
+  /* Ensure that the database is currently version 5. */
+
+  if (manage_db_version () != 5) return -1;
+
+  /* Update the database. */
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* The predefined configs got predefined ID's and the manager now also
+   * caches counts for growing configs. */
+
+  /* Fail with a message if the predefined configs have somehow got ID's
+   * other the usual ones. */
+
+  if ((sql_int (0, 0,
+               "SELECT ROWID FROM configs WHERE name = 'Full and fast';")
+       == 1)
+      && (sql_int (0, 0,
+                   "SELECT ROWID FROM configs"
+                   " WHERE name = 'Full and fast ultimate';")
+          == 2)
+      && (sql_int (0, 0,
+               "SELECT ROWID FROM configs"
+               " WHERE name = 'Full and very deep';")
+          == 3)
+      && (sql_int (0, 0,
+               "SELECT ROWID FROM configs"
+               " WHERE name = 'Full and very deep ultimate';")
+          == 4))
+    {
+      /* Everything's OK. */
+    }
+  else
+    {
+      g_warning ("%s: somehow the predefined configs have moved"
+                 " from the standard location, giving up\n",
+                 __FUNCTION__);
+      sql ("END;");
+      return -1;
+    }
+
+  /* Update cache counts for growing configs. */
+
+  update_config_caches ();
+
+  /* Set the database version to 6. */
+
+  set_db_version (6);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -1389,6 +1454,7 @@ static migrator_t database_migrators[]
     {3, migrate_2_to_3},
     {4, migrate_3_to_4},
     {5, migrate_4_to_5},
+    {6, migrate_5_to_6},
     /* End marker. */
     {-1, NULL}};
 
@@ -2117,26 +2183,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       /* Setup preferences for the config. */
       config = sqlite3_last_insert_rowid (task_db);
       setup_full_config_prefs (config, 0, 0, 1);
-    }
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
-               " WHERE name = 'Empty and fast';")
-      == 0)
-    {
-      config_t config;
-
-      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           // FIX nvt selector "Empty and fast" must stay empty
-           //         (maybe set to NULL instead and add handling everywhere)
-           " VALUES (5, 'Empty and fast', 'Empty and fast',"
-           " 'Empty NVT set; optimized by using previously collected information.',"
-           " 0, 0, 0, 0);");
-
-      /* Setup preferences for the config. */
-      config = sqlite3_last_insert_rowid (task_db);
-      setup_full_config_prefs (config, 1, 1, 0);
     }
 
   /* Ensure the predefined target exists. */
@@ -6063,14 +6109,14 @@ family_count ()
 }
 
 /**
- * @brief Complete an update of the NVT cache.
+ * @brief Update the cached count and growing information in every config.
+ *
+ * It's up to the caller to organise a transaction.
  */
-void
-manage_complete_nvt_cache_update ()
+static void
+update_config_caches ()
 {
   iterator_t configs;
-
-  /* Update the cached count and growing information in every config. */
 
   init_config_iterator (&configs, NULL, 1, NULL);
   while (next (&configs))
@@ -6098,6 +6144,15 @@ manage_complete_nvt_cache_update ()
       g_free (quoted_selector);
     }
   cleanup_iterator (&configs);
+}
+
+/**
+ * @brief Complete an update of the NVT cache.
+ */
+void
+manage_complete_nvt_cache_update ()
+{
+  update_config_caches ();
 }
 
 

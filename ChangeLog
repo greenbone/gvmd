@@ -1,5 +1,17 @@
 2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 5 to 6.  Remove predefined config
+	"Empty and fast".
+
+	* src/tasks_sql.h (migrate_5_to_6): New function.
+	(database_migrators): Add migrate_5_to_6.
+	(init_manage): Remove config "Empty and fast".
+	(update_config_caches): New function, body from
+	manage_complete_nvt_cache_update.
+	(manage_complete_nvt_cache_update): Call update_config_caches.
+
+2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (insert_rc_into_config): Also cache the config counts in
 	the growing case.
 
