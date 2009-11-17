@@ -597,81 +597,81 @@ next (iterator_t* iterator)
 /* Migration. */
 
 /* Procedure for writing a migrator.
-
-Every change that affects the database schema or the format of the data in
-the database must have a migrator so that someone using an older version of
-the database can update to the newer version.
-
-Simply adding a new table to the database is, however, OK.  At startup, the
-manager will automatically add a table if it is missing from the database.
-
- - Ensure that the ChangeLog notes the changes to the database and
-   the increase of DATABASE_VERSION, with an entry like
-
-       * src/tasks_sql.h (DATABASE_VERSION): Increase to 6, for...
-       (init_manage): Add new column...
-
- - Add the migrator function in the style of the others.  In particular,
-   the function must check the version, do the modification and then set
-   the new version, all inside an exclusive transaction.
-
- - If a migrator modifies a table then the table must either have existed
-   in database version 0 (listed below), or some earlier migrator must have
-   added the table, or the migrator must add the table (in the original
-   format).
-
- - Add the migrator to the database_migrators array.
-
- - Test that everything still works for a database that has been migrated
-   from version 0.
-
- - Commit with a ChangeLog heading like
-
-       Add database migration from version 5 to 6.
-
-SQL that created database version 0:
-
-    CREATE TABLE IF NOT EXISTS config_preferences
-      (config INTEGER, type, name, value);
-
-    CREATE TABLE IF NOT EXISTS configs
-      (name UNIQUE, nvt_selector, comment, family_count INTEGER,
-       nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);
-
-    CREATE TABLE IF NOT EXISTS meta
-      (name UNIQUE, value);
-
-    CREATE TABLE IF NOT EXISTS nvt_selectors
-      (name, exclude INTEGER, type INTEGER, family_or_nvt);
-
-    CREATE TABLE IF NOT EXISTS nvts
-      (oid, version, name, summary, description, copyright, cve, bid, xref,
-       tag, sign_key_ids, category, family);
-
-    CREATE TABLE IF NOT EXISTS report_hosts
-      (report INTEGER, host, start_time, end_time, attack_state, current_port,
-       max_port);
-
-    CREATE TABLE IF NOT EXISTS report_results
-      (report INTEGER, result INTEGER);
-
-    CREATE TABLE IF NOT EXISTS reports
-      (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time,
-       end_time, nbefile, comment);
-
-    CREATE TABLE IF NOT EXISTS results
-      (task INTEGER, subnet, host, port, nvt, type, description);
-
-    CREATE TABLE IF NOT EXISTS targets
-      (name, hosts, comment);
-
-    CREATE TABLE IF NOT EXISTS tasks
-      (uuid, name, hidden INTEGER, time, comment, description, owner,
-       run_status, start_time, end_time, config, target);
-
-    CREATE TABLE IF NOT EXISTS users
-      (name UNIQUE, password);
-*/
+ *
+ * Every change that affects the database schema or the format of the data in
+ * the database must have a migrator so that someone using an older version of
+ * the database can update to the newer version.
+ *
+ * Simply adding a new table to the database is, however, OK.  At startup, the
+ * manager will automatically add a table if it is missing from the database.
+ *
+ *  - Ensure that the ChangeLog notes the changes to the database and
+ *    the increase of DATABASE_VERSION, with an entry like
+ *
+ *        * src/tasks_sql.h (DATABASE_VERSION): Increase to 6, for...
+ *        (init_manage): Add new column...
+ *
+ *  - Add the migrator function in the style of the others.  In particular,
+ *    the function must check the version, do the modification and then set
+ *    the new version, all inside an exclusive transaction.
+ *
+ *  - If a migrator modifies a table then the table must either have existed
+ *    in database version 0 (listed below), or some earlier migrator must have
+ *    added the table, or the migrator must add the table (in the original
+ *    format).
+ *
+ *  - Add the migrator to the database_migrators array.
+ *
+ *  - Test that everything still works for a database that has been migrated
+ *    from version 0.
+ *
+ *  - Commit with a ChangeLog heading like
+ *
+ *        Add database migration from version 5 to 6.
+ *
+ * SQL that created database version 0:
+ *
+ *     CREATE TABLE IF NOT EXISTS config_preferences
+ *       (config INTEGER, type, name, value);
+ *
+ *     CREATE TABLE IF NOT EXISTS configs
+ *       (name UNIQUE, nvt_selector, comment, family_count INTEGER,
+ *        nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);
+ *
+ *     CREATE TABLE IF NOT EXISTS meta
+ *       (name UNIQUE, value);
+ *
+ *     CREATE TABLE IF NOT EXISTS nvt_selectors
+ *       (name, exclude INTEGER, type INTEGER, family_or_nvt);
+ *
+ *     CREATE TABLE IF NOT EXISTS nvts
+ *       (oid, version, name, summary, description, copyright, cve, bid, xref,
+ *        tag, sign_key_ids, category, family);
+ *
+ *     CREATE TABLE IF NOT EXISTS report_hosts
+ *       (report INTEGER, host, start_time, end_time, attack_state,
+ *        current_port, max_port);
+ *
+ *     CREATE TABLE IF NOT EXISTS report_results
+ *       (report INTEGER, result INTEGER);
+ *
+ *     CREATE TABLE IF NOT EXISTS reports
+ *       (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time,
+ *        end_time, nbefile, comment);
+ *
+ *     CREATE TABLE IF NOT EXISTS results
+ *       (task INTEGER, subnet, host, port, nvt, type, description);
+ *
+ *     CREATE TABLE IF NOT EXISTS targets
+ *       (name, hosts, comment);
+ *
+ *     CREATE TABLE IF NOT EXISTS tasks
+ *       (uuid, name, hidden INTEGER, time, comment, description, owner,
+ *        run_status, start_time, end_time, config, target);
+ *
+ *     CREATE TABLE IF NOT EXISTS users
+ *       (name UNIQUE, password);
+ */
 
 /**
  * @brief Backup the database to a file.
@@ -6349,7 +6349,64 @@ manage_complete_nvt_cache_update ()
 }
 
 
-/* NVT selectors. */
+/* NVT selectors.
+ *
+ * An NVT selector is a named selection of NVT's from the cache of all
+ * NVT's.
+ *
+ * An NVT selector is made up of zero or more selectors.  The selectors
+ * combine in ROWID order to make a selection.  Depending on the choice
+ * of selectors the selection can be static or growing.  A growing
+ * selection can grow when new NVT's enter the NVT cache, either because it
+ * selects new families or because it selects new NVT's within exising
+ * families.
+ *
+ * There are three types of selectors that an NVT selector can contain.
+ *
+ *   1) The "all selector", which selects all families and all NVT's in
+ *      those families.  The only way to construct the NVT selector so
+ *      that it grows to includes new families, is to add this selector.
+ *
+ *   2) A "family" selector, which designates an entire family.
+ *
+ *   3) An "NVT" selector, which designates a single NVT.
+ *
+ *      The naming overlaps here.  It's a selector of type NVT, which is
+ *      part of an "NVT selector" (a named collection of selectors).
+ *
+ * The family and NVT type selectors can either include or exclude the
+ * designated NVT's.
+ *
+ * While the all selector provides a way to select every single NVT, the
+ * empty NVT selector corresponds to an empty NVT set.
+ *
+ * The selectors provide a mechanism to select a wide range of NVT
+ * combinations.  The mechanism allows for complex selections involving
+ * redundant selectors.  The Manager, however, only implements a simple
+ * subset of the possible combinations of selectors.  This simple subset
+ * is split into two cases.
+ *
+ *   1) Constraining the universe.
+ *
+ *      The all selector and an optional exclude for each family,
+ *      optional NVT includes in the excluded families, and optional NVT
+ *      includes in all other families.
+ *
+ *      This allows a growing collection of families, while any family
+ *      can still have a static NVT selection.
+ *
+ *   2) Generating from empty.
+ *
+ *      An empty set of selectors with an optional include for each family,
+ *      optional NVT excludes in the included families, and optional NVT
+ *      includes in all other families.
+ *
+ *      This allows a static collection of families, while any family
+ *      can still grow when new NVT's enter the family.
+ *
+ * Either case allows one or more NVT's to be excluded from the family, both
+ * when the family is growing and when the family is static.
+ */
 
 /* These could handle strange cases, like when a family is
  * included then excluded, or all is included then later excluded.

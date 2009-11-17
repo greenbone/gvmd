@@ -1,6 +1,11 @@
 2009-11-17  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/tasks_sql.h (clude): Skip NVT is NVT or NVT family missing from
+	* src/tasks_sql.h: Format migration procedure like other comments.  Add a
+	description of NVT selectors.
+
+2009-11-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (clude): Skip NVT if NVT or NVT family is missing from
 	cache.
 	(nvt_selector_nvt_count): Remove handling of NULL family in the family
 	case.
