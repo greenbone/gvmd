@@ -3259,6 +3259,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           pos = pos2;
                                         }
                                     }
+                                  else if (value
+                                           && type
+                                           && (strcmp (type, "password") == 0))
+                                    SEND_TO_CLIENT_OR_FAIL ("<value></value>");
                                   else
                                     SENDF_TO_CLIENT_OR_FAIL
                                      ("<value>%s</value>", value ? value : "");
@@ -6264,6 +6268,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               pos = pos2;
                             }
                         }
+                      else if (type && (strcmp (type, "password") == 0))
+                        SEND_TO_CLIENT_OR_FAIL ("<value></value>");
                       else
                         SENDF_TO_CLIENT_OR_FAIL ("<value>%s</value>",
                                                  value ? value : "");
