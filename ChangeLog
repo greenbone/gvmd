@@ -1,3 +1,20 @@
+2009-11-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Improve migrators.
+
+	* src/tasks_sql.h: Add comment with procedure for writing a migrator.
+	(migrate_0_to_1, migrate_1_to_2, migrate_3_to_4): Check version inside
+	transaction.
+	(migrate_2_to_3): Check version inside transaction.  Ensure table
+	lsc_credentials exists.  Add missing public_key and private_key columns.
+	Make exe column text.
+	(migrate_4_to_5): Check version inside transaction.  Ensure tables
+	nvt_preferences and task_files exist.
+	(migrate_5_to_6_move_other_config): New function.
+	(migrate_5_to_6): Check version inside transaction.  Succeed even if the
+	predefined configs are missing.  Move any configs having the predefined
+	ID's.
+
 2009-11-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add database migration from version 5 to 6.  Remove predefined config

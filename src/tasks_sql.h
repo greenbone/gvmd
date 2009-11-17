@@ -596,6 +596,83 @@ next (iterator_t* iterator)
 
 /* Migration. */
 
+/* Procedure for writing a migrator.
+
+Every change that affects the database schema or the format of the data in
+the database must have a migrator so that someone using an older version of
+the database can update to the newer version.
+
+Simply adding a new table to the database is, however, OK.  At startup, the
+manager will automatically add a table if it is missing from the database.
+
+ - Ensure that the ChangeLog notes the changes to the database and
+   the increase of DATABASE_VERSION, with an entry like
+
+       * src/tasks_sql.h (DATABASE_VERSION): Increase to 6, for...
+       (init_manage): Add new column...
+
+ - Add the migrator function in the style of the others.  In particular,
+   the function must check the version, do the modification and then set
+   the new version, all inside an exclusive transaction.
+
+ - If a migrator modifies a table then the table must either have existed
+   in database version 0 (listed below), or some earlier migrator must have
+   added the table, or the migrator must add the table (in the original
+   format).
+
+ - Add the migrator to the database_migrators array.
+
+ - Test that everything still works for a database that has been migrated
+   from version 0.
+
+ - Commit with a ChangeLog heading like
+
+       Add database migration from version 5 to 6.
+
+SQL that created database version 0:
+
+    CREATE TABLE IF NOT EXISTS config_preferences
+      (config INTEGER, type, name, value);
+
+    CREATE TABLE IF NOT EXISTS configs
+      (name UNIQUE, nvt_selector, comment, family_count INTEGER,
+       nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);
+
+    CREATE TABLE IF NOT EXISTS meta
+      (name UNIQUE, value);
+
+    CREATE TABLE IF NOT EXISTS nvt_selectors
+      (name, exclude INTEGER, type INTEGER, family_or_nvt);
+
+    CREATE TABLE IF NOT EXISTS nvts
+      (oid, version, name, summary, description, copyright, cve, bid, xref,
+       tag, sign_key_ids, category, family);
+
+    CREATE TABLE IF NOT EXISTS report_hosts
+      (report INTEGER, host, start_time, end_time, attack_state, current_port,
+       max_port);
+
+    CREATE TABLE IF NOT EXISTS report_results
+      (report INTEGER, result INTEGER);
+
+    CREATE TABLE IF NOT EXISTS reports
+      (uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time,
+       end_time, nbefile, comment);
+
+    CREATE TABLE IF NOT EXISTS results
+      (task INTEGER, subnet, host, port, nvt, type, description);
+
+    CREATE TABLE IF NOT EXISTS targets
+      (name, hosts, comment);
+
+    CREATE TABLE IF NOT EXISTS tasks
+      (uuid, name, hidden INTEGER, time, comment, description, owner,
+       run_status, start_time, end_time, config, target);
+
+    CREATE TABLE IF NOT EXISTS users
+      (name UNIQUE, password);
+*/
+
 /**
  * @brief Backup the database to a file.
  *
@@ -683,13 +760,17 @@ typedef struct
 static int
 migrate_0_to_1 ()
 {
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 0. */
 
-  if (manage_db_version () != 0) return -1;
+  if (manage_db_version () != 0)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* In SVN the database version flag changed from 0 to 1 on 2009-09-30,
    * while the database changed to the version 1 schema on 2009-08-29.  This
@@ -735,13 +816,17 @@ migrate_1_to_2 ()
 {
   iterator_t nvts;
 
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 1. */
 
-  if (manage_db_version () != 1) return -1;
+  if (manage_db_version () != 1)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* The category column in nvts changed type from string to int.  This
    * may be a redundant conversion, as SQLite may have converted these
@@ -787,17 +872,26 @@ migrate_1_to_2 ()
 static int
 migrate_2_to_3 ()
 {
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 2. */
 
-  if (manage_db_version () != 2) return -1;
+  if (manage_db_version () != 2)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
 
-  sql ("BEGIN EXCLUSIVE;");
+  /* Add tables added since version 2 that are adjust later in the
+   * migration. */
 
-  /* The lsc_credentials table changed: package columns changed type from
-   * BLOB to string, a password column appeared and the dog column changed
-   * name to exe.
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (name, comment, rpm, deb, dog);");
+
+  /* The lsc_credentials table changed: package columns changed type from BLOB
+   * to string, new columns "password", "public key" and "private key" appeared
+   * and the dog column changed name to exe.
    *
    * Just remove all the LSC credentials, as credential generation only
    * started working after version 3. */
@@ -805,11 +899,13 @@ migrate_2_to_3 ()
   sql ("DELETE from lsc_credentials;");
   /* Before revision 5769 this could have caused problems, because these
    * columns are added on the end of the table, so columns referenced by
-   * position in * queries may be wrong (for example, with the iterator
+   * position in * queries may have been wrong (for example, with the iterator
    * returned by init_lsc_credential_iterator).  Since 5769 the queries
    * name all columns explicitly. */
   sql ("ALTER TABLE lsc_credentials ADD COLUMN password;");
-  sql ("ALTER TABLE lsc_credentials ADD COLUMN exe;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN public_key TEXT;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN private_key TEXT;");
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN exe TEXT;");
 
   /* Set the database version to 3. */
 
@@ -830,13 +926,17 @@ migrate_3_to_4 ()
 {
   iterator_t nvts;
 
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 3. */
 
-  if (manage_db_version () != 3) return -1;
+  if (manage_db_version () != 3)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* The nvt_selectors table got a family column. */
 
@@ -1326,13 +1426,17 @@ migrate_4_to_5_copy_data ()
 static int
 migrate_4_to_5 ()
 {
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 4. */
 
-  if (manage_db_version () != 4) return -1;
+  if (manage_db_version () != 4)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* Every table got an "id INTEGER PRIMARY KEY" column.  As the column is a
    * primary key, every table must be recreated and the data transfered.
@@ -1342,6 +1446,12 @@ migrate_4_to_5 ()
    * before entering them in the database.  Convert the existing
    * semicolons while transfering the data.  This should have been an
    * entirely separate version and migration between the current 4 and 5. */
+
+  /* Ensure that all tables exist that will be adjusted below. */
+
+  /* Both introduced between version 1 and 2. */
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS task_files (task INTEGER, name, content);");
 
   /* Move the tables away. */
 
@@ -1383,6 +1493,63 @@ migrate_4_to_5 ()
 }
 
 /**
+ * @brief Move a config that is using a predefined ID.
+ *
+ * @param[in]  predefined_config_name  Name of the predefined config.
+ * @param[in]  predefined_config_id    Row ID of the predefined config.
+ */
+static void
+migrate_5_to_6_move_other_config (const char *predefined_config_name,
+                                  config_t predefined_config_id)
+{
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) = 0 FROM configs"
+               " WHERE name = '%s';",
+               predefined_config_name)
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 1 FROM configs"
+                  " WHERE ROWID = %llu;",
+                  predefined_config_id))
+    {
+      config_t config;
+      char *name;
+      gchar *quoted_name;
+
+      sql ("INSERT into configs (nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " SELECT nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing"
+           " FROM configs"
+           " WHERE ROWID = %llu;",
+           predefined_config_id);
+      /* This ID will be larger then predefined_config_id because
+       * predefined_config_id exists already.  At worst the ID will be one
+       * larger. */
+      config = sqlite3_last_insert_rowid (task_db);
+      sql ("UPDATE config_preferences SET config = %llu WHERE config = %llu;",
+           config,
+           predefined_config_id);
+      name = sql_string (0, 0,
+                         "SELECT name FROM configs WHERE ROWID = %llu;",
+                         predefined_config_id);
+      if (name == NULL)
+        {
+          sql ("END;");
+          abort ();
+        }
+      quoted_name = sql_quote (name);
+      free (name);
+      /* Table tasks references config by name, so it stays the same. */
+      sql ("DELETE FROM configs WHERE ROWID = %llu;",
+           predefined_config_id);
+      sql ("UPDATE configs SET name = '%s' WHERE ROWID = %llu;",
+           quoted_name,
+           config);
+      g_free (quoted_name);
+    }
+}
+
+/**
  * @brief Migrate the database from version 5 to version 6.
  *
  * @return 0 success, -1 error.
@@ -1390,42 +1557,51 @@ migrate_4_to_5 ()
 static int
 migrate_5_to_6 ()
 {
+  sql ("BEGIN EXCLUSIVE;");
+
   /* Ensure that the database is currently version 5. */
 
-  if (manage_db_version () != 5) return -1;
+  if (manage_db_version () != 5)
+    {
+      sql ("END;");
+      return -1;
+    }
 
   /* Update the database. */
-
-  sql ("BEGIN EXCLUSIVE;");
 
   /* The predefined configs got predefined ID's and the manager now also
    * caches counts for growing configs. */
 
   /* Fail with a message if the predefined configs have somehow got ID's
-   * other the usual ones. */
+   * other than the usual ones. */
 
-  if ((sql_int (0, 0,
-               "SELECT ROWID FROM configs WHERE name = 'Full and fast';")
-       == 1)
-      && (sql_int (0, 0,
-                   "SELECT ROWID FROM configs"
-                   " WHERE name = 'Full and fast ultimate';")
-          == 2)
-      && (sql_int (0, 0,
-               "SELECT ROWID FROM configs"
-               " WHERE name = 'Full and very deep';")
-          == 3)
-      && (sql_int (0, 0,
-               "SELECT ROWID FROM configs"
-               " WHERE name = 'Full and very deep ultimate';")
-          == 4))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) = 0 OR ROWID == 1 FROM configs"
+               " WHERE name = 'Full and fast';")
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 2 FROM configs"
+                  " WHERE name = 'Full and fast ultimate';")
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 3 FROM configs"
+                  " WHERE name = 'Full and very deep';")
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 4 FROM configs"
+                  " WHERE name = 'Full and very deep ultimate';"))
     {
-      /* Everything's OK. */
+      /* Any predefined configs are OK.  Move any other configs that have the
+       * predefined ID's. */
+
+      /* The ID of the moved config may be only one larger, so these must
+       * be done in ID order. */
+      migrate_5_to_6_move_other_config ("Full and fast", 1);
+      migrate_5_to_6_move_other_config ("Full and fast ultimate", 2);
+      migrate_5_to_6_move_other_config ("Full and very deep", 3);
+      migrate_5_to_6_move_other_config ("Full and very deep ultimate", 4);
     }
   else
     {
-      g_warning ("%s: somehow the predefined configs have moved"
-                 " from the standard location, giving up\n",
+      g_warning ("%s: a predefined config has moved from the standard location,"
+                 " giving up\n",
                  __FUNCTION__);
       sql ("END;");
       return -1;
