@@ -4856,19 +4856,6 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
       const char *id;
       id = g_array_index (array, char*, index);
 
-      /* Bind the ID to the "$value" in the SQL statement. */
-
-      while (1)
-        {
-          ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_TRANSIENT);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_OK) break;
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          abort ();
-        }
-
       /* Bind the family name to the "$family" in the SQL statement. */
 
       if (families)
@@ -4882,15 +4869,32 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
 
               if (family)
                 g_hash_table_insert (families, family, (gpointer) 1);
+              else
+                {
+                  g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                             " because the NVT is missing a family in the"
+                             " cache",
+                             __FUNCTION__,
+                             id,
+                             config_name);
+                  continue;
+                }
+            }
+          else
+            {
+              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                         " because the NVT is missing from the cache",
+                         __FUNCTION__,
+                         id,
+                         config_name);
+              continue;
             }
 
           while (1)
             {
-              if (family)
-                ret = sqlite3_bind_text (stmt, 2, family, -1,
-                                         SQLITE_TRANSIENT);
-              else
-                ret = sqlite3_bind_null (stmt, 2);
+              assert (family);
+              ret = sqlite3_bind_text (stmt, 2, family, -1,
+                                       SQLITE_TRANSIENT);
               if (ret == SQLITE_BUSY) continue;
               if (ret == SQLITE_OK) break;
               g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -4898,6 +4902,19 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
                          sqlite3_errmsg (task_db));
               abort ();
             }
+        }
+
+      /* Bind the ID to the "$value" in the SQL statement. */
+
+      while (1)
+        {
+          ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_TRANSIENT);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_OK) break;
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          abort ();
         }
 
       /* Run the statement. */
@@ -6759,27 +6776,14 @@ nvt_selector_nvt_count (const char *selector,
       else
         {
           gchar *quoted_selector = sql_quote (selector);
-          if (family)
-            {
-              gchar *quoted_family = sql_quote (family);
-              ret = sql_int (0, 0,
-                             "SELECT COUNT(*) FROM nvt_selectors"
-                             " WHERE exclude = 0 AND type = 2"
-                             " AND name = '%s' AND family = '%s';",
-                             quoted_selector,
-                             quoted_family);
-              g_free (quoted_family);
-            }
-          else
-            /* The family can be NULL if an RC adds an NVT to a
-             * config and the NVT is missing from the NVT
-             * cache. */
-            /** @todo Probably should prevent adding these NVT's. */
-            ret = sql_int (0, 0,
-                           "SELECT COUNT(*) FROM nvt_selectors"
-                           " WHERE exclude = 0 AND type = 2"
-                           " AND name = '%s' AND family is NULL;",
-                           quoted_selector);
+          gchar *quoted_family = sql_quote (family);
+          ret = sql_int (0, 0,
+                         "SELECT COUNT(*) FROM nvt_selectors"
+                         " WHERE exclude = 0 AND type = 2"
+                         " AND name = '%s' AND family = '%s';",
+                         quoted_selector,
+                         quoted_family);
+          g_free (quoted_family);
           g_free (quoted_selector);
         }
 
