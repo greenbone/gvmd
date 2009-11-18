@@ -36,7 +36,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 6
+#define DATABASE_VERSION 7
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -466,7 +466,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
@@ -4621,17 +4621,20 @@ task_file_iterator_length (iterator_t* iterator)
 /**
  * @brief Create a target.
  *
- * @param[in]  name     Name of target.
- * @param[in]  hosts    Host list of target.
- * @param[in]  comment  Comment on target.
+ * @param[in]  name        Name of target.
+ * @param[in]  hosts       Host list of target.
+ * @param[in]  comment     Comment on target.
+ * @param[in]  credential  Credential.
  *
  * @return 0 success, 1 target exists already.
  */
 int
-create_target (const char* name, const char* hosts, const char* comment)
+create_target (const char* name, const char* hosts, const char* comment,
+               const char* credential)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
+  long long int lsc_credential;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -4645,18 +4648,43 @@ create_target (const char* name, const char* hosts, const char* comment)
 
   quoted_hosts = sql_nquote (hosts, strlen (hosts));
 
+  if (credential)
+    {
+      gchar *quoted_credential = sql_quote (credential);
+      int ret = sql_int64 (&lsc_credential, 0, 0,
+                           "SELECT ROWID FROM lsc_credentials"
+                           " WHERE name = '%s';",
+                           quoted_credential);
+      g_free (quoted_credential);
+      switch (ret)
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            lsc_credential = 0;
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            return -1;
+            break;
+        }
+    }
+  else
+    lsc_credential = 0;
+
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO targets (name, hosts, comment)"
-           " VALUES ('%s', '%s', '%s');",
-           quoted_name, quoted_hosts, quoted_comment);
+      sql ("INSERT INTO targets (name, hosts, comment, lsc_credential)"
+           " VALUES ('%s', '%s', '%s', %llu);",
+           quoted_name, quoted_hosts, quoted_comment, lsc_credential);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO targets (name, hosts, comment)"
-         " VALUES ('%s', '%s', '');",
-         quoted_name, quoted_hosts);
+    sql ("INSERT INTO targets (name, hosts, comment, lsc_credential)"
+         " VALUES ('%s', '%s', '', %llu);",
+         quoted_name, quoted_hosts, lsc_credential);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
@@ -4704,8 +4732,8 @@ init_target_iterator (iterator_t* iterator, int ascending,
                       const char* sort_field)
 {
   gchar* sql;
-  sql = g_strdup_printf ("SELECT name, hosts, comment from targets"
-                         " ORDER BY %s %s;",
+  sql = g_strdup_printf ("SELECT name, hosts, comment, lsc_credential"
+                         " FROM targets ORDER BY %s %s;",
                          sort_field ? sort_field : "ROWID",
                          ascending ? "ASC" : "DESC");
   init_iterator (iterator, sql);
@@ -4724,6 +4752,15 @@ target_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
+int
+target_iterator_lsc_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
+}
+
 /**
  * @brief Return the hosts associated with a target.
  *
@@ -4740,6 +4777,41 @@ target_hosts (const char *name)
                             quoted_name);
   g_free (quoted_name);
   return hosts;
+}
+
+/**
+ * @brief Return the name of any credential associated with a target.
+ *
+ * @param[in]  name  Target name.
+ *
+ * @return Name of credential if any, else NULL.
+ */
+char*
+target_lsc_credential_name (const char *name)
+{
+  long long int lsc_credential;
+  gchar *quoted_name = sql_quote (name);
+  int ret = sql_int64 (&lsc_credential, 0, 0,
+                       "SELECT lsc_credential FROM targets"
+                       " WHERE name = '%s';",
+                       quoted_name);
+  g_free (quoted_name);
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return NULL;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        /** @todo Move return to arg; return -1. */
+        return NULL;
+        break;
+    }
+  return sql_string (0, 0,
+                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;");
 }
 
 /**
@@ -7763,14 +7835,18 @@ nvt_preference_count (const char *name)
 /**
  * @brief Create an LSC credential.
  *
- * @param[in]  name     Name of LSC credential.  Must be at least one character.
- * @param[in]  comment  Comment on LSC credential.
+ * @param[in]  name      Name of LSC credential.  Must be at least one
+ *                       character long.
+ * @param[in]  comment   Comment on LSC credential.
+ * @param[in]  password  Password for password-only credential, NULL to
+ *                       generate credentials.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         -1 error.
  */
 int
-create_lsc_credential (const char* name, const char* comment)
+create_lsc_credential (const char* name, const char* comment,
+                       const char* given_password)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment, *public_key, *private_key, *base64;
@@ -7794,6 +7870,29 @@ create_lsc_credential (const char* name, const char* comment)
       g_free (quoted_name);
       sql ("END;");
       return 1;
+    }
+
+  if (given_password)
+    {
+      gchar *quoted_password = sql_quote (given_password);
+      gchar *quoted_comment = sql_quote (comment);
+
+      /* Password-only credential. */
+
+      sql ("INSERT INTO lsc_credentials"
+           " (name, password, comment, public_key, private_key, rpm, deb, exe)"
+           " VALUES"
+           " ('%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
+           quoted_name,
+           quoted_password,
+           quoted_comment);
+
+      g_free (quoted_name);
+      g_free (quoted_password);
+      g_free (quoted_comment);
+
+      sql ("COMMIT;");
+      return 0;
     }
 
   /* Create the keys and packages. */
@@ -8117,5 +8216,13 @@ DEF_ACCESS (lsc_credential_iterator_private_key, 4);
 DEF_ACCESS (lsc_credential_iterator_rpm, 5);
 DEF_ACCESS (lsc_credential_iterator_deb, 6);
 DEF_ACCESS (lsc_credential_iterator_exe, 7);
+
+char*
+lsc_credential_name (lsc_credential_t lsc_credential)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
+                     lsc_credential);
+}
 
 #undef DEF_ACCESS

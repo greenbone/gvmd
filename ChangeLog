@@ -1,3 +1,29 @@
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add support for creating password-only credentials and for associating
+	credentials with targets.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase for changes to table
+	targets.
+	(init_manage): Add column lsc_credential to table targets.
+	(create_target): Take credential parameter.
+	(init_target_iterator): Add lsc_credential column.
+	(target_iterator_lsc_credential, target_lsc_credential_name)
+	(lsc_credential_name): New functions.
+	(create_lsc_credential): Add given_password argument.
+
+	* src/manage.h: Update and add headers.
+	(lsc_credential_t): New type.
+
+	* src/omp.c (client_state_t): Add new LSC states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add PASSWORD to CREATE_LSC_CREDENTIAL.  Add
+	LSC_CREDENTIAL to CREATE_TARGET.  Add LSC_CREDENTIAL to GET_TARGETS
+	response.
+
+	* src/manage.c (start_task): Send credential preferences if there's a
+	credential linked to the target.
+
 2009-11-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_manage): Set requested and running reports to

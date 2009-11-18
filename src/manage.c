@@ -718,9 +718,9 @@ start_task (task_t task, char **report_id)
     }
 
   hosts = target_hosts (target);
-  free (target);
   if (hosts == NULL)
     {
+      free (target);
       tracef ("   target hosts is NULL.\n");
       return -4;
     }
@@ -729,6 +729,7 @@ start_task (task_t task, char **report_id)
 
   if (create_report (task, report_id))
     {
+      free (target);
       free (hosts);
       return -3;
     }
@@ -741,6 +742,7 @@ start_task (task_t task, char **report_id)
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
+      free (target);
       free (hosts);
       return -1;
     }
@@ -750,6 +752,7 @@ start_task (task_t task, char **report_id)
   config = task_config (task);
   if (config == NULL)
     {
+      free (target);
       free (hosts);
       tracef ("   task config is NULL.\n");
       return -5;
@@ -758,6 +761,7 @@ start_task (task_t task, char **report_id)
   selector = config_nvt_selector (config);
   if (selector == NULL)
     {
+      free (target);
       free (hosts);
       free (config);
       tracef ("   task config is NULL.\n");
@@ -773,18 +777,26 @@ start_task (task_t task, char **report_id)
   else
     fail = send_to_server ("plugin_set <|> 0\n");
   free (plugins);
-  if (fail) return -1;
+  if (fail)
+    {
+      free (target);
+      free (hosts);
+      free (config);
+      return -1;
+    }
 
   /* Send some fixed preferences. */
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
     }
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
@@ -792,12 +804,14 @@ start_task (task_t task, char **report_id)
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
     }
   if (send_to_server ("ntp_short_status <|> no\n"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
@@ -807,16 +821,57 @@ start_task (task_t task, char **report_id)
 
   if (send_config_preferences (config, "SERVER_PREFS"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
     }
   if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
+      free (target);
       free (hosts);
       free (config);
       return -1;
     }
+
+  /* Send credential preferences if there's a credential linked to target. */
+
+  {
+    iterator_t credentials;
+    char *credential = target_lsc_credential_name (target);
+
+    init_lsc_credential_iterator (&credentials, credential, 1, NULL);
+    if (next (&credentials))
+      {
+        const char *user = lsc_credential_iterator_name (&credentials);
+        const char *password = lsc_credential_iterator_password (&credentials);
+
+        if (sendf_to_server ("SMB Authorization[entry]:SMB login <|> %s\n",
+                             user)
+            || sendf_to_server ("SMB Authorization[entry]:SMB password"
+                                " <|> %s\n",
+                                password)
+            || sendf_to_server (" SSH Authorization[entry]:SSH login name"
+                                " <|> %s\n",
+                                user)
+            || sendf_to_server ("SSH Authorization[password]:"
+                                "SSH password (unsafe!)"
+                                " <|> %s\n",
+                                password))
+          {
+            free (credential);
+            free (target);
+            free (hosts);
+            free (config);
+            cleanup_iterator (&credentials);
+            return -1;
+          }
+      }
+    cleanup_iterator (&credentials);
+    free (credential);
+  }
+
+  free (target);
 
   if (send_to_server ("<|> CLIENT\n"))
     {

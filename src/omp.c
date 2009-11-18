@@ -416,9 +416,11 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL,
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
+  CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
+  CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
@@ -1785,6 +1787,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
         else
           {
             if (send_element_error_to_client ("create_lsc_credential",
@@ -1806,6 +1810,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
+        else if (strcasecmp ("LSC_CREDENTIAL", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else
@@ -5056,31 +5062,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           if (strlen (modify_task_name) == 0)
             {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
                                   "CREATE_LSC_CREDENTIAL name must both be at"
                                   " least one character long"));
             }
           else switch (create_lsc_credential (modify_task_name,
-                                              modify_task_comment))
+                                              modify_task_comment,
+                                              modify_task_parameter))
             {
               case 0:
-                openvas_free_string_var (&modify_task_comment);
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_comment);
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
                                     "LSC Credential exists already"));
                 break;
               case 2:
-                openvas_free_string_var (&modify_task_comment);
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
                                     "Name may only contain alphanumeric"
@@ -5089,12 +5088,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               default:
                 assert (0);
               case -1:
-                openvas_free_string_var (&modify_task_comment);
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_lsc_credential"));
                 break;
             }
+          openvas_free_string_var (&modify_task_comment);
+          openvas_free_string_var (&modify_task_name);
+          openvas_free_string_var (&modify_task_parameter);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -5104,6 +5104,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
         set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
         break;
 
@@ -5119,6 +5123,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_free_string_var (&modify_task_comment);
               openvas_free_string_var (&modify_task_name);
               openvas_free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_parameter);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_target",
                                   // FIX could pass an empty hosts element?
@@ -5127,11 +5132,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else if (create_target (modify_task_name,
                                   modify_task_value,
-                                  modify_task_comment))
+                                  modify_task_comment,
+                                  modify_task_parameter))
             {
               openvas_free_string_var (&modify_task_comment);
               openvas_free_string_var (&modify_task_name);
               openvas_free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_parameter);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_target",
                                   "Target exists already"));
@@ -5141,6 +5148,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_free_string_var (&modify_task_comment);
               openvas_free_string_var (&modify_task_name);
               openvas_free_string_var (&modify_task_value);
+              openvas_free_string_var (&modify_task_parameter);
               SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
             }
           set_client_state (CLIENT_AUTHENTIC);
@@ -5156,6 +5164,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TARGET_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
+        assert (strcasecmp ("LSC_CREDENTIAL", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
 
@@ -5277,7 +5289,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
               set_task_target (current_client_task, target_name);
-              if (create_target (target_name, hosts, NULL))
+              if (create_target (target_name, hosts, NULL, NULL))
                 {
                   request_delete_task (&current_client_task);
                   g_free (target_name);
@@ -6419,20 +6431,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 current_int_2,   /* Attribute sort_order. */
                                 current_format); /* Attribute sort_field. */
           while (next (&targets))
-            SENDF_TO_CLIENT_OR_FAIL ("<target>"
-                                     "<name>%s</name>"
-                                     "<hosts>%s</hosts>"
-                                     "<max_hosts>%i</max_hosts>"
-                                     "<comment>%s</comment>"
-                                     "<in_use>%i</in_use>"
-                                     "</target>",
-                                     target_iterator_name (&targets),
-                                     target_iterator_hosts (&targets),
-                                     max_hosts
-                                      (target_iterator_hosts (&targets)),
-                                     target_iterator_comment (&targets),
-                                     target_in_use
-                                      (target_iterator_name (&targets)));
+            {
+              char *lsc_name;
+              lsc_credential_t lsc_credential;
+
+              lsc_credential = target_iterator_lsc_credential (&targets);
+              lsc_name = lsc_credential_name (lsc_credential);
+              SENDF_TO_CLIENT_OR_FAIL ("<target>"
+                                       "<name>%s</name>"
+                                       "<hosts>%s</hosts>"
+                                       "<max_hosts>%i</max_hosts>"
+                                       "<comment>%s</comment>"
+                                       "<in_use>%i</in_use>"
+                                       "<lsc_credential>%s</lsc_credential>"
+                                       "</target>",
+                                       target_iterator_name (&targets),
+                                       target_iterator_hosts (&targets),
+                                       max_hosts
+                                        (target_iterator_hosts (&targets)),
+                                       target_iterator_comment (&targets),
+                                       target_in_use
+                                        (target_iterator_name (&targets)),
+                                       lsc_name ? lsc_name : "");
+              free (lsc_name);
+            }
           cleanup_iterator (&targets);
           SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
           openvas_free_string_var (&current_format);
@@ -6544,12 +6566,18 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
         openvas_append_text (&modify_task_name, text, text_len);
         break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD:
+        openvas_append_text (&modify_task_parameter, text, text_len);
+        break;
 
       case CLIENT_CREATE_TARGET_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_HOSTS:
         openvas_append_text (&modify_task_value, text, text_len);
+        break;
+      case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
+        openvas_append_text (&modify_task_parameter, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&modify_task_name, text, text_len);

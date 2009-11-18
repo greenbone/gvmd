@@ -155,6 +155,7 @@ typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int nvt_t;
+typedef long long int lsc_credential_t;
 
 #include <sqlite3.h>
 
@@ -535,7 +536,7 @@ rc_preference (const char*, const char*);
 /* Targets. */
 
 int
-create_target (const char*, const char*, const char*);
+create_target (const char*, const char*, const char*, const char*);
 
 int
 delete_target (const char*);
@@ -552,11 +553,17 @@ target_iterator_hosts (iterator_t*);
 const char*
 target_iterator_comment (iterator_t*);
 
+int
+target_iterator_lsc_credential (iterator_t*);
+
 char*
 target_hosts (const char*);
 
 int
 target_in_use (const char*);
+
+char*
+target_lsc_credential_name (const char *);
 
 
 /* Configs. */
@@ -749,7 +756,7 @@ nvt_preference_count (const char *);
 /* LSC credentials. */
 
 int
-create_lsc_credential (const char*, const char*);
+create_lsc_credential (const char*, const char*, const char*);
 
 int
 delete_lsc_credential (const char*);
@@ -777,6 +784,9 @@ lsc_credential_iterator_deb (iterator_t*);
 
 const char*
 lsc_credential_iterator_exe (iterator_t*);
+
+char*
+lsc_credential_name (lsc_credential_t);
 
 
 /* Scanner messaging. */
