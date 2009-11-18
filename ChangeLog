@@ -1,5 +1,10 @@
 2009-11-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Set requested and running reports to
+	stopped.
+
+2009-11-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_nvt_preference_iterator): Order by name ascending.
 
 2009-11-17  Matthew Mundell <matthew.mundell@intevation.de>

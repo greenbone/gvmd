@@ -2436,6 +2436,19 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     }
   cleanup_task_iterator (&iterator);
 
+  /* Set requested and running reports to stopped. */
+
+  sql ("UPDATE reports SET scan_run_status = %u"
+       " WHERE scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u;",
+       TASK_STATUS_STOPPED,
+       TASK_STATUS_DELETE_REQUESTED,
+       TASK_STATUS_REQUESTED,
+       TASK_STATUS_RUNNING,
+       TASK_STATUS_STOP_REQUESTED);
+
   /* Load the NVT cache into memory. */
 
   if (nvti_cache == NULL)
