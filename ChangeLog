@@ -1,3 +1,7 @@
+2009-11-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (init_nvt_preference_iterator): Order by name ascending.
+
 2009-11-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS and

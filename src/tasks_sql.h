@@ -7620,7 +7620,8 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name NOT LIKE 'server_info_%';",
+                     " AND name NOT LIKE 'server_info_%'"
+                     " ORDER BY name ASC",
                      quoted_name);
       g_free (quoted_name);
     }
@@ -7631,7 +7632,8 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " AND name != 'include_folders'"
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT LIKE 'server_info_%';");
+                   " AND name NOT LIKE 'server_info_%'"
+                   " ORDER BY name ASC");
 }
 
 DEF_ACCESS (nvt_preference_iterator_name, 0);
