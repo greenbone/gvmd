@@ -4846,7 +4846,8 @@ target_lsc_credential_name (const char *name)
         break;
     }
   return sql_string (0, 0,
-                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;");
+                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
+                     lsc_credential);
 }
 
 /**
@@ -8203,7 +8204,8 @@ delete_lsc_credential (const char* name)
 /**
  * @brief Initialise an LSC Credential iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator    Iterator.
+ * @param[in]  name        Name of single credential to iterate, NULL for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */

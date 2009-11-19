@@ -1,3 +1,11 @@
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (target_lsc_credential_name): Add missing sql_string
+	arg.
+	(init_lsc_credential_iterator): Doc missing arg.
+
+	* ChangeLog: Format migrator entry like others.
+
 2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/manage.c (start_task): Corrected preference strings for
@@ -5,9 +13,11 @@
 
 2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	Add database migration from version 6 to 7.
+
 	* src/tasks_sql.h (migrate_6_to_7): Added migrator that adds the new
 	column in targets table.
-	(database_migrators): Added migrator
+	(database_migrators): Added migrator.
 	Declared a section of the documentation as section for doxygen.
 
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
