@@ -1,3 +1,9 @@
+2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/mange.c (send_config_preferences): Renamed parameter and local
+	variable to avoid confusion.
+	(start_task): Made trace message more explicit.
+
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add support for creating password-only credentials and for associating

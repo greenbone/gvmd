@@ -546,24 +546,24 @@ preference_value (const char* name, const char* full_value)
 /**
  * @brief Send the preferences from a config to the scanner.
  *
- * @param[in]  task  Task.
- * @param[in]  name  Name of preference section to send.
+ * @param[in]  task          Task.
+ * @param[in]  section_name  Name of preference section to send.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
 send_config_preferences (const char* config,
-                         const char* name)
+                         const char* section_name)
 {
   iterator_t prefs;
 
-  init_preference_iterator (&prefs, config, name);
+  init_preference_iterator (&prefs, config, section_name);
   while (next (&prefs))
     {
-      const char *name = preference_iterator_name (&prefs);
+      const char *pref_name = preference_iterator_name (&prefs);
       char *value;
 
-      if (send_to_server (name))
+      if (send_to_server (pref_name))
         {
           cleanup_iterator (&prefs);
           return -1;
@@ -575,7 +575,7 @@ send_config_preferences (const char* config,
           return -1;
         }
 
-      value = preference_value (name,
+      value = preference_value (pref_name,
                                 preference_iterator_value (&prefs));
       if (send_to_server (value))
         {
@@ -764,7 +764,7 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       free (config);
-      tracef ("   task config is NULL.\n");
+      tracef ("   task config selector is NULL.\n");
       return -5;
     }
 
