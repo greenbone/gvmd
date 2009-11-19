@@ -113,8 +113,8 @@ compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
   return collate_message_type (NULL,
-                               strlen (one), one,
-                               strlen (two), two);
+                               strlen (two), two,
+                               strlen (one), one);
 }
 
 static gint
@@ -123,8 +123,8 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
   return collate_message_type (NULL,
-                               strlen (two), two,
-                               strlen (one), one);
+                               strlen (one), one,
+                               strlen (two), two);
 }
 
 static void

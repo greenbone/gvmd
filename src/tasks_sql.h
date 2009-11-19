@@ -1782,6 +1782,9 @@ manage_migrate (GSList *log_config, const gchar *database)
  *
  * Callback for SQLite "collate_message_type" collation.
  *
+ * A lower threat is considered less than a higher threat, so Medium is
+ * less than High.
+ *
  * @param[in]  data     Dummy for callback.
  * @param[in]  one_len  Length of first string.
  * @param[in]  arg_one  First string.
@@ -1798,47 +1801,47 @@ collate_message_type (void* data,
   const char* one = (const char*) arg_one;
   const char* two = (const char*) arg_two;
 
-  if (strcmp (one, "Security Hole") == 0)
+  if (strncmp (one, "Security Hole", one_len) == 0)
     {
-      if (strcmp (two, "Security Hole") == 0)
+      if (strncmp (two, "Security Hole", two_len) == 0)
         return 0;
-      return -1;
+      return 1;
     }
-  if (strcmp (two, "Security Hole") == 0) return 1;
+  if (strncmp (two, "Security Hole", two_len) == 0) return -1;
 
-  if (strcmp (one, "Security Warning") == 0)
+  if (strncmp (one, "Security Warning", one_len) == 0)
     {
-      if (strcmp (two, "Security Warning") == 0)
+      if (strncmp (two, "Security Warning", two_len) == 0)
         return 0;
-      return -1;
+      return 1;
     }
-  if (strcmp (two, "Security Warning") == 0) return 1;
+  if (strncmp (two, "Security Warning", two_len) == 0) return -1;
 
-  if (strcmp (one, "Security Note") == 0)
+  if (strncmp (one, "Security Note", one_len) == 0)
     {
-      if (strcmp (two, "Security Note") == 0)
+      if (strncmp (two, "Security Note", two_len) == 0)
         return 0;
-      return -1;
+      return 1;
     }
-  if (strcmp (two, "Security Note") == 0) return 1;
+  if (strncmp (two, "Security Note", two_len) == 0) return -1;
 
-  if (strcmp (one, "Log Message") == 0)
+  if (strncmp (one, "Log Message", one_len) == 0)
     {
-      if (strcmp (two, "Log Message") == 0)
+      if (strncmp (two, "Log Message", two_len) == 0)
         return 0;
-      return -1;
+      return 1;
     }
-  if (strcmp (two, "Log Message") == 0) return 1;
+  if (strncmp (two, "Log Message", two_len) == 0) return -1;
 
-  if (strcmp (one, "Debug Message") == 0)
+  if (strncmp (one, "Debug Message", one_len) == 0)
     {
-      if (strcmp (two, "Debug Message") == 0)
+      if (strncmp (two, "Debug Message", two_len) == 0)
         return 0;
-      return -1;
+      return 1;
     }
-  if (strcmp (two, "Debug Message") == 0) return 1;
+  if (strncmp (two, "Debug Message", two_len) == 0) return -1;
 
-  return strcmp (one, two);
+  return strncmp (one, two, MIN (one_len, two_len));
 }
 
 

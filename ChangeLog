@@ -1,5 +1,12 @@
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (collate_message_type): Heed lengths in comparisons.
+	Reverse order: Medium is less than High, etc.
+
+	* src/omp.c (compare_ports_desc, compare_ports_asc): Switch arg order.
+
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (target_lsc_credential_name): Add missing sql_string
 	arg.
 	(init_lsc_credential_iterator): Doc missing arg.
