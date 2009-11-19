@@ -1,5 +1,11 @@
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_target, target_lsc_credential_name): Use
+	lsc_credential_t for credential.
+	(delete_lsc_credential): Enable in use check.
+
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add IN_USE to OMP GET_LSC_CREDENTIALS response.  Move GET_TARGETS
 	credential name into NAME entity.
 

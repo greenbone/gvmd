@@ -4634,7 +4634,7 @@ create_target (const char* name, const char* hosts, const char* comment,
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
-  long long int lsc_credential;
+  lsc_credential_t lsc_credential;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -4789,7 +4789,7 @@ target_hosts (const char *name)
 char*
 target_lsc_credential_name (const char *name)
 {
-  long long int lsc_credential;
+  lsc_credential_t lsc_credential;
   gchar *quoted_name = sql_quote (name);
   int ret = sql_int64 (&lsc_credential, 0, 0,
                        "SELECT lsc_credential FROM targets"
@@ -8139,25 +8139,26 @@ create_lsc_credential (const char* name, const char* comment,
 /**
  * @brief Delete an LSC credential.
  *
- * @param[in]  name   Name of LSC credential.
+ * @param[in]  name  Name of LSC credential.
  *
- * @return 0 success, 1 fail because a task refers to the LSC credential, -1 error.
+ * @return 0 success, 1 fail because the LSC credential is in use, -1 error.
  */
 int
 delete_lsc_credential (const char* name)
 {
   gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
-#if 0
+
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE lsc_credential = '%s'",
+               "SELECT count(*) FROM targets WHERE lsc_credential ="
+               " (SELECT ROWID from lsc_credentials WHERE name = '%s');",
                quoted_name))
     {
       g_free (quoted_name);
       sql ("END;");
       return 1;
     }
-#endif
+
   sql ("DELETE FROM lsc_credentials WHERE name = '%s';", quoted_name);
   sql ("COMMIT;");
   g_free (quoted_name);
