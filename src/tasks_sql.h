@@ -596,7 +596,8 @@ next (iterator_t* iterator)
 
 /* Migration. */
 
-/* Procedure for writing a migrator.
+/**
+ * @section procedure_writing_migrator Procedure for writing a migrator
  *
  * Every change that affects the database schema or the format of the data in
  * the database must have a migrator so that someone using an older version of
@@ -1621,6 +1622,39 @@ migrate_5_to_6 ()
 }
 
 /**
+ * @brief Migrate the database from version 6 to version 7.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_6_to_7 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 6. */
+
+  if (manage_db_version () != 6)
+    {
+      sql ("END;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add lsc_credential column to targets table */
+  sql ("ALTER TABLE targets ADD COLUMN lsc_credential INTEGER;");
+  sql ("UPDATE targets SET lsc_credential = 0;");
+
+  /* Set the database version to 7. */
+
+  set_db_version (7);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -1631,6 +1665,7 @@ static migrator_t database_migrators[]
     {4, migrate_3_to_4},
     {5, migrate_4_to_5},
     {6, migrate_5_to_6},
+    {7, migrate_6_to_7},
     /* End marker. */
     {-1, NULL}};
 
