@@ -1,5 +1,12 @@
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (migrate_6_to_7): Add fullstop to comment.
+
+	* src/manage.c (start_task): Remove space from beginning of preference
+	name.
+
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (collate_message_type): Heed lengths in comparisons.
 	Reverse order: Medium is less than High, etc.
 
@@ -63,7 +70,7 @@
 	Add support for creating password-only credentials and for associating
 	credentials with targets.
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increase for changes to table
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 7, for changes to table
 	targets.
 	(init_manage): Add column lsc_credential to table targets.
 	(create_target): Take credential parameter.
@@ -618,7 +625,7 @@
 	Add an id column to each table to force VACUUM to respect ROWID.  This
 	makes it safe to use ROWID as a foreign key.
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increment to 5, for new id columns.
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 5, for new id columns.
 	(init_manage): Add an id column to every table with constraints INTEGER
 	PRIMARY KEY.
 	[0] (migrate_4_to_5): Add outline of 4 to 5 migrator.
@@ -1038,7 +1045,7 @@
 	(process_otp_scanner_input): In SCANNER_PLUGIN_LIST_CATEGORY set the
 	category number according to the OTP field.
 
-	* src/tasks_sql.h (DATABASE_VERSION): Increment to 2, due to nvts category
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 2, due to nvts category
 	column type specification.
 	(init_manage): Specify type for category column in table nvts.
 	(make_nvt_from_nvti): Insert category as int.

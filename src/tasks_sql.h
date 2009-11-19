@@ -1641,7 +1641,7 @@ migrate_6_to_7 ()
 
   /* Update the database. */
 
-  /* Add lsc_credential column to targets table */
+  /* Add lsc_credential column to targets table. */
   sql ("ALTER TABLE targets ADD COLUMN lsc_credential INTEGER;");
   sql ("UPDATE targets SET lsc_credential = 0;");
 

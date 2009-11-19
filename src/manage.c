@@ -851,7 +851,7 @@ start_task (task_t task, char **report_id)
             || sendf_to_server ("SMB Authorization[entry]:SMB password:"
                                 " <|> %s\n",
                                 password)
-            || sendf_to_server (" SSH Authorization[entry]:SSH login name:"
+            || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                 " <|> %s\n",
                                 user)
             || sendf_to_server ("SSH Authorization[password]:"
