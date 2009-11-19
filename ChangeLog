@@ -1,5 +1,10 @@
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_tables_version_4): New function.
+	(migrate_4_to_5): Call create_tables_version_4 to create the tables.
+
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (migrate_6_to_7): Add fullstop to comment.
 
 	* src/manage.c (start_task): Remove space from beginning of preference
