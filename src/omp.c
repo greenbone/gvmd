@@ -45,6 +45,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <glib/gstdio.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdlib.h>
@@ -135,6 +136,89 @@ free_array (GArray *array)
   while ((item = g_array_index (array, void*, index++)))
     g_free (item);
   g_array_free (array, TRUE);
+}
+
+/** @todo Duplicated from lsc_user.c. */
+/**
+ * @brief Checks whether a file is a directory or not.
+ *
+ * This is a replacement for the g_file_test functionality which is reported
+ * to be unreliable under certain circumstances, for example if this
+ * application and glib are compiled with a different libc.
+ *
+ * @todo FIXME: handle symbolic links
+ * @todo Move to libs?
+ *
+ * @param[in]  name  File name.
+ *
+ * @return 1 if parameter is directory, 0 if it is not, -1 if it does not
+ *         exist or could not be accessed.
+ */
+static int
+check_is_dir (const char *name)
+{
+  struct stat sb;
+
+  if (stat (name, &sb))
+    {
+      return -1;
+    }
+  else
+    {
+      return (S_ISDIR (sb.st_mode));
+    }
+}
+
+/** @todo Duplicated from lsc_user.c. */
+/**
+ * @brief Recursively removes files and directories.
+ *
+ * This function will recursively call itself to delete a path and any
+ * contents of this path.
+ *
+ * @param[in]  pathname  Name of file to be deleted from filesystem.
+ *
+ * @return 0 if the name was successfully deleted, -1 if an error occurred.
+ */
+static int
+file_utils_rmdir_rf (const gchar * pathname)
+{
+  if (check_is_dir (pathname) == 1)
+    {
+      GError *error = NULL;
+      GDir *directory = g_dir_open (pathname, 0, &error);
+
+      if (directory == NULL)
+        {
+          if (error)
+            {
+              g_warning ("g_dir_open(%s) failed - %s\n", pathname, error->message);
+              g_error_free (error);
+            }
+          return -1;
+        }
+      else
+        {
+          int ret = 0;
+          const gchar *entry = NULL;
+
+          while ((entry = g_dir_read_name (directory)) != NULL && (ret == 0))
+            {
+              gchar *entry_path = g_build_filename (pathname, entry, NULL);
+              ret = file_utils_rmdir_rf (entry_path);
+              g_free (entry_path);
+              if (ret != 0)
+                {
+                  g_warning ("Failed to remove %s from %s!", entry, pathname);
+                  g_dir_close (directory);
+                  return ret;
+                }
+            }
+          g_dir_close (directory);
+        }
+    }
+
+  return g_remove (pathname);
 }
 
 
@@ -4103,20 +4187,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (strcasecmp (current_format, "pdf") == 0)
               {
                 gchar *latex_file;
-                gint latex_fd;
+                char latex_dir[] = "/tmp/openvasmd_XXXXXX";
 
-                latex_file = g_strdup ("/tmp/openvasmd_XXXXXX.tex");
-
-                latex_fd = g_mkstemp (latex_file);
-
-                if (latex_fd == -1)
+                if (mkdtemp (latex_dir) == NULL)
                   {
-                    g_warning ("%s: g_mkstemp failed\n",
-                               __FUNCTION__);
-                    g_free (latex_file);
+                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_latex (report,
+                else if (latex_file = g_strdup_printf ("%s/report.tex",
+                                                       latex_dir),
+                         print_report_latex (report,
                                              latex_file,
                                              /* Attribute sort_order. */
                                              current_int_3,
@@ -4124,20 +4204,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              current_name))
                   {
                     g_free (latex_file);
-                    close (latex_fd);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
-                    // TODO: Remove latex_file.
-
                     gchar *pdf_file, *command;
                     gint pdf_fd;
                     int ret;
-
-                    close (latex_fd);
-
-                    // TODO: Remove pdf_file.
 
                     pdf_file = g_strdup (latex_file);
                     pdf_file[strlen (pdf_file) - 1] = 'f';
@@ -4149,12 +4222,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    S_IRUSR | S_IWUSR);
 
                     command = g_strdup_printf
-                               ("pdflatex -output-directory /tmp/ %s"
+                               ("pdflatex -output-directory %s %s"
                                 " > /tmp/openvasmd_pdflatex_out 2>&1"
-                                " && pdflatex -output-directory /tmp/ %s"
+                                " && pdflatex -output-directory %s %s"
                                 " > /tmp/openvasmd_pdflatex_out 2>&1",
+                                latex_dir,
                                 latex_file,
+                                latex_dir,
                                 latex_file);
+
                     g_free (latex_file);
 
                     g_message ("   command: %s\n", command);
@@ -4180,8 +4256,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    WEXITSTATUS (ret),
                                    command);
                         close (pdf_fd);
-                        g_free (command);
                         g_free (pdf_file);
+                        g_free (command);
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_report"));
                       }
@@ -4213,7 +4289,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else
                           {
-                            /* Encode and send the PDF. */
+                            /* Remove the directory. */
+
+                            file_utils_rmdir_rf (latex_dir);
+
+                            /* Encode and send the PDF data. */
 
                             SEND_TO_CLIENT_OR_FAIL
                              ("<get_report_response"

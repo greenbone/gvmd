@@ -1,5 +1,11 @@
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (check_is_dir, file_utils_rmdir_rf): New functions.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT process the LaTeX in
+	a directory and remove the directory after sending the report.
+
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_tables_version_4): New function.
 	(migrate_4_to_5): Call create_tables_version_4 to create the tables.
 
