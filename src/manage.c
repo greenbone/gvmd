@@ -846,16 +846,16 @@ start_task (task_t task, char **report_id)
         const char *user = lsc_credential_iterator_name (&credentials);
         const char *password = lsc_credential_iterator_password (&credentials);
 
-        if (sendf_to_server ("SMB Authorization[entry]:SMB login <|> %s\n",
+        if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
                              user)
-            || sendf_to_server ("SMB Authorization[entry]:SMB password"
+            || sendf_to_server ("SMB Authorization[entry]:SMB password:"
                                 " <|> %s\n",
                                 password)
-            || sendf_to_server (" SSH Authorization[entry]:SSH login name"
+            || sendf_to_server (" SSH Authorization[entry]:SSH login name:"
                                 " <|> %s\n",
                                 user)
             || sendf_to_server ("SSH Authorization[password]:"
-                                "SSH password (unsafe!)"
+                                "SSH password (unsafe!):"
                                 " <|> %s\n",
                                 password))
           {

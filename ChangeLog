@@ -1,5 +1,10 @@
 2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/manage.c (start_task): Corrected preference strings for
+	"credential" preferences to send.
+
+2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/tasks_sql.h (migrate_6_to_7): Added migrator that adds the new
 	column in targets table.
 	(database_migrators): Added migrator
