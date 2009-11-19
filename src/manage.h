@@ -785,6 +785,9 @@ lsc_credential_iterator_deb (iterator_t*);
 const char*
 lsc_credential_iterator_exe (iterator_t*);
 
+int
+lsc_credential_iterator_in_use (iterator_t*);
+
 char*
 lsc_credential_name (lsc_credential_t);
 

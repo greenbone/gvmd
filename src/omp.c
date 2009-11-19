@@ -6361,10 +6361,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<lsc_credential>"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
+                          "<in_use>%i</in_use>"
                           "<public_key>%s</public_key>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
                           lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets));
                         break;
                       case 2: /* rpm */
@@ -6372,10 +6374,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<lsc_credential>"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
+                          "<in_use>%i</in_use>"
                           "<package format=\"rpm\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
                           lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_rpm (&targets));
                         break;
                       case 3: /* deb */
@@ -6383,10 +6387,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<lsc_credential>"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
+                          "<in_use>%i</in_use>"
                           "<package format=\"deb\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
                           lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_deb (&targets));
                         break;
                       case 4: /* exe */
@@ -6394,10 +6400,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<lsc_credential>"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
+                          "<in_use>%i</in_use>"
                           "<package format=\"exe\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
                           lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_exe (&targets));
                         break;
                       default:
@@ -6405,9 +6413,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<lsc_credential>"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
+                          "<in_use>%i</in_use>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_comment (&targets));
+                          lsc_credential_iterator_comment (&targets),
+                          lsc_credential_iterator_in_use (&targets));
                         break;
                     }
                 }
@@ -6443,7 +6453,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<max_hosts>%i</max_hosts>"
                                        "<comment>%s</comment>"
                                        "<in_use>%i</in_use>"
-                                       "<lsc_credential>%s</lsc_credential>"
+                                       "<lsc_credential>"
+                                       "<name>%s</name>"
+                                       "</lsc_credential>"
                                        "</target>",
                                        target_iterator_name (&targets),
                                        target_iterator_hosts (&targets),

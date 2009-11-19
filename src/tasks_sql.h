@@ -8180,7 +8180,9 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
                      "SELECT name, password, comment, public_key,"
-                     " private_key, rpm, deb, exe"
+                     " private_key, rpm, deb, exe,"
+                     " (SELECT count(*) > 0 FROM targets"
+                     "  WHERE lsc_credential = lsc_credentials.ROWID)"
                      " FROM lsc_credentials"
                      " WHERE name = '%s'"
                      " ORDER BY %s %s;",
@@ -8192,7 +8194,9 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
   else
     init_iterator (iterator,
                    "SELECT name, password, comment, public_key,"
-                   " private_key, rpm, deb, exe"
+                   " private_key, rpm, deb, exe,"
+                   " (SELECT count(*) > 0 FROM targets"
+                   "  WHERE lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "ROWID",
@@ -8216,6 +8220,15 @@ DEF_ACCESS (lsc_credential_iterator_private_key, 4);
 DEF_ACCESS (lsc_credential_iterator_rpm, 5);
 DEF_ACCESS (lsc_credential_iterator_deb, 6);
 DEF_ACCESS (lsc_credential_iterator_exe, 7);
+
+int
+lsc_credential_iterator_in_use (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  return ret;
+}
 
 char*
 lsc_credential_name (lsc_credential_t lsc_credential)

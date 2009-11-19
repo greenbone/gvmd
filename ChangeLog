@@ -1,6 +1,20 @@
+2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add IN_USE to OMP GET_LSC_CREDENTIALS response.  Move GET_TARGETS
+	credential name into NAME entity.
+
+	* src/tasks_sql.h (init_lsc_credential_iterator): Add "in use" field.
+	(lsc_credential_iterator_in_use): New function.
+
+	* src/manage.h: Add header.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_LSC_CREDENTIALS
+	send IN_USE with credential.  In CLIENT_GET_TARGETS move credential name
+	into NAME entity.
+
 2009-11-19  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
-	* src/mange.c (send_config_preferences): Renamed parameter and local
+	* src/manage.c (send_config_preferences): Renamed parameter and local
 	variable to avoid confusion.
 	(start_task): Made trace message more explicit.
 
