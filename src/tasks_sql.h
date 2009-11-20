@@ -5481,7 +5481,7 @@ copy_config (const char* name, const char* comment, const char* config)
   id = sqlite3_last_insert_rowid (task_db);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " SELECT %i, type, name, value FROM config_preferences"
+       " SELECT %llu, type, name, value FROM config_preferences"
        " WHERE config = (SELECT ROWID from configs where name = '%s');",
        id,
        quoted_config);

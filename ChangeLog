@@ -1,3 +1,7 @@
+2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (copy_config): Correct format type in SQL string.
+
 2009-11-20  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/manage.c (latex_print_verbatim_text): Escape ampersands, as we
