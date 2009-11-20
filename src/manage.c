@@ -449,37 +449,27 @@ get_files_to_send (task_t task)
 }
 
 /**
- * @brief Return the plugins of a task, as a semicolon separated string.
+ * @brief Return the plugins of a config, as a semicolon separated string.
  *
- * @param[in]  task  Task.
+ * @param[in]  config  Config name.
  *
- * @return A string of semi-colon separated plugin IDS if known, else NULL.
+ * @return A string of semi-colon separated plugin IDS.
  */
 static gchar*
-nvt_selector_plugins (const char* selector)
+nvt_selector_plugins (const char* config)
 {
-  // FIX config_nvts_growing (config)?
-  if (nvt_selector_nvts_growing (selector))
-    {
-      // FIX do other cases
-      if ((sql_int (0, 0,
-                    "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                    selector)
-           == 1)
-          && (sql_int (0, 0,
-                       "SELECT COUNT(*) FROM nvt_selectors"
-                       " WHERE name = '%s'"
-                       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                       ";",
-                       selector)
-              == 1))
-        {
-          GString* plugins;
-          iterator_t nvts;
-          gboolean first = TRUE;
+  GString* plugins = g_string_new ("");;
+  iterator_t families;
+  gboolean first = TRUE;
 
-          plugins = g_string_new ("");
-          init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
+  init_family_iterator (&families, 0, NULL, 1);
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (family)
+        {
+          iterator_t nvts;
+          init_nvt_iterator (&nvts, 0, config, family, 1, NULL);
           while (next (&nvts))
             {
               if (first)
@@ -489,32 +479,11 @@ nvt_selector_plugins (const char* selector)
               g_string_append (plugins, nvt_iterator_oid (&nvts));
             }
           cleanup_iterator (&nvts);
-          return g_string_free (plugins, FALSE);
         }
-      // FIX finalise selector implementation
-      return NULL;
     }
-  else
-    {
-      GString* plugins;
-      iterator_t nvts;
-      gboolean first = TRUE;
+  cleanup_iterator (&families);
 
-      plugins = g_string_new ("");
-      init_nvt_selector_iterator (&nvts, selector, 2);
-      while (next (&nvts))
-        if (nvt_selector_iterator_include (&nvts))
-          {
-            if (first)
-              first = FALSE;
-            else
-              g_string_append_c (plugins, ';');
-            g_string_append (plugins, nvt_selector_iterator_nvt (&nvts));
-          }
-      cleanup_iterator (&nvts);
-
-      return g_string_free (plugins, FALSE);
-    }
+  return g_string_free (plugins, FALSE);
 }
 
 /**
@@ -691,7 +660,7 @@ send_task_file (task_t task, const char* file)
 int
 start_task (task_t task, char **report_id)
 {
-  char *hosts, *target, *config, *selector;
+  char *hosts, *target, *config;
   gchar *plugins;
   int fail;
   GSList *files = NULL;
@@ -758,20 +727,9 @@ start_task (task_t task, char **report_id)
       return -5;
     }
 
-  selector = config_nvt_selector (config);
-  if (selector == NULL)
-    {
-      free (target);
-      free (hosts);
-      free (config);
-      tracef ("   task config selector is NULL.\n");
-      return -5;
-    }
-
   /* Send the plugin list. */
 
-  plugins = nvt_selector_plugins (selector);
-  free (selector);
+  plugins = nvt_selector_plugins (config);
   if (plugins)
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else

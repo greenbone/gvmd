@@ -1,5 +1,11 @@
 2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (nvt_selector_plugins): Implement outstanding cases by
+	iterating over NVT's per family.  Hence take config instead of selector.
+	(start_task): Pass config to nvt_selector_plugins.
+
+2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (copy_config): Correct format type in SQL string.
 
 2009-11-20  Felix Wolfsteller <felix.wolfsteller@intevation.de>
