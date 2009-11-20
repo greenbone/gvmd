@@ -5891,6 +5891,7 @@ manage_set_config_nvts (const char* config, const char* family,
 {
   char *selector;
   gchar *quoted_config, *quoted_family;
+  int new_nvt_count, old_nvt_count;
 
   quoted_config = sql_quote (config);
   quoted_family = sql_quote (family);
@@ -5902,28 +5903,18 @@ manage_set_config_nvts (const char* config, const char* family,
     /* The config should always have a selector. */
     return -1;
 
-  /* If there is an "include all" or an "include family" selector in the
-   * config, then exclude all no's, otherwise include all yes'es. */
+  /* If the family is growing, then exclude all no's, otherwise the family
+   * is static, so include all yes's. */
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors"
-               " WHERE name = '%s'"
-               " AND exclude = 0"
-               " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-               " OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-               " AND family_or_nvt = '%s'))"
-               " LIMIT 1;",
-               quoted_config,
-               quoted_family))
+  old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
+
+  if (nvt_selector_family_growing (selector,
+                                   family,
+                                   config_families_growing (config)))
     {
       iterator_t nvts;
-      int new_nvt_count, old_nvt_count;
 
-      old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
-
-      free (selector);
-
-      /* Clear any NVT selectors for this family from the configs. */
+      /* Clear any NVT selectors for this family from the config. */
 
       sql ("DELETE FROM nvt_selectors"
            " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
@@ -5958,24 +5949,10 @@ manage_set_config_nvts (const char* config, const char* family,
           new_nvt_count--;
         }
       cleanup_iterator (&nvts);
-
-      /* Update the cached config info. */
-
-      sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
-           " WHERE name = '%s';",
-           old_nvt_count,
-           MAX (new_nvt_count, 0),
-           quoted_config);
     }
   else
     {
-      int old_nvt_count;
-
-      old_nvt_count = nvt_selector_nvt_count (selector, family, 0);
-
-      free (selector);
-
-      /* Clear any NVT selectors for this family from the configs. */
+      /* Clear any NVT selectors for this family from the config. */
 
       sql ("DELETE FROM nvt_selectors"
            " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
@@ -5989,9 +5966,9 @@ manage_set_config_nvts (const char* config, const char* family,
       if (selected_nvts)
         {
           gchar *nvt;
-          int index = 0;
+          new_nvt_count = 0;
 
-          while ((nvt = g_array_index (selected_nvts, gchar*, index)))
+          while ((nvt = g_array_index (selected_nvts, gchar*, new_nvt_count)))
             {
               gchar *quoted_nvt = sql_quote (nvt);
               sql ("INSERT INTO nvt_selectors"
@@ -6003,18 +5980,18 @@ manage_set_config_nvts (const char* config, const char* family,
                    quoted_nvt,
                    quoted_family);
               g_free (quoted_nvt);
-              index++;
+              new_nvt_count++;
             }
-
-          /* Update the cached config info. */
-
-          sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
-               " WHERE name = '%s';",
-               old_nvt_count,
-               index,
-               quoted_config);
         }
     }
+
+  /* Update the cached config info. */
+
+  sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
+       " WHERE name = '%s';",
+       old_nvt_count,
+       MAX (new_nvt_count, 0),
+       quoted_config);
 
   sql ("COMMIT;");
 

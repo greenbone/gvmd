@@ -1,5 +1,11 @@
 2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (manage_set_config_nvts): Determine whether to include
+	or exclude by checking if the family is growing in the selector, instead
+	of checking for an "all" or "family include" in the selector.
+
+2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT for the
 	"html" and "html-pdf" formats, convert in a directory and remove the
 	directory after sending the report.
