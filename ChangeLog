@@ -1,3 +1,8 @@
+2009-11-20  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/manage.c (start_task): Corrected preference string to send for
+	(SMB) local security checks .
+
 2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (manage_set_config_nvts): Determine whether to include
