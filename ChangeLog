@@ -1,3 +1,9 @@
+2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT for the
+	"html" and "html-pdf" formats, convert in a directory and remove the
+	directory after sending the report.
+
 2009-11-19  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (check_is_dir, file_utils_rmdir_rf): New functions.

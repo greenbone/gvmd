@@ -3874,20 +3874,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (strcasecmp (current_format, "html") == 0)
               {
                 gchar *xml_file;
-                gint xml_fd;
+                char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
-                xml_file = g_strdup ("/tmp/openvasmd_xml_XXXXXX");
-
-                xml_fd = g_mkstemp (xml_file);
-
-                if (xml_fd == -1)
+                if (mkdtemp (xml_dir) == NULL)
                   {
-                    g_warning ("%s: g_mkstemp failed\n",
-                               __FUNCTION__);
-                    g_free (xml_file);
+                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_xml (report,
+                else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                         print_report_xml (report,
                                            xml_file,
                                            /* Attribute sort_order. */
                                            current_int_3,
@@ -3895,16 +3890,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            current_name))
                   {
                     g_free (xml_file);
-                    close (xml_fd);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
                     gchar *xsl_file;
-
-                    // TODO: Remove xml_file.
-
-                    close (xml_fd);
 
                     xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
                                                  "openvasmd_report_html.xsl",
@@ -3924,14 +3914,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       {
                         gchar *html_file, *command;
-                        gint html_fd;
                         int ret;
 
-                        // TODO: Remove html_file.
-
-                        html_file = g_strdup ("/tmp/openvasmd_html_XXXXXX");
-
-                        html_fd = g_mkstemp (html_file);
+                        html_file = g_strdup_printf ("%s/report.html", xml_dir);
 
                         command = g_strdup_printf ("xsltproc -v %s %s -o %s 2> /dev/null",
                                                    xsl_file,
@@ -3942,26 +3927,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         g_message ("   command: %s\n", command);
 
-                        if (html_fd == -1)
-                          {
-                            g_warning ("%s: g_mkstemp failed\n",
-                                       __FUNCTION__);
-                            g_free (html_file);
-                            SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
-                          }
                         /* RATS: ignore, command is defined above. */
-                        else if (ret = system (command),
-                                 // FIX ret is always -1
-                                 0 && ((ret) == -1
-                                       || WEXITSTATUS (ret)))
+                        if (ret = system (command),
+                            // FIX ret is always -1
+                            0 && ((ret) == -1
+                                  || WEXITSTATUS (ret)))
                           {
                             g_warning ("%s: system failed with ret %i, %i, %s\n",
                                        __FUNCTION__,
                                        ret,
                                        WEXITSTATUS (ret),
                                        command);
-                            close (html_fd);
                             g_free (command);
                             g_free (html_file);
                             SEND_TO_CLIENT_OR_FAIL
@@ -3973,7 +3949,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             gchar *html;
                             gsize html_len;
 
-                            close (html_fd);
                             g_free (command);
 
                             /* Send the HTML to the client. */
@@ -3995,6 +3970,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             else
                               {
+                                /* Remove the directory. */
+
+                                file_utils_rmdir_rf (xml_dir);
+
                                 /* Encode and send the HTML. */
 
                                 SEND_TO_CLIENT_OR_FAIL
@@ -4028,22 +4007,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (strcasecmp (current_format, "html-pdf") == 0)
               {
                 gchar *xml_file;
-                gint xml_fd;
+                char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
                 // TODO: This block is very similar to the HTML block above.
 
-                xml_file = g_strdup ("/tmp/openvasmd_xml_XXXXXX");
-
-                xml_fd = g_mkstemp (xml_file);
-
-                if (xml_fd == -1)
+                if (mkdtemp (xml_dir) == NULL)
                   {
-                    g_warning ("%s: g_mkstemp failed\n",
-                               __FUNCTION__);
-                    g_free (xml_file);
+                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
-                else if (print_report_xml (report,
+                else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                         print_report_xml (report,
                                            xml_file,
                                            /* Attribute sort_order. */
                                            current_int_3,
@@ -4051,16 +4025,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            current_name))
                   {
                     g_free (xml_file);
-                    close (xml_fd);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
                     gchar *xsl_file;
-
-                    // TODO: Remove xml_file.
-
-                    close (xml_fd);
 
                     xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
                                                  "openvasmd_report_html.xsl",
@@ -4080,14 +4049,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       {
                         gchar *pdf_file, *command;
-                        gint pdf_fd;
                         int ret;
 
-                        // TODO: Remove pdf_file.
-
-                        pdf_file = g_strdup ("/tmp/openvasmd_pdf_XXXXXX");
-
-                        pdf_fd = g_mkstemp (pdf_file);
+                        pdf_file = g_strdup_printf ("%s/report.pdf", xml_dir);
 
                         command = g_strdup_printf ("xsltproc -v %s %s"
                                                    " 2> /dev/null"
@@ -4102,26 +4066,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         g_message ("   command: %s\n", command);
 
-                        if (pdf_fd == -1)
-                          {
-                            g_warning ("%s: g_mkstemp failed\n",
-                                       __FUNCTION__);
-                            g_free (pdf_file);
-                            SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
-                          }
                         /* RATS: ignore, command is defined above. */
-                        else if (ret = system (command),
-                                 // FIX ret is always -1
-                                 0 && ((ret) == -1
-                                       || WEXITSTATUS (ret)))
+                        if (ret = system (command),
+                            // FIX ret is always -1
+                            0 && ((ret) == -1
+                                  || WEXITSTATUS (ret)))
                           {
                             g_warning ("%s: system failed with ret %i, %i, %s\n",
                                        __FUNCTION__,
                                        ret,
                                        WEXITSTATUS (ret),
                                        command);
-                            close (pdf_fd);
                             g_free (command);
                             g_free (pdf_file);
                             SEND_TO_CLIENT_OR_FAIL
@@ -4133,7 +4088,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             gchar *pdf;
                             gsize pdf_len;
 
-                            close (pdf_fd);
                             g_free (command);
 
                             /* Send the PDF to the client. */
@@ -4155,6 +4109,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             else
                               {
+                                /* Remove the directory. */
+
+                                file_utils_rmdir_rf (xml_dir);
+
                                 /* Encode and send the HTML. */
 
                                 SEND_TO_CLIENT_OR_FAIL
