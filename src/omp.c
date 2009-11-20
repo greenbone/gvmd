@@ -2539,6 +2539,11 @@ latex_print_verbatim_text (FILE* file, const char* text)
             nchars = -1;
             break_pos = next_break (pos, line_width);
             break;
+          /* Ampersand needs to be escaped to not confuse tabular
+           * environment. */
+          case '&':
+            fputs ("\\&", file);
+            break;
           default:
             fputc (*pos, file);
             break;

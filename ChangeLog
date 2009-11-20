@@ -1,5 +1,10 @@
 2009-11-20  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/manage.c (latex_print_verbatim_text): Escape ampersands, as we
+	are in a tabular environment.
+
+2009-11-20  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/manage.c (start_task): Corrected preference string to send for
 	(SMB) local security checks .
 
