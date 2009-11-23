@@ -1,3 +1,20 @@
+openvas-manager 0.9.4 (2009-11-23)
+
+This is the tenth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Felix Wolfsteller.
+
+Main changes since 0.9.3:
+
+* The layout of the PDF reports has been improved.
+* A bug which broke DB migration under certain circumstances has been fixed.
+* Support for NVT family retrieval and configuration management has been
+  introduced.
+* Cache management has been improved.
+
+
 openvas-manager 0.9.3 (2009-11-09)
 
 This is the ninth development release of the openvas-manager module
