@@ -1,3 +1,11 @@
+2009-11-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (manage_set_config_preference): Strip type decorations
+	off names of scanner preferences.  If nvt is NULL assume the preference
+	is a SERVER_PREF.
+	(nvt_preference_iterator_config_value): Select any type of preference, so
+	that server preferences are selected too.
+
 2009-11-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
