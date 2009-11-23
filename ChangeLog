@@ -1,3 +1,8 @@
+2009-11-23  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/omp.c (latex_header): Added fix to allow special characters like
+	umlauts in latex/pdf reports.
+
 2009-11-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (nvt_selector_plugins): Implement outstanding cases by
