@@ -1,3 +1,12 @@
+2009-11-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Added stubs for dependency checks during configure/build time.
+	Fixes bug #1208 (http://bugs.openvas.org/1208) for certain
+	environments.
+
+	* CMakeLists.txt: Added stubs for (dependency) checks for glib2,
+	gnutls, openvas-libraries, pcap, gpgme and uuid.
+
 2009-11-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (manage_set_config_preference): Strip type decorations
