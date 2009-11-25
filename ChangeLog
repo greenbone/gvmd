@@ -1,3 +1,18 @@
+2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add support for per-NVT timeout preferences.
+
+	* src/omp.c (send_nvt): Add timeout arg.  Update callers.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS and
+	CLIENT_GET_NVT_DETAILS send TIMEOUT in PREFERENCES and NVT. In
+	CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE initialise the string that will
+	hold the value, so that it is always some string when the OMP caller
+	sends a VALUE and only NULL if the caller leaves out VALUE entirely.
+
+	* src/tasks_sql.h (config_nvt_timeout): New function.
+	(manage_set_config_preference): Enable the preference removal section.
+	Remove type decoration in removal section for scanner preferences.
+
 2009-11-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Added stubs for dependency checks during configure/build time.

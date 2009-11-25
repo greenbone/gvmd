@@ -2117,11 +2117,12 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
  * @param[in]  key         The plugin OID.
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
+ * @param[in]  timeout     Timeout.  Used if details is true.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_nvt (iterator_t *nvts, int details, int pref_count)
+send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -2159,6 +2160,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count)
                              "<fingerprints>%s</fingerprints>"
                              "<tags>%s</tags>"
                              "<preference_count>%i</preference_count>"
+                             "<timeout>%s</timeout>"
                              "<checksum>"
                              "<algorithm>md5</algorithm>"
                              // FIX implement
@@ -2178,7 +2180,8 @@ send_nvt (iterator_t *nvts, int details, int pref_count)
                              nvt_iterator_xref (nvts),
                              nvt_iterator_sign_key_ids (nvts),
                              tag_text,
-                             pref_count);
+                             pref_count,
+                             timeout ? timeout : "");
       g_free (copyright_text);
       g_free (description_text);
       g_free (summary_text);
@@ -3229,7 +3232,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
               while (next (&nvts))
-                if (send_nvt (&nvts, 0, -1))
+                if (send_nvt (&nvts, 0, -1, NULL))
                   {
                     error_send_to_client (error);
                     return;
@@ -3304,7 +3307,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       init_nvt_iterator (&nvts, nvt, NULL, NULL, 1, NULL);
                       while (next (&nvts))
                         {
-                          if (send_nvt (&nvts, 1, -1))
+                          char *timeout = NULL;
+
+                          if (current_name) /* Attribute config. */
+                            timeout = config_nvt_timeout (current_name,
+                                                          nvt_iterator_oid
+                                                           (&nvts));
+
+                          if (send_nvt (&nvts, 1, -1, timeout))
                             {
                               error_send_to_client (error);
                               return;
@@ -3316,7 +3326,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                               /* Send the preferences for the NVT. */
 
-                              SEND_TO_CLIENT_OR_FAIL ("<preferences>");
+                              SENDF_TO_CLIENT_OR_FAIL ("<preferences>"
+                                                       "<timeout>%s</timeout>",
+                                                       timeout ? timeout : "");
+                              free (timeout);
 
                               init_nvt_preference_iterator (&prefs, nvt_name);
                               while (next (&prefs))
@@ -3375,7 +3388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               SEND_TO_CLIENT_OR_FAIL ("</preferences>");
 
                             }
-                          }
+                        }
                       cleanup_iterator (&nvts);
 
                       SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
@@ -3408,13 +3421,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   while (next (&nvts))
                     {
                       int pref_count = -1;
+                      char *timeout = NULL;
+
+                      if (current_name) /* Attribute config. */
+                        timeout = config_nvt_timeout (current_name,
+                                                      nvt_iterator_oid
+                                                       (&nvts));
+
                       if (current_name       /* Attribute config. */
                           || current_format) /* Attribute family. */
                         {
                           const char *nvt_name = nvt_iterator_name (&nvts);
                           pref_count = nvt_preference_count (nvt_name);
                         }
-                      if (send_nvt (&nvts, 1, pref_count))
+                      if (send_nvt (&nvts, 1, pref_count, timeout))
                         {
                           error_send_to_client (error);
                           return;
@@ -4717,6 +4737,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
         assert (strcasecmp ("VALUE", element_name) == 0);
+        /* Init, so it's the empty string when the value is empty. */
+        openvas_append_string (&modify_task_value, "");
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
         break;
 

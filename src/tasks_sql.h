@@ -4942,6 +4942,31 @@ config_preference (config_t config, const char *type, const char *preference)
 }
 
 /**
+ * @brief Get the timeout value for an NVT in a config.
+ *
+ * @param[in]  config  Config name.
+ * @param[in]  oid     ID of NVT.
+ *
+ * @return Newly allocated timeout if set for the NVT, else NULL.
+ */
+char *
+config_nvt_timeout (const char *config, const char *oid)
+{
+  char *ret;
+  gchar *quoted_config = sql_quote (config);
+  ret = sql_string (0, 0,
+                    "SELECT value FROM config_preferences"
+                    " WHERE config ="
+                    " (SELECT ROWID FROM configs where name = '%s')"
+                    " AND type = 'SERVER_PREFS'"
+                    " AND name = 'timeout.%s';",
+                    quoted_config,
+                    oid);
+  g_free (quoted_config);
+  return ret;
+}
+
+/**
  * @brief Exclude or include an array of NVTs in a config.
  *
  * @param[in]  config_name  Config name.
@@ -5778,13 +5803,19 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
   quoted_config = sql_quote (config);
   quoted_name = sql_quote (name);
 
-#if 0
-  /**
-   * @todo The OMP parsing keeps value_64 NULL when VALUE is empty, so do
-   *       this some other way. */
   if (value_64 == NULL)
     {
-      if (nvt == NULL) return -1;
+      int end = -1;
+
+      /* scanner[scanner]:Timeout */
+      count = sscanf (name, "%*[^[][scanner]:%n", &end);
+      if (count == 0 && end > 0)
+        {
+          /* A scanner preference.  Remove type decoration from name. */
+          g_free (quoted_name);
+          quoted_name = sql_quote (name + end);
+        }
+
       sql ("DELETE FROM config_preferences"
            " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
            " AND name = '%s';",
@@ -5794,9 +5825,8 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
       g_free (quoted_name);
       return 0;
     }
-#endif
 
-  if (value_64 && strlen (value_64))
+  if (strlen (value_64))
     {
       gsize value_len;
       value = (gchar*) g_base64_decode (value_64, &value_len);
