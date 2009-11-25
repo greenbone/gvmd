@@ -538,6 +538,7 @@ main (int argc, char** argv)
 
   static gboolean migrate_database = FALSE;
   static gboolean update_nvt_cache = FALSE;
+  static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
@@ -554,6 +555,7 @@ main (int argc, char** argv)
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
+        { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
@@ -652,7 +654,7 @@ main (int argc, char** argv)
         scanner_port = htons (OPENVASSD_PORT);
     }
 
-  if (update_nvt_cache)
+  if (update_nvt_cache || rebuild_nvt_cache)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
 
@@ -662,7 +664,9 @@ main (int argc, char** argv)
 
       /* Initialise OMP daemon. */
 
-      switch (init_ompd (log_config, 1, database))
+      switch (init_ompd (log_config,
+                         update_nvt_cache ? -1 : -2,
+                         database))
         {
           case 0:
             break;
@@ -749,13 +753,14 @@ main (int argc, char** argv)
           return EXIT_FAILURE;
         }
 
-      /* Call the OMP client serving function with client socket -1.  This
-       * invokes a scanner-only manager loop.  As nvt_cache_mode is true, the
-       * manager loop will request and cache the plugins, then exit. */
+      /* Call the OMP client serving function with a special client socket
+       * value.  This invokes a scanner-only manager loop which will
+       * request and cache the plugins, then exit. */
 
       if (serve_omp (NULL, &scanner_session,
                      NULL, &scanner_credentials,
-                     -1, &scanner_socket,
+                     update_nvt_cache ? -1 : -2,
+                     &scanner_socket,
                      database))
         {
           openvas_server_free (scanner_socket,

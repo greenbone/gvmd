@@ -1,5 +1,39 @@
 2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Make --update update the cache a single item at a time, locking the
+	database only around the modification of each item.  Add a new option,
+	--rebuild, which completely rebuilds the cache from scratch, locking
+	the database for the entire duration of the rebuild.
+
+	* src/openvasmd.c (main): Add --rebuild option.
+
+	* src/ompd.c (init_ompd): Update param doc.
+	(write_to_scanner): Add update states by refering to ompd_nvt_cache_mode.
+	(serve_omp): Set ompd_nvt_cache_mode directly from client_socket, which
+	determines which update mode to use.  Add update states to select setup.
+
+	* src/omp.c (init_omp_process): Update param doc.
+
+	* src/tasks_sql.h (init_manage_process): Update param doc.  Only remove
+	NVT and preference caches when rebuilding the cache.  Move COMMIT to
+	manage_complete_nvt_cache_update.
+	(make_nvt_from_nvti): Add argument to control removal of NVT before
+	inserting.
+	(manage_complete_nvt_cache_update): Add mode argument; COMMIT if rebuild.
+
+	* src/manage.h: Update headers.
+
+	* src/otp.h (scanner_init_state_t): Add new states.
+
+	* src/otp.c (parse_scanner_preference_value): Add update state.
+	(parse_scanner_plugin_list_tags): Pass NVT removal flag.
+	(process_otp_scanner_input): Add update states.  In particular, pass mode
+	to manage_complete_nvt_cache_update.
+
+	* README: Update usage message.
+
+2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (start_task): Only do the credential iteration if the
 	target has a credential.
 

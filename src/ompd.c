@@ -94,7 +94,8 @@ static int ompd_nvt_cache_mode = 0;
  * @brief Initialise the OMP library for the OMP daemon.
  *
  * @param[in]  log_config      Log configuration
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache,
+ *                             -2 just rebuild NVT cache.
  * @param[in]  database        Location of manage database.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
@@ -361,6 +362,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         assert (0);
         break;
       case SCANNER_INIT_SENT_COMPLETE_LIST:
+      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
         assert (0);
         break;
       case SCANNER_INIT_GOT_MD5SUM:
@@ -371,7 +373,9 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
                                    (scanner_session,
                                     ack + scanner_init_offset);
             if (scanner_init_offset == 0)
-              set_scanner_init_state (SCANNER_INIT_SENT_COMPLETE_LIST);
+              set_scanner_init_state (ompd_nvt_cache_mode == -1
+                                      ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
+                                      : SCANNER_INIT_SENT_COMPLETE_LIST);
             else if (scanner_init_offset == -1)
               {
                 scanner_init_offset = 0;
@@ -389,7 +393,9 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
                                   ack + scanner_init_offset);
           if (scanner_init_offset == 0)
             {
-              if (ompd_nvt_cache_mode)
+              if (ompd_nvt_cache_mode == -1)
+                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE_UPDATE);
+              else if (ompd_nvt_cache_mode == -2)
                 set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
               else
                 set_scanner_init_state (SCANNER_INIT_DONE);
@@ -405,6 +411,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         /*@fallthrough@*/
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
+      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
         while (1)
           switch (write_to_server_buffer (scanner_session))
             {
@@ -522,7 +529,8 @@ serve_omp (gnutls_session_t* client_session,
    * while the scanner is active. */
   short client_active = client_socket > 0;
 
-  ompd_nvt_cache_mode = client_socket <= 0;
+  if (client_socket < 0)
+    ompd_nvt_cache_mode = client_socket;
 
   if (ompd_nvt_cache_mode)
     tracef ("   Updating NVT cache.\n");
@@ -687,8 +695,10 @@ serve_omp (gnutls_session_t* client_session,
 
       if ((scanner_init_state == SCANNER_INIT_DONE
            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+           || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
            || scanner_init_state == SCANNER_INIT_GOT_VERSION
            || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
+           || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
            || scanner_init_state == SCANNER_INIT_SENT_PASSWORD
            || scanner_init_state == SCANNER_INIT_SENT_USER
            || scanner_init_state == SCANNER_INIT_SENT_VERSION)
@@ -700,7 +710,8 @@ serve_omp (gnutls_session_t* client_session,
 
       if (((scanner_init_state == SCANNER_INIT_TOP
             || scanner_init_state == SCANNER_INIT_DONE
-            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+            || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
            && to_server_buffer_space () > 0)
           || scanner_init_state == SCANNER_INIT_CONNECT_INTR
           || scanner_init_state == SCANNER_INIT_CONNECTED

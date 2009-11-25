@@ -577,6 +577,9 @@ copy_config (const char*, const char*, const char*);
 int
 delete_config (const char*);
 
+char *
+config_nvt_timeout (const char*, const char *);
+
 void
 init_config_iterator (iterator_t*, const char*, int, const char*);
 
@@ -639,7 +642,7 @@ void
 set_nvts_md5sum (const char*);
 
 nvt_t
-make_nvt_from_nvti (const nvti_t*);
+make_nvt_from_nvti (const nvti_t*, int);
 
 gboolean
 find_nvt (const char*, nvt_t*);

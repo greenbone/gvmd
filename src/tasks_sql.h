@@ -2028,7 +2028,8 @@ next_task (task_iterator_t* iterator, task_t* task)
  *
  * Open the SQL database.
  *
- * @param[in]  update_nvt_cache  If true, clear the NVT cache.
+ * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
+ *                               -2 just rebuild NVT cache.
  * @param[in]  database          Location of manage database.
  */
 void
@@ -2039,13 +2040,12 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (task_db)
     {
-      if (update_nvt_cache)
+      if (update_nvt_cache == -2)
         {
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
           sql ("DELETE FROM nvt_preferences;");
           sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
-          sql ("COMMIT;");
         }
       return;
     }
@@ -2077,11 +2077,13 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (update_nvt_cache)
     {
-      sql ("BEGIN EXCLUSIVE;");
-      sql ("DELETE FROM nvts;");
-      sql ("DELETE FROM nvt_preferences;");
-      sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
-      sql ("COMMIT;");
+      if (update_nvt_cache == -2)
+        {
+          sql ("BEGIN EXCLUSIVE;");
+          sql ("DELETE FROM nvts;");
+          sql ("DELETE FROM nvt_preferences;");
+          sql ("DELETE FROM meta WHERE name = 'nvts_checksum';");
+        }
     }
   else
     {
@@ -6269,12 +6271,13 @@ nvt_family (nvt_t nvt)
 /**
  * @brief Make an nvt from an nvti.
  *
- * @param[in]  nvti  NVTI.
+ * @param[in]  nvti    NVTI.
+ * @param[in]  remove  Whether to remove the NVT from the cache first.
  *
  * @return An NVT.
  */
 nvt_t
-make_nvt_from_nvti (const nvti_t *nvti)
+make_nvt_from_nvti (const nvti_t *nvti, int remove)
 {
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
@@ -6299,6 +6302,12 @@ make_nvt_from_nvti (const nvti_t *nvti)
                                    : "");
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
+  if (remove)
+    {
+      sql ("BEGIN EXCLUSIVE;");
+      sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
+    }
+
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
@@ -6316,6 +6325,9 @@ make_nvt_from_nvti (const nvti_t *nvti)
        quoted_sign_key_ids,
        nvti_category (nvti),
        quoted_family);
+
+  if (remove)
+    sql ("COMMIT;");
 
   g_free (quoted_version);
   g_free (quoted_name);
@@ -6506,11 +6518,14 @@ update_config_caches ()
 
 /**
  * @brief Complete an update of the NVT cache.
+ *
+ * @param[in]  mode  -1 updating, -2 rebuilding.
  */
 void
-manage_complete_nvt_cache_update ()
+manage_complete_nvt_cache_update (int mode)
 {
   update_config_caches ();
+  if (mode == -2) sql ("COMMIT;");
 }
 
 

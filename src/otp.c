@@ -999,7 +999,8 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+          || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
         manage_nvt_preference_add (current_scanner_preference, value);
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
@@ -1033,7 +1034,9 @@ parse_scanner_plugin_list_tags (char** messages)
       if (current_plugin)
         {
           nvti_set_tag (current_plugin, value);
-          make_nvt_from_nvti (current_plugin);
+          make_nvt_from_nvti (current_plugin,
+                              scanner_init_state
+                              == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE);
           current_plugin = NULL;
         }
       set_scanner_state (SCANNER_PLUGIN_LIST_OID);
@@ -1354,9 +1357,11 @@ process_otp_scanner_input ()
         /* Input from scanner before version string sent. */
         return -1;
       case SCANNER_INIT_SENT_COMPLETE_LIST:
+      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
       case SCANNER_INIT_SENT_PASSWORD:
       case SCANNER_INIT_DONE:
       case SCANNER_INIT_DONE_CACHE_MODE:
+      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
       case SCANNER_INIT_TOP:
         if (scanner_state == SCANNER_TOP)
           switch (parse_scanner_bad_login (&messages))
@@ -1958,7 +1963,10 @@ process_otp_scanner_input ()
                       switch (parse_scanner_done (&messages))
                         {
                           case  0:
-                            if (scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST)
+                            if (scanner_init_state
+                                == SCANNER_INIT_SENT_COMPLETE_LIST
+                                || scanner_init_state
+                                   == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
                               {
                                 set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
                                 set_nvts_md5sum (scanner.plugins_md5);
@@ -2137,10 +2145,14 @@ process_otp_scanner_input ()
                             if (sync_buffer ()) return -1;
                             return 0;
                         }
-                      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+                      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+                          || scanner_init_state
+                             == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
                         {
+                          manage_complete_nvt_cache_update
+                           (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+                            ? -2 : -1);
                           set_scanner_init_state (SCANNER_INIT_DONE);
-                          manage_complete_nvt_cache_update ();
                           manage_nvt_preferences_enable ();
                           /* Return 1, as though the scanner sent BYE. */
                           // FIX should perhaps exit more formally with scanner

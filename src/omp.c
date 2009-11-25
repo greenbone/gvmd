@@ -6760,7 +6760,8 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
 /**
  * @brief Initialise OMP library data for a process.
  *
- * @param[in]  update_nvt_cache  If true, process will just update NVT cache.
+ * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
+ *                               -2 just rebuild NVT cache.
  * @param[in]  database          Location of manage database.
  *
  * This should run once per process, before the first call to \ref

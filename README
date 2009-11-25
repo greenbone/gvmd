@@ -37,11 +37,14 @@ The program usage message follows.
       -?, --help                  Show help options
 
     Application Options:
+      -d, --database=<file>       Use <file> as database.
       -f, --foreground            Run in foreground.
       -a, --listen=<address>      Listen on <address>.
+      -m, --migrate               Migrate the database and exit.
       -p, --port=<number>         Use port number <number>.
-      -l, --slisten=<address>     Server (openvassd) address.
-      -s, --sport=<number>        Server (openvassd) port number.
+      --rebuild                   Rebuild the NVT cache and exit.
+      -l, --slisten=<address>     Scanner (openvassd) address.
+      -s, --sport=<number>        Scanner (openvassd) port number.
       -u, --update                Update the NVT cache and exit.
       -v, --verbose               Print progress messages.
       --version                   Print version and exit.
