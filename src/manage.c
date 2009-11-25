@@ -798,35 +798,38 @@ start_task (task_t task, char **report_id)
     iterator_t credentials;
     char *credential = target_lsc_credential_name (target);
 
-    init_lsc_credential_iterator (&credentials, credential, 1, NULL);
-    if (next (&credentials))
+    if (credential)
       {
-        const char *user = lsc_credential_iterator_name (&credentials);
-        const char *password = lsc_credential_iterator_password (&credentials);
-
-        if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
-                             user)
-            || sendf_to_server ("SMB Authorization[password]:SMB password:"
-                                " <|> %s\n",
-                                password)
-            || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
-                                " <|> %s\n",
-                                user)
-            || sendf_to_server ("SSH Authorization[password]:"
-                                "SSH password (unsafe!):"
-                                " <|> %s\n",
-                                password))
+        init_lsc_credential_iterator (&credentials, credential, 1, NULL);
+        if (next (&credentials))
           {
-            free (credential);
-            free (target);
-            free (hosts);
-            free (config);
-            cleanup_iterator (&credentials);
-            return -1;
+            const char *user = lsc_credential_iterator_name (&credentials);
+            const char *password = lsc_credential_iterator_password (&credentials);
+
+            if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
+                                 user)
+                || sendf_to_server ("SMB Authorization[password]:SMB password:"
+                                    " <|> %s\n",
+                                    password)
+                || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
+                                    " <|> %s\n",
+                                    user)
+                || sendf_to_server ("SSH Authorization[password]:"
+                                    "SSH password (unsafe!):"
+                                    " <|> %s\n",
+                                    password))
+              {
+                free (credential);
+                free (target);
+                free (hosts);
+                free (config);
+                cleanup_iterator (&credentials);
+                return -1;
+              }
           }
+        cleanup_iterator (&credentials);
+        free (credential);
       }
-    cleanup_iterator (&credentials);
-    free (credential);
   }
 
   free (target);

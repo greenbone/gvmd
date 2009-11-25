@@ -1,5 +1,10 @@
 2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (start_task): Only do the credential iteration if the
+	target has a credential.
+
+2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add support for per-NVT timeout preferences.
 
 	* src/omp.c (send_nvt): Add timeout arg.  Update callers.
