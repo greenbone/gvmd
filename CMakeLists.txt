@@ -127,54 +127,47 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 ## Checks for libraries openvas-administrator depends on
 ## TODO Also check for headers where needed. Maybe implement some cmake find
-##      modules. Replace the current PATH value (/usr/lib with something more
-##      dynamic. Huge potential for improvements here.
+##      modules. Huge potential for improvements here.
 
 ## START DEPENDENCIES
 # GNUTLS
 FIND_LIBRARY(GNUTLS
-             NAMES gnutls
-             PATHS /usr/lib)
+             NAMES gnutls)
 IF(NOT GNUTLS)
 message (FATAL_ERROR "gnutls library could not be found but is required.")
 ENDIF(NOT GNUTLS)
 
 # PCAP
 FIND_LIBRARY(PCAP
-             NAMES pcap
-             PATHS /usr/lib)
+             NAMES pcap)
 IF(NOT PCAP)
 message (FATAL_ERROR "pcap library could not be found but is required.")
 ENDIF(NOT PCAP)
 
 # GPGME
 FIND_LIBRARY(GPGME
-             NAMES gpgme
-             PATHS /usr/lib)
+             NAMES gpgme)
 IF(NOT GPGME)
 message (FATAL_ERROR "gpgme library could not be found but is required.")
 ENDIF(NOT GPGME)
 
-# OPENVAS
+# OPENVAS-BASE (enough for now)
 FIND_LIBRARY(OPENVAS
-             NAMES openvas
-             PATHS /usr/lib)
+             NAMES openvas_base)
 IF(NOT OPENVAS)
-message (FATAL_ERROR "openvas library could not be found but is required.")
+message (FATAL_ERROR "openvas_base library could not be found but is required.")
 ENDIF(NOT OPENVAS)
 
 # GLIB-2
 FIND_LIBRARY(GLIB2
-             NAMES glib-2.0
-             PATHS /usr/lib)
+             NAMES glib-2.0)
 IF(NOT GLIB2)
 message (FATAL_ERROR "glib-2.0 library could not be found but is required.")
 ENDIF(NOT GLIB2)
 
 # UUID
 FIND_LIBRARY(UUID
-             NAMES uuid
-             PATHS /usr/lib)
+             NAMES uuid)
 IF(NOT UUID)
 message (FATAL_ERROR "uuid library could not be found but is required.")
 ENDIF(NOT UUID)

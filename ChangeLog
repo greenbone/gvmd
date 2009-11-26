@@ -1,4 +1,12 @@
-2009-11-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+2009-11-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Changed checks for used libraries, with help of Matthew Mundell.
+
+	* CMakeLists.txt: Removed explicit PATH specification in find_library
+	calls, removed respective todo. Replaced check for libopenvas by check
+	for libopenvas_base.
+
+2009-11-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Changed used library for UUID generation from ossp-uuid to libuuid from
 	e2fsprogs.
