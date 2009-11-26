@@ -2422,137 +2422,190 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
 }
 
 /**
- * @brief Return next good position to wrap text.
+ * @brief Return the position at which to wrap text.
  *
- * Only space is considered a word boundary.
+ * Only space is considered a word boundary, for wrapping.
+ *
+ * Presume that the caller treats "\n" as a newline and skips over "\r".
  *
  * @param[in]  text        Text to inspect.
  * @param[in]  line_width  Line width before or at which to wrap.
  *
- * @return Good position to insert a line break in printable characters in the
- *         sense of latex_print_verbatim_text.
+ * @return The maximum number of chars of \param text which the caller must
+ *         write out in order to write out at most line_width characters of the
+ *         next line in \param text.  As a special case if a newline occurs
+ *         before line width then just return one more than number of chars
+ *         needed to write up to the newline.
  */
 static int
 next_break (const char* text, int line_width)
 {
   const char* pos = text;
-  int last_space = 0;
+  /* The number of characters the caller would have written out before
+   * reaching the last space. */
+  int last_space = -1;
+  /* The number of characters the caller would have written out. */
   int nchars = 0;
 
   /**
    * @todo Test special cases.
-   * @todo Do this a bit better.
    */
 
-  while (*pos && nchars < line_width)
+  /* Loop over the text one character at a time, recording how the caller
+   * would write it out to a stream as LaTeX.  Account for caller treating
+   * "\n" in the text like a newline, and skipping over "\r".  Keep track
+   * of the position of the last space character.  On reaching a newline or
+   * end of file return one more than the number of characters written, so
+   * that the caller can find the newline or EOF too.  On reaching
+   * line_width return the position of the last space if there was one,
+   * otherwise just return the current position. */
+
+  while (*pos)
     {
       switch (*pos)
         {
           case '\\':
-            ++pos;
+            /* Reached a backslash, go on to the next character to look for
+             * special sequences. */
+            pos++;
             if (*pos && *pos == 'n')
               {
-                return nchars + 1;
+                /* Reached "\n". */
+                return nchars + 2;
               }
             if (*pos && *pos == 'r')
               {
-                --nchars;
-                --nchars;
-                break;
+                /* Reached "\r", skip over it. */
+                pos++;
               }
-            --pos;
+            else
+              {
+                /* The caller would write out the backslash. */
+                nchars++;
+              }
             break;
           case '\n':
-            return nchars;
+            /* Reached a real newline. */
+            return nchars + 1;
             break;
           case ' ':
             last_space = nchars;
-            break;
+            /*@fallthrough@*/
           default:
+            /* A normal character, that the caller would just write out. */
+            pos++;
+            nchars++;
             break;
         }
 
-      ++pos;
-      ++nchars;
+      if (nchars == line_width)
+        {
+          /* @todo It's weird to break at the first character (last_space ==
+           *       0).  This function and the caller should drop any leading
+           *       space when wrapping. */
+          if (last_space >= 0)
+            return last_space;
+          return nchars;
+        }
     }
 
-  if (nchars == line_width && last_space != 0)
-    return last_space;
-  else
-    return nchars;
+  /* Reached the end of file before a newline or line_width. */
+  return nchars;
 }
 
 /**
- * @brief Write verbatim LaTeX text to a file, with wrapping.
+ * @brief Write verbatim LaTeX text to a stream, with wrapping.
  *
- * Write \ref text to \ref file, doing line wraps at 80 chars and adding a
- * symbol to indicate each line wrap.
+ * Write \ref text to \ref file, doing line wraps at 80 chars, adding a
+ * symbol to indicate each line wrap, and putting each line in a separate
+ * verbatim environment so that the text breaks across pages.
  *
- * Function to be used to print verbatim text to LaTeX documents in a longtable
- * environment.
- *
- * Newlines will be replaced by row/line breaks, thus might cause trouble in
- * non-tabular environments.
+ * Function used to print verbatim text to LaTeX documents within a longtable
+ * environment.  It is up to the caller to ensure that file is positioned
+ * within a tabular environment.
  *
  * @param[in]   file  Stream to write to.
- * @param[out]  text  Text to write to file.
+ * @param[out]  text  Text to write to file.  Zero or more lines of newline
+ *                    terminated text, where the final newline is optional.
  */
 static void
 latex_print_verbatim_text (FILE* file, const char* text)
 {
   const char* pos = text;
+  /* The number of chars processed of the current line of the text. */
   int nchars = 0;
   int line_width = 80;
-  int break_pos = next_break (pos, line_width);
+  int break_pos;
 
   /** @todo Do this better.  Word wrapping has problems with first line. */
+
+  /* Get the position at which to break the first line. */
+
+  break_pos = next_break (pos, line_width);
+
+  /* Loop over the text one character at a time, writing it out to the file
+   * as LaTeX.  Put each line of the text in a verbatim environment.  On
+   * reaching the break position write out LaTeX to wrap the line,
+   * calculate the next break position, and continue.  While writing out
+   * the text, treat "\n" in the text like a newline, and skip over "\r". */
 
   fputs ("\\verb=", file);
   while (*pos)
     {
       if (nchars == break_pos)
         {
+          /* Reached the break position, start a new line in the LaTeX. */
           fputs ("=\\\\\n", file);
           fputs ("$\\hookrightarrow$\\verb=", file);
           nchars = 0;
+          /* Subtract 2 because the hookrightarrow has taken up some space. */
           break_pos = next_break (pos, line_width - 2);
           continue;
         }
       switch (*pos)
         {
           case '\\':
-            ++pos;
+            /* Reached a backslash, go on to the next character to look for
+             * special sequences. */
+            pos++;
             if (*pos && *pos == 'n')
               {
+                /* Reached "\n", start a new line in the LaTeX. */
                 fputs ("=\\\\\n\\verb=", file);
-                nchars = -1;
+                nchars = 0;
+                pos++;
                 break_pos = next_break (pos, line_width);
-                break;
               }
             else if (*pos && *pos == 'r')
               {
-                --nchars;
-                break;
+                /* Reached "\r", skip over it. */
+                pos++;
               }
-            --pos;
-            fputc (*pos, file);
+            else
+              {
+                /* Write out the backslash. */
+                nchars++;
+                fputc ('\\', file);
+              }
             break;
           case '\n':
+            /* Reached a real newline, start a new line in the LaTeX. */
             fputs ("=\\\\\n\\verb=", file);
-            nchars = -1;
+            nchars = 0;
+            pos++;
             break_pos = next_break (pos, line_width);
             break;
-          /* Ampersand needs to be escaped to not confuse tabular
-           * environment. */
           case '&':
-            fputs ("\\&", file);
-            break;
+            /* Escape ampersand, as it separates columns within tabulars. */
+            fputc ('\\', file);
+            /*@fallthrough@*/
           default:
+            /* A normal character, write it out. */
             fputc (*pos, file);
+            nchars++;
+            pos++;
             break;
         }
-      ++nchars;
-      ++pos;
     }
   /**
    * @todo Handle special situations (empty string, newline at end etc)

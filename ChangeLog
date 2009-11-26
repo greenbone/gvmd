@@ -1,5 +1,27 @@
 2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Try to stabilise the verbatim LaTeX printing.
+
+	* src/omp.c (next_break): Remove extra nchars-- from "\r" case.  Return
+	one more than the newline when a newline ends the line so that the caller
+	finds the newline before wrapping.  Try improve the doc comment.  Document
+	the code.  Init last_space to -1, as 0 is a valid value for last_space.
+	Move the line_width check into the while loop so that it need only be done
+	once.  Do the counter increments inside each case instead of decrementing
+	just to be incremented.  Make the prefix operators postfix to match the
+	rest of the module and general convention.  Use an else for the '\\' case
+	instead of breaking in the other branches, to make the behaviour more
+	explicit for the reader.
+	(latex_print_verbatim_text): Increment pos before calling next_break on
+	finding a newline, otherwise next_break will just find the same newline.
+	Improve the doc comment.  Document the code.  Do the counter increments
+	inside each case instead of decrementing just to be incremented.  Make
+	the prefix operators postfix to match the rest of the module and general
+	convention.  Use an else for the '\\' case instead of breaking in the
+	other branches, to make the behaviour more explicit for the reader.
+
+2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* CMakeLists.txt: Make formatting more consistent.  Add missing .SVN to
 	version.  Streamline TODO.  Match the dependency checks to the other
 	check in the module.  Turn build verbosity back on.
