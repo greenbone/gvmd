@@ -163,17 +163,17 @@ make_report_uuid ()
 
   /* Generate an UUID. */
   uuid_generate (uuid);
-  if (isnull(uuid) == 1)
+  if (uuid_is_null (uuid) == 1)
     {
-      g_warning ("%s: failed to generate UUID.", __FUNCTION__);
+      g_warning ("%s: failed to generate UUID", __FUNCTION__);
       return NULL;
     }
 
   /* Allocate mem for string to hold UUID. */
-  id = malloc (sizeof(char) * 37);
+  id = malloc (sizeof (char) * 37);
   if (id == NULL)
     {
-      g_warning ("%s: Cannot export UUID to text: out of memory.", __FUNCTION__);
+      g_warning ("%s: Cannot export UUID to text: out of memory", __FUNCTION__);
       return NULL;
     }
 
