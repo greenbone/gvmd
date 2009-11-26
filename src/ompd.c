@@ -48,6 +48,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
