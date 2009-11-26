@@ -29,32 +29,32 @@ project (openvas-manager C)
 cmake_minimum_required (VERSION 2.6)
 
 if (POLICY CMP0005)
-   cmake_policy (SET CMP0005 OLD)
+  cmake_policy (SET CMP0005 OLD)
 endif (POLICY CMP0005)
 
 SET (CMAKE_BUILD_TYPE debug)
 
 ## CPack configuration
 
-SET(CPACK_CMAKE_GENERATOR "Unix Makefiles")
-SET(CPACK_GENERATOR "TGZ")
-SET(CPACK_INSTALL_CMAKE_PROJECTS ".;openvas-manager;ALL;/")
-SET(CPACK_MODULE_PATH "")
-SET(CPACK_RESOURCE_FILE_LICENSE "COPYING")
-SET(CPACK_RESOURCE_FILE_README "README")
-SET(CPACK_RESOURCE_FILE_WELCOME "README")
-SET(CPACK_SOURCE_GENERATOR "TGZ")
-SET(CPACK_SOURCE_TOPLEVEL_TAG "")
-SET(CPACK_SYSTEM_NAME "")
-SET(CPACK_TOPLEVEL_TAG "")
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "9")
-SET(CPACK_PACKAGE_VERSION_PATCH "5")
-SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
-SET(CPACK_PACKAGE_VENDOR "The OpenVAS Project")
-SET(CPACK_SOURCE_IGNORE_FILES
+set (CPACK_CMAKE_GENERATOR "Unix Makefiles")
+set (CPACK_GENERATOR "TGZ")
+set (CPACK_INSTALL_CMAKE_PROJECTS ".;openvas-manager;ALL;/")
+set (CPACK_MODULE_PATH "")
+set (CPACK_RESOURCE_FILE_LICENSE "COPYING")
+set (CPACK_RESOURCE_FILE_README "README")
+set (CPACK_RESOURCE_FILE_WELCOME "README")
+set (CPACK_SOURCE_GENERATOR "TGZ")
+set (CPACK_SOURCE_TOPLEVEL_TAG "")
+set (CPACK_SYSTEM_NAME "")
+set (CPACK_TOPLEVEL_TAG "")
+set (CPACK_PACKAGE_VERSION_MAJOR "0")
+set (CPACK_PACKAGE_VERSION_MINOR "9")
+set (CPACK_PACKAGE_VERSION_PATCH "5.SVN")
+set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
+set (CPACK_PACKAGE_VENDOR "The OpenVAS Project")
+set (CPACK_SOURCE_IGNORE_FILES
 "/.svn/"
 "/_CPack_Packages/"
 "/CMakeFiles/"
@@ -67,12 +67,12 @@ SET(CPACK_SOURCE_IGNORE_FILES
 "/doc/generated/"
 )
 
-INCLUDE(CPack)
+include (CPack)
 
 ## Variables
 
 set (CMAKE_BUILD                Debug)
-#set (CMAKE_VERBOSE_MAKEFILE     ON)
+set (CMAKE_VERBOSE_MAKEFILE     ON)
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -128,54 +128,51 @@ set (OPENVAS_CA_CERTIFICATE      "${OPENVAS_STATE_DIR}/CA/cacert.pem")
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
+## Dependency checks
+##
+## TODO Also check for headers where needed.
 
-## Checks for libraries openvas-administrator depends on
-## TODO Also check for headers where needed. Maybe implement some cmake find
-##      modules. Huge potential for improvements here.
+message (STATUS "Looking for gnutls...")
+find_library (GNUTLS gnutls)
+message (STATUS "Looking for gnutls... ${GNUTLS}")
+if (NOT GNUTLS)
+  message (FATAL_ERROR "The gnutls library is required.")
+endif (NOT GNUTLS)
 
-## START DEPENDENCIES
-# GNUTLS
-FIND_LIBRARY(GNUTLS
-             NAMES gnutls)
-IF(NOT GNUTLS)
-message (FATAL_ERROR "gnutls library could not be found but is required.")
-ENDIF(NOT GNUTLS)
+message (STATUS "Looking for pcap...")
+FIND_LIBRARY (PCAP pcap)
+message (STATUS "Looking for pcap... ${PCAP}")
+if (NOT PCAP)
+  message (FATAL_ERROR "The pcap library is required.")
+endif (NOT PCAP)
 
-# PCAP
-FIND_LIBRARY(PCAP
-             NAMES pcap)
-IF(NOT PCAP)
-message (FATAL_ERROR "pcap library could not be found but is required.")
-ENDIF(NOT PCAP)
+message (STATUS "Looking for gpgme...")
+FIND_LIBRARY (GPGME gpgme)
+message (STATUS "Looking for gpgme... ${GPGME}")
+if (NOT GPGME)
+  message (FATAL_ERROR "The gpgme library is required.")
+endif (NOT GPGME)
 
-# GPGME
-FIND_LIBRARY(GPGME
-             NAMES gpgme)
-IF(NOT GPGME)
-message (FATAL_ERROR "gpgme library could not be found but is required.")
-ENDIF(NOT GPGME)
+message (STATUS "Looking for openvas_base...")
+FIND_LIBRARY (OPENVAS_BASE openvas_base)
+message (STATUS "Looking for openvas_base... ${OPENVAS_BASE}")
+if (NOT OPENVAS_BASE)
+  message (FATAL_ERROR "The openvas_base library is required.")
+endif (NOT OPENVAS_BASE)
 
-# OPENVAS-BASE (enough for now)
-FIND_LIBRARY(OPENVAS
-             NAMES openvas_base)
-IF(NOT OPENVAS)
-message (FATAL_ERROR "openvas_base library could not be found but is required.")
-ENDIF(NOT OPENVAS)
+message (STATUS "Looking for glib2...")
+FIND_LIBRARY (GLIB2 glib-2.0)
+message (STATUS "Looking for glib... ${GLIB2}")
+if (NOT GLIB2)
+  message (FATAL_ERROR "The glib-2.0 library is required.")
+endif (NOT GLIB2)
 
-# GLIB-2
-FIND_LIBRARY(GLIB2
-             NAMES glib-2.0)
-IF(NOT GLIB2)
-message (FATAL_ERROR "glib-2.0 library could not be found but is required.")
-ENDIF(NOT GLIB2)
-
-# UUID
-FIND_LIBRARY(UUID
-             NAMES uuid)
-IF(NOT UUID)
-message (FATAL_ERROR "uuid library could not be found but is required.")
-ENDIF(NOT UUID)
-## END DEPENDENCIES
+message (STATUS "Looking for uuid...")
+FIND_LIBRARY (UUID uuid)
+message (STATUS "Looking for uuid... ${UUID}")
+if (NOT UUID)
+  message (FATAL_ERROR "The uuid library is required.")
+endif (NOT UUID)
 
 ## Version
 

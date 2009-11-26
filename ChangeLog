@@ -1,5 +1,11 @@
 2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* CMakeLists.txt: Make formatting more consistent.  Add missing .SVN to
+	version.  Streamline TODO.  Match the dependency checks to the other
+	check in the module.  Turn build verbosity back on.
+
+2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ompd.c: Include string.h, which was previously included via
 	ossp/uuid.h via manage.h via otp.h.
 
