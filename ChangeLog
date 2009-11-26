@@ -1,3 +1,10 @@
+2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Fixing certain wrong installation locations that could be set through
+	cmake. This partly fixes bug #1206 (http://bugs.intevation.org/1206).
+
+	* CMakeLists.txt: Respect SYSCONF_INSTALL_DIR if set.
+
 2009-11-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/manage.c (make_report_uuid): Minor reformatting, and replace
