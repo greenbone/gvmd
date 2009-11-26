@@ -6601,7 +6601,7 @@ manage_complete_nvt_cache_update (int mode)
  * @param[in]  quoted_selector   SQL-quoted selector name.
  * @param[in]  families_growing  1 if families are growing, else 0.
  *
- * @return 1 growing, 0 static.
+ * @return The number of families selected by an NVT selector.
  */
 static int
 nvt_selector_family_count (const char* quoted_selector, int families_growing)
@@ -7756,17 +7756,29 @@ manage_set_config_families (const char* config,
 /**
  * @brief Add an NVT preference.
  *
- * @param[in]  name   The name of the preference.
- * @param[in]  value  The value of the preference.
+ * @param[in]  name    The name of the preference.
+ * @param[in]  value   The value of the preference.
+ * @param[in]  remove  Whether to remove the preference from the database first.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value)
+manage_nvt_preference_add (const char* name, const char* value, int remove)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_value = sql_quote (value);
+
+  if (remove)
+    {
+      sql ("BEGIN EXCLUSIVE;");
+      sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
+    }
+
   sql ("INSERT into nvt_preferences (name, value)"
        " VALUES ('%s', '%s');",
        quoted_name, quoted_value);
+
+  if (remove)
+    sql ("COMMIT;");
+
   g_free (quoted_name);
   g_free (quoted_value);
 }
