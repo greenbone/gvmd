@@ -69,7 +69,7 @@ include_directories (${COMMON_SOURCE_DIRECTORY}/common)
 add_executable (make_report_uuid_0 make_report_uuid_0.c)
 target_link_libraries (make_report_uuid_0 manage ovas-mngr-comm)
 set_target_properties (make_report_uuid_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
-set_target_properties (make_report_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -lossp-uuid")
+set_target_properties (make_report_uuid_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS} -luuid")
 ADD_TEST (make_report_uuid_0 make_report_uuid_0)
 
 add_executable (strip_space_0 strip_space_0.c)

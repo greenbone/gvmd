@@ -1,3 +1,15 @@
+2009-11-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Changed used library for UUID generation from ossp-uuid to libuuid from
+	e2fsprogs.
+
+	* src/manage.h: Removed include.
+	src/manage.c, src/splint.h: Changed include.
+	src/manage.c (make_report_uuid): Use functionality from libuuid rather
+	than from ossp-uuid.
+	src/CMakeLists.txt, src/test/CMakeLists.txt: Changed library to link
+	against.
+
 2009-11-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Make --update update the cache a single item at a time, locking the

@@ -28,7 +28,6 @@
 
 #include <stdio.h>
 #include <glib.h>
-#include <ossp/uuid.h>
 
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/nvti.h> /* for nvti_t */

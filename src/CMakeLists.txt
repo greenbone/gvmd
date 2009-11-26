@@ -124,7 +124,7 @@ if (OPENVAS_DATA_DIR)
 endif (OPENVAS_DATA_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${LIB_TEMP} -lgnutls -lossp-uuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG} ${OPENVAS_LDFLAGS}")
+                       "${LIB_TEMP} -lgnutls -luuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG} ${OPENVAS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
                        "${TASKS_CFLAG} ${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")

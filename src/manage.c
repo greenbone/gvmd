@@ -43,7 +43,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <dirent.h>
-#include <ossp/uuid.h>
+#include <uuid/uuid.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -159,51 +159,26 @@ char*
 make_report_uuid ()
 {
   char* id;
-  uuid_rc_t ret;
-  uuid_t* uuid = NULL;
+  uuid_t uuid;
 
-  /* Create the UUID structure. */
-  ret = uuid_create (&uuid);
-  if (ret)
+  /* Generate an UUID. */
+  uuid_generate (uuid);
+  if (isnull(uuid) == 1)
     {
-      g_warning ("%s: failed to create UUID structure: %s\n",
-                 __FUNCTION__,
-                 uuid_error (ret));
+      g_warning ("%s: failed to generate UUID.", __FUNCTION__);
       return NULL;
     }
 
-  /* Create the UUID in the structure. */
-  ret = uuid_make (uuid, UUID_MAKE_V1);
-  if (ret)
+  /* Allocate mem for string to hold UUID. */
+  id = malloc (sizeof(char) * 37);
+  if (id == NULL)
     {
-      g_warning ("%s: failed to make UUID: %s\n",
-                 __FUNCTION__,
-                 uuid_error (ret));
+      g_warning ("%s: Cannot export UUID to text: out of memory.", __FUNCTION__);
       return NULL;
     }
 
   /* Export the UUID to text. */
-  id = NULL;
-  ret = uuid_export (uuid, UUID_FMT_STR, (void**) &id, NULL);
-  if (ret)
-    {
-      g_warning ("%s: failed to export UUID to text: %s\n",
-                 __FUNCTION__,
-                 uuid_error (ret));
-      (void) uuid_destroy (uuid);
-      return NULL;
-    }
-
-  /* Free the structure. */
-  ret = uuid_destroy (uuid);
-  if (ret)
-    {
-      g_warning ("%s: failed to free UUID structure: %s\n",
-                 __FUNCTION__,
-                 uuid_error (ret));
-      if (id) free (id);
-      return NULL;
-    }
+  uuid_unparse (uuid, id);
 
   return id;
 }

@@ -127,7 +127,7 @@ g_option_context_free (/*@only@*/ /*@out@*/ GOptionContext *);
 
 /* UUIDS. */
 
-#include <ossp/uuid.h>
+#include <uuid/uuid.h>
 
 /*@shared@*/ char*
 uuid_error (uuid_rc_t error);
