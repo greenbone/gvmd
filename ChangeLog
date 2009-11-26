@@ -1,3 +1,16 @@
+2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	When updating the cache, remove preferences before inserting them.
+
+	* src/tasks_sql.h (nvt_selector_family_count): Correct return doc.
+	(manage_nvt_preference_add): Add option to remove preference before
+	inserting it.
+
+	* src/otp.c (parse_scanner_preference_value): Send remove flag to
+	manage_nvt_preference_add according to cache mode.
+
+	* src/manage.h: Update header.
+
 2009-11-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* CMakeLists.txt: Corrected version string change that was left over

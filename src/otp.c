@@ -999,9 +999,10 @@ parse_scanner_preference_value (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
-      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
-          || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
-        manage_nvt_preference_add (current_scanner_preference, value);
+      if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
+        manage_nvt_preference_add (current_scanner_preference, value, 0);
+      else if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
+        manage_nvt_preference_add (current_scanner_preference, value, 1);
       set_scanner_state (SCANNER_PREFERENCE_NAME);
       from_scanner_start += match + 1 - *messages;
       *messages = match + 1;
