@@ -2595,6 +2595,13 @@ latex_print_verbatim_text (FILE* file, const char* text)
             pos++;
             break_pos = next_break (pos, line_width);
             break;
+          case '=':
+            /* Print equal in a whole new \verb environment that uses dash
+             * instead of equal to begin and end the text. */
+            fputs ("=\\verb-=-\\verb=", file);
+            nchars++;
+            pos++;
+            break;
           case '&':
             /* Escape ampersand, as it separates columns within tabulars. */
             fputc ('\\', file);

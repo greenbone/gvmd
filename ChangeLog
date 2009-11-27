@@ -1,5 +1,10 @@
 2009-11-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (latex_print_verbatim_text): Print equal signs is separate
+	verb environments that use dash to begin and end the environment.
+
+2009-11-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_help_0.c (help_text): Add new commands.
 
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
