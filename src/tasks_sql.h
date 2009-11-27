@@ -4972,8 +4972,8 @@ config_nvt_timeout (const char *config, const char *oid)
  * @brief Exclude or include an array of NVTs in a config.
  *
  * @param[in]  config_name  Config name.
- * @param[in]  array        Array of NVTs.
- * @param[in]  array_size   Size of no.
+ * @param[in]  array        Array of OIDs of NVTs.
+ * @param[in]  array_size   Size of \ref array.
  * @param[in]  exclude      If true exclude, else include.
  */
 static void

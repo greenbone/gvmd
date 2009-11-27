@@ -1,5 +1,9 @@
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/task_sql.h: Minor doc improvement.
+
+2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* CMakeLists.txt: At configure time, add svn revision to version
 	number if PREPARE_RELEASE flag is not set.
 
