@@ -1,3 +1,7 @@
+2009-11-27  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tests/omp_help_0.c (help_text): Add new commands.
+
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* CMakeLists.txt: Switched method of svn revision extraction to
