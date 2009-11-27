@@ -1,5 +1,9 @@
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* CMakeLists.txt: Made wording more consistent.
+
+2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/task_sql.h: Minor doc improvement.
 
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
