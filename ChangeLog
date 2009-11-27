@@ -1,3 +1,8 @@
+2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* CMakeLists.txt: At configure time, add svn revision to version
+	number if PREPARE_RELEASE flag is not set.
+
 2009-11-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Try to stabilise the verbatim LaTeX printing.
