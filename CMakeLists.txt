@@ -35,15 +35,25 @@ endif (POLICY CMP0005)
 SET (CMAKE_BUILD_TYPE debug)
 
 ## Retrieve svn revision (at configure time)
-IF (NOT PREPARE_RELEASE)
-  FIND_PACKAGE(Subversion)
-  IF(Subversion_FOUND)
-    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} PROJECT)
-    SET(SVN_REVISION ".SVN.r${PROJECT_WC_REVISION}")
-  ELSE(Subversion_FOUND)
+#  Not using Subversion_WC_INFO, as it would have to connect to the repo
+FIND_PROGRAM(SVN_EXECUTABLE svn DOC "subversion command line client")
+
+MACRO(Subversion_GET_REVISION dir variable)
+  EXECUTE_PROCESS(COMMAND ${SVN_EXECUTABLE} info ${dir}
+    OUTPUT_VARIABLE ${variable}
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  STRING(REGEX REPLACE "^(.*\n)?Revision: ([^\n]+).*"
+    "\\2" ${variable} "${${variable}}")
+ENDMACRO(Subversion_GET_REVISION)
+
+IF(NOT PREPARE_RELEASE)
+  IF(SVN_EXECUTABLE)
+    Subversion_GET_REVISION(. ProjectRevision)
+    SET (SVN_REVISION ".SVN.r${ProjectRevision}")
+  ELSE(SVN_EXECUTABLE)
     SET (SVN_REVISION ".SVN")
-  ENDIF (Subversion_FOUND)
-ENDIF (NOT PREPARE_RELEASE)
+  ENDIF(SVN_EXECUTABLE)
+ENDIF(NOT PREPARE_RELEASE)
 
 ## CPack configuration
 
