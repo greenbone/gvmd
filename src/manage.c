@@ -626,38 +626,53 @@ send_task_file (task_t task, const char* file)
  * @param[in]   task       The task.
  * @param[out]  report_id  The report ID.
  *
- * @return 0 on success, 1 task is active already,
- *         -1 if out of space in scanner output buffer, -2 if the
- *         task is missing a target, -3 if creating the report fails, -4 target
- *         missing hosts, -5 task missing config, -6 if there's already a task
- *         running in this process.
+ * @return Before forking: 1 task is active already,
+ *         -2 task is missing a target, -3 creating the report failed,
+ *         -4 target missing hosts, -6 already a task running in this process,
+ *         -9 fork failed.
+ *         After forking: 0 success (parent), 2 success (child),
+ *         -10 error (child).
  */
 int
 start_task (task_t task, char **report_id)
 {
   char *hosts, *target, *config;
   gchar *plugins;
-  int fail;
+  int fail, pid;
   GSList *files = NULL;
   task_status_t run_status;
 
   tracef ("   start task %u\n", task_id (task));
 
-  // FIX atomic
+  sql ("BEGIN EXCLUSIVE;");
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_DELETE_REQUESTED)
-    return 1;
+    {
+      sql ("END;");
+      return 1;
+    }
 
-  if (current_scanner_task) return -6;
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
+  sql ("COMMIT;");
+
+  /* Every fail exit from here must reset the run status. */
+
+  if (current_scanner_task)
+    {
+      set_task_run_status (task, run_status);
+      return -6;
+    }
 
   target = task_target (task);
   if (target == NULL)
     {
       tracef ("   task target is NULL.\n");
+      set_task_run_status (task, run_status);
       return -2;
     }
 
@@ -666,6 +681,7 @@ start_task (task_t task, char **report_id)
     {
       free (target);
       tracef ("   target hosts is NULL.\n");
+      set_task_run_status (task, run_status);
       return -4;
     }
 
@@ -675,8 +691,39 @@ start_task (task_t task, char **report_id)
     {
       free (target);
       free (hosts);
+      set_task_run_status (task, run_status);
       return -3;
     }
+
+  /* Fork a child to start and handle the task while the parent responds to
+   * the client. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  Carry on starting the task. */
+        break;
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: failed to fork task child: %s\n",
+                   __FUNCTION__,
+                   strerror (errno));
+        set_task_run_status (task, run_status);
+        return -9;
+        break;
+      default:
+        /* Parent.  Return, in order to respond to client. */
+        return 0;
+        break;
+    }
+
+  /* Every fail exit from here must reset to this run status. */
+
+  // FIX On fail exits only, if another process has set a request state then
+  //     honour that request.  (stop_task, request_delete_task)
+
+  run_status = TASK_STATUS_INTERNAL_ERROR;
 
   /* Reset any running information. */
 
@@ -688,7 +735,8 @@ start_task (task_t task, char **report_id)
     {
       free (target);
       free (hosts);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Get the config and selector. */
@@ -699,7 +747,8 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       tracef ("   task config is NULL.\n");
-      return -5;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Send the plugin list. */
@@ -715,7 +764,8 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Send some fixed preferences. */
@@ -725,14 +775,16 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
     {
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
@@ -740,14 +792,16 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
   if (send_to_server ("ntp_short_status <|> no\n"))
     {
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Send the scanner and plugins preferences. */
@@ -757,14 +811,16 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
   if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
       free (target);
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Send credential preferences if there's a credential linked to target. */
@@ -799,7 +855,8 @@ start_task (task_t task, char **report_id)
                 free (hosts);
                 free (config);
                 cleanup_iterator (&credentials);
-                return -1;
+                set_task_run_status (task, run_status);
+                return -10;
               }
           }
         cleanup_iterator (&credentials);
@@ -813,7 +870,8 @@ start_task (task_t task, char **report_id)
     {
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Collect files to send. */
@@ -837,7 +895,8 @@ start_task (task_t task, char **report_id)
             }
           /* Free the list. */
           g_slist_free (last);
-          return -1;
+          set_task_run_status (task, run_status);
+          return -10;
         }
       files = g_slist_next (files);
       g_free (last->data);
@@ -850,21 +909,24 @@ start_task (task_t task, char **report_id)
     {
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   if (send_config_rules (config))
     {
       free (hosts);
       free (config);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   free (config);
   if (send_to_server ("<|> CLIENT\n"))
     {
       free (hosts);
-      return -1;
+      set_task_run_status (task, run_status);
+      return -10;
     }
 
   /* Send the attack command. */
@@ -873,12 +935,14 @@ start_task (task_t task, char **report_id)
                           strlen (hosts),
                           hosts);
   free (hosts);
-  if (fail) return -1;
+  if (fail)
+    {
+      set_task_run_status (task, run_status);
+      return -10;
+    }
   scanner_active = 1;
 
   current_scanner_task = task;
-
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
 
 #if TASKS_FS
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
@@ -888,7 +952,7 @@ start_task (task_t task, char **report_id)
   // FIX
 #endif
 
-  return 0;
+  return 2;
 }
 
 /**

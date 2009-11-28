@@ -359,6 +359,16 @@ static char* help_text = "\n"
 /* Global variables. */
 
 /**
+ * @brief Hack for returning error value from the callbacks.
+ */
+int current_error;
+
+/**
+ * @brief Hack for returning fork status to caller.
+ */
+int forked;
+
+/**
  * @brief Generic array variable for communicating between the callbacks.
  */
 GArray *current_array_1;
@@ -5561,6 +5571,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
+            else if (forked)
+              /* Prevent the process from forking again, as then both children
+               * would be using the same server session. */
+              abort (); // FIX respond with error or something
             else
               {
                 char *report_id;
@@ -5587,18 +5601,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         g_free (msg);
                       }
+                      forked = 1;
                       break;
                     case 1:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("start_task",
                                           "Task is active already"));
                       break;
-                    case -1:
-                      /* to_scanner is full. */
-                      // FIX or other error
-                      // FIX revert parsing for retry
-                      // process_omp_client_input must return -2
-                      abort ();
+                    case 2:
+                      /* Forked task process: success. */
+                      current_error = 2;
+                      g_set_error (error,
+                                   G_MARKUP_ERROR,
+                                   G_MARKUP_ERROR_INVALID_CONTENT,
+                                   "Dummy error for current_error");
+                      break;
+                    case -10:
+                      /* Forked task process: error. */
+                      current_error = -10;
+                      g_set_error (error,
+                                   G_MARKUP_ERROR,
+                                   G_MARKUP_ERROR_INVALID_CONTENT,
+                                   "Dummy error for current_error");
                       break;
                     case -6:
                       SEND_TO_CLIENT_OR_FAIL
@@ -6830,6 +6854,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
 void
 init_omp_process (int update_nvt_cache, const gchar *database)
 {
+  forked = 0;
   init_manage_process (update_nvt_cache, database);
   /* Create the XML parser. */
   xml_parser.start_element = omp_xml_handle_start_element;
@@ -6874,6 +6899,7 @@ process_omp_client_input ()
 
   if (xml_context == NULL) return -1;
 
+  current_error = 0;
   success = g_markup_parse_context_parse (xml_context,
                                           from_client + from_client_start,
                                           from_client_end - from_client_start,
@@ -6891,7 +6917,14 @@ process_omp_client_input ()
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_INVALID_CONTENT))
-            tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+            {
+              if (current_error)
+                {
+                  g_error_free (error);
+                  return current_error;
+                }
+              tracef ("   client error: G_MARKUP_ERROR_INVALID_CONTENT\n");
+            }
           else if (g_error_matches (error,
                                     G_MARKUP_ERROR,
                                     G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE))
@@ -6909,6 +6942,8 @@ process_omp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
+  if (forked)
+    return 3;
   return 0;
 }
 

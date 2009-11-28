@@ -428,7 +428,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
 /**
  * @brief Recreate a server session.
  *
- * @param  server_socket       Server socket.
+ * @param  server_socket       Server socket.  0 to skip freeing
  * @param  server_session      Server session.
  * @param  server_credentials  Server credentials.
  *
@@ -439,9 +439,10 @@ recreate_session (int server_socket,
                   gnutls_session_t* server_session,
                   gnutls_certificate_credentials_t* server_credentials)
 {
-  if (openvas_server_free (server_socket,
-                           *server_session,
-                           *server_credentials))
+  if (server_socket
+      && openvas_server_free (server_socket,
+                              *server_session,
+                              *server_credentials))
     return -1;
   /* Make the server socket. */
   server_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -569,6 +570,52 @@ serve_omp (gnutls_session_t* client_session,
       if (ret == 0)
         /* Processed all input. */
         client_input_stalled = 0;
+      else if (ret == 3)
+        {
+          /* In the parent after a start_task fork.  Create a new
+           * server session, leaving the existing session as it is
+           * so that the child can continue using it. */
+          // FIX probably need to close and free some of the existing
+          //     session
+          set_scanner_init_state (SCANNER_INIT_TOP);
+          scanner_socket = recreate_session (0,
+                                             scanner_session,
+                                             scanner_credentials);
+          if (scanner_socket == -1)
+            {
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+              return -1;
+            }
+          *scanner_socket_addr = scanner_socket;
+        }
+      else if (ret == 2)
+        {
+          /* Now in a process forked to run a task, which has
+           * successfully started the task.  Close the client
+           * connection, as the parent process has continued the
+           * session with the client. */
+#if 0
+          // FIX seems to close parent connections, maybe just do part of this
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
+#endif
+          client_active = 0;
+        }
+      else if (ret == -10)
+        {
+          /* Now in a process forked to run a task, which has
+           * failed in starting the task. */
+#if 0
+          // FIX as above
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
+#endif
+          return -1;
+        }
       else if (ret == -1 || ret == -4)
         {
           /* Error.  Write rest of to_client to client, so that the
@@ -830,6 +877,55 @@ serve_omp (gnutls_session_t* client_session,
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
+          else if (ret == 3)
+            {
+              /* In the parent after a start_task fork.  Create a new
+               * server session, leaving the existing session as it is
+               * so that the child can continue using it. */
+              // FIX probably need to close and free some of the existing
+              //     session
+              set_scanner_init_state (SCANNER_INIT_TOP);
+              scanner_socket = recreate_session (0,
+                                                 scanner_session,
+                                                 scanner_credentials);
+              if (scanner_socket == -1)
+                {
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
+                  return -1;
+                }
+              *scanner_socket_addr = scanner_socket;
+              /* Skip the rest of the loop because the scanner socket is
+               * a new socket.  This is asking for select trouble, really. */
+              continue;
+            }
+          else if (ret == 2)
+            {
+              /* Now in a process forked to run a task, which has
+               * successfully started the task.  Close the client
+               * connection, as the parent process has continued the
+               * session with the client. */
+#if 0
+              // FIX seems to close parent connections, maybe just do part of this
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              client_active = 0;
+            }
+          else if (ret == -10)
+            {
+              /* Now in a process forked to run a task, which has
+               * failed in starting the task. */
+#if 0
+              // FIX as above
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              return -1;
+            }
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the
@@ -1034,6 +1130,55 @@ serve_omp (gnutls_session_t* client_session,
           if (ret == 0)
             /* Processed all input. */
             client_input_stalled = 0;
+          else if (ret == 3)
+            {
+              /* In the parent after a start_task fork.  Create a new
+               * server session, leaving the existing session as it is
+               * so that the child can continue using it. */
+              // FIX probably need to close and free some of the existing
+              //     session
+              set_scanner_init_state (SCANNER_INIT_TOP);
+              scanner_socket = recreate_session (0,
+                                                 scanner_session,
+                                                 scanner_credentials);
+              if (scanner_socket == -1)
+                {
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
+                  return -1;
+                }
+              *scanner_socket_addr = scanner_socket;
+              /* Skip the rest of the loop because the scanner socket is
+               * a new socket.  This is asking for select trouble, really. */
+              continue;
+            }
+          else if (ret == 2)
+            {
+              /* Now in a process forked to run a task, which has
+               * successfully started the task.  Close the client
+               * connection, as the parent process has continued the
+               * session with the client. */
+#if 0
+              // FIX seems to close parent connections, maybe just do part of this
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              client_active = 0;
+            }
+          else if (ret == -10)
+            {
+              /* Now in a process forked to run a task, which has
+               * failed in starting the task. */
+#if 0
+              // FIX as above
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              return -1;
+            }
           else if (ret == -1)
             {
               /* Error.  Write rest of to_client to client, so that the

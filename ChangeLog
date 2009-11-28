@@ -1,3 +1,29 @@
+2009-11-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	As a quick way around the very long OMP START_TASK response time, fork
+	the manager when starting a task, respond in the parent, and let the
+	child slowly start the task.
+
+	* src/manage.c (start_task): Set the task status early, so that other
+	processes know that the task is being started.  Check and set the task
+	status in an atomic block.  Fork a child to do the bulk of the work, so
+	that the current process can return to respond to the client.
+
+	* src/omp.c (current_error, forked): New variables.
+	(omp_xml_handle_end_element): Use forked to prevent the client-serving
+	process from forking more than once.  Use globals to return fork status
+	to process_omp_client_input.
+	(init_omp_process): Init forked.
+	(process_omp_client_input): Use globals to return fork status to caller.
+
+	* src/ompd.c (recreate_session): If server_socket is zero skip freeing
+	the session.
+	(serve_omp): When process_omp_client_input has forked create a new scanner
+	session in the parent so the child can use the old one, and end the client
+	interaction in the child.  Prevent closing and freeing the respective old
+	sessions as this would affect the other branch of the fork because the
+	actual session is forked.
+
 2009-11-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (latex_print_verbatim_text): Print equal signs is separate
