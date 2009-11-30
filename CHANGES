@@ -1,3 +1,25 @@
+openvas-manager 0.9.5 (2009-11-30)
+
+This is the eleventh development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Felix Wolfsteller.
+
+Main changes since 0.9.4:
+
+* Server preference handling has been improved.
+* The build environment has been made more robust.
+* Support for per-NVT timeouts has been added.
+* The database upgrade has been made more flexible.
+* The library used for UUID generation has been changed to a more widely
+  available library.
+* Updating of the internal cache has been improved.
+* The layout of the PDF reports has been improved.
+* An issue with long task start times has been fixed.
+* Cache management has been improved.
+
+
 openvas-manager 0.9.4 (2009-11-23)
 
 This is the tenth development release of the openvas-manager module

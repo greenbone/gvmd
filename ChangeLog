@@ -1,3 +1,15 @@
+2009-11-30  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.9.5 release.
+
+	* VERSION: Set to 0.9.5.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
+	* CHANGES: Updated.
+
 2009-11-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	As a quick way around the very long OMP START_TASK response time, fork
