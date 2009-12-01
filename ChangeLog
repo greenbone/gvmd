@@ -1,3 +1,13 @@
+2009-12-01  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Post-release version bump.
+
+	* VERSION: Set to 0.9.7.SVN.
+
+	* CMakeLists.txt: CPACK_PACKAGE_VERSION_PATCH updated.
+
+	* doc/Doxyfile, doc/Doxyfile_full: Updated PROJECT_NUMBER.
+
 2009-12-01  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Preparing the openvas-manager 0.9.6 release.
