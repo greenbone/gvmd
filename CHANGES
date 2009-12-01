@@ -1,3 +1,16 @@
+openvas-manager 0.9.6 (2009-12-01)
+
+This is the twelfth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Felix Wolfsteller.
+
+Main changes since 0.9.5:
+
+* Support for empty scan config templates has been added.
+
+
 openvas-manager 0.9.5 (2009-11-30)
 
 This is the eleventh development release of the openvas-manager module
