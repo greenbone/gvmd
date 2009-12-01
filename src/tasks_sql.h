@@ -2425,6 +2425,24 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       setup_full_config_prefs (config, 0, 0, 1);
     }
 
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE name = 'empty';")
+      == 0)
+    {
+      config_t config;
+
+      sql ("INSERT into configs (name, nvt_selector, comment, family_count,"
+           " nvt_count, nvts_growing, families_growing)"
+           " VALUES ('empty', 'empty',"
+           " 'Empty and static configuration template',"
+           " 0, 0, 0, 0);");
+
+      /* Setup preferences for the config. */
+      config = sqlite3_last_insert_rowid (task_db);
+      setup_full_config_prefs (config, 1, 1, 0);
+    }
+
   /* Ensure the predefined target exists. */
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
@@ -5541,7 +5559,8 @@ delete_config (const char* name)
   if (strcmp (name, "Full and fast") == 0
       || strcmp (name, "Full and fast ultimate") == 0
       || strcmp (name, "Full and very deep") == 0
-      || strcmp (name, "Full and very deep ultimate") == 0)
+      || strcmp (name, "Full and very deep ultimate") == 0
+      || strcmp (name, "empty") == 0)
     return 1;
 
   quoted_name = sql_nquote (name, strlen (name));
@@ -5650,7 +5669,8 @@ config_in_use (const char* name)
   if (strcmp (name, "Full and fast") == 0
       || strcmp (name, "Full and fast ultimate") == 0
       || strcmp (name, "Full and very deep") == 0
-      || strcmp (name, "Full and very deep ultimate") == 0)
+      || strcmp (name, "Full and very deep ultimate") == 0
+      || strcmp (name, "empty") == 0)
     return 1;
 
   quoted_name = sql_quote (name);
