@@ -1,3 +1,12 @@
+2009-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Fixed a bug which caused NVT selections in non-growing families to be
+	wrongly calculated.
+
+	* src/tasks_sql.h (manage_set_config_nvts): Defer determining the old
+	NVT count until we know whether the family is growing or not, hand the
+	correct growing flag to nvt_selector_nvt_count ().
+
 2009-12-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.

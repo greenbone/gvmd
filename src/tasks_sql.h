@@ -5968,13 +5968,13 @@ manage_set_config_nvts (const char* config, const char* family,
   /* If the family is growing, then exclude all no's, otherwise the family
    * is static, so include all yes's. */
 
-  old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
-
   if (nvt_selector_family_growing (selector,
                                    family,
                                    config_families_growing (config)))
     {
       iterator_t nvts;
+
+      old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
 
       /* Clear any NVT selectors for this family from the config. */
 
@@ -6014,6 +6014,8 @@ manage_set_config_nvts (const char* config, const char* family,
     }
   else
     {
+      old_nvt_count = nvt_selector_nvt_count (selector, family, 0);
+
       /* Clear any NVT selectors for this family from the config. */
 
       sql ("DELETE FROM nvt_selectors"
