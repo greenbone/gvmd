@@ -5414,7 +5414,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (hosts == NULL)
                 {
                   request_delete_task (&current_client_task);
-                  g_free (description);
+                  free (description);
                   free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX
@@ -5424,7 +5424,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              g_free (description);
+              free (description);
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
@@ -5947,7 +5947,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (response);
                     g_free (name);
                     g_free (description64);
-                    g_free (tsk_uuid);
+                    free (tsk_uuid);
                     if (ret)
                       {
                         error_send_to_client (error);
@@ -6252,7 +6252,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_free (last_report);
                 g_free (second_last_report);
                 free (name);
-                free (description64);
+                g_free (description64);
                 free (tsk_uuid);
                 if (send_to_client (line))
                   {

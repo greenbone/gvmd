@@ -1,3 +1,7 @@
+2009-12-07  Tim Brown <timb@openvas.org>
+
+	* src/omp.c: Fixed up some free()s.
+
 2009-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Fixed a bug which caused NVT selections in non-growing families to be
