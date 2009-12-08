@@ -1,3 +1,17 @@
+openvas-manager 0.9.7 (2009-12-08)
+
+This is the thirteenth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Michael Wiegand and Tim Brown.
+
+Main changes since 0.9.6:
+
+* A bug which caused the number of selected NVTs within a family to be wrongly
+  calculated under certain circumstances has been fixed.
+
+
 openvas-manager 0.9.6 (2009-12-01)
 
 This is the twelfth development release of the openvas-manager module
