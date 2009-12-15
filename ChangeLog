@@ -1,5 +1,10 @@
 2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS all
+	case cleanup iterator afterwards.
+
+2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: Put nvt_selectors before nvts when joining these tables
 	in SQL, as suggested by Michael Wiegand.
 	(create_tables): Add indexes on nvt_selectors and nvts.  ANALYZE after

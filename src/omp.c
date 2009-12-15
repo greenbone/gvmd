@@ -3307,6 +3307,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
+              cleanup_iterator (&nvts);
 
               SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
             }
