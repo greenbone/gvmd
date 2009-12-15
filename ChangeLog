@@ -1,5 +1,9 @@
 2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* CMakeLists.txt: Add fullstop to Description.
+
+2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS all
 	case cleanup iterator afterwards.
 

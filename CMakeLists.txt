@@ -1,6 +1,6 @@
 # OpenVAS
 # $Id$
-# Description: Top-level cmake control for the Manager
+# Description: Top-level cmake control for the Manager.
 #
 # Authors:
 # Matthew Mundell <matt@mundell.ukfsn.org>
