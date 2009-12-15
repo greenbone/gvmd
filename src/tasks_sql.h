@@ -461,7 +461,12 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
+  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_name ON nvt_selectors (name);");
+  sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_family_or_nvt ON nvt_selectors (type, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid ON nvts (oid);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
@@ -470,6 +475,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
+
+  sql ("ANALYZE;");
 }
 
 /**
@@ -7160,7 +7167,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                    " SELECT oid, version, nvts.name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
                    " category, nvts.family"
-                   " FROM nvts, nvt_selectors"
+                   " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
                    " AND nvt_selectors.name = '%s'"
@@ -7201,7 +7208,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                      " SELECT oid, version, nvts.name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
                      " category, nvts.family"
-                     " FROM nvts, nvt_selectors"
+                     " FROM nvt_selectors, nvts"
                      " WHERE"
                      " nvts.family = '%s'"
                      " AND nvt_selectors.name = '%s'"
@@ -7219,7 +7226,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                   (" SELECT oid, version, nvts.name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
                    " category, nvts.family"
-                   " FROM nvts, nvt_selectors"
+                   " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
                    " AND nvt_selectors.name = '%s'"
@@ -7246,7 +7253,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
              ("SELECT oid, version, nvts.name, summary, description,"
               " copyright, cve, bid, xref, tag, sign_key_ids,"
               " category, nvts.family"
-              " FROM nvts, nvt_selectors"
+              " FROM nvt_selectors, nvts"
               " WHERE nvts.family = '%s'"
               " AND nvt_selectors.exclude = 0"
               " AND nvt_selectors.type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)

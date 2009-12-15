@@ -1,3 +1,10 @@
+2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h: Put nvt_selectors before nvts when joining these tables
+	in SQL, as suggested by Michael Wiegand.
+	(create_tables): Add indexes on nvt_selectors and nvts.  ANALYZE after
+	creating table.
+
 2009-12-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Made the openvasmd and doxygen- generated documentation aware of the
@@ -152,7 +159,7 @@
 
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
-	* src/task_sql.h: Minor doc improvement.
+	* src/tasks_sql.h: Minor doc improvement.
 
 2009-11-27  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
@@ -3914,7 +3921,7 @@
 
 	Reset task running information before starting the task.
 
-	* src/task_sql.h (reset_task): New function.
+	* src/tasks_sql.h (reset_task): New function.
 	* src/manage.h (reset_task): New header.
 
 	* src/manage.c (start_task): Call reset_task before starting the task.
