@@ -1,3 +1,27 @@
+2009-12-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Made the openvasmd and doxygen- generated documentation aware of the
+	svn revision in the same way as the package does already.
+	That means, in analogy to the source_package target, only if configured
+	with -DPREPARE_RELEASE=1 no revision number will occur in the version
+	string.
+	Note that this works at configure time, thus you have to execute
+	`cmake [OPTIONS] .` to update revision/version numbers in the
+	documentation and as answer to `openvasmd --version`.
+
+	* VERSION: Removed, mechanism replaced by cmake-based one.
+
+	* CMakeLists.txt: Do not read in content of VERSION, use
+	CPACK_PACKAGE_VERSION instead. Configure the two Doxyfiles.
+	Added TODO about missing checks (pkg-config, sqlite3).
+
+	* doc/Doxyfile, doc/Doxyfile_full: Removed. Are generated in configure
+	step.
+
+	* doc/Doxyfile.in, doc/Doxyfile_full.in: New. Used to generate
+	doc/Doxyfile and doc/Doxyfile_full during configure step with
+	automatically updated project version number.
+
 2009-12-01  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.

@@ -55,6 +55,8 @@ IF(NOT PREPARE_RELEASE)
   ENDIF(SVN_EXECUTABLE)
 ENDIF(NOT PREPARE_RELEASE)
 
+# TODO: Check sqlite3, pkg-config (maybe with code like in gsa/CMakeLists.txt).
+
 ## CPack configuration
 
 set (CPACK_CMAKE_GENERATOR "Unix Makefiles")
@@ -197,9 +199,12 @@ endif (NOT UUID)
 
 ## Version
 
-file (READ VERSION _OPENVASMD_VERSION)
 STRING (REPLACE "
-" "" OPENVASMD_VERSION ${_OPENVASMD_VERSION})
+" "" OPENVASMD_VERSION ${CPACK_PACKAGE_VERSION})
+
+# Configure Doxyfile with version number
+CONFIGURE_FILE (doc/Doxyfile.in doc/Doxyfile)
+CONFIGURE_FILE (doc/Doxyfile_full.in doc/Doxyfile_full)
 
 ## Program
 
