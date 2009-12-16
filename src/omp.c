@@ -511,6 +511,7 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_COMMENT,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
+  CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -1239,6 +1240,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (modify_task_name == NULL);
             openvas_append_string (&modify_task_comment, "");
             openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&current_name, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
@@ -1879,6 +1881,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_LSC_CREDENTIAL:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_COMMENT);
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
@@ -5200,6 +5204,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0);
           assert (modify_task_name != NULL);
+          assert (current_name != NULL);
 
           if (strlen (modify_task_name) == 0)
             {
@@ -5208,8 +5213,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_LSC_CREDENTIAL name must both be at"
                                   " least one character long"));
             }
+          else if (strlen (current_name) == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                  "CREATE_LSC_CREDENTIAL user must both be at"
+                                  " least one character long"));
+            }
           else switch (create_lsc_credential (modify_task_name,
                                               modify_task_comment,
+                                              current_name,
                                               modify_task_parameter))
             {
               case 0:
@@ -5234,6 +5247,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
             }
           openvas_free_string_var (&modify_task_comment);
+          openvas_free_string_var (&current_name);
           openvas_free_string_var (&modify_task_name);
           openvas_free_string_var (&modify_task_parameter);
           set_client_state (CLIENT_AUTHENTIC);
@@ -5241,6 +5255,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
+        assert (strcasecmp ("LOGIN", element_name) == 0);
         set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
@@ -6515,12 +6533,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<lsc_credential>"
                           "<name>%s</name>"
+                          "<login>%s</login>"
                           "<comment>%s</comment>"
                           "<in_use>%i</in_use>"
                           "<type>%s</type>"
                           "<public_key>%s</public_key>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_login (&targets),
                           lsc_credential_iterator_comment (&targets),
                           lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets)
@@ -6531,12 +6551,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<lsc_credential>"
                           "<name>%s</name>"
+                          "<login>%s</login>"
                           "<comment>%s</comment>"
                           "<in_use>%i</in_use>"
                           "<type>%s</type>"
                           "<package format=\"rpm\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_login (&targets),
                           lsc_credential_iterator_comment (&targets),
                           lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets)
@@ -6547,12 +6569,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<lsc_credential>"
                           "<name>%s</name>"
+                          "<login>%s</login>"
                           "<comment>%s</comment>"
                           "<in_use>%i</in_use>"
                           "<type>%s</type>"
                           "<package format=\"deb\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_login (&targets),
                           lsc_credential_iterator_comment (&targets),
                           lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets)
@@ -6563,12 +6587,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<lsc_credential>"
                           "<name>%s</name>"
+                          "<login>%s</login>"
                           "<comment>%s</comment>"
                           "<in_use>%i</in_use>"
                           "<type>%s</type>"
                           "<package format=\"exe\">%s</package>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_login (&targets),
                           lsc_credential_iterator_comment (&targets),
                           lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets)
@@ -6579,11 +6605,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<lsc_credential>"
                           "<name>%s</name>"
+                          "<login>%s</login>"
                           "<comment>%s</comment>"
                           "<in_use>%i</in_use>"
                           "<type>%s</type>"
                           "</lsc_credential>",
                           lsc_credential_iterator_name (&targets),
+                          lsc_credential_iterator_login (&targets),
                           lsc_credential_iterator_comment (&targets),
                           lsc_credential_iterator_in_use (&targets),
                           lsc_credential_iterator_public_key (&targets)
@@ -6744,6 +6772,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
+        openvas_append_text (&current_name, text, text_len);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
         openvas_append_text (&modify_task_name, text, text_len);

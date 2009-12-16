@@ -1,3 +1,23 @@
+2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Separate credential name and login name for LSC credentials.
+
+	* src/tasks_sql.h (DATABASE_VERSION): Increase to 8, for changes to table
+	lsc_credentials.
+	(create_tables): Add login column to lsc_credentials.
+	(create_lsc_credential): Add login param.
+	(init_lsc_credential_iterator): Include login.
+	(lsc_credential_iterator_login): New function.  Adjust positions of other
+	accessors accordingly.
+
+	* src/manage.h: Add headers.
+
+	* src/manage.c (start_task): Send login to scanner instead of name.
+
+	* src/omp.c (client_state_t): Add CLIENT_CREATE_LSC_CREDENTIAL_LOGIN.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Add login to LSC credential handling.
+
 2009-12-15  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt: Add fullstop to Description.

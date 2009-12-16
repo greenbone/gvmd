@@ -36,7 +36,7 @@
 /**
  * @brief Version of the database schema.
  */
-#define DATABASE_VERSION 7
+#define DATABASE_VERSION 8
 
 /**
  * @brief NVT selector type for "all" rule.
@@ -456,7 +456,7 @@ create_tables ()
 {
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
@@ -7973,6 +7973,8 @@ nvt_preference_count (const char *name)
  * @param[in]  name      Name of LSC credential.  Must be at least one
  *                       character long.
  * @param[in]  comment   Comment on LSC credential.
+ * @param[in]  login     Name of LSC credential user.  Must be at least one
+ *                       character long.
  * @param[in]  password  Password for password-only credential, NULL to
  *                       generate credentials.
  *
@@ -7981,19 +7983,20 @@ nvt_preference_count (const char *name)
  */
 int
 create_lsc_credential (const char* name, const char* comment,
-                       const char* given_password)
+                       const char* login, const char* given_password)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_comment, *public_key, *private_key, *base64;
+  gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
   void *rpm, *deb, *exe;
   gsize rpm_size, deb_size, exe_size;
   int i;
   GRand *rand;
 #define PASSWORD_LENGTH 10
   gchar password[PASSWORD_LENGTH];
-  const char *s = name;
+  const char *s = login;
 
-  assert (strlen (name) > 0);
+  assert (name && strlen (name) > 0);
+  assert (login && strlen (login) > 0);
 
   while (*s) if (!isalnum (*s++)) return 2;
 
@@ -8009,20 +8012,24 @@ create_lsc_credential (const char* name, const char* comment,
 
   if (given_password)
     {
+      gchar *quoted_login = sql_quote (login);
       gchar *quoted_password = sql_quote (given_password);
       gchar *quoted_comment = sql_quote (comment);
 
       /* Password-only credential. */
 
       sql ("INSERT INTO lsc_credentials"
-           " (name, password, comment, public_key, private_key, rpm, deb, exe)"
+           " (name, login, password, comment, public_key, private_key, rpm,"
+           "  deb, exe)"
            " VALUES"
-           " ('%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
+           " ('%s', '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
            quoted_name,
+           quoted_login,
            quoted_password,
            quoted_comment);
 
       g_free (quoted_name);
+      g_free (quoted_login);
       g_free (quoted_password);
       g_free (quoted_comment);
 
@@ -8038,7 +8045,7 @@ create_lsc_credential (const char* name, const char* comment,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_all_create (name,
+  if (lsc_user_all_create (login,
                            password,
                            &public_key,
                            &private_key,
@@ -8059,18 +8066,20 @@ create_lsc_credential (const char* name, const char* comment,
     sqlite3_stmt* stmt;
     gchar* formatted, *quoted_password;
 
+    quoted_login = sql_quote (login);
     quoted_password = sql_nquote (password, strlen (password));
     if (comment)
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, password, comment,"
+                                     " (name, login, password, comment,"
                                      "  public_key, private_key, rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s', '%s', '%s',"
+                                     " ('%s', '%s', '%s', '%s',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
+                                     quoted_login,
                                      quoted_password,
                                      quoted_comment);
         g_free (quoted_comment);
@@ -8078,17 +8087,19 @@ create_lsc_credential (const char* name, const char* comment,
     else
       {
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, password, comment,"
+                                     " (name, login, password, comment,"
                                      "  public_key, private_key, rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s', '%s', '',"
+                                     " ('%s', '%s', '%s', '',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
+                                     quoted_login,
                                      quoted_password);
       }
 
     g_free (quoted_name);
+    g_free (quoted_login);
     g_free (quoted_password);
 
     tracef ("   sql: %s\n", formatted);
@@ -8316,7 +8327,7 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
     {
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
-                     "SELECT name, password, comment, public_key,"
+                     "SELECT name, login, password, comment, public_key,"
                      " private_key, rpm, deb, exe,"
                      " (SELECT count(*) > 0 FROM targets"
                      "  WHERE lsc_credential = lsc_credentials.ROWID)"
@@ -8330,7 +8341,7 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
     }
   else
     init_iterator (iterator,
-                   "SELECT name, password, comment, public_key,"
+                   "SELECT name, login, password, comment, public_key,"
                    " private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
@@ -8341,22 +8352,23 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
 }
 
 DEF_ACCESS (lsc_credential_iterator_name, 0);
-DEF_ACCESS (lsc_credential_iterator_password, 1);
+DEF_ACCESS (lsc_credential_iterator_login, 1);
+DEF_ACCESS (lsc_credential_iterator_password, 2);
 
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
 }
 
-DEF_ACCESS (lsc_credential_iterator_public_key, 3);
-DEF_ACCESS (lsc_credential_iterator_private_key, 4);
-DEF_ACCESS (lsc_credential_iterator_rpm, 5);
-DEF_ACCESS (lsc_credential_iterator_deb, 6);
-DEF_ACCESS (lsc_credential_iterator_exe, 7);
+DEF_ACCESS (lsc_credential_iterator_public_key, 4);
+DEF_ACCESS (lsc_credential_iterator_private_key, 5);
+DEF_ACCESS (lsc_credential_iterator_rpm, 6);
+DEF_ACCESS (lsc_credential_iterator_deb, 7);
+DEF_ACCESS (lsc_credential_iterator_exe, 8);
 
 int
 lsc_credential_iterator_in_use (iterator_t* iterator)

@@ -758,7 +758,7 @@ nvt_preference_count (const char *);
 /* LSC credentials. */
 
 int
-create_lsc_credential (const char*, const char*, const char*);
+create_lsc_credential (const char*, const char*, const char*, const char*);
 
 int
 delete_lsc_credential (const char*);
@@ -768,6 +768,9 @@ init_lsc_credential_iterator (iterator_t*, const char*, int, const char*);
 
 const char*
 lsc_credential_iterator_name (iterator_t*);
+
+const char*
+lsc_credential_iterator_login (iterator_t*);
 
 const char*
 lsc_credential_iterator_comment (iterator_t*);

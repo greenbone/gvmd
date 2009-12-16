@@ -834,7 +834,7 @@ start_task (task_t task, char **report_id)
         init_lsc_credential_iterator (&credentials, credential, 1, NULL);
         if (next (&credentials))
           {
-            const char *user = lsc_credential_iterator_name (&credentials);
+            const char *user = lsc_credential_iterator_login (&credentials);
             const char *password = lsc_credential_iterator_password (&credentials);
 
             if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
