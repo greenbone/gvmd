@@ -2193,7 +2193,7 @@ process_otp_scanner_input ()
                 if (strcasecmp ("BYE", field) == 0)
                   set_scanner_state (SCANNER_BYE);
                 else if (strcasecmp ("DEBUG", field) == 0)
-                  set_scanner_state (SCANNER_HOLE_HOST);
+                  set_scanner_state (SCANNER_DEBUG_HOST);
                 else if (strcasecmp ("ERROR", field) == 0)
                   {
                     set_scanner_state (SCANNER_ERROR);

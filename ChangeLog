@@ -1,5 +1,10 @@
 2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/otp.c (process_otp_scanner_input): In SCANNER_SERVER correct
+	scanner state for "DEBUG".
+
+2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add message counts to GET_REPORT XML response.
 
 	* src/tasks_sql.h (REPORT_COUNT): Take report arg instead of using
