@@ -3939,17 +3939,16 @@ report_scan_result_count (report_t report, const char* levels, int* count)
   return 0;
 }
 
-#define REPORT_COUNT(var, name) \
+#define REPORT_COUNT(report, var, name) \
   *var = sql_int (0, 0, \
                   "SELECT count(*) FROM results, report_results" \
                   " WHERE results.type = '" name "'" \
                   " AND results.ROWID = report_results.result" \
-                  " AND report_results.report" \
-                  " = (SELECT ROWID FROM reports WHERE uuid = '%s');", \
-                  report_id)
+                  " AND report_results.report = '%llu';", \
+                  report)
 
 /**
- * @brief Get the message counts for a report.
+ * @brief Get the message counts for a report given the UUID.
  *
  * @param[in]   report_id    ID of report.
  * @param[out]  debugs       Number of debug messages.
@@ -3964,11 +3963,32 @@ int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int* logs, int* warnings)
 {
-  REPORT_COUNT (debugs,   "Debug Message");
-  REPORT_COUNT (holes,    "Security Hole");
-  REPORT_COUNT (infos,    "Security Note");
-  REPORT_COUNT (logs,     "Log Message");
-  REPORT_COUNT (warnings, "Security Warning");
+  report_t report;
+  if (find_report (report_id, &report)) return -1;
+  return report_counts_id (report, debugs, holes, infos, logs, warnings);
+}
+
+/**
+ * @brief Get the message counts for a report.
+ *
+ * @param[in]   report    Report.
+ * @param[out]  debugs    Number of debug messages.
+ * @param[out]  holes     Number of hole messages.
+ * @param[out]  infos     Number of info messages.
+ * @param[out]  logs      Number of log messages.
+ * @param[out]  warnings  Number of warning messages.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+report_counts_id (report_t report, int* debugs, int* holes, int* infos,
+                  int* logs, int* warnings)
+{
+  REPORT_COUNT (report, debugs,   "Debug Message");
+  REPORT_COUNT (report, holes,    "Security Hole");
+  REPORT_COUNT (report, infos,    "Security Note");
+  REPORT_COUNT (report, logs,     "Log Message");
+  REPORT_COUNT (report, warnings, "Security Warning");
   return 0;
 }
 

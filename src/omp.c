@@ -3844,6 +3844,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   cleanup_iterator (&results);
                 }
 
+                /* Threat counts. */
+
+                {
+                  int debugs, holes, infos, logs, warnings;
+
+                  report_counts_id (report, &debugs, &holes, &infos, &logs,
+                                    &warnings);
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<messages>"
+                                           "<debug>%i</debug>"
+                                           "<hole>%i</hole>"
+                                           "<info>%i</info>"
+                                           "<log>%i</log>"
+                                           "<warning>%i</warning>"
+                                           "</messages>",
+                                           debugs,
+                                           holes,
+                                           infos,
+                                           logs,
+                                           warnings);
+                }
+
                 /* Results. */
 
                 init_result_iterator (&results, report, NULL,

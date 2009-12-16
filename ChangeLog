@@ -1,5 +1,19 @@
 2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add message counts to GET_REPORT XML response.
+
+	* src/tasks_sql.h (REPORT_COUNT): Take report arg instead of using
+	report UUID variable.
+	(report_counts_id): New function.
+	(report_counts): Call through to report_counts_id.
+
+	* src/manage.h: Add header.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT add message
+	counts to XML format response.
+
+2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add filtered count to OMP GET_REPORT XML report.
 
 	* src/tasks_sql.h (where_levels): New function.
