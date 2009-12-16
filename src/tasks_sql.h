@@ -3434,6 +3434,91 @@ next_report (iterator_t* iterator, report_t* report)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to levels.
+ *
+ * @param[in]  levels        String describing threat levels (message types)
+ *                           to include in report (for example, "hmlgd" for
+ *                           High, Medium, Low, loG and Debug).  All levels if
+ *                           NULL.
+ *
+ * @return WHERE clause for levels.
+ */
+GString *
+where_levels (const char* levels)
+{
+  GString *levels_sql = NULL;
+
+  /* Generate SQL for constraints on message type, according to levels. */
+
+  if (strlen (levels))
+    {
+      int count = 0;
+
+      /* High. */
+      if (strchr (levels, 'h'))
+        {
+          count = 1;
+          levels_sql = g_string_new (" AND (type = 'Security Hole'");
+        }
+
+      /* Medium. */
+      if (strchr (levels, 'm'))
+        {
+          if (count == 0)
+            levels_sql = g_string_new (" AND (type = 'Security Warning'");
+          else
+            levels_sql = g_string_append (levels_sql,
+                                          " OR type = 'Security Warning'");
+          count++;
+        }
+
+      /* Low. */
+      if (strchr (levels, 'l'))
+        {
+          if (count == 0)
+            levels_sql = g_string_new (" AND (type = 'Security Note'");
+          else
+            levels_sql = g_string_append (levels_sql,
+                                          " OR type = 'Security Note'");
+          count++;
+        }
+
+      /* loG. */
+      if (strchr (levels, 'g'))
+        {
+          if (count == 0)
+            levels_sql = g_string_new (" AND (type = 'Log Message'");
+          else
+            levels_sql = g_string_append (levels_sql,
+                                          " OR type = 'Log Message'");
+          count++;
+        }
+
+      /* Debug. */
+      if (strchr (levels, 'd'))
+        {
+          if (count == 0)
+            levels_sql = g_string_new (" AND (type = 'Debug Message')");
+          else
+            levels_sql = g_string_append (levels_sql,
+                                          " OR type = 'Debug Message')");
+          count++;
+        }
+      else if (count)
+        levels_sql = g_string_append (levels_sql, ")");
+
+      if (count == 5)
+        {
+          /* All levels. */
+          g_string_free (levels_sql, TRUE);
+          levels_sql = NULL;
+        }
+    }
+  return levels_sql;
+}
+
+
+/**
  * @brief Initialise a result iterator.
  *
  * The results are ordered by host, then port and type (severity) according
@@ -3464,74 +3549,7 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
   if (levels == NULL) levels = "hmlgd";
   if (report)
     {
-      GString *levels_sql = NULL;
-
-      /* Generate SQL for constraints on message type, according to levels. */
-
-      if (strlen (levels))
-        {
-          int count = 0;
-
-          /* High. */
-          if (strchr (levels, 'h'))
-            {
-              count = 1;
-              levels_sql = g_string_new (" AND (type = 'Security Hole'");
-            }
-
-          /* Medium. */
-          if (strchr (levels, 'm'))
-            {
-              if (count == 0)
-                levels_sql = g_string_new (" AND (type = 'Security Warning'");
-              else
-                levels_sql = g_string_append (levels_sql,
-                                              " OR type = 'Security Warning'");
-              count++;
-            }
-
-          /* Low. */
-          if (strchr (levels, 'l'))
-            {
-              if (count == 0)
-                levels_sql = g_string_new (" AND (type = 'Security Note'");
-              else
-                levels_sql = g_string_append (levels_sql,
-                                              " OR type = 'Security Note'");
-              count++;
-            }
-
-          /* loG. */
-          if (strchr (levels, 'g'))
-            {
-              if (count == 0)
-                levels_sql = g_string_new (" AND (type = 'Log Message'");
-              else
-                levels_sql = g_string_append (levels_sql,
-                                              " OR type = 'Log Message'");
-              count++;
-            }
-
-          /* Debug. */
-          if (strchr (levels, 'd'))
-            {
-              if (count == 0)
-                levels_sql = g_string_new (" AND (type = 'Debug Message')");
-              else
-                levels_sql = g_string_append (levels_sql,
-                                              " OR type = 'Debug Message')");
-              count++;
-            }
-          else if (count)
-            levels_sql = g_string_append (levels_sql, ")");
-
-          if (count == 5)
-            {
-              /* All levels. */
-              g_string_free (levels_sql, TRUE);
-              levels_sql = NULL;
-            }
-        }
+      GString *levels_sql = where_levels (levels);
 
       /* Allocate the query. */
 
@@ -3888,13 +3906,31 @@ report_scan_run_status (report_t report, int* status)
  * @brief Get the number of results in the scan associated with a report.
  *
  * @param[in]   report  Report.
+ * @param[in]   levels  String describing threat levels (message types)
+ *                      to include in count (for example, "hmlgd" for
+ *                      High, Medium, Low, loG and Debug).  All levels if
+ *                      NULL.
  * @param[out]  count   Total number of results in the scan.
  *
  * @return 0 on success, -1 on error.
  */
 int
-report_scan_result_count (report_t report, int* count)
+report_scan_result_count (report_t report, const char* levels, int* count)
 {
+  if (levels)
+    {
+      GString *levels_sql = where_levels (levels);
+      *count = sql_int (0, 0,
+                        "SELECT count(*) FROM results, report_results"
+                        " WHERE results.ROWID = report_results.result"
+                        "%s"
+                        " AND report_results.report = %llu;",
+                        levels_sql ? levels_sql->str : "",
+                        report);
+      if (levels_sql) g_string_free (levels_sql, TRUE);
+      return 0;
+    }
+
   *count = sql_int (0, 0,
                     "SELECT count(*) FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"

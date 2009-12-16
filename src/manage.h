@@ -441,7 +441,7 @@ int
 report_scan_run_status (report_t, int*);
 
 int
-report_scan_result_count (report_t, int*);
+report_scan_result_count (report_t, const char*, int*);
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*);

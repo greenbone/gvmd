@@ -1,5 +1,18 @@
 2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add filtered count to OMP GET_REPORT XML report.
+
+	* src/tasks_sql.h (where_levels): New function.
+	(init_result_iterator): Move levels WHERE calc to where_levels.
+	(report_scan_result_count): Add a levels arg.
+
+	* src/manage.h: Update header.
+
+	* src/omp.c (omp_xml_handle_end_element): In the XML case of
+	CLIENT_GET_REPORT add a filtered count to SCAN_RESULT_COUNT.
+
+2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 7 to 8.
 
 	* src/tasks_sql.h (migrate_7_to_8): New function.

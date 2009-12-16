@@ -3657,7 +3657,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 task_t task;
                 char *tsk_uuid = NULL, *start_time, *end_time;
-                int result_count, run_status;
+                int result_count, filtered_result_count, run_status;
                 const char *levels;
 
                 /* Attribute levels. */
@@ -3680,7 +3680,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                   }
 
-                report_scan_result_count (report, &result_count);
+                report_scan_result_count (report, NULL, &result_count);
+                report_scan_result_count (report, levels,
+                                          &filtered_result_count);
                 report_scan_run_status (report, &run_status);
                 SENDF_TO_CLIENT_OR_FAIL
                  ("<get_report_response"
@@ -3710,11 +3712,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SENDF_TO_CLIENT_OR_FAIL
                  ("</filters>"
                   "<scan_run_status>%s</scan_run_status>"
-                  "<scan_result_count>%i</scan_result_count>",
+                  "<scan_result_count>"
+                  "%i"
+                  "<filtered>%i</filtered>"
+                  "</scan_result_count>",
                   run_status_name (run_status
                                    ? run_status
                                    : TASK_STATUS_INTERNAL_ERROR),
-                  result_count);
+                  result_count,
+                  filtered_result_count);
 
                 if (task && tsk_uuid)
                   {
