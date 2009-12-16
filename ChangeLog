@@ -1,5 +1,12 @@
 2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 7 to 8.
+
+	* src/tasks_sql.h (migrate_7_to_8): New function.
+	(database_migrators): Add migrate_7_to_8.
+
+2009-12-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Separate credential name and login name for LSC credentials.
 
 	* src/tasks_sql.h (DATABASE_VERSION): Increase to 8, for changes to table

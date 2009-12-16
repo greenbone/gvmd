@@ -1686,6 +1686,40 @@ migrate_6_to_7 ()
 }
 
 /**
+ * @brief Migrate the database from version 7 to version 8.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_7_to_8 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 7. */
+
+  if (manage_db_version () != 7)
+    {
+      sql ("END;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The lsc_credentials table got a login column. */
+
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN login;");
+  sql ("UPDATE lsc_credentials SET login = name;");
+
+  /* Set the database version to 8. */
+
+  set_db_version (8);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -1697,6 +1731,7 @@ static migrator_t database_migrators[]
     {5, migrate_4_to_5},
     {6, migrate_5_to_6},
     {7, migrate_6_to_7},
+    {8, migrate_7_to_8},
     /* End marker. */
     {-1, NULL}};
 
