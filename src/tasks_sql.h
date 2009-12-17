@@ -6286,6 +6286,31 @@ switch_representation (const char* config, int constraining)
   return 0;
 }
 
+/**
+ * @brief Initialise a config task iterator.
+ *
+ * Iterates over all tasks that use the config.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  name       Name of config.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_config_task_iterator (iterator_t* iterator, const char *name,
+                           int ascending)
+{
+  gchar *quoted_name = sql_quote (name);
+  init_iterator (iterator,
+                 "SELECT name, uuid FROM tasks WHERE config = '%s'"
+                 " ORDER BY name %s;",
+                 quoted_name,
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_name);
+}
+
+DEF_ACCESS (config_task_iterator_name, 0);
+DEF_ACCESS (config_task_iterator_uuid, 1);
+
 
 /* NVT's. */
 

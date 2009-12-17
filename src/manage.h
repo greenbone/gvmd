@@ -361,6 +361,15 @@ config_file_iterator_content (iterator_t*);
 int
 config_file_iterator_length (iterator_t*);
 
+void
+init_config_task_iterator (iterator_t*, const char *, int);
+
+const char*
+config_task_iterator_name (iterator_t*);
+
+const char*
+config_task_iterator_uuid (iterator_t*);
+
 
 /* General task facilities. */
 

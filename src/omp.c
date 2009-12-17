@@ -5730,7 +5730,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
-                    char *name, *target, *hosts;
+                    char *name, *config, *target, *hosts;
                     gchar *first_report_id, *first_report;
                     char* description;
                     gchar *description64, *last_report_id, *last_report;
@@ -5740,7 +5740,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? max_hosts (hosts) : 0;
-                    free (target);
 
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
@@ -5952,12 +5951,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       description64 = g_strdup ("");
 
                     name = task_name (task);
+                    config = task_config (task);
                     response = g_strdup_printf
                                 ("<get_status_response"
                                  " status=\"" STATUS_OK "\""
                                  " status_text=\"" STATUS_OK_TEXT "\">"
                                  "<task id=\"%s\">"
                                  "<name>%s</name>"
+                                 "<config><name>%s</name></config>"
+                                 "<target><name>%s</name></target>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
@@ -5974,6 +5976,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "%s%s%s",
                                  tsk_uuid,
                                  name,
+                                 config ? config : "",
+                                 target ? target : "",
                                  task_run_status_name (task),
                                  progress_xml,
                                  description64,
@@ -5987,6 +5991,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  first_report,
                                  last_report,
                                  second_last_report);
+                    free (config);
+                    free (target);
                     g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
@@ -6050,7 +6056,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 gchar *line, *progress_xml;
                 char *name = task_name (index);
-                char *tsk_uuid, *target, *hosts;
+                char *tsk_uuid, *config, *target, *hosts;
                 gchar *first_report_id, *first_report;
                 char *description;
                 gchar *description64, *last_report_id, *last_report;
@@ -6064,7 +6070,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 target = task_target (index);
                 hosts = target ? target_hosts (target) : NULL;
                 maximum_hosts = hosts ? max_hosts (hosts) : 0;
-                free (target);
 
                 first_report_id = task_first_report_id (index);
                 if (first_report_id)
@@ -6269,9 +6274,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   progress_xml = g_strdup ("-1");
 
+                config = task_config (index);
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
+                                        "<config><name>%s</name></config>"
+                                        "<target><name>%s</name></target>"
                                         "<status>%s</status>"
                                         "<progress>%s</progress>"
                                         "%s"
@@ -6289,6 +6297,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "</task>",
                                         tsk_uuid,
                                         name,
+                                        config ? config : "",
+                                        target ? target : "",
                                         task_run_status_name (index),
                                         progress_xml,
                                         description64,
@@ -6302,6 +6312,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         first_report,
                                         last_report,
                                         second_last_report);
+                free (config);
+                free (target);
                 g_free (progress_xml);
                 g_free (last_report);
                 g_free (second_last_report);
@@ -6340,6 +6352,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               int config_nvts_growing, config_families_growing;
               const char *selector, *config_name;
+              iterator_t tasks;
 
               selector = config_iterator_nvt_selector (&configs);
               config_name = config_iterator_name (&configs);
@@ -6358,7 +6371,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
                                        "</nvt_count>"
-                                       "<in_use>%i</in_use>",
+                                       "<in_use>%i</in_use>"
+                                       "<tasks>",
                                        config_name,
                                        config_iterator_comment (&configs),
                                        config_family_count (config_name),
@@ -6366,6 +6380,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        config_nvt_count (config_name),
                                        config_nvts_growing,
                                        config_in_use (config_name));
+
+              init_config_task_iterator (&tasks,
+                                         config_name,
+                                         /* Attribute sort_order. */
+                                         current_int_2);
+              while (next (&tasks))
+                SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                         "<name>%s</name>"
+                                         "</task>",
+                                         config_task_iterator_uuid (&tasks),
+                                         config_task_iterator_name (&tasks));
+              cleanup_iterator (&tasks);
+              SEND_TO_CLIENT_OR_FAIL ("</tasks>");
 
               if (current_int_1)
                 {

@@ -1,5 +1,16 @@
 2009-12-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_config_task_iterator, config_task_iterator_name)
+	(config_task_iterator_uuid): New functions.
+
+	* src/manage.h: Add headers.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS send
+	config and target with task.  In CLIENT_GET_CONFIGS send list of tasks
+	that use the config.
+
+2009-12-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS send sort
 	information back with task list.
 
