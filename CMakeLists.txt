@@ -88,6 +88,9 @@ set (CPACK_SOURCE_IGNORE_FILES
 "install_manifest.txt"
 "Makefile"
 "/doc/generated/"
+"/doc/Doxyfile.in"
+"/doc/Doxyfile_full.in"
+".in"
 )
 
 include (CPack)
@@ -205,6 +208,7 @@ STRING (REPLACE "
 # Configure Doxyfile with version number
 CONFIGURE_FILE (doc/Doxyfile.in doc/Doxyfile)
 CONFIGURE_FILE (doc/Doxyfile_full.in doc/Doxyfile_full)
+CONFIGURE_FILE (VERSION.in VERSION)
 
 ## Program
 
