@@ -1,3 +1,8 @@
+2009-12-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS send sort
+	information back with task list.
+
 2009-12-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Revived VERSION file, as its present in other modules, too.

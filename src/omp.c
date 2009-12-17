@@ -6036,6 +6036,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             g_free (response);
 
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<sort>"
+              "<field>%s<order>%s</order></field>"
+              "</sort>",
+              current_format ? current_format : "ROWID",
+              current_int_2 ? "ascending" : "descending");
+
             init_task_iterator (&iterator,
                                 current_int_2,      /* Attribute sort_order. */
                                 current_format);    /* Attribute sort_field. */
