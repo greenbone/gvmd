@@ -1,3 +1,14 @@
+2009-12-18  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Changed installation destination for openvasmd_report_html.xsl as
+	proposed by Stephan Kleine.
+
+	* src/CMakeLists.txt: Install openvasmd_report_html.xsl to datadir
+	instead of sysconfdir.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjusted to changed location
+	of openvasmd_report_html.xsl
+
 2009-12-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_config_task_iterator, config_task_iterator_name)

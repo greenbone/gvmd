@@ -4029,7 +4029,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     gchar *xsl_file;
 
-                    xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                    xsl_file = g_build_filename (OPENVAS_DATA_DIR,
                                                  "openvasmd_report_html.xsl",
                                                  NULL);
                     if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
@@ -4164,7 +4164,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     gchar *xsl_file;
 
-                    xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                    xsl_file = g_build_filename (OPENVAS_DATA_DIR,
                                                  "openvasmd_report_html.xsl",
                                                  NULL);
                     if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
