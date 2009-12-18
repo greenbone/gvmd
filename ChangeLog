@@ -1,3 +1,21 @@
+2009-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Add agent support.
+
+	* src/tasks_sql.h (agent_t): New type.
+	(create_tables): Added "agents" table.
+	(create_agent, delete_agent, init_agent_iterator, agent_iterator_name)
+	(agent_iterator_comment, agent_iterator_installer)
+	(agent_iterator_howto_install, agent_iterator_howto_use, agent_name): New
+	functions.
+
+	* src/manage.h: Added protos accordingly.
+
+	* src/omp.c (help_text, client_state_t): Extended with agent
+	commands/states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Added handling for agent commands.
+
 2009-12-18  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Changed installation destination for openvasmd_report_html.xsl as

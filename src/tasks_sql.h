@@ -62,6 +62,7 @@
 /* Types. */
 
 typedef long long int config_t;
+typedef long long int agent_t;
 
 
 /* Static headers. */
@@ -457,6 +458,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
@@ -8501,6 +8503,279 @@ lsc_credential_name (lsc_credential_t lsc_credential)
   return sql_string (0, 0,
                      "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
                      lsc_credential);
+}
+
+/**
+ * @brief Create an agent entry.
+ *
+ * @param[in]  name     Name of agent.  Must be at least one character long.
+ * @param[in]  comment  Comment on agent.
+ *
+ * @return 0 success, 1 agent exists already, -1 error.
+ */
+int
+create_agent (const char* name, const char* comment)
+{
+  gchar *quoted_name = sql_nquote (name, strlen (name));
+  gchar *quoted_comment, *base64;
+  void *installer = NULL, *howto_install = NULL, *howto_use = NULL;
+  gsize installer_size, howto_install_size, howto_use_size;
+
+  assert (strlen (name) > 0);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM agents WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
+
+  /* Insert the packages. */
+
+  {
+    const char* tail;
+    int ret;
+    sqlite3_stmt* stmt;
+    gchar* formatted;
+
+    if (comment)
+      {
+        quoted_comment = sql_nquote (comment, strlen (comment));
+        formatted = g_strdup_printf ("INSERT INTO agents"
+                                     " (name, comment, installer,"
+                                     "  howto_install, howto_use)"
+                                     " VALUES"
+                                     " ('%s', '%s',"
+                                     "  $installer, $howto_install,"
+                                     "  $howto_use);",
+                                     quoted_name,
+                                     quoted_comment);
+        g_free (quoted_comment);
+      }
+    else
+      {
+        formatted = g_strdup_printf ("INSERT INTO agents"
+                                     " (name, comment, installer,"
+                                     "  howto_install, howto_use)"
+                                     " VALUES"
+                                     " ('%s', '',"
+                                     "  $installer, $howto_install,"
+                                     "  $howto_use);",
+                                     quoted_name);
+      }
+
+    g_free (quoted_name);
+
+    tracef ("   sql: %s\n", formatted);
+
+    /* Prepare statement. */
+
+    while (1)
+      {
+        ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+        if (ret == SQLITE_BUSY) continue;
+        g_free (formatted);
+        if (ret == SQLITE_OK)
+          {
+            if (stmt == NULL)
+              {
+                g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                           __FUNCTION__,
+                           sqlite3_errmsg (task_db));
+                sql ("END;");
+                g_free (installer);
+                g_free (howto_install);
+                g_free (howto_use);
+                return -1;
+              }
+            break;
+          }
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("END;");
+        g_free (installer);
+        g_free (howto_install);
+        g_free (howto_use);
+        return -1;
+      }
+
+    /* Bind the packages to the "$values" in the SQL statement. */
+
+    base64 = (installer && strlen (installer))
+             ? g_base64_encode (installer, installer_size)
+             : g_strdup ("");
+    g_free (installer);
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 1,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("END;");
+        g_free (base64);
+        g_free (howto_install);
+        g_free (howto_use);
+        return -1;
+      }
+    g_free (base64);
+
+    base64 = (howto_install && strlen (howto_install))
+             ? g_base64_encode (howto_install, howto_install_size)
+             : g_strdup ("");
+    g_free (howto_install);
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 2,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("END;");
+        g_free (base64);
+        g_free (howto_use);
+        return -1;
+      }
+    g_free (base64);
+
+    base64 = (howto_use && strlen (howto_use))
+             ? g_base64_encode (howto_use, howto_use_size)
+             : g_strdup ("");
+    g_free (howto_use);
+    while (1)
+      {
+        ret = sqlite3_bind_blob (stmt,
+                                 3,
+                                 base64,
+                                 strlen (base64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("END;");
+        g_free (base64);
+        return -1;
+      }
+    g_free (base64);
+
+    /* Run the statement. */
+
+    while (1)
+      {
+        ret = sqlite3_step (stmt);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_DONE) break;
+        if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+          {
+            if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+            g_warning ("%s: sqlite3_step failed: %s\n",
+                       __FUNCTION__,
+                       sqlite3_errmsg (task_db));
+            sql ("END;");
+            return -1;
+          }
+      }
+
+    sqlite3_finalize (stmt);
+  }
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete an agent.
+ *
+ * @param[in]  name  Name of agent.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+delete_agent (const char* name)
+{
+  gchar* quoted_name = sql_quote (name);
+  sql ("BEGIN IMMEDIATE;");
+
+  sql ("DELETE FROM agents WHERE name = '%s';", quoted_name);
+  sql ("COMMIT;");
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Initialise an agent iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  name        Name of single agent to iterate, NULL for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_agent_iterator (iterator_t* iterator, const char *name,
+                     int ascending, const char* sort_field)
+{
+  if (name && strlen (name))
+    {
+      gchar *quoted_name = sql_quote (name);
+      init_iterator (iterator,
+                     "SELECT name, comment, installer,"
+                     " howto_install, howto_use,"
+                     " FROM agents"
+                     " WHERE name = '%s'"
+                     " ORDER BY %s %s;",
+                     quoted_name,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
+      g_free (quoted_name);
+    }
+  else
+    init_iterator (iterator,
+                   "SELECT name, comment, installer,"
+                   " howto_install, howto_use"
+                   " FROM agents"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+DEF_ACCESS (agent_iterator_name, 0);
+
+const char*
+agent_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret ? ret : "";
+}
+
+DEF_ACCESS (agent_iterator_installer, 2);
+DEF_ACCESS (agent_iterator_howto_install, 3);
+DEF_ACCESS (agent_iterator_howto_use, 4);
+
+char*
+agent_name (agent_t agent)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM agents WHERE ROWID = %llu;",
+                     agent);
 }
 
 #undef DEF_ACCESS

@@ -229,14 +229,17 @@ static char* help_text = "\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
 "    COMMANDS               Run a list of commands.\n"
 "    CREATE_CONFIG          Create a config.\n"
+"    CREATE_AGENT           Create a agent.\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
+"    DELETE_AGENT           Delete a agent.\n"
 "    DELETE_CONFIG          Delete a config.\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
+"    GET_AGENTS             Get all agents.\n"
 "    GET_CERTIFICATES       Get all available certificates.\n"
 "    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
@@ -502,6 +505,12 @@ typedef enum
   CLIENT_AUTHENTICATE,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
+  CLIENT_CREATE_AGENT,
+  CLIENT_CREATE_AGENT_NAME,
+  CLIENT_CREATE_AGENT_COMMENT,
+  CLIENT_CREATE_AGENT_INSTALLER,
+  CLIENT_CREATE_AGENT_HOWTO_INSTALL,
+  CLIENT_CREATE_AGENT_HOWTO_USE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
@@ -526,6 +535,8 @@ typedef enum
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
+  CLIENT_DELETE_AGENT,
+  CLIENT_DELETE_AGENT_NAME,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_CONFIG_NAME,
   CLIENT_DELETE_LSC_CREDENTIAL,
@@ -534,6 +545,7 @@ typedef enum
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TARGET_NAME,
+  CLIENT_GET_AGENTS,
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
@@ -1015,6 +1027,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
             set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
+        else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
+          {
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_name, "");
+            set_client_state (CLIENT_DELETE_AGENT);
+          }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
             assert (modify_task_name == NULL);
@@ -1048,6 +1066,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "task_id", &attribute))
               openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_TASK);
+          }
+        else if (strcasecmp ("GET_AGENTS", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "format", &attribute))
+              openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
+            set_client_state (CLIENT_GET_AGENTS);
           }
         else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
           set_client_state (CLIENT_GET_CERTIFICATES);
@@ -1225,6 +1262,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
           }
+        else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
+          {
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            set_client_state (CLIENT_CREATE_AGENT);
+          }
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
           {
             assert (modify_task_comment == NULL);
@@ -1345,6 +1390,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_DELETE_AGENT:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_DELETE_AGENT_NAME);
+        else
+          {
+            if (send_element_error_to_client ("delete_agent",
+                                              element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_DELETE_CONFIG:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_DELETE_CONFIG_NAME);
@@ -1424,6 +1488,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
+        break;
+
+      case CLIENT_GET_AGENTS:
+          {
+            if (send_element_error_to_client ("get_agents",
+                                              element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
         break;
 
       case CLIENT_GET_CERTIFICATES:
@@ -1842,6 +1922,27 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("abort_task", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_AGENT:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_COMMENT);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_NAME);
+        else
+          {
+            if (send_element_error_to_client ("create_agent",
+                                              element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -4453,6 +4554,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_AGENT:
+        {
+          assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              openvas_free_string_var (&modify_task_name);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("delete_agent",
+                                  "DELETE_AGENT name must be at least"
+                                  " one character long"));
+            }
+          else switch (delete_agent (modify_task_name))
+            {
+              case 0:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
+                break;
+              case 1:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_agent",
+                                    "Agent is in use"));
+                break;
+              default:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("delete_agent"));
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_DELETE_AGENT_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_DELETE_AGENT);
+        break;
+
       case CLIENT_DELETE_CONFIG:
         {
           assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
@@ -5108,6 +5247,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_TASK);
         break;
 
+      case CLIENT_CREATE_AGENT:
+        {
+          assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
+          assert (modify_task_name != NULL);
+
+          if (strlen (modify_task_name) == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_agent",
+                                  "CREATE_AGENT name must be at"
+                                  " least one character long"));
+            }
+          else switch (create_agent (modify_task_name,
+                                     modify_task_comment))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_agent"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_agent",
+                                    "Agent exists already"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_agent",
+                                    "Name may only contain alphanumeric"
+                                    " characters"));
+                break;
+              default:
+                assert (0);
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_agent"));
+                break;
+            }
+          openvas_free_string_var (&modify_task_comment);
+          openvas_free_string_var (&modify_task_name);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_AGENT_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT);
+        break;
+      case CLIENT_CREATE_AGENT_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT);
+        break;
+
       case CLIENT_CREATE_CONFIG:
         {
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
@@ -5238,7 +5427,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL name must both be at"
+                                  "CREATE_LSC_CREDENTIAL name must be at"
                                   " least one character long"));
             }
           else if (strlen (current_name) == 0)
@@ -6336,6 +6525,107 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_GET_AGENTS:
+        {
+          iterator_t targets;
+          int format;
+          assert (strcasecmp ("GET_AGENTS", element_name) == 0);
+
+          if (current_format)
+            {
+              if (strlen (current_format))
+                {
+                  if (strcasecmp (current_format, "installer") == 0)
+                    format = 1;
+                  else if (strcasecmp (current_format, "howto_install") == 0)
+                    format = 2;
+                  else if (strcasecmp (current_format, "howto_use") == 0)
+                    format = 3;
+                  else
+                    format = -1;
+                }
+              else
+                format = 0;
+              openvas_free_string_var (&current_format);
+            }
+          else
+            format = 0;
+          if (format == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_agents",
+                                "GET_AGENTS format attribute should"
+                                " be \"installer\", \"howto_install\" or \"howto_use\"."));
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_agent_iterator (&targets,
+                                   current_uuid,
+                                   /* Attribute sort_order. */
+                                   current_int_2,
+                                   /* Attribute sort_field. */
+                                   current_name);
+              while (next (&targets))
+                {
+                  switch (format)
+                    {
+                      case 1: /* installer */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<agent>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"installer\">%s</package>"
+                          "<in_use>0</in_use>"
+                          "</agent>",
+                          agent_iterator_name (&targets),
+                          agent_iterator_comment (&targets),
+                          agent_iterator_installer (&targets));
+                        break;
+                      case 2: /* howto_install */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<agent>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"howto_install\">%s</package>"
+                          "<in_use>0</in_use>"
+                          "</agent>",
+                          agent_iterator_name (&targets),
+                          agent_iterator_comment (&targets),
+                          agent_iterator_howto_install (&targets));
+                        break;
+                      case 3: /* howto_use */
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<agent>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<package format=\"howto_use\">%s</package>"
+                          "<in_use>0</in_use>"
+                          "</agent>",
+                          agent_iterator_name (&targets),
+                          agent_iterator_comment (&targets),
+                          agent_iterator_howto_use (&targets));
+                        break;
+                      default:
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<agent>"
+                          "<name>%s</name>"
+                          "<comment>%s</comment>"
+                          "<in_use>0</in_use>"
+                          "</agent>",
+                          agent_iterator_name (&targets),
+                          agent_iterator_comment (&targets));
+                        break;
+                    }
+                }
+              cleanup_iterator (&targets);
+              SEND_TO_CLIENT_OR_FAIL ("</get_agents_response>");
+            }
+          openvas_free_string_var (&current_name);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_CONFIGS:
         {
           iterator_t configs;
@@ -6819,6 +7109,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+      case CLIENT_CREATE_AGENT_COMMENT:
+        openvas_append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_CREATE_AGENT_NAME:
+        openvas_append_text (&modify_task_name, text, text_len);
+        break;
+
       case CLIENT_CREATE_CONFIG_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
         break;
@@ -6878,6 +7175,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_task_target (current_client_task, text, text_len);
         break;
 
+      case CLIENT_DELETE_AGENT_NAME:
       case CLIENT_DELETE_CONFIG_NAME:
       case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
       case CLIENT_DELETE_TARGET_NAME:

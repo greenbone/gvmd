@@ -809,6 +809,36 @@ char*
 lsc_credential_name (lsc_credential_t);
 
 
+/* Agents. */
+
+int
+create_agent (const char*, const char*);
+
+int
+delete_agent (const char*);
+
+void
+init_agent_iterator (iterator_t*, const char*, int, const char*);
+
+const char*
+agent_iterator_name (iterator_t*);
+
+const char*
+agent_iterator_comment (iterator_t*);
+
+const char*
+agent_iterator_installer (iterator_t*);
+
+const char*
+agent_iterator_howto_install (iterator_t*);
+
+const char*
+agent_iterator_howto_use (iterator_t*);
+
+char*
+agent_name (lsc_credential_t);
+
+
 /* Scanner messaging. */
 
 int
