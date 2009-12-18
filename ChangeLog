@@ -1,3 +1,16 @@
+2009-12-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Complete support for creating agent with associated files.
+
+	* src/tasks_sql.h (create_agent): Add installer and howto args.  Expect
+	the installer and howtos to be base64 encoded already.
+	(init_agent_iterator): Remove comma from SQL.
+
+	* src/manage.h: Update header.
+
+	* src/omp.c (omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add installer and howto entities to CREATE_AGENT.
+
 2009-12-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Add agent support.

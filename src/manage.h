@@ -812,7 +812,7 @@ lsc_credential_name (lsc_credential_t);
 /* Agents. */
 
 int
-create_agent (const char*, const char*);
+create_agent (const char*, const char*, const char*, const char*, const char*);
 
 int
 delete_agent (const char*);

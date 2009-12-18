@@ -1268,6 +1268,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (modify_task_name == NULL);
             openvas_append_string (&modify_task_comment, "");
             openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_file, "");
+            openvas_append_string (&modify_task_parameter, "");
+            openvas_append_string (&modify_task_value, "");
             set_client_state (CLIENT_CREATE_AGENT);
           }
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -1937,6 +1940,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_COMMENT);
+        else if (strcasecmp ("HOWTO_INSTALL", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_HOWTO_INSTALL);
+        else if (strcasecmp ("HOWTO_USE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_HOWTO_USE);
+        else if (strcasecmp ("INSTALLER", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_NAME);
         else
@@ -5260,7 +5269,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " least one character long"));
             }
           else switch (create_agent (modify_task_name,
-                                     modify_task_comment))
+                                     modify_task_comment,
+                                     modify_task_file,      /* Installer. */
+                                     modify_task_parameter, /* HOWTO Install. */
+                                     modify_task_value))    /* HOWTO Use. */
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_agent"));
@@ -5285,11 +5297,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           openvas_free_string_var (&modify_task_comment);
           openvas_free_string_var (&modify_task_name);
+          openvas_free_string_var (&modify_task_file);
+          openvas_free_string_var (&modify_task_parameter);
+          openvas_free_string_var (&modify_task_value);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
       case CLIENT_CREATE_AGENT_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT);
+        break;
+      case CLIENT_CREATE_AGENT_HOWTO_INSTALL:
+        assert (strcasecmp ("HOWTO_INSTALL", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT);
+        break;
+      case CLIENT_CREATE_AGENT_HOWTO_USE:
+        assert (strcasecmp ("HOWTO_USE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT);
+        break;
+      case CLIENT_CREATE_AGENT_INSTALLER:
+        assert (strcasecmp ("INSTALLER", element_name) == 0);
         set_client_state (CLIENT_CREATE_AGENT);
         break;
       case CLIENT_CREATE_AGENT_NAME:
@@ -7111,6 +7138,15 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_AGENT_COMMENT:
         openvas_append_text (&modify_task_comment, text, text_len);
+        break;
+      case CLIENT_CREATE_AGENT_HOWTO_INSTALL:
+        openvas_append_text (&modify_task_parameter, text, text_len);
+        break;
+      case CLIENT_CREATE_AGENT_HOWTO_USE:
+        openvas_append_text (&modify_task_value, text, text_len);
+        break;
+      case CLIENT_CREATE_AGENT_INSTALLER:
+        openvas_append_text (&modify_task_file, text, text_len);
         break;
       case CLIENT_CREATE_AGENT_NAME:
         openvas_append_text (&modify_task_name, text, text_len);

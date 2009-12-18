@@ -8508,18 +8508,20 @@ lsc_credential_name (lsc_credential_t lsc_credential)
 /**
  * @brief Create an agent entry.
  *
- * @param[in]  name     Name of agent.  Must be at least one character long.
- * @param[in]  comment  Comment on agent.
+ * @param[in]  name           Name of agent.  Must be at least one character long.
+ * @param[in]  comment        Comment on agent.
+ * @param[in]  installer      Installer, in base64.
+ * @param[in]  howto_install  Install HOWTO, in base64.
+ * @param[in]  howto_use      Usage HOWTO, in base64.
  *
  * @return 0 success, 1 agent exists already, -1 error.
  */
 int
-create_agent (const char* name, const char* comment)
+create_agent (const char* name, const char* comment, const char* installer,
+              const char* howto_install, const char* howto_use)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_comment, *base64;
-  void *installer = NULL, *howto_install = NULL, *howto_use = NULL;
-  gsize installer_size, howto_install_size, howto_use_size;
+  gchar *quoted_comment;
 
   assert (strlen (name) > 0);
 
@@ -8586,9 +8588,6 @@ create_agent (const char* name, const char* comment)
                            __FUNCTION__,
                            sqlite3_errmsg (task_db));
                 sql ("END;");
-                g_free (installer);
-                g_free (howto_install);
-                g_free (howto_use);
                 return -1;
               }
             break;
@@ -8597,24 +8596,17 @@ create_agent (const char* name, const char* comment)
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("END;");
-        g_free (installer);
-        g_free (howto_install);
-        g_free (howto_use);
         return -1;
       }
 
     /* Bind the packages to the "$values" in the SQL statement. */
 
-    base64 = (installer && strlen (installer))
-             ? g_base64_encode (installer, installer_size)
-             : g_strdup ("");
-    g_free (installer);
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
                                  1,
-                                 base64,
-                                 strlen (base64),
+                                 installer,
+                                 strlen (installer),
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
@@ -8622,23 +8614,15 @@ create_agent (const char* name, const char* comment)
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("END;");
-        g_free (base64);
-        g_free (howto_install);
-        g_free (howto_use);
         return -1;
       }
-    g_free (base64);
 
-    base64 = (howto_install && strlen (howto_install))
-             ? g_base64_encode (howto_install, howto_install_size)
-             : g_strdup ("");
-    g_free (howto_install);
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
                                  2,
-                                 base64,
-                                 strlen (base64),
+                                 howto_install,
+                                 strlen (howto_install),
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
@@ -8646,22 +8630,15 @@ create_agent (const char* name, const char* comment)
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("END;");
-        g_free (base64);
-        g_free (howto_use);
         return -1;
       }
-    g_free (base64);
 
-    base64 = (howto_use && strlen (howto_use))
-             ? g_base64_encode (howto_use, howto_use_size)
-             : g_strdup ("");
-    g_free (howto_use);
     while (1)
       {
         ret = sqlite3_bind_blob (stmt,
                                  3,
-                                 base64,
-                                 strlen (base64),
+                                 howto_use,
+                                 strlen (howto_use),
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
@@ -8669,10 +8646,8 @@ create_agent (const char* name, const char* comment)
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("END;");
-        g_free (base64);
         return -1;
       }
-    g_free (base64);
 
     /* Run the statement. */
 
@@ -8736,7 +8711,7 @@ init_agent_iterator (iterator_t* iterator, const char *name,
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
                      "SELECT name, comment, installer,"
-                     " howto_install, howto_use,"
+                     " howto_install, howto_use"
                      " FROM agents"
                      " WHERE name = '%s'"
                      " ORDER BY %s %s;",
