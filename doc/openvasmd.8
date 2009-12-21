@@ -1,0 +1,39 @@
+.TH openvamd 8 User Manuals
+.SH NAME
+openvamd \- The manager layer of the OpenVAS Security Scanner
+.SH SYNOPSIS
+\fBopenvasmd OPTION
+\f1
+.SH DESCRIPTION
+The OpenVAS security scanner consists of a server and client. The scanner, openvassd(8), does the actual scanning, and the client, OpenVAS-Client(1), provides a user interface to the server. 
+
+The manager is a program that provides a layer between the server and client. This reduces the amount of work done by the server, thus reducing the amount of work done with high system privileges. 
+.SH OPTIONS
+.TP
+\fB-a, --listen=\fIADDRESS\fB\f1
+Listen on ADDRESS.
+.TP
+\fB-l, --slisten=\fIADDRESS\fB\f1
+Connect to server (openvassd) at address ADDRESS.
+.TP
+\fB-p, --port=\fINUMBER\fB\f1
+Listen on port number \fINUMBER\f1.
+.TP
+\fB-s, --sport=\fINUMBER\fB\f1
+Connect to server (openvassd) on port number \fINUMBER\f1.
+.TP
+\fB-v, --version\f1
+Print version.
+.TP
+\fB-?, --help\f1
+Show help.
+.SH EXAMPLES
+openvasmd --port 1241 --sport 7772
+
+Serve the client on port 1241 and connect to the server on 7772.
+.SH SEE ALSO
+\fBopenvas(1)\f1, \fBopenvassd(8)\f1
+.SH MORE INFORMATION ABOUT THE OPENVAS PROJECT
+The canonical places where you will find more information about the OpenVAS project are: \fBhttp://www.openvas.org/\f1 (Official site) \fBhttp://www.openvas.org/doku.php?id=mailing_lists\f1 (Mailing lists) 
+.SH COPYRIGHT
+The OpenVAS manager is release under the GNU GPL, version 2.

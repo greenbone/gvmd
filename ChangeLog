@@ -1,3 +1,11 @@
+2009-12-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* doc/openvasmd.html, doc/openvasmd.8: New files.
+
+	* doc/CMakeLists.txt: Remove groff comments.  Prevent "clean" from
+	removing extra documentation.
+	(man, man-html): New targets.
+
 2009-12-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
@@ -10,7 +18,7 @@
 
 	* CHANGES: Updated.
 
-2009-12-18  Matthew Mundell <matthew.mundell@intevation.de>
+2009-12-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_AGENT require
 	an installer.

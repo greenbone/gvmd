@@ -22,31 +22,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-## Check groff
-
-message (STATUS "Looking for groff...")
-
-find_program (GROFF_EXECUTABLE groff
-              PATHS /bin /usr/bin /usr/local/bin/
-              DOC "Groff location")
-
-message (STATUS "Looking for groff... ${GROFF_EXECUTABLE}")
-
-# if (GROFF_EXECUTABLE)
-#   message (STATUS "Checking if groff does HTML...")
-#   execute_process (COMMAND echo test | ${GROFF_EXECUTABLE} -T html
-#                    RESULT_VARIABLE GROFF_DOES_HTML
-# 				   OUTPUT_QUIET ERROR_QUIET)
-#
-#   if ("${GROFF_DOES_HTML}" MATCHES "^0$")
-#     set (GROFF_DOES_HTML true)
-#   else ("${GROFF_DOES_HTML}" MATCHES "^0$")
-#     set (GROFF_DOES_HTML false)
-#   endif ("${GROFF_DOES_HTML}" MATCHES "^0$")
-#
-#   message (STATUS "Checking if groff does HTML... ${GROFF_DOES_HTML}")
-# endif (GROFF_EXECUTABLE)
-
 ## Find xml2man
 
 message (STATUS "Looking for xmltoman...")
@@ -82,6 +57,9 @@ message (STATUS "Looking for SQLFairy... ${SQLT-DIAGRAM_EXECUTABLE}, ${SQLT_EXEC
 
 ## build
 
+set_directory_properties (PROPERTIES CLEAN_NO_CUSTOM true)
+set_directory_properties (PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ".built-html;.built-html_full")
+
 include (FindDoxygen)
 
 if (NOT DOXYGEN_EXECUTABLE)
@@ -103,6 +81,12 @@ add_custom_target (doc COMMENT "Building documentation..."
 add_custom_target (doc-full COMMENT "Building documentation..."
                    DEPENDS openvasmd.8 Doxyfile_full .built-html_full
                            .built-html_db db.png)
+
+add_custom_target (man COMMENT "Building manual page..."
+                   DEPENDS openvasmd.8)
+
+add_custom_target (man-html COMMENT "Building manual page HTML..."
+                   DEPENDS openvasmd.html)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_command (OUTPUT openvasmd.8
@@ -159,31 +143,6 @@ add_custom_command (OUTPUT .built-html_full
                     COMMAND sh
 					ARGS -c \"cd .. && ${DOXYGEN_EXECUTABLE} doc/Doxyfile_full && touch doc/.built-html_full\;\"
 					DEPENDS openvasmd.html Doxyfile_full ${DOC_FILES})
-
-# if (GROFF_DOES_HTML)
-#   add_custom_command (OUTPUT openvasmd.html
-# 					  COMMAND sh
-# 					  ARGS -c \"${GROFF_EXECUTABLE} -T html openvasmd.8 > openvasmd.html\;\"
-# 					  DEPENDS openvasmd.8)
-#   add_custom_command (OUTPUT .built-html
-# 					  COMMAND sh
-# 					  ARGS -c \"${DOXYGEN_EXECUTABLE} Doxyfile && touch .built-html\;\"
-# 					  DEPENDS openvasmd.html Doxyfile footer.html
-# 					          ../src/openvasmd.c
-# 							  ../README ../INSTALL)
-# else (GROFF_DOES_HTML)
-#   message (STATUS "WARNING: groff with HTML device is required for manpage in HTML docs.")
-#   add_custom_command (OUTPUT openvasmd.html
-#                       COMMAND echo "[Error: groff with HTML device is required to see manpage here]"
-# 					          > openvasmd.html)
-#   add_custom_command (OUTPUT .built-html
-# 					  COMMAND sh
-# 					  ARGS -c \"${DOXYGEN_EXECUTABLE} Doxyfile && touch .built-html\;\"
-# 					  DEPENDS openvasmd.html Doxyfile footer.html
-# 					          ../src/openvasmd.c
-# 							  ../README ../INSTALL)
-# endif (GROFF_DOES_HTML)
-
 
 ## Install
 
