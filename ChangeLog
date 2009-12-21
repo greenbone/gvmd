@@ -1,5 +1,9 @@
 2009-12-21  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_help_0.c (help_text): Add agent commands.
+
+2009-12-21  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* doc/openvasmd.html, doc/openvasmd.8: New files.
 
 	* doc/CMakeLists.txt: Remove groff comments.  Prevent "clean" from
