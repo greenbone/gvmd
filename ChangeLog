@@ -1,3 +1,9 @@
+2009-12-21  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 0.9.8 release.
+
+	* CHANGES: Updated.
+
 2009-12-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_AGENT require

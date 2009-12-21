@@ -1,3 +1,19 @@
+openvas-manager 0.9.8 (2009-12-21)
+
+This is the fourteenth development release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Jan-Oliver Wagner, Felix Wolfsteller and Michael Wiegand.
+
+Main changes since 0.9.7:
+
+* Database performance has been improved.
+* Credential management has been improved.
+* Initial agent support has been added.
+* Support for cross-referencing in tasks, configs and targets has been added.
+
+
 openvas-manager 0.9.7 (2009-12-08)
 
 This is the thirteenth development release of the openvas-manager module
