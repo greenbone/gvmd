@@ -1,3 +1,8 @@
+2009-12-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_AGENT require
+	an installer.
+
 2009-12-21  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* CMakeLists.txt: Don't ignore necessary files when creating the source

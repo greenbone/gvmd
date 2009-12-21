@@ -5268,6 +5268,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_AGENT name must be at"
                                   " least one character long"));
             }
+          else if (strlen (modify_task_file) == 0)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_agent",
+                                  "CREATE_AGENT installer must be at"
+                                  " least one byte long"));
+            }
           else switch (create_agent (modify_task_name,
                                      modify_task_comment,
                                      modify_task_file,      /* Installer. */
