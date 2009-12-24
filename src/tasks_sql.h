@@ -427,7 +427,6 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
 
 /* General helpers. */
 
-/** @todo Duplicated in gsa. */
 /**
  * @brief Test whether a string equal to a given string exists in an array.
  *
@@ -437,11 +436,11 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
  * @return 1 if a string equal to \arg string exists in \arg array, else 0.
  */
 static int
-member (GArray *array, const char *string)
+member (GPtrArray *array, const char *string)
 {
   const gchar *item;
   int index = 0;
-  while ((item = g_array_index (array, gchar*, index++)))
+  while ((item = (gchar*) g_ptr_array_index (array, index++)))
     if (strcmp (item, string) == 0) return 1;
   return 0;
 }
@@ -6048,7 +6047,7 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
  */
 int
 manage_set_config_nvts (const char* config, const char* family,
-                        GArray* selected_nvts)
+                        GPtrArray* selected_nvts)
 {
   char *selector;
   gchar *quoted_config, *quoted_family;
@@ -6131,7 +6130,8 @@ manage_set_config_nvts (const char* config, const char* family,
           gchar *nvt;
           new_nvt_count = 0;
 
-          while ((nvt = g_array_index (selected_nvts, gchar*, new_nvt_count)))
+          while ((nvt = (gchar*) g_ptr_array_index (selected_nvts,
+                                                    new_nvt_count)))
             {
               gchar *quoted_nvt = sql_quote (nvt);
               sql ("INSERT INTO nvt_selectors"
@@ -7566,9 +7566,9 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  */
 int
 manage_set_config_families (const char* config,
-                            GArray* growing_all_families,
-                            GArray* static_all_families,
-                            GArray* growing_families,
+                            GPtrArray* growing_all_families,
+                            GPtrArray* static_all_families,
+                            GPtrArray* growing_families,
                             int grow_families)
 {
   iterator_t families;

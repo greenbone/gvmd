@@ -128,14 +128,51 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
                                strlen (two), two);
 }
 
+/**
+ * @brief Make a global array.
+ *
+ * @return New array.
+ */
+static GPtrArray *
+make_array ()
+{
+  return g_ptr_array_new ();
+}
+
+/**
+ * @brief Push a string onto a global array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.
+ */
 static void
-free_array (GArray *array)
+array_add (GPtrArray *array, gchar* string)
+{
+  if (array) g_ptr_array_add (array, string);
+}
+
+/**
+ * @brief Terminate a global array.
+ */
+static void
+array_terminate (GPtrArray *array)
+{
+  if (array) g_ptr_array_add (array, NULL);
+}
+
+/**
+ * @brief Free global array value.
+ *
+ * @param[in]  array  Pointer to array.
+ */
+static void
+free_array (GPtrArray *array)
 {
   int index = 0;
-  void* item;
-  while ((item = g_array_index (array, void*, index++)))
+  gpointer item;
+  while ((item = g_ptr_array_index (array, index++)))
     g_free (item);
-  g_array_free (array, TRUE);
+  g_ptr_array_free (array, TRUE);
 }
 
 /** @todo Duplicated from lsc_user.c. */
@@ -374,17 +411,17 @@ int forked;
 /**
  * @brief Generic array variable for communicating between the callbacks.
  */
-GArray *current_array_1;
+GPtrArray *current_array_1;
 
 /**
  * @brief Generic array variable for communicating between the callbacks.
  */
-GArray *current_array_2;
+GPtrArray *current_array_2;
 
 /**
  * @brief Generic array variable for communicating between the callbacks.
  */
-GArray *current_array_3;
+GPtrArray *current_array_3;
 
 /**
  * @brief Generic integer variable for communicating between the callbacks.
@@ -1707,16 +1744,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             assert (current_array_1 == NULL);
             assert (current_array_2 == NULL);
-            current_array_1 = g_array_new (TRUE, FALSE, sizeof (gchar*));
-            current_array_2 = g_array_new (TRUE, FALSE, sizeof (gchar*));
-            current_array_3 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            assert (current_array_3 == NULL);
+            current_array_1 = make_array ();
+            current_array_2 = make_array ();
+            current_array_3 = make_array ();
             current_int_3 = 0; /* For GROWING entity, in case missing. */
             set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
           }
         else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
           {
             assert (current_array_1 == NULL);
-            current_array_1 = g_array_new (TRUE, FALSE, sizeof (gchar*));
+            current_array_1 = make_array ();
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
           }
         else if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -4788,11 +4826,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               " an NVT_SELECTION or a FAMILY_SELECTION"));
         else if (current_format)
           {
-            gchar *item;
-            int index = 0;
-
             assert (current_array_1);
 
+            array_terminate (current_array_1);
             switch (manage_set_config_nvts (current_name,
                                             current_format,
                                             current_array_1))
@@ -4814,10 +4850,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
               }
 
-            while ((item = g_array_index (current_array_1, gchar*, index++)))
-              g_free (item);
-
-            g_array_free (current_array_1, TRUE);
+            free_array (current_array_1);
             current_array_1 = NULL;
           }
         else if (current_array_2)    /* Implies FAMILY_SELECTION. */
@@ -4825,6 +4858,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             assert (current_array_1);
             assert (current_array_3);
 
+            array_terminate (current_array_1);
+            array_terminate (current_array_2);
+            array_terminate (current_array_3);
             switch (manage_set_config_families (current_name,
                                                 current_array_1,
                                                 current_array_2,
@@ -4911,16 +4947,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (current_int_2)
                   /* Growing 1 and select all 1. */
-                  g_array_append_val (current_array_1, current_uuid);
+                  array_add (current_array_1, current_uuid);
                 else
                   /* Growing 1 and select all 0. */
-                  g_array_append_val (current_array_3, current_uuid);
+                  array_add (current_array_3, current_uuid);
               }
             else
               {
                 if (current_int_2)
                   /* Growing 0 and select all 1. */
-                  g_array_append_val (current_array_2, current_uuid);
+                  array_add (current_array_2, current_uuid);
                 /* Else growing 0 and select all 0. */
               }
           }
@@ -4973,7 +5009,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
         assert (strcasecmp ("NVT", element_name) == 0);
         if (current_uuid)
-          g_array_append_val (current_array_1, current_uuid);
+          array_add (current_array_1, current_uuid);
         current_uuid = NULL;
         set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
         break;

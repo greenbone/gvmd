@@ -1,5 +1,23 @@
 2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Switch the global OMP array variables to GPtrArrays.
+
+	* src/tasks_sql.h (member): Switch array to GPtrArray.
+	(manage_set_config_nvts): Switch selected_nvts to GPtrArray.
+	(manage_set_config_families): Switch families args to GPtrArray.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (make_array, array_add, array_terminate): New functions.
+	(free_array): Switch arg to GPtrArray.
+	(current_array_1, current_array_2, current_array_3): Switch type to
+	GPtrArray.
+	(omp_xml_handle_start_element): Create arrays with make_array.
+	(omp_xml_handle_end_element): Terminate arrays before use.  Free
+	arrays with free_array.  Append to arrays with array_add.
+
+2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (help_text): Sort.  Correct article.
 
 	* src/tasks_sql.h (set_task_run_status): Neaten doc.

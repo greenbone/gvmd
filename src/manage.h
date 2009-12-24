@@ -633,10 +633,11 @@ manage_set_config_preference (const char*, const char*, const char*,
                               const char*);
 
 int
-manage_set_config_nvts (const char*, const char*, GArray*);
+manage_set_config_nvts (const char*, const char*, GPtrArray*);
 
 int
-manage_set_config_families (const char*, GArray*, GArray*, GArray*, int);
+manage_set_config_families (const char*, GPtrArray*, GPtrArray*, GPtrArray*,
+                            int);
 
 
 /* NVT's. */
