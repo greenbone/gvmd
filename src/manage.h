@@ -150,6 +150,7 @@ typedef enum
 } task_status_t;
 
 #ifdef TASKS_SQL
+typedef long long int escalator_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
@@ -171,6 +172,7 @@ typedef struct
   gboolean done;
 } iterator_t;
 #else /* not TASKS_SQL */
+typedef long long int escalator_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
@@ -189,6 +191,98 @@ typedef struct
   gboolean done;
 } iterator_t;
 #endif /* not TASKS_SQL */
+
+
+/* Events. */
+
+/**
+ * @brief Types of task events.
+ */
+typedef enum
+{
+  EVENT_ERROR,
+  EVENT_TASK_RUN_STATUS_CHANGED
+} event_t;
+
+/**
+ * @brief Types of escalators.
+ */
+typedef enum
+{
+  ESCALATOR_METHOD_ERROR,
+  ESCALATOR_METHOD_EMAIL
+} escalator_method_t;
+
+/**
+ * @brief Types of escalator conditions.
+ */
+typedef enum
+{
+  ESCALATOR_CONDITION_ERROR,
+  ESCALATOR_CONDITION_ALWAYS
+} escalator_condition_t;
+
+int
+create_escalator (const char*, const char*, event_t, GPtrArray*,
+                  escalator_condition_t, GPtrArray*, escalator_method_t,
+                  GPtrArray*);
+
+int
+delete_escalator (const char*);
+
+gboolean
+find_escalator (const char*, escalator_t*);
+
+void
+init_escalator_iterator (iterator_t*, task_t, event_t, int, const char*);
+
+escalator_t
+escalator_iterator_escalator (iterator_t*);
+
+const char*
+escalator_iterator_name (iterator_t*);
+
+int
+escalator_iterator_in_use (iterator_t*);
+
+const char *
+escalator_iterator_comment (iterator_t*);
+
+int
+escalator_iterator_event (iterator_t*);
+
+int
+escalator_iterator_condition (iterator_t*);
+
+int
+escalator_iterator_method (iterator_t*);
+
+const char*
+escalator_condition_name (escalator_condition_t);
+
+const char*
+event_name (event_t);
+
+const char*
+escalator_method_name (escalator_method_t);
+
+escalator_condition_t
+escalator_condition_from_name (const char*);
+
+event_t
+event_from_name (const char*);
+
+escalator_method_t
+escalator_method_from_name (const char*);
+
+void
+init_escalator_data_iterator (iterator_t *, escalator_t, const char *);
+
+const char*
+escalator_data_iterator_name (iterator_t*);
+
+const char*
+escalator_data_iterator_data (iterator_t*);
 
 
 /* Task global variables. */
@@ -265,6 +359,12 @@ task_end_time (task_t);
 
 void
 set_task_end_time (task_t task, char* time);
+
+char*
+task_escalator (task_t);
+
+void
+add_task_escalator (task_t, const char*);
 
 unsigned int
 task_report_count (task_t);

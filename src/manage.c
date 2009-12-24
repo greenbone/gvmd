@@ -241,6 +241,105 @@ print_tasks ();
 #endif
 
 
+/* Escalators. */
+
+/**
+ * @brief Get the name of an escalator condition.
+ *
+ * @param[in]  condition  Condition.
+ *
+ * @return The name of the condition (for example, "Always").
+ */
+const char*
+escalator_condition_name (escalator_condition_t condition)
+{
+  switch (condition)
+    {
+      case ESCALATOR_CONDITION_ALWAYS: return "Always";
+      default:                         return "Internal Error";
+    }
+}
+
+/**
+ * @brief Get the name of an escalator event.
+ *
+ * @param[in]  event  Event.
+ *
+ * @return The name of the event (for example, "Run status changed").
+ */
+const char*
+event_name (event_t event)
+{
+  switch (event)
+    {
+      case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
+      default:                            return "Internal Error";
+    }
+}
+
+/**
+ * @brief Get the name of an escalator method.
+ *
+ * @param[in]  method  Method.
+ *
+ * @return The name of the method (for example, "Email" or "SNMP").
+ */
+const char*
+escalator_method_name (escalator_method_t method)
+{
+  switch (method)
+    {
+      case ESCALATOR_METHOD_EMAIL: return "Email";
+      default:                     return "Internal Error";
+    }
+}
+
+/**
+ * @brief Get an escalator condition from a name.
+ *
+ * @param[in]  name  Condition name.
+ *
+ * @return The condition.
+ */
+escalator_condition_t
+escalator_condition_from_name (const char* name)
+{
+  if (strcasecmp (name, "Always") == 0)
+    return ESCALATOR_CONDITION_ALWAYS;
+  return ESCALATOR_CONDITION_ERROR;
+}
+
+/**
+ * @brief Get an event from a name.
+ *
+ * @param[in]  name  Event name.
+ *
+ * @return The event.
+ */
+event_t
+event_from_name (const char* name)
+{
+  if (strcasecmp (name, "Task run status changed") == 0)
+    return EVENT_TASK_RUN_STATUS_CHANGED;
+  return EVENT_ERROR;
+}
+
+/**
+ * @brief Get an escalator method from a name.
+ *
+ * @param[in]  name  Method name.
+ *
+ * @return The method.
+ */
+escalator_method_t
+escalator_method_from_name (const char* name)
+{
+  if (strcasecmp (name, "Email") == 0)
+    return ESCALATOR_METHOD_EMAIL;
+  return ESCALATOR_METHOD_ERROR;
+}
+
+
 /* General task facilities. */
 
 /**

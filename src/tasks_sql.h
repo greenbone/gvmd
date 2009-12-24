@@ -457,6 +457,10 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, name UNIQUE, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
@@ -474,6 +478,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
+  sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
 
@@ -1912,6 +1917,538 @@ collate_message_type (void* data,
 }
 
 
+/* Events and Escalators. */
+
+/**
+ * @brief Create an escalator.
+ *
+ * @param[in]  name            Name of escalator.
+ * @param[in]  comment         Comment on escalator.
+ * @param[in]  event           Type of event.
+ * @param[in]  event_data      Type-specific event data.
+ * @param[in]  condition_data  Event condition.
+ * @param[in]  condition_data  Condition-specific data.
+ * @param[in]  method_data     Escalation method.
+ * @param[in]  method_data     Data for escalation method.
+ *
+ * @return 0 success, 1 escalation exists already.
+ */
+int
+create_escalator (const char* name, const char* comment,
+                  event_t event, GPtrArray* event_data,
+                  escalator_condition_t condition, GPtrArray* condition_data,
+                  escalator_method_t method, GPtrArray* method_data)
+{
+  escalator_t escalator;
+  int index;
+  gchar *item, *quoted_comment;
+  gchar *quoted_name = sql_quote (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM escalators WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
+
+  quoted_comment = comment ? sql_quote (comment) : NULL;
+
+  sql ("INSERT INTO escalators (name, comment, event, condition, method)"
+       " VALUES ('%s', '%s', %i, %i, %i);",
+       quoted_name,
+       quoted_comment ? quoted_comment : "",
+       event,
+       condition,
+       method);
+
+  escalator = sqlite3_last_insert_rowid (task_db);
+
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      sql ("INSERT INTO escalator_condition_data (escalator, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           escalator,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
+
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      sql ("INSERT INTO escalator_event_data (escalator, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           escalator,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
+
+  index = 0;
+  while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
+    {
+      gchar *name = sql_quote (item);
+      gchar *data = sql_quote (item + strlen (item) + 1);
+      sql ("INSERT INTO escalator_method_data (escalator, name, data)"
+           " VALUES (%llu, '%s', '%s');",
+           escalator,
+           name,
+           data);
+      g_free (name);
+      g_free (data);
+    }
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete an escalator.
+ *
+ * @param[in]  name  Name of escalator.
+ *
+ * @return 0 success, 1 fail because a task refers to the escalator, -1 error.
+ */
+int
+delete_escalator (const char* name)
+{
+  gchar* quoted_name = sql_quote (name);
+  sql ("BEGIN IMMEDIATE;");
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM task_escalators WHERE escalator ="
+               " (SELECT ROWID FROM escalators where name = '%s');",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("END;");
+      return 1;
+    }
+  sql ("DELETE FROM escalator_condition_data"
+       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
+       quoted_name);
+  sql ("DELETE FROM escalator_event_data"
+       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
+       quoted_name);
+  sql ("DELETE FROM escalator_method_data"
+       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
+       quoted_name);
+  sql ("DELETE FROM escalators WHERE name = '%s';", quoted_name);
+  sql ("COMMIT;");
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Find an escalator given a name.
+ *
+ * @param[in]   name       Escalator name.
+ * @param[out]  escalator  Return.  0 if succesfully failed to find escalator.
+ *
+ * @return FALSE on success (including if failed to find escalator), TRUE on
+ *         error.
+ */
+gboolean
+find_escalator (const char* name, escalator_t* escalator)
+{
+  gchar *quoted_name = sql_quote (name);
+  switch (sql_int64 (escalator, 0, 0,
+                     "SELECT ROWID FROM escalators WHERE name = '%s';",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *escalator = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
+ * @brief Initialise an escalator iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  task        Iterate over escalators for this task.  0 for all.
+ * @param[in]  event       Iterate over escalators handling this event.  0 for
+ *                         all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_escalator_iterator (iterator_t *iterator, task_t task, event_t event,
+                         int ascending, const char *sort_field)
+{
+  if (task)
+    init_iterator (iterator,
+                   "SELECT escalators.ROWID, name, comment,"
+                   " task_escalators.task, event, condition, method, 1"
+                   " FROM escalators, task_escalators"
+                   " WHERE task_escalators.escalator = escalators.ROWID"
+                   " AND task_escalators.task = %llu AND event = %i"
+                   " ORDER BY %s %s;",
+                   task,
+                   event,
+                   sort_field ? sort_field : "escalators.ROWID",
+                   ascending ? "ASC" : "DESC");
+  else if (event)
+    abort (); /** @todo Complete. */
+  else
+    init_iterator (iterator,
+                   "SELECT escalators.ROWID, name, comment,"
+                   " 0, event, condition, method,"
+                   " (SELECT count(*) > 0 FROM task_escalators"
+                   "  WHERE task_escalators.escalator = escalators.ROWID)"
+                   " FROM escalators"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "escalators.ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Return the escalator from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+escalator_t
+escalator_iterator_escalator (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
+ * @brief Return the name from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_iterator_name (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret;
+}
+
+/**
+ * @brief Return the comment on an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char *
+escalator_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  return ret;
+}
+
+/**
+ * @brief Return the event from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+int
+escalator_iterator_event (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  return ret;
+}
+
+/**
+ * @brief Return the condition from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+int
+escalator_iterator_condition (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  return ret;
+}
+
+/**
+ * @brief Return the method from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+int
+escalator_iterator_method (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
+
+/**
+ * @brief Return whether an escalator is in use.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+int
+escalator_iterator_in_use (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 7);
+  return ret;
+}
+
+/**
+ * @brief Initialise an escalator data iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  escalator  Escalator.
+ * @param[in]  type       Type of data: "condition", "event" or "method".
+ */
+void
+init_escalator_data_iterator (iterator_t *iterator, escalator_t escalator,
+                              const char *table)
+{
+  init_iterator (iterator,
+                 "SELECT name, data FROM escalator_%s_data"
+                 " WHERE escalator = %llu;",
+                 table,
+                 escalator);
+}
+
+/**
+ * @brief Return the name from an escalator data iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_data_iterator_name (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  return ret;
+}
+
+/**
+ * @brief Return the data from an escalator data iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_data_iterator_data (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret;
+}
+
+/**
+ * @brief Return data associated with an escalator.
+ *
+ * @param[in]  escalator  Escalator.
+ * @param[in]  type       Type of data: "condition", "event" or "method".
+ * @param[in]  name       Name of the data.
+ *
+ * @return Freshly allocated data if it exists, else NULL.
+ */
+static char *
+escalator_data (escalator_t escalator, const char *type, const char *name)
+{
+  gchar *quoted_name;
+  char *data;
+
+  assert (strcmp (type, "condition") == 0
+          || strcmp (type, "event") == 0
+          || strcmp (type, "method") == 0);
+
+  quoted_name = sql_quote (name);
+  data = sql_string (0, 0,
+                     "SELECT data FROM escalator_%s_data"
+                     " WHERE escalator = %llu AND name = '%s';",
+                     type,
+                     escalator,
+                     quoted_name);
+  g_free (quoted_name);
+  return data;
+}
+
+/**
+ * @brief Send an email.
+ *
+ * @param[in]  to_address  Address to send to.
+ * @param[in]  subject     Subject of email.
+ * @param[in]  body        Body of email.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+email (const char *to_address, const char *subject, const char *body)
+{
+  tracef ("   EMAIL to %s subject: %s, body: %s", to_address, subject, body);
+  return 0;
+}
+
+/**
+ * @brief Escalate an event.
+ *
+ * @param[in]  escalator   Escalator.
+ * @param[in]  task        Task.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  method      Method from escalator.
+ * @param[in]  condition   Condition from escalator, which was met by event.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+escalate (escalator_t escalator, task_t task, event_t event,
+          const void* event_data, escalator_method_t method,
+          escalator_condition_t condition)
+{
+  switch (method)
+    {
+      case ESCALATOR_METHOD_EMAIL:
+        {
+          int ret;
+          char *address = escalator_data (escalator, "method", "address");
+
+          if (address)
+            {
+              gchar *subject;
+              subject = g_strdup_printf ("[OpenVAS-Manager] Task FIX subject");
+              ret = email (address, subject, "FIX body");
+              g_free (subject);
+            }
+          free (address);
+          return ret;
+          break;
+        }
+      case ESCALATOR_METHOD_ERROR:
+      default:
+        break;
+    }
+  return -1;
+}
+
+/**
+ * @brief Return whether an event applies to a task and an escalator.
+ *
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ * @param[in]  task        Task.
+ * @param[in]  escalator   Escalator.
+ *
+ * @return 1 if event applies, else 0.
+ */
+static int
+event_applies (event_t event, const void *event_data, task_t task,
+               escalator_t escalator)
+{
+  switch (event)
+    {
+      case EVENT_TASK_RUN_STATUS_CHANGED:
+        {
+          int ret;
+          char *escalator_event_data;
+
+          escalator_event_data = escalator_data (escalator, "event", "status");
+          if (escalator_event_data == NULL)
+            return 0;
+          ret = (task_run_status (task) == (task_status_t) event_data)
+                && (strcmp (escalator_event_data,
+                            run_status_name ((task_status_t) event_data))
+                    == 0);
+          free (escalator_event_data);
+          return ret;
+          break;
+        }
+      default:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return whether a condition is met.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  condition  Condition.
+ *
+ * @return 1 if met, else 0.
+ */
+static int
+condition_met (task_t task, escalator_condition_t condition)
+{
+  switch (condition)
+    {
+      case ESCALATOR_CONDITION_ALWAYS:
+        return 1;
+        break;
+      default:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Produce an event.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event type specific details.
+ */
+static void
+event (task_t task, event_t event, void* event_data)
+{
+  iterator_t escalators;
+  tracef ("   EVENT %i on task %llu", event, task);
+  init_escalator_iterator (&escalators, task, event, 1, NULL);
+  while (next (&escalators))
+    {
+      escalator_t escalator = escalator_iterator_escalator (&escalators);
+      if (event_applies (event, event_data, task, escalator))
+        {
+          escalator_condition_t condition;
+
+          condition = escalator_iterator_condition (&escalators);
+          if (condition_met (task, condition))
+            escalate (escalator,
+                      task,
+                      event,
+                      event_data,
+                      escalator_iterator_method (&escalators),
+                      condition);
+        }
+    }
+  cleanup_iterator (&escalators);
+}
+
+
 /* Task functions. */
 
 void
@@ -2860,6 +3397,7 @@ set_task_run_status (task_t task, task_status_t status)
   sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
        status,
        task);
+  event (task, EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
 }
 
 /**
@@ -2982,6 +3520,41 @@ task_second_last_report_id (task_t task)
                      " ORDER BY date DESC LIMIT 2;",
                      task,
                      TASK_STATUS_DONE);
+}
+
+/**
+ * @brief Return the escalator of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Escalator of task if any, else NULL.
+ */
+char*
+task_escalator (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM escalators"
+                     " WHERE ROWID ="
+                     " (SELECT escalator FROM task_escalators"
+                     "  WHERE task = %llu LIMIT 1);",
+                     task);
+}
+
+/**
+ * @brief Add an escalator to a task.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  escalator  Escalator.
+ */
+void
+add_task_escalator (task_t task, const char* escalator)
+{
+  gchar* quoted_escalator = sql_quote (escalator);
+  sql ("INSERT INTO task_escalators (task, escalator)"
+       " VALUES (%llu, (SELECT ROWID FROM escalators WHERE name = '%s'));",
+       task,
+       quoted_escalator);
+  g_free (quoted_escalator);
 }
 
 /**
@@ -4482,6 +5055,7 @@ delete_task (task_t task)
 
   sql ("DELETE FROM results WHERE task = %llu;", task);
   sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
+  sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
   sql ("DELETE FROM task_files WHERE task = %llu;", task);
 
   return 0;

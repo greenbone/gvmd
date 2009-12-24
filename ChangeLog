@@ -1,5 +1,37 @@
 2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add escalator support, including OMP commands CREATE_ESCALATOR,
+	DELETE_ESCALATOR and GET_ESCALATORS, and CREATE_TASK element ESCALATOR.
+
+	* src/manage.c (escalator_condition_name, event_name)
+	(escalator_method_name, escalator_condition_from_name, event_from_name)
+	(escalator_method_from_name): New function.
+
+	* src/tasks_sql.h (create_tables): Add tables escalator_condition_data,
+	escalator_event_data, escalator_method_data, escalators and
+	task_escalators.
+	(create_escalator, delete_escalator, find_escalator)
+	(init_escalator_iterator, escalator_iterator_escalator)
+	(escalator_iterator_name, escalator_iterator_comment)
+	(escalator_iterator_event, escalator_iterator_condition)
+	(escalator_iterator_method, escalator_iterator_in_use)
+	(init_escalator_data_iterator, escalator_data_iterator_name)
+	(escalator_data_iterator_data, escalator_data, email, escalate)
+	(event_applies, condition_met, event): New functions.
+	(set_task_run_status, task_escalator, add_task_escalator): Add event.
+	(delete_task): Delete escalator.
+
+	* src/manage.h: Add headers accordingly.
+	(escalator_t, event_t, escalator_method_t, escalator_condition_t): New
+	types.
+
+	* src/omp.c (help_text): Add escalator commands.
+	(client_state_t): Add escalator states.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Handle new commands for escalators.
+
+2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_tables): Sort better.
 
 2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
