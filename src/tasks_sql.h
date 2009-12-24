@@ -2850,7 +2850,6 @@ task_run_status (task_t task)
  *
  * @param[in]  task    Task.
  * @param[in]  status  New run status.
- *
  */
 void
 set_task_run_status (task_t task, task_status_t status)

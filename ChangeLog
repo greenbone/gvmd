@@ -1,3 +1,11 @@
+2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (help_text): Sort.  Correct article.
+
+	* src/tasks_sql.h (set_task_run_status): Neaten doc.
+
+	* src/manage.h [!TASKS_SQL] (lsc_credential_t): New type.
+
 2009-12-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_help_0.c (help_text): Add agent commands.

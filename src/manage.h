@@ -175,6 +175,7 @@ typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int nvt_t;
+typedef long long int lsc_credential_t;
 
 typedef struct
 {
