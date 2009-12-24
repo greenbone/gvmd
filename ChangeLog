@@ -1,5 +1,9 @@
 2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_tables): Sort better.
+
+2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Switch the global OMP array variables to GPtrArrays.
 
 	* src/tasks_sql.h (member): Switch array to GPtrArray.

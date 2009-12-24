@@ -454,10 +454,10 @@ member (GPtrArray *array, const char *string)
 static void
 create_tables ()
 {
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
