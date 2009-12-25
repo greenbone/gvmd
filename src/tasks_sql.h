@@ -2339,12 +2339,49 @@ escalate (escalator_t escalator, task_t task, event_t event,
 
           if (address)
             {
-              gchar *subject;
-              subject = g_strdup_printf ("[OpenVAS-Manager] Task FIX subject");
-              ret = email (address, subject, "FIX body");
+              gchar *body, *subject;
+              char *name, *notice;
+
+              notice = escalator_data (escalator, "method", "notice");
+              name = task_name (task);
+              if (notice && strcmp (notice, "0") == 0)
+                {
+                  gchar *event_desc;
+
+                  /* Summary message. */
+                  event_desc = event_description (event, event_data);
+                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
+                                             name ? name : "Internal Error",
+                                             event_desc);
+                  body = g_strdup_printf ("Task: %s\n"
+                                          "Event: %s\n"
+                                          "Condition: %s\n"
+                                          "\n"
+                                          "The event occurred and matched the"
+                                          " task and condition.",
+                                          name ? name : "Internal Error",
+                                          event_desc,
+                                          escalator_condition_name (condition));
+                  g_free (event_desc);
+                }
+              else
+                {
+                  /* Notice message. */
+                  subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
+                                             " An event occurred",
+                                             name);
+                  body = g_strdup_printf ("Task: %s\n"
+                                          "\n"
+                                          "An event occurred on the task.",
+                                          name);
+                }
+              free (name);
+              free (notice);
+              ret = email (address, subject, body);
+              free (address);
               g_free (subject);
+              g_free (body);
             }
-          free (address);
           return ret;
           break;
         }

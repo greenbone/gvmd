@@ -1,5 +1,13 @@
 2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (event_description): New function.
+
+	* src/manage.h: Add header.
+
+	* src/tasks_sql.h (escalate): Flesh out email.
+
+2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add escalator support, including OMP commands CREATE_ESCALATOR,
 	DELETE_ESCALATOR and GET_ESCALATORS, and CREATE_TASK element ESCALATOR.
 

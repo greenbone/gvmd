@@ -263,6 +263,9 @@ escalator_condition_name (escalator_condition_t);
 const char*
 event_name (event_t);
 
+gchar*
+event_description (event_t, const void *);
+
 const char*
 escalator_method_name (escalator_method_t);
 

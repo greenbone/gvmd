@@ -278,6 +278,28 @@ event_name (event_t event)
 }
 
 /**
+ * @brief Get a description of an escalator event.
+ *
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ *
+ * @return Freshly allocated description of event.
+ */
+gchar*
+event_description (event_t event, const void *event_data)
+{
+  switch (event)
+    {
+      case EVENT_TASK_RUN_STATUS_CHANGED:
+        return g_strdup_printf ("Task run status changed to '%s'",
+                                run_status_name ((task_status_t) event_data));
+        break;
+      default:
+        return g_strdup ("Internal Error");
+    }
+}
+
+/**
  * @brief Get the name of an escalator method.
  *
  * @param[in]  method  Method.
