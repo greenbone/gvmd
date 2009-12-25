@@ -1,5 +1,21 @@
 2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* doc/db_postgres.sql (agents, escalator_condition_data)
+	(escalator_event_data, escalator_method_data, escalators)
+	(task_files, task_escalators, nvt_preferences): New tables.
+	(meta): Add field id.  Add type to name.
+	(nvt_selectors): Add field family.
+	(targets): Add fields comment and lsc_credential.
+	(config): Add comment and cache fields.
+	(tasks): Add fields hidden, description, run_status, start_time, end_time,
+	Move field comment up.
+	(reports): Add fields hidden and scan_run_status.
+	(report_hosts): Add fields attack_state, current_port and max_port.
+	(lsc_credentials): Add fields login, password, public_key and private_key.
+	Rename dog to exe.
+
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add new condition "Threat level at least".
 
 	* src/manage.c (escalator_data): Declare.

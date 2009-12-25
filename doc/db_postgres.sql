@@ -1,6 +1,41 @@
 CREATE TABLE meta (
-	name UNIQUE NOT NULL,
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
 	value text);
+
+CREATE TABLE agents (
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
+	comment text,
+	installer text,
+	howto_install text,
+	howto_use text);
+
+CREATE TABLE escalator_condition_data (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
+CREATE TABLE escalator_event_data (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
+CREATE TABLE escalator_method_data (
+	id integer PRIMARY KEY,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT,
+	name text,
+	data text);
+
+CREATE TABLE escalators (
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
+	comment text,
+	event integer,
+	condition integer,
+	method integer);
 
 CREATE TABLE users (
 	id integer PRIMARY KEY,
@@ -11,16 +46,24 @@ CREATE TABLE nvt_selectors (
     name text,
 	exclude boolean,
 	type integer,
-	family_or_nvt text);
+	family_or_nvt text,
+	family text);
 
 CREATE TABLE targets (
 	name text PRIMARY KEY,
-	hosts text);
+	hosts text,
+	comment text,
+	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
 	name text UNIQUE NOT NULL,
-	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT);
+	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT,
+	comment text,
+	family_count integer,
+	nvt_count integer,
+	families_growing integer,
+	nvts_growing integer);
 
 CREATE TABLE config_preferences (
 	config integer PRIMARY KEY REFERENCES configs (id) ON DELETE RESTRICT,
@@ -32,10 +75,26 @@ CREATE TABLE tasks (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
 	name text,
+	hidden integer,
+	comment text,
+	description text,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	run_status integer,
+	start_time date,
+	end_time date,
 	config integer REFERENCES configs (name) ON DELETE RESTRICT,
-	target integer REFERENCES targets (name) ON DELETE RESTRICT,
-	comment text);
+	target integer REFERENCES targets (name) ON DELETE RESTRICT);
+
+CREATE TABLE task_files (
+	id integer PRIMARY KEY,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	name text,
+	content text);
+
+CREATE TABLE task_escalators (
+	id integer PRIMARY KEY,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	escalator integer REFERENCES escalators (id) ON DELETE RESTRICT);
 
 CREATE TABLE results (
 	id integer PRIMARY KEY,
@@ -50,23 +109,33 @@ CREATE TABLE results (
 CREATE TABLE reports (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
+	hidden integer,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
 	date date,
 	start_time date,
 	end_time date,
 	nbefile text,
-	comment text);
+	comment text,
+	scan_run_status integer);
 
 CREATE TABLE report_hosts (
 	id integer PRIMARY KEY,
 	report integer REFERENCES reports (id) ON DELETE RESTRICT,
 	host text,
 	start_time date,
-	end_time date);
+	end_time date,
+	attack_state INTEGER,
+	current_port text,
+	max_port text);
 
 CREATE TABLE report_results (
 	report integer PRIMARY KEY REFERENCES reports (id) ON DELETE RESTRICT,
 	result integer PRIMARY KEY REFERENCES results (id) ON DELETE RESTRICT);
+
+CREATE TABLE nvt_preferences (
+    id integer PRIMARY KEY,
+    name text UNIQUE NOT NULL,
+	value text);
 
 CREATE TABLE nvts (
     id integer PRIMARY KEY,
@@ -87,7 +156,11 @@ CREATE TABLE nvts (
 CREATE TABLE lsc_credentials (
 	id integer PRIMARY KEY,
 	name text UNIQUE NOT NULL,
+	login text,
+	password text,
 	comment text,
+	public_key text,
+	private_key text,
 	rpm bytea,
 	deb bytea,
-	dog bytea);
+	exe bytea);
