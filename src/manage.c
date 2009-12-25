@@ -86,6 +86,18 @@ inc_task_report_count (task_t task);
 void
 dec_task_report_count (task_t task);
 
+/**
+ * @brief Return data associated with an escalator.
+ *
+ * @param[in]  escalator  Escalator.
+ * @param[in]  type       Type of data: "condition", "event" or "method".
+ * @param[in]  name       Name of the data.
+ *
+ * @return Freshly allocated data if it exists, else NULL.
+ */
+static char *
+escalator_data (escalator_t, const char *, const char *);
+
 
 /* Credentials. */
 
@@ -255,8 +267,12 @@ escalator_condition_name (escalator_condition_t condition)
 {
   switch (condition)
     {
-      case ESCALATOR_CONDITION_ALWAYS: return "Always";
-      default:                         return "Internal Error";
+      case ESCALATOR_CONDITION_ALWAYS:
+        return "Always";
+      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+        return "Threat level at least";
+      default:
+        return "Internal Error";
     }
 }
 
@@ -274,6 +290,36 @@ event_name (event_t event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
       default:                            return "Internal Error";
+    }
+}
+
+/**
+ * @brief Get a description of an escalator condition.
+ *
+ * @param[in]  condition  Condition.
+ * @param[in]  escalator  Escalator.
+ *
+ * @return Freshly allocated description of condition.
+ */
+gchar*
+escalator_condition_description (escalator_condition_t condition,
+                                 escalator_t escalator)
+{
+  switch (condition)
+    {
+      case ESCALATOR_CONDITION_ALWAYS:
+        return g_strdup ("Always");
+      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+        {
+          char *level = escalator_data (escalator, "condition", "level");
+          gchar *ret = g_strdup_printf ("Task threat level is at least '%s'",
+                                        level);
+          free (level);
+          return ret;
+          break;
+        }
+      default:
+        return g_strdup ("Internal Error");
     }
 }
 
@@ -328,6 +374,8 @@ escalator_condition_from_name (const char* name)
 {
   if (strcasecmp (name, "Always") == 0)
     return ESCALATOR_CONDITION_ALWAYS;
+  if (strcasecmp (name, "Threat level at least") == 0)
+    return ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST;
   return ESCALATOR_CONDITION_ERROR;
 }
 

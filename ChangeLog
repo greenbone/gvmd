@@ -1,5 +1,24 @@
 2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add new condition "Threat level at least".
+
+	* src/manage.c (escalator_data): Declare.
+	(escalator_condition_name, escalator_condition_from_name): Add new
+	condition.
+	(escalator_condition_description): New function.
+
+	* src/manage.h (escalator_condition_t): Add new condition.
+	(escalator_condition_description): New header.
+
+	* src/tasks_sql.h (escalate): Use condition description instead of name
+	in email body.
+	(condition_met): Add escalator arg.  Add check for new condition.  Update
+	caller.
+	(task_last_report_id, task_second_last_report_id): Correct doc.
+	(task_threat_level): New function.
+
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (email): Add simple implementation.
 	(escalate): Add newline to body.
 

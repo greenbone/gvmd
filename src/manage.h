@@ -219,7 +219,8 @@ typedef enum
 typedef enum
 {
   ESCALATOR_CONDITION_ERROR,
-  ESCALATOR_CONDITION_ALWAYS
+  ESCALATOR_CONDITION_ALWAYS,
+  ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST
 } escalator_condition_t;
 
 int
@@ -259,6 +260,9 @@ escalator_iterator_method (iterator_t*);
 
 const char*
 escalator_condition_name (escalator_condition_t);
+
+gchar*
+escalator_condition_description (escalator_condition_t, escalator_t);
 
 const char*
 event_name (event_t);

@@ -125,6 +125,9 @@ select_config_nvts (const char*, const char*, int, const char*);
 int
 family_count ();
 
+const char*
+task_threat_level (task_t);
+
 
 /* Variables. */
 
@@ -2380,10 +2383,12 @@ escalate (escalator_t escalator, task_t task, event_t event,
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
-                  gchar *event_desc;
+                  gchar *event_desc, *condition_desc;
 
                   /* Summary message. */
                   event_desc = event_description (event, event_data);
+                  condition_desc = escalator_condition_description (condition,
+                                                                    escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
@@ -2395,8 +2400,9 @@ escalate (escalator_t escalator, task_t task, event_t event,
                                           " task and condition.\n",
                                           name ? name : "Internal Error",
                                           event_desc,
-                                          escalator_condition_name (condition));
+                                          condition_desc);
                   g_free (event_desc);
+                  g_free (condition_desc);
                 }
               else
                 {
@@ -2465,25 +2471,52 @@ event_applies (event_t event, const void *event_data, task_t task,
 }
 
 /**
- * @brief Return whether a condition is met.
+ * @brief Return whether the condition of an escalator is met by a task.
  *
  * @param[in]  task       Task.
+ * @param[in]  escalator  Escalator.
  * @param[in]  condition  Condition.
  *
  * @return 1 if met, else 0.
  */
 static int
-condition_met (task_t task, escalator_condition_t condition)
+condition_met (task_t task, escalator_t escalator,
+               escalator_condition_t condition)
 {
   switch (condition)
     {
       case ESCALATOR_CONDITION_ALWAYS:
         return 1;
         break;
+      case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
+        {
+          char *condition_level;
+          const char *report_level;
+
+          /* True if the threat level of the last finished report is at
+           * least the given level. */
+
+          condition_level = escalator_data (escalator, "condition", "level");
+          report_level = task_threat_level (task);
+          if (condition_level
+              && report_level
+              && (collate_message_type (NULL,
+                                        strlen (report_level),
+                                        report_level,
+                                        strlen (condition_level),
+                                        condition_level)
+                  > -1))
+            {
+              free (condition_level);
+              return 1;
+            }
+          free (condition_level);
+          break;
+        }
       default:
-        return 0;
         break;
     }
+  return 0;
 }
 
 /**
@@ -2507,7 +2540,7 @@ event (task_t task, event_t event, void* event_data)
           escalator_condition_t condition;
 
           condition = escalator_iterator_condition (&escalators);
-          if (condition_met (task, condition))
+          if (condition_met (task, escalator, condition))
             escalate (escalator,
                       task,
                       event,
@@ -3562,7 +3595,7 @@ task_first_report_id (task_t task)
  *
  * @param[in]  task  The task.
  *
- * @return The UUID of the task as a newly allocated string.
+ * @return The UUID of the report as a newly allocated string.
  */
 gchar*
 task_last_report_id (task_t task)
@@ -3580,7 +3613,7 @@ task_last_report_id (task_t task)
  *
  * @param[in]  task  The task.
  *
- * @return The UUID of the task as a newly allocated string.
+ * @return The UUID of the report as a newly allocated string.
  */
 gchar*
 task_second_last_report_id (task_t task)
@@ -3626,6 +3659,65 @@ add_task_escalator (task_t task, const char* escalator)
        task,
        quoted_escalator);
   g_free (quoted_escalator);
+}
+
+/**
+ * @brief Return the threat level of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Threat level of last report on task if there is one, as a static
+ *         string, else NULL.
+ */
+const char*
+task_threat_level (task_t task)
+{
+  char *type;
+
+  type = sql_string (0, 0,
+                     " SELECT results.type FROM results, report_results"
+                     " WHERE report_results.report ="
+                     " (SELECT ROWID FROM reports WHERE reports.task = %llu"
+                     "  AND reports.scan_run_status = %u"
+                     "  ORDER BY reports.date DESC LIMIT 1)"
+                     " AND results.ROWID = report_results.result"
+                     " ORDER BY type COLLATE collate_message_type DESC"
+                     " LIMIT 1",
+                     task,
+                     TASK_STATUS_DONE);
+
+  if (strcmp (type, "Security Hole") == 0)
+    {
+      free (type);
+      return "High";
+    }
+
+  if (strcmp (type, "Security Warning") == 0)
+    {
+      free (type);
+      return "Medium";
+    }
+
+  if (strcmp (type, "Security Note") == 0)
+    {
+      free (type);
+      return "Low";
+    }
+
+  if (strcmp (type, "Log Message") == 0)
+    {
+      free (type);
+      return "Log";
+    }
+
+  if (strcmp (type, "Debug Message") == 0)
+    {
+      free (type);
+      return "Debug";
+    }
+
+  free (type);
+  return NULL;
 }
 
 /**
