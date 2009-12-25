@@ -1,5 +1,11 @@
 2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* doc/db_postgres.sql (nvt_selectors): Add id field.
+	(targets): Add id field.
+	(tasks): Describe description.  Refer to config and target by id.
+
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* doc/db_postgres.sql (agents, escalator_condition_data)
 	(escalator_event_data, escalator_method_data, escalators)
 	(task_files, task_escalators, nvt_preferences): New tables.

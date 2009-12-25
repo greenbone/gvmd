@@ -43,6 +43,7 @@ CREATE TABLE users (
 	password text);
 
 CREATE TABLE nvt_selectors (
+	id integer PRIMARY KEY,
     name text,
 	exclude boolean,
 	type integer,
@@ -50,7 +51,8 @@ CREATE TABLE nvt_selectors (
 	family text);
 
 CREATE TABLE targets (
-	name text PRIMARY KEY,
+	id integer PRIMARY KEY,
+	name text UNIQUE NOT NULL,
 	hosts text,
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
@@ -77,13 +79,13 @@ CREATE TABLE tasks (
 	name text,
 	hidden integer,
 	comment text,
-	description text,
+	description text, -- RC file
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	run_status integer,
 	start_time date,
 	end_time date,
-	config integer REFERENCES configs (name) ON DELETE RESTRICT,
-	target integer REFERENCES targets (name) ON DELETE RESTRICT);
+	config integer REFERENCES configs (id) ON DELETE RESTRICT,
+	target integer REFERENCES targets (id) ON DELETE RESTRICT);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
