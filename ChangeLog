@@ -1,5 +1,16 @@
 2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): New variable.
+
+	* doc/CMakeLists.txt: Add database version to db PNG and HTML.
+
+	* src/CMakeLists.txt: Pass OPENVASMD_DATABASE_VERSION to compiler.
+
+	* src/tasks_sql.h: Replace DATABASE_VERSION with
+	OPENVASMD_DATABASE_VERSION.
+
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* doc/db_postgres.sql (nvt_selectors): Add id field.
 	(targets): Add id field.
 	(tasks): Describe description.  Refer to config and target by id.

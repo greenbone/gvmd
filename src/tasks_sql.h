@@ -35,11 +35,6 @@
 #endif
 
 /**
- * @brief Version of the database schema.
- */
-#define DATABASE_VERSION 8
-
-/**
  * @brief NVT selector type for "all" rule.
  */
 #define NVT_SELECTOR_TYPE_ALL 0
@@ -648,10 +643,11 @@ next (iterator_t* iterator)
  * manager will automatically add a table if it is missing from the database.
  *
  *  - Ensure that the ChangeLog notes the changes to the database and
- *    the increase of DATABASE_VERSION, with an entry like
+ *    the increase of OPENVASMD_DATABASE_VERSION, with an entry like
  *
- *        * src/tasks_sql.h (DATABASE_VERSION): Increase to 6, for...
- *        (init_manage): Add new column...
+ *        * CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 6, for...
+ *
+ *        * src/tasks_sql.h (init_manage): Add new column...
  *
  *  - Add the migrator function in the style of the others.  In particular,
  *    the function must check the version, do the modification and then set
@@ -747,7 +743,7 @@ restore_db ()
 int
 manage_db_supported_version ()
 {
-  return DATABASE_VERSION;
+  return OPENVASMD_DATABASE_VERSION;
 }
 
 /**
@@ -2954,14 +2950,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   if (nvt_cache_mode)
     {
       if (database_version
-          && strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
+          && strcmp (database_version,
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
         {
           g_message ("%s: database version of database: %s\n",
                      __FUNCTION__,
                      database_version);
           g_message ("%s: database version supported by manager: %s\n",
                      __FUNCTION__,
-                     G_STRINGIFY (DATABASE_VERSION));
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
           g_free (database_version);
           return -2;
         }
@@ -2976,14 +2973,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       if (database_version)
         {
-          if (strcmp (database_version, G_STRINGIFY (DATABASE_VERSION)))
+          if (strcmp (database_version,
+                      G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
             {
               g_message ("%s: database version of database: %s\n",
                          __FUNCTION__,
                          database_version);
               g_message ("%s: database version supported by manager: %s\n",
                          __FUNCTION__,
-                         G_STRINGIFY (DATABASE_VERSION));
+                         G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
               g_free (database_version);
               return -2;
             }
@@ -3013,7 +3011,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the version is set. */
 
-  set_db_version (DATABASE_VERSION);
+  set_db_version (OPENVASMD_DATABASE_VERSION);
 
   /* Ensure the special "om" user exists. */
 
