@@ -25,6 +25,7 @@
 
 #include <ctype.h>
 #include <sqlite3.h>
+#include <sys/wait.h>
 
 #include <openvas/openvas_logging.h>
 #include "lsc_user.h"
@@ -2309,7 +2310,40 @@ escalator_data (escalator_t escalator, const char *type, const char *name)
 static int
 email (const char *to_address, const char *subject, const char *body)
 {
+  int ret;
+  gchar *command;
+
   tracef ("   EMAIL to %s subject: %s, body: %s", to_address, subject, body);
+
+  command = g_strdup_printf ("echo \""
+                             "To: %s\n"
+                             "From: automated@openvas.org\n"
+                             "Subject: %s\n"
+                             "\n"
+                             "%s\""
+                             " | /usr/sbin/sendmail %s"
+                             " > /tmp/openvasmd_sendmail_out 2>&1",
+                             to_address,
+                             subject,
+                             body,
+                             to_address);
+
+  tracef ("   command: %s\n", command);
+
+  if (ret = system (command),
+      // FIX ret is always -1
+      0 && ((ret) == -1
+            || WEXITSTATUS (ret)))
+    {
+      g_warning ("%s: system failed with ret %i, %i, %s\n",
+                 __FUNCTION__,
+                 ret,
+                 WEXITSTATUS (ret),
+                 command);
+      g_free (command);
+      return -1;
+    }
+  g_free (command);
   return 0;
 }
 
@@ -2358,7 +2392,7 @@ escalate (escalator_t escalator, task_t task, event_t event,
                                           "Condition: %s\n"
                                           "\n"
                                           "The event occurred and matched the"
-                                          " task and condition.",
+                                          " task and condition.\n",
                                           name ? name : "Internal Error",
                                           event_desc,
                                           escalator_condition_name (condition));
@@ -2372,7 +2406,7 @@ escalate (escalator_t escalator, task_t task, event_t event,
                                              name);
                   body = g_strdup_printf ("Task: %s\n"
                                           "\n"
-                                          "An event occurred on the task.",
+                                          "An event occurred on the task.\n",
                                           name);
                 }
               free (name);

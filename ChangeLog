@@ -1,4 +1,9 @@
-2009-12-24  Matthew Mundell <matthew.mundell@intevation.de>
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (email): Add simple implementation.
+	(escalate): Add newline to body.
+
+2009-12-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (event_description): New function.
 
