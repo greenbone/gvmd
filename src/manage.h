@@ -661,7 +661,7 @@ int
 delete_target (const char*);
 
 void
-init_target_iterator (iterator_t*, int, const char*);
+init_target_iterator (iterator_t*, const char*, int, const char*);
 
 const char*
 target_iterator_name (iterator_t*);
@@ -683,6 +683,15 @@ target_in_use (const char*);
 
 char*
 target_lsc_credential_name (const char *);
+
+void
+init_target_task_iterator (iterator_t*, const char *, int);
+
+const char*
+target_task_iterator_name (iterator_t*);
+
+const char*
+target_task_iterator_uuid (iterator_t*);
 
 
 /* Configs. */

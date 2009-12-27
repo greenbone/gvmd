@@ -5638,21 +5638,32 @@ delete_target (const char* name)
 /**
  * @brief Initialise a target iterator.
  *
- * @param[in]  iterator  Iterator.
+ * @param[in]  iterator    Iterator.
+ * @param[in]  name        Name of target to limit iteration to.  NULL for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_target_iterator (iterator_t* iterator, int ascending,
-                      const char* sort_field)
+init_target_iterator (iterator_t* iterator, const char* name,
+                      int ascending, const char* sort_field)
 {
-  gchar* sql;
-  sql = g_strdup_printf ("SELECT name, hosts, comment, lsc_credential"
-                         " FROM targets ORDER BY %s %s;",
-                         sort_field ? sort_field : "ROWID",
-                         ascending ? "ASC" : "DESC");
-  init_iterator (iterator, sql);
-  g_free (sql);
+  if (name)
+    {
+      gchar *quoted_name = sql_quote (name);
+      init_iterator (iterator,
+                     "SELECT name, hosts, comment, lsc_credential"
+                     " FROM targets WHERE name = '%s' ORDER BY %s %s;",
+                     quoted_name,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
+      g_free (quoted_name);
+    }
+  else
+    init_iterator (iterator,
+                   "SELECT name, hosts, comment, lsc_credential"
+                   " FROM targets ORDER BY %s %s;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
 }
 
 DEF_ACCESS (target_iterator_name, 0);
@@ -5764,6 +5775,31 @@ target_in_use (const char* name)
   g_free (quoted_name);
   return ret;
 }
+
+/**
+ * @brief Initialise a target task iterator.
+ *
+ * Iterates over all tasks that use the target.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  name       Name of target.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_target_task_iterator (iterator_t* iterator, const char *name,
+                           int ascending)
+{
+  gchar *quoted_name = sql_quote (name);
+  init_iterator (iterator,
+                 "SELECT name, uuid FROM tasks WHERE target = '%s'"
+                 " ORDER BY name %s;",
+                 quoted_name,
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_name);
+}
+
+DEF_ACCESS (target_task_iterator_name, 0);
+DEF_ACCESS (target_task_iterator_uuid, 1);
 
 
 /* Configs. */
