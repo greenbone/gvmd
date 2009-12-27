@@ -1916,6 +1916,71 @@ collate_message_type (void* data,
   return strncmp (one, two, MIN (one_len, two_len));
 }
 
+/**
+ * @brief Collate two threat levels.
+ *
+ * A lower threat is considered less than a higher threat, so Medium is
+ * less than High.
+ *
+ * @param[in]  data     Dummy for callback.
+ * @param[in]  one_len  Length of first string.
+ * @param[in]  arg_one  First string.
+ * @param[in]  two_len  Length of second string.
+ * @param[in]  arg_two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+int
+collate_threat (void* data,
+                int one_len, const void* arg_one,
+                int two_len, const void* arg_two)
+{
+  const char* one = (const char*) arg_one;
+  const char* two = (const char*) arg_two;
+
+  if (strncmp (one, "High", one_len) == 0)
+    {
+      if (strncmp (two, "High", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "High", two_len) == 0) return -1;
+
+  if (strncmp (one, "Medium", one_len) == 0)
+    {
+      if (strncmp (two, "Medium", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "Medium", two_len) == 0) return -1;
+
+  if (strncmp (one, "Low", one_len) == 0)
+    {
+      if (strncmp (two, "Low", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "Low", two_len) == 0) return -1;
+
+  if (strncmp (one, "Log", one_len) == 0)
+    {
+      if (strncmp (two, "Log", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "Log", two_len) == 0) return -1;
+
+  if (strncmp (one, "Debug", one_len) == 0)
+    {
+      if (strncmp (two, "Debug", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "Debug", two_len) == 0) return -1;
+
+  return strncmp (one, two, MIN (one_len, two_len));
+}
+
 
 /* Events and Escalators. */
 
@@ -2496,11 +2561,11 @@ condition_met (task_t task, escalator_t escalator,
           report_level = task_threat_level (task);
           if (condition_level
               && report_level
-              && (collate_message_type (NULL,
-                                        strlen (report_level),
-                                        report_level,
-                                        strlen (condition_level),
-                                        condition_level)
+              && (collate_threat (NULL,
+                                  strlen (report_level),
+                                  report_level,
+                                  strlen (condition_level),
+                                  condition_level)
                   > -1))
             {
               free (condition_level);

@@ -1,5 +1,10 @@
 2009-12-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (collate_threat): New function.
+	(condition_met): Call collate_threat to compare threats.
+
+2009-12-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_target_iterator): Add name arg.
 	(init_target_task_iterator, target_task_iterator_name)
 	(target_task_iterator_uuid): New functions.
