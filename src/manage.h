@@ -926,6 +926,12 @@ lsc_credential_iterator_in_use (iterator_t*);
 char*
 lsc_credential_name (lsc_credential_t);
 
+void
+init_lsc_credential_target_iterator (iterator_t*, const char *, int);
+
+const char*
+lsc_credential_target_iterator_name (iterator_t*);
+
 
 /* Agents. */
 

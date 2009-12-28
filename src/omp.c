@@ -7508,7 +7508,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_LSC_CREDENTIALS:
         {
-          iterator_t targets;
+          iterator_t credentials;
           int format;
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
 
@@ -7543,13 +7543,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              init_lsc_credential_iterator (&targets,
+              init_lsc_credential_iterator (&credentials,
                                             current_uuid,
                                             /* Attribute sort_order. */
                                             current_int_2,
                                             /* Attribute sort_field. */
                                             current_name);
-              while (next (&targets))
+              while (next (&credentials))
                 {
                   switch (format)
                     {
@@ -7563,13 +7563,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<public_key>%s</public_key>"
                           "</lsc_credential>",
-                          lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_login (&targets),
-                          lsc_credential_iterator_comment (&targets),
-                          lsc_credential_iterator_in_use (&targets),
-                          lsc_credential_iterator_public_key (&targets)
+                          lsc_credential_iterator_name (&credentials),
+                          lsc_credential_iterator_login (&credentials),
+                          lsc_credential_iterator_comment (&credentials),
+                          lsc_credential_iterator_in_use (&credentials),
+                          lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_public_key (&targets));
+                          lsc_credential_iterator_public_key (&credentials));
                         break;
                       case 2: /* rpm */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -7581,13 +7581,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"rpm\">%s</package>"
                           "</lsc_credential>",
-                          lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_login (&targets),
-                          lsc_credential_iterator_comment (&targets),
-                          lsc_credential_iterator_in_use (&targets),
-                          lsc_credential_iterator_public_key (&targets)
+                          lsc_credential_iterator_name (&credentials),
+                          lsc_credential_iterator_login (&credentials),
+                          lsc_credential_iterator_comment (&credentials),
+                          lsc_credential_iterator_in_use (&credentials),
+                          lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_rpm (&targets));
+                          lsc_credential_iterator_rpm (&credentials));
                         break;
                       case 3: /* deb */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -7599,13 +7599,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"deb\">%s</package>"
                           "</lsc_credential>",
-                          lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_login (&targets),
-                          lsc_credential_iterator_comment (&targets),
-                          lsc_credential_iterator_in_use (&targets),
-                          lsc_credential_iterator_public_key (&targets)
+                          lsc_credential_iterator_name (&credentials),
+                          lsc_credential_iterator_login (&credentials),
+                          lsc_credential_iterator_comment (&credentials),
+                          lsc_credential_iterator_in_use (&credentials),
+                          lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_deb (&targets));
+                          lsc_credential_iterator_deb (&credentials));
                         break;
                       case 4: /* exe */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -7617,33 +7617,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"exe\">%s</package>"
                           "</lsc_credential>",
-                          lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_login (&targets),
-                          lsc_credential_iterator_comment (&targets),
-                          lsc_credential_iterator_in_use (&targets),
-                          lsc_credential_iterator_public_key (&targets)
+                          lsc_credential_iterator_name (&credentials),
+                          lsc_credential_iterator_login (&credentials),
+                          lsc_credential_iterator_comment (&credentials),
+                          lsc_credential_iterator_in_use (&credentials),
+                          lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_exe (&targets));
+                          lsc_credential_iterator_exe (&credentials));
                         break;
                       default:
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential>"
-                          "<name>%s</name>"
-                          "<login>%s</login>"
-                          "<comment>%s</comment>"
-                          "<in_use>%i</in_use>"
-                          "<type>%s</type>"
-                          "</lsc_credential>",
-                          lsc_credential_iterator_name (&targets),
-                          lsc_credential_iterator_login (&targets),
-                          lsc_credential_iterator_comment (&targets),
-                          lsc_credential_iterator_in_use (&targets),
-                          lsc_credential_iterator_public_key (&targets)
-                            ? "gen" : "pass");
-                        break;
+                        {
+                          const char *name;
+                          iterator_t targets;
+
+                          name = lsc_credential_iterator_name (&credentials);
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<lsc_credential>"
+                            "<name>%s</name>"
+                            "<login>%s</login>"
+                            "<comment>%s</comment>"
+                            "<in_use>%i</in_use>"
+                            "<type>%s</type>"
+                            "<targets>",
+                            name,
+                            lsc_credential_iterator_login (&credentials),
+                            lsc_credential_iterator_comment (&credentials),
+                            lsc_credential_iterator_in_use (&credentials),
+                            lsc_credential_iterator_public_key (&credentials)
+                              ? "gen" : "pass");
+
+                          init_lsc_credential_target_iterator (&targets,
+                                                               name,
+                                                               /* sort_order. */
+                                                               current_int_2);
+                          while (next (&targets))
+                            SENDF_TO_CLIENT_OR_FAIL
+                             ("<target>"
+                              "<name>%s</name>"
+                              "</target>",
+                              lsc_credential_target_iterator_name (&targets));
+                          cleanup_iterator (&targets);
+
+                          SEND_TO_CLIENT_OR_FAIL ("</targets>"
+                                                  "</lsc_credential>");
+                          break;
+                        }
                     }
                 }
-              cleanup_iterator (&targets);
+              cleanup_iterator (&credentials);
               SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
             }
           openvas_free_string_var (&current_name);

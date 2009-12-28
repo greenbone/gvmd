@@ -9409,7 +9409,7 @@ lsc_credential_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 8);
+  ret = (int) sqlite3_column_int (iterator->stmt, 9);
   return ret;
 }
 
@@ -9420,6 +9420,34 @@ lsc_credential_name (lsc_credential_t lsc_credential)
                      "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
                      lsc_credential);
 }
+
+/**
+ * @brief Initialise an LSC credential target iterator.
+ *
+ * Iterates over all targets that use the credential.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  name       Name of credential.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_lsc_credential_target_iterator (iterator_t* iterator, const char *name,
+                                     int ascending)
+{
+  gchar *quoted_name = sql_quote (name);
+  init_iterator (iterator,
+                 "SELECT name FROM targets WHERE lsc_credential ="
+                 " (SELECT ROWID FROM lsc_credentials WHERE name = '%s')"
+                 " ORDER BY name %s;",
+                 quoted_name,
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_name);
+}
+
+DEF_ACCESS (lsc_credential_target_iterator_name, 0);
+
+
+/* Agents. */
 
 /**
  * @brief Create an agent entry.

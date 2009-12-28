@@ -1,5 +1,17 @@
 2009-12-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (lsc_credential_iterator_in_use): Correct column.
+	(init_lsc_credential_target_iterator)
+	(lsc_credential_target_iterator_name): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Rename variable targets to
+	credentials.  Send targets using the credential with each credential in
+	list version.
+
+2009-12-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (collate_ip_compare, collate_ip): New functions.
 	(init_manage_process): Add SQL collation function collate_ip.
 	(init_host_iterator): Order by hosts with IP collation.
