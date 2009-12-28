@@ -1,3 +1,9 @@
+2009-12-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (collate_ip_compare, collate_ip): New functions.
+	(init_manage_process): Add SQL collation function collate_ip.
+	(init_host_iterator): Order by hosts with IP collation.
+
 2009-12-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (collate_threat): New function.

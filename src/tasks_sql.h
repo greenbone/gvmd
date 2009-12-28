@@ -1981,6 +1981,74 @@ collate_threat (void* data,
   return strncmp (one, two, MIN (one_len, two_len));
 }
 
+/**
+ * @brief Compare two number strings for collate_ip.
+ *
+ * @param[in]  one  First string.
+ * @param[in]  two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+static int
+collate_ip_compare (const char *one_arg, const char *two_arg)
+{
+  int one = atoi (one_arg);
+  int two = atoi (two_arg);
+  return one == two ? 0 : (one < two ? -1 : 1);
+}
+
+/**
+ * @brief Collate two IP addresses.
+ *
+ * For example, 127.0.0.2 is less than 127.0.0.3 and 127.0.0.10.
+ *
+ * Only works correctly for IPv4 addresses.
+ *
+ * @param[in]  data     Dummy for callback.
+ * @param[in]  one_len  Length of first IP (a string).
+ * @param[in]  arg_one  First string.
+ * @param[in]  two_len  Length of second IP (a string).
+ * @param[in]  arg_two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+int
+collate_ip (void* data,
+            int one_len, const void* arg_one,
+            int two_len, const void* arg_two)
+{
+  int ret;
+  char one_a[4], one_b[4], one_c[4], one_d[4];
+  char two_a[4], two_b[4], two_c[4], two_d[4];
+  const char* one = (const char*) arg_one;
+  const char* two = (const char*) arg_two;
+
+  if ((sscanf (one, "%3[0-9].%3[0-9].%3[0-9].%3[0-9]",
+               one_a, one_b, one_c, one_d)
+       == 4)
+      && (sscanf (two, "%3[0-9].%3[0-9].%3[0-9].%3[0-9]",
+                  two_a, two_b, two_c, two_d)
+          == 4))
+    {
+      int ret = collate_ip_compare (one_a, two_a);
+      if (ret) return ret < 0 ? -1 : 1;
+
+      ret = collate_ip_compare (one_b, two_b);
+      if (ret) return ret < 0 ? -1 : 1;
+
+      ret = collate_ip_compare (one_c, two_c);
+      if (ret) return ret < 0 ? -1 : 1;
+
+      ret = collate_ip_compare (one_d, two_d);
+      if (ret) return ret < 0 ? -1 : 1;
+
+      return 0;
+    }
+
+  ret = strncmp (one, two, MIN (one_len, two_len));
+  return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
+}
+
 
 /* Events and Escalators. */
 
@@ -2842,6 +2910,17 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_message ("%s: failed to create collate_message_type", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_collation (task_db,
+                                    "collate_ip",
+                                    SQLITE_UTF8,
+                                    NULL,
+                                    collate_ip)
+          != SQLITE_OK)
+        {
+          g_message ("%s: failed to create collate_ip", __FUNCTION__);
           abort ();
         }
     }
@@ -4483,7 +4562,8 @@ init_host_iterator (iterator_t* iterator, report_t report)
       gchar* sql;
       sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
                              " current_port, max_port"
-                             " FROM report_hosts WHERE report = %llu;",
+                             " FROM report_hosts WHERE report = %llu"
+                             " ORDER BY host COLLATE collate_ip;",
                              report);
       init_iterator (iterator, sql);
       g_free (sql);
@@ -4492,7 +4572,8 @@ init_host_iterator (iterator_t* iterator, report_t report)
     init_iterator (iterator,
                    "SELECT host, start_time, end_time, attack_state,"
                    " current_port, max_port"
-                   " FROM report_hosts;");
+                   " FROM report_hosts"
+                   " ORDER BY host COLLATE collate_ip;");
 }
 
 #if 0
