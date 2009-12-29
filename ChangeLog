@@ -1,5 +1,13 @@
 2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_escalator_task_iterator)
+	(init_target_task_iterator, init_config_task_iterator): Leave out hidden
+	tasks.
+	(init_manage): Use %u to insert task status.  Correct example task config.
+	Init status of example report.
+
+2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (make_report): Add status arg.  Use as initial status
 	of report.
 	(create_report): Add status arg.  Pass to make_report.

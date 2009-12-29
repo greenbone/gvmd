@@ -2719,6 +2719,7 @@ init_escalator_task_iterator (iterator_t* iterator, const char *name,
                  " WHERE tasks.ROWID = task_escalators.task"
                  " AND task_escalators.escalator ="
                  " (SELECT ROWID FROM escalators WHERE escalators.name = '%s')"
+                 " AND hidden = 0"
                  " ORDER BY tasks.name %s;",
                  quoted_name,
                  ascending ? "ASC" : "DESC");
@@ -3354,9 +3355,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into tasks (uuid, name, hidden, comment, owner,"
            " run_status, start_time, end_time, config, target)"
            " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f29', 'Example task',"
-           " 1, 'This is an example task for the help pages.', NULL, %i,"
+           " 1, 'This is an example task for the help pages.', NULL, %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
-           " 'Full', 'Localhost');",
+           " 'Full and fast', 'Localhost');",
            TASK_STATUS_DONE);
     }
 
@@ -3374,11 +3375,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       else
         {
           sql ("INSERT into reports (uuid, hidden, task, comment,"
-               " start_time, end_time)"
+               " start_time, end_time, scan_run_status)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', 1, %llu,"
                " 'This is an example report for the help pages.',"
-               " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009');",
-               task);
+               " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
+               " %u);",
+               task,
+               TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
           sql ("INSERT into results (task, subnet, host, port, nvt, type,"
                " description)"
@@ -6012,7 +6015,8 @@ init_target_task_iterator (iterator_t* iterator, const char *name,
 {
   gchar *quoted_name = sql_quote (name);
   init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks WHERE target = '%s'"
+                 "SELECT name, uuid FROM tasks"
+                 " WHERE target = '%s' AND hidden = 0"
                  " ORDER BY name %s;",
                  quoted_name,
                  ascending ? "ASC" : "DESC");
@@ -7331,7 +7335,8 @@ init_config_task_iterator (iterator_t* iterator, const char *name,
 {
   gchar *quoted_name = sql_quote (name);
   init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks WHERE config = '%s'"
+                 "SELECT name, uuid FROM tasks"
+                 " WHERE config = '%s' AND hidden = 0"
                  " ORDER BY name %s;",
                  quoted_name,
                  ascending ? "ASC" : "DESC");
