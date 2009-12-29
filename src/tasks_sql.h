@@ -6828,7 +6828,7 @@ find_config (const char* name, task_t* task)
  * @param[in]  value_64  Preference value in base64.  NULL for an NVT
  *                       preference removes the preference from the config.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 config in use, -1 error.
  */
 int
 manage_set_config_preference (const char* config, const char* nvt, const char* name,
@@ -6838,11 +6838,23 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
   int type_start = -1, type_end = -1, count;
 
   quoted_config = sql_quote (config);
-  quoted_name = sql_quote (name);
 
   if (value_64 == NULL)
     {
       int end = -1;
+
+      sql ("BEGIN IMMEDIATE;");
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM tasks WHERE config = '%s'",
+                   quoted_config))
+        {
+          g_free (quoted_config);
+          sql ("END;");
+          return 1;
+        }
+
+      quoted_name = sql_quote (name);
 
       /* scanner[scanner]:Timeout */
       count = sscanf (name, "%*[^[][scanner]:%n", &end);
@@ -6858,10 +6870,26 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
            " AND name = '%s';",
            quoted_config,
            quoted_name);
+
+      sql ("COMMIT;");
+
       g_free (quoted_config);
       g_free (quoted_name);
       return 0;
     }
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE config = '%s'",
+               quoted_config))
+    {
+      g_free (quoted_config);
+      sql ("END;");
+      return 1;
+    }
+
+  quoted_name = sql_quote (name);
 
   if (strlen (value_64))
     {
@@ -6929,7 +6957,6 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
 
-  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM config_preferences"
        " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
        " AND type %s"
@@ -6960,7 +6987,7 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 config in use, -1 error.
  */
 int
 manage_set_config_nvts (const char* config, const char* family,
@@ -6971,9 +6998,19 @@ manage_set_config_nvts (const char* config, const char* family,
   int new_nvt_count, old_nvt_count;
 
   quoted_config = sql_quote (config);
-  quoted_family = sql_quote (family);
 
   sql ("BEGIN EXCLUSIVE;");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE config = '%s'",
+               quoted_config))
+    {
+      g_free (quoted_config);
+      sql ("END;");
+      return 1;
+    }
+
+  quoted_family = sql_quote (family);
 
   selector = config_nvt_selector (config);
   if (selector == NULL)
@@ -8479,7 +8516,7 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, config in use, -1 error.
  */
 int
 manage_set_config_families (const char* config,
@@ -8493,14 +8530,26 @@ manage_set_config_families (const char* config,
   int constraining;
   char *selector;
 
-  constraining = config_families_growing (config);
-
   sql ("BEGIN EXCLUSIVE;");
+
+  quoted_config = sql_quote (config);
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE config = '%s'",
+               quoted_config))
+    {
+      g_free (quoted_config);
+      sql ("END;");
+      return 1;
+    }
+
+  constraining = config_families_growing (config);
 
   if (constraining + grow_families == 1)
     {
       if (switch_representation (config, constraining))
         {
+          g_free (quoted_config);
           sql ("END;");
           return -1;
         }
@@ -8511,13 +8560,12 @@ manage_set_config_families (const char* config,
   if (selector == NULL)
     {
       /* The config should always have a selector. */
+      g_free (quoted_config);
       sql ("END;");
       return -1;
     }
   quoted_selector = sql_quote (selector);
   free (selector);
-
-  quoted_config = sql_quote (config);
 
   /* Loop through all the known families. */
 

@@ -5111,6 +5111,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
                   break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                  break;
 #if 0
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -5121,7 +5125,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
                 default:
                   SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_report"));
+                   (XML_INTERNAL_ERROR ("modify_config"));
                   break;
               }
 
@@ -5144,6 +5148,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
                   break;
 #if 0
                 case -1:
@@ -5178,6 +5186,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             case 0:
               SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+              break;
+            case 1:
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
               break;
             case -1:
               SEND_TO_CLIENT_OR_FAIL

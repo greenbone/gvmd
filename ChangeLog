@@ -1,3 +1,12 @@
+2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (manage_set_config_preference)
+	(manage_set_config_nvts, manage_set_config_families): Return 1 if the
+	config is in use.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_CONFIG respond
+	with error if config is in use.
+
 2009-12-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/ovas-mngr-comm.c (sendn_to_server, write_string_to_server)
