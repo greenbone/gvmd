@@ -2222,6 +2222,7 @@ find_escalator (const char* name, escalator_t* escalator)
  * @brief Initialise an escalator iterator.
  *
  * @param[in]  iterator    Iterator.
+ * @param[in]  name        Name of single task to iterator over, NULL for all.
  * @param[in]  task        Iterate over escalators for this task.  0 for all.
  * @param[in]  event       Iterate over escalators handling this event.  0 for
  *                         all.
@@ -2229,10 +2230,30 @@ find_escalator (const char* name, escalator_t* escalator)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_escalator_iterator (iterator_t *iterator, task_t task, event_t event,
-                         int ascending, const char *sort_field)
+init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
+                         event_t event, int ascending, const char *sort_field)
 {
-  if (task)
+  assert (name ? task == 0 : (task ? name == NULL : 1));
+  assert (name ? event == 0 : (event ? name == NULL : 1));
+  assert (event ? task : 1);
+
+  if (name)
+    {
+      gchar *quoted_name = sql_quote (name);
+      init_iterator (iterator,
+                     "SELECT escalators.ROWID, name, comment,"
+                     " 0, event, condition, method,"
+                     " (SELECT count(*) > 0 FROM task_escalators"
+                     "  WHERE task_escalators.escalator = escalators.ROWID)"
+                     " FROM escalators"
+                     " WHERE name = '%s'"
+                     " ORDER BY %s %s;",
+                     quoted_name,
+                     sort_field ? sort_field : "escalators.ROWID",
+                     ascending ? "ASC" : "DESC");
+      g_free (quoted_name);
+    }
+  else if (task)
     init_iterator (iterator,
                    "SELECT escalators.ROWID, name, comment,"
                    " task_escalators.task, event, condition, method, 1"
@@ -2244,8 +2265,6 @@ init_escalator_iterator (iterator_t *iterator, task_t task, event_t event,
                    event,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
-  else if (event)
-    abort (); /** @todo Complete. */
   else
     init_iterator (iterator,
                    "SELECT escalators.ROWID, name, comment,"
@@ -2660,7 +2679,7 @@ event (task_t task, event_t event, void* event_data)
 {
   iterator_t escalators;
   tracef ("   EVENT %i on task %llu", event, task);
-  init_escalator_iterator (&escalators, task, event, 1, NULL);
+  init_escalator_iterator (&escalators, NULL, task, event, 1, NULL);
   while (next (&escalators))
     {
       escalator_t escalator = escalator_iterator_escalator (&escalators);
@@ -2679,6 +2698,59 @@ event (task_t task, event_t event, void* event_data)
         }
     }
   cleanup_iterator (&escalators);
+}
+
+/**
+ * @brief Initialise an escalator task iterator.
+ *
+ * Iterate over all tasks that use the escalator.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  name       Name of escalator.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_escalator_task_iterator (iterator_t* iterator, const char *name,
+                              int ascending)
+{
+  gchar *quoted_name = sql_quote (name);
+  init_iterator (iterator,
+                 "SELECT tasks.name, tasks.uuid FROM tasks, task_escalators"
+                 " WHERE tasks.ROWID = task_escalators.task"
+                 " AND task_escalators.escalator ="
+                 " (SELECT ROWID FROM escalators WHERE escalators.name = '%s')"
+                 " ORDER BY tasks.name %s;",
+                 quoted_name,
+                 ascending ? "ASC" : "DESC");
+  g_free (quoted_name);
+}
+
+/**
+ * @brief Return the name from an escalator task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_task_iterator_name (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  return ret;
+}
+
+/**
+ * @brief Return the uuid from an escalator task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_task_iterator_uuid (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret;
 }
 
 

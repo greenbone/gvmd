@@ -1183,6 +1183,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_name, attribute);
+            if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
               openvas_append_string (&current_format, attribute);
             if (find_attribute (attribute_names, attribute_values,
@@ -7434,6 +7437,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
           init_escalator_iterator (&escalators,
+                                   current_name,
                                    (task_t) 0,
                                    (event_t) 0,
                                    current_int_2,   /* Attribute sort_order. */
@@ -7509,11 +7513,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&data);
               SEND_TO_CLIENT_OR_FAIL ("</method>");
 
+              /**
+               * @todo
+               * (OMP) For consistency, the operations should respond the
+               * same way if one, some or all elements are requested.  The
+               * level of details in the response should instead be controlled
+               * by some other mechanism, like a details flag.
+               */
+
+              if (current_name)
+                {
+                  iterator_t tasks;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                  init_escalator_task_iterator (&tasks,
+                                                current_name,
+                                                /* Attribute sort_order. */
+                                                current_int_2);
+                  while (next (&tasks))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<task id=\"%s\">"
+                      "<name>%s</name>"
+                      "</task>",
+                      escalator_task_iterator_uuid (&tasks),
+                      escalator_task_iterator_name (&tasks));
+                  cleanup_iterator (&tasks);
+                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                }
+
               SEND_TO_CLIENT_OR_FAIL ("</escalator>");
             }
           cleanup_iterator (&escalators);
           SEND_TO_CLIENT_OR_FAIL ("</get_escalators_response>");
           openvas_free_string_var (&current_format);
+          openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

@@ -1,5 +1,18 @@
 2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_escalator_iterator): Add name arg.  Update caller.
+	(init_escalator_task_iterator, escalator_task_iterator_name)
+	(escalator_task_iterator_uuid): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_start_element): Get name attrib for
+	GET_ESCALATORS.
+	(omp_xml_handle_end_element): In CLIENT_GET_ESCALATORS return task list
+	if name attribute is present.
+
+2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (manage_set_config_preference)
 	(manage_set_config_nvts, manage_set_config_families): Return 1 if the
 	config is in use.

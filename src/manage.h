@@ -193,7 +193,7 @@ typedef struct
 #endif /* not TASKS_SQL */
 
 
-/* Events. */
+/* Events and Escalators. */
 
 /**
  * @brief Types of task events.
@@ -235,7 +235,8 @@ gboolean
 find_escalator (const char*, escalator_t*);
 
 void
-init_escalator_iterator (iterator_t*, task_t, event_t, int, const char*);
+init_escalator_iterator (iterator_t*, const char*, task_t, event_t, int,
+                         const char*);
 
 escalator_t
 escalator_iterator_escalator (iterator_t*);
@@ -290,6 +291,15 @@ escalator_data_iterator_name (iterator_t*);
 
 const char*
 escalator_data_iterator_data (iterator_t*);
+
+void
+init_escalator_task_iterator (iterator_t*, const char *, int);
+
+const char*
+escalator_task_iterator_name (iterator_t*);
+
+const char*
+escalator_task_iterator_uuid (iterator_t*);
 
 
 /* Task global variables. */
