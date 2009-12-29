@@ -1,5 +1,15 @@
 2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (make_report): Add status arg.  Use as initial status
+	of report.
+	(create_report): Add status arg.  Pass to make_report.
+
+	* src/manage.c (start_task): Create report with requested status, as the
+	fork additions have moved the report task association to the end of the
+	function.
+
+2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_escalator_iterator): Add name arg.  Update caller.
 	(init_escalator_task_iterator, escalator_task_iterator_name)
 	(escalator_task_iterator_uuid): New functions.

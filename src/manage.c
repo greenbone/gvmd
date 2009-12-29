@@ -856,7 +856,7 @@ start_task (task_t task, char **report_id)
 
   /* Create the report. */
 
-  if (create_report (task, report_id))
+  if (create_report (task, report_id, TASK_STATUS_REQUESTED))
     {
       free (target);
       free (hosts);
@@ -891,6 +891,8 @@ start_task (task_t task, char **report_id)
 
   // FIX On fail exits only, if another process has set a request state then
   //     honour that request.  (stop_task, request_delete_task)
+
+  /** @todo Also reset status on report, as current_scanner_task is 0 here. */
 
   run_status = TASK_STATUS_INTERNAL_ERROR;
 

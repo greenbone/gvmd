@@ -4133,18 +4133,20 @@ make_result (task_t task, const char* subnet, const char* host,
 /**
  * @brief Make a report.
  *
- * @param[in]  task  The task associated with the report.
- * @param[in]  uuid  The UUID of the report.
+ * @param[in]  task    The task associated with the report.
+ * @param[in]  uuid    The UUID of the report.
+ * @param[in]  status  The run status of the scan associated with the report.
  *
  * @return A report descriptor for the new report.
  */
 report_t
-make_report (task_t task, const char* uuid)
+make_report (task_t task, const char* uuid, task_status_t status)
 {
   report_t report;
-  sql ("INSERT into reports (uuid, hidden, task, date, nbefile, comment)"
-       " VALUES ('%s', 0, %llu, %i, '', '');",
-       uuid, task, time (NULL));
+  sql ("INSERT into reports (uuid, hidden, task, date, nbefile, comment,"
+       " scan_run_status)"
+       " VALUES ('%s', 0, %llu, %i, '', '', %u);",
+       uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
   return report;
 }
@@ -4154,11 +4156,12 @@ make_report (task_t task, const char* uuid)
  *
  * @param[in]   task       The task.
  * @param[out]  report_id  Report ID.
+ * @param[in]   status     Run status of scan associated with report.
  *
  * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
  */
 static int
-create_report (task_t task, char **report_id)
+create_report (task_t task, char **report_id, task_status_t status)
 {
   assert (current_report == (report_t) 0);
   if (current_report) return -1;
@@ -4172,7 +4175,7 @@ create_report (task_t task, char **report_id)
 
   /* Create the report. */
 
-  current_report = make_report (task, *report_id);
+  current_report = make_report (task, *report_id, status);
 
   return 0;
 }
