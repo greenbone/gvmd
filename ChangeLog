@@ -1,3 +1,10 @@
+2009-12-30  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Applied patch from Vladimir Nadvornik to build static libraries only,
+	as shared libs are neither installed nor used.
+	
+	* src/CMakeLists.txt: Declared libraries as static.
+
 2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_escalator_task_iterator)
