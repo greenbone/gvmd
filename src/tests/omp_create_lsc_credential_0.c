@@ -57,6 +57,7 @@ main ()
   if (openvas_server_send (&session,
                            "<create_lsc_credential>"
                            "<name>ompcreatelsccredential0</name>"
+                           "<login>ompcreatelsccredential0</login>"
                            "</create_lsc_credential>")
       == -1)
     {

@@ -1,6 +1,6 @@
-/* Test 0 of getting the lsc_credentials.
+/* Test 1 of getting the lsc_credentials.
  * $Id$
- * Description: Test OMP get_lsc_credentials.
+ * Description: Test OMP get_lsc_credentials, naming a credential.
  *
  * Authors:
  * Matthew Mundell <matthew.mundell@intevation.de>
@@ -33,14 +33,14 @@
 #include "common.h"
 #include "../tracef.h"
 
-#define NAME_1 "ompgetlsccredentials0name1"
-#define NAME_2 "ompgetlsccredentials0name2"
+#define NAME_1 "ompgetlsccredentials1name1"
+#define NAME_2 "ompgetlsccredentials1name2"
 #define COMMENT_1 "Test comment."
 
 int
 main ()
 {
-  int socket, found_1 = 0, found_2 = 0;
+  int socket, found_1 = 0;
   gnutls_session_t session;
   entities_t lsc_credentials;
   entity_t entity, lsc_credential;
@@ -59,14 +59,14 @@ main ()
   /* Ensure the lsc_credentials exist. */
 
   omp_delete_lsc_credential (&session, NAME_1);
-  if (omp_create_lsc_credential (&session, NAME_1, NAME_2, COMMENT_1) == -1)
+  if (omp_create_lsc_credential (&session, NAME_1, NAME_1, COMMENT_1) == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
     }
 
   omp_delete_lsc_credential (&session, NAME_2);
-  if (omp_create_lsc_credential (&session, NAME_2, NAME_1, NULL) == -1)
+  if (omp_create_lsc_credential (&session, NAME_2, NAME_2, NULL) == -1)
     {
       close_manager_connection (socket, session);
       return EXIT_FAILURE;
@@ -74,11 +74,13 @@ main ()
 
   /* Request the lsc_credentials. */
 
-  if (openvas_server_send (&session, "<get_lsc_credentials/>")
+  if (openvas_server_sendf (&session,
+                            "<get_lsc_credentials name=\"%s\"/>",
+                            NAME_1)
       == -1)
     goto delete_fail;
 
-  /* Check that the response includes both created entries. */
+  /* Check that the response includes the created entry. */
 
   entity = NULL;
   if (read_entity (&session, &entity))
@@ -91,7 +93,7 @@ main ()
       && strcmp (entity_attribute (entity, "status"), "200") == 0)
     {
       lsc_credentials = entity->entities;
-      while ((lsc_credential = first_entity (lsc_credentials)))
+      if ((lsc_credential = first_entity (lsc_credentials)))
         {
           entity_t name = entity_child (lsc_credential, "name");
           entity_t comment = entity_child (lsc_credential, "comment");
@@ -101,14 +103,9 @@ main ()
               || comment == NULL)
             goto free_fail;
           if ((strcmp (entity_text (name), NAME_1) == 0)
-              && (strcmp (entity_text (login), NAME_2) == 0)
+              && (strcmp (entity_text (login), NAME_1) == 0)
               && (strcmp (entity_text (comment), COMMENT_1) == 0))
             found_1 = 1;
-          else if ((strcmp (entity_text (name), NAME_2) == 0)
-                   && (strcmp (entity_text (login), NAME_1) == 0)
-                   && (strcmp (entity_text (comment), "") == 0))
-            found_2 = 1;
-          lsc_credentials = next_entities (lsc_credentials);
         }
     }
 
@@ -118,5 +115,5 @@ main ()
   omp_delete_lsc_credential (&session, NAME_1);
   omp_delete_lsc_credential (&session, NAME_2);
   close_manager_connection (socket, session);
-  return (found_1 && found_2) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return found_1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

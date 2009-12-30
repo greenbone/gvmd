@@ -92,7 +92,7 @@ main ()
               count = entity_child (config, "nvt_count");
               if (count == NULL) break;
               growing = entity_child (count, "growing");
-              if (growing == NULL || strcmp (entity_text (growing), "1"))
+              if (growing == NULL || strcmp (entity_text (growing), "0"))
                 break;
               found_1 = 1;
               break;

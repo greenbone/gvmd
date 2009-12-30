@@ -1,5 +1,29 @@
 2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tests/omp_help_0.c (help_text): Match to current value.
+
+	* src/tests/omp_get_configs_0.c, src/tests/omp_get_configs_1.c,
+	src/tests/omp_get_configs_3.c, src/tests/omp_get_configs_2.c: Clear
+	expected NVT growing state for "Full and fast".
+
+	* src/tests/omp_get_status_5.c: Add config, escalator and target
+	entities to expected response.
+
+	* src/tests/omp_create_lsc_credential_1.c,
+	src/tests/omp_delete_lsc_credential_0.c,
+	src/tests/omp_create_lsc_credential_0.c,
+	src/tests/omp_get_lsc_credentials_0.c: Add LOGIN to CREATE_LSC_CREDENTIAL.
+
+	* src/tests/omp_start_task_4.c: Swap success and failure.
+
+	* src/tests/omp_get_lsc_credentials_1.c,
+	src/tests/omp_get_lsc_credentials_2.c: New files.
+
+	* src/tests/CMakeLists.txt: Add omp_get_lsc_credentials_1 and
+	omp_get_lsc_credentials_2.
+
+2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (where_levels): Neaten doc formatting.
 
 	* src/ompd.c (serve_omp): Just read and log a character on select

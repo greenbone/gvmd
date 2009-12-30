@@ -56,6 +56,7 @@ main ()
   omp_delete_lsc_credential (&session, "ompcreatelsccredential1");
   if (openvas_server_send (&session, "<create_lsc_credential>"
                                      "<name>ompcreatelsccredential1</name>"
+                                     "<login>ompcreatelsccredential1</login>"
                                      "</create_lsc_credential>")
       == -1)
     {
@@ -95,6 +96,7 @@ main ()
 
   if (openvas_server_send (&session, "<create_lsc_credential>"
                                      "<name>ompcreatelsccredential1</name>"
+                                     "<login>ompcreatelsccredential1</login>"
                                      "</create_lsc_credential>")
       == -1)
     {

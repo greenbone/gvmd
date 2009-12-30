@@ -40,7 +40,8 @@ main ()
   int socket;
   gnutls_session_t session;
   char* id;
-  entity_t entity, expected, task, messages, report_count;
+  entity_t entity, expected, task, messages, report_count, element;
+  gchar* string;
 
   setup_test ();
 
@@ -92,6 +93,18 @@ main ()
   task = add_entity (&expected->entities, "task", NULL);
   add_attribute (task, "id", id);
   add_entity (&task->entities, "name", "Task for omp_get_status_5");
+
+  element = add_entity (&task->entities, "config", NULL);
+  string = g_strdup_printf ("Imported config for task %s", id);
+  add_entity (&element->entities, "name", string);
+  g_free (string);
+  element = add_entity (&task->entities, "escalator", NULL);
+  add_entity (&element->entities, "name", NULL);
+  element = add_entity (&task->entities, "target", NULL);
+  string = g_strdup_printf ("Imported target for task %s", id);
+  add_entity (&element->entities, "name", string);
+  g_free (string);
+
   add_entity (&task->entities, "status", "New");
   add_entity (&task->entities, "progress", "-1");
   messages = add_entity (&task->entities, "messages", NULL);

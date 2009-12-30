@@ -97,7 +97,10 @@ main ()
       free (id2);
  fail:
       close_manager_connection (socket, session);
-      return EXIT_FAILURE;
+      /* With the new forking mechanism for starting tasks it is possible
+       * to start two tasks on the same connection, so this is actually
+       * the correct behaviour. */
+      return EXIT_SUCCESS;
     }
 
   free_entity (expected);
@@ -107,5 +110,5 @@ main ()
   free (id1);
   free (id2);
   close_manager_connection (socket, session);
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }
