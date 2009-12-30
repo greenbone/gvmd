@@ -804,7 +804,7 @@ migrate_0_to_1 ()
 
   if (manage_db_version () != 0)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -860,7 +860,7 @@ migrate_1_to_2 ()
 
   if (manage_db_version () != 1)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -916,7 +916,7 @@ migrate_2_to_3 ()
 
   if (manage_db_version () != 2)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -970,7 +970,7 @@ migrate_3_to_4 ()
 
   if (manage_db_version () != 3)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -1470,7 +1470,7 @@ migrate_4_to_5 ()
 
   if (manage_db_version () != 4)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -1572,7 +1572,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
                          predefined_config_id);
       if (name == NULL)
         {
-          sql ("END;");
+          sql ("ROLLBACK;");
           abort ();
         }
       quoted_name = sql_quote (name);
@@ -1601,7 +1601,7 @@ migrate_5_to_6 ()
 
   if (manage_db_version () != 5)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -1641,7 +1641,7 @@ migrate_5_to_6 ()
       g_warning ("%s: a predefined config has moved from the standard location,"
                  " giving up\n",
                  __FUNCTION__);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -1672,7 +1672,7 @@ migrate_6_to_7 ()
 
   if (manage_db_version () != 6)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -1705,7 +1705,7 @@ migrate_7_to_8 ()
 
   if (manage_db_version () != 7)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -2083,7 +2083,7 @@ create_escalator (const char* name, const char* comment,
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -2167,7 +2167,7 @@ delete_escalator (const char* name)
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
   sql ("DELETE FROM escalator_condition_data"
@@ -5258,7 +5258,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         if (config_name == NULL)
           {
             g_free (rc);
-            sql ("END");
+            sql ("ROLLBACK");
             return -1;
           }
 
@@ -5267,7 +5267,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           {
             free (config_name);
             g_free (rc);
-            sql ("END");
+            sql ("ROLLBACK");
             return -1;
           }
 
@@ -5277,7 +5277,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             free (config_name);
             free (target);
             g_free (rc);
-            sql ("END");
+            sql ("ROLLBACK");
             return -1;
           }
         quoted_selector = sql_quote (selector);
@@ -5289,7 +5289,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             free (config_name);
             free (target);
             g_free (rc);
-            sql ("END");
+            sql ("ROLLBACK");
             return -1;
           }
         else if (config == 0)
@@ -5298,7 +5298,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             free (config_name);
             free (target);
             g_free (rc);
-            sql ("END");
+            sql ("ROLLBACK");
             return -1;
           }
         else
@@ -5323,7 +5323,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
               {
                 free (config_name);
                 g_free (rc);
-                sql ("END");
+                sql ("ROLLBACK");
                 return -1;
               }
             set_target_hosts (target, hosts);
@@ -5337,7 +5337,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             if (insert_rc_into_config (config, quoted_config_name, (gchar*) rc))
               {
                 g_free (rc);
-                sql ("END");
+                sql ("ROLLBACK");
                 return -1;
               }
             g_free (rc);
@@ -5781,7 +5781,7 @@ create_target (const char* name, const char* hosts, const char* comment,
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -5850,7 +5850,7 @@ delete_target (const char* name)
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
   sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
@@ -6134,7 +6134,7 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
       g_warning ("%s: sqlite3_prepare failed: %s\n",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
-      /** @todo END if in transaction. */
+      /** @todo ROLLBACK if in transaction. */
       abort ();
     }
 
@@ -6486,7 +6486,7 @@ create_config (const char* name, const char* comment, char* rc)
                quoted_name))
     {
       tracef ("   config \"%s\" already exists\n", name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       return 1;
     }
@@ -6495,7 +6495,7 @@ create_config (const char* name, const char* comment, char* rc)
                quoted_name))
     {
       tracef ("   NVT selector \"%s\" already exists\n", name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       return -1;
     }
@@ -6518,7 +6518,7 @@ create_config (const char* name, const char* comment, char* rc)
   config = sqlite3_last_insert_rowid (task_db);
   if (insert_rc_into_config (config, quoted_name, rc))
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       return -1;
     }
@@ -6559,7 +6559,7 @@ copy_config (const char* name, const char* comment, const char* config)
                quoted_name))
     {
       tracef ("   config \"%s\" already exists\n", name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
@@ -6570,7 +6570,7 @@ copy_config (const char* name, const char* comment, const char* config)
                quoted_config)
       == 0)
     {
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
@@ -6582,7 +6582,7 @@ copy_config (const char* name, const char* comment, const char* config)
                quoted_name))
     {
       tracef ("   NVT selector \"%s\" already exists\n", name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
@@ -6664,7 +6664,7 @@ delete_config (const char* name)
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
   sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
@@ -6929,7 +6929,7 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
                    quoted_config))
         {
           g_free (quoted_config);
-          sql ("END;");
+          sql ("ROLLBACK;");
           return 1;
         }
 
@@ -6964,7 +6964,7 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
                quoted_config))
     {
       g_free (quoted_config);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -7085,7 +7085,7 @@ manage_set_config_nvts (const char* config, const char* family,
                quoted_config))
     {
       g_free (quoted_config);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -8619,7 +8619,7 @@ manage_set_config_families (const char* config,
                quoted_config))
     {
       g_free (quoted_config);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -8630,7 +8630,7 @@ manage_set_config_families (const char* config,
       if (switch_representation (config, constraining))
         {
           g_free (quoted_config);
-          sql ("END;");
+          sql ("ROLLBACK;");
           return -1;
         }
       constraining = constraining == 0;
@@ -8641,7 +8641,7 @@ manage_set_config_families (const char* config,
     {
       /* The config should always have a selector. */
       g_free (quoted_config);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
   quoted_selector = sql_quote (selector);
@@ -9168,7 +9168,7 @@ create_lsc_credential (const char* name, const char* comment,
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -9216,7 +9216,7 @@ create_lsc_credential (const char* name, const char* comment,
                            &exe, &exe_size))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return -1;
     }
 
@@ -9280,7 +9280,7 @@ create_lsc_credential (const char* name, const char* comment,
                 g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                            __FUNCTION__,
                            sqlite3_errmsg (task_db));
-                sql ("END;");
+                sql ("ROLLBACK;");
                 g_free (public_key);
                 g_free (private_key);
                 g_free (rpm);
@@ -9293,7 +9293,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (public_key);
         g_free (private_key);
         g_free (rpm);
@@ -9316,7 +9316,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (public_key);
         g_free (private_key);
         g_free (rpm);
@@ -9338,7 +9338,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (private_key);
         g_free (rpm);
         g_free (deb);
@@ -9365,7 +9365,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (base64);
         g_free (deb);
         g_free (exe);
@@ -9389,7 +9389,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (base64);
         g_free (exe);
         return -1;
@@ -9412,7 +9412,7 @@ create_lsc_credential (const char* name, const char* comment,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         g_free (base64);
         return -1;
       }
@@ -9431,7 +9431,7 @@ create_lsc_credential (const char* name, const char* comment,
             g_warning ("%s: sqlite3_step failed: %s\n",
                        __FUNCTION__,
                        sqlite3_errmsg (task_db));
-            sql ("END;");
+            sql ("ROLLBACK;");
             return -1;
           }
       }
@@ -9463,7 +9463,7 @@ delete_lsc_credential (const char* name)
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -9603,7 +9603,7 @@ create_agent (const char* name, const char* comment, const char* installer,
                quoted_name))
     {
       g_free (quoted_name);
-      sql ("END;");
+      sql ("ROLLBACK;");
       return 1;
     }
 
@@ -9659,7 +9659,7 @@ create_agent (const char* name, const char* comment, const char* installer,
                 g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                            __FUNCTION__,
                            sqlite3_errmsg (task_db));
-                sql ("END;");
+                sql ("ROLLBACK;");
                 return -1;
               }
             break;
@@ -9667,7 +9667,7 @@ create_agent (const char* name, const char* comment, const char* installer,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         return -1;
       }
 
@@ -9685,7 +9685,7 @@ create_agent (const char* name, const char* comment, const char* installer,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         return -1;
       }
 
@@ -9701,7 +9701,7 @@ create_agent (const char* name, const char* comment, const char* installer,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         return -1;
       }
 
@@ -9717,7 +9717,7 @@ create_agent (const char* name, const char* comment, const char* installer,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
-        sql ("END;");
+        sql ("ROLLBACK;");
         return -1;
       }
 
@@ -9734,7 +9734,7 @@ create_agent (const char* name, const char* comment, const char* installer,
             g_warning ("%s: sqlite3_step failed: %s\n",
                        __FUNCTION__,
                        sqlite3_errmsg (task_db));
-            sql ("END;");
+            sql ("ROLLBACK;");
             return -1;
           }
       }

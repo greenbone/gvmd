@@ -1,5 +1,9 @@
 2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h: Replace SQL END with ROLLBACK.
+
+2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tests/omp_help_0.c (help_text): Match to current value.
 
 	* src/tests/omp_get_configs_0.c, src/tests/omp_get_configs_1.c,
