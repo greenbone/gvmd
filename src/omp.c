@@ -402,7 +402,7 @@ static char* help_text = "\n"
 /* Global variables. */
 
 /**
- * @brief Hack for returning error value from the callbacks.
+ * @brief Hack for returning forked process status from the callbacks.
  */
 int current_error;
 
@@ -5991,7 +5991,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL user must both be at"
+                                  "CREATE_LSC_CREDENTIAL login must be at"
                                   " least one character long"));
             }
           else switch (create_lsc_credential (modify_task_name,
@@ -6393,9 +6393,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            else if (forked)
-              /* Prevent the process from forking again, as then both children
-               * would be using the same server session. */
+            else if (forked == 2)
+              /* Prevent the forked child from forking again, as then both
+               * forked children would be using the same server session. */
               abort (); // FIX respond with error or something
             else
               {
@@ -8118,6 +8118,8 @@ process_omp_client_input ()
             {
               if (current_error)
                 {
+                  /* This is the return status for a forked child. */
+                  forked = 2; /* Prevent further forking. */
                   g_error_free (error);
                   return current_error;
                 }

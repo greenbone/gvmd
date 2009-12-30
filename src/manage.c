@@ -879,15 +879,18 @@ start_task (task_t task, char **report_id)
                    __FUNCTION__,
                    strerror (errno));
         set_task_run_status (task, run_status);
+        current_report = (report_t) 0;
         return -9;
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
+        current_report = (report_t) 0;
         return 0;
         break;
     }
 
-  /* Every fail exit from here must reset to this run status. */
+  /* Every fail exit from here must reset to this run status, and must
+   * clear current_report. */
 
   // FIX On fail exits only, if another process has set a request state then
   //     honour that request.  (stop_task, request_delete_task)
@@ -907,6 +910,7 @@ start_task (task_t task, char **report_id)
       free (target);
       free (hosts);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -919,6 +923,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       tracef ("   task config is NULL.\n");
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -936,6 +941,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -947,6 +953,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
@@ -955,6 +962,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
   // FIX still getting FINISHED msgs
@@ -964,6 +972,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
   if (send_to_server ("ntp_short_status <|> no\n"))
@@ -972,6 +981,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -983,6 +993,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
   if (send_config_preferences (config, "PLUGINS_PREFS"))
@@ -991,6 +1002,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -1027,6 +1039,7 @@ start_task (task_t task, char **report_id)
                 free (config);
                 cleanup_iterator (&credentials);
                 set_task_run_status (task, run_status);
+                current_report = (report_t) 0;
                 return -10;
               }
           }
@@ -1042,6 +1055,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -1067,6 +1081,7 @@ start_task (task_t task, char **report_id)
           /* Free the list. */
           g_slist_free (last);
           set_task_run_status (task, run_status);
+          current_report = (report_t) 0;
           return -10;
         }
       files = g_slist_next (files);
@@ -1081,6 +1096,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -1089,6 +1105,7 @@ start_task (task_t task, char **report_id)
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -1097,6 +1114,7 @@ start_task (task_t task, char **report_id)
     {
       free (hosts);
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
 
@@ -1109,6 +1127,7 @@ start_task (task_t task, char **report_id)
   if (fail)
     {
       set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
       return -10;
     }
   scanner_active = 1;

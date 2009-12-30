@@ -698,6 +698,8 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Setup for select. */
 
+      /** @todo nfds must only include a socket if it's in >= one set. */
+
       fds = 0;
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
@@ -791,22 +793,40 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
-          g_warning ("%s: exception on client in child select\n",
-                     __FUNCTION__);
-          openvas_server_free (client_socket,
-                               *client_session,
-                               *client_credentials);
-          return -1;
+          char ch;
+          if (recv (client_socket, &ch, 1, MSG_OOB) < 1)
+            {
+              g_warning ("%s: after exception on client in child select:"
+                         " recv failed\n",
+                         __FUNCTION__);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+              return -1;
+            }
+          g_warning ("%s: after exception on client in child select:"
+                     " recv: %c\n",
+                     __FUNCTION__,
+                     ch);
         }
 
       if (FD_ISSET (scanner_socket, &exceptfds))
         {
-          g_warning ("%s: exception on scanner in child select\n",
-                     __FUNCTION__);
-          openvas_server_free (client_socket,
-                               *client_session,
-                               *client_credentials);
-          return -1;
+          char ch;
+          if (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
+            {
+              g_warning ("%s: after exception on scanner in child select:"
+                         " recv failed\n",
+                         __FUNCTION__);
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+              return -1;
+            }
+          g_warning ("%s: after exception on scanner in child select:"
+                     " recv: %c\n",
+                     __FUNCTION__,
+                     ch);
         }
 
       if ((fds & FD_CLIENT_READ) == FD_CLIENT_READ
@@ -895,6 +915,8 @@ serve_omp (gnutls_session_t* client_session,
                                        *client_credentials);
                   return -1;
                 }
+              nfds = 1 + (client_socket > scanner_socket
+                          ? client_socket : scanner_socket);
               *scanner_socket_addr = scanner_socket;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -1030,6 +1052,8 @@ serve_omp (gnutls_session_t* client_session,
                                        *client_credentials);
                   return -1;
                 }
+              nfds = 1 + (client_socket > scanner_socket
+                          ? client_socket : scanner_socket);
               *scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)
@@ -1148,6 +1172,8 @@ serve_omp (gnutls_session_t* client_session,
                                        *client_credentials);
                   return -1;
                 }
+              nfds = 1 + (client_socket > scanner_socket
+                          ? client_socket : scanner_socket);
               *scanner_socket_addr = scanner_socket;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -1235,6 +1261,8 @@ serve_omp (gnutls_session_t* client_session,
                                        *client_credentials);
                   return -1;
                 }
+              nfds = 1 + (client_socket > scanner_socket
+                          ? client_socket : scanner_socket);
               *scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)

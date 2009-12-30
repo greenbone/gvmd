@@ -4392,10 +4392,10 @@ next_report (iterator_t* iterator, report_t* report)
 /**
  * @brief Return SQL WHERE for restricting a SELECT to levels.
  *
- * @param[in]  levels        String describing threat levels (message types)
- *                           to include in report (for example, "hmlgd" for
- *                           High, Medium, Low, loG and Debug).  All levels if
- *                           NULL.
+ * @param[in]  levels  String describing threat levels (message types)
+ *                     to include in report (for example, "hmlgd" for
+ *                     High, Medium, Low, loG and Debug).  All levels if
+ *                     NULL.
  *
  * @return WHERE clause for levels.
  */

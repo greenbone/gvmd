@@ -1,8 +1,24 @@
+2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (where_levels): Neaten doc formatting.
+
+	* src/ompd.c (serve_omp): Just read and log a character on select
+	exception, instead of failing.  Recalculate nfds after recreating
+	the scanner session.
+
+	* src/omp.c (omp_xml_handle_end_element): Correct entity name in error
+	message.  In the task start mechanism prevent the child from forking
+	instead of the parent.
+	(process_omp_client_input): Flag start_task children specially.
+
+	* src/manage.c (start_task): Clear current report in the child on failure
+	and in the parent always.
+
 2009-12-30  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	Applied patch from Vladimir Nadvornik to build static libraries only,
 	as shared libs are neither installed nor used.
-	
+
 	* src/CMakeLists.txt: Declared libraries as static.
 
 2009-12-29  Matthew Mundell <matthew.mundell@intevation.de>
