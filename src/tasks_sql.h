@@ -2219,10 +2219,41 @@ find_escalator (const char* name, escalator_t* escalator)
 }
 
 /**
+ * @brief Return the condition associated with an escalator.
+ *
+ * @param[in]  escalator  Escalator.
+ *
+ * @return Condition.
+ */
+static escalator_condition_t
+escalator_condition (escalator_t escalator)
+{
+  return sql_int (0, 0,
+                  "SELECT condition FROM escalators WHERE ROWID = %llu;",
+                  escalator);
+}
+
+/**
+ * @brief Return the method associated with an escalator.
+ *
+ * @param[in]  escalator  Escalator.
+ *
+ * @return Method.
+ */
+static escalator_method_t
+escalator_method (escalator_t escalator)
+{
+  return sql_int (0, 0,
+                  "SELECT method FROM escalators WHERE ROWID = %llu;",
+                  escalator);
+}
+
+/**
  * @brief Initialise an escalator iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of single task to iterator over, NULL for all.
+ * @param[in]  name        Name of single escalator to iterator over, NULL for
+ *                         all.
  * @param[in]  task        Iterate over escalators for this task.  0 for all.
  * @param[in]  event       Iterate over escalators handling this event.  0 for
  *                         all.
@@ -2452,29 +2483,34 @@ escalator_data (escalator_t escalator, const char *type, const char *name)
 /**
  * @brief Send an email.
  *
- * @param[in]  to_address  Address to send to.
- * @param[in]  subject     Subject of email.
- * @param[in]  body        Body of email.
+ * @param[in]  to_address    Address to send to.
+ * @param[in]  from_address  Address to send to.
+ * @param[in]  subject       Subject of email.
+ * @param[in]  body          Body of email.
  *
  * @return 0 success, -1 error.
  */
 static int
-email (const char *to_address, const char *subject, const char *body)
+email (const char *to_address, const char *from_address, const char *subject,
+       const char *body)
 {
   int ret;
   gchar *command;
 
-  tracef ("   EMAIL to %s subject: %s, body: %s", to_address, subject, body);
+  tracef ("   EMAIL to %s from %s subject: %s, body: %s",
+          to_address, from_address, subject, body);
 
   command = g_strdup_printf ("echo \""
                              "To: %s\n"
-                             "From: automated@openvas.org\n"
+                             "From: %s\n"
                              "Subject: %s\n"
                              "\n"
                              "%s\""
                              " | /usr/sbin/sendmail %s"
                              " > /tmp/openvasmd_sendmail_out 2>&1",
                              to_address,
+                             from_address ? from_address
+                                          : "automated@openvas.org",
                              subject,
                              body,
                              to_address);
@@ -2511,18 +2547,21 @@ email (const char *to_address, const char *subject, const char *body)
  * @return 0 success, -1 error.
  */
 static int
-escalate (escalator_t escalator, task_t task, event_t event,
-          const void* event_data, escalator_method_t method,
-          escalator_condition_t condition)
+escalate_1 (escalator_t escalator, task_t task, event_t event,
+            const void* event_data, escalator_method_t method,
+            escalator_condition_t condition)
 {
   switch (method)
     {
       case ESCALATOR_METHOD_EMAIL:
         {
           int ret;
-          char *address = escalator_data (escalator, "method", "address");
+          char *to_address, *from_address;
 
-          if (address)
+          to_address = escalator_data (escalator, "method", "to_address");
+          from_address = escalator_data (escalator, "method", "from_address");
+
+          if (to_address)
             {
               gchar *body, *subject;
               char *name, *notice;
@@ -2565,8 +2604,9 @@ escalate (escalator_t escalator, task_t task, event_t event,
                 }
               free (name);
               free (notice);
-              ret = email (address, subject, body);
-              free (address);
+              ret = email (to_address, from_address, subject, body);
+              free (to_address);
+              free (from_address);
               g_free (subject);
               g_free (body);
             }
@@ -2578,6 +2618,25 @@ escalate (escalator_t escalator, task_t task, event_t event,
         break;
     }
   return -1;
+}
+
+/**
+ * @brief Escalate an escalator with task and event data.
+ *
+ * @param[in]  escalator   Escalator.
+ * @param[in]  task        Task.
+ * @param[in]  event       Event.
+ * @param[in]  event_data  Event data.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+escalate (escalator_t escalator, task_t task, event_t event,
+          const void* event_data)
+{
+  escalator_condition_t condition = escalator_condition (escalator);
+  escalator_method_t method = escalator_method (escalator);
+  return escalate_1 (escalator, task, event, event_data, method, condition);
 }
 
 /**
@@ -2689,12 +2748,12 @@ event (task_t task, event_t event, void* event_data)
 
           condition = escalator_iterator_condition (&escalators);
           if (condition_met (task, escalator, condition))
-            escalate (escalator,
-                      task,
-                      event,
-                      event_data,
-                      escalator_iterator_method (&escalators),
-                      condition);
+            escalate_1 (escalator,
+                        task,
+                        event,
+                        event_data,
+                        escalator_iterator_method (&escalators),
+                        condition);
         }
     }
   cleanup_iterator (&escalators);
@@ -3354,7 +3413,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       sql ("INSERT into tasks (uuid, name, hidden, comment, owner,"
            " run_status, start_time, end_time, config, target)"
-           " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f29', 'Example task',"
+           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', 'Example task',"
            " 1, 'This is an example task for the help pages.', NULL, %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
            " 'Full and fast', 'Localhost');",

@@ -234,6 +234,9 @@ delete_escalator (const char*);
 gboolean
 find_escalator (const char*, escalator_t*);
 
+int
+escalate (escalator_t, task_t, event_t, const void*);
+
 void
 init_escalator_iterator (iterator_t*, const char*, task_t, event_t, int,
                          const char*);
@@ -302,7 +305,7 @@ const char*
 escalator_task_iterator_uuid (iterator_t*);
 
 
-/* Task global variables. */
+/* Task global variables and preprocessor variables. */
 
 /**
  * @brief The task currently running on the scanner.
@@ -310,6 +313,8 @@ escalator_task_iterator_uuid (iterator_t*);
 extern /*@null@*/ task_t current_scanner_task;
 
 extern /*@null@*/ report_t current_report;
+
+#define MANAGE_EXAMPLE_TASK_UUID "343435d6-91b0-11de-9478-ffd71f4c6f29"
 
 
 /* Task code specific to the representation of tasks. */

@@ -69,6 +69,7 @@ static char* help_text = "\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
+"    TEST_ESCALATOR         Run an escalator.\n"
 "    START_TASK             Manually start an existing task.\n";
 
 int

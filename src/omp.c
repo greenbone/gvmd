@@ -298,6 +298,7 @@ static char* help_text = "\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
+"    TEST_ESCALATOR         Run an escalator.\n"
 "    START_TASK             Manually start an existing task.\n";
 
 
@@ -640,6 +641,8 @@ typedef enum
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_START_TASK,
+  CLIENT_TEST_ESCALATOR,
+  CLIENT_TEST_ESCALATOR_NAME,
   CLIENT_VERSION
 } client_state_t;
 
@@ -1420,6 +1423,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_VERSION);
+        else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&current_name, attribute);
+            set_client_state (CLIENT_TEST_ESCALATOR);
+          }
         else if (strcasecmp ("START_TASK", element_name) == 0)
           {
             const gchar* attribute;
@@ -2337,6 +2348,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_task", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_TEST_ESCALATOR:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_TEST_ESCALATOR_NAME);
+        else
+          {
+            if (send_element_error_to_client ("test_escalator",
+                                              element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -6376,6 +6406,59 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
+      case CLIENT_TEST_ESCALATOR:
+        if (current_name)
+          {
+            escalator_t escalator;
+            task_t task;
+
+            if (find_escalator (current_name, &escalator))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
+            else if (escalator == 0)
+              {
+                if (send_find_error_to_client ("test_escalator",
+                                               "escalator",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
+            else if (task == 0)
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
+            else switch (escalate (escalator,
+                                   task,
+                                   EVENT_TASK_RUN_STATUS_CHANGED,
+                                   (void*) TASK_STATUS_DONE))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("test_escalator"));
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("test_escalator"));
+                  break;
+                default: /* Programming error. */
+                  assert (0);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("test_escalator"));
+                  break;
+              }
+            openvas_free_string_var (&current_name);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("test_escalator",
+                              "TEST_ESCALATOR requires a name element"));
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_TEST_ESCALATOR_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_TEST_ESCALATOR);
+        break;
+
       case CLIENT_START_TASK:
         if (current_uuid)
           {
@@ -7985,6 +8068,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_ESCALATOR_NAME:
       case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
       case CLIENT_DELETE_TARGET_NAME:
+      case CLIENT_TEST_ESCALATOR_NAME:
         openvas_append_text (&modify_task_name, text, text_len);
         break;
 

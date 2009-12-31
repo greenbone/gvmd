@@ -1,3 +1,25 @@
+2009-12-31  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP command TEST_ESCALATOR.
+
+	* src/manage.h (escalate): New header.
+	(MANAGE_EXAMPLE_TASK_UUID): New definition.
+
+	* src/tasks_sql.h (escalator_condition, escalator_method, escalate): New
+	functions.
+	(email): Add from_address arg.  Rename address to to_address.
+	(escalate_1): New function, renamed from escalate.  Pass from address from
+	method data to email.
+	(event): Call escalate_1 instead of escalate.
+	(init_manage): Use MANAGE_EXAMPLE_TASK_UUID to create example task.
+
+	* src/omp.c (help_text): Add TEST_ESCALATOR.
+	(client_state_t): Add TEST_ESCALATOR states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle TEST_ESCALATOR.
+
+	* src/tests/omp_help_0.c (help_text): Add TEST_ESCALATOR.
+
 2009-12-30  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h: Replace SQL END with ROLLBACK.
