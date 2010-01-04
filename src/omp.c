@@ -3370,10 +3370,22 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
       /* Print the result summary table. */
 
       fprintf (out,
-               "\\begin{tabular}{|l|l|}\n"
+               "\\begin{longtable}{|l|l|}\n"
                "\\hline\n"
                "\\rowcolor{openvas_report}Service (Port)&Threat Level\\\\\n"
-               "\\hline\n");
+               "\\hline\n"
+               "\\endfirsthead\n"
+               "\\multicolumn{2}{l}{\\hfill\\ldots continued from previous page \\ldots}\\\\\n"
+               "\\hline\n"
+               "\\rowcolor{openvas_report}Service (Port)&Threat Level\\\\\n"
+               "\\hline\n"
+               "\\endhead\n"
+               "\\hline\n"
+               "\\multicolumn{2}{l}{\\ldots continues on next page \\ldots}\\\\\n"
+               "\\endfoot\n"
+               "\\hline\n"
+               "\\endlastfoot\n"
+               );
 
       init_result_iterator (&results, report, host,
                             current_int_1,  /* First result. */
@@ -3402,7 +3414,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
       if (last_port) g_free (last_port);
 
       fprintf (out,
-               "\\end{tabular}\n"
+               "\\end{longtable}\n"
                "\n"
                "%%\\subsection*{Security Issues and Fixes -- %s}\n\n",
                host_iterator_host (&hosts));

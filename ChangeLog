@@ -1,5 +1,15 @@
 2010-01-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	In PDF report, enabled page-breaks in service/port per host overview
+	table. Initial commit, size issues still exists (e.g. table header
+	bigger than table).
+
+	* src/omp.c (print_report_latex): Use longtable environment instead of
+	tabularx environment when printing the service per host overview
+	table.
+
+2010-01-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	In PDF report, enabled page-breaks in result overview table.
 
 	* src/omp.c (print_report_latex): Use longtable environment instead of
