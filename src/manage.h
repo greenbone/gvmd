@@ -843,7 +843,25 @@ manage_complete_nvt_cache_update ();
 
 /* NVT selectors. */
 
-/** @todo Hide NVT selectors behind configs. */
+/**
+ * @brief NVT selector type for "all" rule.
+ */
+#define NVT_SELECTOR_TYPE_ALL 0
+
+/**
+ * @brief NVT selector type for "family" rule.
+ */
+#define NVT_SELECTOR_TYPE_FAMILY 1
+
+/**
+ * @brief NVT selector type for "NVT" rule.
+ */
+#define NVT_SELECTOR_TYPE_NVT 2
+
+/**
+ * @brief Special NVT selector type for selecting all types in interfaces.
+ */
+#define NVT_SELECTOR_TYPE_ANY 999
 
 void
 init_family_iterator (iterator_t*, int, const char*, int);
@@ -856,6 +874,21 @@ nvt_selector_family_growing (const char *, const char *, int);
 
 int
 nvt_selector_nvt_count (const char *, const char *, int);
+
+void
+init_nvt_selector_iterator (iterator_t*, const char*, const char*, int);
+
+const char*
+nvt_selector_iterator_nvt (iterator_t*);
+
+const char*
+nvt_selector_iterator_name (iterator_t*);
+
+int
+nvt_selector_iterator_include (iterator_t*);
+
+int
+nvt_selector_iterator_type (iterator_t*);
 
 
 /* NVT preferences. */

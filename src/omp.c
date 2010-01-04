@@ -443,6 +443,11 @@ int current_int_2;
 int current_int_3;
 
 /**
+ * @brief Generic integer variable for communicating between the callbacks.
+ */
+int current_int_4;
+
+/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -1178,6 +1183,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_3 = atoi (attribute);
             else
               current_int_3 = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "nvt_selectors", &attribute))
+              current_int_4 = atoi (attribute);
+            else
+              current_int_4 = 0;
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
@@ -7512,6 +7522,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   cleanup_iterator (&prefs);
 
                   SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+                }
+
+              if (current_int_4)
+                {
+                  iterator_t selectors;
+
+                  /* The "nvt_selectors" attribute was true. */
+
+                  SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
+
+                  init_nvt_selector_iterator (&selectors,
+                                              NULL,
+                                              config_name,
+                                              NVT_SELECTOR_TYPE_ANY);
+                  while (next (&selectors))
+                    {
+                      int type = nvt_selector_iterator_type (&selectors);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<nvt_selector>"
+                        "<name>%s</name>"
+                        "<include>%i</include>"
+                        "<type>%i</type>"
+                        "<family_or_nvt>%s</family_or_nvt>"
+                        "</nvt_selector>",
+                        nvt_selector_iterator_name (&selectors),
+                        nvt_selector_iterator_include (&selectors),
+                        type,
+                        (type == NVT_SELECTOR_TYPE_ALL
+                          ? ""
+                          : nvt_selector_iterator_nvt (&selectors)));
+                    }
+                  cleanup_iterator (&selectors);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</nvt_selectors>");
                 }
 
               SENDF_TO_CLIENT_OR_FAIL ("</config>");

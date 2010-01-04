@@ -34,26 +34,6 @@
 #include "splint.h"
 #endif
 
-/**
- * @brief NVT selector type for "all" rule.
- */
-#define NVT_SELECTOR_TYPE_ALL 0
-
-/**
- * @brief NVT selector type for "family" rule.
- */
-#define NVT_SELECTOR_TYPE_FAMILY 1
-
-/**
- * @brief NVT selector type for "NVT" rule.
- */
-#define NVT_SELECTOR_TYPE_NVT 2
-
-/**
- * @brief Special NVT selector type for selecting all types in interfaces.
- */
-#define NVT_SELECTOR_TYPE_ANY 999
-
 
 /* Types. */
 
@@ -73,9 +53,6 @@ static const char*
 preference_iterator_value (iterator_t*);
 
 static void
-init_nvt_selector_iterator (iterator_t*, const char*, int);
-
-static void
 nvt_selector_add (const char*, const char*, const char*, int);
 
 static int
@@ -83,15 +60,6 @@ nvt_selector_families_growing (const char*);
 
 static int
 nvt_selector_family_count (const char*, int);
-
-static const char*
-nvt_selector_iterator_nvt (iterator_t*);
-
-static const char*
-nvt_selector_iterator_name (iterator_t*);
-
-static int
-nvt_selector_iterator_include (iterator_t*);
 
 static int
 nvt_selector_nvts_growing (const char*);
@@ -463,7 +431,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
-  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* above). */
+  /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
   sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_name ON nvt_selectors (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_family_or_nvt ON nvt_selectors (type, family_or_nvt);");
@@ -980,7 +948,7 @@ migrate_3_to_4 ()
 
   sql ("ALTER TABLE nvt_selectors ADD COLUMN family;");
 
-  init_nvt_selector_iterator (&nvts, NULL, 2);
+  init_nvt_selector_iterator (&nvts, NULL, NULL, 2);
   while (next (&nvts))
     {
       gchar *quoted_name = sql_quote (nvt_selector_iterator_name (&nvts));
@@ -4130,7 +4098,7 @@ make_task_rcfile (task_t task)
       {
         iterator_t nvts;
 
-        init_nvt_selector_iterator (&nvts, selector, 2);
+        init_nvt_selector_iterator (&nvts, selector, NULL, 2);
         while (next (&nvts))
           g_string_append_printf (buffer,
                                   " %s = %s\n",
@@ -8000,26 +7968,42 @@ config_families_growing (const char* config)
  * @brief Initialise an NVT selector iterator.
  *
  * @param[in]  iterator  Iterator.
+ * @param[in]  selector  Name of single selector to iterate over, NULL for all.
+ * @param[in]  config    Name of config to limit iteration to, NULL for all.
+ * @param[in]  type      Type of selector.  All if config is given.
  */
-static void
-init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type)
+void
+init_nvt_selector_iterator (iterator_t* iterator, const char* selector,
+                            const char* config, int type)
 {
   gchar *sql;
 
-  assert (type >= 0 && type <= 2);
+  assert (selector ? config == NULL : (config ? selector == NULL : 1));
+  assert (config ? type == NVT_SELECTOR_TYPE_ANY : (type >= 0 && type <= 2));
 
   if (selector)
     {
       gchar *quoted_selector = sql_quote (selector);
-      sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name"
+      sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
                              " FROM nvt_selectors"
                              " WHERE name = '%s' AND type = %i;",
                              quoted_selector,
                              type);
       g_free (quoted_selector);
     }
+  else if (config)
+    {
+      gchar *quoted_config = sql_quote (config);
+      sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
+                             " FROM nvt_selectors"
+                             " WHERE name ="
+                             " (SELECT nvt_selector FROM configs"
+                             "  WHERE configs.name = '%s');",
+                             quoted_config);
+      g_free (quoted_config);
+    }
   else
-    sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name"
+    sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
                            " FROM nvt_selectors"
                            " WHERE type = %i;",
                            type);
@@ -8034,7 +8018,7 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector, int type
  *
  * @return -1 if iteration is complete, 1 if include, else 0.
  */
-static int
+int
 nvt_selector_iterator_include (iterator_t* iterator)
 {
   int ret;
@@ -8050,7 +8034,7 @@ nvt_selector_iterator_include (iterator_t* iterator)
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_nvt, 1);
+DEF_ACCESS (nvt_selector_iterator_nvt, 1);
 
 /**
  * @brief Get the name from an NVT selector iterator.
@@ -8059,7 +8043,23 @@ static DEF_ACCESS (nvt_selector_iterator_nvt, 1);
  *
  * @return NVT selector, or NULL if iteration is complete.
  */
-static DEF_ACCESS (nvt_selector_iterator_name, 2);
+DEF_ACCESS (nvt_selector_iterator_name, 2);
+
+/**
+ * @brief Get the type from an NVT selector.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return -1 if iteration is complete, 1 if include, else 0.
+ */
+int
+nvt_selector_iterator_type (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
+}
 
 /**
  * @brief Get the number of families included in a config.

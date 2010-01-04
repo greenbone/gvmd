@@ -1,3 +1,22 @@
+2009-01-04  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add an option to OMP command GET_CONFIGS for getting the NVT selectors of
+	the configs.
+
+	* src/tasks_sql.h (NVT_SELECTOR_TYPE_ALL, NVT_SELECTOR_TYPE_FAMILY)
+	(NVT_SELECTOR_TYPE_NVT, NVT_SELECTOR_TYPE_ANY): Move to tasks_sql.h.
+	(init_nvt_selector_iterator): Export.  Add config argument.
+	(nvt_selector_iterator_include, nvt_selector_iterator_nvt)
+	(nvt_selector_iterator_name): Export.
+	(nvt_selector_iterator_type): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (current_int_4): New variable.
+	(omp_xml_handle_start_element): Store GET_CONFIGS nvt_selectors attribute.
+	(omp_xml_handle_end_element): In CLIENT_GET_CONFIGS respond with NVT
+	selectors according to nvt_selectors attribute.
+
 2010-01-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	In PDF report, enabled page-breaks in service/port per host overview
@@ -25,6 +44,7 @@
 	verbatim environment.
 	(print_report_latex): Removed done todo, minor style edit.
 
+>>>>>>> .r6304
 2009-12-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP command TEST_ESCALATOR.
