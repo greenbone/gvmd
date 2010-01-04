@@ -3276,13 +3276,23 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
 
   /* Print the list of hosts. */
 
-  fprintf (out,
-           "\\section{Result Overview}\n"
-           "\n"
-           "\\begin{tabularx}{\\textwidth * 1}{|l|X|l|l|l|l|}\n"
-           "\\hline\n"
-           "\\rowcolor{openvas_report}"
-           "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n");
+  fprintf (out, "\\section{Result Overview}\n\n");
+  fprintf (out, "\\begin{longtable}{|l|l|l|l|l|l|}\n");
+  fprintf (out, "\\hline\n"
+                "\\rowcolor{openvas_report}"
+                "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n"
+                "\\hline\n"
+                "\\endfirsthead\n"
+                "\\multicolumn{6}{l}{\\hfill\\ldots continued from previous page \\ldots}\\\\\n"
+                "\\hline\n"
+                "\\rowcolor{openvas_report}"
+                "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n"
+                "\\endhead\n"
+                "\\hline\n"
+                "\\multicolumn{6}{l}{\\ldots continues on next page \\ldots}\\\\\n"
+                "\\endfoot\n"
+                "\\hline\n"
+                "\\endlastfoot\n");
 
   init_host_iterator (&hosts, report);
   while (next (&hosts))
@@ -3325,7 +3335,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
            // FIX 0 (false positives)
            "Total: %i&&%i&%i&%i&0\\\\\n"
            "\\hline\n"
-           "\\end{tabularx}\n"
+           "\\end{longtable}\n"
            "\n"
            "\\section{Results per Host}\n"
            "\n",

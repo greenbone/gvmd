@@ -1,5 +1,12 @@
 2010-01-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	In PDF report, enabled page-breaks in result overview table.
+
+	* src/omp.c (print_report_latex): Use longtable environment instead of
+	tabularx environment when printing the result overview table.
+
+2010-01-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	Fixed bug that could result in endless loops in pdf report generation.
 
 	* src/omp.c (next_break): Corrected position of remembered last space
