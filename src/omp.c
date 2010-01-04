@@ -2923,7 +2923,7 @@ next_break (const char* text, int line_width)
             return nchars + 1;
             break;
           case ' ':
-            last_space = nchars;
+            last_space = nchars + 1;
             /*@fallthrough@*/
           default:
             /* A normal character, that the caller would just write out. */
@@ -3036,10 +3036,6 @@ latex_print_verbatim_text (FILE* file, const char* text)
             nchars++;
             pos++;
             break;
-          case '&':
-            /* Escape ampersand, as it separates columns within tabulars. */
-            fputc ('\\', file);
-            /*@fallthrough@*/
           default:
             /* A normal character, write it out. */
             fputc (*pos, file);
@@ -3243,11 +3239,6 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   char *start_time, *end_time;
 
   /**
-   * @todo Lines of issue texts (descriptions of message like "security hole")
-   *       are printed as rows. This will lead to trouble if a single issue line
-   *       does not fit on a whole page, because page breaks can only be inserted
-   *       _between_ rows. Consider using the verbatim environment with manually
-   *       added row breaks after a certain number of characters.
    * @todo Also, this code produces empty tables (probably because of the
    *       'if (last_port == )' code).
    * @todo Escape all text that should appear as text in latex.
@@ -3280,8 +3271,8 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   free (start_time);
   free (end_time);
 
-  fputs("\\tableofcontents\n", out);
-  fputs("\\newpage\n", out);
+  fputs ("\\tableofcontents\n", out);
+  fputs ("\\newpage\n", out);
 
   /* Print the list of hosts. */
 
