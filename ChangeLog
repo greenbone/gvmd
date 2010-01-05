@@ -1,3 +1,9 @@
+2010-01-05  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/omp.c (print_report_latex): Fixed size issues in service/port per
+	host overview table by shortening text that is displayed when page
+	breaks within the table occur.
+
 2009-01-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an option to OMP command GET_CONFIGS for getting the NVT selectors of
