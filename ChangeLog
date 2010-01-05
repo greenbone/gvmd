@@ -1,3 +1,33 @@
+2009-01-05  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Convert the GET_CONFIGS "nvt_selector" attribute to an "export"
+	attribute.  Add importing of entire configs to CREATE_CONFIG.
+	Use a cleaner style of passing data between the parser callbacks for
+	the import implementation, as a start towards using a cleaner data
+	passing mechanism throughout.
+
+	* src/tasks_sql.h (insert_nvt_selectors, config_insert_preferences)
+	(create_config_rc): New functions.
+	(create_config): Move body to create_config_rc.  Reimplement to expect
+	full config.
+	(update_config_caches): Add config arg.  Update caller.
+
+	* src/manage.h: Adjust headers accordingly.
+	(array_t, preference_t, nvt_selector_t): New types.
+
+	* src/omp.c (array_add): Convert string arg type to gpointer.
+	(free_array): Add NULL check.
+	(array_reset, preference_new, nvt_selector_new)
+	(create_config_data_reset, command_data_init): New functions.
+	(import_config_data_t, create_config_data_t, command_data_t): New type.
+	(command_data, create_config_data, import_config_data): New variables.
+	(client_state_t): Add GET_CONFIGS import states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Convert
+	GET_CONFIGS "nvt_selectors" to "export", which responds with data suitable
+	for import.  Add CREATE_CONFIG import handling.
+	(omp_xml_handle_text): Add CREATE_CONFIG import handling.
+	(init_omp): Initialise command_data.
+
 2010-01-05  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/omp.c (print_report_latex): Fixed size issues in service/port per
@@ -50,7 +80,6 @@
 	verbatim environment.
 	(print_report_latex): Removed done todo, minor style edit.
 
->>>>>>> .r6304
 2009-12-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP command TEST_ESCALATOR.

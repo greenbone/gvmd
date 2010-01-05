@@ -6057,6 +6057,213 @@ DEF_ACCESS (target_task_iterator_uuid, 1);
 /* Configs. */
 
 /**
+ * @brief Insert NVT selectors.
+ *
+ * @param[in]  quoted_name  Name of NVT selector.
+ * @param[in]  selectors    NVT selectors.
+ *
+ * @return 0 success, -1 error, -3 input error.
+ */
+static int
+insert_nvt_selectors (const char *quoted_name,
+                      const array_t* selectors /* nvt_selector_t. */)
+{
+  int index = 0;
+  const nvt_selector_t *selector;
+  if (selectors == NULL) return -3;
+  while ((selector = (nvt_selector_t*) g_ptr_array_index (selectors, index++)))
+    {
+      if (selector->type == NULL) return -3;
+
+      if (selector->family_or_nvt)
+        {
+          char *quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
+               " VALUES ('%s', %i, %i, '%s');",
+               quoted_name,
+               selector->include ? 0 : 1,
+               /** @todo Check this is in range. */
+               atoi (selector->type),
+               quoted_family_or_nvt);
+          g_free (quoted_family_or_nvt);
+        }
+      else
+        sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
+             " VALUES ('%s', %i, %i, NULL);",
+             quoted_name,
+             selector->include ? 0 : 1,
+             /** @todo Check this is in range. */
+             atoi (selector->type));
+    }
+  return 0;
+}
+
+/**
+ * @brief Insert preferences into a config.
+ *
+ * @param[in]  config       Config.
+ * @param[in]  preferences  Preferences.
+ *
+ * @return 0 success, -1 error, -4 input error.
+ */
+static int
+config_insert_preferences (config_t config,
+                           const array_t* preferences /* preference_t. */)
+{
+  int index = 0;
+  const preference_t *preference;
+  if (preferences == NULL) return -4;
+  while ((preference = (preference_t*) g_ptr_array_index (preferences, index++)))
+    /* Simply skip the preference if the value is NULL, for exports
+     * where sensitive information is left out. */
+    if (preference->value)
+      {
+        GString *value;
+        int alt_index = 0;
+        const gchar *alt;
+        gchar *quoted_value;
+
+        if (preference->name == NULL) return -4;
+        if (preference->type)
+          {
+            gchar *quoted_type, *quoted_nvt_name, *quoted_preference_name;
+
+            /* Presume NVT preference. */
+
+            if (preference->nvt_name == NULL) return -4;
+
+            value = g_string_new (preference->value);
+            while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
+              g_string_append_printf (value, ";%s", alt);
+
+            quoted_nvt_name = sql_quote (preference->name);
+            quoted_preference_name = sql_quote (preference->name);
+            quoted_type = sql_quote (preference->type);
+            quoted_value = sql_quote (value->str);
+            g_string_free (value, TRUE);
+            /* LDAPsearch[entry]:Timeout value */
+            sql ("INSERT into config_preferences (config, type, name, value)"
+                 " VALUES (%llu, 'PLUGINS_PREFS', '%s[%s]:%s', '%s');",
+                 config,
+                 quoted_nvt_name,
+                 quoted_type,
+                 quoted_preference_name,
+                 quoted_value);
+            g_free (quoted_nvt_name);
+            g_free (quoted_preference_name);
+            g_free (quoted_type);
+            g_free (quoted_value);
+          }
+        else
+          {
+            gchar *quoted_name;
+
+            /* Presume scanner preference. */
+
+            quoted_name = sql_quote (preference->name);
+            quoted_value = sql_quote (preference->value);
+            sql ("INSERT into config_preferences (config, type, name, value)"
+                 " VALUES (%llu, 'SERVER_PREFS', '%s', '%s');",
+                 config,
+                 quoted_name,
+                 quoted_value);
+            g_free (quoted_name);
+            g_free (quoted_value);
+          }
+      }
+  return 0;
+}
+
+/**
+ * @brief Create a config.
+ *
+ * @param[in]  name         Name of config and NVT selector.
+ * @param[in]  comment      Comment on config.
+ * @param[in]  selectors    NVT selectors.
+ * @param[in]  preferences  Preferences.
+ *
+ * @return 0 success, 1 config exists already, -1 error, -2 name empty,
+ *         -3 input error in selectors, -4 input error in preferences.
+ */
+int
+create_config (const char* name, const char* comment,
+               const array_t* selectors /* nvt_selector_t. */,
+               const array_t* preferences /* preference_t. */)
+{
+  int ret;
+  gchar* quoted_name;
+  gchar* quoted_comment;
+  config_t config;
+
+  if (name == NULL || strlen (name) == 0) return -2;
+
+  quoted_name = sql_quote (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+               quoted_name))
+    {
+      tracef ("   config \"%s\" already exists\n", name);
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 1;
+    }
+
+  /** @todo Reference selector in config by ROWID instead of by name. */
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
+               quoted_name))
+    {
+      tracef ("   NVT selector \"%s\" already exists\n", name);
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return -1;
+    }
+
+  if (comment)
+    {
+      quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO configs (name, nvt_selector, comment)"
+           " VALUES ('%s', '%s', '%s');",
+           quoted_name, quoted_name, quoted_comment);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO configs (name, nvt_selector, comment)"
+         " VALUES ('%s', '%s', '');",
+         quoted_name, quoted_name);
+
+  /* Insert the selectors into the nvt_selectors table. */
+
+  config = sqlite3_last_insert_rowid (task_db);
+  if ((ret = insert_nvt_selectors (quoted_name, selectors)))
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return ret;
+    }
+
+  /* Insert the preferences into the config_preferences table. */
+
+  if ((ret = config_insert_preferences (config, preferences)))
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return ret;
+    }
+
+  /* Update family and NVT count caches. */
+
+  update_config_caches (name);
+
+  sql ("COMMIT;");
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
  * @brief Get the value of a config preference.
  *
  * @param[in]  config   Config.
@@ -6501,7 +6708,7 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
  * @return 0 success, 1 config exists already, -1 error.
  */
 int
-create_config (const char* name, const char* comment, char* rc)
+create_config_rc (const char* name, const char* comment, char* rc)
 {
   gchar* quoted_name = sql_nquote (name, strlen (name));
   gchar* quoted_comment;
@@ -7689,13 +7896,15 @@ family_count ()
  * @brief Update the cached count and growing information in every config.
  *
  * It's up to the caller to organise a transaction.
+ *
+ * @param[in]  name  Name of config to update.  NULL for all.
  */
 static void
-update_config_caches ()
+update_config_caches (const char *name)
 {
   iterator_t configs;
 
-  init_config_iterator (&configs, NULL, 1, NULL);
+  init_config_iterator (&configs, name, 1, NULL);
   while (next (&configs))
     {
       const char *selector;
@@ -7731,7 +7940,7 @@ update_config_caches ()
 void
 manage_complete_nvt_cache_update (int mode)
 {
-  update_config_caches ();
+  update_config_caches (NULL);
   if (mode == -2) sql ("COMMIT;");
 }
 

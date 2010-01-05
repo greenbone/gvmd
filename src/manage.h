@@ -711,8 +711,31 @@ target_task_iterator_uuid (iterator_t*);
 
 /* Configs. */
 
+typedef GPtrArray array_t;
+
+typedef struct
+{
+  char *name;
+  char *type;
+  char *value;
+  char *nvt_name;
+  char *nvt_oid;
+  array_t *alts;  /* gchar. */
+} preference_t;
+
+typedef struct
+{
+  char *name;
+  char *type;
+  int include;
+  char *family_or_nvt;
+} nvt_selector_t;
+
 int
-create_config (const char*, const char*, char*);
+create_config (const char*, const char*, const array_t*, const array_t*);
+
+int
+create_config_rc (const char*, const char*, char*);
 
 int
 copy_config (const char*, const char*, const char*);
