@@ -1,3 +1,8 @@
+2009-01-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* CMakeLists.txt: Added clumsy for check for libopenvas version from
+	gsad.
+
 2009-01-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Convert the GET_CONFIGS "nvt_selector" attribute to an "export"

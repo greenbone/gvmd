@@ -156,6 +156,48 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## Dependency checks
 ##
 ## TODO Also check for headers where needed.
+## Improve for workflow: First collect list of missing libs, then print the
+## list and throw an error, otherwise long install-cmake-install-cmake cycles
+## might occur.
+
+# TODO The version check of libopenvas will probably is required by other
+# modules, too (e.g. gsad). Either
+# 1) Move to the next CMake version with built-in version comparison functions
+# 2) Use the pkg-config configuration file that kost provided when installing
+#    openvas-libraries
+# 3) Move following checks in an own CMake- module to reuse. Other parts of
+#    the various CMakeLists.txt could be moved in a common ("openvas") module,
+#    too.
+
+## Check version of libopenvas
+# Obtain libopenvas version number
+find_program (PATH_TO_LIBOPENVASCONFIG libopenvas-config DOC "libopenvas-config program"
+                        " to retrieve information about installed"
+                        " openvas-libraries in the system.")
+if (PATH_TO_LIBOPENVASCONFIG)
+  # Obtain libopenvas version number
+  exec_program (libopenvas-config
+                ARGS --version
+                OUTPUT_VARIABLE LIBOPENVAS_VERSION)
+  # Make a (per definition: semicolon separated) list of it
+  string (REGEX REPLACE "\\." ";" LO_VER ${LIBOPENVAS_VERSION})
+  list (GET LO_VER 0 LO_MAJOR_VER)
+  list (GET LO_VER 1 LO_MINOR_VER)
+  list (GET LO_VER 2 LO_PATCH_VER)
+  set (LIBOPENVAS_SUFFICIENT TRUE)
+  # TODO Would like something like set (MIN_LO_VER "3" "0" "1")
+  #      which would then make it easier to modify these. However, had serious
+  #      issues with the conditionals, thus this clumsy implementation.
+  if (   ${LO_MAJOR_VER} LESS 3
+      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 0
+      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 1 )
+      message (FATAL_ERROR "openvas-libraries version >= 3.0.1 not found.")
+  endif (   ${LO_MAJOR_VER} LESS 3
+        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 0
+        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 1 )
+else (PATH_TO_LIBOPENVASCONFIG)
+   message (FATAL_ERROR "openvas-libraries version >= 3.0.1 not found.")
+endif (PATH_TO_LIBOPENVASCONFIG)
 
 message (STATUS "Looking for gnutls...")
 find_library (GNUTLS gnutls)
