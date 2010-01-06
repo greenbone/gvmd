@@ -6071,15 +6071,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            * any other elements. */
           if (import_config_data->import)
             {
+              char *name;
               array_terminate (import_config_data->nvt_selectors);
               array_terminate (import_config_data->preferences);
               switch (create_config (import_config_data->name,
                                      import_config_data->comment,
                                      import_config_data->nvt_selectors,
-                                     import_config_data->preferences))
+                                     import_config_data->preferences,
+                                     &name))
                 {
                   case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<create_config_response"
+                      " status=\"" STATUS_OK_CREATED "\""
+                      " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
+                      "<config><name>%s</name></config>"
+                      "</create_config_response>",
+                      name);
+                    free (name);
                     break;
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL

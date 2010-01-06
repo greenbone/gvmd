@@ -732,7 +732,8 @@ typedef struct
 } nvt_selector_t;
 
 int
-create_config (const char*, const char*, const array_t*, const array_t*);
+create_config (const char*, const char*, const array_t*, const array_t*,
+               char**);
 
 int
 create_config_rc (const char*, const char*, char*);

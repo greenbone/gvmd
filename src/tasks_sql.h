@@ -6177,49 +6177,52 @@ config_insert_preferences (config_t config,
 /**
  * @brief Create a config.
  *
- * @param[in]  name         Name of config and NVT selector.
- * @param[in]  comment      Comment on config.
- * @param[in]  selectors    NVT selectors.
- * @param[in]  preferences  Preferences.
+ * If a config with the same name exists already then add a unique integer
+ * suffix onto the name.
+ *
+ * @param[in]   proposed_name  Proposed name of config and NVT selector.
+ * @param[in]   comment        Comment on config.
+ * @param[in]   selectors      NVT selectors.
+ * @param[in]   preferences    Preferences.
+ * @param[out]  name           On success the name of the config.
  *
  * @return 0 success, 1 config exists already, -1 error, -2 name empty,
  *         -3 input error in selectors, -4 input error in preferences.
  */
 int
-create_config (const char* name, const char* comment,
+create_config (const char* proposed_name, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
-               const array_t* preferences /* preference_t. */)
+               const array_t* preferences /* preference_t. */,
+               char **name)
 {
   int ret;
-  gchar* quoted_name;
-  gchar* quoted_comment;
+  gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
   config_t config;
+  unsigned int num = 1;
 
-  if (name == NULL || strlen (name) == 0) return -2;
+  if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  quoted_name = sql_quote (name);
+  candidate_name = g_strdup (proposed_name);
+  quoted_candidate_name = sql_quote (candidate_name);
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-               quoted_name))
+  while (1)
     {
-      tracef ("   config \"%s\" already exists\n", name);
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      return 1;
-    }
-
-  /** @todo Reference selector in config by ROWID instead of by name. */
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-               quoted_name))
-    {
-      tracef ("   NVT selector \"%s\" already exists\n", name);
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      return -1;
+      if ((sql_int (0, 0,
+                    "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+                    quoted_candidate_name)
+           == 0)
+          /** @todo Reference selector in config by ROWID instead of by name. */
+          && (sql_int (0, 0,
+                       "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
+                       quoted_candidate_name)
+              == 0))
+        break;
+      g_free (candidate_name);
+      g_free (quoted_candidate_name);
+      candidate_name = g_strdup_printf ("%s %u", proposed_name, ++num);
+      quoted_candidate_name = sql_quote (candidate_name);
     }
 
   if (comment)
@@ -6227,21 +6230,21 @@ create_config (const char* name, const char* comment,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (name, nvt_selector, comment)"
            " VALUES ('%s', '%s', '%s');",
-           quoted_name, quoted_name, quoted_comment);
+           quoted_candidate_name, quoted_candidate_name, quoted_comment);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (name, nvt_selector, comment)"
          " VALUES ('%s', '%s', '');",
-         quoted_name, quoted_name);
+         quoted_candidate_name, quoted_candidate_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
   config = sqlite3_last_insert_rowid (task_db);
-  if ((ret = insert_nvt_selectors (quoted_name, selectors)))
+  if ((ret = insert_nvt_selectors (quoted_candidate_name, selectors)))
     {
       sql ("ROLLBACK;");
-      g_free (quoted_name);
+      g_free (quoted_candidate_name);
       return ret;
     }
 
@@ -6250,16 +6253,17 @@ create_config (const char* name, const char* comment,
   if ((ret = config_insert_preferences (config, preferences)))
     {
       sql ("ROLLBACK;");
-      g_free (quoted_name);
+      g_free (quoted_candidate_name);
       return ret;
     }
 
   /* Update family and NVT count caches. */
 
-  update_config_caches (name);
+  update_config_caches (candidate_name);
 
   sql ("COMMIT;");
-  g_free (quoted_name);
+  g_free (quoted_candidate_name);
+  *name = candidate_name;
   return 0;
 }
 
