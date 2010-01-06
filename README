@@ -59,6 +59,11 @@ then set the environment variables for the user and password
     export OPENVAS_TEST_USER=user_created_by_openvas-adduser
     export OPENVAS_TEST_PASSWORD=that_users_password
 
+and optionally for the host and/or port
+
+    export OPENVAS_TEST_HOST=host.example.org
+    export OPENVAS_TEST_PORT=9999
+
 and then run all the tests
 
     make test

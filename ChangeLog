@@ -1,9 +1,13 @@
-2009-01-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+2010-01-06  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* README: Note OPENVAS_TEST_HOST and OPENVAS_TEST_PORT.
+
+2010-01-06  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* CMakeLists.txt: Added clumsy for check for libopenvas version from
 	gsad.
 
-2009-01-05  Matthew Mundell <matthew.mundell@intevation.de>
+2010-01-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Convert the GET_CONFIGS "nvt_selector" attribute to an "export"
 	attribute.  Add importing of entire configs to CREATE_CONFIG.
@@ -39,7 +43,7 @@
 	host overview table by shortening text that is displayed when page
 	breaks within the table occur.
 
-2009-01-04  Matthew Mundell <matthew.mundell@intevation.de>
+2010-01-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add an option to OMP command GET_CONFIGS for getting the NVT selectors of
 	the configs.
