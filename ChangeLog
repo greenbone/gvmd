@@ -1,5 +1,10 @@
 2010-01-06  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (insert_nvt_selectors): Set the family column when
+	inserting the NVTs.  Improve checking of types of given selectors.
+
+2010-01-06  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_config): Add name return arg.  Find a unique
 	name if a config with the same name exists already.
 

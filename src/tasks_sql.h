@@ -6073,27 +6073,106 @@ insert_nvt_selectors (const char *quoted_name,
   if (selectors == NULL) return -3;
   while ((selector = (nvt_selector_t*) g_ptr_array_index (selectors, index++)))
     {
+      int type;
+
       if (selector->type == NULL) return -3;
 
-      if (selector->family_or_nvt)
+      /** @todo Check that selector->type is actually an integer. */
+      type = atoi (selector->type);
+
+      if ((selector->family_or_nvt != NULL)
+          && (type == NVT_SELECTOR_TYPE_NVT))
         {
-          char *quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
-          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-               " VALUES ('%s', %i, %i, '%s');",
+          gchar *quoted_family_or_nvt, *quoted_family, *family = NULL;
+          nvti_t *nvti = nvtis_lookup (nvti_cache, selector->family_or_nvt);
+
+          /* An NVT selector. */
+
+          if (nvti)
+            {
+              family = nvti_family (nvti);
+
+              if (family == NULL)
+                {
+                  g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                             " because the NVT is missing a family in the"
+                             " cache",
+                             __FUNCTION__,
+                             selector->family_or_nvt,
+                             quoted_name);
+                  continue;
+                }
+            }
+          else
+            {
+              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                         " because the NVT is missing from the cache",
+                         __FUNCTION__,
+                         selector->family_or_nvt,
+                         quoted_name);
+              continue;
+            }
+
+          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
+          quoted_family = sql_quote (family);
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, '%s', '%s');",
                quoted_name,
                selector->include ? 0 : 1,
-               /** @todo Check this is in range. */
-               atoi (selector->type),
+               type,
+               quoted_family_or_nvt,
+               quoted_family);
+          g_free (quoted_family_or_nvt);
+          g_free (quoted_family);
+        }
+      else if (selector->family_or_nvt)
+        {
+          gchar *quoted_family_or_nvt;
+
+          /* A family selector. */
+
+          if (type != NVT_SELECTOR_TYPE_FAMILY)
+            {
+              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                         " because the type is wrong (expected family)",
+                         __FUNCTION__,
+                         selector->family_or_nvt,
+                         quoted_name);
+              continue;
+            }
+
+          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
+
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, '%s', NULL);",
+               quoted_name,
+               selector->include ? 0 : 1,
+               type,
                quoted_family_or_nvt);
           g_free (quoted_family_or_nvt);
         }
       else
-        sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-             " VALUES ('%s', %i, %i, NULL);",
-             quoted_name,
-             selector->include ? 0 : 1,
-             /** @todo Check this is in range. */
-             atoi (selector->type));
+        {
+          /* An "all" selector. */
+
+          if (type != NVT_SELECTOR_TYPE_ALL)
+            {
+              g_warning ("%s: skipping NVT from import of config '%s'"
+                         " because the type is wrong (expected all)",
+                         __FUNCTION__,
+                         quoted_name);
+              continue;
+            }
+
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, NULL, NULL);",
+               quoted_name,
+               selector->include ? 0 : 1,
+               type);
+        }
     }
   return 0;
 }
