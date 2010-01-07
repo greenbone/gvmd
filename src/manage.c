@@ -99,6 +99,40 @@ static char *
 escalator_data (escalator_t, const char *, const char *);
 
 
+/* Arrays. */
+
+/**
+ * @brief Make a global array.
+ *
+ * @return New array.
+ */
+GPtrArray *
+make_array ()
+{
+  return g_ptr_array_new ();
+}
+
+/**
+ * @brief Free global array value.
+ *
+ * Also g_free any elements.
+ *
+ * @param[in]  array  Pointer to array.
+ */
+void
+free_array (GPtrArray *array)
+{
+  if (array)
+    {
+      int index = 0;
+      gpointer item;
+      while ((item = g_ptr_array_index (array, index++)))
+        g_free (item);
+      g_ptr_array_free (array, TRUE);
+    }
+}
+
+
 /* Credentials. */
 
 /**
@@ -1271,5 +1305,188 @@ manage_check_current_task ()
           return 1;
         }
     }
+  return 0;
+}
+
+
+/* System reports. */
+
+#define COMMAND "openvasmr 0 titles"
+
+/**
+ * @brief Get system report types.
+ *
+ * @param[out]  types  Types on success.
+ *
+ * @return 0 if successful, -1 otherwise.
+ */
+static int
+get_system_report_types (gchar ***types)
+{
+  gchar *astdout = NULL;
+  gchar *astderr = NULL;
+  GError *err = NULL;
+  gint exit_status;
+
+  tracef ("   command: " COMMAND);
+
+  if ((g_spawn_command_line_sync (COMMAND,
+                                  &astdout,
+                                  &astderr,
+                                  &exit_status,
+                                  &err)
+       == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      tracef ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      tracef ("%s: stdout: %s", __FUNCTION__, astdout);
+      tracef ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_free (astdout);
+      g_free (astderr);
+      return -1;
+    }
+  if (astdout)
+    {
+      char **type;
+      *types = type = g_strsplit (g_strchomp (astdout), "\n", 0);
+      while (*type)
+        {
+          char *space;
+          space = strchr (*type, ' ');
+          if (space == NULL)
+            {
+              g_strfreev (type);
+              *types = NULL;
+              g_free (astdout);
+              g_free (astderr);
+              return -1;
+            }
+          *space = '\0';
+          type++;
+        }
+    }
+  else
+    *types = NULL;
+  g_free (astdout);
+  g_free (astderr);
+  return 0;
+}
+
+#undef COMMAND
+
+/**
+ * @brief Initialise a system report type iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+init_system_report_type_iterator (report_type_iterator_t* iterator)
+{
+  if (get_system_report_types (&iterator->start)) return -1;
+  iterator->current = iterator->start - 1;
+  return 0;
+}
+
+/**
+ * @brief Cleanup a report type iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+cleanup_report_type_iterator (report_type_iterator_t* iterator)
+{
+  g_strfreev (iterator->start);
+}
+
+/**
+ * @brief Increment a report type iterator.
+ *
+ * The caller must stop using this after it returns FALSE.
+ *
+ * @param[in]  iterator  Task iterator.
+ *
+ * @return TRUE if there was a next item, else FALSE.
+ */
+gboolean
+next_report_type (report_type_iterator_t* iterator)
+{
+  iterator->current++;
+  if (*iterator->current == NULL) return FALSE;
+  return TRUE;
+}
+
+/**
+ * @brief Return the name from a report type iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+report_type_iterator_name (report_type_iterator_t* iterator)
+{
+  return (const char*) *iterator->current;
+}
+
+/**
+ * @brief Return the title from a report type iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+report_type_iterator_title (report_type_iterator_t* iterator)
+{
+  const char *name = *iterator->current;
+  return name + strlen (name) + 1;
+}
+
+/**
+ * @brief Get a system report.
+ *
+ * @param[in]   name      Name of report.
+ * @param[in]   duration  Time range of report, in seconds.
+ * @param[out]  report    On success, report in base64 if such a report exists
+ *                        else NULL.  Arbitrary on error.
+ *
+ * @return 0 if successful (including failure to find report), -1 on error.
+ */
+int
+manage_system_report (const char *name, const char *duration, char **report)
+{
+  gchar *astdout = NULL;
+  gchar *astderr = NULL;
+  GError *err = NULL;
+  gint exit_status;
+  gchar *command;
+
+  /* For simplicity, it's up to the command to do the base64 encoding. */
+  command = g_strdup_printf ("openvasmr %s %s", duration, name);
+
+  tracef ("   command: %s", command);
+
+  if ((g_spawn_command_line_sync (command,
+                                  &astdout,
+                                  &astderr,
+                                  &exit_status,
+                                  &err)
+       == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      tracef ("%s: openvasmr failed with %d", __FUNCTION__, exit_status);
+      tracef ("%s: stdout: %s", __FUNCTION__, astdout);
+      tracef ("%s: stderr: %s", __FUNCTION__, astderr);
+      g_free (astdout);
+      g_free (astderr);
+      g_free (command);
+      return -1;
+    }
+  if (astdout)
+    *report = astdout;
+  else
+    *report = NULL;
+  g_free (astderr);
+  g_free (command);
   return 0;
 }

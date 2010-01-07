@@ -50,3 +50,21 @@ variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
 enabled and edited in order to link to a custom installation of OpenVAS.
 The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
 OPENVAS_SERVER_KEY and OPENVAS_CA_CERTIFICATE may also need modifying.
+
+Certain features of the Manager also require some programs at run time:
+
+Prerequisites for generating PDF reports:
+* pdflatex
+
+Prerequisites for generating credentials Debian packages:
+* fakeroot
+* alien
+
+Prerequisites for generating system reports:
+* A program in the PATH, with usage "openvasmr seconds type", where
+  seconds is the number of seconds before now that the report covers,
+  and type is the type of report.  When called with type "titles" the
+  script must print a list of possible types, where the name of the
+  type is everything up to the first space and everything else is a
+  title for the report.  When called with one of these types openvasmr
+  must print a PNG in base64 encoding.

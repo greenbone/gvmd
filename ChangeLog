@@ -1,3 +1,30 @@
+2010-01-07  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP command GET_SYSTEM_REPORTS.
+
+	* src/manage.c (make_array, free_array): New functions.  From omp.c.
+	(get_system_report_types, init_system_report_type_iterator)
+	(cleanup_report_type_iterator, next_report_type)
+	(report_type_iterator_name, report_type_iterator_title)
+	(manage_system_report): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(report_type_iterator_t): New type.
+
+	* src/omp.c (make_array, free_array): Remove.  Move to manage.c.
+	(help_text): Add GET_SYSTEM_REPORTS.
+	(name_command_data_t, get_system_report_data_t): New types.
+	(name_command_data_reset, get_system_report_data_reset): New functions.
+	(command_data_t): Add get_system_report and name_command.
+	(get_system_reports_data): New variable.
+	(client_state_t): Add CLIENT_GET_SYSTEM_REPORTS.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_SYSTEM_REPORTS handling.  In CLIENT_GET_TARGETS free current_name.
+
+	* INSTALL: Add run time requirements.
+
+	* src/tests/omp_help_0.c (help_text): Add GET_SYSTEM_REPORTS.
+
 2010-01-06  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (insert_nvt_selectors): Set the family column when

@@ -60,6 +60,17 @@ void
 cleanup_manage_process ();
 
 
+/* Arrays. */
+
+typedef GPtrArray array_t;
+
+array_t *
+make_array ();
+
+void
+free_array (array_t *array);
+
+
 /* Credentials. */
 
 /**
@@ -711,8 +722,6 @@ target_task_iterator_uuid (iterator_t*);
 
 /* Configs. */
 
-typedef GPtrArray array_t;
-
 typedef struct
 {
   char *name;
@@ -1054,5 +1063,32 @@ acknowledge_md5sum_info ();
 
 int
 manage_check_current_task ();
+
+
+/* System reports. */
+
+typedef struct
+{
+  gchar **start;
+  gchar **current;
+} report_type_iterator_t;
+
+int
+init_system_report_type_iterator (report_type_iterator_t*);
+
+void
+cleanup_report_type_iterator (report_type_iterator_t*);
+
+gboolean
+next_report_type (report_type_iterator_t*);
+
+const char*
+report_type_iterator_name (report_type_iterator_t*);
+
+const char*
+report_type_iterator_title (report_type_iterator_t*);
+
+int
+manage_system_report (const char *, const char *, char **);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

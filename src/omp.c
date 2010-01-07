@@ -129,17 +129,6 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
 }
 
 /**
- * @brief Make a global array.
- *
- * @return New array.
- */
-static GPtrArray *
-make_array ()
-{
-  return g_ptr_array_new ();
-}
-
-/**
  * @brief Push a generic pointer onto a global array.
  *
  * @param[in]  array    Array.
@@ -158,26 +147,6 @@ static void
 array_terminate (GPtrArray *array)
 {
   if (array) g_ptr_array_add (array, NULL);
-}
-
-/**
- * @brief Free global array value.
- *
- * Also g_free any elements.
- *
- * @param[in]  array  Pointer to array.
- */
-static void
-free_array (GPtrArray *array)
-{
-  if (array)
-    {
-      int index = 0;
-      gpointer item;
-      while ((item = g_ptr_array_index (array, index++)))
-        g_free (item);
-      g_ptr_array_free (array, TRUE);
-    }
 }
 
 /**
@@ -309,6 +278,7 @@ static char* help_text = "\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_STATUS             Get task status information.\n"
+"    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGETS            Get all targets.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
@@ -508,9 +478,37 @@ create_config_data_reset (create_config_data_t *data)
   memset (data, 0, sizeof (create_config_data_t));
 }
 
+typedef struct
+{
+  char *name;
+} name_command_data_t;
+
+void
+name_command_data_reset (name_command_data_t *data)
+{
+  free (data->name);
+  memset (data, 0, sizeof (name_command_data_t));
+}
+
+typedef struct
+{
+  char *name;
+  char *duration;
+} get_system_reports_data_t;
+
+void
+get_system_reports_data_reset (get_system_reports_data_t *data)
+{
+  free (data->name);
+  free (data->duration);
+  memset (data, 0, sizeof (get_system_reports_data_t));
+}
+
 typedef union
 {
   create_config_data_t create_config;
+  get_system_reports_data_t get_system_reports;
+  name_command_data_t name_command;
 } command_data_t;
 
 void
@@ -526,6 +524,9 @@ command_data_t command_data;
 
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
+
+get_system_reports_data_t *get_system_reports_data
+ = &(command_data.get_system_reports);
 
 import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
@@ -768,6 +769,7 @@ typedef enum
   CLIENT_GET_REPORT,
   CLIENT_GET_RULES,
   CLIENT_GET_STATUS,
+  CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
@@ -1469,6 +1471,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_RULES", element_name) == 0)
           set_client_state (CLIENT_GET_RULES);
+        else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "name", &attribute))
+              openvas_append_string (&(get_system_reports_data->name),
+                                     attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "duration", &attribute))
+              openvas_append_string (&(get_system_reports_data->duration),
+                                     attribute);
+            set_client_state (CLIENT_GET_SYSTEM_REPORTS);
+          }
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
           {
             const gchar* attribute;
@@ -1971,6 +1986,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_RULES:
           {
             if (send_element_error_to_client ("get_rules", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_SYSTEM_REPORTS:
+          {
+            if (send_element_error_to_client ("get_system_reports", element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -8372,6 +8402,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_SYSTEM_REPORTS:
+        {
+          assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
+
+          if (get_system_reports_data->name
+              && (strcasecmp (get_system_reports_data->name,
+                              "types")
+                  == 0))
+            {
+              report_type_iterator_t types;
+
+              if (init_system_report_type_iterator (&types))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_system_reports"));
+              else
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
+                                          " status=\"" STATUS_OK "\""
+                                          " status_text=\"" STATUS_OK_TEXT "\">"
+                                          "<system_report>"
+                                          "<name>types</name>"
+                                          "<report>");
+                  while (next_report_type (&types))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<system_report>"
+                      "<name>%s</name>"
+                      "<title>%s</title>"
+                      "</system_report>",
+                      report_type_iterator_name (&types),
+                      report_type_iterator_title (&types));
+                  cleanup_report_type_iterator (&types);
+                  SEND_TO_CLIENT_OR_FAIL
+                    ("</report>"
+                     "</system_report>"
+                     "</get_system_reports_response>");
+                }
+            }
+          else
+            {
+              char *report;
+
+              SEND_TO_CLIENT_OR_FAIL
+               ("<get_system_reports_response"
+                " status=\"" STATUS_OK "\""
+                " status_text=\"" STATUS_OK_TEXT "\">");
+
+              if (manage_system_report (get_system_reports_data->name,
+                                        get_system_reports_data->duration,
+                                        &report))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_system_reports"));
+              else if (report)
+                {
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<system_report>"
+                    "<name>%s</name>"
+                    "<report format=\"png\" duration=\"%s\">"
+                    "%s"
+                    "</report>"
+                    "</system_report>",
+                    get_system_reports_data->name,
+                    get_system_reports_data->duration,
+                    report);
+                  free (report);
+                }
+              else
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_system_reports",
+                                    "Failed to find report with given name"));
+              SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
+            }
+          get_system_reports_data_reset (get_system_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_TARGETS:
         {
           iterator_t targets, tasks;
@@ -8432,6 +8538,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           cleanup_iterator (&targets);
           SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
           openvas_free_string_var (&current_format);
+          openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
