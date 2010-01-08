@@ -1,3 +1,12 @@
+2010-01-08  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.c (manage_system_report): If the graph is empty, try get
+	the "blank" graph.
+
+	* INSTALL: Add note about openvasmr blank type.
+
+	* README: Add space.
+
 2010-01-07  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP command GET_SYSTEM_REPORTS.

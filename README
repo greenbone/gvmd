@@ -7,7 +7,7 @@ other features, it adds server-side storage of scan results and it makes it
 unnecessary for scan clients to keep connection until a scan finishes.
 
 OpenVAS-Manager is licensed under GNU General Public License Version 2 or
-any later version. Please see file COPYING for details.
+any later version.  Please see file COPYING for details.
 
 All parts of OpenVAS-Manager are Copyright (C) by Greenbone Networks GmbH
 (see http://www.greenbone.net).

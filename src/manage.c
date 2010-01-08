@@ -1460,6 +1460,9 @@ manage_system_report (const char *name, const char *duration, char **report)
   gint exit_status;
   gchar *command;
 
+  assert (name);
+  assert (duration);
+
   /* For simplicity, it's up to the command to do the base64 encoding. */
   command = g_strdup_printf ("openvasmr %s %s", duration, name);
 
@@ -1482,11 +1485,16 @@ manage_system_report (const char *name, const char *duration, char **report)
       g_free (command);
       return -1;
     }
-  if (astdout)
-    *report = astdout;
-  else
-    *report = NULL;
   g_free (astderr);
   g_free (command);
+  if (astdout == NULL || strlen (astdout) == 0)
+    {
+      g_free (astdout);
+      if (strcmp (name, "blank") == 0)
+        return -1;
+      return manage_system_report ("blank", duration, report);
+    }
+  else
+    *report = astdout;
   return 0;
 }
