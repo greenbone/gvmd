@@ -67,4 +67,7 @@ Prerequisites for generating system reports:
   script must print a list of possible types, where the name of the
   type is everything up to the first space and everything else is a
   title for the report.  When called with one of these types openvasmr
-  must print a PNG in base64 encoding.
+  must print a PNG in base64 encoding.  When called with the special
+  type "blank", openvasmr must print a PNG in base64 for the Manager to
+  use when a request for one of the titled types fails.  openvasmr may
+  indicate failure by simply refraining from printing.
