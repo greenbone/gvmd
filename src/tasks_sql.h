@@ -7176,7 +7176,7 @@ init_otp_pref_iterator (iterator_t* iterator,
 
   assert (config);
   assert (section);
-  assert ((strcmp (section, "PLUGIN_PREFS") == 0)
+  assert ((strcmp (section, "PLUGINS_PREFS") == 0)
           || (strcmp (section, "SERVER_PREFS") == 0));
 
   quoted_config = sql_quote (config);

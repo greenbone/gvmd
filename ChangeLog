@@ -1,5 +1,9 @@
 2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_otp_pref_iterator): Correct string in assertion.
+
+2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Add NVT names to cache.
 	(result_iterator_nvt): Remove, rename with _oid.
 	(result_iterator_nvt_oid, result_iterator_nvt_name): New functions.
