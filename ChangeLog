@@ -1,5 +1,27 @@
 2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a search_phrase attribute to OMP GET_REPORT and switch GET_REPORT to
+	the new callback data mechanism.
+
+	* src/tasks_sql.h (where_levels): Make static.  Add NULL check.
+	(where_search_phrase): New function.
+	(init_result_iterator, report_scan_result_count): Add param search_phrase.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_config_data_reset, get_system_reports_data_reset)
+	(command_data_init): Make static.
+	(name_command_data_reset): Define out for now.
+	(get_report_data_t): New type.
+	(get_report_data_reset): New function.
+	(get_report_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(print_report_latex, print_report_xml): Switch GET_REPORT to pass data
+	between callbacks via get_report_data.  Add GET_REPORT attribute
+	"search_phrase".
+
+2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_otp_pref_iterator): Correct string in assertion.
 
 2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>

@@ -446,7 +446,7 @@ typedef struct
 } create_config_data_t;
 
 // array members must be created separately
-void
+static void
 create_config_data_reset (create_config_data_t *data)
 {
   int index = 0;
@@ -483,11 +483,36 @@ typedef struct
   char *name;
 } name_command_data_t;
 
-void
+#if 0
+static void
 name_command_data_reset (name_command_data_t *data)
 {
   free (data->name);
   memset (data, 0, sizeof (name_command_data_t));
+}
+#endif
+
+typedef struct
+{
+  char *format;
+  char *report_id;
+  int first_result;
+  int max_results;
+  char *sort_field;
+  int sort_order;
+  char *levels;
+  char *search_phrase;
+} get_report_data_t;
+
+static void
+get_report_data_reset (get_report_data_t *data)
+{
+  free (data->format);
+  free (data->report_id);
+  free (data->sort_field);
+  free (data->levels);
+  free (data->search_phrase);
+  memset (data, 0, sizeof (get_report_data_t));
 }
 
 typedef struct
@@ -496,7 +521,7 @@ typedef struct
   char *duration;
 } get_system_reports_data_t;
 
-void
+static void
 get_system_reports_data_reset (get_system_reports_data_t *data)
 {
   free (data->name);
@@ -507,11 +532,12 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 typedef union
 {
   create_config_data_t create_config;
+  get_report_data_t get_report;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
 } command_data_t;
 
-void
+static void
 command_data_init (command_data_t *data)
 {
   memset (data, 0, sizeof (command_data_t));
@@ -524,6 +550,9 @@ command_data_t command_data;
 
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
+
+get_report_data_t *get_report_data
+ = &(command_data.get_report);
 
 get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
@@ -1427,45 +1456,49 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_report_data->report_id, attribute);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_report_data->format, attribute);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
               /* Subtract 1 to switch from 1 to 0 indexing. */
-              current_int_1 = atoi (attribute) - 1;
+              get_report_data->first_result = atoi (attribute) - 1;
             else
-              current_int_1 = 0;
+              get_report_data->first_result = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "max_results", &attribute))
-              current_int_2 = atoi (attribute);
+              get_report_data->max_results = atoi (attribute);
             else
-              current_int_2 = -1;
+              get_report_data->max_results = -1;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_report_data->sort_field, attribute);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_3 = strcmp (attribute, "descending");
+              get_report_data->sort_order = strcmp (attribute, "descending");
             else
               {
                 if (current_name == NULL
                     || (strcmp (current_name, "type") == 0))
                   /* Normally it makes more sense to order type descending. */
-                  current_int_3 = 0;
+                  get_report_data->sort_order = 0;
                 else
-                  current_int_3 = 1;
+                  get_report_data->sort_order = 1;
               }
 
             if (find_attribute (attribute_names, attribute_values,
                                 "levels", &attribute))
-              openvas_append_string (&modify_task_value, attribute);
+              openvas_append_string (&get_report_data->levels, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "search_phrase", &attribute))
+              openvas_append_string (&get_report_data->search_phrase, attribute);
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -3190,12 +3223,12 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
   cleanup_iterator (&hosts);
 
   init_result_iterator (&results, report, NULL,
-                        current_int_1,  /* First result. */
-                        current_int_2,  /* Max results. */
+                        get_report_data->first_result,
+                        get_report_data->max_results,
                         ascending,
                         sort_field,
-                        /* Attribute levels. */
-                        modify_task_value);
+                        get_report_data->levels,
+                        get_report_data->search_phrase);
 
   while (next (&results))
     {
@@ -3783,12 +3816,12 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                );
 
       init_result_iterator (&results, report, host,
-                            current_int_1,  /* First result. */
-                            current_int_2,  /* Max results. */
+                            get_report_data->first_result,
+                            get_report_data->max_results,
                             ascending,
                             sort_field,
-                            /* Attribute levels. */
-                            modify_task_value);
+                            get_report_data->levels,
+                            get_report_data->search_phrase);
       last_port = NULL;
       while (next (&results))
         {
@@ -3817,12 +3850,12 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
       /* Print the result details. */
 
       init_result_iterator (&results, report, host,
-                            current_int_1,  /* First result. */
-                            current_int_2,  /* Max results. */
+                            get_report_data->first_result,
+                            get_report_data->max_results,
                             ascending,
                             sort_field,
-                            /* Attribute levels. */
-                            modify_task_value);
+                            get_report_data->levels,
+                            get_report_data->search_phrase);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -4451,13 +4484,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("GET_REPORT", element_name) == 0);
         if (current_credentials.username == NULL)
           {
-            openvas_free_string_var (&current_uuid);
+            get_report_data_reset (get_report_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
-        if (current_uuid == NULL) /* Attribute report_id. */
+        if (get_report_data->report_id == NULL)
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("get_report",
                               "GET_REPORT must have a report_id attribute"));
@@ -4468,48 +4501,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             GString *nbe;
             gchar *content;
 
-            if (find_report (current_uuid, &report))
+            if (find_report (get_report_data->report_id, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
             else if (report == 0)
               {
                 if (send_find_error_to_client ("get_report",
                                                "report",
-                                               current_uuid))
+                                               get_report_data->report_id))
                   {
                     error_send_to_client (error);
                     return;
                   }
               }
-            else if (current_format == NULL
-                     || strcasecmp (current_format, "xml") == 0)
+            else if (get_report_data->format == NULL
+                     || strcasecmp (get_report_data->format, "xml") == 0)
               {
                 task_t task;
                 char *tsk_uuid = NULL, *start_time, *end_time;
                 int result_count, filtered_result_count, run_status;
                 const char *levels;
 
-                /* Attribute levels. */
-                levels = modify_task_value ? modify_task_value : "hmlgd";
+                levels = get_report_data->levels
+                          ? get_report_data->levels : "hmlgd";
 
                 if (report_task (report, &task))
                   {
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    openvas_free_string_var (&current_uuid);
-                    openvas_free_string_var (&current_format);
+                    get_report_data_reset (get_report_data);
                     set_client_state (CLIENT_AUTHENTIC);
                     break;
                   }
                 else if (task && task_uuid (task, &tsk_uuid))
                   {
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    openvas_free_string_var (&current_uuid);
-                    openvas_free_string_var (&current_format);
+                    get_report_data_reset (get_report_data);
                     set_client_state (CLIENT_AUTHENTIC);
                     break;
                   }
 
-                report_scan_result_count (report, NULL, &result_count);
-                report_scan_result_count (report, levels,
+                report_scan_result_count (report, NULL, NULL, &result_count);
+                report_scan_result_count (report,
+                                          levels,
+                                          get_report_data->search_phrase,
                                           &filtered_result_count);
                 report_scan_run_status (report, &run_status);
                 SENDF_TO_CLIENT_OR_FAIL
@@ -4518,13 +4551,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   " status_text=\"" STATUS_OK_TEXT "\">"
                   "<report id=\"%s\">"
                   "<sort><field>%s<order>%s</order></field></sort>"
-                  "<filters>%s",
-                  current_uuid,
-                  /* Attribute sort_field. */
-                  current_name ? current_name : "type",
-                  /* Attribute sort_order. */
-                  current_int_3 ? "ascending" : "descending",
-                  levels);
+                  "<filters>"
+                  "%s"
+                  "<phrase>%s</phrase>",
+                  get_report_data->report_id,
+                  get_report_data->sort_field ? get_report_data->sort_field
+                                              : "type",
+                  get_report_data->sort_order ? "ascending" : "descending",
+                  levels,
+                  get_report_data->search_phrase
+                   ? get_report_data->search_phrase
+                   : "");
 
                 if (strchr (levels, 'h'))
                   SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
@@ -4580,17 +4617,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *last_port;
                   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
-                  init_result_iterator (&results, report, NULL,
-                                        current_int_1,   /* First result. */
-                                        current_int_2,   /* Max results. */
-                                        /* Sort by port in order requested. */
-                                        ((current_name   /* "sort_field". */
-                                          && (strcmp (current_name, "port")
-                                              == 0))
-                                         ? current_int_3 /* "sort_order". */
-                                         : 1),
-                                        "port", /* Always desc. by threat. */
-                                        levels);
+                  init_result_iterator
+                   (&results, report, NULL,
+                    get_report_data->first_result,
+                    get_report_data->max_results,
+                    /* Sort by port in order requested. */
+                    ((get_report_data->sort_field
+                      && (strcmp (get_report_data->sort_field, "port")
+                                 == 0))
+                     ? get_report_data->sort_order
+                     : 1),
+                    "port",
+                    levels,
+                    get_report_data->search_phrase);
 
                   /* Buffer the results. */
 
@@ -4627,12 +4666,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   /* Ensure the buffered results are sorted. */
 
-                  if (current_name
-                      && strcmp (current_name, /* Attribute sort_field. */
-                                 "port"))
+                  if (get_report_data->sort_field
+                      && strcmp (get_report_data->sort_field, "port"))
                     {
                       /* Sort by threat. */
-                      if (current_int_3) /* Attribute sort_order. */
+                      if (get_report_data->sort_order)
                         g_array_sort (ports, compare_ports_asc);
                       else
                         g_array_sort (ports, compare_ports_desc);
@@ -4644,8 +4682,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            " start=\"%i\""
                                            " max=\"%i\">",
                                            /* Add 1 for 1 indexing. */
-                                           current_int_1 + 1,
-                                           current_int_2);
+                                           get_report_data->first_result + 1,
+                                           get_report_data->max_results);
                   {
                     gchar *item;
                     int index = 0;
@@ -4697,20 +4735,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 /* Results. */
 
                 init_result_iterator (&results, report, NULL,
-                                      current_int_1,  /* First result. */
-                                      current_int_2,  /* Max results. */
-                                      /* Attribute sort_order. */
-                                      current_int_3,
-                                      /* Attribute sort_field. */
-                                      current_name,
-                                      levels);
+                                      get_report_data->first_result,
+                                      get_report_data->max_results,
+                                      get_report_data->sort_order,
+                                      get_report_data->sort_field,
+                                      levels,
+                                      get_report_data->search_phrase);
 
                 SENDF_TO_CLIENT_OR_FAIL ("<results"
                                          " start=\"%i\""
                                          " max=\"%i\">",
                                          /* Add 1 for 1 indexing. */
-                                         current_int_1 + 1,
-                                         current_int_2);
+                                         get_report_data->first_result + 1,
+                                         get_report_data->max_results);
                 while (next (&results))
                   {
                     const char *descr = result_iterator_descr (&results);
@@ -4753,7 +4790,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
               }
-            else if (strcasecmp (current_format, "nbe") == 0)
+            else if (strcasecmp (get_report_data->format, "nbe") == 0)
               {
                 char *start_time, *end_time;
 
@@ -4777,14 +4814,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 cleanup_iterator (&hosts);
 
                 init_result_iterator (&results, report, NULL,
-                                      current_int_1,  /* First result. */
-                                      current_int_2,  /* Max results. */
-                                      /* Attribute sort_order. */
-                                      current_int_3,
-                                      /* Attribute sort_field. */
-                                      current_name,
-                                      /* Attribute levels. */
-                                      modify_task_value);
+                                      get_report_data->first_result,
+                                      get_report_data->max_results,
+                                      get_report_data->sort_order,
+                                      get_report_data->sort_field,
+                                      get_report_data->levels,
+                                      get_report_data->search_phrase);
                 while (next (&results))
                   g_string_append_printf (nbe,
                                           "results|%s|%s|%s|%s|%s|%s\n",
@@ -4835,7 +4870,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL ("</report>"
                                         "</get_report_response>");
               }
-            else if (strcasecmp (current_format, "html") == 0)
+            else if (strcasecmp (get_report_data->format, "html") == 0)
               {
                 gchar *xml_file;
                 char xml_dir[] = "/tmp/openvasmd_XXXXXX";
@@ -4848,10 +4883,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                          print_report_xml (report,
                                            xml_file,
-                                           /* Attribute sort_order. */
-                                           current_int_3,
-                                           /* Attribute sort_field. */
-                                           current_name))
+                                           get_report_data->sort_order,
+                                           get_report_data->sort_field))
                   {
                     g_free (xml_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -4968,7 +5001,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
               }
-            else if (strcasecmp (current_format, "html-pdf") == 0)
+            else if (strcasecmp (get_report_data->format, "html-pdf") == 0)
               {
                 gchar *xml_file;
                 char xml_dir[] = "/tmp/openvasmd_XXXXXX";
@@ -4983,10 +5016,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                          print_report_xml (report,
                                            xml_file,
-                                           /* Attribute sort_order. */
-                                           current_int_3,
-                                           /* Attribute sort_field. */
-                                           current_name))
+                                           get_report_data->sort_order,
+                                           get_report_data->sort_field))
                   {
                     g_free (xml_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -5106,7 +5137,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
               }
-            else if (strcasecmp (current_format, "pdf") == 0)
+            else if (strcasecmp (get_report_data->format, "pdf") == 0)
               {
                 gchar *latex_file;
                 char latex_dir[] = "/tmp/openvasmd_XXXXXX";
@@ -5120,10 +5151,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        latex_dir),
                          print_report_latex (report,
                                              latex_file,
-                                             /* Attribute sort_order. */
-                                             current_int_3,
-                                             /* Attribute sort_field. */
-                                             current_name))
+                                             get_report_data->sort_order,
+                                             get_report_data->sort_field))
                   {
                     g_free (latex_file);
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -5248,10 +5277,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("get_report",
                                   "Bogus report format in format attribute"));
           }
-        openvas_free_string_var (&current_uuid);
-        openvas_free_string_var (&current_format);
-        openvas_free_string_var (&modify_task_value);
-        openvas_free_string_var (&current_name);
+        get_report_data_reset (get_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

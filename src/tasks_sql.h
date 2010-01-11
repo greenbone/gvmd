@@ -4434,80 +4434,118 @@ next_report (iterator_t* iterator, report_t* report)
  *                     High, Medium, Low, loG and Debug).  All levels if
  *                     NULL.
  *
- * @return WHERE clause for levels.
+ * @return WHERE clause for levels if one is required, else NULL.
  */
-GString *
+static GString *
 where_levels (const char* levels)
 {
-  GString *levels_sql = NULL;
+  int count;
+  GString *levels_sql;
 
   /* Generate SQL for constraints on message type, according to levels. */
 
-  if (strlen (levels))
+  if (levels == NULL || strlen (levels) == 0)
+    return NULL;
+
+  levels_sql = NULL;
+  count = 0;
+
+  /* High. */
+  if (strchr (levels, 'h'))
     {
-      int count = 0;
-
-      /* High. */
-      if (strchr (levels, 'h'))
-        {
-          count = 1;
-          levels_sql = g_string_new (" AND (type = 'Security Hole'");
-        }
-
-      /* Medium. */
-      if (strchr (levels, 'm'))
-        {
-          if (count == 0)
-            levels_sql = g_string_new (" AND (type = 'Security Warning'");
-          else
-            levels_sql = g_string_append (levels_sql,
-                                          " OR type = 'Security Warning'");
-          count++;
-        }
-
-      /* Low. */
-      if (strchr (levels, 'l'))
-        {
-          if (count == 0)
-            levels_sql = g_string_new (" AND (type = 'Security Note'");
-          else
-            levels_sql = g_string_append (levels_sql,
-                                          " OR type = 'Security Note'");
-          count++;
-        }
-
-      /* loG. */
-      if (strchr (levels, 'g'))
-        {
-          if (count == 0)
-            levels_sql = g_string_new (" AND (type = 'Log Message'");
-          else
-            levels_sql = g_string_append (levels_sql,
-                                          " OR type = 'Log Message'");
-          count++;
-        }
-
-      /* Debug. */
-      if (strchr (levels, 'd'))
-        {
-          if (count == 0)
-            levels_sql = g_string_new (" AND (type = 'Debug Message')");
-          else
-            levels_sql = g_string_append (levels_sql,
-                                          " OR type = 'Debug Message')");
-          count++;
-        }
-      else if (count)
-        levels_sql = g_string_append (levels_sql, ")");
-
-      if (count == 5)
-        {
-          /* All levels. */
-          g_string_free (levels_sql, TRUE);
-          levels_sql = NULL;
-        }
+      count = 1;
+      levels_sql = g_string_new (" AND (type = 'Security Hole'");
     }
+
+  /* Medium. */
+  if (strchr (levels, 'm'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (type = 'Security Warning'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR type = 'Security Warning'");
+      count++;
+    }
+
+  /* Low. */
+  if (strchr (levels, 'l'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (type = 'Security Note'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR type = 'Security Note'");
+      count++;
+    }
+
+  /* loG. */
+  if (strchr (levels, 'g'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (type = 'Log Message'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR type = 'Log Message'");
+      count++;
+    }
+
+  /* Debug. */
+  if (strchr (levels, 'd'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (type = 'Debug Message')");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR type = 'Debug Message')");
+      count++;
+    }
+  else if (count)
+    levels_sql = g_string_append (levels_sql, ")");
+
+  if (count == 5)
+    {
+      /* All levels. */
+      g_string_free (levels_sql, TRUE);
+      levels_sql = NULL;
+    }
+
   return levels_sql;
+}
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
+ *
+ * @param[in]  search_phrase  Phrase that results must include.  All results if
+ *                            NULL or "".
+ *
+ * @return WHERE clause for search phrase if one is required, else NULL.
+ */
+static GString *
+where_search_phrase (const char* search_phrase)
+{
+  if (search_phrase)
+    {
+      GString *phrase_sql;
+      gchar *quoted_search_phrase;
+
+      if (strlen (search_phrase) == 0)
+        return NULL;
+
+      quoted_search_phrase = sql_quote (search_phrase);
+      phrase_sql = g_string_new ("");
+      g_string_append_printf (phrase_sql,
+                              " AND (port LIKE '%%%%%s%%%%'"
+                              " OR nvt LIKE '%%%%%s%%%%'"
+                              " OR description LIKE '%%%%%s%%%%')",
+                              quoted_search_phrase,
+                              quoted_search_phrase,
+                              quoted_search_phrase);
+      g_free (quoted_search_phrase);
+
+      return phrase_sql;
+    }
+  return NULL;
 }
 
 /**
@@ -4516,25 +4554,28 @@ where_levels (const char* levels)
  * The results are ordered by host, then port and type (severity) according
  * to sort_field.
  *
- * @param[in]  iterator      Iterator.
- * @param[in]  report        Report whose results the iterator loops over.
- *                           All results if NULL.
- * @param[in]  host          Host whose results the iterator loops over.  All
- *                           results if NULL.  Only considered if report given.
- * @param[in]  first_result  The result to start from.  The results are 0
- *                           indexed.
- * @param[in]  max_results   The maximum number of results returned.
- * @param[in]  ascending     Whether to sort ascending or descending.
- * @param[in]  sort_field    Field to sort on, or NULL for "type".
- * @param[in]  levels        String describing threat levels (message types)
- *                           to include in report (for example, "hmlgd" for
- *                           High, Medium, Low, loG and Debug).  All levels if
- *                           NULL.
+ * @param[in]  iterator       Iterator.
+ * @param[in]  report         Report whose results the iterator loops over.
+ *                            All results if NULL.
+ * @param[in]  host           Host whose results the iterator loops over.  All
+ *                            results if NULL.  Only considered if report given.
+ * @param[in]  first_result   The result to start from.  The results are 0
+ *                            indexed.
+ * @param[in]  max_results    The maximum number of results returned.
+ * @param[in]  ascending      Whether to sort ascending or descending.
+ * @param[in]  sort_field     Field to sort on, or NULL for "type".
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in report (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  search_phrase  Phrase that results must include.  All results if
+ *                            NULL or "".
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                       int first_result, int max_results, int ascending,
-                      const char* sort_field, const char* levels)
+                      const char* sort_field, const char* levels,
+                      const char* search_phrase)
 {
   gchar* sql;
   if (sort_field == NULL) sort_field = "type";
@@ -4542,6 +4583,7 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
   if (report)
     {
       GString *levels_sql = where_levels (levels);
+      GString *phrase_sql = where_search_phrase (search_phrase);
 
       /* Allocate the query. */
 
@@ -4553,10 +4595,12 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                " AND report_results.result = results.ROWID"
                                " AND results.host = '%s'"
                                "%s"
+                               "%s"
                                " LIMIT %i OFFSET %i;",
                                report,
                                levels_sql ? levels_sql->str : "",
                                host,
+                               phrase_sql ? phrase_sql->str : "",
                                ascending
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
@@ -4579,11 +4623,13 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
+                               "%s"
                                " AND report_results.result = results.ROWID"
                                "%s"
                                " LIMIT %i OFFSET %i;",
                                report,
                                levels_sql ? levels_sql->str : "",
+                               phrase_sql ? phrase_sql->str : "",
                                ascending
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY host,"
@@ -4603,11 +4649,16 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                                first_result);
 
       if (levels_sql) g_string_free (levels_sql, TRUE);
+      if (phrase_sql) g_string_free (phrase_sql, TRUE);
     }
   else
-    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                           " FROM results LIMIT %i OFFSET %i;",
-                           max_results, first_result);
+    {
+      assert (levels == NULL);
+      assert (search_phrase == NULL);
+      sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                             " FROM results LIMIT %i OFFSET %i;",
+                             max_results, first_result);
+    }
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -4918,37 +4969,35 @@ report_scan_run_status (report_t report, int* status)
 /**
  * @brief Get the number of results in the scan associated with a report.
  *
- * @param[in]   report  Report.
- * @param[in]   levels  String describing threat levels (message types)
- *                      to include in count (for example, "hmlgd" for
- *                      High, Medium, Low, loG and Debug).  All levels if
- *                      NULL.
- * @param[out]  count   Total number of results in the scan.
+ * @param[in]   report         Report.
+ * @param[in]   levels         String describing threat levels (message types)
+ *                             to include in count (for example, "hmlgd" for
+ *                             High, Medium, Low, loG and Debug).  All levels if
+ *                             NULL.
+ * @param[in]   search_phrase  Phrase that results must include.  All results if
+ *                             NULL or "".
+ * @param[out]  count          Total number of results in the scan.
  *
  * @return 0 on success, -1 on error.
  */
 int
-report_scan_result_count (report_t report, const char* levels, int* count)
+report_scan_result_count (report_t report, const char* levels,
+                          const char* search_phrase, int* count)
 {
-  if (levels)
-    {
-      GString *levels_sql = where_levels (levels);
-      *count = sql_int (0, 0,
-                        "SELECT count(*) FROM results, report_results"
-                        " WHERE results.ROWID = report_results.result"
-                        "%s"
-                        " AND report_results.report = %llu;",
-                        levels_sql ? levels_sql->str : "",
-                        report);
-      if (levels_sql) g_string_free (levels_sql, TRUE);
-      return 0;
-    }
+  GString *levels_sql, *phrase_sql;
 
+  levels_sql = where_levels (levels);
+  phrase_sql = where_search_phrase (search_phrase);
   *count = sql_int (0, 0,
                     "SELECT count(*) FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"
+                    "%s%s"
                     " AND report_results.report = %llu;",
+                    levels_sql ? levels_sql->str : "",
+                    phrase_sql ? phrase_sql->str : "",
                     report);
+  if (levels_sql) g_string_free (levels_sql, TRUE);
+  if (phrase_sql) g_string_free (phrase_sql, TRUE);
   return 0;
 }
 
