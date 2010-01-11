@@ -53,6 +53,15 @@ static const char*
 preference_iterator_value (iterator_t*);
 
 static void
+init_otp_pref_iterator (iterator_t*, const char*, const char*);
+
+static const char*
+otp_pref_iterator_name (iterator_t*);
+
+static const char*
+otp_pref_iterator_value (iterator_t*);
+
+static void
 nvt_selector_add (const char*, const char*, const char*, int);
 
 static int
@@ -4500,7 +4509,6 @@ where_levels (const char* levels)
   return levels_sql;
 }
 
-
 /**
  * @brief Initialise a result iterator.
  *
@@ -7128,6 +7136,58 @@ init_preference_iterator (iterator_t* iterator,
 
 static DEF_ACCESS (preference_iterator_name, 0);
 static DEF_ACCESS (preference_iterator_value, 1);
+
+/**
+ * @brief Initialise an "OTP" preference iterator.
+ *
+ * This version includes scanner preferences where when the NVT preferences
+ * is missing.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  config    Config containing preferences.
+ * @param[in]  section   Preference section, NULL for general preferences.
+ */
+static void
+init_otp_pref_iterator (iterator_t* iterator,
+                        const char* config,
+                        const char* section)
+{
+  gchar *quoted_config, *quoted_section;
+
+  assert (config);
+  assert (section);
+  assert ((strcmp (section, "PLUGIN_PREFS") == 0)
+          || (strcmp (section, "SERVER_PREFS") == 0));
+
+  quoted_config = sql_quote (config);
+  quoted_section = sql_quote (section);
+
+  init_iterator (iterator,
+                 "SELECT config_preferences.name, config_preferences.value"
+                 " FROM config_preferences, nvt_preferences"
+                 " WHERE config_preferences.config ="
+                 "       (SELECT ROWID FROM configs WHERE name = '%s')"
+                 " AND config_preferences.type = '%s'"
+                 " AND config_preferences.name = nvt_preferences.name"
+                 " UNION"
+                 " SELECT nvt_preferences.name, nvt_preferences.value"
+                 " FROM nvt_preferences"
+                 " WHERE nvt_preferences.name %s"
+                 " AND (SELECT COUNT(*) FROM config_preferences"
+                 "      WHERE config ="
+                 "            (SELECT ROWID FROM configs WHERE name = '%s')"
+                 "      AND config_preferences.name = nvt_preferences.name) = 0;",
+                 quoted_config,
+                 quoted_section,
+                 strcmp (quoted_section, "SERVER_PREFS") == 0
+                  ? "NOT LIKE '%[%]%'" : "LIKE '%[%]%'",
+                 quoted_config);
+  g_free (quoted_section);
+  g_free (quoted_config);
+}
+
+static DEF_ACCESS (otp_pref_iterator_name, 0);
+static DEF_ACCESS (otp_pref_iterator_value, 1);
 
 /**
  * @brief Initialise a config preference iterator.

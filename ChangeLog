@@ -1,3 +1,14 @@
+2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Send all preferences when starting a task, even those which have the
+	same value on the server, to match the client behaviour.
+
+	* src/tasks_sql.h (init_otp_pref_iterator, otp_pref_iterator_name)
+	(otp_pref_iterator_value): New functions.
+
+	* src/manage.c (send_config_preferences): Iterate with otp_pref_iterator
+	functions.
+
 2010-01-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (manage_system_report): If the graph is empty, try get

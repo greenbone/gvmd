@@ -704,10 +704,10 @@ send_config_preferences (const char* config,
 {
   iterator_t prefs;
 
-  init_preference_iterator (&prefs, config, section_name);
+  init_otp_pref_iterator (&prefs, config, section_name);
   while (next (&prefs))
     {
-      const char *pref_name = preference_iterator_name (&prefs);
+      const char *pref_name = otp_pref_iterator_name (&prefs);
       char *value;
 
       if (send_to_server (pref_name))
@@ -723,7 +723,7 @@ send_config_preferences (const char* config,
         }
 
       value = preference_value (pref_name,
-                                preference_iterator_value (&prefs));
+                                otp_pref_iterator_value (&prefs));
       if (send_to_server (value))
         {
           g_free (value);
