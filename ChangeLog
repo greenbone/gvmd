@@ -1,5 +1,18 @@
 2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Add NVT names to cache.
+	(result_iterator_nvt): Remove, rename with _oid.
+	(result_iterator_nvt_oid, result_iterator_nvt_name): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c: Update result_iterator_nvt callers.
+	(print_report_xml): Add name to NVT element.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT XML report, add name
+	to NVT element.
+
+2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Send all preferences when starting a task, even those which have the
 	same value on the server, to match the client behaviour.
 

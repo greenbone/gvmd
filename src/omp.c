@@ -3200,7 +3200,9 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
   while (next (&results))
     {
       gchar *descr;
+      const char *name;
 
+      name = result_iterator_nvt_name (&results);
       descr = g_markup_escape_text (result_iterator_descr (&results), -1);
       // FIX as in other <result response below?
       //gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
@@ -3209,14 +3211,15 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
                "<subnet>%s</subnet>"
                "<host>%s</host>"
                "<port>%s</port>"
-               "<nvt>%s</nvt>"
+               "<nvt oid=\"%s\"><name>%s</name></nvt>"
                "<type>%s</type>"
                "<description>%s</description>"
                "</result>",
                result_iterator_subnet (&results),
                result_iterator_host (&results),
                result_iterator_port (&results),
-               result_iterator_nvt (&results),
+               result_iterator_nvt_oid (&results),
+               name ? name : "",
                result_iterator_type (&results),
                descr);
       g_free (descr);
@@ -3877,7 +3880,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                    "\\end{longtable}\n"
                    "\n"
                    "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
-                   result_iterator_nvt (&results));
+                   result_iterator_nvt_oid (&results));
 
         }
       if (last_port)
@@ -4712,21 +4715,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     const char *descr = result_iterator_descr (&results);
                     gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
-                    SENDF_TO_CLIENT_OR_FAIL ("<result>"
-                                             "<subnet>%s</subnet>"
-                                             "<host>%s</host>"
-                                             "<port>%s</port>"
-                                             "<nvt>%s</nvt>"
-                                             "<threat>%s</threat>"
-                                             "<description>%s</description>"
-                                             "</result>",
-                                             result_iterator_subnet (&results),
-                                             result_iterator_host (&results),
-                                             result_iterator_port (&results),
-                                             result_iterator_nvt (&results),
-                                             result_type_threat
-                                              (result_iterator_type (&results)),
-                                             descr ? nl_descr : "");
+                    const char *name = result_iterator_nvt_name (&results);
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<result>"
+                      "<subnet>%s</subnet>"
+                      "<host>%s</host>"
+                      "<port>%s</port>"
+                      "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                      "<threat>%s</threat>"
+                      "<description>%s</description>"
+                      "</result>",
+                      result_iterator_subnet (&results),
+                      result_iterator_host (&results),
+                      result_iterator_port (&results),
+                      result_iterator_nvt_oid (&results),
+                      name ? name : "",
+                      result_type_threat
+                       (result_iterator_type (&results)),
+                      descr ? nl_descr : "");
                     if (descr) g_free (nl_descr);
                   }
                 SENDF_TO_CLIENT_OR_FAIL ("</results>");
@@ -4785,7 +4791,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           result_iterator_subnet (&results),
                                           result_iterator_host (&results),
                                           result_iterator_port (&results),
-                                          result_iterator_nvt (&results),
+                                          result_iterator_nvt_oid (&results),
                                           result_iterator_type (&results),
                                           result_iterator_descr (&results));
                 cleanup_iterator (&results);

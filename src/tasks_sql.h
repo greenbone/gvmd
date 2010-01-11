@@ -3481,6 +3481,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
         {
           nvti_t *nvti = nvti_new ();
           nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
+          nvti_set_name (nvti, nvt_iterator_name (&nvts));
           nvti_set_family (nvti, nvt_iterator_family (&nvts));
           nvtis_add (nvti_cache, nvti);
         }
@@ -4654,7 +4655,26 @@ result_iterator_ ## name (iterator_t* iterator) \
 DEF_ACCESS (subnet, 0);
 DEF_ACCESS (host, 1);
 DEF_ACCESS (port, 2);
-DEF_ACCESS (nvt, 3);
+DEF_ACCESS (nvt_oid, 3);
+
+/**
+ * @brief Get the NVT name from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_name (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_name (nvti);
+  return NULL;
+}
+
 DEF_ACCESS (type, 4);
 DEF_ACCESS (descr, 5);
 

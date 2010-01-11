@@ -639,7 +639,10 @@ const char*
 result_iterator_port (iterator_t*);
 
 const char*
-result_iterator_nvt (iterator_t*);
+result_iterator_nvt_oid (iterator_t*);
+
+const char*
+result_iterator_nvt_name (iterator_t *);
 
 const char*
 result_iterator_type (iterator_t*);
