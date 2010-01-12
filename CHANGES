@@ -1,3 +1,25 @@
+openvas-manager 1.0.0-beta1 (2010-01-12)
+
+This is the first beta release of the openvas-manager module
+for the Open Vulnerability Assessment System (OpenVAS) leading up to the
+upcoming openvas-manager 1.0.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Felix Wolfsteller and Michael Wiegand.
+
+Main changes since 0.9.8:
+
+* Agent support has been improved.
+* Escalation support has been added.
+* A bug in PDF generation which could cause the manager to stay in an infinite
+  loop under certain conditions has been fixed.
+* Support for exporting scan configurations has been added.
+* Support for performance monitoring has been added.
+* An issue which could cause some preferences not to be sent to the scanner has
+  been fixed.
+* Initial searching support has been added.
+
+
 openvas-manager 0.9.8 (2009-12-21)
 
 This is the fourteenth development release of the openvas-manager module

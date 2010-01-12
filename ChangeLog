@@ -1,3 +1,11 @@
+2010-01-12  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 1.0.0-beta1 release.
+
+	* CMakeLists.txt: Updated version number.
+
+	* CHANGES: Updated.
+
 2010-01-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add a search_phrase attribute to OMP GET_REPORT and switch GET_REPORT to
