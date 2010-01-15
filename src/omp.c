@@ -4452,24 +4452,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            else
+            else switch (delete_report (report))
               {
-                int ret = delete_report (report);
-                switch (ret)
-                  {
-                    case 0:
-                      SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("delete_report",
-                                          "Attempt to delete a hidden report"));
-                      break;
-                    default:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("delete_report"));
-                      break;
-                  }
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_report",
+                                      "Attempt to delete a hidden report"));
+                  break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_report",
+                                      "Report is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_report"));
+                  break;
               }
             openvas_free_string_var (&current_uuid);
           }

@@ -5061,13 +5061,24 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  *
  * @param[in]  report  Report.
  *
- * @return 0 success, 1 report is hidden.
+ * @return 0 success, 1 report is hidden, 2 report is in use.
  */
 int
 delete_report (report_t report)
 {
-  if (sql_int (0, 0, "SELECT hidden from reports WHERE ROWID = %llu;", report))
+  if (sql_int (0, 0, "SELECT hidden FROM reports WHERE ROWID = %llu;", report))
     return 1;
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM reports WHERE ROWID = %llu"
+               " AND (scan_run_status = %u OR scan_run_status = %u"
+               " OR scan_run_status = %u OR scan_run_status = %u);",
+               report,
+               TASK_STATUS_RUNNING,
+               TASK_STATUS_REQUESTED,
+               TASK_STATUS_DELETE_REQUESTED,
+               TASK_STATUS_STOP_REQUESTED))
+    return 2;
 
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);

@@ -1,3 +1,12 @@
+2010-01-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Prevent deleting of active reports.
+
+	* src/tasks_sql.h (delete_report): Just return 2 if report is active.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_REPORT handle
+	delete_report active report return.
+
 2010-01-12  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Post-release version bump.
