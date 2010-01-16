@@ -317,6 +317,16 @@ static char* help_text = "\n"
 #define STATUS_ERROR_MUST_AUTH_TEXT    "Authenticate first"
 
 /**
+ * @brief Response code for forbidden access.
+ */
+#define STATUS_ERROR_ACCESS            "403"
+
+/**
+ * @brief Response code text for forbidden access.
+ */
+#define STATUS_ERROR_ACCESS_TEXT       "Access to resource forbidden"
+
+/**
  * @brief Response code for a missing resource.
  */
 #define STATUS_ERROR_MISSING           "404"
@@ -325,6 +335,16 @@ static char* help_text = "\n"
  * @brief Response code text for a missing resource.
  */
 #define STATUS_ERROR_MISSING_TEXT      "Resource missing"
+
+/**
+ * @brief Response code for a busy resource.
+ */
+#define STATUS_ERROR_BUSY              "409"
+
+/**
+ * @brief Response code text for a busy resource.
+ */
+#define STATUS_ERROR_BUSY_TEXT         "Resource busy"
 
 /**
  * @brief Response code when authorisation failed.
@@ -537,6 +557,9 @@ typedef union
   name_command_data_t name_command;
 } command_data_t;
 
+/**
+ * @brief Initialise command data.
+ */
 static void
 command_data_init (command_data_t *data)
 {
@@ -546,17 +569,32 @@ command_data_init (command_data_t *data)
 
 /* Global variables. */
 
+/**
+ * @brief Parser callback data.
+ */
 command_data_t command_data;
 
+/**
+ * @brief Parser callback data for CREATE_CONFIG.
+ */
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
 
+/**
+ * @brief Parser callback data for GET_REPORT.
+ */
 get_report_data_t *get_report_data
  = &(command_data.get_report);
 
+/**
+ * @brief Parser callback data for GET_SYSTEM_REPORTS.
+ */
 get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
 
+/**
+ * @brief Parser callback data for CREATE_CONFIG (import).
+ */
 import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
 
@@ -967,6 +1005,16 @@ error_send_to_client (GError** error)
  "<" tag "_response"                                     \
  " status=\"" STATUS_ERROR_SYNTAX "\""                   \
  " status_text=\"" text "\"/>"
+
+/**
+ * @brief Expand to XML for a STATUS_ERROR_ACCESS response.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
+#define XML_ERROR_ACCESS(tag)                            \
+ "<" tag "_response"                                     \
+ " status=\"" STATUS_ERROR_ACCESS "\""                   \
+ " status_text=\"" STATUS_ERROR_ACCESS_TEXT "\"/>"
 
 /**
  * @brief Expand to XML for a STATUS_ERROR_MISSING response.
@@ -4165,7 +4213,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (md5sum);
               SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
 
-              init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
+              init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
               while (next (&nvts))
                 if (send_nvt (&nvts, 0, -1, NULL))
                   {
@@ -4213,6 +4261,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           char *md5sum = nvts_md5sum ();
           if (md5sum)
             {
+              config_t config = (config_t) 0;
+
               if (current_uuid)
                 {
                   nvt_t nvt;
@@ -4240,12 +4290,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         " status=\"" STATUS_OK "\""
                         " status_text=\"" STATUS_OK_TEXT "\">");
 
-                      init_nvt_iterator (&nvts, nvt, NULL, NULL, 1, NULL);
+                      init_nvt_iterator (&nvts, nvt, (config_t) 0, NULL, 1,
+                                         NULL);
                       while (next (&nvts))
                         {
                           char *timeout = NULL;
 
                           if (current_name) /* Attribute config. */
+                            /** @todo find_config (current_name)... */
                             timeout = config_nvt_timeout (current_name,
                                                           nvt_iterator_oid
                                                            (&nvts));
@@ -4330,9 +4382,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                     }
                 }
+              else if (current_name && find_config (current_name, &config))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_nvt_details"));
+              else if (current_name && (config == 0))
+                {
+                  if (send_find_error_to_client ("get_nvt_details",
+                                                 "config",
+                                                 current_name))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                }
               else
                 {
                   iterator_t nvts;
+
 
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<get_nvt_details_response"
@@ -4348,7 +4414,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   init_nvt_iterator (&nvts,
                                      (nvt_t) 0,
-                                     current_name,    /* Attribute config. */
+                                     config,
                                      current_format,  /* Attribute family. */
                                      /* Attribute sort_order. */
                                      current_int_2,
@@ -5336,6 +5402,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_agent",
                                     "Agent is in use"));
                 break;
+              case 2:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_agent"));
+                break;
               default:
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
@@ -5373,6 +5443,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                           "Config is in use"));
                 break;
+              case 2:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_config"));
+                break;
               default:
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
@@ -5408,6 +5482,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_escalator",
                                                           "Escalator is in use"));
+                break;
+              case 2:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_escalator"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);
@@ -5446,6 +5524,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_lsc_credential",
                                     "LSC credential is in use"));
                 break;
+              case 2:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_ACCESS ("delete_lsc_credential"));
+                break;
               default:
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
@@ -5482,6 +5565,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
                                                           "Target is in use"));
+                break;
+              case 2:
+                openvas_free_string_var (&modify_task_name);
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_target"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);
@@ -5555,124 +5642,140 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CONFIG:
-        /** @todo find_config */
-        if (current_name == NULL || strlen (current_name) == 0)
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "MODIFY_CONFIG requires a NAME element"));
-        else if ((current_format         /* NVT_SELECTION family. */
-                  && current_array_2)    /* Implies FAMILY_SELECTION. */
-                 || ((current_format || current_array_2)
-                     && (modify_task_name
-                         || modify_task_value
-                         || current_uuid)))
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "MODIFY_CONFIG requires either a PREFERENCE or"
-                              " an NVT_SELECTION or a FAMILY_SELECTION"));
-        else if (current_format)
-          {
-            assert (current_array_1);
+        {
+          config_t config;
+          if (current_name == NULL || strlen (current_name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG requires a NAME element"));
+          else if ((current_format         /* NVT_SELECTION family. */
+                    && current_array_2)    /* Implies FAMILY_SELECTION. */
+                   || ((current_format || current_array_2)
+                       && (modify_task_name
+                           || modify_task_value
+                           || current_uuid)))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG requires either a PREFERENCE or"
+                                " an NVT_SELECTION or a FAMILY_SELECTION"));
+          else if (find_config (current_name, &config))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
+          else if (config == 0)
+            {
+              if (send_find_error_to_client ("modify_config",
+                                             "config",
+                                             current_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (current_format)
+            {
+              assert (current_array_1);
 
-            array_terminate (current_array_1);
-            switch (manage_set_config_nvts (current_name,
-                                            current_format,
-                                            current_array_1))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                  break;
+              array_terminate (current_array_1);
+              switch (manage_set_config_nvts (config,
+                                              current_format,
+                                              current_array_1))
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    break;
 #if 0
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG PREFERENCE requires at least"
-                                      " one of the VALUE and NVT elements"));
-                  break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config",
+                                        "MODIFY_CONFIG PREFERENCE requires at"
+                                        " least one of the VALUE and NVT"
+                                        " elements"));
+                    break;
 #endif
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_config"));
-                  break;
-              }
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_config"));
+                    break;
+                }
 
-            free_array (current_array_1);
-            current_array_1 = NULL;
-          }
-        else if (current_array_2)    /* Implies FAMILY_SELECTION. */
-          {
-            assert (current_array_1);
-            assert (current_array_3);
+              free_array (current_array_1);
+              current_array_1 = NULL;
+            }
+          else if (current_array_2)    /* Implies FAMILY_SELECTION. */
+            {
+              assert (current_array_1);
+              assert (current_array_3);
 
-            array_terminate (current_array_1);
-            array_terminate (current_array_2);
-            array_terminate (current_array_3);
-            switch (manage_set_config_families (current_name,
-                                                current_array_1,
-                                                current_array_2,
-                                                current_array_3,
-                                                current_int_3))
-              {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-                  break;
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-                  break;
+              array_terminate (current_array_1);
+              array_terminate (current_array_2);
+              array_terminate (current_array_3);
+              switch (manage_set_config_families (config,
+                                                  current_array_1,
+                                                  current_array_2,
+                                                  current_array_3,
+                                                  current_int_3))
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    break;
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    break;
 #if 0
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_config",
-                                      "MODIFY_CONFIG PREFERENCE requires at least"
-                                      " one of the VALUE and NVT elements"));
-                  break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_config",
+                                        "MODIFY_CONFIG PREFERENCE requires at"
+                                        " least one of the VALUE and NVT"
+                                        " elements"));
+                    break;
 #endif
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("modify_report"));
-                  break;
-              }
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_report"));
+                    break;
+                }
 
-            free_array (current_array_1);
-            free_array (current_array_2);
-            free_array (current_array_3);
-            current_array_1 = NULL;
-            current_array_2 = NULL;
-            current_array_3 = NULL;
-          }
-        else if (modify_task_name == NULL || strlen (modify_task_name) == 0)
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "MODIFY_CONFIG PREFERENCE requires a NAME"
-                              " element"));
-        else switch (manage_set_config_preference (current_name,
-                                                   current_uuid,
-                                                   modify_task_name,
-                                                   modify_task_value))
-          {
-            case 0:
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-              break;
-            case 1:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-              break;
-            case -1:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_config",
-                                  "MODIFY_CONFIG PREFERENCE requires at least"
-                                  " one of the VALUE and NVT elements"));
-              break;
-            default:
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_INTERNAL_ERROR ("modify_report"));
-              break;
-          }
+              free_array (current_array_1);
+              free_array (current_array_2);
+              free_array (current_array_3);
+              current_array_1 = NULL;
+              current_array_2 = NULL;
+              current_array_3 = NULL;
+            }
+          else if (modify_task_name == NULL || strlen (modify_task_name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "MODIFY_CONFIG PREFERENCE requires a NAME"
+                                " element"));
+          else switch (manage_set_config_preference (config,
+                                                     current_uuid,
+                                                     modify_task_name,
+                                                     modify_task_value))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_config",
+                                    "MODIFY_CONFIG PREFERENCE requires at least"
+                                    " one of the VALUE and NVT elements"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_report"));
+                break;
+            }
+        }
         openvas_free_string_var (&current_format);
         openvas_free_string_var (&current_name);
         openvas_free_string_var (&modify_task_name);
@@ -6760,7 +6863,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* Check for the right combination of rcfile, target and config. */
 
           description = task_description (current_client_task);
-          config = task_config (current_client_task);
+          config = task_config_name (current_client_task);
+          /** @todo Hence task_target_name? */
           target = task_target (current_client_task);
           if ((description && (config || target))
               || (description == NULL
@@ -7401,7 +7505,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     name = task_name (task);
                     escalator = task_escalator (task);
-                    config = task_config (task);
+                    config = task_config_name (task);
                     response = g_strdup_printf
                                 ("<get_status_response"
                                  " status=\"" STATUS_OK "\""
@@ -7727,7 +7831,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   progress_xml = g_strdup ("-1");
 
-                config = task_config (index);
+                config = task_config_name (index);
                 escalator = task_escalator (index);
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
@@ -7825,6 +7929,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " be \"installer\", \"howto_install\" or \"howto_use\"."));
           else
             {
+              /** @todo if (current_uuid && strlen (...)) find_agent... */
               SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
@@ -7899,6 +8004,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t configs;
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
+          /** @todo if (current_name) find_config (current_name, &config)... */
           SEND_TO_CLIENT_OR_FAIL ("<get_configs_response"
                                   " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
@@ -7912,7 +8018,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               const char *selector, *config_name;
               iterator_t tasks;
 
+              /** @todo This should really be an nvt_selector_t. */
               selector = config_iterator_nvt_selector (&configs);
+              /** @todo Pass config_t to config_name users instead of name. */
               config_name = config_iterator_name (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
               config_families_growing
@@ -8110,6 +8218,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
 
+                  /** @todo Pass config_t instead of name. */
                   init_nvt_selector_iterator (&selectors,
                                               NULL,
                                               config_name,
@@ -8409,6 +8518,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             lsc_credential_iterator_public_key (&credentials)
                               ? "gen" : "pass");
 
+                          /** @todo Pass lsc_credential_t instead of name. */
                           init_lsc_credential_target_iterator (&targets,
                                                                name,
                                                                /* sort_order. */

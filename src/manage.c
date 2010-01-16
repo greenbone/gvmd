@@ -629,12 +629,12 @@ get_files_to_send (task_t task)
 /**
  * @brief Return the plugins of a config, as a semicolon separated string.
  *
- * @param[in]  config  Config name.
+ * @param[in]  config  Config.
  *
  * @return A string of semi-colon separated plugin IDS.
  */
 static gchar*
-nvt_selector_plugins (const char* config)
+nvt_selector_plugins (config_t config)
 {
   GString* plugins = g_string_new ("");;
   iterator_t families;
@@ -844,6 +844,7 @@ start_task (task_t task, char **report_id)
   int fail, pid;
   GSList *files = NULL;
   task_status_t run_status;
+  config_t config_id;
 
   tracef ("   start task %u\n", task_id (task));
 
@@ -950,7 +951,7 @@ start_task (task_t task, char **report_id)
 
   /* Get the config and selector. */
 
-  config = task_config (task);
+  config = task_config_name (task);
   if (config == NULL)
     {
       free (target);
@@ -961,9 +962,18 @@ start_task (task_t task, char **report_id)
       return -10;
     }
 
+  if (find_config (config, &config_id) || (config_id == 0))
+    {
+      free (target);
+      free (hosts);
+      set_task_run_status (task, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+
   /* Send the plugin list. */
 
-  plugins = nvt_selector_plugins (config);
+  plugins = nvt_selector_plugins (config_id);
   if (plugins)
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
@@ -1311,6 +1321,9 @@ manage_check_current_task ()
 
 /* System reports. */
 
+/**
+ * @brief Command called by get_system_report_types.
+ */
 #define COMMAND "openvasmr 0 titles"
 
 /**

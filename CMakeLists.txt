@@ -94,7 +94,7 @@ include (CPack)
 
 ## Variables
 
-SET (OPENVASMD_DATABASE_VERSION 8)
+SET (OPENVASMD_DATABASE_VERSION 9)
 
 set (CMAKE_BUILD                Debug)
 set (CMAKE_VERBOSE_MAKEFILE     ON)

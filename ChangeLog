@@ -1,5 +1,85 @@
 2010-01-15  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add ownership of targets, configs, lsc_credentials, escalators, reports
+	and agents.  Hence increase database version to 9.  Add database
+	migration from 8 to 9.  Check ownership before performing any OMP
+	command that accesses or modifies these resources.  Limit resource
+	listing operations to the resources owned by the current user.  Allow
+	any user to access the predefined resources as well as any resources
+	defined prior to migration to version 9.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 9.
+
+	* src/tasks_sql.h: Improve doc on writing a migrator.
+	(create_tables): Add owner column to targets, configs, lsc_credentials,
+	escalators, reports and agents.  Make owner in tasks an integer, and move
+	it forward in the definition.
+	(config_t): Remove.  Move to manage.h.
+	(find_config): Move declaration to manage.h.  Change task_t param to
+	config_t.  Quote name.
+	(update_config_caches): Add arg to declaration.
+	(update_all_config_caches, user_owns, user_owns_uuid)
+	(update_config_cache): New static functions.
+	(set_target_hosts): Make static in declaration.
+	(next): Correct param description in doc.
+	(migrate_5_to_6, manage_complete_nvt_cache_update): Use the "all users"
+	config cacher, update_all_config_caches.
+	(migrate_8_to_9, config_id_nvt_selector): New functions.
+	(database_migrators): Add migrate_8_to_9.
+	(create_escalator, make_report, create_target, create_config)
+	(create_config_rc, copy_config, create_lsc_credential, create_agent): Set
+	owner.
+	(delete_escalator, find_escalator, find_task, find_report, delete_target)
+	(target_hosts, target_lsc_credential_name, config_nvt_timeout)
+	(delete_config, config_nvt_selector, delete_lsc_credential)
+	(delete_agent): Check ownership.
+	(init_escalator_iterator, init_escalator_task_iterator)
+	(init_task_iterator, task_count, init_target_iterator)
+	(init_target_task_iterator, init_config_iterator)
+	(init_lsc_credential_iterator, init_agent_iterator): Restrict to resources
+	owned by current user.
+	(inc_task_int, dec_task_int): Remove.
+	(append_to_task_string): Make static.
+	(init_manage): Init owner columns in predefined resources.  Improve
+	find_task call for example task.
+	(task_config): Remove.  Rename to task_config.  Update callers.
+	(init_report_iterator): Remove alternate behaviour for NULL task.
+	(init_result_iterator, init_host_iterator): Remove alternate behaviour for
+	NULL report.
+	(make_task): Match the users SQL to other such statements.
+	(manage_set_config_preference, init_nvt_iterator, config_nvts_growing)
+	(config_families_growing, manage_set_config_families): Change the config
+	parameter from the config name to a config_t.  Update callers.
+	(manage_set_config_nvts, switch_representation)
+	(select_config_nvts): Change the config parameter from the config name to
+	a config_t.  Use the selector name to refer to the selector instead of the
+	config name; both strings should be the same anyway.  Update callers.
+	(update_config_caches): Call update_config_cache.
+	(nvt_preference_iterator_config_value): Add doc.
+
+	* src/manage.c (nvt_selector_plugins): Change the config parameter from
+	the config name to a config_t.  This is required because init_nvt_iterator
+	now takes a config_t.
+	(start_task): Pass config_t to nvt_selector_plugins.
+	(COMMAND): Add doc.
+
+	* src/manage.h: Update headers accordingly.
+	(config_t): New type.  Moved from tasks_sql.h.
+
+	* src/omp.c (STATUS_ERROR_ACCESS, STATUS_ERROR_ACCESS_TEXT)
+	(STATUS_ERROR_BUSY, STATUS_ERROR_BUSY_TEXT): New defines.  The BUSY ones
+	are just to match the Administrator.
+	(command_data_init, command_data, create_config_data, get_report_data)
+	(get_system_reports_data, import_config_data): Add docs.
+	(XML_ERROR_ACCESS): New macro.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS and
+	CLIENT_MODIFY_CONFIG find the named config first, so that the permission
+	checks are performed.  In CLIENT_DELETE_AGENT, CLIENT_DELETE_CONFIG,
+	CLIENT_DELETE_ESCALATOR, CLIENT_DELETE_LSC_CREDENTIAL and
+	CLIENT_DELETE_TARGET handle new permission returns.
+
+2010-01-15  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Prevent deleting of active reports.
 
 	* src/tasks_sql.h (delete_report): Just return 2 if report is active.

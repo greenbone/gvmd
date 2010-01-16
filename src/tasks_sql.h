@@ -37,7 +37,6 @@
 
 /* Types. */
 
-typedef long long int config_t;
 typedef long long int agent_t;
 
 
@@ -79,20 +78,20 @@ nvt_selector_nvts_growing_2 (const char*, int);
 static void
 nvt_selector_remove_selector (const char*, const char*, int);
 
-gboolean
-find_config (const char*, task_t*);
-
 static int
 insert_rc_into_config (config_t, const char*, char*);
 
 static void
-update_config_caches ();
+update_config_caches (const char*);
+
+static void
+update_all_config_caches ();
 
 static void
 set_target_hosts (const char *, const char *);
 
 static gchar*
-select_config_nvts (const char*, const char*, int, const char*);
+select_config_nvts (config_t, const char*, int, const char*);
 
 int
 family_count ();
@@ -421,6 +420,66 @@ member (GPtrArray *array, const char *string)
   return 0;
 }
 
+/**
+ * @brief Test whether a user owns a resource.
+ *
+ * @param[in]  resource              Type of resource, for example "target".
+ * @param[in]  quoted_resource_name  Name of resource, SQL quoted.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+static int
+user_owns (const char *resource, const char *quoted_resource_name)
+{
+  int ret;
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM %ss"
+                 " WHERE name = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.name = '%s')))",
+                 resource,
+                 quoted_resource_name,
+                 quoted_user_name);
+  g_free (quoted_user_name);
+
+  return ret;
+}
+
+/**
+ * @brief Test whether a user owns a resource.
+ *
+ * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  uuid      UUID of resource.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+static int
+user_owns_uuid (const char *resource, const char *uuid)
+{
+  int ret;
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM %ss"
+                 " WHERE uuid = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.name = '%s')))",
+                 resource,
+                 uuid,
+                 quoted_user_name);
+  g_free (quoted_user_name);
+
+  return ret;
+}
+
 
 /* Creation. */
 
@@ -430,14 +489,14 @@ member (GPtrArray *array, const char *string)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, name UNIQUE, comment, event INTEGER, condition INTEGER, method INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
@@ -450,12 +509,12 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, name, hosts, comment, lsc_credential INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, name, hidden INTEGER, time, comment, description, owner" /** @todo INTEGER */ ", run_status INTEGER, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config, target);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
 
   sql ("ANALYZE;");
@@ -578,7 +637,7 @@ cleanup_iterator (iterator_t* iterator)
 /**
  * @brief Increment an iterator.
  *
- * @param[in]  iterator  Task iterator.
+ * @param[in]  iterator  Iterator.
  *
  * @return TRUE if there was a next item, else FALSE.
  */
@@ -624,18 +683,22 @@ next (iterator_t* iterator)
  *
  *        * CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 6, for...
  *
- *        * src/tasks_sql.h (init_manage): Add new column...
+ *        * src/tasks_sql.h (create_tables): Add new column...
  *
  *  - Add the migrator function in the style of the others.  In particular,
  *    the function must check the version, do the modification and then set
  *    the new version, all inside an exclusive transaction.
  *
- *  - If a migrator modifies a table then the table must either have existed
- *    in database version 0 (listed below), or some earlier migrator must have
- *    added the table, or the migrator must add the table (in the original
- *    format).
+ *  - Remember to ensure that tables exist in the migrator before the migrator
+ *    modifies them.  If a migrator modifies a table then the table must either
+ *    have existed in database version 0 (listed below), or some earlier
+ *    migrator must have added the table, or the migrator must add the table
+ *    (using the original schema of the table).
  *
  *  - Add the migrator to the database_migrators array.
+ *
+ *  - Test that everything still works for a database that has been migrated
+ *    from the previous version.
  *
  *  - Test that everything still works for a database that has been migrated
  *    from version 0.
@@ -847,7 +910,7 @@ migrate_1_to_2 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
+  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
   while (next (&nvts))
     {
       int category;
@@ -1624,7 +1687,7 @@ migrate_5_to_6 ()
 
   /* Update cache counts for growing configs. */
 
-  update_config_caches ();
+  update_all_config_caches ();
 
   /* Set the database version to 6. */
 
@@ -1703,6 +1766,87 @@ migrate_7_to_8 ()
 }
 
 /**
+ * @brief Migrate the database from version 8 to version 9.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_8_to_9 ()
+{
+  task_iterator_t tasks;
+  task_t index;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 8. */
+
+  if (manage_db_version () != 8)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Many tables got an owner column. */
+
+  /** @todo Does ROLLBACK happen when these fail? */
+
+  sql ("ALTER TABLE targets ADD COLUMN owner INTEGER;");
+  sql ("UPDATE targets SET owner = NULL;");
+
+  sql ("ALTER TABLE configs ADD COLUMN owner INTEGER;");
+  sql ("UPDATE configs SET owner = NULL;");
+
+  sql ("ALTER TABLE lsc_credentials ADD COLUMN owner INTEGER;");
+  sql ("UPDATE lsc_credentials SET owner = NULL;");
+
+  sql ("ALTER TABLE escalators ADD COLUMN owner INTEGER;");
+  sql ("UPDATE escalators SET owner = NULL;");
+
+  sql ("ALTER TABLE reports ADD COLUMN owner INTEGER;");
+  sql ("UPDATE reports SET owner = NULL;");
+
+  sql ("ALTER TABLE agents ADD COLUMN owner INTEGER;");
+  sql ("UPDATE agents SET owner = NULL;");
+
+  /* The owner column in tasks changed type from string to int.  This
+   * may be a redundant conversion, as SQLite may have converted these
+   * values automatically in each query anyway. */
+
+  // FIX task iter now for current user
+  // FIX init_iterator (&rows, "SELECT...")
+  init_task_iterator (&tasks, 1, NULL);
+  while (next_task (&tasks, &index))
+    {
+      int owner;
+      char *owner_string;
+
+      owner_string = sql_string (0, 0,
+                                 "SELECT owner FROM tasks"
+                                 " WHERE ROWID = '%llu';",
+                                 index);
+      if (owner_string)
+        {
+          owner = atoi (owner_string);
+          sql ("UPDATE tasks SET owner = %i WHERE owner = '%s';",
+               owner,
+               owner_string);
+          free (owner_string);
+        }
+    }
+  cleanup_task_iterator (&tasks);
+
+  /* Set the database version to 9. */
+
+  set_db_version (9);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -1715,6 +1859,7 @@ static migrator_t database_migrators[]
     {6, migrate_5_to_6},
     {7, migrate_6_to_7},
     {8, migrate_7_to_8},
+    {9, migrate_8_to_9},
     /* End marker. */
     {-1, NULL}};
 
@@ -2051,8 +2196,10 @@ create_escalator (const char* name, const char* comment,
 {
   escalator_t escalator;
   int index;
-  gchar *item, *quoted_comment;
+  gchar *item, *quoted_comment, *quoted_user_name;
   gchar *quoted_name = sql_quote (name);
+
+  assert (current_credentials.username);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -2065,14 +2212,19 @@ create_escalator (const char* name, const char* comment,
     }
 
   quoted_comment = comment ? sql_quote (comment) : NULL;
+  quoted_user_name = sql_quote (current_credentials.username);
 
-  sql ("INSERT INTO escalators (name, comment, event, condition, method)"
-       " VALUES ('%s', '%s', %i, %i, %i);",
+  sql ("INSERT INTO escalators (owner, name, comment, event, condition, method)"
+       " VALUES ((SELECT ROWID FROM users WHERE users.name = '%s'),"
+       " '%s', '%s', %i, %i, %i);",
+       quoted_user_name,
        quoted_name,
        quoted_comment ? quoted_comment : "",
        event,
        condition,
        method);
+
+  g_free (quoted_user_name);
 
   escalator = sqlite3_last_insert_rowid (task_db);
 
@@ -2131,7 +2283,8 @@ create_escalator (const char* name, const char* comment,
  *
  * @param[in]  name  Name of escalator.
  *
- * @return 0 success, 1 fail because a task refers to the escalator, -1 error.
+ * @return 0 success, 1 fail because a task refers to the escalator,
+ *         2 access forbidden, -1 error.
  */
 int
 delete_escalator (const char* name)
@@ -2146,6 +2299,12 @@ delete_escalator (const char* name)
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
+    }
+  if (user_owns ("escalator", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
     }
   sql ("DELETE FROM escalator_condition_data"
        " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
@@ -2175,6 +2334,12 @@ gboolean
 find_escalator (const char* name, escalator_t* escalator)
 {
   gchar *quoted_name = sql_quote (name);
+  if (user_owns ("escalator", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      *escalator = 0;
+      return FALSE;
+    }
   switch (sql_int64 (escalator, 0, 0,
                      "SELECT ROWID FROM escalators WHERE name = '%s';",
                      quoted_name))
@@ -2244,7 +2409,9 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
   assert (name ? task == 0 : (task ? name == NULL : 1));
   assert (name ? event == 0 : (event ? name == NULL : 1));
   assert (event ? task : 1);
+  assert (current_credentials.username);
 
+  gchar *quoted_user_name = sql_quote (current_credentials.username);
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
@@ -2255,8 +2422,11 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                      "  WHERE task_escalators.escalator = escalators.ROWID)"
                      " FROM escalators"
                      " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
+                     quoted_user_name,
                      sort_field ? sort_field : "escalators.ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -2268,9 +2438,12 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                    " FROM escalators, task_escalators"
                    " WHERE task_escalators.escalator = escalators.ROWID"
                    " AND task_escalators.task = %llu AND event = %i"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                    " ORDER BY %s %s;",
                    task,
                    event,
+                   quoted_user_name,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
   else
@@ -2280,9 +2453,13 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                    " (SELECT count(*) > 0 FROM task_escalators"
                    "  WHERE task_escalators.escalator = escalators.ROWID)"
                    " FROM escalators"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                    " ORDER BY %s %s;",
+                   quoted_user_name,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
+  g_free (quoted_user_name);
 }
 
 /**
@@ -2749,17 +2926,27 @@ void
 init_escalator_task_iterator (iterator_t* iterator, const char *name,
                               int ascending)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name, *quoted_user_name;
+
+  assert (name);
+  assert (current_credentials.username);
+
+  quoted_name = sql_quote (name);
+  quoted_user_name = sql_quote (current_credentials.username);
   init_iterator (iterator,
                  "SELECT tasks.name, tasks.uuid FROM tasks, task_escalators"
                  " WHERE tasks.ROWID = task_escalators.task"
                  " AND task_escalators.escalator ="
                  " (SELECT ROWID FROM escalators WHERE escalators.name = '%s')"
                  " AND hidden = 0"
+                 " AND ((tasks.owner IS NULL) OR (tasks.owner ="
+                 " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                  " ORDER BY tasks.name %s;",
                  quoted_name,
+                 quoted_user_name,
                  ascending ? "ASC" : "DESC");
   g_free (quoted_name);
+  g_free (quoted_user_name);
 }
 
 /**
@@ -2793,33 +2980,7 @@ escalator_task_iterator_uuid (iterator_t* iterator)
 
 /* Task functions. */
 
-void
-inc_task_int (task_t task, const char* field)
-{
-  int current = sql_int (0, 0,
-                         "SELECT %s FROM tasks WHERE ROWID = %llu;",
-                         field,
-                         task);
-  sql ("UPDATE tasks SET %s = %i WHERE ROWID = %llu;",
-       field,
-       current + 1,
-       task);
-}
-
-void
-dec_task_int (task_t task, const char* field)
-{
-  int current = sql_int (0, 0,
-                         "SELECT %s FROM tasks WHERE ROWID = %llu;",
-                         field,
-                         task);
-  sql ("UPDATE tasks SET %s = %i WHERE ROWID = %llu;",
-       field,
-       current - 1,
-       task);
-}
-
-void
+static void
 append_to_task_string (task_t task, const char* field, const char* value)
 {
   char* current;
@@ -2866,7 +3027,8 @@ init_task_iterator (task_iterator_t* iterator,
   iterator->done = FALSE;
   if (current_credentials.username)
     formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users WHERE name = '%s')"
+                                 " (SELECT ROWID FROM users"
+                                 "  WHERE users.name = '%s')"
                                  " ORDER BY %s %s;",
                                  current_credentials.username,
                                  sort_field ? sort_field : "ROWID",
@@ -3285,9 +3447,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           " VALUES (1, 'Full and fast', 'All',"
+      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing)"
+           " VALUES (1, NULL, 'Full and fast', 'All',"
            " 'All NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL),
@@ -3305,9 +3467,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           " VALUES (2, 'Full and fast ultimate', 'All',"
+      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing)"
+           " VALUES (2, NULL, 'Full and fast ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
@@ -3326,9 +3488,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           " VALUES (3, 'Full and very deep', 'All',"
+      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing)"
+           " VALUES (3, NULL, 'Full and very deep', 'All',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL),
@@ -3346,9 +3508,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           " VALUES (4, 'Full and very deep ultimate', 'All',"
+      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing)"
+           " VALUES (4, NULL, 'Full and very deep ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
@@ -3367,9 +3529,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, nvt_selector, comment, family_count,"
-           " nvt_count, nvts_growing, families_growing)"
-           " VALUES ('empty', 'empty',"
+      sql ("INSERT into configs (name, owner, nvt_selector, comment,"
+           " family_count, nvt_count, nvts_growing, families_growing)"
+           " VALUES ('empty', NULL, 'empty',"
            " 'Empty and static configuration template',"
            " 0, 0, 0, 0);");
 
@@ -3382,16 +3544,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
       == 0)
-    sql ("INSERT into targets (name, hosts) VALUES ('Localhost', 'localhost');");
+    sql ("INSERT into targets (owner, name, hosts)"
+         " VALUES (NULL, 'Localhost', 'localhost');");
 
   /* Ensure the predefined example task and report exists. */
 
   if (sql_int (0, 0, "SELECT count(*) FROM tasks WHERE hidden = 1;") == 0)
     {
-      sql ("INSERT into tasks (uuid, name, hidden, comment, owner,"
+      sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
            " run_status, start_time, end_time, config, target)"
-           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', 'Example task',"
-           " 1, 'This is an example task for the help pages.', NULL, %u,"
+           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
+           " 1, 'This is an example task for the help pages.', %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
            " 'Full and fast', 'Localhost');",
            TASK_STATUS_DONE);
@@ -3406,13 +3569,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       result_t result;
       report_t report;
 
-      if (find_task ("343435d6-91b0-11de-9478-ffd71f4c6f29", &task))
-        g_warning ("%s: failed to find the example task", __FUNCTION__);
+      if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
+        g_warning ("%s: error while finding example task", __FUNCTION__);
+      else if (task == 0)
+        g_warning ("%s: failed to find example task", __FUNCTION__);
       else
         {
-          sql ("INSERT into reports (uuid, hidden, task, comment,"
+          sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
                " start_time, end_time, scan_run_status)"
-               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', 1, %llu,"
+               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
                " %u);",
@@ -3476,7 +3641,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       nvti_cache = nvtis_new ();
 
-      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
+      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
       while (next (&nvts))
         {
           nvti_t *nvti = nvti_new ();
@@ -3565,7 +3730,8 @@ task_count ()
 {
   return (unsigned int) sql_int (0, 0,
                                  "SELECT count(*) FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users WHERE name = '%s');",
+                                 " (SELECT ROWID FROM users"
+                                 "  WHERE users.name = '%s');",
                                  current_credentials.username);
 }
 
@@ -3631,14 +3797,14 @@ task_comment (task_t task)
 }
 
 /**
- * @brief Return the config of a task.
+ * @brief Return the name of the config of a task.
  *
  * @param[in]  task  Task.
  *
  * @return Config of task.
  */
 char*
-task_config (task_t task)
+task_config_name (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT config FROM tasks WHERE ROWID = %llu;",
@@ -3988,7 +4154,7 @@ make_task_rcfile (task_t task)
   iterator_t prefs;
   GString *buffer;
 
-  config = task_config (task);
+  config = task_config_name (task);
   if (config == NULL) return -1;
 
   target = task_target (task);
@@ -4096,7 +4262,7 @@ make_task_rcfile (task_t task)
           {
             iterator_t nvts;
 
-            init_nvt_iterator (&nvts, (nvt_t) 0, NULL, NULL, 1, NULL);
+            init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
             while (next (&nvts))
               g_string_append_printf (buffer,
                                       " %s = yes\n",
@@ -4183,11 +4349,19 @@ report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
   report_t report;
-  sql ("INSERT into reports (uuid, hidden, task, date, nbefile, comment,"
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
+  sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
        " scan_run_status)"
-       " VALUES ('%s', 0, %llu, %i, '', '', %u);",
-       uuid, task, time (NULL), status);
+       " VALUES ('%s',"
+       " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+       " 0, %llu, %i, '', '', %u);",
+       uuid, quoted_user_name, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
+  g_free (quoted_user_name);
   return report;
 }
 
@@ -4376,21 +4550,17 @@ report_add_result (report_t report, result_t result)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task whose reports the iterator loops over.
- *                       All tasks if NULL.
  */
 void
 init_report_iterator (iterator_t* iterator, task_t task)
 {
-  if (task)
-    {
-      gchar* sql;
-      sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
-                             task);
-      init_iterator (iterator, sql);
-      g_free (sql);
-    }
-  else
-    init_iterator (iterator, "SELECT ROWID FROM reports;");
+  gchar* sql;
+
+  assert (task);
+  sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
+                         task);
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 /**
@@ -4577,88 +4747,83 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                       const char* sort_field, const char* levels,
                       const char* search_phrase)
 {
+  GString *levels_sql, *phrase_sql;
   gchar* sql;
+
+  assert (report);
+
   if (sort_field == NULL) sort_field = "type";
   if (levels == NULL) levels = "hmlgd";
-  if (report)
-    {
-      GString *levels_sql = where_levels (levels);
-      GString *phrase_sql = where_search_phrase (search_phrase);
 
-      /* Allocate the query. */
+  levels_sql = where_levels (levels);
+  phrase_sql = where_search_phrase (search_phrase);
 
-      if (host)
-        sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                               " FROM results, report_results"
-                               " WHERE report_results.report = %llu"
-                               "%s"
-                               " AND report_results.result = results.ROWID"
-                               " AND results.host = '%s'"
-                               "%s"
-                               "%s"
-                               " LIMIT %i OFFSET %i;",
-                               report,
-                               levels_sql ? levels_sql->str : "",
-                               host,
-                               phrase_sql ? phrase_sql->str : "",
-                               ascending
-                                ? ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY"
-                                      " port,"
-                                      " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY"
-                                      " type COLLATE collate_message_type,"
-                                      " port")
-                                : ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY"
-                                      " port DESC,"
-                                      " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY"
-                                      " type COLLATE collate_message_type DESC,"
-                                      " port"),
-                               max_results,
-                               first_result);
-      else
-        sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                               " FROM results, report_results"
-                               " WHERE report_results.report = %llu"
-                               "%s"
-                               "%s"
-                               " AND report_results.result = results.ROWID"
-                               "%s"
-                               " LIMIT %i OFFSET %i;",
-                               report,
-                               levels_sql ? levels_sql->str : "",
-                               phrase_sql ? phrase_sql->str : "",
-                               ascending
-                                ? ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host,"
-                                      " port,"
-                                      " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY host,"
-                                      " type COLLATE collate_message_type,"
-                                      " port")
-                                : ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host,"
-                                      " port DESC,"
-                                      " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY host,"
-                                      " type COLLATE collate_message_type DESC,"
-                                      " port"),
-                               max_results,
-                               first_result);
+  /* Allocate the query. */
 
-      if (levels_sql) g_string_free (levels_sql, TRUE);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-    }
+  if (host)
+    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                           " FROM results, report_results"
+                           " WHERE report_results.report = %llu"
+                           "%s"
+                           " AND report_results.result = results.ROWID"
+                           " AND results.host = '%s'"
+                           "%s"
+                           "%s"
+                           " LIMIT %i OFFSET %i;",
+                           report,
+                           levels_sql ? levels_sql->str : "",
+                           host,
+                           phrase_sql ? phrase_sql->str : "",
+                           ascending
+                            ? ((strcmp (sort_field, "port") == 0)
+                                ? " ORDER BY"
+                                  " port,"
+                                  " type COLLATE collate_message_type DESC"
+                                : " ORDER BY"
+                                  " type COLLATE collate_message_type,"
+                                  " port")
+                            : ((strcmp (sort_field, "port") == 0)
+                                ? " ORDER BY"
+                                  " port DESC,"
+                                  " type COLLATE collate_message_type DESC"
+                                : " ORDER BY"
+                                  " type COLLATE collate_message_type DESC,"
+                                  " port"),
+                           max_results,
+                           first_result);
   else
-    {
-      assert (levels == NULL);
-      assert (search_phrase == NULL);
-      sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
-                             " FROM results LIMIT %i OFFSET %i;",
-                             max_results, first_result);
-    }
+    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+                           " FROM results, report_results"
+                           " WHERE report_results.report = %llu"
+                           "%s"
+                           "%s"
+                           " AND report_results.result = results.ROWID"
+                           "%s"
+                           " LIMIT %i OFFSET %i;",
+                           report,
+                           levels_sql ? levels_sql->str : "",
+                           phrase_sql ? phrase_sql->str : "",
+                           ascending
+                            ? ((strcmp (sort_field, "port") == 0)
+                                ? " ORDER BY host,"
+                                  " port,"
+                                  " type COLLATE collate_message_type DESC"
+                                : " ORDER BY host,"
+                                  " type COLLATE collate_message_type,"
+                                  " port")
+                            : ((strcmp (sort_field, "port") == 0)
+                                ? " ORDER BY host,"
+                                  " port DESC,"
+                                  " type COLLATE collate_message_type DESC"
+                                : " ORDER BY host,"
+                                  " type COLLATE collate_message_type DESC,"
+                                  " port"),
+                           max_results,
+                           first_result);
+
+  if (levels_sql) g_string_free (levels_sql, TRUE);
+  if (phrase_sql) g_string_free (phrase_sql, TRUE);
+
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -4741,23 +4906,17 @@ DEF_ACCESS (descr, 5);
 void
 init_host_iterator (iterator_t* iterator, report_t report)
 {
-  if (report)
-    {
-      gchar* sql;
-      sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
-                             " current_port, max_port"
-                             " FROM report_hosts WHERE report = %llu"
-                             " ORDER BY host COLLATE collate_ip;",
-                             report);
-      init_iterator (iterator, sql);
-      g_free (sql);
-    }
-  else
-    init_iterator (iterator,
-                   "SELECT host, start_time, end_time, attack_state,"
-                   " current_port, max_port"
-                   " FROM report_hosts"
-                   " ORDER BY host COLLATE collate_ip;");
+  gchar* sql;
+
+  assert (report);
+
+  sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
+                         " current_port, max_port"
+                         " FROM report_hosts WHERE report = %llu"
+                         " ORDER BY host COLLATE collate_ip;",
+                         report);
+  init_iterator (iterator, sql);
+  g_free (sql);
 }
 
 #if 0
@@ -4929,6 +5088,10 @@ set_scan_host_start_time (report_t report, const char* host,
 /**
  * @brief Get the timestamp of a report.
  *
+ * @todo Lacks permission check.  Caller contexts all have permission
+ *       checks before calling this so it's safe.  Rework callers so
+ *       they pass report_t instead of UUID string.
+ *
  * @param[in]   report_id    UUID of report.
  * @param[out]  timestamp    Timestamp on success.  Caller must free.
  *
@@ -5011,6 +5174,10 @@ report_scan_result_count (report_t report, const char* levels,
 
 /**
  * @brief Get the message counts for a report given the UUID.
+ *
+ * @todo Lacks permission check.  Caller contexts all have permission
+ *       checks before calling this so it's safe.  Rework callers to
+ *       use report_counts_id instead.
  *
  * @param[in]   report_id    ID of report.
  * @param[out]  debugs       Number of debug messages.
@@ -5277,7 +5444,7 @@ make_task (char* name, unsigned int time, char* comment)
   if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
   sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment)"
-       " VALUES ((SELECT ROWID FROM users WHERE name = '%s'),"
+       " VALUES ((SELECT ROWID FROM users WHERE users.name = '%s'),"
        "         '%s', %s, 0, %u, %s);",
        current_credentials.username, uuid, name, time, comment);
   task = sqlite3_last_insert_rowid (task_db);
@@ -5369,7 +5536,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         char *config_name, *target, *selector;
         char *quoted_config_name, *quoted_selector;
 
-        config_name = task_config (task);
+        config_name = task_config_name (task);
         if (config_name == NULL)
           {
             g_free (rc);
@@ -5545,6 +5712,7 @@ delete_task (task_t task)
   if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;", task))
     return -1;
 
+  /** @todo Many other places just assert this. */
   if (current_credentials.username == NULL) return -1;
 
   if (task_uuid (task, &tsk_uuid)) return -1;
@@ -5603,8 +5771,7 @@ append_to_task_config (task_t task, const char* text, /*@unused@*/ int length)
  * @return 0 on success, -1 if out of memory.
  */
 int
-append_to_task_name (task_t task, const char* text,
-                           /*@unused@*/ int length)
+append_to_task_name (task_t task, const char* text, /*@unused@*/ int length)
 {
   append_to_task_string (task, "name", text);
   return 0;
@@ -5682,6 +5849,11 @@ append_task_open_port (task_t task, unsigned int number, char* protocol)
 gboolean
 find_task (const char* uuid, task_t* task)
 {
+  if (user_owns_uuid ("task", uuid) == 0)
+    {
+      *task = 0;
+      return FALSE;
+    }
   switch (sql_int64 (task, 0, 0,
                      "SELECT ROWID FROM tasks WHERE uuid = '%s';",
                      uuid))
@@ -5712,6 +5884,11 @@ find_task (const char* uuid, task_t* task)
 gboolean
 find_report (const char* uuid, report_t* report)
 {
+  if (user_owns_uuid ("report", uuid) == 0)
+    {
+      *report = 0;
+      return FALSE;
+    }
   switch (sql_int64 (report, 0, 0,
                      "SELECT ROWID FROM reports WHERE uuid = '%s';",
                      uuid))
@@ -5872,6 +6049,15 @@ task_file_iterator_length (iterator_t* iterator)
 
 /* Targets. */
 
+/** @todo Add target_t and find_target.
+ *
+ * The permission check will be easier and more solid if the target user
+ * accesses these functions via a target_t instead of via the target name.
+ * That way all functions that return target_t's can do the permission
+ * check and everything else can work with target_t and be sure that the
+ * permission is already checked.
+ */
+
 /**
  * @brief Create a target.
  *
@@ -5887,10 +6073,12 @@ create_target (const char* name, const char* hosts, const char* comment,
                const char* credential)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment;
+  gchar *quoted_hosts, *quoted_comment, *quoted_user_name;
   lsc_credential_t lsc_credential;
 
   sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.username);
 
   if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
                quoted_name))
@@ -5927,21 +6115,29 @@ create_target (const char* name, const char* hosts, const char* comment,
   else
     lsc_credential = 0;
 
+  quoted_user_name = sql_quote (current_credentials.username);
+
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO targets (name, hosts, comment, lsc_credential)"
-           " VALUES ('%s', '%s', '%s', %llu);",
-           quoted_name, quoted_hosts, quoted_comment, lsc_credential);
+      sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
+           " VALUES ('%s',"
+           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " '%s', '%s', %llu);",
+           quoted_name, quoted_user_name, quoted_hosts, quoted_comment,
+           lsc_credential);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO targets (name, hosts, comment, lsc_credential)"
-         " VALUES ('%s', '%s', '', %llu);",
-         quoted_name, quoted_hosts, lsc_credential);
+    sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
+         " VALUES ('%s',"
+         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " '%s', '', %llu);",
+         quoted_name, quoted_user_name, quoted_hosts, lsc_credential);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
+  g_free (quoted_user_name);
 
   sql ("COMMIT;");
 
@@ -5953,13 +6149,20 @@ create_target (const char* name, const char* hosts, const char* comment,
  *
  * @param[in]  name   Name of target.
  *
- * @return 0 success, 1 fail because a task refers to the target, -1 error.
+ * @return 0 success, 1 fail because a task refers to the target,
+ *         2 access forbidden, -1 error.
  */
 int
 delete_target (const char* name)
 {
   gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
+  if (user_owns ("target", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
+    }
   if (sql_int (0, 0,
                "SELECT count(*) FROM tasks WHERE target = '%s'",
                quoted_name))
@@ -5986,13 +6189,23 @@ void
 init_target_iterator (iterator_t* iterator, const char* name,
                       int ascending, const char* sort_field)
 {
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
                      "SELECT name, hosts, comment, lsc_credential"
-                     " FROM targets WHERE name = '%s' ORDER BY %s %s;",
+                     " FROM targets"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                     " ORDER BY %s %s;",
                      quoted_name,
+                     quoted_user_name,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -6000,9 +6213,14 @@ init_target_iterator (iterator_t* iterator, const char* name,
   else
     init_iterator (iterator,
                    "SELECT name, hosts, comment, lsc_credential"
-                   " FROM targets ORDER BY %s %s;",
+                   " FROM targets"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " ORDER BY %s %s;",
+                   quoted_user_name,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (target_iterator_name, 0);
@@ -6036,14 +6254,21 @@ target_iterator_lsc_credential (iterator_t* iterator)
 char*
 target_hosts (const char *name)
 {
+  char* hosts;
   gchar* quoted_name = sql_nquote (name, strlen (name));
-  char* hosts = sql_string (0, 0,
-                            "SELECT hosts FROM targets WHERE name = '%s';",
-                            quoted_name);
+  if (user_owns ("target", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      return NULL;
+    }
+  hosts = sql_string (0, 0,
+                      "SELECT hosts FROM targets WHERE name = '%s';",
+                      quoted_name);
   g_free (quoted_name);
   return hosts;
 }
 
+/** @todo Make static? */
 /**
  * @brief Return the name of any credential associated with a target.
  *
@@ -6054,12 +6279,20 @@ target_hosts (const char *name)
 char*
 target_lsc_credential_name (const char *name)
 {
+  int ret;
   lsc_credential_t lsc_credential;
   gchar *quoted_name = sql_quote (name);
-  int ret = sql_int64 (&lsc_credential, 0, 0,
-                       "SELECT lsc_credential FROM targets"
-                       " WHERE name = '%s';",
-                       quoted_name);
+
+  if (user_owns ("target", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      return NULL;
+    }
+
+  ret = sql_int64 (&lsc_credential, 0, 0,
+                   "SELECT lsc_credential FROM targets"
+                   " WHERE name = '%s';",
+                   quoted_name);
   g_free (quoted_name);
   switch (ret)
     {
@@ -6128,14 +6361,24 @@ void
 init_target_task_iterator (iterator_t* iterator, const char *name,
                            int ascending)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name, *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_name = sql_quote (name);
+  quoted_user_name = sql_quote (current_credentials.username);
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
-                 " WHERE target = '%s' AND hidden = 0"
+                 " WHERE target = '%s'"
+                 " AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                  " ORDER BY name %s;",
                  quoted_name,
+                 quoted_user_name,
                  ascending ? "ASC" : "DESC");
   g_free (quoted_name);
+  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (target_task_iterator_name, 0);
@@ -6143,6 +6386,12 @@ DEF_ACCESS (target_task_iterator_uuid, 1);
 
 
 /* Configs. */
+
+/** @todo Access the config via config_t where possible.
+ *
+ * As noted in todos below, the permission check are easier and more solid
+ * when the config user accesses these functions via config_t.
+ */
 
 /**
  * @brief Insert NVT selectors.
@@ -6364,8 +6613,11 @@ create_config (const char* proposed_name, const char* comment,
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
+  gchar *quoted_user_name;
   config_t config;
   unsigned int num = 1;
+
+  assert (current_credentials.username);
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
@@ -6392,18 +6644,27 @@ create_config (const char* proposed_name, const char* comment,
       quoted_candidate_name = sql_quote (candidate_name);
     }
 
+  quoted_user_name = sql_quote (current_credentials.username);
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (name, nvt_selector, comment)"
-           " VALUES ('%s', '%s', '%s');",
-           quoted_candidate_name, quoted_candidate_name, quoted_comment);
+      sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
+           " VALUES ('%s',"
+           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " '%s', '%s');",
+           quoted_candidate_name,
+           quoted_user_name,
+           quoted_candidate_name,
+           quoted_comment);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (name, nvt_selector, comment)"
-         " VALUES ('%s', '%s', '');",
-         quoted_candidate_name, quoted_candidate_name);
+    sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
+         " VALUES ('%s',"
+         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " '%s', '');",
+         quoted_candidate_name, quoted_user_name, quoted_candidate_name);
+  g_free (quoted_user_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
@@ -6460,6 +6721,7 @@ config_preference (config_t config, const char *type, const char *preference)
                        config, preference);
 }
 
+/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the timeout value for an NVT in a config.
  *
@@ -6473,6 +6735,13 @@ config_nvt_timeout (const char *config, const char *oid)
 {
   char *ret;
   gchar *quoted_config = sql_quote (config);
+
+  if (user_owns ("config", quoted_config) == 0)
+    {
+      g_free (quoted_config);
+      return NULL;
+    }
+
   ret = sql_string (0, 0,
                     "SELECT value FROM config_preferences"
                     " WHERE config ="
@@ -6881,9 +7150,11 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 int
 create_config_rc (const char* name, const char* comment, char* rc)
 {
-  gchar* quoted_name = sql_nquote (name, strlen (name));
-  gchar* quoted_comment;
+  gchar *quoted_name = sql_nquote (name, strlen (name));
+  gchar *quoted_comment, *quoted_user_name;
   config_t config;
+
+  assert (current_credentials.username);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -6905,18 +7176,27 @@ create_config_rc (const char* name, const char* comment, char* rc)
       return -1;
     }
 
+
+  quoted_user_name = sql_quote (current_credentials.username);
+
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (name, nvt_selector, comment)"
-           " VALUES ('%s', '%s', '%s');",
-           quoted_name, quoted_name, quoted_comment);
+      sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
+           " VALUES ('%s',"
+           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " '%s', '%s');",
+           quoted_name, quoted_user_name, quoted_name, quoted_comment);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (name, nvt_selector, comment)"
-         " VALUES ('%s', '%s', '');",
-         quoted_name, quoted_name);
+    sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
+         " VALUES ('%s',"
+         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " '%s', '');",
+         quoted_name, quoted_user_name, quoted_name);
+
+  g_free (quoted_user_name);
 
   /* Insert the RC into the config_preferences table. */
 
@@ -6950,7 +7230,9 @@ copy_config (const char* name, const char* comment, const char* config)
   config_t id;
   gchar *quoted_name = sql_quote (name);
   gchar *quoted_config = sql_quote (config);
-  gchar *quoted_comment, *quoted_config_selector;
+  gchar *quoted_comment, *quoted_config_selector, *quoted_user_name;
+
+  assert (current_credentials.username);
 
   config_selector = config_nvt_selector (config);
   if (config_selector == NULL)
@@ -6971,14 +7253,21 @@ copy_config (const char* name, const char* comment, const char* config)
       return 1;
     }
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-               quoted_config)
+  quoted_user_name = sql_quote (current_credentials.username);
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM configs"
+               " WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT ROWID FROM users WHERE users.name = '%s')))",
+               quoted_config,
+               quoted_user_name)
       == 0)
     {
       sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
+      g_free (quoted_user_name);
       return 2;
     }
 
@@ -6991,6 +7280,7 @@ copy_config (const char* name, const char* comment, const char* config)
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
+      g_free (quoted_user_name);
       return -1;
     }
 
@@ -7000,12 +7290,14 @@ copy_config (const char* name, const char* comment, const char* config)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs"
-           " (name, nvt_selector, comment, family_count, nvt_count,"
+           " (name, owner, nvt_selector, comment, family_count, nvt_count,"
            "  families_growing, nvts_growing)"
-           " SELECT '%s', '%s', '%s', family_count, nvt_count,"
+           " SELECT '%s', (SELECT ROWID FROM users where users.name = '%s'),"
+           " '%s', '%s', family_count, nvt_count,"
            " families_growing, nvts_growing"
            " FROM configs WHERE name = '%s'",
            quoted_name,
+           quoted_user_name,
            quoted_name,
            quoted_comment,
            quoted_config);
@@ -7013,14 +7305,18 @@ copy_config (const char* name, const char* comment, const char* config)
     }
   else
     sql ("INSERT INTO configs"
-         " (name, nvt_selector, comment, family_count, nvt_count,"
+         " (name, owner, nvt_selector, comment, family_count, nvt_count,"
          "  families_growing, nvts_growing)"
-         " SELECT '%s', '%s', '', family_count, nvt_count,"
+         " SELECT '%s', (SELECT ROWID FROM users where users.name = '%s'),"
+         " '%s', '', family_count, nvt_count,"
          " families_growing, nvts_growing"
          " FROM configs WHERE name = '%s'",
          quoted_name,
+         quoted_user_name,
          quoted_name,
          quoted_config);
+
+  g_free (quoted_user_name);
 
   id = sqlite3_last_insert_rowid (task_db);
 
@@ -7048,7 +7344,8 @@ copy_config (const char* name, const char* comment, const char* config)
  *
  * @param[in]  name   Name of config.
  *
- * @return 0 success, 1 fail because a task refers to the config, -1 error.
+ * @return 0 success, 1 fail because a task refers to the config,
+ *         2 access forbidden, -1 error.
  */
 int
 delete_config (const char* name)
@@ -7064,6 +7361,12 @@ delete_config (const char* name)
 
   quoted_name = sql_nquote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
+  if (user_owns ("config", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
+    }
   if (sql_int (0, 0,
                "SELECT count(*) FROM tasks WHERE config = '%s'",
                quoted_name))
@@ -7096,15 +7399,23 @@ init_config_iterator (iterator_t* iterator, const char *name,
                       int ascending, const char* sort_field)
 
 {
-  gchar* sql;
+  gchar *sql, *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
       sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
                              " families_growing, nvts_growing"
-                             " FROM configs WHERE name = '%s'"
+                             " FROM configs"
+                             " WHERE name = '%s'"
+                             " AND ((owner IS NULL) OR (owner ="
+                             " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                              " ORDER BY %s %s;",
                              quoted_name,
+                             quoted_user_name,
                              sort_field ? sort_field : "ROWID",
                              ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -7113,9 +7424,13 @@ init_config_iterator (iterator_t* iterator, const char *name,
     sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
                            " families_growing, nvts_growing"
                            " FROM configs"
+                           " WHERE ((owner IS NULL) OR (owner ="
+                           " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                            " ORDER BY %s %s;",
+                           quoted_user_name,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
+  g_free (quoted_user_name);
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -7155,6 +7470,8 @@ config_iterator_nvts_growing (iterator_t* iterator)
  *
  * The predefined configs are always in use.
  *
+ * @todo Lacks permission check.  Get single caller to send config_t.
+ *
  * @param[in]  name   Name of config.
  *
  * @return 1 if in use, else 0.
@@ -7183,7 +7500,10 @@ config_in_use (const char* name)
 /**
  * @brief Initialise a preference iterator.
  *
+ * Assume the caller has permission to access the config.
+ *
  * @param[in]  iterator  Iterator.
+ * @param[in]  config    Config name.
  * @param[in]  section   Preference section, NULL for general preferences.
  */
 static void
@@ -7220,7 +7540,9 @@ static DEF_ACCESS (preference_iterator_value, 1);
 /**
  * @brief Initialise an "OTP" preference iterator.
  *
- * This version includes scanner preferences where when the NVT preferences
+ * Assume the caller has permission to access the config.
+ *
+ * This version substitutes the scanner preference when the NVT preference
  * is missing.
  *
  * @param[in]  iterator  Iterator.
@@ -7269,6 +7591,8 @@ init_otp_pref_iterator (iterator_t* iterator,
 static DEF_ACCESS (otp_pref_iterator_name, 0);
 static DEF_ACCESS (otp_pref_iterator_value, 1);
 
+/** @todo Remove this version of the iterator. */
+
 /**
  * @brief Initialise a config preference iterator.
  *
@@ -7304,6 +7628,7 @@ config_pref_iterator_value (iterator_t* iterator)
   return ret ? ret : (const char*) sqlite3_column_text (iterator->stmt, 2);
 }
 
+/** @todo Switch external callers to config_id_nvt_selector, make static. */
 /**
  * @brief Return the NVT selector associated with a config.
  *
@@ -7315,34 +7640,63 @@ config_pref_iterator_value (iterator_t* iterator)
 char*
 config_nvt_selector (const char *name)
 {
+  char *selector;
   gchar* quoted_name = sql_nquote (name, strlen (name));
-  char* selector = sql_string (0, 0,
-                               "SELECT nvt_selector FROM configs"
-                               " WHERE name = '%s';",
-                               quoted_name);
+  if (user_owns ("config", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      return NULL;
+    }
+  selector = sql_string (0, 0,
+                         "SELECT nvt_selector FROM configs"
+                         " WHERE name = '%s';",
+                         quoted_name);
   g_free (quoted_name);
   return selector;
 }
 
 /**
+ * @brief Return the NVT selector associated with a config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return Name of NVT selector if config exists and NVT selector is set, else
+ *         NULL.
+ */
+char*
+config_id_nvt_selector (config_t config)
+{
+  return sql_string (0, 0,
+                     "SELECT nvt_selector FROM configs WHERE ROWID = %llu;",
+                     config);
+}
+
+/**
  * @brief Find a config given a name.
  *
- * @param[in]   name  Config name.
- * @param[out]  task  Task return, 0 if succesfully failed to find task.
+ * @param[in]   name    Config name.
+ * @param[out]  config  Config return, 0 if succesfully failed to find config.
  *
- * @return FALSE on success (including if failed to find task), TRUE on error.
+ * @return FALSE on success (including if failed to find config), TRUE on error.
  */
 gboolean
-find_config (const char* name, task_t* task)
+find_config (const char* name, config_t* config)
 {
-  switch (sql_int64 (task, 0, 0,
+  gchar *quoted_name = sql_quote (name);
+  if (user_owns ("config", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      *config = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (config, 0, 0,
                      "SELECT ROWID FROM configs WHERE name = '%s';",
-                     name))
+                     quoted_name))
     {
       case 0:
         break;
       case 1:        /* Too few rows in result of query. */
-        *task = 0;
+        *config = 0;
         break;
       default:       /* Programming error. */
         assert (0);
@@ -7350,14 +7704,14 @@ find_config (const char* name, task_t* task)
         return TRUE;
         break;
     }
-
+  g_free (quoted_name);
   return FALSE;
 }
 
 /**
  * @brief Set a preference of a config.
  *
- * @param[in]  config    Config name.
+ * @param[in]  config    Config.
  * @param[in]  nvt       UUID of NVT.  NULL for scanner preference.
  * @param[in]  name      Preference name, including NVT name and preference
  *                       type.
@@ -7367,13 +7721,11 @@ find_config (const char* name, task_t* task)
  * @return 0 success, 1 config in use, -1 error.
  */
 int
-manage_set_config_preference (const char* config, const char* nvt, const char* name,
+manage_set_config_preference (config_t config, const char* nvt, const char* name,
                               const char* value_64)
 {
-  gchar *quoted_config, *quoted_name, *quoted_value, *value;
+  gchar *quoted_name, *quoted_value, *value;
   int type_start = -1, type_end = -1, count;
-
-  quoted_config = sql_quote (config);
 
   if (value_64 == NULL)
     {
@@ -7382,10 +7734,10 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
       sql ("BEGIN IMMEDIATE;");
 
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks WHERE config = '%s'",
-                   quoted_config))
+                   "SELECT count(*) FROM tasks WHERE config ="
+                   " (SELECT name FROM configs WHERE ROWID = %llu);",
+                   config))
         {
-          g_free (quoted_config);
           sql ("ROLLBACK;");
           return 1;
         }
@@ -7402,14 +7754,13 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
         }
 
       sql ("DELETE FROM config_preferences"
-           " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+           " WHERE config = %llu"
            " AND name = '%s';",
-           quoted_config,
+           config,
            quoted_name);
 
       sql ("COMMIT;");
 
-      g_free (quoted_config);
       g_free (quoted_name);
       return 0;
     }
@@ -7417,10 +7768,10 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
   sql ("BEGIN IMMEDIATE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = '%s'",
-               quoted_config))
+               "SELECT count(*) FROM tasks WHERE config ="
+               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               config))
     {
-      g_free (quoted_config);
       sql ("ROLLBACK;");
       return 1;
     }
@@ -7449,10 +7800,10 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
 
           old_value = sql_string (0, 0,
                                   "SELECT value FROM config_preferences"
-                                  " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+                                  " WHERE config = %llu"
                                   " AND type %s"
                                   " AND name = '%s'",
-                                  quoted_config,
+                                  config,
                                   nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
                                   quoted_name);
           if (old_value == NULL)
@@ -7494,23 +7845,21 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
   g_free (value);
 
   sql ("DELETE FROM config_preferences"
-       " WHERE config = (SELECT ROWID FROM configs WHERE name = '%s')"
+       " WHERE config = %llu"
        " AND type %s"
        " AND name = '%s'",
-       quoted_config,
+       config,
        nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
        quoted_name);
   sql ("INSERT INTO config_preferences"
        " (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE name = '%s'),"
-       " %s, '%s', '%s');",
-       quoted_config,
+       " VALUES (%llu, %s, '%s', '%s');",
+       config,
        nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'",
        quoted_name,
        quoted_value);
   sql ("COMMIT;");
 
-  g_free (quoted_config);
   g_free (quoted_name);
   g_free (quoted_value);
   return 0;
@@ -7519,39 +7868,40 @@ manage_set_config_preference (const char* config, const char* nvt, const char* n
 /**
  * @brief Set the NVT's selected for a single family of a config.
  *
- * @param[in]  config         Config name.
+ * @param[in]  config         Config.
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
  * @return 0 success, 1 config in use, -1 error.
  */
 int
-manage_set_config_nvts (const char* config, const char* family,
+manage_set_config_nvts (config_t config, const char* family,
                         GPtrArray* selected_nvts)
 {
   char *selector;
-  gchar *quoted_config, *quoted_family;
+  gchar *quoted_family, *quoted_selector;
   int new_nvt_count, old_nvt_count;
-
-  quoted_config = sql_quote (config);
 
   sql ("BEGIN EXCLUSIVE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = '%s'",
-               quoted_config))
+               "SELECT count(*) FROM tasks WHERE config ="
+               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               config))
     {
-      g_free (quoted_config);
       sql ("ROLLBACK;");
       return 1;
     }
 
   quoted_family = sql_quote (family);
 
-  selector = config_nvt_selector (config);
+  selector = config_id_nvt_selector (config);
   if (selector == NULL)
     /* The config should always have a selector. */
     return -1;
+
+  quoted_selector = sql_quote (selector);
+  free (selector);
 
   /* If the family is growing, then exclude all no's, otherwise the family
    * is static, so include all yes's. */
@@ -7567,10 +7917,10 @@ manage_set_config_nvts (const char* config, const char* family,
       /* Clear any NVT selectors for this family from the config. */
 
       sql ("DELETE FROM nvt_selectors"
-           " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
+           " WHERE name = '%s'"
            " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
            " AND family = '%s';",
-           quoted_config,
+           quoted_selector,
            quoted_family);
 
       /* Exclude all no's. */
@@ -7591,7 +7941,7 @@ manage_set_config_nvts (const char* config, const char* family,
                " VALUES ('%s', 1, "
                G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                ", '%s', '%s');",
-               quoted_config,
+               quoted_selector,
                quoted_oid,
                quoted_family);
           g_free (quoted_oid);
@@ -7607,10 +7957,10 @@ manage_set_config_nvts (const char* config, const char* family,
       /* Clear any NVT selectors for this family from the config. */
 
       sql ("DELETE FROM nvt_selectors"
-           " WHERE name = (SELECT nvt_selector FROM configs WHERE name = '%s')"
+           " WHERE name = '%s'"
            " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
            " AND family = '%s';",
-           quoted_config,
+           quoted_selector,
            quoted_family);
 
       /* Include all yes's. */
@@ -7629,7 +7979,7 @@ manage_set_config_nvts (const char* config, const char* family,
                    " VALUES ('%s', 0, "
                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    ", '%s', '%s');",
-                   quoted_config,
+                   quoted_selector,
                    quoted_nvt,
                    quoted_family);
               g_free (quoted_nvt);
@@ -7641,15 +7991,15 @@ manage_set_config_nvts (const char* config, const char* family,
   /* Update the cached config info. */
 
   sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
-       " WHERE name = '%s';",
+       " WHERE ROWID = %llu;",
        old_nvt_count,
        MAX (new_nvt_count, 0),
-       quoted_config);
+       config);
 
   sql ("COMMIT;");
 
-  g_free (quoted_config);
   g_free (quoted_family);
+  g_free (quoted_selector);
   return 0;
 }
 
@@ -7664,15 +8014,16 @@ manage_set_config_nvts (const char* config, const char* family,
  *
  * @return 0 success, -1 error.
  */
-int
-switch_representation (const char* config, int constraining)
+static int
+switch_representation (config_t config, int constraining)
 {
   char* selector;
   gchar *quoted_selector;
 
-  selector = config_nvt_selector (config);
+  selector = config_id_nvt_selector (config);
   if (selector == NULL)
     return -1;
+  free (selector);
   quoted_selector = sql_quote (selector);
 
   if (constraining)
@@ -7714,28 +8065,21 @@ switch_representation (const char* config, int constraining)
 
       /* Update the cached config info. */
 
-      {
-        gchar *quoted_config = sql_quote (config);
-        sql ("UPDATE configs SET families_growing = 0 WHERE name = '%s';",
-             quoted_config);
-        free (quoted_config);
-      }
+      sql ("UPDATE configs SET families_growing = 0 WHERE ROWID = %llu;",
+           config);
     }
   else
     {
       iterator_t families;
-      gchar *quoted_config;
 
       /* Currently generating from empty. */
 
       /* Add the all selector. */
 
-      quoted_config = sql_quote (config);
       sql ("INSERT INTO nvt_selectors"
            " (name, exclude, type, family_or_nvt)"
            " VALUES ('%s', 0, 0, 0);",
-           quoted_config);
-      g_free (quoted_config);
+           quoted_selector);
 
       /* Convert each family. */
 
@@ -7764,19 +8108,15 @@ switch_representation (const char* config, int constraining)
 
       /* Update the cached config info. */
 
-      {
-        gchar *quoted_config = sql_quote (config);
-        sql ("UPDATE configs SET families_growing = 1 WHERE name = '%s';",
-             quoted_config);
-        free (quoted_config);
-      }
+      sql ("UPDATE configs SET families_growing = 1 WHERE ROWID = %llu;",
+           config);
     }
 
-  free (selector);
   g_free (quoted_selector);
   return 0;
 }
 
+/** @todo Take config_t instead of name. */
 /**
  * @brief Initialise a config task iterator.
  *
@@ -7993,7 +8333,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_nvt_iterator (iterator_t* iterator, nvt_t nvt, const char* config,
+init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                    const char* family, int ascending, const char* sort_field)
 {
   if (nvt)
@@ -8116,7 +8456,42 @@ family_count ()
 }
 
 /**
+ * @brief Update the cached count and growing information in a config.
+ *
+ * It's up to the caller to organise a transaction.
+ *
+ * @param[in]  iterator  Config to update.
+ */
+static void
+update_config_cache (iterator_t *configs)
+{
+  const char *selector;
+  gchar *quoted_selector, *quoted_name;
+  int families_growing;
+
+  quoted_name = sql_quote (config_iterator_name (configs));
+  selector = config_iterator_nvt_selector (configs);
+  families_growing = nvt_selector_families_growing (selector);
+  quoted_selector = sql_quote (selector);
+
+  sql ("UPDATE configs"
+       " SET family_count = %i, nvt_count = %i,"
+       " families_growing = %i, nvts_growing = %i"
+       " WHERE name = '%s';",
+       nvt_selector_family_count (quoted_selector, families_growing),
+       nvt_selector_nvt_count (quoted_selector, NULL, families_growing),
+       families_growing,
+       nvt_selector_nvts_growing_2 (quoted_selector, families_growing),
+       quoted_name);
+
+  g_free (quoted_name);
+  g_free (quoted_selector);
+}
+
+/**
  * @brief Update the cached count and growing information in every config.
+ *
+ * Only consider configs for the current user.
  *
  * It's up to the caller to organise a transaction.
  *
@@ -8129,29 +8504,28 @@ update_config_caches (const char *name)
 
   init_config_iterator (&configs, name, 1, NULL);
   while (next (&configs))
-    {
-      const char *selector;
-      gchar *quoted_selector, *quoted_name;
-      int families_growing;
+    update_config_cache (&configs);
+  cleanup_iterator (&configs);
+}
 
-      quoted_name = sql_quote (config_iterator_name (&configs));
-      selector = config_iterator_nvt_selector (&configs);
-      families_growing = nvt_selector_families_growing (selector);
-      quoted_selector = sql_quote (selector);
+/**
+ * @brief Update count and growing info in every config across all users.
+ *
+ * It's up to the caller to organise a transaction.
+ */
+static void
+update_all_config_caches ()
+{
+  iterator_t configs;
 
-      sql ("UPDATE configs"
-           " SET family_count = %i, nvt_count = %i,"
-           " families_growing = %i, nvts_growing = %i"
-           " WHERE name = '%s';",
-           nvt_selector_family_count (quoted_selector, families_growing),
-           nvt_selector_nvt_count (quoted_selector, NULL, families_growing),
-           families_growing,
-           nvt_selector_nvts_growing_2 (quoted_selector, families_growing),
-           quoted_name);
-
-      g_free (quoted_name);
-      g_free (quoted_selector);
-    }
+  /* This must contain the same columns as init_config_iterator, in the same
+   * order. */
+  init_iterator (&configs,
+                 "SELECT name, nvt_selector, comment,"
+                 " families_growing, nvts_growing"
+                 " FROM configs;");
+  while (next (&configs))
+    update_config_cache (&configs);
   cleanup_iterator (&configs);
 }
 
@@ -8163,7 +8537,7 @@ update_config_caches (const char *name)
 void
 manage_complete_nvt_cache_update (int mode)
 {
-  update_config_caches (NULL);
+  update_all_config_caches ();
   if (mode == -2) sql ("COMMIT;");
 }
 
@@ -8363,6 +8737,8 @@ nvt_selector_nvts_growing (const char* selector)
   return ret;
 }
 
+/** @todo Move these config functions to the config section. */
+
 /**
  * @brief Get the NVT growth status of a config.
  *
@@ -8371,11 +8747,11 @@ nvt_selector_nvts_growing (const char* selector)
  * @return 1 growing, 0 static.
  */
 int
-config_nvts_growing (const char* config)
+config_nvts_growing (config_t config)
 {
   return sql_int (0, 0,
                   "SELECT nvts_growing FROM configs"
-                  " WHERE name = '%s' LIMIT 1;",
+                  " WHERE ROWID = %llu;",
                   config);
 }
 
@@ -8387,15 +8763,15 @@ config_nvts_growing (const char* config)
  * @return 1 growing, 0 static.
  */
 int
-config_families_growing (const char* config)
+config_families_growing (config_t config)
 {
-  /** @todo Quote. */
   return sql_int (0, 0,
                   "SELECT families_growing FROM configs"
-                  " WHERE name = '%s' LIMIT 1;",
+                  " WHERE ROWID = %llu;",
                   config);
 }
 
+/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Initialise an NVT selector iterator.
  *
@@ -8493,6 +8869,7 @@ nvt_selector_iterator_type (iterator_t* iterator)
   return ret;
 }
 
+/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the number of families included in a config.
  *
@@ -8510,6 +8887,7 @@ config_family_count (const char* config)
                   config);
 }
 
+/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the number of NVTs included in a config.
  *
@@ -8732,15 +9110,20 @@ nvt_selector_nvt_count (const char *selector,
  * @return Freshly allocated SELECT statement on success, or NULL on error.
  */
 static gchar*
-select_config_nvts (const char* config, const char* family, int ascending,
+select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
-  /** @todo sql_quote. */
-  char *selector = config_nvt_selector (config);
-  /** @todo Free. */
+  gchar *quoted_selector;
+  char *selector = config_id_nvt_selector (config);
   if (selector == NULL)
     /* The config should always have a selector. */
     return NULL;
+
+  /** @todo Free. */
+  quoted_selector = sql_quote (selector);
+  free (selector);
+
+  /** @todo Quote family. */
 
   if (config_nvts_growing (config))
     {
@@ -8756,7 +9139,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
 
           if (sql_int (0, 0,
                         "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                        selector)
+                        quoted_selector)
               == 1)
             /* There is one selector, it should be the all selector. */
             return g_strdup_printf
@@ -8778,7 +9161,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                        G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                        " AND family_or_nvt = '%s'"
                        ";",
-                       selector,
+                       quoted_selector,
                        family))
             /* The family is excluded, just iterate the NVT includes. */
             return g_strdup_printf
@@ -8795,7 +9178,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                      " AND nvt_selectors.exclude = 0"
                      " AND nvts.oid == nvt_selectors.family_or_nvt;",
                      family,
-                     config,
+                     quoted_selector,
                      family);
 
           /* The family is included.  Iterate all NVT's minus excluded NVT's. */
@@ -8820,7 +9203,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                    " AND nvts.oid == nvt_selectors.family_or_nvt;",
                    family,
                    family,
-                   config,
+                   quoted_selector,
                    family);
         }
       else
@@ -8835,7 +9218,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                          " AND type = "
                          G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                          " AND family_or_nvt = '%s';",
-                         selector,
+                         quoted_selector,
                          family);
 
           if (all)
@@ -8861,7 +9244,7 @@ select_config_nvts (const char* config, const char* family, int ascending,
                      " AND nvts.oid == nvt_selectors.family_or_nvt;",
                      family,
                      family,
-                     config,
+                     quoted_selector,
                      family);
 
           return g_strdup_printf
@@ -8878,18 +9261,17 @@ select_config_nvts (const char* config, const char* family, int ascending,
                    " AND nvt_selectors.exclude = 0"
                    " AND nvts.oid == nvt_selectors.family_or_nvt;",
                    family,
-                   config,
+                   quoted_selector,
                    family);
         }
     }
   else
     {
-      gchar *sql, *quoted_config, *quoted_family;
+      gchar *sql, *quoted_family;
 
       /* The number of NVT's is static.  Assume a simple list of NVT
        * includes. */
 
-      quoted_config = sql_quote (config);
       quoted_family = sql_quote (family);
       sql = g_strdup_printf
              ("SELECT oid, version, nvts.name, summary, description,"
@@ -8899,15 +9281,13 @@ select_config_nvts (const char* config, const char* family, int ascending,
               " WHERE nvts.family = '%s'"
               " AND nvt_selectors.exclude = 0"
               " AND nvt_selectors.type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-              " AND nvt_selectors.name ="
-              " (SELECT nvt_selector FROM configs WHERE configs.name = '%s')"
+              " AND nvt_selectors.name = '%s'"
               " AND nvts.oid = nvt_selectors.family_or_nvt"
               " ORDER BY nvts.%s %s;",
               quoted_family,
-              quoted_config,
+              quoted_selector,
               sort_field ? sort_field : "ROWID",
               ascending ? "ASC" : "DESC");
-      g_free (quoted_config);
       g_free (quoted_family);
 
       return sql;
@@ -9081,7 +9461,7 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
 /**
  * @brief Refresh NVT selection of a config from given families.
  *
- * @param[in]  config                Config name.
+ * @param[in]  config                Config.
  * @param[in]  growing_all_families  Growing families with all selection.
  * @param[in]  static_all_families   Static families with all selection.
  * @param[in]  growing_families      The rest of the growing families.
@@ -9090,26 +9470,23 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  * @return 0 success, config in use, -1 error.
  */
 int
-manage_set_config_families (const char* config,
+manage_set_config_families (config_t config,
                             GPtrArray* growing_all_families,
                             GPtrArray* static_all_families,
                             GPtrArray* growing_families,
                             int grow_families)
 {
   iterator_t families;
-  gchar *quoted_config, *quoted_selector;
+  gchar *quoted_selector;
   int constraining;
   char *selector;
 
   sql ("BEGIN EXCLUSIVE;");
 
-  quoted_config = sql_quote (config);
-
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = '%s'",
-               quoted_config))
+               "SELECT count(*) FROM tasks WHERE config = %llu;",
+               config))
     {
-      g_free (quoted_config);
       sql ("ROLLBACK;");
       return 1;
     }
@@ -9120,18 +9497,16 @@ manage_set_config_families (const char* config,
     {
       if (switch_representation (config, constraining))
         {
-          g_free (quoted_config);
           sql ("ROLLBACK;");
           return -1;
         }
       constraining = constraining == 0;
     }
 
-  selector = config_nvt_selector (config);
+  selector = config_id_nvt_selector (config);
   if (selector == NULL)
     {
       /* The config should always have a selector. */
-      g_free (quoted_config);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -9210,7 +9585,7 @@ manage_set_config_families (const char* config,
 
                   /* Add an include for every NVT in the family. */
 
-                  init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
+                  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, family, 1,
                                      NULL);
                   while (next (&nvts))
                     {
@@ -9249,12 +9624,12 @@ manage_set_config_families (const char* config,
 
               sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i,"
                    " nvts_growing = %i, family_count = family_count + %i"
-                   " WHERE name = '%s';",
+                   " WHERE ROWID = %llu;",
                    old_nvt_count,
                    new_nvt_count,
                    growing_all ? 1 : 0,
                    was_selected ? 1 : 0,
-                   quoted_config);
+                   config);
             }
           else
             {
@@ -9286,8 +9661,8 @@ manage_set_config_families (const char* config,
 
                       /* Add an exclude for every NVT in the family. */
 
-                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
-                                         NULL);
+                      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
+                                         family, 1, NULL);
                       while (next (&nvts))
                         nvt_selector_add (quoted_selector,
                                           nvt_iterator_oid (&nvts),
@@ -9299,9 +9674,9 @@ manage_set_config_families (const char* config,
 
                       sql ("UPDATE configs SET nvt_count = nvt_count - %i,"
                            " nvts_growing = 1"
-                           " WHERE name = '%s';",
+                           " WHERE ROWID = %llu;",
                            old_nvt_count,
-                           quoted_config);
+                           config);
                     }
                   else if (family_growing == 0)
                     {
@@ -9316,8 +9691,8 @@ manage_set_config_families (const char* config,
                       /* Remove any included NVT, add excludes for all
                        * other NVT's. */
 
-                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
-                                         NULL);
+                      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
+                                         family, 1, NULL);
                       while (next (&nvts))
                         if (nvt_selector_has (quoted_selector,
                                               nvt_iterator_oid (&nvts),
@@ -9337,8 +9712,8 @@ manage_set_config_families (const char* config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvts_growing = 1"
-                           " WHERE name = '%s';",
-                           quoted_config);
+                           " WHERE ROWID = %llu;",
+                           config);
                     }
                 }
               else
@@ -9366,12 +9741,12 @@ manage_set_config_families (const char* config,
                       sql ("UPDATE configs SET nvts_growing = %i,"
                            " nvt_count = nvt_count - %i,"
                            " family_count = family_count - 1"
-                           " WHERE name = '%s';",
+                           " WHERE ROWID = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
                                                         constraining),
                            old_nvt_count,
-                           quoted_config);
+                           config);
                     }
                   else if (family_growing)
                     {
@@ -9390,8 +9765,8 @@ manage_set_config_families (const char* config,
                       /* Remove any excluded NVT; add includes for all
                        * other NVT's. */
 
-                      init_nvt_iterator (&nvts, (nvt_t) 0, NULL, family, 1,
-                                         NULL);
+                      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0,
+                                         family, 1, NULL);
                       while (next (&nvts))
                         if (nvt_selector_has (quoted_selector,
                                               nvt_iterator_oid (&nvts),
@@ -9411,11 +9786,11 @@ manage_set_config_families (const char* config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvts_growing = %i"
-                           " WHERE name = '%s';",
+                           " WHERE ROWID = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
                                                         constraining),
-                           quoted_config);
+                           config);
                     }
                 }
             }
@@ -9428,7 +9803,6 @@ manage_set_config_families (const char* config,
   sql ("COMMIT;");
 
   g_free (quoted_selector);
-  g_free (quoted_config);
   return 0;
 }
 
@@ -9573,6 +9947,15 @@ nvt_preference_iterator_nvt (iterator_t* iterator)
   return NULL;
 }
 
+/** @todo Adjust omp.c callers, make config a config_t. */
+/**
+ * @brief Get the config value from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  config    Name of config.
+ *
+ * @return Freshly allocated config value.
+ */
 char*
 nvt_preference_iterator_config_value (iterator_t* iterator, const char* config)
 {
@@ -9620,6 +10003,12 @@ nvt_preference_count (const char *name)
 
 /* LSC Credentials. */
 
+/** @todo Add find_lsc_credential.
+ *
+ * The permission check will be easier and more solid if the lsc_credential
+ * user accesses these functions via an lsc_credential_t instead of via a name.
+ */
+
 /**
  * @brief Create an LSC credential.
  *
@@ -9640,6 +10029,7 @@ create_lsc_credential (const char* name, const char* comment,
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
+  gchar *quoted_user_name;
   void *rpm, *deb, *exe;
   gsize rpm_size, deb_size, exe_size;
   int i;
@@ -9650,6 +10040,7 @@ create_lsc_credential (const char* name, const char* comment,
 
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
+  assert (current_credentials.username);
 
   while (*s) if (!isalnum (*s++)) return 2;
 
@@ -9663,6 +10054,8 @@ create_lsc_credential (const char* name, const char* comment,
       return 1;
     }
 
+  quoted_user_name = sql_quote (current_credentials.username);
+
   if (given_password)
     {
       gchar *quoted_login = sql_quote (login);
@@ -9672,16 +10065,19 @@ create_lsc_credential (const char* name, const char* comment,
       /* Password-only credential. */
 
       sql ("INSERT INTO lsc_credentials"
-           " (name, login, password, comment, public_key, private_key, rpm,"
-           "  deb, exe)"
+           " (name, owner, login, password, comment, public_key, private_key,"
+           "  rpm, deb, exe)"
            " VALUES"
-           " ('%s', '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
+           " ('%s', (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
            quoted_name,
+           quoted_user_name,
            quoted_login,
            quoted_password,
            quoted_comment);
 
       g_free (quoted_name);
+      g_free (quoted_user_name);
       g_free (quoted_login);
       g_free (quoted_password);
       g_free (quoted_comment);
@@ -9707,6 +10103,7 @@ create_lsc_credential (const char* name, const char* comment,
                            &exe, &exe_size))
     {
       g_free (quoted_name);
+      g_free (quoted_user_name);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -9725,13 +10122,17 @@ create_lsc_credential (const char* name, const char* comment,
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, login, password, comment,"
+                                     " (name, owner, login, password, comment,"
                                      "  public_key, private_key, rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s', '%s', '%s', '%s',"
+                                     " ('%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.name = '%s'),"
+                                     "  '%s', '%s', '%s',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
+                                     quoted_user_name,
                                      quoted_login,
                                      quoted_password,
                                      quoted_comment);
@@ -9740,18 +10141,23 @@ create_lsc_credential (const char* name, const char* comment,
     else
       {
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, login, password, comment,"
+                                     " (name, owner, login, password, comment,"
                                      "  public_key, private_key, rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s', '%s', '%s', '',"
+                                     " ('%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.name = '%s'),"
+                                     "  '%s', '%s', '',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
+                                     quoted_user_name,
                                      quoted_login,
                                      quoted_password);
       }
 
     g_free (quoted_name);
+    g_free (quoted_user_name);
     g_free (quoted_login);
     g_free (quoted_password);
 
@@ -9940,13 +10346,21 @@ create_lsc_credential (const char* name, const char* comment,
  *
  * @param[in]  name  Name of LSC credential.
  *
- * @return 0 success, 1 fail because the LSC credential is in use, -1 error.
+ * @return 0 success, 1 fail because the LSC credential is in use,
+ *         2 access forbidden, -1 error.
  */
 int
 delete_lsc_credential (const char* name)
 {
   gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_owns ("lsc_credential", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
+    }
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM targets WHERE lsc_credential ="
@@ -9976,6 +10390,11 @@ void
 init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                               int ascending, const char* sort_field)
 {
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
   if (name && strlen (name))
     {
       gchar *quoted_name = sql_quote (name);
@@ -9986,8 +10405,11 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                      "  WHERE lsc_credential = lsc_credentials.ROWID)"
                      " FROM lsc_credentials"
                      " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
+                     quoted_user_name,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -9999,9 +10421,13 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                    " ORDER BY %s %s;",
+                   quoted_user_name,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (lsc_credential_iterator_name, 0);
@@ -10040,6 +10466,7 @@ lsc_credential_name (lsc_credential_t lsc_credential)
                      lsc_credential);
 }
 
+/** @todo Adjust omp.c caller, replace name with a config_t. */
 /**
  * @brief Initialise an LSC credential target iterator.
  *
@@ -10068,6 +10495,12 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 0);
 
 /* Agents. */
 
+/** @todo Add find_agent.
+ *
+ * The permission check will be easier and more solid if the agent user
+ * accesses these functions via an agent_t instead of via a name.
+ */
+
 /**
  * @brief Create an agent entry.
  *
@@ -10087,6 +10520,7 @@ create_agent (const char* name, const char* comment, const char* installer,
   gchar *quoted_comment;
 
   assert (strlen (name) > 0);
+  assert (current_credentials.username);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -10105,34 +10539,46 @@ create_agent (const char* name, const char* comment, const char* installer,
     int ret;
     sqlite3_stmt* stmt;
     gchar* formatted;
+    gchar* quoted_user_name;
+
+    quoted_user_name = sql_quote (current_credentials.username);
 
     if (comment)
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (name, comment, installer,"
+                                     " (name, owner, comment, installer,"
                                      "  howto_install, howto_use)"
                                      " VALUES"
-                                     " ('%s', '%s',"
+                                     " ('%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.name = '%s'),"
+                                     "  '%s',"
                                      "  $installer, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
+                                     quoted_user_name,
                                      quoted_comment);
         g_free (quoted_comment);
       }
     else
       {
         formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (name, comment, installer,"
+                                     " (name, owner, comment, installer,"
                                      "  howto_install, howto_use)"
                                      " VALUES"
-                                     " ('%s', '',"
+                                     " ('%s',"
+                                     "  (SELECT ROWID FROM users"
+                                     "   WHERE users.name = '%s'),"
+                                     "  '',"
                                      "  $installer, $howto_install,"
                                      "  $howto_use);",
-                                     quoted_name);
+                                     quoted_name,
+                                     quoted_user_name);
       }
 
     g_free (quoted_name);
+    g_free (quoted_user_name);
 
     tracef ("   sql: %s\n", formatted);
 
@@ -10243,20 +10689,26 @@ create_agent (const char* name, const char* comment, const char* installer,
  *
  * @param[in]  name  Name of agent.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 2 access forbidden, -1 error.
  */
 int
 delete_agent (const char* name)
 {
   gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
-
+  if (user_owns ("agent", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
+    }
   sql ("DELETE FROM agents WHERE name = '%s';", quoted_name);
   sql ("COMMIT;");
   g_free (quoted_name);
   return 0;
 }
 
+/** @todo Adjust omp.c caller, replace name with a agent_t. */
 /**
  * @brief Initialise an agent iterator.
  *
@@ -10269,6 +10721,11 @@ void
 init_agent_iterator (iterator_t* iterator, const char *name,
                      int ascending, const char* sort_field)
 {
+  gchar *quoted_user_name;
+
+  assert (current_credentials.username);
+
+  quoted_user_name = sql_quote (current_credentials.username);
   if (name && strlen (name))
     {
       gchar *quoted_name = sql_quote (name);
@@ -10277,8 +10734,11 @@ init_agent_iterator (iterator_t* iterator, const char *name,
                      " howto_install, howto_use"
                      " FROM agents"
                      " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
+                     quoted_user_name,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -10288,9 +10748,13 @@ init_agent_iterator (iterator_t* iterator, const char *name,
                    "SELECT name, comment, installer,"
                    " howto_install, howto_use"
                    " FROM agents"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
                    " ORDER BY %s %s;",
+                   quoted_user_name,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (agent_iterator_name, 0);

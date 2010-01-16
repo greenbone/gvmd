@@ -68,7 +68,7 @@ array_t *
 make_array ();
 
 void
-free_array (array_t *array);
+free_array (array_t *);
 
 
 /* Credentials. */
@@ -161,6 +161,7 @@ typedef enum
 } task_status_t;
 
 #ifdef TASKS_SQL
+typedef long long int config_t;
 typedef long long int escalator_t;
 typedef long long int task_t;
 typedef long long int result_t;
@@ -183,6 +184,7 @@ typedef struct
   gboolean done;
 } iterator_t;
 #else /* not TASKS_SQL */
+typedef long long int config_t;
 typedef long long int escalator_t;
 typedef long long int task_t;
 typedef long long int result_t;
@@ -355,7 +357,7 @@ char*
 task_comment (task_t);
 
 char*
-task_config (task_t);
+task_config_name (task_t);
 
 void
 set_task_config (task_t, const char*);
@@ -756,6 +758,9 @@ copy_config (const char*, const char*, const char*);
 int
 delete_config (const char*);
 
+gboolean
+find_config (const char*, config_t*);
+
 char *
 config_nvt_timeout (const char*, const char *);
 
@@ -780,14 +785,17 @@ config_iterator_families_growing (iterator_t*);
 char*
 config_nvt_selector (const char*);
 
+char*
+config_id_nvt_selector (config_t);
+
 int
 config_in_use (const char*);
 
 int
-config_families_growing (const char*);
+config_families_growing (config_t);
 
 int
-config_nvts_growing (const char*);
+config_nvts_growing (config_t);
 
 int
 config_family_count (const char*);
@@ -796,14 +804,14 @@ int
 config_nvt_count (const char*);
 
 int
-manage_set_config_preference (const char*, const char*, const char*,
+manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
 int
-manage_set_config_nvts (const char*, const char*, GPtrArray*);
+manage_set_config_nvts (config_t, const char*, GPtrArray*);
 
 int
-manage_set_config_families (const char*, GPtrArray*, GPtrArray*, GPtrArray*,
+manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*,
                             int);
 
 
@@ -828,7 +836,7 @@ gboolean
 find_nvt (const char*, nvt_t*);
 
 void
-init_nvt_iterator (iterator_t*, nvt_t, const char*, const char*, int,
+init_nvt_iterator (iterator_t*, nvt_t, config_t, const char*, int,
                    const char*);
 
 const char*
