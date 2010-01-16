@@ -5,6 +5,7 @@ CREATE TABLE meta (
 
 CREATE TABLE agents (
 	id integer PRIMARY KEY,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text UNIQUE NOT NULL,
 	comment text,
 	installer text,
@@ -31,6 +32,7 @@ CREATE TABLE escalator_method_data (
 
 CREATE TABLE escalators (
 	id integer PRIMARY KEY,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text UNIQUE NOT NULL,
 	comment text,
 	event integer,
@@ -52,6 +54,7 @@ CREATE TABLE nvt_selectors (
 
 CREATE TABLE targets (
 	id integer PRIMARY KEY,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text UNIQUE NOT NULL,
 	hosts text,
 	comment text,
@@ -59,6 +62,7 @@ CREATE TABLE targets (
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text UNIQUE NOT NULL,
 	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT,
 	comment text,
@@ -76,11 +80,11 @@ CREATE TABLE config_preferences (
 CREATE TABLE tasks (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text,
 	hidden integer,
 	comment text,
 	description text, -- RC file
-	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	run_status integer,
 	start_time date,
 	end_time date,
@@ -111,6 +115,7 @@ CREATE TABLE results (
 CREATE TABLE reports (
 	id integer PRIMARY KEY,
 	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	hidden integer,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
 	date date,
@@ -157,6 +162,7 @@ CREATE TABLE nvts (
 
 CREATE TABLE lsc_credentials (
 	id integer PRIMARY KEY,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text UNIQUE NOT NULL,
 	login text,
 	password text,

@@ -1,4 +1,10 @@
-2010-01-15  Matthew Mundell <matthew.mundell@intevation.de>
+2010-01-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* doc/db_postgres.sql (agents, escalators, targets, configs, reports)
+	(lsc_credentials): Add owner field.
+	(tasks): Move owner up in definition.
+
+2010-01-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add ownership of targets, configs, lsc_credentials, escalators, reports
 	and agents.  Hence increase database version to 9.  Add database
