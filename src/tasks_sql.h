@@ -3584,6 +3584,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       result_t result;
       report_t report;
 
+      /* Setup a dummy user, so that find_task will work. */
+      current_credentials.username = "";
+
       if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
         g_warning ("%s: error while finding example task", __FUNCTION__);
       else if (task == 0)
@@ -3613,6 +3616,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                " 'Tue Aug 25 21:52:15 2009')",
                report);
         }
+
+      current_credentials.username = NULL;
     }
 
   /* Set requested and running tasks to stopped. */

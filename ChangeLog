@@ -1,5 +1,9 @@
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Setup dummy user around find_task.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (config_nvt_selector): Make static.
 	(task_config): New function.
 
