@@ -784,6 +784,12 @@ sync_buffer ()
   return 0;
 }
 
+/** @todo Complete ISO to UTF-8 hack.
+ *
+ * In all of these "messages" parsing functions, convert to UTF before
+ * passing into rest of Manager.
+ */
+
 /**
  * @brief Parse the final field of a certificate in a certificate list.
  *
@@ -1479,7 +1485,21 @@ process_otp_scanner_input ()
           tracef ("   scanner message: %s\n", message);
 
           /* Strip leading and trailing whitespace. */
+#if 0
+          /* What to do when the scanner sends UTF-8. */
           field = openvas_strip_space (message, match);
+#else
+          /* ISO-8859-1 input to UTF-8 hack. */
+          {
+            gsize size_dummy;
+            char* iso_field = openvas_strip_space (message, match);
+            tracef ("   scanner ISO field: %s\n", iso_field);
+            field = g_convert (iso_field, match - message - 1,
+                               "UTF-8", "ISO_8859-1",
+                               NULL, &size_dummy, NULL);
+            if (field == NULL) abort (); // FIX
+          }
+#endif
 
           tracef ("   scanner old state %i\n", scanner_state);
           tracef ("   scanner field: %s\n", field);
@@ -1487,27 +1507,28 @@ process_otp_scanner_input ()
             {
               case SCANNER_BYE:
                 if (strcasecmp ("BYE", field))
-                  return -1;
+                  goto return_error;
                 /* It's up to the caller to set the init state, as the
                  * caller must flush the ACK. */
                 set_scanner_state (SCANNER_DONE);
                 switch (parse_scanner_done (&messages))
                   {
                     case  0:
-                      if (sync_buffer ()) return -1;
+                      if (sync_buffer ()) goto return_error;
                       scanner_active = 0;
-                      if (acknowledge_bye ()) return -1;
-                      return 1;
-                    case -1: return -1;
+                      if (acknowledge_bye ()) goto return_error;
+                      goto return_bye;
+                    case -1: goto return_error;
                     case -2:
                       /* Need more input. */
-                      if (sync_buffer ()) return -1;
-                      return 0;
+                      if (sync_buffer ()) goto return_error;
+                      goto return_need_more;
                   }
                 break;
               case SCANNER_CERTIFICATE_FINGERPRINT:
                 {
-                  if (strlen (field) == 0 && field[1] == '|')
+                  /* Use match[1] instead of field[1] for UTF-8 hack. */
+                  if (strlen (field) == 0 && match[1] == '|')
                     {
                       certificates_free (scanner.certificates);
                       scanner.certificates = current_certificates;
@@ -1515,11 +1536,11 @@ process_otp_scanner_input ()
                       set_scanner_state (SCANNER_DONE);
                       switch (parse_scanner_done (&messages))
                         {
-                          case -1: return -1;
+                          case -1: goto return_error;
                           case -2:
                             /* Need more input. */
-                            if (sync_buffer ()) return -1;
-                            return 0;
+                            if (sync_buffer ()) goto return_error;
+                            goto return_need_more;
                         }
                       break;
                     }
@@ -1539,8 +1560,8 @@ process_otp_scanner_input ()
                     {
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -1621,11 +1642,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -1695,11 +1716,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -1766,11 +1787,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -1837,11 +1858,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -1908,26 +1929,27 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
               case SCANNER_PLUGIN_DEPENDENCY_NAME:
                 {
-                  if (strlen (field) == 0 && field[1] == '|')
+                  /* Use match[1] instead of field[1] for UTF-8 hack. */
+                  if (strlen (field) == 0 && match[1] == '|')
                     {
                       set_scanner_state (SCANNER_DONE);
                       switch (parse_scanner_done (&messages))
                         {
-                          case -1: return -1;
+                          case -1: goto return_error;
                           case -2:
                             /* Need more input. */
-                            if (sync_buffer ()) return -1;
-                            return 0;
+                            if (sync_buffer ()) goto return_error;
+                            goto return_need_more;
                         }
                       break;
                     }
@@ -1938,8 +1960,8 @@ process_otp_scanner_input ()
                     if (parse_scanner_plugin_dependency_dependency (&messages))
                       {
                         /* Need more input for a <|>. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                       }
                   }
                   break;
@@ -1951,14 +1973,15 @@ process_otp_scanner_input ()
                   if (parse_scanner_plugin_dependency_dependency (&messages))
                     {
                       /* Need more input for a <|>. */
-                      if (sync_buffer ()) return -1;
-                      return 0;
+                      if (sync_buffer ()) goto return_error;
+                      goto return_need_more;
                     }
                   break;
                 }
               case SCANNER_PLUGIN_LIST_OID:
                 {
-                  if (strlen (field) == 0 && field[1] == '|')
+                  /* Use match[1] instead of field[1] for UTF-8 hack. */
+                  if (strlen (field) == 0 && match[1] == '|')
                     {
                       set_scanner_state (SCANNER_DONE);
                       switch (parse_scanner_done (&messages))
@@ -1973,11 +1996,11 @@ process_otp_scanner_input ()
                                 set_nvts_md5sum (scanner.plugins_md5);
                               }
                             break;
-                          case -1: return -1;
+                          case -1: goto return_error;
                           case -2:
                             /* Need more input. */
-                            if (sync_buffer ()) return -1;
-                            return 0;
+                            if (sync_buffer ()) goto return_error;
+                            goto return_need_more;
                         }
                       break;
                     }
@@ -2064,8 +2087,8 @@ process_otp_scanner_input ()
                     {
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2082,13 +2105,13 @@ process_otp_scanner_input ()
                         if (scanner_init_state == SCANNER_INIT_SENT_PASSWORD)
                           set_scanner_init_state (SCANNER_INIT_GOT_MD5SUM);
                         else if (acknowledge_md5sum_info ())
-                          return -1;
+                          goto return_error;
                         break;
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2125,26 +2148,27 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
               case SCANNER_PREFERENCE_NAME:
                 {
-                  if (strlen (field) == 0 && field[1] == '|')
+                  /* Use match[1] instead of field[1] for UTF-8 hack. */
+                  if (strlen (field) == 0 && match[1] == '|')
                     {
                       set_scanner_state (SCANNER_DONE);
                       switch (parse_scanner_done (&messages))
                         {
-                          case -1: return -1;
+                          case -1: goto return_error;
                           case -2:
                             /* Need more input. */
-                            if (sync_buffer ()) return -1;
-                            return 0;
+                            if (sync_buffer ()) goto return_error;
+                            goto return_need_more;
                         }
                       if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
                           || scanner_init_state
@@ -2158,7 +2182,7 @@ process_otp_scanner_input ()
                           /* Return 1, as though the scanner sent BYE. */
                           // FIX should perhaps exit more formally with scanner
                           scanner_active = 0;
-                          return 1;
+                          goto return_bye;
                         }
                       break;
                     }
@@ -2169,8 +2193,8 @@ process_otp_scanner_input ()
                       {
                         case -2:
                           /* Need more input. */
-                          if (sync_buffer ()) return -1;
-                          return 0;
+                          if (sync_buffer ()) goto return_error;
+                          goto return_need_more;
                       }
                     g_free (current_scanner_preference);
                     current_scanner_preference = NULL;
@@ -2182,11 +2206,11 @@ process_otp_scanner_input ()
                 set_scanner_state (SCANNER_DONE);
                 switch (parse_scanner_done (&messages))
                   {
-                    case -1: return -1;
+                    case -1: goto return_error;
                     case -2:
                       /* Need more input. */
-                      if (sync_buffer ()) return -1;
-                      return 0;
+                      if (sync_buffer ()) goto return_error;
+                      goto return_need_more;
                   }
                 break;
               case SCANNER_SERVER:
@@ -2206,11 +2230,11 @@ process_otp_scanner_input ()
                            * so adjust input. */
                           input = messages;
                           break;
-                        case -1: return -1;
+                        case -1: goto return_error;
                         case -2:
                           /* Need more input. */
-                          if (sync_buffer ()) return -1;
-                          return 0;
+                          if (sync_buffer ()) goto return_error;
+                          goto return_need_more;
                       }
                   }
                 else if (strcasecmp ("FILE_ACCEPTED", field) == 0)
@@ -2218,11 +2242,11 @@ process_otp_scanner_input ()
                     set_scanner_state (SCANNER_DONE);
                     switch (parse_scanner_done (&messages))
                       {
-                        case -1: return -1;
+                        case -1: goto return_error;
                         case -2:
                           /* Need more input. */
-                          if (sync_buffer ()) return -1;
-                          return 0;
+                          if (sync_buffer ()) goto return_error;
+                          goto return_need_more;
                       }
                   }
                 else if (strcasecmp ("HOLE", field) == 0)
@@ -2259,8 +2283,8 @@ process_otp_scanner_input ()
                             case -1: break;        /* At final <|>. */
                             case -2:
                               /* Need more input. */
-                              if (sync_buffer ()) return -1;
-                              return 0;
+                              if (sync_buffer ()) goto return_error;
+                              goto return_need_more;
                           }
                         break;
                       }
@@ -2278,7 +2302,7 @@ process_otp_scanner_input ()
                   {
                     tracef ("New scanner command to implement: %s\n",
                             field);
-                    return -1;
+                    goto return_error;
                   }
                 break;
               case SCANNER_STATUS_ATTACK_STATE:
@@ -2318,11 +2342,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2348,11 +2372,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2391,11 +2415,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2420,11 +2444,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2445,11 +2469,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2485,11 +2509,11 @@ process_otp_scanner_input ()
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
-                      case -1: return -1;
+                      case -1: goto return_error;
                       case -2:
                         /* Need more input. */
-                        if (sync_buffer ()) return -1;
-                        return 0;
+                        if (sync_buffer ()) goto return_error;
+                        goto return_need_more;
                     }
                   break;
                 }
@@ -2498,17 +2522,17 @@ process_otp_scanner_input ()
                 tracef ("   switch t\n");
                 tracef ("   cmp %i\n", strcasecmp ("SERVER", field));
                 if (strcasecmp ("SERVER", field))
-                  return -1;
+                  goto return_error;
                 set_scanner_state (SCANNER_SERVER);
                 /* Look for any newline delimited scanner commands. */
                 switch (parse_scanner_server (&messages))
                   {
                     case  0: break;        /* Found newline delimited command. */
-                    case -1: return -1;    /* Error. */
+                    case -1: goto return_error;    /* Error. */
                     case -2:
                       /* Need more input. */
-                      if (sync_buffer ()) return -1;
-                      return 0;
+                      if (sync_buffer ()) goto return_error;
+                      goto return_need_more;
                     case -3: break;        /* Next <|> is before next \n. */
                     case -4: break;        /* Failed to find \n, try for <|>. */
                   }
@@ -2516,6 +2540,23 @@ process_otp_scanner_input ()
             }
 
           tracef ("   scanner new state: %i\n", scanner_state);
+
+          /* The jumps are for the UTF-8 hack. */
+
+          g_free (field);
+          continue;
+
+         return_error:
+          g_free (field);
+          return -1;
+
+         return_need_more:
+          g_free (field);
+          return 0;
+
+         return_bye:
+          g_free (field);
+          return 1;
         }
       else
         {

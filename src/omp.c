@@ -908,24 +908,9 @@ send_to_client (const char* msg)
       return TRUE;
     }
 
-#if 1
-  /** @todo FIX Temp hack to catch ISO chars sent by scanner. */
-  {
-    gsize size_dummy;
-    gchar* msg_utf8 = msg ? g_convert (msg, strlen (msg),
-                                       "UTF-8", "ISO_8859-1",
-                                       NULL, &size_dummy, NULL)
-                          : NULL;
-    memmove (to_client + to_client_end, msg_utf8, strlen (msg_utf8));
-    tracef ("-> client: %s\n", msg_utf8);
-    to_client_end += strlen (msg_utf8);
-    g_free (msg_utf8);
-  }
-#else /* 1 */
   memmove (to_client + to_client_end, msg, strlen (msg));
   tracef ("-> client: %s\n", msg);
   to_client_end += strlen (msg);
-#endif /* not 1 */
   return FALSE;
 }
 
@@ -2904,19 +2889,12 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
 {
   certificate_t* cert = (certificate_t*) cert_gp;
   gchar* msg;
-  gsize size_dummy;
 
   const char* public_key = certificate_public_key (cert);
   const char* owner = certificate_owner (cert);
-  /* FIX The g_convert is a temp hack. */
-  gchar* owner_utf8 = owner ? g_convert (owner, strlen (owner),
-                                         "UTF-8", "ISO_8859-1",
-                                         NULL, &size_dummy, NULL)
-                            : NULL;
-  gchar* owner_text = owner_utf8
-                      ? g_markup_escape_text (owner_utf8, -1)
+  gchar* owner_text = owner
+                      ? g_markup_escape_text (owner, -1)
                       : g_strdup ("");
-  g_free (owner_utf8);
 
   msg = g_strdup_printf ("<certificate>"
                          "<fingerprint>%s</fingerprint>"
@@ -2926,7 +2904,7 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
                          "<public_key>%s</public_key>"
                          "</certificate>",
                          certificate_fingerprint (cert),
-                         owner_utf8,
+                         owner_text,
                          certificate_trusted (cert) ? "trusted" : "notrust",
                          strlen (public_key),
                          public_key);
@@ -3002,21 +2980,15 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 }
 
 /**
- * @brief Define a code snippet for send_plugin.
+ * @brief Define a code snippet for send_nvt.
  *
  * @param  x  Prefix for names in snippet.
  */
 #define DEF(x)                                                    \
       const char* x = nvt_iterator_ ## x (nvts);                  \
-      /* FIX The g_convert is a temp hack. */                     \
-      gchar* x ## _utf8 = x ? g_convert (x, strlen (x),           \
-                                         "UTF-8", "ISO_8859-1",   \
-                                         NULL, &dummy, NULL)      \
-                            : NULL;                               \
-      gchar* x ## _text = x ## _utf8                              \
-                          ? g_markup_escape_text (x ## _utf8, -1) \
-                          : g_strdup ("");                        \
-      g_free (x ## _utf8);
+      gchar* x ## _text = x                                       \
+                          ? g_markup_escape_text (x, -1)          \
+                          : g_strdup ("");
 
 /**
  * @brief Send XML for an NVT.
@@ -3038,7 +3010,6 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
-      gsize dummy;
 
 #ifndef S_SPLINT_S
       DEF (copyright);

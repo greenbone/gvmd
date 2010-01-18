@@ -1,5 +1,19 @@
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Hack ISO-8859-1 to UTF-8 conversion on OTP input.  Covers most cases.
+
+	* src/otp.c (process_otp_scanner_input): In the <|> loop convert field
+	to UTF-8 before processing.  As a consequence jump instead of returning
+	to ease freeing the converted string, and use "match" instead of "field"
+	to read past the end of the field.
+
+	* src/omp.c (send_to_client, send_certificate, DEF, send_nvt): Remove
+	previous UTF-8 hacks.
+
+	* src/manage.c: Add query about sending ISO-8859-1 to server.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Setup dummy user around find_task.
 
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>

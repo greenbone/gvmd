@@ -818,6 +818,8 @@ send_task_file (task_t task, const char* file)
   return 0;
 }
 
+/** @todo g_convert back to ISO-8559-1 for scanner? */
+
 /**
  * @brief Start a task.
  *
