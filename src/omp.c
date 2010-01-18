@@ -4340,9 +4340,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   real_name
                                    = nvt_preference_iterator_real_name (&prefs);
                                   type = nvt_preference_iterator_type (&prefs);
-                                  /** @todo Pass config_t. */
                                   value = nvt_preference_iterator_config_value
-                                           (&prefs, current_name);
+                                           (&prefs, config);
                                   nvt = nvt_preference_iterator_nvt (&prefs);
                                   if (nvt) oid = nvt_oid (nvt);
 
@@ -8159,6 +8158,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (current_int_3 || current_int_4)
                 {
                   iterator_t prefs;
+                  config_t config = config_iterator_config (&configs);
+
+                  assert (config);
 
                   /** @todo Similar to block in CLIENT_GET_NVT_DETAILS. */
 
@@ -8173,9 +8175,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       real_name
                        = nvt_preference_iterator_real_name (&prefs);
                       type = nvt_preference_iterator_type (&prefs);
-                      /** @todo Pass config_t. */
                       value = nvt_preference_iterator_config_value
-                               (&prefs, config_name);
+                               (&prefs, config);
                       nvt = nvt_preference_iterator_nvt (&prefs);
                       if (nvt) oid = nvt_oid (nvt);
 

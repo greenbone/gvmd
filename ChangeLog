@@ -1,5 +1,18 @@
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_config_iterator): Add ROWID to selection.  Adjust
+	column numbers in callers.
+	(config_iterator_config): New function.
+	(nvt_preference_iterator_config_value): Change config parameter to a
+	config_t.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS
+	pass config_t to nvt_preference_iterator_config_value.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Init current user around
 	set_task_run_status, so event check will work.
 	(task_owner_name): New function.

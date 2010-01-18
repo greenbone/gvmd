@@ -3011,7 +3011,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * If there is a current user select that user's tasks, otherwise select
  * all tasks.
  *
- *
  * @param[in]  iterator    Task iterator.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
@@ -7418,7 +7417,7 @@ init_config_iterator (iterator_t* iterator, const char *name,
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
-      sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
+      sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
                              " families_growing, nvts_growing"
                              " FROM configs"
                              " WHERE name = '%s'"
@@ -7432,7 +7431,7 @@ init_config_iterator (iterator_t* iterator, const char *name,
       g_free (quoted_name);
     }
   else
-    sql = g_strdup_printf ("SELECT name, nvt_selector, comment,"
+    sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
                            " families_growing, nvts_growing"
                            " FROM configs"
                            " WHERE ((owner IS NULL) OR (owner ="
@@ -7446,15 +7445,22 @@ init_config_iterator (iterator_t* iterator, const char *name,
   g_free (sql);
 }
 
-DEF_ACCESS (config_iterator_name, 0);
-DEF_ACCESS (config_iterator_nvt_selector, 1);
+config_t
+config_iterator_config (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (config_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+DEF_ACCESS (config_iterator_name, 1);
+DEF_ACCESS (config_iterator_nvt_selector, 2);
 
 const char*
 config_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
 }
 
@@ -7463,7 +7469,7 @@ config_iterator_families_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
   return ret;
 }
 
@@ -7472,7 +7478,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
 
@@ -9958,32 +9964,27 @@ nvt_preference_iterator_nvt (iterator_t* iterator)
   return NULL;
 }
 
-/** @todo Adjust omp.c callers, make config a config_t. */
 /**
  * @brief Get the config value from an NVT preference iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  config    Name of config.
+ * @param[in]  config    Config.
  *
  * @return Freshly allocated config value.
  */
 char*
-nvt_preference_iterator_config_value (iterator_t* iterator, const char* config)
+nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
 {
-  gchar *quoted_config, *quoted_name, *value;
+  gchar *quoted_name, *value;
   const char *ret;
   if (iterator->done) return NULL;
 
-  quoted_config = sql_quote (config);
   quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
   value = sql_string (0, 0,
                       "SELECT value FROM config_preferences"
-                      " WHERE config ="
-                      " (SELECT ROWID FROM configs WHERE name = '%s')"
-                      " AND name = '%s';",
-                      quoted_config,
+                      " WHERE config = %llu AND name = '%s';",
+                      config,
                       quoted_name);
-  g_free (quoted_config);
   g_free (quoted_name);
   if (value) return value;
 

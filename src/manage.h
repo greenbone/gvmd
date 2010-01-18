@@ -770,6 +770,9 @@ config_nvt_timeout (config_t, const char *);
 void
 init_config_iterator (iterator_t*, const char*, int, const char*);
 
+config_t
+config_iterator_config (iterator_t*);
+
 const char*
 config_iterator_name (iterator_t*);
 
@@ -956,7 +959,7 @@ const char*
 nvt_preference_iterator_value (iterator_t*);
 
 char*
-nvt_preference_iterator_config_value (iterator_t*, const char*);
+nvt_preference_iterator_config_value (iterator_t*, config_t);
 
 char*
 nvt_preference_iterator_real_name (iterator_t*);
