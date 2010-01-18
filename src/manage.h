@@ -768,7 +768,7 @@ char *
 config_nvt_timeout (config_t, const char *);
 
 void
-init_config_iterator (iterator_t*, const char*, int, const char*);
+init_config_iterator (iterator_t*, config_t, int, const char*);
 
 config_t
 config_iterator_config (iterator_t*);

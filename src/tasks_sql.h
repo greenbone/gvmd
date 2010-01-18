@@ -87,7 +87,7 @@ static int
 insert_rc_into_config (config_t, const char*, char*);
 
 static void
-update_config_caches (const char*);
+update_config_caches (config_t);
 
 static void
 update_all_config_caches ();
@@ -6719,7 +6719,7 @@ create_config (const char* proposed_name, const char* comment,
 
   /* Update family and NVT count caches. */
 
-  update_config_caches (candidate_name);
+  update_config_caches (config);
 
   sql ("COMMIT;");
   g_free (quoted_candidate_name);
@@ -7409,12 +7409,12 @@ delete_config (const char* name)
  * @brief Initialise a config iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of config.  NULL for all.
+ * @param[in]  config      Config.  0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_config_iterator (iterator_t* iterator, const char *name,
+init_config_iterator (iterator_t* iterator, config_t config,
                       int ascending, const char* sort_field)
 
 {
@@ -7423,22 +7423,18 @@ init_config_iterator (iterator_t* iterator, const char *name,
   assert (current_credentials.username);
 
   quoted_user_name = sql_quote (current_credentials.username);
-  if (name)
-    {
-      gchar *quoted_name = sql_quote (name);
-      sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
-                             " families_growing, nvts_growing"
-                             " FROM configs"
-                             " WHERE name = '%s'"
-                             " AND ((owner IS NULL) OR (owner ="
-                             " (SELECT ROWID FROM users WHERE users.name = '%s')))"
-                             " ORDER BY %s %s;",
-                             quoted_name,
-                             quoted_user_name,
-                             sort_field ? sort_field : "ROWID",
-                             ascending ? "ASC" : "DESC");
-      g_free (quoted_name);
-    }
+  if (config)
+    sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
+                           " families_growing, nvts_growing"
+                           " FROM configs"
+                           " WHERE ROWID = %llu"
+                           " AND ((owner IS NULL) OR (owner ="
+                           " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                           " ORDER BY %s %s;",
+                           config,
+                           quoted_user_name,
+                           sort_field ? sort_field : "ROWID",
+                           ascending ? "ASC" : "DESC");
   else
     sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
                            " families_growing, nvts_growing"
@@ -8511,14 +8507,14 @@ update_config_cache (iterator_t *configs)
  *
  * It's up to the caller to organise a transaction.
  *
- * @param[in]  name  Name of config to update.  NULL for all.
+ * @param[in]  config  Config to update.  0 for all.
  */
 static void
-update_config_caches (const char *name)
+update_config_caches (config_t config)
 {
   iterator_t configs;
 
-  init_config_iterator (&configs, name, 1, NULL);
+  init_config_iterator (&configs, config, 1, NULL);
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);

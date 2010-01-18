@@ -1,5 +1,16 @@
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (update_config_caches, init_config_iterator): Change
+	config type to config_t.  Update callers.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS if the
+	request includes a config then find config and pass the config_t to
+	init_config_iterator instead of the config name.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: (CONFIG_ID_FULL_AND_FAST)
 	(CONFIG_ID_FULL_AND_FAST_ULTIMATE, CONFIG_ID_FULL_AND_VERY_DEEP)
 	(CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE): New defines.
