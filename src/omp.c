@@ -4281,6 +4281,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           return;
                         }
                     }
+                  else if (current_name /* Attribute config. */
+                           && find_config (current_name, &config))
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("get_nvt_details"));
+                  else if (current_name && (config == 0))
+                    {
+                      if (send_find_error_to_client ("get_nvt_details",
+                                                     "config",
+                                                     current_name))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                    }
                   else
                     {
                       iterator_t nvts;
@@ -4296,9 +4310,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         {
                           char *timeout = NULL;
 
-                          if (current_name) /* Attribute config. */
-                            /** @todo find_config (current_name)... */
-                            timeout = config_nvt_timeout (current_name,
+                          if (config)
+                            timeout = config_nvt_timeout (config,
                                                           nvt_iterator_oid
                                                            (&nvts));
 
@@ -4307,7 +4320,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               error_send_to_client (error);
                               return;
                             }
-                          if (current_name) /* Attribute config. */
+                          if (config)
                             {
                               iterator_t prefs;
                               const char *nvt_name = nvt_iterator_name (&nvts);
@@ -4327,6 +4340,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   real_name
                                    = nvt_preference_iterator_real_name (&prefs);
                                   type = nvt_preference_iterator_type (&prefs);
+                                  /** @todo Pass config_t. */
                                   value = nvt_preference_iterator_config_value
                                            (&prefs, current_name);
                                   nvt = nvt_preference_iterator_nvt (&prefs);
@@ -4399,7 +4413,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   iterator_t nvts;
 
-
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<get_nvt_details_response"
                     " status=\"" STATUS_OK "\""
@@ -4425,13 +4438,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       int pref_count = -1;
                       char *timeout = NULL;
 
-                      if (current_name) /* Attribute config. */
-                        timeout = config_nvt_timeout (current_name,
-                                                      nvt_iterator_oid
-                                                       (&nvts));
+                      if (config)
+                        timeout = config_nvt_timeout (config,
+                                                      nvt_iterator_oid (&nvts));
 
-                      if (current_name       /* Attribute config. */
-                          || current_format) /* Attribute family. */
+                      if (config || current_format) /* Attribute family. */
                         {
                           const char *nvt_name = nvt_iterator_name (&nvts);
                           pref_count = nvt_preference_count (nvt_name);
@@ -8162,6 +8173,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       real_name
                        = nvt_preference_iterator_real_name (&prefs);
                       type = nvt_preference_iterator_type (&prefs);
+                      /** @todo Pass config_t. */
                       value = nvt_preference_iterator_config_value
                                (&prefs, config_name);
                       nvt = nvt_preference_iterator_nvt (&prefs);

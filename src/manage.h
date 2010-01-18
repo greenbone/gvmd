@@ -762,7 +762,7 @@ gboolean
 find_config (const char*, config_t*);
 
 char *
-config_nvt_timeout (const char*, const char *);
+config_nvt_timeout (config_t, const char *);
 
 void
 init_config_iterator (iterator_t*, const char*, int, const char*);

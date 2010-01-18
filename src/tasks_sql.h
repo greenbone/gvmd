@@ -6721,37 +6721,24 @@ config_preference (config_t config, const char *type, const char *preference)
                        config, preference);
 }
 
-/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the timeout value for an NVT in a config.
  *
- * @param[in]  config  Config name.
+ * @param[in]  config  Config.
  * @param[in]  oid     ID of NVT.
  *
  * @return Newly allocated timeout if set for the NVT, else NULL.
  */
 char *
-config_nvt_timeout (const char *config, const char *oid)
+config_nvt_timeout (config_t config, const char *oid)
 {
-  char *ret;
-  gchar *quoted_config = sql_quote (config);
-
-  if (user_owns ("config", quoted_config) == 0)
-    {
-      g_free (quoted_config);
-      return NULL;
-    }
-
-  ret = sql_string (0, 0,
-                    "SELECT value FROM config_preferences"
-                    " WHERE config ="
-                    " (SELECT ROWID FROM configs where name = '%s')"
-                    " AND type = 'SERVER_PREFS'"
-                    " AND name = 'timeout.%s';",
-                    quoted_config,
-                    oid);
-  g_free (quoted_config);
-  return ret;
+  return sql_string (0, 0,
+                     "SELECT value FROM config_preferences"
+                     " WHERE config = %llu"
+                     " AND type = 'SERVER_PREFS'"
+                     " AND name = 'timeout.%s';",
+                     config,
+                     oid);
 }
 
 /**

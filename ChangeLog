@@ -1,3 +1,13 @@
+2010-01-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (config_nvt_timeout): Change config from name to
+	config_t.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS
+	find config if given, and pass config_t to config_nvt_timeout.
+
 2010-01-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* doc/db_postgres.sql (agents, escalators, targets, configs, reports)
