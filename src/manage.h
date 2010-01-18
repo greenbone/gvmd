@@ -351,6 +351,9 @@ int
 task_uuid (task_t, /*@out@*/ char **);
 
 char*
+task_owner_name (task_t);
+
+char*
 task_name (task_t);
 
 char*

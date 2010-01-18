@@ -3008,6 +3008,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Initialise a task iterator.
  *
+ * If there is a current user select that user's tasks, otherwise select
+ * all tasks.
+ *
+ *
  * @param[in]  iterator    Task iterator.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
@@ -3612,13 +3616,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_REQUESTED:
+            /* Set the current user, for event checks. */
+            current_credentials.username = task_owner_name (index);
             set_task_run_status (index, TASK_STATUS_STOPPED);
+            free (current_credentials.username);
             break;
           default:
             break;
         }
     }
   cleanup_task_iterator (&iterator);
+  current_credentials.username = NULL;
 
   /* Set requested and running reports to stopped. */
 
@@ -3764,6 +3772,22 @@ task_uuid (task_t task, char ** id)
                     "SELECT uuid FROM tasks WHERE ROWID = %llu;",
                     task);
   return 0;
+}
+
+/**
+ * @brief Return the name of the owner of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Newly allocated user name.
+ */
+char*
+task_owner_name (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM users WHERE ROWID ="
+                     " (SELECT owner FROM tasks WHERE ROWID = %llu);",
+                     task);
 }
 
 /**

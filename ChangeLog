@@ -1,4 +1,12 @@
-2010-01-17  Matthew Mundell <matthew.mundell@intevation.de>
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (init_manage): Init current user around
+	set_task_run_status, so event check will work.
+	(task_owner_name): New function.
+
+	* src/manage.h: Update header accordingly.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (config_nvt_timeout): Change config from name to
 	config_t.
