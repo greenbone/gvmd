@@ -501,7 +501,7 @@ int
 config_file_iterator_length (iterator_t*);
 
 void
-init_config_task_iterator (iterator_t*, const char *, int);
+init_config_task_iterator (iterator_t*, config_t, int);
 
 const char*
 config_task_iterator_name (iterator_t*);
@@ -795,7 +795,7 @@ char*
 config_id_nvt_selector (config_t);
 
 int
-config_in_use (const char*);
+config_in_use (config_t);
 
 int
 config_families_growing (config_t);
@@ -804,10 +804,10 @@ int
 config_nvts_growing (config_t);
 
 int
-config_family_count (const char*);
+config_family_count (config_t);
 
 int
-config_nvt_count (const char*);
+config_nvt_count (config_t);
 
 int
 manage_set_config_preference (config_t, const char*, const char*,
@@ -926,7 +926,7 @@ int
 nvt_selector_nvt_count (const char *, const char *, int);
 
 void
-init_nvt_selector_iterator (iterator_t*, const char*, const char*, int);
+init_nvt_selector_iterator (iterator_t*, const char*, config_t, int);
 
 const char*
 nvt_selector_iterator_nvt (iterator_t*);

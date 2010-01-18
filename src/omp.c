@@ -8025,13 +8025,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (next (&configs))
             {
               int config_nvts_growing, config_families_growing;
-              const char *selector, *config_name;
+              const char *selector;
+              config_t config;
               iterator_t tasks;
 
               /** @todo This should really be an nvt_selector_t. */
               selector = config_iterator_nvt_selector (&configs);
-              /** @todo Pass config_t to config_name users instead of name. */
-              config_name = config_iterator_name (&configs);
+              config = config_iterator_config (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
               config_families_growing
                 = config_iterator_families_growing (&configs);
@@ -8041,7 +8041,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                          "<name>%s</name>"
                                          "<comment>%s</comment>",
-                                         config_name,
+                                         config_iterator_name (&configs),
                                          config_iterator_comment (&configs));
               else
                 {
@@ -8058,16 +8058,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "</nvt_count>"
                                            "<in_use>%i</in_use>"
                                            "<tasks>",
-                                           config_name,
+                                           config_iterator_name (&configs),
                                            config_iterator_comment (&configs),
-                                           config_family_count (config_name),
+                                           config_family_count (config),
                                            config_families_growing,
-                                           config_nvt_count (config_name),
+                                           config_nvt_count (config),
                                            config_nvts_growing,
-                                           config_in_use (config_name));
+                                           config_in_use (config));
 
                   init_config_task_iterator (&tasks,
-                                             config_name,
+                                             config,
                                              /* Attribute sort_order. */
                                              current_int_2);
                   while (next (&tasks))
@@ -8231,10 +8231,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
 
-                  /** @todo Pass config_t instead of name. */
                   init_nvt_selector_iterator (&selectors,
                                               NULL,
-                                              config_name,
+                                              config,
                                               NVT_SELECTOR_TYPE_ANY);
                   while (next (&selectors))
                     {

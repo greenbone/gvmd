@@ -1,5 +1,21 @@
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h: (CONFIG_ID_FULL_AND_FAST)
+	(CONFIG_ID_FULL_AND_FAST_ULTIMATE, CONFIG_ID_FULL_AND_VERY_DEEP)
+	(CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE): New defines.
+	(init_manage): Use defines for config IDs.
+	(config_in_use, init_config_task_iterator, init_nvt_selector_iterator)
+	(config_family_count, config_nvt_count): Change config arg from name to
+	config_t.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_CONFIGS within
+	the config iteration pass config_t to config functions instead of the
+	config name.
+
+2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_config_iterator): Add ROWID to selection.  Adjust
 	column numbers in callers.
 	(config_iterator_config): New function.

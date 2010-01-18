@@ -35,9 +35,14 @@
 #endif
 
 
-/* Types. */
+/* Internal types and preprocessor definitions. */
 
 typedef long long int agent_t;
+
+#define CONFIG_ID_FULL_AND_FAST 1
+#define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
+#define CONFIG_ID_FULL_AND_VERY_DEEP 3
+#define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
 
 
 /* Static headers. */
@@ -1020,7 +1025,7 @@ migrate_3_to_4 ()
 
   sql ("ALTER TABLE nvt_selectors ADD COLUMN family;");
 
-  init_nvt_selector_iterator (&nvts, NULL, NULL, 2);
+  init_nvt_selector_iterator (&nvts, NULL, (config_t) 0, 2);
   while (next (&nvts))
     {
       gchar *quoted_name = sql_quote (nvt_selector_iterator_name (&nvts));
@@ -3452,7 +3457,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (1, NULL, 'Full and fast', 'All',"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ", NULL,"
+           " 'Full and fast', 'All',"
            " 'All NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL),
@@ -3472,7 +3478,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (2, NULL, 'Full and fast ultimate', 'All',"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ", NULL,"
+           " 'Full and fast ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
@@ -3493,7 +3500,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (3, NULL, 'Full and very deep', 'All',"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ", NULL,"
+           " 'Full and very deep', 'All',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL),
@@ -3513,7 +3521,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (4, NULL, 'Full and very deep ultimate', 'All',"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
+           " NULL, 'Full and very deep ultimate', 'All',"
            " 'All NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
@@ -4297,7 +4306,7 @@ make_task_rcfile (task_t task)
       {
         iterator_t nvts;
 
-        init_nvt_selector_iterator (&nvts, selector, NULL, 2);
+        init_nvt_selector_iterator (&nvts, selector, (config_t) 0, 2);
         while (next (&nvts))
           g_string_append_printf (buffer,
                                   " %s = %s\n",
@@ -7483,35 +7492,27 @@ config_iterator_nvts_growing (iterator_t* iterator)
 }
 
 /**
- * @brief Return whether a config is referenced by a task
+ * @brief Return whether a config is referenced by a task.
  *
  * The predefined configs are always in use.
  *
- * @todo Lacks permission check.  Get single caller to send config_t.
- *
- * @param[in]  name   Name of config.
+ * @param[in]  config  Config.
  *
  * @return 1 if in use, else 0.
  */
 int
-config_in_use (const char* name)
+config_in_use (config_t config)
 {
-  int ret;
-  gchar* quoted_name;
-
-  if (strcmp (name, "Full and fast") == 0
-      || strcmp (name, "Full and fast ultimate") == 0
-      || strcmp (name, "Full and very deep") == 0
-      || strcmp (name, "Full and very deep ultimate") == 0
-      || strcmp (name, "empty") == 0)
+  if (config == CONFIG_ID_FULL_AND_FAST
+      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE)
     return 1;
 
-  quoted_name = sql_quote (name);
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM tasks WHERE config = '%s'",
-                 quoted_name);
-  g_free (quoted_name);
-  return ret;
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks WHERE config ="
+                  " (SELECT name FROM configs WHERE ROWID = %llu);",
+                  config);
 }
 
 /**
@@ -8133,28 +8134,26 @@ switch_representation (config_t config, int constraining)
   return 0;
 }
 
-/** @todo Take config_t instead of name. */
 /**
  * @brief Initialise a config task iterator.
  *
- * Iterates over all tasks that use the config.
+ * Iterate over all tasks that use the config.
  *
  * @param[in]  iterator   Iterator.
- * @param[in]  name       Name of config.
+ * @param[in]  config     Config.
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_config_task_iterator (iterator_t* iterator, const char *name,
+init_config_task_iterator (iterator_t* iterator, config_t config,
                            int ascending)
 {
-  gchar *quoted_name = sql_quote (name);
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
-                 " WHERE config = '%s' AND hidden = 0"
+                 " WHERE config = (SELECT name FROM configs WHERE ROWID = %llu)"
+                 " AND hidden = 0"
                  " ORDER BY name %s;",
-                 quoted_name,
+                 config,
                  ascending ? "ASC" : "DESC");
-  g_free (quoted_name);
 }
 
 DEF_ACCESS (config_task_iterator_name, 0);
@@ -8794,16 +8793,16 @@ config_families_growing (config_t config)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  selector  Name of single selector to iterate over, NULL for all.
- * @param[in]  config    Name of config to limit iteration to, NULL for all.
+ * @param[in]  config    Config to limit iteration to, 0 for all.
  * @param[in]  type      Type of selector.  All if config is given.
  */
 void
 init_nvt_selector_iterator (iterator_t* iterator, const char* selector,
-                            const char* config, int type)
+                            config_t config, int type)
 {
   gchar *sql;
 
-  assert (selector ? config == NULL : (config ? selector == NULL : 1));
+  assert (selector ? config == 0 : (config ? selector == NULL : 1));
   assert (config ? type == NVT_SELECTOR_TYPE_ANY : (type >= 0 && type <= 2));
 
   if (selector)
@@ -8817,16 +8816,12 @@ init_nvt_selector_iterator (iterator_t* iterator, const char* selector,
       g_free (quoted_selector);
     }
   else if (config)
-    {
-      gchar *quoted_config = sql_quote (config);
-      sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
-                             " FROM nvt_selectors"
-                             " WHERE name ="
-                             " (SELECT nvt_selector FROM configs"
-                             "  WHERE configs.name = '%s');",
-                             quoted_config);
-      g_free (quoted_config);
-    }
+    sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
+                           " FROM nvt_selectors"
+                           " WHERE name ="
+                           " (SELECT nvt_selector FROM configs"
+                           "  WHERE configs.ROWID = %llu);",
+                           config);
   else
     sql = g_strdup_printf ("SELECT exclude, family_or_nvt, name, type"
                            " FROM nvt_selectors"
@@ -8886,38 +8881,36 @@ nvt_selector_iterator_type (iterator_t* iterator)
   return ret;
 }
 
-/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the number of families included in a config.
  *
- * @param[in]  config  Config selector is part of.
+ * @param[in]  config  Config.
  *
  * @return Family count if known, else -1.
  */
 int
-config_family_count (const char* config)
+config_family_count (config_t config)
 {
   return sql_int (0, 0,
                   "SELECT family_count FROM configs"
-                  " WHERE name = '%s'"
+                  " WHERE ROWID = %llu"
                   " LIMIT 1;",
                   config);
 }
 
-/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Get the number of NVTs included in a config.
  *
- * @param[in]  config  Config selector is part of.
+ * @param[in]  config  Config.
  *
  * @return NVT count if known, else -1.
  */
 int
-config_nvt_count (const char* config)
+config_nvt_count (config_t config)
 {
   return sql_int (0, 0,
                   "SELECT nvt_count FROM configs"
-                  " WHERE name = '%s'"
+                  " WHERE ROWID = %llu"
                   " LIMIT 1;",
                   config);
 }
