@@ -104,6 +104,9 @@ family_count ();
 const char*
 task_threat_level (task_t);
 
+static char*
+config_nvt_selector (const char*);
+
 
 /* Variables. */
 
@@ -3829,11 +3832,40 @@ task_comment (task_t task)
 }
 
 /**
- * @brief Return the name of the config of a task.
+ * @brief Return the config of a task.
  *
  * @param[in]  task  Task.
  *
  * @return Config of task.
+ */
+config_t
+task_config (task_t task)
+{
+  config_t config;
+  switch (sql_int64 (&config, 0, 0,
+                     "SELECT ROWID FROM configs WHERE name ="
+                     " (SELECT config FROM tasks"
+                     "  WHERE ROWID = %llu);",
+                     task))
+    {
+      case 0:
+        return config;
+      default:       /* Programming error. */
+      case 1:        /* Too few rows in result of query. */
+      case -1:       /* Error. */
+        /* Every task should have a config. */
+        assert (0);
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return the name of the config of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Name of config of task.
  */
 char*
 task_config_name (task_t task)
@@ -7642,7 +7674,6 @@ config_pref_iterator_value (iterator_t* iterator)
   return ret ? ret : (const char*) sqlite3_column_text (iterator->stmt, 2);
 }
 
-/** @todo Switch external callers to config_id_nvt_selector, make static. */
 /**
  * @brief Return the NVT selector associated with a config.
  *
@@ -7651,7 +7682,7 @@ config_pref_iterator_value (iterator_t* iterator)
  * @return Name of NVT selector if config exists and NVT selector is set, else
  *         NULL.
  */
-char*
+static char*
 config_nvt_selector (const char *name)
 {
   char *selector;
@@ -7669,6 +7700,7 @@ config_nvt_selector (const char *name)
   return selector;
 }
 
+/** @todo Rename to config_nvt_selector. */
 /**
  * @brief Return the NVT selector associated with a config.
  *

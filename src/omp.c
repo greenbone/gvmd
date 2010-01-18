@@ -6841,7 +6841,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK:
         {
           gchar* msg;
-          char *tsk_uuid, *name, *description, *config, *target;
+          config_t config;
+          char *tsk_uuid, *name, *description, *target;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (current_client_task != (task_t) 0);
@@ -6873,16 +6874,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* Check for the right combination of rcfile, target and config. */
 
           description = task_description (current_client_task);
-          config = task_config_name (current_client_task);
+          config = task_config (current_client_task);
           /** @todo Hence task_target_name? */
           target = task_target (current_client_task);
           if ((description && (config || target))
               || (description == NULL
-                  && (config == NULL || target == NULL)))
+                  && (config == 0 || target == NULL)))
             {
               request_delete_task (&current_client_task);
               free (tsk_uuid);
-              free (config);
               free (target);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
@@ -6925,7 +6925,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               request_delete_task (&current_client_task);
               free (tsk_uuid);
               free (description);
-              free (config);
               free (target);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
@@ -7001,7 +7000,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (config);
                   free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
@@ -7010,11 +7008,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              if (config_nvt_selector (config) == NULL)
+              if (config_id_nvt_selector (config) == NULL)
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (config);
                   free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
@@ -7030,7 +7027,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (config);
                   free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",

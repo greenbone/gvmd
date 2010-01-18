@@ -359,6 +359,9 @@ task_name (task_t);
 char*
 task_comment (task_t);
 
+config_t
+task_config (task_t);
+
 char*
 task_config_name (task_t);
 
@@ -787,9 +790,6 @@ config_iterator_nvts_growing (iterator_t*);
 
 int
 config_iterator_families_growing (iterator_t*);
-
-char*
-config_nvt_selector (const char*);
 
 char*
 config_id_nvt_selector (config_t);
