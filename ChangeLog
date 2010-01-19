@@ -1,3 +1,8 @@
+2010-01-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (create_lsc_credential): Allow \ in login name.  Move
+	name quotation to follow login name check.
+
 2010-01-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Hack ISO-8859-1 to UTF-8 conversion on OTP input.  Covers most cases.

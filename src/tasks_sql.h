@@ -10065,7 +10065,7 @@ int
 create_lsc_credential (const char* name, const char* comment,
                        const char* login, const char* given_password)
 {
-  gchar *quoted_name = sql_nquote (name, strlen (name));
+  gchar *quoted_name;
   gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
   gchar *quoted_user_name;
   void *rpm, *deb, *exe;
@@ -10080,7 +10080,9 @@ create_lsc_credential (const char* name, const char* comment,
   assert (login && strlen (login) > 0);
   assert (current_credentials.username);
 
-  while (*s) if (!isalnum (*s++)) return 2;
+  while (*s) if (isalnum (*s) || (*s == '\\')) s++; else return 2;
+
+  quoted_name = sql_quote (name);
 
   sql ("BEGIN IMMEDIATE;");
 
