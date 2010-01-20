@@ -7,7 +7,7 @@ Prerequisites:
 * gnutls
 * cmake
 * sqlite3
-* libossp-uuid
+* libuuid (from e2fsprogs)
 
 Prerequisites for building documentation:
 * Doxygen
