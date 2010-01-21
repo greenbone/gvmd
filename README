@@ -26,7 +26,14 @@ A command like
 
     openvasmd --sport 9391 --update
 
-will update the Manager's NVT cache, and then exit.
+or
+
+    openvasmd --sport 9391 --rebuild
+
+will update the Manager's NVT cache, and then exit.  The cache must be
+updated every time the Scanner syncs with the NVT feed.  The --rebuild
+option is faster as it locks the database the entire time, whereas --update
+allows clients to access the Manager during the update.
 
 The program usage message follows.
 

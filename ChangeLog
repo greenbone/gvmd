@@ -1,3 +1,7 @@
+2010-01-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* README: Add --rebuild example.  Note when to update cache.
+
 2010-01-20  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* INSTALL: Update UUID library.
