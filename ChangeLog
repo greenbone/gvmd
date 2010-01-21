@@ -1,3 +1,16 @@
+2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>
+
+	When starting a task send the rules from the user's OpenVAS auth
+	directory, instead of from preferences.
+
+	* CMakeLists.txt: Setup OPENVAS_USERS_DIR.
+
+	* src/CMakeLists.txt: Pass OPENVAS_USERS_DIR to compiler.
+
+	* src/manage.c (send_config_rules): Define out.
+	(send_user_rules): New function.
+	(start_task): Send rules with send_user_rules.
+
 2010-01-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* README: Add --rebuild example.  Note when to update cache.

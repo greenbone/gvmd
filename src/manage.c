@@ -742,6 +742,7 @@ send_config_preferences (const char* config,
   return 0;
 }
 
+#if 0
 /**
  * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the scanner.
  *
@@ -769,6 +770,66 @@ send_config_rules (const char* config)
         }
     }
   cleanup_iterator (&prefs);
+  return 0;
+}
+#endif
+
+/**
+ * @brief Send the rules listed in the users directory.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_user_rules ()
+{
+  gchar *rules_file, *rules;
+  GError *error = NULL;
+  gchar **rule, **split;
+
+  assert (current_credentials.username);
+
+  rules_file = g_build_filename (OPENVAS_USERS_DIR,
+                                 current_credentials.username,
+                                 "auth",
+                                 "rules",
+                                 NULL);
+  g_file_get_contents (rules_file, &rules, NULL, &error);
+  if (error)
+    {
+      tracef ("   failed to get rules: %s", error->message);
+      g_error_free (error);
+      g_free (rules_file);
+      return -1;
+    }
+  g_free (rules_file);
+
+  split = rule = g_strsplit (rules, "\n", 0);
+  g_free (rules);
+  while (*rule)
+    {
+      *rule = g_strstrip (*rule);
+      if (**rule == '#')
+        {
+          rule++;
+          continue;
+        }
+      /* Presume the rule is correctly formatted. */
+      if (send_to_server (*rule))
+        {
+          g_strfreev (split);
+          return -1;
+        }
+      if (sendn_to_server ("\n", 1))
+        {
+          g_strfreev (split);
+          return -1;
+        }
+      rule++;
+    }
+  g_strfreev (split);
+
   return 0;
 }
 
@@ -1145,17 +1206,16 @@ start_task (task_t task, char **report_id)
       current_report = (report_t) 0;
       return -10;
     }
+  free (config);
 
-  if (send_config_rules (config))
+  if (send_user_rules ())
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
 
-  free (config);
   if (send_to_server ("<|> CLIENT\n"))
     {
       free (hosts);
