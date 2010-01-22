@@ -3684,6 +3684,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
 /**
  * @brief Cleanup the manage library.
+ *
+ * Put any running task in the stopped state and close the database.
  */
 void
 cleanup_manage_process ()
@@ -3691,10 +3693,28 @@ cleanup_manage_process ()
   if (task_db)
     {
       if (current_scanner_task)
-        {
-          if (task_run_status (current_scanner_task) == TASK_STATUS_REQUESTED)
-            set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
-        }
+        set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+      sqlite3_close (task_db);
+      task_db = NULL;
+    }
+}
+
+/**
+ * @brief Cleanup as immediately as possible.
+ *
+ * Put any running task in the error state and close the database.
+ *
+ * Intended for handlers for signals like SIGSEGV and SIGABRT.
+ *
+ * @param[in]  signal  Dummy argument for use as signal handler.
+ */
+void
+manage_cleanup_process_error (/*@unused@*/ int signal)
+{
+  if (task_db)
+    {
+      if (current_scanner_task)
+        set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
       sqlite3_close (task_db);
       task_db = NULL;
     }

@@ -1,5 +1,20 @@
 2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Clean up the database better on exits from signals.
+
+	* src/omp.c (cleanup_manage_process): Set any running task to stopped,
+	whatever its state is.
+	(manage_cleanup_process_error): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (handle_sigabrt, handle_sigsegv): New functions.
+	(handle_sigterm, handle_sighup, handle_sigint): Call
+	cleanup_manage_process before exit.
+	(main): Register SIGABRT and SIGSEGV handlers.
+
+2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (send_reports): Wrap the reports in a REPORTS.
 
 2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>

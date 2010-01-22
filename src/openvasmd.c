@@ -483,6 +483,18 @@ cleanup ()
 }
 
 /**
+ * @brief Handle a SIGABRT signal.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sigabrt (/*@unused@*/ int signal)
+{
+  manage_cleanup_process_error (signal);
+  g_critical ("%s: abort\n", __FUNCTION__);
+}
+
+/**
  * @brief Handle a SIGTERM signal.
  *
  * @param[in]  signal  The signal that caused this function to run.
@@ -490,6 +502,7 @@ cleanup ()
 void
 handle_sigterm (/*@unused@*/ int signal)
 {
+  cleanup_manage_process ();
   exit (EXIT_SUCCESS);
 }
 
@@ -501,6 +514,7 @@ handle_sigterm (/*@unused@*/ int signal)
 void
 handle_sighup (/*@unused@*/ int signal)
 {
+  cleanup_manage_process ();
   exit (EXIT_SUCCESS);
 }
 
@@ -512,7 +526,21 @@ handle_sighup (/*@unused@*/ int signal)
 void
 handle_sigint (/*@unused@*/ int signal)
 {
+  cleanup_manage_process ();
   exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Handle a SIGSEGV signal.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sigsegv (/*@unused@*/ int signal)
+{
+  manage_cleanup_process_error (signal);
+  g_critical ("%s: segmentation fault\n", __FUNCTION__);
+  exit (EXIT_FAILURE);
 }
 
 
@@ -696,12 +724,15 @@ main (int argc, char** argv)
 
       /* Register the signal handlers. */
 
+      /** @todo Use sigaction. */
       /* Warning from RATS heeded (signals now use small, separate handlers)
        * hence annotations. */
-      if (signal (SIGTERM, handle_sigterm) == SIG_ERR  /* RATS: ignore */
-          || signal (SIGINT, handle_sigint) == SIG_ERR /* RATS: ignore */
-          || signal (SIGHUP, handle_sighup) == SIG_ERR /* RATS: ignore */
-          || signal (SIGCHLD, SIG_IGN) == SIG_ERR)     /* RATS: ignore */
+      if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
+          || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
+          || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
+          || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
+          || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
+          || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
         {
           g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
           exit (EXIT_FAILURE);
@@ -907,8 +938,10 @@ main (int argc, char** argv)
   /* Warning from RATS heeded (signals now use small, separate handlers)
    * hence annotations. */
   if (signal (SIGTERM, handle_sigterm) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
       || signal (SIGINT, handle_sigint) == SIG_ERR  /* RATS: ignore */
       || signal (SIGHUP, handle_sighup) == SIG_ERR  /* RATS: ignore */
+      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
       || signal (SIGCHLD, SIG_IGN) == SIG_ERR)      /* RATS: ignore */
     {
       g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
