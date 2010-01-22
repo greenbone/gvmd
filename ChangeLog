@@ -1,5 +1,9 @@
 2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (send_reports): Wrap the reports in a REPORTS.
+
+2010-01-22  Matthew Mundell <matthew.mundell@intevation.de>
+
 	When starting a task send the rules from the user's OpenVAS auth
 	directory, instead of from preferences.
 

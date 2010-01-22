@@ -3127,6 +3127,9 @@ send_reports (task_t task)
   iterator_t iterator;
   report_t index;
 
+  if (send_to_client ("<reports>"))
+    return -4;
+
   init_report_iterator (&iterator, task);
   while (next_report (&iterator, &index))
     {
@@ -3186,6 +3189,9 @@ send_reports (task_t task)
       free (uuid);
     }
   cleanup_iterator (&iterator);
+
+  if (send_to_client ("</reports>"))
+    return -4;
 
   return 0;
 }
