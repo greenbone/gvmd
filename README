@@ -16,8 +16,8 @@ All parts of OpenVAS-Manager are Copyright (C) by Greenbone Networks GmbH
 Howto use
 ---------
 
-Note that the manager always connects to the scanner as user "om" with
-password "om", so that user must exist on the scanner.
+Note that the Manager always connects to the Scanner as user "om" with
+password "om", so that user must exist on the Scanner.
 
 For example, if openvassd is running on port 9391, the following command
 starts the Manager on port 9390.  The client can then connect to port 9390

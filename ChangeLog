@@ -1,5 +1,9 @@
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* README: Capitalise names.
+
+2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/otpd.c (serve_otp): Filter logging of input that may contain
 	passwords.
 
