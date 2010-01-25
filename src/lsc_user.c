@@ -358,10 +358,14 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (command);
+      g_free (astdout);
+      g_free (astderr);
       return -1;
     }
 
   g_free (command);
+  g_free (astdout);
+  g_free (astderr);
   return 0;
 }
 
@@ -460,9 +464,13 @@ ssh_pubkey_create (const char *comment,
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
       g_free (command);
+      g_free (astdout);
+      g_free (astderr);
       return -1;
     }
   g_free (command);
+  g_free (astdout);
+  g_free (astderr);
   return 0;
 }
 
@@ -521,8 +529,8 @@ lsc_user_rpm_create (const gchar *username,
   gchar **cmd;
   char tmpdir[] = "/tmp/lsc_user_rpm_create_XXXXXX";
   gboolean success = TRUE;
-  gchar *standard_out;
-  gchar *standard_err;
+  gchar *standard_out = NULL;
+  gchar *standard_err = NULL;
   gchar *rpmfile;
 
   generator_path = get_rpm_generator_path ();
@@ -575,13 +583,13 @@ lsc_user_rpm_create (const gchar *username,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to creating the rpm: %d (WIF %i, WEX %i)",
+      g_debug ("%s: failed to create the rpm: %d (WIF %i, WEX %i)",
                __FUNCTION__,
                exit_status,
                WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
-      g_debug ("%s: sout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: serr: %s\n", __FUNCTION__, standard_err);
+      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
       success = FALSE;
     }
 
@@ -593,6 +601,8 @@ lsc_user_rpm_create (const gchar *username,
   g_free (cmd);
   g_free (pubkey_basename);
   g_free (new_pubkey_filename);
+  g_free (standard_out);
+  g_free (standard_err);
 
   /* Build the filename that the RPM in the temporary directory has,
    * for example RPMS/noarch/openvas-lsc-target-example_user-0.5-1.noarch.rpm.
@@ -646,6 +656,8 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
   gchar **cmd;
   gint exit_status;
   int ret = 0;
+  gchar *standard_out = NULL;
+  gchar *standard_err = NULL;
 
   cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
 
@@ -666,18 +678,20 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
                      G_SPAWN_SEARCH_PATH,
                      NULL,                 /* Setup func. */
                      NULL,
-                     NULL,
-                     NULL,
+                     &standard_out,
+                     &standard_err,
                      &exit_status,
                      NULL) == FALSE)
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to creating the deb: %d (WIF %i, WEX %i)",
+      g_debug ("%s: failed to create the deb: %d (WIF %i, WEX %i)",
                __FUNCTION__,
                exit_status,
                WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
+      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
       ret = -1;
     }
 
@@ -689,6 +703,8 @@ execute_alien (const gchar *rpmdir, const gchar *rpmfile)
   g_free (cmd[5]);
   g_free (cmd[6]);
   g_free (cmd);
+  g_free (standard_out);
+  g_free (standard_err);
 
   return ret;
 }
@@ -757,6 +773,210 @@ alien_found ()
 }
 
 
+/* Exe generation. */
+
+/**
+ * @brief Write an NSIS installer script to file.
+ *
+ * @param[in]  script_name   Name of script.
+ * @param[in]  package_name  Name of package.
+ * @param[in]  user_name     User name.
+ * @param[in]  password      User password.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+create_nsis_script (const gchar *script_name, const gchar *package_name,
+                    const gchar *user_name, const gchar *password)
+{
+  FILE* fd;
+
+  fd = fopen (script_name, "w");
+  if (fd <= 0)
+    return -1;
+
+  // Write part about default section
+  fprintf (fd, "#Installer filename\n");
+  fprintf (fd, "outfile ");
+  fprintf (fd, "%s", package_name);
+  fprintf (fd, "\n\n");
+
+  fprintf (fd, "# Set desktop as install directory\n");
+  fprintf (fd, "installDir $DESKTOP\n\n");
+
+  fprintf (fd, "# Put some text\n");
+  fprintf (fd, "BrandingText \"OpenVAS Local Security Checks User\"\n\n");
+
+  // For ms vista installers we need the UAC plugin and use the following lines:
+  // This requires the user to have the UAC plugin installed and to provide the
+  // the path to it.
+  //fprintf (fd, "# Request application privileges for Windows Vista\n");
+  //fprintf (fd, "RequestExecutionLevel admin\n\n");
+
+  fprintf (fd, "#\n# Default (installer) section.\n#\n");
+  fprintf (fd, "section\n\n");
+
+  fprintf (fd, "# Define output path\n");
+  fprintf (fd, "setOutPath $INSTDIR\n\n");
+
+  fprintf (fd, "# Uninstaller name\n");
+  fprintf (fd, "writeUninstaller $INSTDIR\\openvas_lsc_remove_%s.exe\n\n",
+           user_name);
+
+  // Need to find localized Administrators group name, create a
+  // GetAdminGroupName - vb script (Thanks to Thomas Rotter)
+  fprintf (fd, "# Create Thomas Rotters GetAdminGroupName.vb script\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo Set objWMIService = GetObject($\\\"winmgmts:\\\\.\\root\\cimv2$\\\") > $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" \"\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo Set colAccounts = objWMIService.ExecQuery ($\\\"Select * From Win32_Group Where SID = 'S-1-5-32-544'$\\\")  >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo For Each objAccount in colAccounts >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo Wscript.Echo objAccount.Name >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo Next >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
+  fprintf (fd, "ExecWait \"cmd /C cscript //nologo $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
+
+  /** @TODO provide /comment:"OpenVAS User" /fullname:"OpenVAS Testuser" */
+  fprintf (fd, "# Create batch script that installs the user\n");
+  fprintf (fd, "ExecWait \"cmd /C Echo Set /P AdminGroupName= ^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > $\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
+  fprintf (fd, "ExecWait \"cmd /C Echo net user %s %s /add /active:yes >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n",
+           user_name,
+           password);
+  fprintf (fd, "ExecWait \"cmd /C Echo net localgroup %%AdminGroupName%% %%COMPUTERNAME%%\\%s /add >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n",
+           user_name);
+
+  fprintf (fd, "# Execute AddUser script\n");
+  fprintf (fd, "ExecWait \"cmd /C $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
+
+  // Remove up temporary files for localized Administrators group names
+  fprintf (fd, "# Remove temporary files for localized admin group names\n");
+  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n");
+  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n\n");
+  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
+
+  /** @TODO Display note about NTLM and SMB signing and encryption, 'Easy Filesharing' in WIN XP */
+  fprintf (fd, "# Display message that everything seems to be fine\n");
+  fprintf (fd, "messageBox MB_OK \"A user has been added. An uninstaller is placed on your Desktop.\"\n\n");
+
+  fprintf (fd, "# Default (install) section end\n");
+  fprintf (fd, "sectionEnd\n\n");
+
+  // Write part about uninstall section
+  fprintf (fd, "#\n# Uninstaller section.\n#\n");
+  fprintf (fd, "section \"Uninstall\"\n\n");
+
+  fprintf (fd, "# Run cmd to remove user\n");
+  fprintf (fd, "ExecWait \"net user %s /delete\"\n\n",
+           user_name);
+
+  /** @todo Uninstaller should remove itself */
+  fprintf (fd, "# Unistaller should remove itself (from desktop/installdir)\n\n");
+
+  fprintf (fd, "# Display message that everything seems to be fine\n");
+  fprintf (fd, "messageBox MB_OK \"A user has been removed. You can now savely remmove the uninstaller from your Desktop.\"\n\n");
+
+  fprintf (fd, "# Uninstaller section end\n");
+  fprintf (fd, "sectionEnd\n\n");
+
+  if (fclose (fd))
+    return -1;
+
+  return 0;
+}
+
+/**
+ * @brief Execute makensis to create a package from an NSIS script.
+ *
+ * Run makensis in the directory that nsis_script is in.
+ *
+ * @param[in]  nsis_script  Name of resulting package.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+execute_makensis (const gchar *nsis_script)
+{
+  gchar *dirname = g_path_get_dirname (nsis_script);
+  gchar **cmd;
+  gint exit_status;
+  int ret = 0;
+  gchar *standard_out = NULL;
+  gchar *standard_err = NULL;
+
+  cmd = (gchar **) g_malloc (3 * sizeof (gchar *));
+
+  cmd[0] = g_strdup ("makensis");
+  cmd[1] = g_strdup (nsis_script);
+  cmd[2] = NULL;
+  g_debug ("--- executing makensis.\n");
+  g_debug ("%s: Spawning in %s: %s %s\n",
+           __FUNCTION__,
+           dirname, cmd[0], cmd[1]);
+  if ((g_spawn_sync (dirname,
+                     cmd,
+                     NULL,                 /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL,                 /* Setup func. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL) == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      g_debug ("%s: failed to create the exe: %d (WIF %i, WEX %i)",
+               __FUNCTION__,
+               exit_status,
+               WIFEXITED (exit_status),
+               WEXITSTATUS (exit_status));
+      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+      ret = -1;
+    }
+
+  g_free (cmd[0]);
+  g_free (cmd[1]);
+  g_free (cmd);
+  g_free (dirname);
+  g_free (standard_out);
+  g_free (standard_err);
+
+  return ret;
+}
+
+/**
+ * @brief Create an NSIS package.
+ *
+ * @param[in]  user_name    Name of user.
+ * @param[in]  password     Password of user.
+ * @param[in]  to_filename  Destination filename for package.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+lsc_user_exe_create (const gchar *user_name, const gchar *password,
+                     const gchar *to_filename)
+{
+  gchar *dirname = g_path_get_dirname (to_filename);
+  gchar *nsis_script = g_build_filename (dirname, "p.nsis", NULL);
+
+  g_free (dirname);
+
+  if (create_nsis_script (nsis_script, to_filename, user_name, password))
+    {
+      g_free (nsis_script);
+      return -1;
+    }
+
+  if (execute_makensis (nsis_script))
+    {
+      g_free (nsis_script);
+      return -1;
+    }
+
+  g_free (nsis_script);
+  return 0;
+}
+
+
 /* Generation of all packages. */
 
 /**
@@ -789,7 +1009,8 @@ lsc_user_all_create (const gchar *name,
   gchar *public_key_path, *private_key_path;
   char rpm_dir[] = "/tmp/rpm_XXXXXX";
   char key_dir[] = "/tmp/key_XXXXXX";
-  gchar *rpm_path, *deb_path;
+  char exe_dir[] = "/tmp/exe_XXXXXX";
+  gchar *rpm_path, *deb_path, *exe_path;
   int ret = -1;
 
   if (alien_found () == FALSE)
@@ -843,19 +1064,24 @@ lsc_user_all_create (const gchar *name,
     }
   g_debug ("%s: deb_path: %s", __FUNCTION__, deb_path);
 
-#if 0
-  /** @todo Create NSIS installer. */
+  /* Create NSIS installer. */
 
-  exe_path = lsc_user_exe_create ();
-  if (exe_path == NULL)
+  if (mkdtemp (exe_dir) == NULL)
+    {
+      g_free (rpm_path);
+      g_free (deb_path);
+      goto rm_rpm_exit;
+    }
+  exe_path = g_build_filename (exe_dir, "p.nsis", NULL);
+  g_debug ("%s: exe_path: %s", __FUNCTION__, exe_path);
+  if (lsc_user_exe_create (name, password, exe_path))
     {
       g_free (rpm_path);
       g_free (deb_path);
       g_free (exe_path);
       goto rm_exit;
     }
-  g_debug ("%s: exe_path: %s", __FUNCTION__, deb_path);
-#endif
+  g_debug ("%s: exe_path: %s", __FUNCTION__, exe_path);
 
   /* Read the packages and key into memory. */
 
@@ -865,6 +1091,7 @@ lsc_user_all_create (const gchar *name,
     {
       g_free (rpm_path);
       g_free (deb_path);
+      g_free (exe_path);
       g_error_free (error);
       goto rm_exit;
     }
@@ -875,6 +1102,7 @@ lsc_user_all_create (const gchar *name,
     {
       g_free (rpm_path);
       g_free (deb_path);
+      g_free (exe_path);
       g_error_free (error);
       goto rm_exit;
     }
@@ -886,6 +1114,7 @@ lsc_user_all_create (const gchar *name,
     {
       g_error_free (error);
       g_free (deb_path);
+      g_free (exe_path);
       goto rm_exit;
     }
 
@@ -895,17 +1124,28 @@ lsc_user_all_create (const gchar *name,
   if (error)
     {
       g_error_free (error);
+      g_free (exe_path);
       goto rm_exit;
     }
 
-  *exe = g_strdup ("");
-  *exe_size = 0;
+  error = NULL;
+  g_file_get_contents (exe_path, (gchar **) exe, exe_size, &error);
+  g_free (exe_path);
+  if (error)
+    {
+      g_error_free (error);
+      goto rm_exit;
+    }
 
   /* Return. */
 
   ret = 0;
 
  rm_exit:
+
+  file_utils_rmdir_rf (exe_dir);
+
+ rm_rpm_exit:
 
   file_utils_rmdir_rf (rpm_dir);
 

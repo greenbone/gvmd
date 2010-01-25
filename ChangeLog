@@ -1,3 +1,16 @@
+2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add rest of NSIS package generation.
+
+	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Free astdout
+	and astderr.
+	(lsc_user_rpm_create): Init and free standard_out and standard_err.
+	Neaten messages.
+	(execute_alien): Print command output on error. Neaten message.
+	(create_nsis_script, execute_makensis, lsc_user_exe_create): New
+	functions.
+	(lsc_user_all_create): Enable and complete NSIS generation.
+
 2010-01-25  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* README: Added note from INSTALL about special "om" user.
