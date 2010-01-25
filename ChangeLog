@@ -1,5 +1,13 @@
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/ompd.c (serve_omp): Filter logging of input that may contain
+	passwords.
+
+	* src/oxpd.c (read_protocol): Filter logging of input that may contain
+	passwords.
+
+2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add rest of NSIS package generation.
 
 	* src/lsc_user.c (ssh_privkey_create, ssh_pubkey_create): Free astdout

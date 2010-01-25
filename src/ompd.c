@@ -883,9 +883,14 @@ serve_omp (gnutls_session_t* client_session,
                     from_client_end - initial_start,
                     from_client + initial_start);
 #if TRACE_TEXT
-              tracef ("<= client  \"%.*s\"\n",
-                      from_client_end - initial_start,
-                      from_client + initial_start);
+              if (g_strstr_len (from_client + initial_start,
+                                from_client_end - initial_start,
+                                "<password>"))
+                tracef ("<= client  Input may contain password, suppressed.\n");
+              else
+                tracef ("<= client  \"%.*s\"\n",
+                        from_client_end - initial_start,
+                        from_client + initial_start);
 #else
               tracef ("<= client  %i bytes\n",
                       from_client_end - initial_start);
