@@ -1,5 +1,10 @@
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/otpd.c (serve_otp): Filter logging of input that may contain
+	passwords.
+
+2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ompd.c (serve_omp): Filter logging of input that may contain
 	passwords.
 
