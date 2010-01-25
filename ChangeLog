@@ -1,5 +1,34 @@
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add user UUIDs.  Hence increase database version to 10.  Add database
+	migration from 9 to 10.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 10.
+
+	* src/manage.h (credentials_t): Add uuid.
+
+	* src/tasks_sql.h (task_owner_uuid, openvas_user_uuid)
+	(openvas_authenticate_uuid, migrate_9_to_10): New functions.
+	(user_owns, user_owns_uuid, create_escalator, init_escalator_iterator)
+	(init_escalator_task_iterator, init_task_iterator, task_count)
+	(make_report, make_task, create_target, init_target_iterator)
+	(init_target_task_iterator, create_config, create_config_rc)
+	(copy_config, init_config_iterator, create_lsc_credential)
+	(init_lsc_credential_iterator, create_agent, init_agent_iterator): Get
+	the user ROWID by UUID instead of by name.
+	(create_tables): Add "uuid" to users.  Drop UNIQUE from users "name".
+	(database_migrators): Add migrate_9_to_10.
+	(init_manage): Init current_credentials uuid.  Set UUIDs instead of
+	names around calls to task functions.
+	(authenticate): Ensure a user with the UUID of the authenticated user
+	exists in the database.
+	(request_delete_task, delete_task): Check for credential UUID instead of
+	name.
+
+	* doc/db_postgres.sql (users): Add uuid, remove unique from name.
+
+2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* README: Capitalise names.
 
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>

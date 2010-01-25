@@ -41,7 +41,8 @@ CREATE TABLE escalators (
 
 CREATE TABLE users (
 	id integer PRIMARY KEY,
-    name text UNIQUE NOT NULL,
+    uuid text UNIQUE NOT NULL,
+    name text NOT NULL,
 	password text);
 
 CREATE TABLE nvt_selectors (

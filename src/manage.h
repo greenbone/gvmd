@@ -77,12 +77,13 @@ free_array (array_t *);
 /* Credentials. */
 
 /**
- * @brief A username password pair.
+ * @brief User authentication details.
  */
 typedef struct
 {
   /*@null@*/ gchar* username; ///< Login name of user.
   /*@null@*/ gchar* password; ///< Password of user.
+  /*@null@*/ gchar* uuid;     ///< UUID of user.
 } credentials_t;
 
 extern credentials_t current_credentials;

@@ -107,6 +107,9 @@ task_threat_level (task_t);
 static char*
 config_nvt_selector (const char*);
 
+static char*
+task_owner_uuid (task_t);
+
 
 /* Variables. */
 
@@ -440,20 +443,17 @@ static int
 user_owns (const char *resource, const char *quoted_resource_name)
 {
   int ret;
-  gchar *quoted_user_name;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
-  quoted_user_name = sql_quote (current_credentials.username);
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM %ss"
                  " WHERE name = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.name = '%s')))",
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
                  resource,
                  quoted_resource_name,
-                 quoted_user_name);
-  g_free (quoted_user_name);
+                 current_credentials.uuid);
 
   return ret;
 }
@@ -470,22 +470,110 @@ static int
 user_owns_uuid (const char *resource, const char *uuid)
 {
   int ret;
-  gchar *quoted_user_name;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
-  quoted_user_name = sql_quote (current_credentials.username);
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM %ss"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.name = '%s')))",
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
                  resource,
                  uuid,
-                 quoted_user_name);
-  g_free (quoted_user_name);
+                 current_credentials.uuid);
 
   return ret;
+}
+
+/**
+ * @brief Return the UUID of a user.
+ *
+ * If the user exists, ensure that the user has a UUID.
+ *
+ * @param[in]  name   User name.
+ *
+ * @return UUID of given user if user exists, else NULL.
+ */
+static gchar *
+openvas_user_uuid (const char *name)
+{
+  gchar *user_dir = g_build_filename (OPENVAS_USERS_DIR, name, NULL);
+  if (g_file_test (user_dir, G_FILE_TEST_EXISTS))
+    {
+      gchar *uuid_file = g_build_filename (user_dir, "uuid", NULL);
+      if (g_file_test (uuid_file, G_FILE_TEST_EXISTS))
+        {
+          gsize size;
+          gchar *uuid;
+          if (g_file_get_contents (uuid_file, &uuid, &size, NULL))
+            {
+              if (strlen (uuid) < 36)
+                g_free (uuid);
+              else
+                {
+                  g_free (user_dir);
+                  g_free (uuid_file);
+                  /* Drop any trailing characters. */
+                  uuid[36] = '\0';
+                  return uuid;
+                }
+            }
+        }
+      else
+        {
+          gchar *contents;
+          char *uuid;
+
+          uuid = make_report_uuid ();
+          if (uuid == NULL)
+            {
+              g_free (user_dir);
+              g_free (uuid_file);
+              return NULL;
+            }
+
+          contents = g_strdup_printf ("%s\n", uuid);
+
+          if (g_file_set_contents (uuid_file, contents, -1, NULL))
+            {
+              g_free (contents);
+              g_free (user_dir);
+              g_free (uuid_file);
+              return uuid;
+            }
+
+          g_free (contents);
+          free (uuid);
+        }
+      g_free (uuid_file);
+    }
+  g_free (user_dir);
+  return NULL;
+}
+
+/**
+ * @brief Authenticate a credential pair, returning the user UUID.
+ *
+ * @param  username  Username.
+ * @param  password  Password.
+ * @param  uuid      UUID return.
+ *
+ * @return 0 authentication success, 1 authentication failure, -1 error.
+ */
+static int
+openvas_authenticate_uuid (const gchar * username, const gchar * password,
+                           gchar **uuid)
+{
+  int ret;
+
+  ret = openvas_authenticate (username, password);
+  if (ret)
+    return ret;
+
+  *uuid = openvas_user_uuid (username);
+  if (*uuid)
+    return 0;
+  return -1;
 }
 
 
@@ -523,7 +611,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config, target);");
-  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, name UNIQUE, password);");
+  sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
 }
@@ -1855,6 +1943,75 @@ migrate_8_to_9 ()
 }
 
 /**
+ * @brief Migrate the database from version 9 to version 10.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_9_to_10 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 9. */
+
+  if (manage_db_version () != 9)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The user table got a unique "uuid" column and lost the lost the
+   * uniqueness of its "name" column. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE users RENAME TO users_9;");
+
+  sql ("CREATE TABLE users"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
+
+  init_iterator (&rows, "SELECT rowid, name, password FROM users_9;");
+  while (next (&rows))
+    {
+      gchar *quoted_name, *quoted_password, *uuid;
+
+      uuid = openvas_user_uuid (iterator_string (&rows, 1));
+      if (uuid == NULL)
+        {
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      quoted_name = sql_insert (iterator_string (&rows, 1));
+      quoted_password = sql_insert (iterator_string (&rows, 2));
+      sql ("INSERT into users (id, uuid, name, password)"
+           " VALUES (%llu, '%s', %s, %s);",
+           iterator_int64 (&rows, 0),
+           uuid,
+           quoted_name,
+           quoted_password);
+      g_free (uuid);
+      g_free (quoted_name);
+      g_free (quoted_password);
+    }
+  cleanup_iterator (&rows);
+  sql ("DROP TABLE users_9;");
+
+  /* Set the database version to 10. */
+
+  set_db_version (10);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -1868,6 +2025,7 @@ static migrator_t database_migrators[]
     {7, migrate_6_to_7},
     {8, migrate_7_to_8},
     {9, migrate_8_to_9},
+    {10, migrate_9_to_10},
     /* End marker. */
     {-1, NULL}};
 
@@ -2204,10 +2362,10 @@ create_escalator (const char* name, const char* comment,
 {
   escalator_t escalator;
   int index;
-  gchar *item, *quoted_comment, *quoted_user_name;
+  gchar *item, *quoted_comment;
   gchar *quoted_name = sql_quote (name);
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -2220,19 +2378,16 @@ create_escalator (const char* name, const char* comment,
     }
 
   quoted_comment = comment ? sql_quote (comment) : NULL;
-  quoted_user_name = sql_quote (current_credentials.username);
 
   sql ("INSERT INTO escalators (owner, name, comment, event, condition, method)"
-       " VALUES ((SELECT ROWID FROM users WHERE users.name = '%s'),"
+       " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        " '%s', '%s', %i, %i, %i);",
-       quoted_user_name,
+       current_credentials.uuid,
        quoted_name,
        quoted_comment ? quoted_comment : "",
        event,
        condition,
        method);
-
-  g_free (quoted_user_name);
 
   escalator = sqlite3_last_insert_rowid (task_db);
 
@@ -2417,9 +2572,8 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
   assert (name ? task == 0 : (task ? name == NULL : 1));
   assert (name ? event == 0 : (event ? name == NULL : 1));
   assert (event ? task : 1);
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
-  gchar *quoted_user_name = sql_quote (current_credentials.username);
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
@@ -2431,10 +2585,10 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                      " FROM escalators"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
-                     quoted_user_name,
+                     current_credentials.uuid,
                      sort_field ? sort_field : "escalators.ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -2447,11 +2601,11 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                    " WHERE task_escalators.escalator = escalators.ROWID"
                    " AND task_escalators.task = %llu AND event = %i"
                    " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
                    task,
                    event,
-                   quoted_user_name,
+                   current_credentials.uuid,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
   else
@@ -2462,12 +2616,11 @@ init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
                    "  WHERE task_escalators.escalator = escalators.ROWID)"
                    " FROM escalators"
                    " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   quoted_user_name,
+                   current_credentials.uuid,
                    sort_field ? sort_field : "escalators.ROWID",
                    ascending ? "ASC" : "DESC");
-  g_free (quoted_user_name);
 }
 
 /**
@@ -2934,13 +3087,12 @@ void
 init_escalator_task_iterator (iterator_t* iterator, const char *name,
                               int ascending)
 {
-  gchar *quoted_name, *quoted_user_name;
+  gchar *quoted_name;
 
   assert (name);
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   quoted_name = sql_quote (name);
-  quoted_user_name = sql_quote (current_credentials.username);
   init_iterator (iterator,
                  "SELECT tasks.name, tasks.uuid FROM tasks, task_escalators"
                  " WHERE tasks.ROWID = task_escalators.task"
@@ -2948,13 +3100,12 @@ init_escalator_task_iterator (iterator_t* iterator, const char *name,
                  " (SELECT ROWID FROM escalators WHERE escalators.name = '%s')"
                  " AND hidden = 0"
                  " AND ((tasks.owner IS NULL) OR (tasks.owner ="
-                 " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY tasks.name %s;",
                  quoted_name,
-                 quoted_user_name,
+                 current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
   g_free (quoted_name);
-  g_free (quoted_user_name);
 }
 
 /**
@@ -3036,12 +3187,12 @@ init_task_iterator (task_iterator_t* iterator,
   /** @todo Use init_iterator. */
 
   iterator->done = FALSE;
-  if (current_credentials.username)
+  if (current_credentials.uuid)
     formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
                                  " (SELECT ROWID FROM users"
-                                 "  WHERE users.name = '%s')"
+                                 "  WHERE users.uuid = '%s')"
                                  " ORDER BY %s %s;",
-                                 current_credentials.username,
+                                 current_credentials.uuid,
                                  sort_field ? sort_field : "ROWID",
                                  ascending ? "ASC" : "DESC");
   else
@@ -3363,6 +3514,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                      (GLogFunc) openvas_log_func,
                      log_config);
 
+  current_credentials.uuid = NULL;
   current_credentials.username = NULL;
   current_credentials.password = NULL;
 
@@ -3585,7 +3737,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       report_t report;
 
       /* Setup a dummy user, so that find_task will work. */
-      current_credentials.username = "";
+      current_credentials.uuid = "";
 
       if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
         g_warning ("%s: error while finding example task", __FUNCTION__);
@@ -3617,12 +3769,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                report);
         }
 
-      current_credentials.username = NULL;
+      current_credentials.uuid = NULL;
     }
 
   /* Set requested and running tasks to stopped. */
 
-  assert (current_credentials.username == NULL);
+  assert (current_credentials.uuid == NULL);
   init_task_iterator (&iterator, 1, NULL);
   while (next_task (&iterator, &index))
     {
@@ -3633,16 +3785,16 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_REQUESTED:
             /* Set the current user, for event checks. */
-            current_credentials.username = task_owner_name (index);
+            current_credentials.uuid = task_owner_uuid (index);
             set_task_run_status (index, TASK_STATUS_STOPPED);
-            free (current_credentials.username);
+            free (current_credentials.uuid);
             break;
           default:
             break;
         }
     }
   cleanup_task_iterator (&iterator);
-  current_credentials.username = NULL;
+  current_credentials.uuid = NULL;
 
   /* Set requested and running reports to stopped. */
 
@@ -3736,27 +3888,27 @@ authenticate (credentials_t* credentials)
 
       if (strcmp (credentials->username, "om") == 0) return 1;
 
-      fail = openvas_authenticate (credentials->username,
-                                   credentials->password);
+      fail = openvas_authenticate_uuid (credentials->username,
+                                        credentials->password,
+                                        &credentials->uuid);
       if (fail == 0)
         {
-          gchar* name;
+          gchar* quoted_name;
 
           /* Ensure the user exists in the database.  SELECT then INSERT
            * instead of using "INSERT OR REPLACE", so that the ROWID stays
            * the same. */
 
-          name = sql_nquote (credentials->username,
-                            strlen (credentials->username));
           if (sql_int (0, 0,
-                       "SELECT count(*) FROM users WHERE name = '%s';",
-                       name))
-            {
-              g_free (name);
-              return 0;
-            }
-          sql ("INSERT INTO users (name) VALUES ('%s');", name);
-          g_free (name);
+                       "SELECT count(*) FROM users WHERE uuid = '%s';",
+                       credentials->uuid))
+            return 0;
+
+          quoted_name = sql_quote (credentials->username);
+          sql ("INSERT INTO users (uuid, name) VALUES ('%s', '%s');",
+               credentials->uuid,
+               quoted_name);
+          g_free (quoted_name);
           return 0;
         }
       return fail;
@@ -3775,8 +3927,8 @@ task_count ()
   return (unsigned int) sql_int (0, 0,
                                  "SELECT count(*) FROM tasks WHERE owner ="
                                  " (SELECT ROWID FROM users"
-                                 "  WHERE users.name = '%s');",
-                                 current_credentials.username);
+                                 "  WHERE users.uuid = '%s');",
+                                 current_credentials.uuid);
 }
 
 /**
@@ -3822,6 +3974,22 @@ task_owner_name (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT name FROM users WHERE ROWID ="
+                     " (SELECT owner FROM tasks WHERE ROWID = %llu);",
+                     task);
+}
+
+/**
+ * @brief Return the name of the owner of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Newly allocated user name.
+ */
+static char*
+task_owner_uuid (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM users WHERE ROWID ="
                      " (SELECT owner FROM tasks WHERE ROWID = %llu);",
                      task);
 }
@@ -4438,19 +4606,16 @@ report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
   report_t report;
-  gchar *quoted_user_name;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
-  quoted_user_name = sql_quote (current_credentials.username);
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
        " scan_run_status)"
        " VALUES ('%s',"
-       " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+       " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        " 0, %llu, %i, '', '', %u);",
-       uuid, quoted_user_name, task, time (NULL), status);
+       uuid, current_credentials.uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
-  g_free (quoted_user_name);
   return report;
 }
 
@@ -5533,9 +5698,9 @@ make_task (char* name, unsigned int time, char* comment)
   if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
   sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment)"
-       " VALUES ((SELECT ROWID FROM users WHERE users.name = '%s'),"
+       " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "         '%s', %s, 0, %u, %s);",
-       current_credentials.username, uuid, name, time, comment);
+       current_credentials.uuid, uuid, name, time, comment);
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
   free (uuid);
@@ -5763,7 +5928,7 @@ request_delete_task (task_t* task_pointer)
                *task_pointer))
     return 2;
 
-  if (current_credentials.username == NULL) return -1;
+  if (current_credentials.uuid == NULL) return -1;
 
   switch (stop_task (task))
     {
@@ -5802,7 +5967,7 @@ delete_task (task_t task)
     return -1;
 
   /** @todo Many other places just assert this. */
-  if (current_credentials.username == NULL) return -1;
+  if (current_credentials.uuid == NULL) return -1;
 
   if (task_uuid (task, &tsk_uuid)) return -1;
 
@@ -6162,12 +6327,12 @@ create_target (const char* name, const char* hosts, const char* comment,
                const char* credential)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_hosts, *quoted_comment, *quoted_user_name;
+  gchar *quoted_hosts, *quoted_comment;
   lsc_credential_t lsc_credential;
 
   sql ("BEGIN IMMEDIATE;");
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
                quoted_name))
@@ -6204,29 +6369,26 @@ create_target (const char* name, const char* hosts, const char* comment,
   else
     lsc_credential = 0;
 
-  quoted_user_name = sql_quote (current_credentials.username);
-
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
            " VALUES ('%s',"
-           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', %llu);",
-           quoted_name, quoted_user_name, quoted_hosts, quoted_comment,
+           quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
            lsc_credential);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
          " VALUES ('%s',"
-         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '', %llu);",
-         quoted_name, quoted_user_name, quoted_hosts, lsc_credential);
+         quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
-  g_free (quoted_user_name);
 
   sql ("COMMIT;");
 
@@ -6278,11 +6440,8 @@ void
 init_target_iterator (iterator_t* iterator, const char* name,
                       int ascending, const char* sort_field)
 {
-  gchar *quoted_user_name;
+  assert (current_credentials.uuid);
 
-  assert (current_credentials.username);
-
-  quoted_user_name = sql_quote (current_credentials.username);
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
@@ -6291,10 +6450,10 @@ init_target_iterator (iterator_t* iterator, const char* name,
                      " FROM targets"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
-                     quoted_user_name,
+                     current_credentials.uuid,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -6304,12 +6463,11 @@ init_target_iterator (iterator_t* iterator, const char* name,
                    "SELECT name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   quoted_user_name,
+                   current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
-  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (target_iterator_name, 0);
@@ -6450,24 +6608,22 @@ void
 init_target_task_iterator (iterator_t* iterator, const char *name,
                            int ascending)
 {
-  gchar *quoted_name, *quoted_user_name;
+  gchar *quoted_name;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   quoted_name = sql_quote (name);
-  quoted_user_name = sql_quote (current_credentials.username);
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
                  " WHERE target = '%s'"
                  " AND hidden = 0"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name %s;",
                  quoted_name,
-                 quoted_user_name,
+                 current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
   g_free (quoted_name);
-  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (target_task_iterator_name, 0);
@@ -6702,11 +6858,10 @@ create_config (const char* proposed_name, const char* comment,
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  gchar *quoted_user_name;
   config_t config;
   unsigned int num = 1;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
@@ -6733,16 +6888,15 @@ create_config (const char* proposed_name, const char* comment,
       quoted_candidate_name = sql_quote (candidate_name);
     }
 
-  quoted_user_name = sql_quote (current_credentials.username);
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
            " VALUES ('%s',"
-           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s');",
            quoted_candidate_name,
-           quoted_user_name,
+           current_credentials.uuid,
            quoted_candidate_name,
            quoted_comment);
       g_free (quoted_comment);
@@ -6750,10 +6904,11 @@ create_config (const char* proposed_name, const char* comment,
   else
     sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
          " VALUES ('%s',"
-         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '');",
-         quoted_candidate_name, quoted_user_name, quoted_candidate_name);
-  g_free (quoted_user_name);
+         quoted_candidate_name,
+         current_credentials.uuid,
+         quoted_candidate_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
@@ -7227,10 +7382,10 @@ int
 create_config_rc (const char* name, const char* comment, char* rc)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_comment, *quoted_user_name;
+  gchar *quoted_comment;
   config_t config;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -7253,26 +7408,22 @@ create_config_rc (const char* name, const char* comment, char* rc)
     }
 
 
-  quoted_user_name = sql_quote (current_credentials.username);
-
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
            " VALUES ('%s',"
-           " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s');",
-           quoted_name, quoted_user_name, quoted_name, quoted_comment);
+           quoted_name, current_credentials.uuid, quoted_name, quoted_comment);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
          " VALUES ('%s',"
-         " (SELECT ROWID FROM users WHERE users.name = '%s'),"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '');",
-         quoted_name, quoted_user_name, quoted_name);
-
-  g_free (quoted_user_name);
+         quoted_name, current_credentials.uuid, quoted_name);
 
   /* Insert the RC into the config_preferences table. */
 
@@ -7306,9 +7457,9 @@ copy_config (const char* name, const char* comment, const char* config)
   config_t id;
   gchar *quoted_name = sql_quote (name);
   gchar *quoted_config = sql_quote (config);
-  gchar *quoted_comment, *quoted_config_selector, *quoted_user_name;
+  gchar *quoted_comment, *quoted_config_selector;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   config_selector = config_nvt_selector (config);
   if (config_selector == NULL)
@@ -7329,21 +7480,19 @@ copy_config (const char* name, const char* comment, const char* config)
       return 1;
     }
 
-  quoted_user_name = sql_quote (current_credentials.username);
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM configs"
                " WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
-               " (SELECT ROWID FROM users WHERE users.name = '%s')))",
+               " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
                quoted_config,
-               quoted_user_name)
+               current_credentials.uuid)
       == 0)
     {
       sql ("ROLLBACK;");
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
-      g_free (quoted_user_name);
       return 2;
     }
 
@@ -7356,7 +7505,6 @@ copy_config (const char* name, const char* comment, const char* config)
       g_free (quoted_name);
       g_free (quoted_config);
       g_free (quoted_config_selector);
-      g_free (quoted_user_name);
       return -1;
     }
 
@@ -7368,12 +7516,12 @@ copy_config (const char* name, const char* comment, const char* config)
       sql ("INSERT INTO configs"
            " (name, owner, nvt_selector, comment, family_count, nvt_count,"
            "  families_growing, nvts_growing)"
-           " SELECT '%s', (SELECT ROWID FROM users where users.name = '%s'),"
+           " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
            " '%s', '%s', family_count, nvt_count,"
            " families_growing, nvts_growing"
            " FROM configs WHERE name = '%s'",
            quoted_name,
-           quoted_user_name,
+           current_credentials.uuid,
            quoted_name,
            quoted_comment,
            quoted_config);
@@ -7383,16 +7531,14 @@ copy_config (const char* name, const char* comment, const char* config)
     sql ("INSERT INTO configs"
          " (name, owner, nvt_selector, comment, family_count, nvt_count,"
          "  families_growing, nvts_growing)"
-         " SELECT '%s', (SELECT ROWID FROM users where users.name = '%s'),"
+         " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
          " '%s', '', family_count, nvt_count,"
          " families_growing, nvts_growing"
          " FROM configs WHERE name = '%s'",
          quoted_name,
-         quoted_user_name,
+         current_credentials.uuid,
          quoted_name,
          quoted_config);
-
-  g_free (quoted_user_name);
 
   id = sqlite3_last_insert_rowid (task_db);
 
@@ -7475,21 +7621,21 @@ init_config_iterator (iterator_t* iterator, config_t config,
                       int ascending, const char* sort_field)
 
 {
-  gchar *sql, *quoted_user_name;
+  gchar *sql;
 
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
-  quoted_user_name = sql_quote (current_credentials.username);
   if (config)
     sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
                            " families_growing, nvts_growing"
                            " FROM configs"
                            " WHERE ROWID = %llu"
                            " AND ((owner IS NULL) OR (owner ="
-                           " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                           " (SELECT ROWID FROM users"
+                           "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
                            config,
-                           quoted_user_name,
+                           current_credentials.uuid,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
   else
@@ -7497,12 +7643,12 @@ init_config_iterator (iterator_t* iterator, config_t config,
                            " families_growing, nvts_growing"
                            " FROM configs"
                            " WHERE ((owner IS NULL) OR (owner ="
-                           " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                           " (SELECT ROWID FROM users"
+                           "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
-                           quoted_user_name,
+                           current_credentials.uuid,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
-  g_free (quoted_user_name);
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -10087,7 +10233,6 @@ create_lsc_credential (const char* name, const char* comment,
 {
   gchar *quoted_name;
   gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
-  gchar *quoted_user_name;
   void *rpm, *deb, *exe;
   gsize rpm_size, deb_size, exe_size;
   int i;
@@ -10098,7 +10243,7 @@ create_lsc_credential (const char* name, const char* comment,
 
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   while (*s) if (isalnum (*s) || (*s == '\\')) s++; else return 2;
 
@@ -10114,8 +10259,6 @@ create_lsc_credential (const char* name, const char* comment,
       return 1;
     }
 
-  quoted_user_name = sql_quote (current_credentials.username);
-
   if (given_password)
     {
       gchar *quoted_login = sql_quote (login);
@@ -10128,16 +10271,15 @@ create_lsc_credential (const char* name, const char* comment,
            " (name, owner, login, password, comment, public_key, private_key,"
            "  rpm, deb, exe)"
            " VALUES"
-           " ('%s', (SELECT ROWID FROM users WHERE users.name = '%s'),"
+           " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
            quoted_name,
-           quoted_user_name,
+           current_credentials.uuid,
            quoted_login,
            quoted_password,
            quoted_comment);
 
       g_free (quoted_name);
-      g_free (quoted_user_name);
       g_free (quoted_login);
       g_free (quoted_password);
       g_free (quoted_comment);
@@ -10163,7 +10305,6 @@ create_lsc_credential (const char* name, const char* comment,
                            &exe, &exe_size))
     {
       g_free (quoted_name);
-      g_free (quoted_user_name);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -10187,12 +10328,12 @@ create_lsc_credential (const char* name, const char* comment,
                                      " VALUES"
                                      " ('%s',"
                                      "  (SELECT ROWID FROM users"
-                                     "   WHERE users.name = '%s'),"
+                                     "   WHERE users.uuid = '%s'),"
                                      "  '%s', '%s', '%s',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
-                                     quoted_user_name,
+                                     current_credentials.uuid,
                                      quoted_login,
                                      quoted_password,
                                      quoted_comment);
@@ -10206,18 +10347,17 @@ create_lsc_credential (const char* name, const char* comment,
                                      " VALUES"
                                      " ('%s',"
                                      "  (SELECT ROWID FROM users"
-                                     "   WHERE users.name = '%s'),"
+                                     "   WHERE users.uuid = '%s'),"
                                      "  '%s', '%s', '',"
                                      "  $public_key, $private_key,"
                                      "  $rpm, $deb, $exe);",
                                      quoted_name,
-                                     quoted_user_name,
+                                     current_credentials.uuid,
                                      quoted_login,
                                      quoted_password);
       }
 
     g_free (quoted_name);
-    g_free (quoted_user_name);
     g_free (quoted_login);
     g_free (quoted_password);
 
@@ -10450,11 +10590,8 @@ void
 init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                               int ascending, const char* sort_field)
 {
-  gchar *quoted_user_name;
+  assert (current_credentials.uuid);
 
-  assert (current_credentials.username);
-
-  quoted_user_name = sql_quote (current_credentials.username);
   if (name && strlen (name))
     {
       gchar *quoted_name = sql_quote (name);
@@ -10466,10 +10603,10 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                      " FROM lsc_credentials"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
-                     quoted_user_name,
+                     current_credentials.uuid,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -10482,12 +10619,11 @@ init_lsc_credential_iterator (iterator_t* iterator, const char *name,
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
                    " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   quoted_user_name,
+                   current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
-  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (lsc_credential_iterator_name, 0);
@@ -10580,7 +10716,7 @@ create_agent (const char* name, const char* comment, const char* installer,
   gchar *quoted_comment;
 
   assert (strlen (name) > 0);
-  assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -10599,9 +10735,6 @@ create_agent (const char* name, const char* comment, const char* installer,
     int ret;
     sqlite3_stmt* stmt;
     gchar* formatted;
-    gchar* quoted_user_name;
-
-    quoted_user_name = sql_quote (current_credentials.username);
 
     if (comment)
       {
@@ -10612,12 +10745,12 @@ create_agent (const char* name, const char* comment, const char* installer,
                                      " VALUES"
                                      " ('%s',"
                                      "  (SELECT ROWID FROM users"
-                                     "   WHERE users.name = '%s'),"
+                                     "   WHERE users.uuid = '%s'),"
                                      "  '%s',"
                                      "  $installer, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
-                                     quoted_user_name,
+                                     current_credentials.uuid,
                                      quoted_comment);
         g_free (quoted_comment);
       }
@@ -10629,16 +10762,15 @@ create_agent (const char* name, const char* comment, const char* installer,
                                      " VALUES"
                                      " ('%s',"
                                      "  (SELECT ROWID FROM users"
-                                     "   WHERE users.name = '%s'),"
+                                     "   WHERE users.uuid = '%s'),"
                                      "  '',"
                                      "  $installer, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
-                                     quoted_user_name);
+                                     current_credentials.uuid);
       }
 
     g_free (quoted_name);
-    g_free (quoted_user_name);
 
     tracef ("   sql: %s\n", formatted);
 
@@ -10781,11 +10913,8 @@ void
 init_agent_iterator (iterator_t* iterator, const char *name,
                      int ascending, const char* sort_field)
 {
-  gchar *quoted_user_name;
+  assert (current_credentials.uuid);
 
-  assert (current_credentials.username);
-
-  quoted_user_name = sql_quote (current_credentials.username);
   if (name && strlen (name))
     {
       gchar *quoted_name = sql_quote (name);
@@ -10795,10 +10924,10 @@ init_agent_iterator (iterator_t* iterator, const char *name,
                      " FROM agents"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                      " ORDER BY %s %s;",
                      quoted_name,
-                     quoted_user_name,
+                     current_credentials.uuid,
                      sort_field ? sort_field : "ROWID",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_name);
@@ -10809,12 +10938,11 @@ init_agent_iterator (iterator_t* iterator, const char *name,
                    " howto_install, howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.name = '%s')))"
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
-                   quoted_user_name,
+                   current_credentials.uuid,
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
-  g_free (quoted_user_name);
 }
 
 DEF_ACCESS (agent_iterator_name, 0);
