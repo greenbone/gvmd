@@ -1,5 +1,11 @@
 2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/omp.c (latex_header): Define "inactive" (gray) color.
+	(print_report_latex): Print placeholder text about filters, if some
+	shown results are filtered, added respective TODO.
+
+2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): "Early break" if requested
 	report uuid is NULL.
 

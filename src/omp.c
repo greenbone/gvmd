@@ -3630,6 +3630,7 @@ const char* latex_header
     "% must come last\n"
     "\\usepackage{hyperref}\n"
     "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
+    "\\definecolor{inactive}{rgb}{0.56,0.56,0.56}\n"
     "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
     /* Log */
     "\\definecolor{openvas_log}{rgb}{0.2275,0.2275,0.2275}\n"
@@ -3707,8 +3708,10 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
       return -1;
     }
 
+  /* Print Header. */
   fputs (latex_header, out);
 
+  /* Print Abstract. */
   start_time = scan_start_time (report);
   end_time = scan_end_time (report);
   fprintf (out,
@@ -3724,11 +3727,11 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   free (start_time);
   free (end_time);
 
+  /* Print TOC. */
   fputs ("\\tableofcontents\n", out);
   fputs ("\\newpage\n", out);
 
-  /* Print the list of hosts. */
-
+  /* Print Overview. */
   fprintf (out, "\\section{Result Overview}\n\n");
   fprintf (out, "\\begin{longtable}{|l|l|l|l|l|l|}\n");
   fprintf (out, "\\hline\n"
@@ -3747,7 +3750,11 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                 "\\hline\n"
                 "\\endlastfoot\n");
 
+  /* In Overview, Print the list of hosts. */
   init_host_iterator (&hosts, report);
+  /** @TODO Either modify this table or show another table in which the
+   *        filtered result count is shown. Also, one could alter columns
+   *        in the table, e.g. with \\cellcolor{inactive}. */
   while (next (&hosts))
     {
       int holes, warnings, notes;
@@ -3789,15 +3796,54 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
            "Total: %i&&%i&%i&%i&0\\\\\n"
            "\\hline\n"
            "\\end{longtable}\n"
-           "\n"
-           "\\section{Results per Host}\n"
            "\n",
            num_hosts,
            total_holes,
            total_warnings,
            total_notes);
 
+  const char *levels = get_report_data->levels ? get_report_data->levels
+                                               : "hmlgd";
+  if (get_report_data->search_phrase || strcmp (levels, "hmlgd"))
+    {
+      fputs ("This report might not show details of all issues that were found.\\\\\n", out);
+      if (get_report_data->search_phrase && strcmp (get_report_data->search_phrase, ""))
+        fprintf (out, "It shows issues that contain the search phrase \"%s\".\\\\\n", get_report_data->search_phrase);
+      if (!strchr (levels, 'h'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"High\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+      if (!strchr (levels, 'm'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"Medium\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+      if (!strchr (levels, 'l'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"Low\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+      if (!strchr (levels, 'g'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"Log\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+      if (!strchr (levels, 'd'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"Debug\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+    }
+
+  /* Print second chapter, Results per host */
   /* Print a section for each host. */
+  fprintf (out, "%s\n\n", "\\section{Results per Host}");
 
   init_host_iterator (&hosts, report);
   while (next (&hosts))
