@@ -1,5 +1,11 @@
 2010-01-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	Post-release version bump.
+
+	* CMakeLists.txt: Updated version number.
+
+2010-01-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Preparing the openvas-manager 1.0.0-beta2 release.
 
 	* CMakeLists.txt: Updated version number.
