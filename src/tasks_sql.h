@@ -1991,9 +1991,13 @@ migrate_9_to_10 ()
       uuid = openvas_user_uuid (iterator_string (&rows, 1));
       if (uuid == NULL)
         {
-          cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
-          return -1;
+          uuid = make_report_uuid ();
+          if (uuid == NULL)
+            {
+              cleanup_iterator (&rows);
+              sql ("ROLLBACK;");
+              return -1;
+            }
         }
 
       quoted_name = sql_insert (iterator_string (&rows, 1));
