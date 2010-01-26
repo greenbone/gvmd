@@ -1,3 +1,8 @@
+2010-01-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (migrate_8_to_9): Ensure that tables added since version
+	8 exist.
+
 2010-01-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add user UUIDs.  Hence increase database version to 10.  Add database

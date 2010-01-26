@@ -1884,9 +1884,20 @@ migrate_8_to_9 ()
 
   /* Update the database. */
 
-  /* Many tables got an owner column. */
-
   /** @todo Does ROLLBACK happen when these fail? */
+
+  /* Ensure that all tables that will be modified here exist.  These were
+   * all added after version 8 anyway. */
+
+  sql ("CREATE TABLE IF NOT EXISTS escalators"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, comment, event INTEGER,"
+       "  condition INTEGER, method INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agents"
+       " (id INTEGER PRIMARY KEY, name UNIQUE, comment, installer TEXT,"
+       "  howto_install TEXT, howto_use TEXT);");
+
+  /* Many tables got an owner column. */
 
   sql ("ALTER TABLE targets ADD COLUMN owner INTEGER;");
   sql ("UPDATE targets SET owner = NULL;");
@@ -6580,7 +6591,7 @@ set_target_hosts (const char *name, const char *hosts)
 /**
  * @brief Return whether a target is referenced by a task
  *
- * @param[in]  name   Name of target.
+ * @param[in]  name  Name of target.
  *
  * @return 1 if in use, else 0.
  */
