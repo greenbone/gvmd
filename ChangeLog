@@ -1,5 +1,10 @@
 2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): "Early break" if requested
+	report uuid is NULL.
+
+2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/tasks_sql.h (migrate_9_to_10): Create a "dummy" uuid in memory
 	for users that do not have one on disk (e.g. because they were
 	deleted).

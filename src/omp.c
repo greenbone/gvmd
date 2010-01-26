@@ -4545,726 +4545,594 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
 
         if (get_report_data->report_id == NULL)
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("get_report",
-                              "GET_REPORT must have a report_id attribute"));
-        else
           {
-            report_t report;
-            iterator_t results, hosts;
-            GString *nbe;
-            gchar *content;
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report",
+                               "GET_REPORT must have a report_id attribute"));
+            get_report_data_reset (get_report_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
 
-            if (find_report (get_report_data->report_id, &report))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-            else if (report == 0)
+        report_t report;
+        iterator_t results, hosts;
+        GString *nbe;
+        gchar *content;
+
+        if (find_report (get_report_data->report_id, &report))
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+        else if (report == 0)
+          {
+            if (send_find_error_to_client ("get_report",
+                                            "report",
+                                            get_report_data->report_id))
               {
-                if (send_find_error_to_client ("get_report",
-                                               "report",
-                                               get_report_data->report_id))
+                error_send_to_client (error);
+                return;
+              }
+          }
+        else if (get_report_data->format == NULL
+                  || strcasecmp (get_report_data->format, "xml") == 0)
+          {
+            task_t task;
+            char *tsk_uuid = NULL, *start_time, *end_time;
+            int result_count, filtered_result_count, run_status;
+            const char *levels;
+
+            levels = get_report_data->levels
+                      ? get_report_data->levels : "hmlgd";
+
+            if (report_task (report, &task))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+            else if (task && task_uuid (task, &tsk_uuid))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+
+            report_scan_result_count (report, NULL, NULL, &result_count);
+            report_scan_result_count (report,
+                                      levels,
+                                      get_report_data->search_phrase,
+                                      &filtered_result_count);
+            report_scan_run_status (report, &run_status);
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<get_report_response"
+              " status=\"" STATUS_OK "\""
+              " status_text=\"" STATUS_OK_TEXT "\">"
+              "<report id=\"%s\">"
+              "<sort><field>%s<order>%s</order></field></sort>"
+              "<filters>"
+              "%s"
+              "<phrase>%s</phrase>",
+              get_report_data->report_id,
+              get_report_data->sort_field ? get_report_data->sort_field
+                                          : "type",
+              get_report_data->sort_order ? "ascending" : "descending",
+              levels,
+              get_report_data->search_phrase
+                ? get_report_data->search_phrase
+                : "");
+
+            if (strchr (levels, 'h'))
+              SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
+            if (strchr (levels, 'm'))
+              SEND_TO_CLIENT_OR_FAIL ("<filter>Medium</filter>");
+            if (strchr (levels, 'l'))
+              SEND_TO_CLIENT_OR_FAIL ("<filter>Low</filter>");
+            if (strchr (levels, 'g'))
+              SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
+            if (strchr (levels, 'd'))
+              SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
+
+            SENDF_TO_CLIENT_OR_FAIL
+              ("</filters>"
+              "<scan_run_status>%s</scan_run_status>"
+              "<scan_result_count>"
+              "%i"
+              "<filtered>%i</filtered>"
+              "</scan_result_count>",
+              run_status_name (run_status
+                                ? run_status
+                                : TASK_STATUS_INTERNAL_ERROR),
+              result_count,
+              filtered_result_count);
+
+            if (task && tsk_uuid)
+              {
+                char* tsk_name = task_name (task);
+                SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                          "<name>%s</name>"
+                                          "</task>",
+                                          tsk_uuid,
+                                          tsk_name ? tsk_name : "");
+                free (tsk_name);
+                free (tsk_uuid);
+              }
+
+            start_time = scan_start_time (report);
+            SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
+                                      start_time);
+            free (start_time);
+
+            init_host_iterator (&hosts, report);
+            while (next (&hosts))
+              SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
+                                        host_iterator_host (&hosts),
+                                        host_iterator_start_time (&hosts));
+            cleanup_iterator (&hosts);
+
+            /* Port summary. */
+
+            {
+              gchar *last_port;
+              GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+
+              init_result_iterator
+                (&results, report, NULL,
+                get_report_data->first_result,
+                get_report_data->max_results,
+                /* Sort by port in order requested. */
+                ((get_report_data->sort_field
+                  && (strcmp (get_report_data->sort_field, "port")
+                              == 0))
+                  ? get_report_data->sort_order
+                  : 1),
+                "port",
+                levels,
+                get_report_data->search_phrase);
+
+              /* Buffer the results. */
+
+              last_port = NULL;
+              while (next (&results))
+                {
+                  const char *port = result_iterator_port (&results);
+
+                  if (last_port == NULL || strcmp (port, last_port))
+                    {
+                      const char *host, *type;
+                      gchar *item;
+                      int type_len, host_len;
+
+                      g_free (last_port);
+                      last_port = g_strdup (port);
+
+                      host = result_iterator_host (&results);
+                      type = result_iterator_type (&results);
+                      type_len = strlen (type);
+                      host_len = strlen (host);
+                      item = g_malloc (type_len
+                                        + host_len
+                                        + strlen (port)
+                                        + 3);
+                      g_array_append_val (ports, item);
+                      strcpy (item, type);
+                      strcpy (item + type_len + 1, host);
+                      strcpy (item + type_len + host_len + 2, port);
+                    }
+
+                }
+              g_free (last_port);
+
+              /* Ensure the buffered results are sorted. */
+
+              if (get_report_data->sort_field
+                  && strcmp (get_report_data->sort_field, "port"))
+                {
+                  /* Sort by threat. */
+                  if (get_report_data->sort_order)
+                    g_array_sort (ports, compare_ports_asc);
+                  else
+                    g_array_sort (ports, compare_ports_desc);
+                }
+
+              /* Send from the buffer. */
+
+              SENDF_TO_CLIENT_OR_FAIL ("<ports"
+                                        " start=\"%i\""
+                                        " max=\"%i\">",
+                                        /* Add 1 for 1 indexing. */
+                                        get_report_data->first_result + 1,
+                                        get_report_data->max_results);
+              {
+                gchar *item;
+                int index = 0;
+
+                while ((item = g_array_index (ports, gchar*, index++)))
                   {
+                    int type_len = strlen (item);
+                    int host_len = strlen (item + type_len + 1);
+                    SENDF_TO_CLIENT_OR_FAIL ("<port>"
+                                              "<host>%s</host>"
+                                              "%s"
+                                              "<threat>%s</threat>"
+                                              "</port>",
+                                              item + type_len + 1,
+                                              item + type_len
+                                                  + host_len
+                                                  + 2,
+                                              result_type_threat (item));
+                    g_free (item);
+                  }
+                g_array_free (ports, TRUE);
+              }
+              SENDF_TO_CLIENT_OR_FAIL ("</ports>");
+              cleanup_iterator (&results);
+            }
+
+            /* Threat counts. */
+
+            {
+              int debugs, holes, infos, logs, warnings;
+
+              report_counts_id (report, &debugs, &holes, &infos, &logs,
+                                &warnings);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<messages>"
+                                        "<debug>%i</debug>"
+                                        "<hole>%i</hole>"
+                                        "<info>%i</info>"
+                                        "<log>%i</log>"
+                                        "<warning>%i</warning>"
+                                        "</messages>",
+                                        debugs,
+                                        holes,
+                                        infos,
+                                        logs,
+                                        warnings);
+            }
+
+            /* Results. */
+
+            init_result_iterator (&results, report, NULL,
+                                  get_report_data->first_result,
+                                  get_report_data->max_results,
+                                  get_report_data->sort_order,
+                                  get_report_data->sort_field,
+                                  levels,
+                                  get_report_data->search_phrase);
+
+            SENDF_TO_CLIENT_OR_FAIL ("<results"
+                                      " start=\"%i\""
+                                      " max=\"%i\">",
+                                      /* Add 1 for 1 indexing. */
+                                      get_report_data->first_result + 1,
+                                      get_report_data->max_results);
+            while (next (&results))
+              {
+                const char *descr = result_iterator_descr (&results);
+                gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
+                const char *name = result_iterator_nvt_name (&results);
+                SENDF_TO_CLIENT_OR_FAIL
+                  ("<result>"
+                  "<subnet>%s</subnet>"
+                  "<host>%s</host>"
+                  "<port>%s</port>"
+                  "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                  "<threat>%s</threat>"
+                  "<description>%s</description>"
+                  "</result>",
+                  result_iterator_subnet (&results),
+                  result_iterator_host (&results),
+                  result_iterator_port (&results),
+                  result_iterator_nvt_oid (&results),
+                  name ? name : "",
+                  result_type_threat
+                    (result_iterator_type (&results)),
+                  descr ? nl_descr : "");
+                if (descr) g_free (nl_descr);
+              }
+            SENDF_TO_CLIENT_OR_FAIL ("</results>");
+            cleanup_iterator (&results);
+
+            init_host_iterator (&hosts, report);
+            while (next (&hosts))
+              SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
+                                        host_iterator_host (&hosts),
+                                        host_iterator_end_time (&hosts));
+            cleanup_iterator (&hosts);
+
+            end_time = scan_end_time (report);
+            SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
+                                      end_time);
+            free (end_time);
+
+            SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                    "</get_report_response>");
+          }
+        else if (strcasecmp (get_report_data->format, "nbe") == 0)
+          {
+            char *start_time, *end_time;
+
+            /* TODO: Encode and send in chunks, after each printf. */
+
+            /* Build the NBE in memory. */
+
+            nbe = g_string_new ("");
+            start_time = scan_start_time (report);
+            g_string_append_printf (nbe,
+                                    "timestamps|||scan_start|%s|\n",
+                                    start_time);
+            free (start_time);
+
+            init_host_iterator (&hosts, report);
+            while (next (&hosts))
+              g_string_append_printf (nbe,
+                                      "timestamps||%s|host_start|%s|\n",
+                                      host_iterator_host (&hosts),
+                                      host_iterator_start_time (&hosts));
+            cleanup_iterator (&hosts);
+
+            init_result_iterator (&results, report, NULL,
+                                  get_report_data->first_result,
+                                  get_report_data->max_results,
+                                  get_report_data->sort_order,
+                                  get_report_data->sort_field,
+                                  get_report_data->levels,
+                                  get_report_data->search_phrase);
+            while (next (&results))
+              g_string_append_printf (nbe,
+                                      "results|%s|%s|%s|%s|%s|%s\n",
+                                      result_iterator_subnet (&results),
+                                      result_iterator_host (&results),
+                                      result_iterator_port (&results),
+                                      result_iterator_nvt_oid (&results),
+                                      result_iterator_type (&results),
+                                      result_iterator_descr (&results));
+            cleanup_iterator (&results);
+
+            init_host_iterator (&hosts, report);
+            while (next (&hosts))
+              g_string_append_printf (nbe,
+                                      "timestamps||%s|host_end|%s|\n",
+                                      host_iterator_host (&hosts),
+                                      host_iterator_end_time (&hosts));
+            cleanup_iterator (&hosts);
+
+            end_time = scan_end_time (report);
+            g_string_append_printf (nbe,
+                                    "timestamps|||scan_end|%s|\n",
+                                    end_time);
+            free (end_time);
+
+            /* Encode and send the NBE. */
+
+            SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+                                    " status=\"" STATUS_OK "\""
+                                    " status_text=\"" STATUS_OK_TEXT "\">"
+                                    "<report format=\"nbe\">");
+            content = g_string_free (nbe, FALSE);
+            if (content && strlen (content))
+              {
+                gchar *base64_content;
+                base64_content = g_base64_encode ((guchar*) content,
+                                                  strlen (content));
+                if (send_to_client (base64_content))
+                  {
+                    g_free (content);
+                    g_free (base64_content);
                     error_send_to_client (error);
                     return;
                   }
+                g_free (base64_content);
               }
-            else if (get_report_data->format == NULL
-                     || strcasecmp (get_report_data->format, "xml") == 0)
+            g_free (content);
+            SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                    "</get_report_response>");
+          }
+        else if (strcasecmp (get_report_data->format, "html") == 0)
+          {
+            gchar *xml_file;
+            char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            if (mkdtemp (xml_dir) == NULL)
               {
-                task_t task;
-                char *tsk_uuid = NULL, *start_time, *end_time;
-                int result_count, filtered_result_count, run_status;
-                const char *levels;
-
-                levels = get_report_data->levels
-                          ? get_report_data->levels : "hmlgd";
-
-                if (report_task (report, &task))
-                  {
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    get_report_data_reset (get_report_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    break;
-                  }
-                else if (task && task_uuid (task, &tsk_uuid))
-                  {
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                    get_report_data_reset (get_report_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    break;
-                  }
-
-                report_scan_result_count (report, NULL, NULL, &result_count);
-                report_scan_result_count (report,
-                                          levels,
-                                          get_report_data->search_phrase,
-                                          &filtered_result_count);
-                report_scan_run_status (report, &run_status);
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<get_report_response"
-                  " status=\"" STATUS_OK "\""
-                  " status_text=\"" STATUS_OK_TEXT "\">"
-                  "<report id=\"%s\">"
-                  "<sort><field>%s<order>%s</order></field></sort>"
-                  "<filters>"
-                  "%s"
-                  "<phrase>%s</phrase>",
-                  get_report_data->report_id,
-                  get_report_data->sort_field ? get_report_data->sort_field
-                                              : "type",
-                  get_report_data->sort_order ? "ascending" : "descending",
-                  levels,
-                  get_report_data->search_phrase
-                   ? get_report_data->search_phrase
-                   : "");
-
-                if (strchr (levels, 'h'))
-                  SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
-                if (strchr (levels, 'm'))
-                  SEND_TO_CLIENT_OR_FAIL ("<filter>Medium</filter>");
-                if (strchr (levels, 'l'))
-                  SEND_TO_CLIENT_OR_FAIL ("<filter>Low</filter>");
-                if (strchr (levels, 'g'))
-                  SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
-                if (strchr (levels, 'd'))
-                  SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
-
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("</filters>"
-                  "<scan_run_status>%s</scan_run_status>"
-                  "<scan_result_count>"
-                  "%i"
-                  "<filtered>%i</filtered>"
-                  "</scan_result_count>",
-                  run_status_name (run_status
-                                   ? run_status
-                                   : TASK_STATUS_INTERNAL_ERROR),
-                  result_count,
-                  filtered_result_count);
-
-                if (task && tsk_uuid)
-                  {
-                    char* tsk_name = task_name (task);
-                    SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                             "<name>%s</name>"
-                                             "</task>",
-                                             tsk_uuid,
-                                             tsk_name ? tsk_name : "");
-                    free (tsk_name);
-                    free (tsk_uuid);
-                  }
-
-                start_time = scan_start_time (report);
-                SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
-                                         start_time);
-                free (start_time);
-
-                init_host_iterator (&hosts, report);
-                while (next (&hosts))
-                  SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
-                                           host_iterator_host (&hosts),
-                                           host_iterator_start_time (&hosts));
-                cleanup_iterator (&hosts);
-
-                /* Port summary. */
-
-                {
-                  gchar *last_port;
-                  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
-
-                  init_result_iterator
-                   (&results, report, NULL,
-                    get_report_data->first_result,
-                    get_report_data->max_results,
-                    /* Sort by port in order requested. */
-                    ((get_report_data->sort_field
-                      && (strcmp (get_report_data->sort_field, "port")
-                                 == 0))
-                     ? get_report_data->sort_order
-                     : 1),
-                    "port",
-                    levels,
-                    get_report_data->search_phrase);
-
-                  /* Buffer the results. */
-
-                  last_port = NULL;
-                  while (next (&results))
-                    {
-                      const char *port = result_iterator_port (&results);
-
-                      if (last_port == NULL || strcmp (port, last_port))
-                        {
-                          const char *host, *type;
-                          gchar *item;
-                          int type_len, host_len;
-
-                          g_free (last_port);
-                          last_port = g_strdup (port);
-
-                          host = result_iterator_host (&results);
-                          type = result_iterator_type (&results);
-                          type_len = strlen (type);
-                          host_len = strlen (host);
-                          item = g_malloc (type_len
-                                           + host_len
-                                           + strlen (port)
-                                           + 3);
-                          g_array_append_val (ports, item);
-                          strcpy (item, type);
-                          strcpy (item + type_len + 1, host);
-                          strcpy (item + type_len + host_len + 2, port);
-                        }
-
-                    }
-                  g_free (last_port);
-
-                  /* Ensure the buffered results are sorted. */
-
-                  if (get_report_data->sort_field
-                      && strcmp (get_report_data->sort_field, "port"))
-                    {
-                      /* Sort by threat. */
-                      if (get_report_data->sort_order)
-                        g_array_sort (ports, compare_ports_asc);
-                      else
-                        g_array_sort (ports, compare_ports_desc);
-                    }
-
-                  /* Send from the buffer. */
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<ports"
-                                           " start=\"%i\""
-                                           " max=\"%i\">",
-                                           /* Add 1 for 1 indexing. */
-                                           get_report_data->first_result + 1,
-                                           get_report_data->max_results);
-                  {
-                    gchar *item;
-                    int index = 0;
-
-                    while ((item = g_array_index (ports, gchar*, index++)))
-                      {
-                        int type_len = strlen (item);
-                        int host_len = strlen (item + type_len + 1);
-                        SENDF_TO_CLIENT_OR_FAIL ("<port>"
-                                                 "<host>%s</host>"
-                                                 "%s"
-                                                 "<threat>%s</threat>"
-                                                 "</port>",
-                                                 item + type_len + 1,
-                                                 item + type_len
-                                                      + host_len
-                                                      + 2,
-                                                 result_type_threat (item));
-                        g_free (item);
-                      }
-                    g_array_free (ports, TRUE);
-                  }
-                  SENDF_TO_CLIENT_OR_FAIL ("</ports>");
-                  cleanup_iterator (&results);
-                }
-
-                /* Threat counts. */
-
-                {
-                  int debugs, holes, infos, logs, warnings;
-
-                  report_counts_id (report, &debugs, &holes, &infos, &logs,
-                                    &warnings);
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<messages>"
-                                           "<debug>%i</debug>"
-                                           "<hole>%i</hole>"
-                                           "<info>%i</info>"
-                                           "<log>%i</log>"
-                                           "<warning>%i</warning>"
-                                           "</messages>",
-                                           debugs,
-                                           holes,
-                                           infos,
-                                           logs,
-                                           warnings);
-                }
-
-                /* Results. */
-
-                init_result_iterator (&results, report, NULL,
-                                      get_report_data->first_result,
-                                      get_report_data->max_results,
-                                      get_report_data->sort_order,
-                                      get_report_data->sort_field,
-                                      levels,
-                                      get_report_data->search_phrase);
-
-                SENDF_TO_CLIENT_OR_FAIL ("<results"
-                                         " start=\"%i\""
-                                         " max=\"%i\">",
-                                         /* Add 1 for 1 indexing. */
-                                         get_report_data->first_result + 1,
-                                         get_report_data->max_results);
-                while (next (&results))
-                  {
-                    const char *descr = result_iterator_descr (&results);
-                    gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
-                    const char *name = result_iterator_nvt_name (&results);
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<result>"
-                      "<subnet>%s</subnet>"
-                      "<host>%s</host>"
-                      "<port>%s</port>"
-                      "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                      "<threat>%s</threat>"
-                      "<description>%s</description>"
-                      "</result>",
-                      result_iterator_subnet (&results),
-                      result_iterator_host (&results),
-                      result_iterator_port (&results),
-                      result_iterator_nvt_oid (&results),
-                      name ? name : "",
-                      result_type_threat
-                       (result_iterator_type (&results)),
-                      descr ? nl_descr : "");
-                    if (descr) g_free (nl_descr);
-                  }
-                SENDF_TO_CLIENT_OR_FAIL ("</results>");
-                cleanup_iterator (&results);
-
-                init_host_iterator (&hosts, report);
-                while (next (&hosts))
-                  SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
-                                           host_iterator_host (&hosts),
-                                           host_iterator_end_time (&hosts));
-                cleanup_iterator (&hosts);
-
-                end_time = scan_end_time (report);
-                SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
-                                         end_time);
-                free (end_time);
-
-                SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                        "</get_report_response>");
+                g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
               }
-            else if (strcasecmp (get_report_data->format, "nbe") == 0)
+            else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                      print_report_xml (report,
+                                        xml_file,
+                                        get_report_data->sort_order,
+                                        get_report_data->sort_field))
               {
-                char *start_time, *end_time;
-
-                /* TODO: Encode and send in chunks, after each printf. */
-
-                /* Build the NBE in memory. */
-
-                nbe = g_string_new ("");
-                start_time = scan_start_time (report);
-                g_string_append_printf (nbe,
-                                        "timestamps|||scan_start|%s|\n",
-                                        start_time);
-                free (start_time);
-
-                init_host_iterator (&hosts, report);
-                while (next (&hosts))
-                  g_string_append_printf (nbe,
-                                          "timestamps||%s|host_start|%s|\n",
-                                          host_iterator_host (&hosts),
-                                          host_iterator_start_time (&hosts));
-                cleanup_iterator (&hosts);
-
-                init_result_iterator (&results, report, NULL,
-                                      get_report_data->first_result,
-                                      get_report_data->max_results,
-                                      get_report_data->sort_order,
-                                      get_report_data->sort_field,
-                                      get_report_data->levels,
-                                      get_report_data->search_phrase);
-                while (next (&results))
-                  g_string_append_printf (nbe,
-                                          "results|%s|%s|%s|%s|%s|%s\n",
-                                          result_iterator_subnet (&results),
-                                          result_iterator_host (&results),
-                                          result_iterator_port (&results),
-                                          result_iterator_nvt_oid (&results),
-                                          result_iterator_type (&results),
-                                          result_iterator_descr (&results));
-                cleanup_iterator (&results);
-
-                init_host_iterator (&hosts, report);
-                while (next (&hosts))
-                  g_string_append_printf (nbe,
-                                          "timestamps||%s|host_end|%s|\n",
-                                          host_iterator_host (&hosts),
-                                          host_iterator_end_time (&hosts));
-                cleanup_iterator (&hosts);
-
-                end_time = scan_end_time (report);
-                g_string_append_printf (nbe,
-                                        "timestamps|||scan_end|%s|\n",
-                                        end_time);
-                free (end_time);
-
-                /* Encode and send the NBE. */
-
-                SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
-                                        " status=\"" STATUS_OK "\""
-                                        " status_text=\"" STATUS_OK_TEXT "\">"
-                                        "<report format=\"nbe\">");
-                content = g_string_free (nbe, FALSE);
-                if (content && strlen (content))
-                  {
-                    gchar *base64_content;
-                    base64_content = g_base64_encode ((guchar*) content,
-                                                      strlen (content));
-                    if (send_to_client (base64_content))
-                      {
-                        g_free (content);
-                        g_free (base64_content);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64_content);
-                  }
-                g_free (content);
-                SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                        "</get_report_response>");
+                g_free (xml_file);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
               }
-            else if (strcasecmp (get_report_data->format, "html") == 0)
+            else
               {
-                gchar *xml_file;
-                char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+                gchar *xsl_file;
 
-                if (mkdtemp (xml_dir) == NULL)
+                xsl_file = g_build_filename (OPENVAS_DATA_DIR,
+                                              "openvasmd_report_html.xsl",
+                                              NULL);
+                if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
                   {
-                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                  }
-                else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
-                         print_report_xml (report,
-                                           xml_file,
-                                           get_report_data->sort_order,
-                                           get_report_data->sort_field))
-                  {
+                    g_warning ("%s: XSL missing: %s\n",
+                                __FUNCTION__,
+                                xsl_file);
+                    g_free (xsl_file);
                     g_free (xml_file);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                    /* This is a missing resource, however the resource is
+                      * the responsibility of the manager admin. */
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
-                    gchar *xsl_file;
+                    gchar *html_file, *command;
+                    int ret;
 
-                    xsl_file = g_build_filename (OPENVAS_DATA_DIR,
-                                                 "openvasmd_report_html.xsl",
-                                                 NULL);
-                    if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
-                      {
-                        g_warning ("%s: XSL missing: %s\n",
-                                   __FUNCTION__,
-                                   xsl_file);
-                        g_free (xsl_file);
-                        g_free (xml_file);
-                        /* This is a missing resource, however the resource is
-                         * the responsibility of the manager admin. */
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
-                      }
-                    else
-                      {
-                        gchar *html_file, *command;
-                        int ret;
+                    html_file = g_strdup_printf ("%s/report.html", xml_dir);
 
-                        html_file = g_strdup_printf ("%s/report.html", xml_dir);
-
-                        command = g_strdup_printf ("xsltproc -v %s %s -o %s 2> /dev/null",
-                                                   xsl_file,
-                                                   xml_file,
-                                                   html_file);
-                        g_free (xsl_file);
-                        g_free (xml_file);
-
-                        g_message ("   command: %s\n", command);
-
-                        /* RATS: ignore, command is defined above. */
-                        if (ret = system (command),
-                            // FIX ret is always -1
-                            0 && ((ret) == -1
-                                  || WEXITSTATUS (ret)))
-                          {
-                            g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                       __FUNCTION__,
-                                       ret,
-                                       WEXITSTATUS (ret),
-                                       command);
-                            g_free (command);
-                            g_free (html_file);
-                            SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
-                          }
-                        else
-                          {
-                            GError *get_error;
-                            gchar *html;
-                            gsize html_len;
-
-                            g_free (command);
-
-                            /* Send the HTML to the client. */
-
-                            get_error = NULL;
-                            g_file_get_contents (html_file,
-                                                 &html,
-                                                 &html_len,
-                                                 &get_error);
-                            g_free (html_file);
-                            if (get_error)
-                              {
-                                g_warning ("%s: Failed to get HTML: %s\n",
-                                           __FUNCTION__,
-                                           get_error->message);
-                                g_error_free (get_error);
-                                SEND_TO_CLIENT_OR_FAIL
-                                 (XML_INTERNAL_ERROR ("get_report"));
-                              }
-                            else
-                              {
-                                /* Remove the directory. */
-
-                                file_utils_rmdir_rf (xml_dir);
-
-                                /* Encode and send the HTML. */
-
-                                SEND_TO_CLIENT_OR_FAIL
-                                 ("<get_report_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">"
-                                  "<report format=\"html\">");
-                                if (html && strlen (html))
-                                  {
-                                    gchar *base64;
-                                    base64 = g_base64_encode ((guchar*) html,
-                                                              html_len);
-                                    if (send_to_client (base64))
-                                      {
-                                        g_free (html);
-                                        g_free (base64);
-                                        error_send_to_client (error);
-                                        return;
-                                      }
-                                    g_free (base64);
-                                  }
-                                g_free (html);
-                                SEND_TO_CLIENT_OR_FAIL
-                                 ("</report>"
-                                  "</get_report_response>");
-                              }
-                          }
-                      }
-                  }
-              }
-            else if (strcasecmp (get_report_data->format, "html-pdf") == 0)
-              {
-                gchar *xml_file;
-                char xml_dir[] = "/tmp/openvasmd_XXXXXX";
-
-                // TODO: This block is very similar to the HTML block above.
-
-                if (mkdtemp (xml_dir) == NULL)
-                  {
-                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                  }
-                else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
-                         print_report_xml (report,
-                                           xml_file,
-                                           get_report_data->sort_order,
-                                           get_report_data->sort_field))
-                  {
+                    command = g_strdup_printf ("xsltproc -v %s %s -o %s 2> /dev/null",
+                                                xsl_file,
+                                                xml_file,
+                                                html_file);
+                    g_free (xsl_file);
                     g_free (xml_file);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                  }
-                else
-                  {
-                    gchar *xsl_file;
 
-                    xsl_file = g_build_filename (OPENVAS_DATA_DIR,
-                                                 "openvasmd_report_html.xsl",
-                                                 NULL);
-                    if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                    g_message ("   command: %s\n", command);
+
+                    /* RATS: ignore, command is defined above. */
+                    if (ret = system (command),
+                        // FIX ret is always -1
+                        0 && ((ret) == -1
+                              || WEXITSTATUS (ret)))
                       {
-                        g_warning ("%s: XSL missing: %s\n",
-                                   __FUNCTION__,
-                                   xsl_file);
-                        g_free (xsl_file);
-                        g_free (xml_file);
-                        /* This is a missing resource, however the resource is
-                         * the responsibility of the manager admin. */
+                        g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                    __FUNCTION__,
+                                    ret,
+                                    WEXITSTATUS (ret),
+                                    command);
+                        g_free (command);
+                        g_free (html_file);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                          (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
-                        gchar *pdf_file, *command;
-                        int ret;
+                        GError *get_error;
+                        gchar *html;
+                        gsize html_len;
 
-                        pdf_file = g_strdup_printf ("%s/report.pdf", xml_dir);
+                        g_free (command);
 
-                        command = g_strdup_printf ("xsltproc -v %s %s"
-                                                   " 2> /dev/null"
-                                                   " | tee /tmp/openvasmd_html"
-                                                   " | htmldoc -t pdf --webpage -f %s -"
-                                                   " 2> /dev/null",
-                                                   xsl_file,
-                                                   xml_file,
-                                                   pdf_file);
-                        g_free (xsl_file);
-                        g_free (xml_file);
+                        /* Send the HTML to the client. */
 
-                        g_message ("   command: %s\n", command);
-
-                        /* RATS: ignore, command is defined above. */
-                        if (ret = system (command),
-                            // FIX ret is always -1
-                            0 && ((ret) == -1
-                                  || WEXITSTATUS (ret)))
+                        get_error = NULL;
+                        g_file_get_contents (html_file,
+                                              &html,
+                                              &html_len,
+                                              &get_error);
+                        g_free (html_file);
+                        if (get_error)
                           {
-                            g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                       __FUNCTION__,
-                                       ret,
-                                       WEXITSTATUS (ret),
-                                       command);
-                            g_free (command);
-                            g_free (pdf_file);
+                            g_warning ("%s: Failed to get HTML: %s\n",
+                                        __FUNCTION__,
+                                        get_error->message);
+                            g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
+                              (XML_INTERNAL_ERROR ("get_report"));
                           }
                         else
                           {
-                            GError *get_error;
-                            gchar *pdf;
-                            gsize pdf_len;
+                            /* Remove the directory. */
 
-                            g_free (command);
+                            file_utils_rmdir_rf (xml_dir);
 
-                            /* Send the PDF to the client. */
+                            /* Encode and send the HTML. */
 
-                            get_error = NULL;
-                            g_file_get_contents (pdf_file,
-                                                 &pdf,
-                                                 &pdf_len,
-                                                 &get_error);
-                            g_free (pdf_file);
-                            if (get_error)
+                            SEND_TO_CLIENT_OR_FAIL
+                              ("<get_report_response"
+                              " status=\"" STATUS_OK "\""
+                              " status_text=\"" STATUS_OK_TEXT "\">"
+                              "<report format=\"html\">");
+                            if (html && strlen (html))
                               {
-                                g_warning ("%s: Failed to get PDF: %s\n",
-                                           __FUNCTION__,
-                                           get_error->message);
-                                g_error_free (get_error);
-                                SEND_TO_CLIENT_OR_FAIL
-                                 (XML_INTERNAL_ERROR ("get_report"));
-                              }
-                            else
-                              {
-                                /* Remove the directory. */
-
-                                file_utils_rmdir_rf (xml_dir);
-
-                                /* Encode and send the HTML. */
-
-                                SEND_TO_CLIENT_OR_FAIL
-                                 ("<get_report_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">"
-                                  "<report format=\"pdf\">");
-                                if (pdf && strlen (pdf))
+                                gchar *base64;
+                                base64 = g_base64_encode ((guchar*) html,
+                                                          html_len);
+                                if (send_to_client (base64))
                                   {
-                                    gchar *base64;
-                                    base64 = g_base64_encode ((guchar*) pdf,
-                                                              pdf_len);
-                                    if (send_to_client (base64))
-                                      {
-                                        g_free (pdf);
-                                        g_free (base64);
-                                        error_send_to_client (error);
-                                        return;
-                                      }
+                                    g_free (html);
                                     g_free (base64);
+                                    error_send_to_client (error);
+                                    return;
                                   }
-                                g_free (pdf);
-                                SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                                        "</get_report_response>");
+                                g_free (base64);
                               }
+                            g_free (html);
+                            SEND_TO_CLIENT_OR_FAIL
+                              ("</report>"
+                              "</get_report_response>");
                           }
                       }
                   }
               }
-            else if (strcasecmp (get_report_data->format, "pdf") == 0)
-              {
-                gchar *latex_file;
-                char latex_dir[] = "/tmp/openvasmd_XXXXXX";
+          }
+        else if (strcasecmp (get_report_data->format, "html-pdf") == 0)
+          {
+            gchar *xml_file;
+            char xml_dir[] = "/tmp/openvasmd_XXXXXX";
 
-                if (mkdtemp (latex_dir) == NULL)
+            // TODO: This block is very similar to the HTML block above.
+
+            if (mkdtemp (xml_dir) == NULL)
+              {
+                g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                      print_report_xml (report,
+                                        xml_file,
+                                        get_report_data->sort_order,
+                                        get_report_data->sort_field))
+              {
+                g_free (xml_file);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else
+              {
+                gchar *xsl_file;
+
+                xsl_file = g_build_filename (OPENVAS_DATA_DIR,
+                                              "openvasmd_report_html.xsl",
+                                              NULL);
+                if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
                   {
-                    g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                  }
-                else if (latex_file = g_strdup_printf ("%s/report.tex",
-                                                       latex_dir),
-                         print_report_latex (report,
-                                             latex_file,
-                                             get_report_data->sort_order,
-                                             get_report_data->sort_field))
-                  {
-                    g_free (latex_file);
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                    g_warning ("%s: XSL missing: %s\n",
+                                __FUNCTION__,
+                                xsl_file);
+                    g_free (xsl_file);
+                    g_free (xml_file);
+                    /* This is a missing resource, however the resource is
+                      * the responsibility of the manager admin. */
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
                     gchar *pdf_file, *command;
-                    gint pdf_fd;
                     int ret;
 
-                    pdf_file = g_strdup (latex_file);
-                    pdf_file[strlen (pdf_file) - 1] = 'f';
-                    pdf_file[strlen (pdf_file) - 2] = 'd';
-                    pdf_file[strlen (pdf_file) - 3] = 'p';
+                    pdf_file = g_strdup_printf ("%s/report.pdf", xml_dir);
 
-                    pdf_fd = open (pdf_file,
-                                   O_RDWR | O_CREAT,
-                                   S_IRUSR | S_IWUSR);
-
-                    command = g_strdup_printf
-                               ("pdflatex -output-directory %s %s"
-                                " > /tmp/openvasmd_pdflatex_out 2>&1"
-                                " && pdflatex -output-directory %s %s"
-                                " > /tmp/openvasmd_pdflatex_out 2>&1",
-                                latex_dir,
-                                latex_file,
-                                latex_dir,
-                                latex_file);
-
-                    g_free (latex_file);
+                    command = g_strdup_printf ("xsltproc -v %s %s"
+                                                " 2> /dev/null"
+                                                " | tee /tmp/openvasmd_html"
+                                                " | htmldoc -t pdf --webpage -f %s -"
+                                                " 2> /dev/null",
+                                                xsl_file,
+                                                xml_file,
+                                                pdf_file);
+                    g_free (xsl_file);
+                    g_free (xml_file);
 
                     g_message ("   command: %s\n", command);
 
-                    if (pdf_fd == -1)
-                      {
-                        g_warning ("%s: open of %s failed\n",
-                                   __FUNCTION__,
-                                   pdf_file);
-                        g_free (pdf_file);
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
-                      }
                     /* RATS: ignore, command is defined above. */
-                    else if (ret = system (command),
-                             // FIX ret is always -1
-                             0 && ((ret) == -1
-                                   || WEXITSTATUS (ret)))
+                    if (ret = system (command),
+                        // FIX ret is always -1
+                        0 && ((ret) == -1
+                              || WEXITSTATUS (ret)))
                       {
                         g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                   __FUNCTION__,
-                                   ret,
-                                   WEXITSTATUS (ret),
-                                   command);
-                        close (pdf_fd);
-                        g_free (pdf_file);
+                                    __FUNCTION__,
+                                    ret,
+                                    WEXITSTATUS (ret),
+                                    command);
                         g_free (command);
+                        g_free (pdf_file);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                          (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -5272,36 +5140,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         gchar *pdf;
                         gsize pdf_len;
 
-                        close (pdf_fd);
                         g_free (command);
 
                         /* Send the PDF to the client. */
 
                         get_error = NULL;
                         g_file_get_contents (pdf_file,
-                                             &pdf,
-                                             &pdf_len,
-                                             &get_error);
+                                              &pdf,
+                                              &pdf_len,
+                                              &get_error);
                         g_free (pdf_file);
                         if (get_error)
                           {
                             g_warning ("%s: Failed to get PDF: %s\n",
-                                       __FUNCTION__,
-                                       get_error->message);
+                                        __FUNCTION__,
+                                        get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
+                              (XML_INTERNAL_ERROR ("get_report"));
                           }
                         else
                           {
                             /* Remove the directory. */
 
-                            file_utils_rmdir_rf (latex_dir);
+                            file_utils_rmdir_rf (xml_dir);
 
-                            /* Encode and send the PDF data. */
+                            /* Encode and send the HTML. */
 
                             SEND_TO_CLIENT_OR_FAIL
-                             ("<get_report_response"
+                              ("<get_report_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"pdf\">");
@@ -5326,11 +5193,149 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
               }
-            else
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_report",
-                                  "Bogus report format in format attribute"));
           }
+        else if (strcasecmp (get_report_data->format, "pdf") == 0)
+          {
+            gchar *latex_file;
+            char latex_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            if (mkdtemp (latex_dir) == NULL)
+              {
+                g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else if (latex_file = g_strdup_printf ("%s/report.tex",
+                                                    latex_dir),
+                      print_report_latex (report,
+                                          latex_file,
+                                          get_report_data->sort_order,
+                                          get_report_data->sort_field))
+              {
+                g_free (latex_file);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else
+              {
+                gchar *pdf_file, *command;
+                gint pdf_fd;
+                int ret;
+
+                pdf_file = g_strdup (latex_file);
+                pdf_file[strlen (pdf_file) - 1] = 'f';
+                pdf_file[strlen (pdf_file) - 2] = 'd';
+                pdf_file[strlen (pdf_file) - 3] = 'p';
+
+                pdf_fd = open (pdf_file,
+                                O_RDWR | O_CREAT,
+                                S_IRUSR | S_IWUSR);
+
+                command = g_strdup_printf
+                            ("pdflatex -output-directory %s %s"
+                            " > /tmp/openvasmd_pdflatex_out 2>&1"
+                            " && pdflatex -output-directory %s %s"
+                            " > /tmp/openvasmd_pdflatex_out 2>&1",
+                            latex_dir,
+                            latex_file,
+                            latex_dir,
+                            latex_file);
+
+                g_free (latex_file);
+
+                g_message ("   command: %s\n", command);
+
+                if (pdf_fd == -1)
+                  {
+                    g_warning ("%s: open of %s failed\n",
+                                __FUNCTION__,
+                                pdf_file);
+                    g_free (pdf_file);
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("get_report"));
+                  }
+                /* RATS: ignore, command is defined above. */
+                else if (ret = system (command),
+                          // FIX ret is always -1
+                          0 && ((ret) == -1
+                                || WEXITSTATUS (ret)))
+                  {
+                    g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                __FUNCTION__,
+                                ret,
+                                WEXITSTATUS (ret),
+                                command);
+                    close (pdf_fd);
+                    g_free (pdf_file);
+                    g_free (command);
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_INTERNAL_ERROR ("get_report"));
+                  }
+                else
+                  {
+                    GError *get_error;
+                    gchar *pdf;
+                    gsize pdf_len;
+
+                    close (pdf_fd);
+                    g_free (command);
+
+                    /* Send the PDF to the client. */
+
+                    get_error = NULL;
+                    g_file_get_contents (pdf_file,
+                                          &pdf,
+                                          &pdf_len,
+                                          &get_error);
+                    g_free (pdf_file);
+                    if (get_error)
+                      {
+                        g_warning ("%s: Failed to get PDF: %s\n",
+                                    __FUNCTION__,
+                                    get_error->message);
+                        g_error_free (get_error);
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("get_report"));
+                      }
+                    else
+                      {
+                        /* Remove the directory. */
+
+                        file_utils_rmdir_rf (latex_dir);
+
+                        /* Encode and send the PDF data. */
+
+                        SEND_TO_CLIENT_OR_FAIL
+                          ("<get_report_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">"
+                          "<report format=\"pdf\">");
+                        if (pdf && strlen (pdf))
+                          {
+                            gchar *base64;
+                            base64 = g_base64_encode ((guchar*) pdf,
+                                                      pdf_len);
+                            if (send_to_client (base64))
+                              {
+                                g_free (pdf);
+                                g_free (base64);
+                                error_send_to_client (error);
+                                return;
+                              }
+                            g_free (base64);
+                          }
+                        g_free (pdf);
+                        SEND_TO_CLIENT_OR_FAIL ("</report>"
+                                                "</get_report_response>");
+                      }
+                  }
+              }
+          }
+        else
+          {
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("get_report",
+                                 "Bogus report format in format attribute"));
+          }
+
         get_report_data_reset (get_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
