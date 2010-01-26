@@ -37,8 +37,6 @@
 
 /* Internal types and preprocessor definitions. */
 
-typedef long long int agent_t;
-
 #define CONFIG_ID_FULL_AND_FAST 1
 #define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
 #define CONFIG_ID_FULL_AND_VERY_DEEP 3
@@ -10702,11 +10700,40 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 0);
 
 /* Agents. */
 
-/** @todo Add find_agent.
+/**
+ * @brief Find an agent given a name.
  *
- * The permission check will be easier and more solid if the agent user
- * accesses these functions via an agent_t instead of via a name.
+ * @param[in]   name   Name of agent.
+ * @param[out]  agent  Agent return, 0 if succesfully failed to find agent.
+ *
+ * @return FALSE on success (including if failed to find agent), TRUE on error.
  */
+gboolean
+find_agent (const char* name, agent_t* agent)
+{
+  if (user_owns ("agent", name) == 0)
+    {
+      *agent = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (agent, 0, 0,
+                     "SELECT ROWID FROM agents WHERE name = '%s';",
+                     name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *agent = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
 
 /**
  * @brief Create an agent entry.
@@ -10890,24 +10917,14 @@ create_agent (const char* name, const char* comment, const char* installer,
 /**
  * @brief Delete an agent.
  *
- * @param[in]  name  Name of agent.
+ * @param[in]  agent  Agent.
  *
- * @return 0 success, 2 access forbidden, -1 error.
+ * @return 0 success, -1 error.
  */
 int
-delete_agent (const char* name)
+delete_agent (agent_t agent)
 {
-  gchar* quoted_name = sql_quote (name);
-  sql ("BEGIN IMMEDIATE;");
-  if (user_owns ("agent", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 2;
-    }
-  sql ("DELETE FROM agents WHERE name = '%s';", quoted_name);
-  sql ("COMMIT;");
-  g_free (quoted_name);
+  sql ("DELETE FROM agents WHERE ROWID = '%llu';", agent);
   return 0;
 }
 

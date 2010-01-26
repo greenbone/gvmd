@@ -165,6 +165,7 @@ typedef enum
 } task_status_t;
 
 #ifdef TASKS_SQL
+typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
 typedef long long int task_t;
@@ -188,6 +189,7 @@ typedef struct
   gboolean done;
 } iterator_t;
 #else /* not TASKS_SQL */
+typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
 typedef long long int task_t;
@@ -1037,11 +1039,14 @@ lsc_credential_target_iterator_name (iterator_t*);
 
 /* Agents. */
 
+gboolean
+find_agent (const char*, agent_t*);
+
 int
 create_agent (const char*, const char*, const char*, const char*, const char*);
 
 int
-delete_agent (const char*);
+delete_agent (agent_t);
 
 void
 init_agent_iterator (iterator_t*, const char*, int, const char*);

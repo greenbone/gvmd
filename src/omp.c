@@ -5366,6 +5366,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_AGENT:
         {
+          agent_t agent;
+
           assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -5377,7 +5379,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_AGENT name must be at least"
                                   " one character long"));
             }
-          else switch (delete_agent (modify_task_name))
+          else if (find_agent (modify_task_name, &agent))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
+          else if (agent == 0)
+            {
+              if (send_find_error_to_client ("delete_agent",
+                                             "agent",
+                                             modify_task_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (delete_agent (agent))
             {
               case 0:
                 openvas_free_string_var (&modify_task_name);
@@ -5388,10 +5402,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_agent",
                                     "Agent is in use"));
-                break;
-              case 2:
-                openvas_free_string_var (&modify_task_name);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_agent"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);

@@ -1,5 +1,17 @@
 2010-01-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (agent_t): Remove.  Move to manage.h.
+	(find_agent): New function.
+	(delete_agent): Take an agent instead of agent name.
+
+	* src/manage.h: Update headers accordingly.
+	(agent_t): New type.  From tasks_sql.h.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_AGENT find
+	agent and pass agent_t to delete_agent.
+
+2010-01-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (migrate_8_to_9): Ensure that tables added since version
 	8 exist.
 
