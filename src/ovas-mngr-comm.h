@@ -40,16 +40,6 @@
  */
 
 int
-make_session (int,
-              gnutls_session_t*,
-              gnutls_certificate_credentials_t*);
-
-int
-end_session (int,
-             gnutls_session_t,
-             gnutls_certificate_credentials_t);
-
-int
 send_to_server (const char *);
 
 int

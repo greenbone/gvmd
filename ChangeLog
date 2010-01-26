@@ -1,5 +1,10 @@
 2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* src/ovas-mngr-comm.h (make_session, end_session): Removed prototypes
+	(there is no implementation).
+
+2010-01-26  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* src/omp.c (latex_header): Define "inactive" (gray) color.
 	(print_report_latex): Print placeholder text about filters, if some
 	shown results are filtered, added respective TODO.
