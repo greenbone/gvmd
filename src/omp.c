@@ -3709,9 +3709,11 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
     }
 
   /* Print Header. */
+
   fputs (latex_header, out);
 
   /* Print Abstract. */
+
   start_time = scan_start_time (report);
   end_time = scan_end_time (report);
   fprintf (out,
@@ -3728,10 +3730,12 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   free (end_time);
 
   /* Print TOC. */
+
   fputs ("\\tableofcontents\n", out);
   fputs ("\\newpage\n", out);
 
-  /* Print Overview. */
+  /* Print first section, Overview. */
+
   fprintf (out, "\\section{Result Overview}\n\n");
   fprintf (out, "\\begin{longtable}{|l|l|l|l|l|l|}\n");
   fprintf (out, "\\hline\n"
@@ -3750,9 +3754,10 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                 "\\hline\n"
                 "\\endlastfoot\n");
 
-  /* In Overview, Print the list of hosts. */
+  /* In Overview, print the list of hosts. */
+
   init_host_iterator (&hosts, report);
-  /** @TODO Either modify this table or show another table in which the
+  /** @todo Either modify this table or show another table in which the
    *        filtered result count is shown. Also, one could alter columns
    *        in the table, e.g. with \\cellcolor{inactive}. */
   while (next (&hosts))
@@ -3806,9 +3811,14 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                                                : "hmlgd";
   if (get_report_data->search_phrase || strcmp (levels, "hmlgd"))
     {
-      fputs ("This report might not show details of all issues that were found.\\\\\n", out);
-      if (get_report_data->search_phrase && strcmp (get_report_data->search_phrase, ""))
-        fprintf (out, "It shows issues that contain the search phrase \"%s\".\\\\\n", get_report_data->search_phrase);
+      fputs ("This report might not show details of all issues that were"
+             " found.\\\\\n",
+             out);
+      if (get_report_data->search_phrase
+          && strcmp (get_report_data->search_phrase, ""))
+        fprintf (out,
+                 "It shows issues that contain the search phrase \"%s\".\\\\\n",
+                 get_report_data->search_phrase);
       if (!strchr (levels, 'h'))
         {
           fputs ("Issues with the threat level ", out);
@@ -3841,9 +3851,11 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
         }
     }
 
-  /* Print second chapter, Results per host */
-  /* Print a section for each host. */
+  /* Print second section, "Results per Host". */
+
   fprintf (out, "%s\n\n", "\\section{Results per Host}");
+
+  /* Print a subsection for each host. */
 
   init_host_iterator (&hosts, report);
   while (next (&hosts))

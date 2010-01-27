@@ -1,5 +1,10 @@
 2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (print_report_latex): Spread headings out like rest of file.
+	Bring line lengths under 80.
+
+2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (CONFIG_ITERATOR_FIELDS): New define.
 	(init_config_iterator, update_all_config_caches): Use
 	CONFIG_ITERATOR_FIELDS for SELECT fields, so that both functions
