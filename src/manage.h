@@ -991,11 +991,14 @@ nvt_preference_count (const char *);
 
 /* LSC credentials. */
 
+gboolean
+find_lsc_credential (const char*, lsc_credential_t*);
+
 int
 create_lsc_credential (const char*, const char*, const char*, const char*);
 
 int
-delete_lsc_credential (const char*);
+delete_lsc_credential (lsc_credential_t);
 
 void
 init_lsc_credential_iterator (iterator_t*, const char*, int, const char*);

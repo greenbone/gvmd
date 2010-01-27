@@ -5561,6 +5561,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
         {
+          lsc_credential_t lsc_credential = 0;
+
           assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -5572,7 +5574,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_LSC_CREDENTIAL name must be at least"
                                   " one character long"));
             }
-          else switch (delete_lsc_credential (modify_task_name))
+          else if (find_lsc_credential (modify_task_name, &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("delete_lsc_credential"));
+          else if (lsc_credential == 0)
+            {
+              if (send_find_error_to_client ("delete_lsc_credential",
+                                             "lsc_credential",
+                                             modify_task_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (delete_lsc_credential (lsc_credential))
             {
               case 0:
                 openvas_free_string_var (&modify_task_name);
@@ -5583,11 +5598,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_lsc_credential",
                                     "LSC credential is in use"));
-                break;
-              case 2:
-                openvas_free_string_var (&modify_task_name);
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_ACCESS ("delete_lsc_credential"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);

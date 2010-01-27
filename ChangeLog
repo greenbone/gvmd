@@ -1,5 +1,15 @@
 2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (find_lsc_credential): New function.
+	(delete_lsc_credential): Switch name arg to a lsc_credential_t.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_LSC_CREDENTIAL
+	pass lsc_credential_t to delete_lsc_credential instead of name.
+
+2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Include only the Nmap scanner from
 	"Port scanners" in the "All" NVT selector.
 

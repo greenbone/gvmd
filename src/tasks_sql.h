@@ -10223,11 +10223,42 @@ nvt_preference_count (const char *name)
 
 /* LSC Credentials. */
 
-/** @todo Add find_lsc_credential.
+/**
+ * @brief Find an LSC credential given a name.
  *
- * The permission check will be easier and more solid if the lsc_credential
- * user accesses these functions via an lsc_credential_t instead of via a name.
+ * @param[in]   name            Name of LSC credential.
+ * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
+ *                              to find credential.
+ *
+ * @return FALSE on success (including if failed to find LSC credential),
+ *         TRUE on error.
  */
+gboolean
+find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
+{
+  if (user_owns ("lsc_credential", name) == 0)
+    {
+      *lsc_credential = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (lsc_credential, 0, 0,
+                     "SELECT ROWID FROM lsc_credentials WHERE name = '%s';",
+                     name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *lsc_credential = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
 
 /**
  * @brief Create an LSC credential.
@@ -10560,37 +10591,25 @@ create_lsc_credential (const char* name, const char* comment,
 /**
  * @brief Delete an LSC credential.
  *
- * @param[in]  name  Name of LSC credential.
+ * @param[in]  lsc_credential  LSC credential.
  *
- * @return 0 success, 1 fail because the LSC credential is in use,
- *         2 access forbidden, -1 error.
+ * @return 0 success, 1 fail because the LSC credential is in use, -1 error.
  */
 int
-delete_lsc_credential (const char* name)
+delete_lsc_credential (lsc_credential_t lsc_credential)
 {
-  gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
 
-  if (user_owns ("lsc_credential", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 2;
-    }
-
   if (sql_int (0, 0,
-               "SELECT count(*) FROM targets WHERE lsc_credential ="
-               " (SELECT ROWID from lsc_credentials WHERE name = '%s');",
-               quoted_name))
+               "SELECT count(*) FROM targets WHERE lsc_credential = %llu;",
+               lsc_credential))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
-  sql ("DELETE FROM lsc_credentials WHERE name = '%s';", quoted_name);
+  sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
   sql ("COMMIT;");
-  g_free (quoted_name);
   return 0;
 }
 
