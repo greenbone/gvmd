@@ -1,3 +1,12 @@
+2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (CONFIG_ITERATOR_FIELDS): New define.
+	(init_config_iterator, update_all_config_caches): Use
+	CONFIG_ITERATOR_FIELDS for SELECT fields, so that both functions
+	always use the same fields.
+	(family_count): Always count, otherwise the initial value sticks during
+	an update.
+
 2010-01-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post-release version bump.

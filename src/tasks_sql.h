@@ -7621,6 +7621,8 @@ delete_config (const char* name)
   return 0;
 }
 
+#define CONFIG_ITERATOR_FIELDS "ROWID, name, nvt_selector, comment, families_growing, nvts_growing"
+
 /**
  * @brief Initialise a config iterator.
  *
@@ -7639,8 +7641,7 @@ init_config_iterator (iterator_t* iterator, config_t config,
   assert (current_credentials.uuid);
 
   if (config)
-    sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
-                           " families_growing, nvts_growing"
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
                            " FROM configs"
                            " WHERE ROWID = %llu"
                            " AND ((owner IS NULL) OR (owner ="
@@ -7652,8 +7653,7 @@ init_config_iterator (iterator_t* iterator, config_t config,
                            sort_field ? sort_field : "ROWID",
                            ascending ? "ASC" : "DESC");
   else
-    sql = g_strdup_printf ("SELECT ROWID, name, nvt_selector, comment,"
-                           " families_growing, nvts_growing"
+    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_FIELDS
                            " FROM configs"
                            " WHERE ((owner IS NULL) OR (owner ="
                            " (SELECT ROWID FROM users"
@@ -8677,10 +8677,7 @@ family_nvt_count (const char *family)
 int
 family_count ()
 {
-  static int count = -1;
-  if (count == -1)
-    count = sql_int (0, 0, "SELECT COUNT(distinct family) FROM nvts;");
-  return count;
+  return sql_int (0, 0, "SELECT COUNT(distinct family) FROM nvts;");
 }
 
 /**
@@ -8746,12 +8743,7 @@ update_all_config_caches ()
 {
   iterator_t configs;
 
-  /* This must contain the same columns as init_config_iterator, in the same
-   * order. */
-  init_iterator (&configs,
-                 "SELECT name, nvt_selector, comment,"
-                 " families_growing, nvts_growing"
-                 " FROM configs;");
+  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_FIELDS " FROM configs;");
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
