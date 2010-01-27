@@ -3613,8 +3613,19 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors WHERE name = 'All';")
       == 0)
-    sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-         " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
+    {
+      sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
+           " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('All', 1, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+           " 'Port scanners', 'Port scanners');");
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "Nmap (NASL wrapper)" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');");
+    }
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
@@ -3629,7 +3640,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'Full and fast', 'All',"
            " 'All NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
-           family_nvt_count (NULL),
+           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
       /* Setup preferences for the config. */
@@ -3651,7 +3662,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
-           family_nvt_count (NULL),
+           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
       /* Setup preferences for the config. */
@@ -3672,7 +3683,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'Full and very deep', 'All',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
-           family_nvt_count (NULL),
+           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
       /* Setup preferences for the config. */
@@ -3694,7 +3705,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'All NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
-           family_nvt_count (NULL),
+           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
       /* Setup preferences for the config. */

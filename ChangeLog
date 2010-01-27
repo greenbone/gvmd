@@ -1,5 +1,10 @@
 2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Include only the Nmap scanner from
+	"Port scanners" in the "All" NVT selector.
+
+2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (print_report_latex): Spread headings out like rest of file.
 	Bring line lengths under 80.
 
