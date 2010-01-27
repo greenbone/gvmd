@@ -2743,7 +2743,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
+          {
+            assert (modify_task_parameter == NULL);
+            openvas_append_string (&modify_task_parameter, "");
+            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
+          }
         else
           {
             if (send_element_error_to_client ("create_lsc_credential",
