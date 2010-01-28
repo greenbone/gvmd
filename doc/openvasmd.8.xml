@@ -60,10 +60,26 @@
 	  </optdesc>
 	</option>
 
+        <option>
+	  <p><opt>-u, --update</opt></p>
+	  <optdesc>
+		<p>Updates the database with information from a running
+		   scanner (openvassd) and exits.</p>
+	  </optdesc>
+	</option>
+
 	<option>
 	  <p><opt>-p, --port=<arg>NUMBER</arg></opt></p>
 	  <optdesc>
 		<p>Listen on port number <arg>NUMBER</arg>.</p>
+	  </optdesc>
+	</option>
+
+        <option>
+	  <p><opt>--rebuild</opt></p>
+	  <optdesc>
+		<p>Rebuild the database with information from a running
+		   scanner (openvassd) and exits.</p>
 	  </optdesc>
 	</option>
 

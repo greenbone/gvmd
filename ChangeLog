@@ -1,3 +1,7 @@
+2010-01-28  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* doc/openvasmd.8.xml: Added some of the new commands.
+
 2010-01-27  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): In
