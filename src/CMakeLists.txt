@@ -24,6 +24,8 @@
 
 ## Config
 
+add_definitions (-Werror)
+
 set (TASKS_CFLAG "-DTASKS_SQL")
 set (TASKS_LDFLAG "-lsqlite3")
 

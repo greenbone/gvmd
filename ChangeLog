@@ -1,3 +1,7 @@
+2010-01-29  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/CMakeLists.txt: Make warnings errors.
+
 2010-01-28  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* doc/openvasmd.8.xml: Added some of the new commands.
