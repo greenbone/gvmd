@@ -1,5 +1,24 @@
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_lsc_credential_iterator): Add ROWID.
+	(lsc_credential_iterator_lsc_credential): New function.
+	(lsc_credential_iterator_name, lsc_credential_iterator_login)
+	(lsc_credential_iterator_password, lsc_credential_iterator_public_key)
+	(lsc_credential_iterator_private_key, lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe)
+	(lsc_credential_iterator_comment, lsc_credential_iterator_in_use): Adjust
+	column position.
+	(init_lsc_credential_target_iterator): Take lsc_credential_t instead of
+	name.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_LSC_CREDENTIALS
+	Pass lsc_credential_t to init_lsc_credential_target_iterator instead of
+	passing name.
+
+2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (target_lsc_credential_name): Remove.
 	(target_lsc_credential): New function.
 	(init_lsc_credential_iterator): Take lsc_credential_t instead of

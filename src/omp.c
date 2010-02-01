@@ -8609,10 +8609,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       default:
                         {
-                          const char *name;
                           iterator_t targets;
 
-                          name = lsc_credential_iterator_name (&credentials);
                           SENDF_TO_CLIENT_OR_FAIL
                            ("<lsc_credential>"
                             "<name>%s</name>"
@@ -8621,18 +8619,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             "<in_use>%i</in_use>"
                             "<type>%s</type>"
                             "<targets>",
-                            name,
+                            lsc_credential_iterator_name (&credentials),
                             lsc_credential_iterator_login (&credentials),
                             lsc_credential_iterator_comment (&credentials),
                             lsc_credential_iterator_in_use (&credentials),
                             lsc_credential_iterator_public_key (&credentials)
                               ? "gen" : "pass");
 
-                          /** @todo Pass lsc_credential_t instead of name. */
-                          init_lsc_credential_target_iterator (&targets,
-                                                               name,
-                                                               /* sort_order. */
-                                                               current_int_2);
+                          init_lsc_credential_target_iterator
+                           (&targets,
+                            lsc_credential_iterator_lsc_credential
+                             (&credentials),
+                            /* sort_order. */
+                            current_int_2);
                           while (next (&targets))
                             SENDF_TO_CLIENT_OR_FAIL
                              ("<target>"

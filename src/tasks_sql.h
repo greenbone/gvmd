@@ -10636,7 +10636,7 @@ init_lsc_credential_iterator (iterator_t* iterator,
 
   if (lsc_credential)
     init_iterator (iterator,
-                   "SELECT name, login, password, comment, public_key,"
+                   "SELECT ROWID, name, login, password, comment, public_key,"
                    " private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
@@ -10651,7 +10651,7 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT name, login, password, comment, public_key,"
+                   "SELECT ROWID, name, login, password, comment, public_key,"
                    " private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
@@ -10664,31 +10664,38 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
 }
 
-DEF_ACCESS (lsc_credential_iterator_name, 0);
-DEF_ACCESS (lsc_credential_iterator_login, 1);
-DEF_ACCESS (lsc_credential_iterator_password, 2);
+lsc_credential_t
+lsc_credential_iterator_lsc_credential (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (lsc_credential_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+DEF_ACCESS (lsc_credential_iterator_name, 1);
+DEF_ACCESS (lsc_credential_iterator_login, 2);
+DEF_ACCESS (lsc_credential_iterator_password, 3);
 
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
   return ret ? ret : "";
 }
 
-DEF_ACCESS (lsc_credential_iterator_public_key, 4);
-DEF_ACCESS (lsc_credential_iterator_private_key, 5);
-DEF_ACCESS (lsc_credential_iterator_rpm, 6);
-DEF_ACCESS (lsc_credential_iterator_deb, 7);
-DEF_ACCESS (lsc_credential_iterator_exe, 8);
+DEF_ACCESS (lsc_credential_iterator_public_key, 5);
+DEF_ACCESS (lsc_credential_iterator_private_key, 6);
+DEF_ACCESS (lsc_credential_iterator_rpm, 7);
+DEF_ACCESS (lsc_credential_iterator_deb, 8);
+DEF_ACCESS (lsc_credential_iterator_exe, 9);
 
 int
 lsc_credential_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 9);
+  ret = (int) sqlite3_column_int (iterator->stmt, 10);
   return ret;
 }
 
@@ -10700,28 +10707,25 @@ lsc_credential_name (lsc_credential_t lsc_credential)
                      lsc_credential);
 }
 
-/** @todo Adjust omp.c caller, replace name with a config_t. */
 /**
  * @brief Initialise an LSC credential target iterator.
  *
  * Iterates over all targets that use the credential.
  *
- * @param[in]  iterator   Iterator.
- * @param[in]  name       Name of credential.
- * @param[in]  ascending  Whether to sort ascending or descending.
+ * @param[in]  iterator        Iterator.
+ * @param[in]  lsc_credential  Name of LSC credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
  */
 void
-init_lsc_credential_target_iterator (iterator_t* iterator, const char *name,
+init_lsc_credential_target_iterator (iterator_t* iterator,
+                                     lsc_credential_t lsc_credential,
                                      int ascending)
 {
-  gchar *quoted_name = sql_quote (name);
   init_iterator (iterator,
-                 "SELECT name FROM targets WHERE lsc_credential ="
-                 " (SELECT ROWID FROM lsc_credentials WHERE name = '%s')"
+                 "SELECT name FROM targets WHERE lsc_credential = %llu"
                  " ORDER BY name %s;",
-                 quoted_name,
+                 lsc_credential,
                  ascending ? "ASC" : "DESC");
-  g_free (quoted_name);
 }
 
 DEF_ACCESS (lsc_credential_target_iterator_name, 0);
