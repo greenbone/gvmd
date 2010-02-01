@@ -8142,7 +8142,6 @@ manage_set_config_nvts (config_t config, const char* family,
     return -1;
 
   quoted_selector = sql_quote (selector);
-  free (selector);
 
   /* If the family is growing, then exclude all no's, otherwise the family
    * is static, so include all yes's. */
@@ -8154,6 +8153,8 @@ manage_set_config_nvts (config_t config, const char* family,
       iterator_t nvts;
 
       old_nvt_count = nvt_selector_nvt_count (selector, family, 1);
+
+      free (selector);
 
       /* Clear any NVT selectors for this family from the config. */
 
@@ -8194,6 +8195,8 @@ manage_set_config_nvts (config_t config, const char* family,
   else
     {
       old_nvt_count = nvt_selector_nvt_count (selector, family, 0);
+
+      free (selector);
 
       /* Clear any NVT selectors for this family from the config. */
 
@@ -9736,7 +9739,6 @@ manage_set_config_families (config_t config,
       return -1;
     }
   quoted_selector = sql_quote (selector);
-  free (selector);
 
   /* Loop through all the known families. */
 
@@ -10028,6 +10030,7 @@ manage_set_config_families (config_t config,
   sql ("COMMIT;");
 
   g_free (quoted_selector);
+  free (selector);
   return 0;
 }
 

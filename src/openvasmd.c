@@ -490,8 +490,12 @@ cleanup ()
 void
 handle_sigabrt (/*@unused@*/ int signal)
 {
+  static int in_sigabrt = 0;
+  if (in_sigabrt) _exit (EXIT_FAILURE);
+  in_sigabrt = 1;
   manage_cleanup_process_error (signal);
   g_critical ("%s: abort\n", __FUNCTION__);
+  exit (EXIT_FAILURE);
 }
 
 /**

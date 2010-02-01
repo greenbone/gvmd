@@ -1,3 +1,12 @@
+2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/openvasmd.c (handle_sigabrt): Check if already in handler.
+
+	* src/tasks_sql.h (manage_set_config_nvts)
+	(manage_set_config_families): Free selector after last use.
+
+	* src/tracef.h (tracef) [TRACE]: Remove UTF-8 conversion.
+
 2010-01-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/CMakeLists.txt: Make warnings errors.

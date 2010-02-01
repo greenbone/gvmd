@@ -90,15 +90,9 @@ extern GSList *log_config;
   do {                                                           \
     if (verbose)                                                 \
       {                                                          \
-        /* UTF-8 hack: Convert log message to utf-8, in case it  \
-         * contains server input. */                             \
-        gsize size_dummy;                                        \
-        gchar* iso = g_strdup_printf (args);                     \
-        gchar* utf8 = g_convert (iso, -1, "UTF-8", "ISO_8859-1", \
-                                 NULL, &size_dummy, NULL);       \
-        g_free (iso);                                            \
-        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", utf8);     \
-        g_free (utf8);                                           \
+        gchar* msg_ = g_strdup_printf (args);                    \
+        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", msg_);     \
+        g_free (msg_);                                           \
       }                                                          \
   } while (0)
 #else
