@@ -1973,7 +1973,7 @@ migrate_9_to_10 ()
 
   /* Update the database. */
 
-  /* The user table got a unique "uuid" column and lost the lost the
+  /* The user table got a unique "uuid" column and lost the
    * uniqueness of its "name" column. */
 
   /** @todo ROLLBACK on failure. */
@@ -7729,7 +7729,9 @@ config_in_use (config_t config)
   if (config == CONFIG_ID_FULL_AND_FAST
       || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
       || config == CONFIG_ID_FULL_AND_VERY_DEEP
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE)
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
+      || config == sql_int (0, 0,
+                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
     return 1;
 
   return sql_int (0, 0,
