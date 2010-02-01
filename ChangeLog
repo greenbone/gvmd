@@ -1,5 +1,9 @@
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_manage): Put fullstop on empty config description.
+
+2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (migrate_9_to_10): Correct comment typo.
 	(config_in_use): Also check for empty config.
 

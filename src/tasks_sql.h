@@ -3723,7 +3723,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into configs (name, owner, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES ('empty', NULL, 'empty',"
-           " 'Empty and static configuration template',"
+           " 'Empty and static configuration template.',"
            " 0, 0, 0, 0);");
 
       /* Setup preferences for the config. */
