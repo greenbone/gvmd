@@ -8476,6 +8476,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t credentials;
           int format;
+          lsc_credential_t lsc_credential = 0;
+
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
 
           if (current_format)
@@ -8499,18 +8501,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             format = 0;
+
           if (format == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_lsc_credentials",
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
+          else if (current_uuid
+                   && find_lsc_credential (current_uuid, &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_lsc_credentials"));
+          else if (current_uuid && (lsc_credential == 0))
+            {
+              if (send_find_error_to_client ("get_lsc_credentials",
+                                             "lsc_credential",
+                                             current_uuid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           else
             {
               SEND_TO_CLIENT_OR_FAIL ("<get_lsc_credentials_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_lsc_credential_iterator (&credentials,
-                                            current_uuid,
+                                            lsc_credential,
                                             /* Attribute sort_order. */
                                             current_int_2,
                                             /* Attribute sort_field. */
@@ -8635,6 +8651,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
             }
           openvas_free_string_var (&current_name);
+          openvas_free_string_var (&current_uuid);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

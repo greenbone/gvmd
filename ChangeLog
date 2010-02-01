@@ -1,5 +1,20 @@
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (target_lsc_credential_name): Remove.
+	(target_lsc_credential): New function.
+	(init_lsc_credential_iterator): Take lsc_credential_t instead of
+	credential name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage.c (start_task): Pass lsc_credential_t to
+	init_lsc_credential_iterator instead of name.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_LSC_CREDENTIALS
+	pass lsc_credential_t to init_lsc_credential_iterator instead of name.
+
+2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_manage): Put fullstop on empty config description.
 
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>

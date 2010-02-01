@@ -6539,16 +6539,15 @@ target_hosts (const char *name)
   return hosts;
 }
 
-/** @todo Make static? */
 /**
- * @brief Return the name of any credential associated with a target.
+ * @brief Return the credential associated with a target, if any.
  *
  * @param[in]  name  Target name.
  *
- * @return Name of credential if any, else NULL.
+ * @return Credential if any, else 0.
  */
-char*
-target_lsc_credential_name (const char *name)
+static lsc_credential_t
+target_lsc_credential (const char *name)
 {
   int ret;
   lsc_credential_t lsc_credential;
@@ -6557,7 +6556,7 @@ target_lsc_credential_name (const char *name)
   if (user_owns ("target", quoted_name) == 0)
     {
       g_free (quoted_name);
-      return NULL;
+      return 0;
     }
 
   ret = sql_int64 (&lsc_credential, 0, 0,
@@ -6570,18 +6569,16 @@ target_lsc_credential_name (const char *name)
       case 0:
         break;
       case 1:        /* Too few rows in result of query. */
-        return NULL;
+        return 0;
         break;
       default:       /* Programming error. */
         assert (0);
       case -1:
         /** @todo Move return to arg; return -1. */
-        return NULL;
+        return 0;
         break;
     }
-  return sql_string (0, 0,
-                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
-                     lsc_credential);
+  return lsc_credential;
 }
 
 /**
@@ -10626,35 +10623,32 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
  * @brief Initialise an LSC Credential iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of single credential to iterate, NULL for all.
+ * @param[in]  credential  Single LSC credential to iterate, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_lsc_credential_iterator (iterator_t* iterator, const char *name,
-                              int ascending, const char* sort_field)
+init_lsc_credential_iterator (iterator_t* iterator,
+                              lsc_credential_t lsc_credential, int ascending,
+                              const char* sort_field)
 {
   assert (current_credentials.uuid);
 
-  if (name && strlen (name))
-    {
-      gchar *quoted_name = sql_quote (name);
-      init_iterator (iterator,
-                     "SELECT name, login, password, comment, public_key,"
-                     " private_key, rpm, deb, exe,"
-                     " (SELECT count(*) > 0 FROM targets"
-                     "  WHERE lsc_credential = lsc_credentials.ROWID)"
-                     " FROM lsc_credentials"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                     " ORDER BY %s %s;",
-                     quoted_name,
-                     current_credentials.uuid,
-                     sort_field ? sort_field : "ROWID",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_name);
-    }
+  if (lsc_credential)
+    init_iterator (iterator,
+                   "SELECT name, login, password, comment, public_key,"
+                   " private_key, rpm, deb, exe,"
+                   " (SELECT count(*) > 0 FROM targets"
+                   "  WHERE lsc_credential = lsc_credentials.ROWID)"
+                   " FROM lsc_credentials"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   lsc_credential,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
                    "SELECT name, login, password, comment, public_key,"

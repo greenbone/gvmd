@@ -1001,7 +1001,7 @@ int
 delete_lsc_credential (lsc_credential_t);
 
 void
-init_lsc_credential_iterator (iterator_t*, const char*, int, const char*);
+init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, const char*);
 
 const char*
 lsc_credential_iterator_name (iterator_t*);

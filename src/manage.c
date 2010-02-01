@@ -908,6 +908,7 @@ start_task (task_t task, char **report_id)
   GSList *files = NULL;
   task_status_t run_status;
   config_t config_id;
+  lsc_credential_t credential;
 
   tracef ("   start task %u\n", task_id (task));
 
@@ -952,11 +953,13 @@ start_task (task_t task, char **report_id)
       return -4;
     }
 
+  credential = target_lsc_credential (target);
+  free (target);
+
   /* Create the report. */
 
   if (create_report (task, report_id, TASK_STATUS_REQUESTED))
     {
-      free (target);
       free (hosts);
       set_task_run_status (task, run_status);
       return -3;
@@ -1005,7 +1008,6 @@ start_task (task_t task, char **report_id)
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
-      free (target);
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
@@ -1017,7 +1019,6 @@ start_task (task_t task, char **report_id)
   config = task_config_name (task);
   if (config == NULL)
     {
-      free (target);
       free (hosts);
       tracef ("   task config is NULL.\n");
       set_task_run_status (task, run_status);
@@ -1027,7 +1028,6 @@ start_task (task_t task, char **report_id)
 
   if (find_config (config, &config_id) || (config_id == 0))
     {
-      free (target);
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
@@ -1044,7 +1044,6 @@ start_task (task_t task, char **report_id)
   free (plugins);
   if (fail)
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1056,7 +1055,6 @@ start_task (task_t task, char **report_id)
 
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1065,7 +1063,6 @@ start_task (task_t task, char **report_id)
     }
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1075,7 +1072,6 @@ start_task (task_t task, char **report_id)
   // FIX still getting FINISHED msgs
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1084,7 +1080,6 @@ start_task (task_t task, char **report_id)
     }
   if (send_to_server ("ntp_short_status <|> no\n"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1096,7 +1091,6 @@ start_task (task_t task, char **report_id)
 
   if (send_config_preferences (config, "SERVER_PREFS"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1105,7 +1099,6 @@ start_task (task_t task, char **report_id)
     }
   if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
-      free (target);
       free (hosts);
       free (config);
       set_task_run_status (task, run_status);
@@ -1115,47 +1108,39 @@ start_task (task_t task, char **report_id)
 
   /* Send credential preferences if there's a credential linked to target. */
 
-  {
-    iterator_t credentials;
-    char *credential = target_lsc_credential_name (target);
+  if (credential)
+    {
+      iterator_t credentials;
 
-    if (credential)
-      {
-        init_lsc_credential_iterator (&credentials, credential, 1, NULL);
-        if (next (&credentials))
-          {
-            const char *user = lsc_credential_iterator_login (&credentials);
-            const char *password = lsc_credential_iterator_password (&credentials);
+      init_lsc_credential_iterator (&credentials, credential, 1, NULL);
+      if (next (&credentials))
+        {
+          const char *user = lsc_credential_iterator_login (&credentials);
+          const char *password = lsc_credential_iterator_password (&credentials);
 
-            if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
-                                 user)
-                || sendf_to_server ("SMB Authorization[password]:SMB password:"
-                                    " <|> %s\n",
-                                    password)
-                || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
-                                    " <|> %s\n",
-                                    user)
-                || sendf_to_server ("SSH Authorization[password]:"
-                                    "SSH password (unsafe!):"
-                                    " <|> %s\n",
-                                    password))
-              {
-                free (credential);
-                free (target);
-                free (hosts);
-                free (config);
-                cleanup_iterator (&credentials);
-                set_task_run_status (task, run_status);
-                current_report = (report_t) 0;
-                return -10;
-              }
-          }
-        cleanup_iterator (&credentials);
-        free (credential);
-      }
-  }
-
-  free (target);
+          if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
+                               user)
+              || sendf_to_server ("SMB Authorization[password]:SMB password:"
+                                  " <|> %s\n",
+                                  password)
+              || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
+                                  " <|> %s\n",
+                                  user)
+              || sendf_to_server ("SSH Authorization[password]:"
+                                  "SSH password (unsafe!):"
+                                  " <|> %s\n",
+                                  password))
+            {
+              free (hosts);
+              free (config);
+              cleanup_iterator (&credentials);
+              set_task_run_status (task, run_status);
+              current_report = (report_t) 0;
+              return -10;
+            }
+        }
+      cleanup_iterator (&credentials);
+    }
 
   if (send_to_server ("<|> CLIENT\n"))
     {
