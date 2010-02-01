@@ -1,5 +1,10 @@
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (manage_set_config_nvts): Update family count when
+	updating cached config info.
+
+2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (handle_sigabrt): Check if already in handler.
 
 	* src/tasks_sql.h (manage_set_config_nvts)

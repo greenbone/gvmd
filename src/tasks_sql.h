@@ -8234,8 +8234,12 @@ manage_set_config_nvts (config_t config, const char* family,
 
   /* Update the cached config info. */
 
-  sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i"
+  sql ("UPDATE configs SET family_count = family_count + %i,"
+       " nvt_count = nvt_count - %i + %i"
        " WHERE ROWID = %llu;",
+       old_nvt_count == 0
+        ? (new_nvt_count == 0 ? 0 : 1)
+        : (new_nvt_count == 0 ? -1 : 0),
        old_nvt_count,
        MAX (new_nvt_count, 0),
        config);
