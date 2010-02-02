@@ -6920,7 +6920,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           gchar* msg;
           config_t config;
-          char *tsk_uuid, *name, *description, *target;
+          target_t target;
+          char *tsk_uuid, *name, *description;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (current_client_task != (task_t) 0);
@@ -6953,15 +6954,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           description = task_description (current_client_task);
           config = task_config (current_client_task);
-          /** @todo Hence task_target_name? */
           target = task_target (current_client_task);
           if ((description && (config || target))
               || (description == NULL
-                  && (config == 0 || target == NULL)))
+                  && (config == 0 || target == 0)))
             {
               request_delete_task (&current_client_task);
               free (tsk_uuid);
-              free (target);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires either an rcfile"
@@ -7003,7 +7002,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               request_delete_task (&current_client_task);
               free (tsk_uuid);
               free (description);
-              free (target);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
@@ -7078,7 +7076,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK target must exist"));
@@ -7090,7 +7087,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK config must exist"));
@@ -7105,7 +7101,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
-                  free (target);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "Failed to generate task rcfile"));
@@ -7367,7 +7362,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
-                    char *name, *config, *escalator, *target, *hosts;
+                    target_t target;
+                    char *name, *config, *escalator, *task_target_name, *hosts;
                     gchar *first_report_id, *first_report;
                     char* description;
                     gchar *description64, *last_report_id, *last_report;
@@ -7590,6 +7586,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     name = task_name (task);
                     escalator = task_escalator (task);
                     config = task_config_name (task);
+                    task_target_name = target_name (target);
                     response = g_strdup_printf
                                 ("<get_status_response"
                                  " status=\"" STATUS_OK "\""
@@ -7617,7 +7614,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  name,
                                  config ? config : "",
                                  escalator ? escalator : "",
-                                 target ? target : "",
+                                 task_target_name ? task_target_name : "",
                                  task_run_status_name (task),
                                  progress_xml,
                                  description64,
@@ -7633,7 +7630,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  second_last_report);
                     free (config);
                     free (escalator);
-                    free (target);
+                    free (task_target_name);
                     g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
@@ -7697,7 +7694,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 gchar *line, *progress_xml;
                 char *name = task_name (index);
-                char *tsk_uuid, *config, *escalator, *target, *hosts;
+                target_t target;
+                char *tsk_uuid, *config, *escalator, *task_target_name, *hosts;
                 gchar *first_report_id, *first_report;
                 char *description;
                 gchar *description64, *last_report_id, *last_report;
@@ -7917,6 +7915,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 config = task_config_name (index);
                 escalator = task_escalator (index);
+                task_target_name = target_name (target);
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
@@ -7942,7 +7941,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         name,
                                         config ? config : "",
                                         escalator ? escalator : "",
-                                        target ? target : "",
+                                        task_target_name ? task_target_name : "",
                                         task_run_status_name (index),
                                         progress_xml,
                                         description64,
@@ -7958,7 +7957,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         second_last_report);
                 free (config);
                 free (escalator);
-                free (target);
+                free (task_target_name);
                 g_free (progress_xml);
                 g_free (last_report);
                 g_free (second_last_report);

@@ -376,7 +376,7 @@ task_config_name (task_t);
 void
 set_task_config (task_t, const char*);
 
-char*
+target_t
 task_target (task_t);
 
 void
@@ -727,7 +727,10 @@ int
 target_iterator_lsc_credential (iterator_t*);
 
 char*
-target_hosts (const char*);
+target_name (target_t);
+
+char*
+target_hosts (target_t);
 
 int
 target_in_use (target_t);

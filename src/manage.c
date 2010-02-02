@@ -902,7 +902,8 @@ send_task_file (task_t task, const char* file)
 int
 start_task (task_t task, char **report_id)
 {
-  char *hosts, *target, *config;
+  target_t target;
+  char *hosts, *config;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -937,9 +938,9 @@ start_task (task_t task, char **report_id)
     }
 
   target = task_target (task);
-  if (target == NULL)
+  if (target == 0)
     {
-      tracef ("   task target is NULL.\n");
+      tracef ("   task target is 0.\n");
       set_task_run_status (task, run_status);
       return -2;
     }
@@ -947,14 +948,12 @@ start_task (task_t task, char **report_id)
   hosts = target_hosts (target);
   if (hosts == NULL)
     {
-      free (target);
       tracef ("   target hosts is NULL.\n");
       set_task_run_status (task, run_status);
       return -4;
     }
 
   credential = target_lsc_credential (target);
-  free (target);
 
   /* Create the report. */
 

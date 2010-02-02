@@ -91,7 +91,7 @@ static void
 update_all_config_caches ();
 
 static void
-set_target_hosts (const char *, const char *);
+set_target_hosts (target_t, const char *);
 
 static gchar*
 select_config_nvts (config_t, const char*, int, const char*);
@@ -4115,12 +4115,25 @@ set_task_config (task_t task, const char* config)
  *
  * @return Target of task.
  */
-char*
+target_t
 task_target (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT target FROM tasks WHERE ROWID = %llu;",
-                     task);
+  target_t target = 0;
+  switch (sql_int64 (&target, 0, 0,
+                     "SELECT ROWID FROM targets WHERE name ="
+                     " (SELECT target FROM tasks WHERE ROWID = %llu);",
+                     task))
+    {
+      case 0:
+        return target;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
 }
 
 /**
@@ -4431,7 +4444,8 @@ task_threat_level (task_t task)
 int
 make_task_rcfile (task_t task)
 {
-  char *config, *target, *selector, *hosts, *rc;
+  target_t target;
+  char *config, *selector, *hosts, *rc;
   iterator_t prefs;
   GString *buffer;
 
@@ -4439,7 +4453,7 @@ make_task_rcfile (task_t task)
   if (config == NULL) return -1;
 
   target = task_target (task);
-  if (target == NULL)
+  if (target == 0)
     {
       free (config);
       return -1;
@@ -4449,7 +4463,6 @@ make_task_rcfile (task_t task)
   if (selector == NULL)
     {
       free (config);
-      free (target);
       return -1;
     }
 
@@ -4471,7 +4484,6 @@ make_task_rcfile (task_t task)
   /* Targets for general preferences. */
 
   hosts = target_hosts (target);
-  free (target);
   if (hosts)
     g_string_append_printf (buffer, "targets = %s\n\n", hosts);
   else
@@ -5811,7 +5823,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 
       {
         config_t config;
-        char *config_name, *target, *selector;
+        target_t target;
+        char *config_name, *selector;
         char *quoted_config_name, *quoted_selector;
 
         config_name = task_config_name (task);
@@ -5823,7 +5836,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           }
 
         target = task_target (task);
-        if (target == NULL)
+        if (target == 0)
           {
             free (config_name);
             g_free (rc);
@@ -5835,7 +5848,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         if (selector == NULL)
           {
             free (config_name);
-            free (target);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
@@ -5847,7 +5859,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           {
             free (quoted_selector);
             free (config_name);
-            free (target);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
@@ -5856,7 +5867,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           {
             free (quoted_selector);
             free (config_name);
-            free (target);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
@@ -6536,27 +6546,34 @@ target_iterator_lsc_credential (iterator_t* iterator)
 }
 
 /**
- * @brief Return the hosts associated with a target.
+ * @brief Return the name of a target.
  *
- * @param[in]  name  Target name.
+ * @param[in]  target  Target.
  *
- * @return Comma separated list of hosts if available, else NULL.
+ * @return Newly allocated name if available, else NULL.
  */
 char*
-target_hosts (const char *name)
+target_name (target_t target)
 {
-  char* hosts;
-  gchar* quoted_name = sql_nquote (name, strlen (name));
-  if (user_owns ("target", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      return NULL;
-    }
-  hosts = sql_string (0, 0,
-                      "SELECT hosts FROM targets WHERE name = '%s';",
-                      quoted_name);
-  g_free (quoted_name);
-  return hosts;
+  return sql_string (0, 0,
+                     "SELECT name FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the hosts associated with a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated comma separated list of hosts if available,
+ *         else NULL.
+ */
+char*
+target_hosts (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT hosts FROM targets WHERE ROWID = %llu;",
+                     target);
 }
 
 /**
@@ -6567,24 +6584,14 @@ target_hosts (const char *name)
  * @return Credential if any, else 0.
  */
 static lsc_credential_t
-target_lsc_credential (const char *name)
+target_lsc_credential (target_t target)
 {
-  int ret;
   lsc_credential_t lsc_credential;
-  gchar *quoted_name = sql_quote (name);
 
-  if (user_owns ("target", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      return 0;
-    }
-
-  ret = sql_int64 (&lsc_credential, 0, 0,
-                   "SELECT lsc_credential FROM targets"
-                   " WHERE name = '%s';",
-                   quoted_name);
-  g_free (quoted_name);
-  switch (ret)
+  switch (sql_int64 (&lsc_credential, 0, 0,
+                     "SELECT lsc_credential FROM targets"
+                     " WHERE ROWID = %llu;",
+                     target))
     {
       case 0:
         break;
@@ -6604,18 +6611,20 @@ target_lsc_credential (const char *name)
 /**
  * @brief Set the hosts associated with a target.
  *
- * @param[in]  name  Target name.
- * @param[in]  name  New value for hosts.
+ * @param[in]  target  Target.
+ * @param[in]  hosts   New value for hosts.
  */
 static void
-set_target_hosts (const char *name, const char *hosts)
+set_target_hosts (target_t target, const char *hosts)
 {
-  gchar* quoted_name = sql_quote (name);
-  gchar* quoted_hosts = sql_quote (hosts);
-  sql ("UPDATE targets SET hosts = '%s' WHERE name = '%s';",
-       quoted_hosts, quoted_name);
+  gchar* quoted_hosts;
+
+  assert (hosts);
+
+  quoted_hosts = sql_quote (hosts);
+  sql ("UPDATE targets SET hosts = '%s' WHERE ROWID = %llu;",
+       quoted_hosts, target);
   g_free (quoted_hosts);
-  g_free (quoted_name);
 }
 
 /**
