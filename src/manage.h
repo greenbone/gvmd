@@ -733,7 +733,7 @@ char*
 target_lsc_credential_name (const char *);
 
 void
-init_target_task_iterator (iterator_t*, const char *, int);
+init_target_task_iterator (iterator_t*, target_t, int);
 
 const char*
 target_task_iterator_name (iterator_t*);

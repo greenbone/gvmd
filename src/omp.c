@@ -8800,10 +8800,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             (target_iterator_name (&targets)),
                                            lsc_name ? lsc_name : "");
 
-                  if (current_name)
+                  if (target)
                     {
                       init_target_task_iterator (&tasks,
-                                                 current_name,
+                                                 target,
                                                  /* Attribute sort_order. */
                                                  current_int_2);
                       while (next (&tasks))

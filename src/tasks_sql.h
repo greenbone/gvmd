@@ -6635,29 +6635,25 @@ target_in_use (const char* name)
  * Iterates over all tasks that use the target.
  *
  * @param[in]  iterator   Iterator.
- * @param[in]  name       Name of target.
+ * @param[in]  target     Target.
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_target_task_iterator (iterator_t* iterator, const char *name,
+init_target_task_iterator (iterator_t* iterator, target_t target,
                            int ascending)
 {
-  gchar *quoted_name;
-
   assert (current_credentials.uuid);
 
-  quoted_name = sql_quote (name);
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
-                 " WHERE target = '%s'"
+                 " WHERE target = (SELECT name FROM targets WHERE ROWID = %llu)"
                  " AND hidden = 0"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name %s;",
-                 quoted_name,
+                 target,
                  current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
-  g_free (quoted_name);
 }
 
 DEF_ACCESS (target_task_iterator_name, 0);
