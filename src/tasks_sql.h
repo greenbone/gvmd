@@ -6473,32 +6473,28 @@ delete_target (target_t target)
  * @brief Initialise a target iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of target to limit iteration to.  NULL for all.
+ * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_target_iterator (iterator_t* iterator, const char* name,
+init_target_iterator (iterator_t* iterator, target_t target,
                       int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
-  if (name)
-    {
-      gchar *quoted_name = sql_quote (name);
-      init_iterator (iterator,
-                     "SELECT name, hosts, comment, lsc_credential"
-                     " FROM targets"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                     " ORDER BY %s %s;",
-                     quoted_name,
-                     current_credentials.uuid,
-                     sort_field ? sort_field : "ROWID",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_name);
-    }
+  if (target)
+    init_iterator (iterator,
+                   "SELECT name, hosts, comment, lsc_credential"
+                   " FROM targets"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   target,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
                    "SELECT name, hosts, comment, lsc_credential"

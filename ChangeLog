@@ -1,5 +1,14 @@
 2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_target_iterator): Take target_t instead of name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS pass a
+	target_t to init_target_iterator instead of passing a name.
+
+2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (find_target): New function.
 	(delete_target): Take target_t instead of name.
 

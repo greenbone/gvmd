@@ -8747,63 +8747,81 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TARGETS:
         {
-          iterator_t targets, tasks;
+          target_t target = 0;
+
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          init_target_iterator (&targets,
-                                current_name,    /* Attribute name. */
-                                current_int_2,   /* Attribute sort_order. */
-                                current_format); /* Attribute sort_field. */
-          while (next (&targets))
+          if (current_name && find_target (current_name, &target))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+          else if (current_name && target == 0)
             {
-              char *lsc_name;
-              lsc_credential_t lsc_credential;
-
-              lsc_credential = target_iterator_lsc_credential (&targets);
-              lsc_name = lsc_credential_name (lsc_credential);
-              SENDF_TO_CLIENT_OR_FAIL ("<target>"
-                                       "<name>%s</name>"
-                                       "<hosts>%s</hosts>"
-                                       "<max_hosts>%i</max_hosts>"
-                                       "<comment>%s</comment>"
-                                       "<in_use>%i</in_use>"
-                                       "<lsc_credential>"
-                                       "<name>%s</name>"
-                                       "</lsc_credential>"
-                                       "<tasks>",
-                                       target_iterator_name (&targets),
-                                       target_iterator_hosts (&targets),
-                                       max_hosts
-                                        (target_iterator_hosts (&targets)),
-                                       target_iterator_comment (&targets),
-                                       target_in_use
-                                        (target_iterator_name (&targets)),
-                                       lsc_name ? lsc_name : "");
-
-              if (current_name)
+              if (send_find_error_to_client ("delete_target",
+                                             "target",
+                                             current_name))
                 {
-                  init_target_task_iterator (&tasks,
-                                             current_name,
-                                             /* Attribute sort_order. */
-                                             current_int_2);
-                  while (next (&tasks))
-                    SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                             "<name>%s</name>"
-                                             "</task>",
-                                             target_task_iterator_uuid (&tasks),
-                                             target_task_iterator_name (&tasks));
-                  cleanup_iterator (&tasks);
+                  error_send_to_client (error);
+                  return;
                 }
-
-              SEND_TO_CLIENT_OR_FAIL ("</tasks>"
-                                      "</target>");
-              free (lsc_name);
             }
-          cleanup_iterator (&targets);
-          SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
+          else
+            {
+              iterator_t targets, tasks;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_target_iterator (&targets,
+                                    target,
+                                    current_int_2,   /* Attribute sort_order. */
+                                    current_format); /* Attribute sort_field. */
+              while (next (&targets))
+                {
+                  char *lsc_name;
+                  lsc_credential_t lsc_credential;
+
+                  lsc_credential = target_iterator_lsc_credential (&targets);
+                  lsc_name = lsc_credential_name (lsc_credential);
+                  SENDF_TO_CLIENT_OR_FAIL ("<target>"
+                                           "<name>%s</name>"
+                                           "<hosts>%s</hosts>"
+                                           "<max_hosts>%i</max_hosts>"
+                                           "<comment>%s</comment>"
+                                           "<in_use>%i</in_use>"
+                                           "<lsc_credential>"
+                                           "<name>%s</name>"
+                                           "</lsc_credential>"
+                                           "<tasks>",
+                                           target_iterator_name (&targets),
+                                           target_iterator_hosts (&targets),
+                                           max_hosts
+                                            (target_iterator_hosts (&targets)),
+                                           target_iterator_comment (&targets),
+                                           target_in_use
+                                            (target_iterator_name (&targets)),
+                                           lsc_name ? lsc_name : "");
+
+                  if (current_name)
+                    {
+                      init_target_task_iterator (&tasks,
+                                                 current_name,
+                                                 /* Attribute sort_order. */
+                                                 current_int_2);
+                      while (next (&tasks))
+                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                 "<name>%s</name>"
+                                                 "</task>",
+                                                 target_task_iterator_uuid (&tasks),
+                                                 target_task_iterator_name (&tasks));
+                      cleanup_iterator (&tasks);
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL ("</tasks>"
+                                          "</target>");
+                  free (lsc_name);
+                }
+              cleanup_iterator (&targets);
+              SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
+            }
           openvas_free_string_var (&current_format);
           openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);

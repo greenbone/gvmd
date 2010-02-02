@@ -709,7 +709,7 @@ int
 delete_target (target_t);
 
 void
-init_target_iterator (iterator_t*, const char*, int, const char*);
+init_target_iterator (iterator_t*, target_t, int, const char*);
 
 const char*
 target_iterator_name (iterator_t*);
