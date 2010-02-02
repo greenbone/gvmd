@@ -711,6 +711,9 @@ delete_target (target_t);
 void
 init_target_iterator (iterator_t*, target_t, int, const char*);
 
+target_t
+target_iterator_target (iterator_t*);
+
 const char*
 target_iterator_name (iterator_t*);
 
@@ -727,7 +730,7 @@ char*
 target_hosts (const char*);
 
 int
-target_in_use (const char*);
+target_in_use (target_t);
 
 char*
 target_lsc_credential_name (const char *);

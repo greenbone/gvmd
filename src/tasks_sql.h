@@ -6485,7 +6485,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
 
   if (target)
     init_iterator (iterator,
-                   "SELECT name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -6497,7 +6497,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -6507,15 +6507,22 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
 }
 
-DEF_ACCESS (target_iterator_name, 0);
-DEF_ACCESS (target_iterator_hosts, 1);
+target_t
+target_iterator_target (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (target_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+DEF_ACCESS (target_iterator_name, 1);
+DEF_ACCESS (target_iterator_hosts, 2);
 
 const char*
 target_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret ? ret : "";
 }
 
@@ -6524,7 +6531,7 @@ target_iterator_lsc_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 3);
+  ret = (int) sqlite3_column_int (iterator->stmt, 4);
   return ret;
 }
 
@@ -6614,19 +6621,17 @@ set_target_hosts (const char *name, const char *hosts)
 /**
  * @brief Return whether a target is referenced by a task
  *
- * @param[in]  name  Name of target.
+ * @param[in]  target  Target.
  *
  * @return 1 if in use, else 0.
  */
 int
-target_in_use (const char* name)
+target_in_use (target_t target)
 {
-  gchar* quoted_name = sql_quote (name);
-  int ret = sql_int (0, 0,
-                     "SELECT count(*) FROM tasks WHERE target = '%s'",
-                     quoted_name);
-  g_free (quoted_name);
-  return ret;
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks WHERE target ="
+                  " (SELECT name FROM targets WHERE ROWID = %llu);",
+                  target);
 }
 
 /**

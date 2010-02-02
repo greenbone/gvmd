@@ -8797,7 +8797,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             (target_iterator_hosts (&targets)),
                                            target_iterator_comment (&targets),
                                            target_in_use
-                                            (target_iterator_name (&targets)),
+                                            (target_iterator_target (&targets)),
                                            lsc_name ? lsc_name : "");
 
                   if (target)
