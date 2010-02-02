@@ -1,3 +1,14 @@
+2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (find_target): New function.
+	(delete_target): Take target_t instead of name.
+
+	* src/manage.h: Update headers accordingly.
+	(target_t): New type.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_TARGET pass
+	target_t to delete_target instead of passing a name.
+
 2010-02-01  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_lsc_credential_iterator): Add ROWID.

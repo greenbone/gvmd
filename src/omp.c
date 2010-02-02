@@ -5618,6 +5618,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_TARGET:
         {
+          target_t target = 0;
+
           assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -5629,7 +5631,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_TARGET name must be at least one"
                                   " character long"));
             }
-          else switch (delete_target (modify_task_name))
+          else if (find_target (modify_task_name, &target))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+          else if (target == 0)
+            {
+              if (send_find_error_to_client ("delete_target",
+                                             "target",
+                                             modify_task_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (delete_target (target))
             {
               case 0:
                 openvas_free_string_var (&modify_task_name);

@@ -168,6 +168,7 @@ typedef enum
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
+typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
@@ -192,6 +193,7 @@ typedef struct
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
+typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
@@ -697,11 +699,14 @@ rc_preference (const char*, const char*);
 
 /* Targets. */
 
+gboolean
+find_target (const char*, target_t*);
+
 int
 create_target (const char*, const char*, const char*, const char*);
 
 int
-delete_target (const char*);
+delete_target (target_t);
 
 void
 init_target_iterator (iterator_t*, const char*, int, const char*);

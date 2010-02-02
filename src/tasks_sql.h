@@ -6327,14 +6327,40 @@ task_file_iterator_length (iterator_t* iterator)
 
 /* Targets. */
 
-/** @todo Add target_t and find_target.
+/**
+ * @brief Find a target given a name.
  *
- * The permission check will be easier and more solid if the target user
- * accesses these functions via a target_t instead of via the target name.
- * That way all functions that return target_t's can do the permission
- * check and everything else can work with target_t and be sure that the
- * permission is already checked.
+ * @param[in]   name    Name of target.
+ * @param[out]  target  Target return, 0 if succesfully failed to find target.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
  */
+gboolean
+find_target (const char* name, target_t* target)
+{
+  if (user_owns ("target", name) == 0)
+    {
+      *target = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (target, 0, 0,
+                     "SELECT ROWID FROM targets WHERE name = '%s';",
+                     name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *target = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
 
 /**
  * @brief Create a target.
@@ -6422,33 +6448,24 @@ create_target (const char* name, const char* hosts, const char* comment,
 /**
  * @brief Delete a target.
  *
- * @param[in]  name   Name of target.
+ * @param[in]  target  Target.
  *
- * @return 0 success, 1 fail because a task refers to the target,
- *         2 access forbidden, -1 error.
+ * @return 0 success, 1 fail because a task refers to the target, -1 error.
  */
 int
-delete_target (const char* name)
+delete_target (target_t target)
 {
-  gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
-  if (user_owns ("target", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 2;
-    }
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE target = '%s'",
-               quoted_name))
+               "SELECT count(*) FROM tasks WHERE target ="
+               " (SELECT name FROM targets WHERE ROWID = %llu);",
+               target))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
-  sql ("DELETE FROM targets WHERE name = '%s';", quoted_name);
+  sql ("DELETE FROM targets WHERE ROWID = %llu;", target);
   sql ("COMMIT;");
-  g_free (quoted_name);
   return 0;
 }
 
