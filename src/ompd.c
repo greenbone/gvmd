@@ -1020,17 +1020,22 @@ serve_omp (gnutls_session_t* client_session,
            * error" case. */
           if (from_scanner_end > initial_start)
             {
-              logf ("<= scanner %.*s\n",
-                    from_scanner_end - initial_start,
-                    from_scanner + initial_start);
+              /* Convert to UTF-8. */
+              gsize size_dummy;
+              gchar *utf8 = g_convert (from_scanner,
+                                       from_scanner_end - initial_start,
+                                       "UTF-8", "ISO_8859-1",
+                                       NULL, &size_dummy, NULL);
+              if (utf8 == NULL) return -1;
+
+              logf ("<= scanner %s\n", utf8);
 #if TRACE_TEXT
-              tracef ("<= scanner  \"%.*s\"\n",
-                      from_scanner_end - initial_start,
-                      from_scanner + initial_start);
+              tracef ("<= scanner %s\n", utf8);
 #else
               tracef ("<= scanner  %i bytes\n",
                       from_scanner_end - initial_start);
 #endif
+              g_free (utf8);
             }
 #endif /* TRACE || LOG */
 

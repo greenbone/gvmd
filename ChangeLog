@@ -1,5 +1,12 @@
 2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (serve_omp): Convert scanner input to UTF-8 before
+	logging.
+
+	* src/otp.c (process_otp_scanner_input): Turn off tracing of ISO input.
+
+2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_target_iterator): Add ROWID.
 	(target_iterator_target): New function.
 	(target_iterator_name, target_iterator_hosts, target_iterator_comment)

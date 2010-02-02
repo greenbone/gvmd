@@ -1469,7 +1469,7 @@ process_otp_scanner_input ()
           char* message;
           char* field;
           /* Found a full field, process the field. */
-#if 1
+#if SCANNER_SENDS_UTF8
           tracef ("   scanner messages: %.*s...\n",
                   from_scanner_end - from_scanner_start < 200
                   ? from_scanner_end - from_scanner_start
@@ -1482,10 +1482,12 @@ process_otp_scanner_input ()
           from_start = from_scanner_start;
           messages = match + 3;
           input = messages;
+#ifdef SCANNER_SENDS_UTF8
           tracef ("   scanner message: %s\n", message);
+#endif
 
           /* Strip leading and trailing whitespace. */
-#if 0
+#ifdef SCANNER_SENDS_UTF8
           /* What to do when the scanner sends UTF-8. */
           field = openvas_strip_space (message, match);
 #else
@@ -1493,7 +1495,6 @@ process_otp_scanner_input ()
           {
             gsize size_dummy;
             char* iso_field = openvas_strip_space (message, match);
-            tracef ("   scanner ISO field: %s\n", iso_field);
             field = g_convert (iso_field, match - message - 1,
                                "UTF-8", "ISO_8859-1",
                                NULL, &size_dummy, NULL);
