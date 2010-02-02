@@ -1,5 +1,10 @@
 2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_TARGET
+	remove auth case from delete_target return check.
+
+2010-02-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (set_target_hosts, target_hosts)
 	(target_lsc_credential, set_target_hosts): Take target_t instead of name.
 	(task_target): Return target_t instead of name.

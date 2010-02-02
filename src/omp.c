@@ -5654,10 +5654,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
                                                           "Target is in use"));
                 break;
-              case 2:
-                openvas_free_string_var (&modify_task_name);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_target"));
-                break;
               default:
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
