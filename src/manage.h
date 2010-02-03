@@ -987,15 +987,6 @@ nvt_preference_iterator_type (iterator_t*);
 char*
 nvt_preference_iterator_nvt (iterator_t*);
 
-void
-init_config_pref_iterator (iterator_t*, const char*, const char*);
-
-const char*
-config_pref_iterator_name (iterator_t*);
-
-const char*
-config_pref_iterator_value (iterator_t*);
-
 int
 nvt_preference_count (const char *);
 

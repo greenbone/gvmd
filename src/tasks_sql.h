@@ -7845,43 +7845,6 @@ init_otp_pref_iterator (iterator_t* iterator,
 static DEF_ACCESS (otp_pref_iterator_name, 0);
 static DEF_ACCESS (otp_pref_iterator_value, 1);
 
-/** @todo Remove this version of the iterator. */
-
-/**
- * @brief Initialise a config preference iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  config    Config.
- * @param[in]  nvt       Name of NVT whose preferences to iterator over.
- */
-void
-init_config_pref_iterator (iterator_t* iterator,
-                           const char* config,
-                           const char* nvt)
-{
-  gchar *quoted_config = sql_nquote (config, strlen (config));
-  init_iterator (iterator,
-                 "SELECT name, value FROM config_preferences"
-                 " WHERE config ="
-                 " (SELECT ROWID FROM configs WHERE name = '%s')"
-                 " AND type = 'PLUGINS_PREFS'"
-                 " AND name LIKE '%s[%%';",
-                 quoted_config,
-                 nvt ? nvt : "");
-  g_free (quoted_config);
-}
-
-DEF_ACCESS (config_pref_iterator_name, 0);
-
-const char*
-config_pref_iterator_value (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  return ret ? ret : (const char*) sqlite3_column_text (iterator->stmt, 2);
-}
-
 /**
  * @brief Return the NVT selector associated with a config.
  *

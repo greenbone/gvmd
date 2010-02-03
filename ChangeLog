@@ -1,5 +1,13 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_config_pref_iterator)
+	(config_pref_iterator_name, config_pref_iterator_value): Remove,
+	superceded by newer iterators.
+
+	* src/manage.h: Remove headers accordingly.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_preference_iterator): Take config_t instead of
 	name.
 	(make_task_rcfile): Pass config_t to init_preference_iterator.
