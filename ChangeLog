@@ -1,5 +1,14 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (copy_config): Take config_t instead of name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_CONFIG
+	pass config_t instead of config name to copy_config.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (start_task): Get the config directly, instead of via the
 	config name.
 

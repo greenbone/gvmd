@@ -6324,6 +6324,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_CONFIG:
         {
+          config_t config = 0;
+
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -6428,32 +6430,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          else
+          else if (find_config (current_name, &config))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_config"));
+          else if (config == 0)
             {
-              assert (current_name);
-
-              switch (copy_config (modify_task_name,
-                                   modify_task_comment,
-                                   current_name))
+              if (send_find_error_to_client ("create_config",
+                                             "config",
+                                             current_name))
                 {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
-                    break;
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Config exists already"));
-                    break;
-                  case 2:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("create_config",
-                                        "Copied config must exist"));
-                    break;
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("create_config"));
-                    break;
+                  error_send_to_client (error);
+                  return;
                 }
+            }
+          else switch (copy_config (modify_task_name,
+                                    modify_task_comment,
+                                    config))
+            {
+              case 0:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_config",
+                                    "Config exists already"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_config"));
+                break;
             }
           create_config_data_reset (create_config_data);
           openvas_free_string_var (&modify_task_comment);

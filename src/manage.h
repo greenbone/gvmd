@@ -776,7 +776,7 @@ int
 create_config_rc (const char*, const char*, char*);
 
 int
-copy_config (const char*, const char*, const char*);
+copy_config (const char*, const char*, config_t);
 
 int
 delete_config (config_t);

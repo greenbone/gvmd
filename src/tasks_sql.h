@@ -7498,17 +7498,16 @@ create_config_rc (const char* name, const char* comment, char* rc)
  *         config, -1 error.
  */
 int
-copy_config (const char* name, const char* comment, const char* config)
+copy_config (const char* name, const char* comment, config_t config)
 {
   char* config_selector;
   config_t id;
   gchar *quoted_name = sql_quote (name);
-  gchar *quoted_config = sql_quote (config);
   gchar *quoted_comment, *quoted_config_selector;
 
   assert (current_credentials.uuid);
 
-  config_selector = config_nvt_selector (config);
+  config_selector = config_id_nvt_selector (config);
   if (config_selector == NULL)
     return -1;
   quoted_config_selector = sql_quote (config_selector);
@@ -7522,23 +7521,21 @@ copy_config (const char* name, const char* comment, const char* config)
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
       g_free (quoted_name);
-      g_free (quoted_config);
       g_free (quoted_config_selector);
       return 1;
     }
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM configs"
-               " WHERE name = '%s'"
+               " WHERE ROWID = %llu"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
-               quoted_config,
+               config,
                current_credentials.uuid)
       == 0)
     {
       sql ("ROLLBACK;");
       g_free (quoted_name);
-      g_free (quoted_config);
       g_free (quoted_config_selector);
       return 2;
     }
@@ -7550,7 +7547,6 @@ copy_config (const char* name, const char* comment, const char* config)
       tracef ("   NVT selector \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
       g_free (quoted_name);
-      g_free (quoted_config);
       g_free (quoted_config_selector);
       return -1;
     }
@@ -7566,12 +7562,12 @@ copy_config (const char* name, const char* comment, const char* config)
            " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
            " '%s', '%s', family_count, nvt_count,"
            " families_growing, nvts_growing"
-           " FROM configs WHERE name = '%s'",
+           " FROM configs WHERE ROWID = %llu;",
            quoted_name,
            current_credentials.uuid,
            quoted_name,
            quoted_comment,
-           quoted_config);
+           config);
       g_free (quoted_comment);
     }
   else
@@ -7581,19 +7577,19 @@ copy_config (const char* name, const char* comment, const char* config)
          " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
          " '%s', '', family_count, nvt_count,"
          " families_growing, nvts_growing"
-         " FROM configs WHERE name = '%s'",
+         " FROM configs WHERE ROWID = %llu",
          quoted_name,
          current_credentials.uuid,
          quoted_name,
-         quoted_config);
+         config);
 
   id = sqlite3_last_insert_rowid (task_db);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " SELECT %llu, type, name, value FROM config_preferences"
-       " WHERE config = (SELECT ROWID from configs where name = '%s');",
+       " WHERE config = %llu;",
        id,
-       quoted_config);
+       config);
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " SELECT '%s', exclude, type, family_or_nvt, family FROM nvt_selectors"
@@ -7603,7 +7599,6 @@ copy_config (const char* name, const char* comment, const char* config)
 
   sql ("COMMIT;");
   g_free (quoted_name);
-  g_free (quoted_config);
   g_free (quoted_config_selector);
   return 0;
 }
