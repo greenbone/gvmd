@@ -1,5 +1,10 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (start_task): Get the config directly, instead of via the
+	config name.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_otp_pref_iterator): Take config_t instead of
 	name.
 

@@ -902,12 +902,12 @@ int
 start_task (task_t task, char **report_id)
 {
   target_t target;
-  char *hosts, *config;
+  char *hosts;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
   task_status_t run_status;
-  config_t config_id;
+  config_t config;
   lsc_credential_t credential;
 
   tracef ("   start task %u\n", task_id (task));
@@ -1014,29 +1014,19 @@ start_task (task_t task, char **report_id)
 
   /* Get the config and selector. */
 
-  config = task_config_name (task);
-  if (config == NULL)
+  config = task_config (task);
+  if (config == 0)
     {
       free (hosts);
-      tracef ("   task config is NULL.\n");
+      tracef ("   task config is 0.\n");
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-
-  if (find_config (config, &config_id) || (config_id == 0))
-    {
-      free (config);
-      free (hosts);
-      set_task_run_status (task, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-  free (config);
 
   /* Send the plugin list. */
 
-  plugins = nvt_selector_plugins (config_id);
+  plugins = nvt_selector_plugins (config);
   if (plugins)
     fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
   else
@@ -1084,14 +1074,14 @@ start_task (task_t task, char **report_id)
 
   /* Send the scanner and plugins preferences. */
 
-  if (send_config_preferences (config_id, "SERVER_PREFS"))
+  if (send_config_preferences (config, "SERVER_PREFS"))
     {
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-  if (send_config_preferences (config_id, "PLUGINS_PREFS"))
+  if (send_config_preferences (config, "PLUGINS_PREFS"))
     {
       free (hosts);
       set_task_run_status (task, run_status);
