@@ -1,5 +1,9 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (latex_header): Switch encoding to UTF-8.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (insert_nvt_selectors): Move to NVT selectors page.
 	(find_config): Move to top of page like on other pages.
 	(insert_rc_into_config): Doc config_name param.

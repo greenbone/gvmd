@@ -3623,11 +3623,7 @@ const char* latex_header
     "\\usepackage{chngpage}\n"
     "\\usepackage{calc}\n"
     "\\usepackage{url}\n"
-    // FIX encoding issue
-    /** @todo Following line is a fix to include special characters, including
-     *        umlauts, in the verbatim sections of the latex/pdf reports.
-     *        Handling of the encoding should be done at a different point. */
-    "\\usepackage[latin1]{inputenc}\n"
+    "\\usepackage[utf8x]{inputenc}\n"
     "\n"
     "\\usepackage{colortbl}\n"
     "\n"
