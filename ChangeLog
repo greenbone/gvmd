@@ -1,5 +1,11 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (config_nvt_selector): Remove.
+	(make_task_rcfile, set_task_parameter): Get selector via config_t instead
+	of via name.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (copy_config): Take config_t instead of name.
 
 	* src/manage.h: Update header accordingly.

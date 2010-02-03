@@ -103,9 +103,6 @@ const char*
 task_threat_level (task_t);
 
 static char*
-config_nvt_selector (const char*);
-
-static char*
 task_owner_uuid (task_t);
 
 
@@ -4462,7 +4459,7 @@ make_task_rcfile (task_t task)
       return -1;
     }
 
-  selector = config_nvt_selector (config_name);
+  selector = config_id_nvt_selector (config);
   if (selector == NULL)
     {
       free (config_name);
@@ -5827,7 +5824,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       {
         config_t config;
         target_t target;
-        char *config_name, *selector;
+        char *config_name;
         char *quoted_config_name, *quoted_selector;
 
         config_name = task_config_name (task);
@@ -5847,20 +5844,8 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             return -1;
           }
 
-        selector = config_nvt_selector (config_name);
-        if (selector == NULL)
-          {
-            free (config_name);
-            g_free (rc);
-            sql ("ROLLBACK");
-            return -1;
-          }
-        quoted_selector = sql_quote (selector);
-        free (selector);
-
         if (find_config (config_name, &config))
           {
-            free (quoted_selector);
             free (config_name);
             g_free (rc);
             sql ("ROLLBACK");
@@ -5868,7 +5853,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           }
         else if (config == 0)
           {
-            free (quoted_selector);
             free (config_name);
             g_free (rc);
             sql ("ROLLBACK");
@@ -5876,7 +5860,18 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           }
         else
           {
-            char *hosts;
+            char *hosts, *selector;
+
+            selector = config_id_nvt_selector (config);
+            if (selector == NULL)
+              {
+                free (config_name);
+                g_free (rc);
+                sql ("ROLLBACK");
+                return -1;
+              }
+            quoted_selector = sql_quote (selector);
+            free (selector);
 
             /* Flush config preferences. */
 
@@ -7835,32 +7830,6 @@ init_otp_pref_iterator (iterator_t* iterator,
 
 static DEF_ACCESS (otp_pref_iterator_name, 0);
 static DEF_ACCESS (otp_pref_iterator_value, 1);
-
-/**
- * @brief Return the NVT selector associated with a config.
- *
- * @param[in]  name  Config name.
- *
- * @return Name of NVT selector if config exists and NVT selector is set, else
- *         NULL.
- */
-static char*
-config_nvt_selector (const char *name)
-{
-  char *selector;
-  gchar* quoted_name = sql_nquote (name, strlen (name));
-  if (user_owns ("config", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      return NULL;
-    }
-  selector = sql_string (0, 0,
-                         "SELECT nvt_selector FROM configs"
-                         " WHERE name = '%s';",
-                         quoted_name);
-  g_free (quoted_name);
-  return selector;
-}
 
 /** @todo Rename to config_nvt_selector. */
 /**
