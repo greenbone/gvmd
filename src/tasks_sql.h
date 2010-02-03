@@ -46,7 +46,7 @@
 /* Static headers. */
 
 static void
-init_preference_iterator (iterator_t*, const char*, const char*);
+init_preference_iterator (iterator_t*, config_t, const char*);
 
 static const char*
 preference_iterator_name (iterator_t*);
@@ -4444,25 +4444,28 @@ task_threat_level (task_t task)
 int
 make_task_rcfile (task_t task)
 {
+  config_t config;
   target_t target;
-  char *config, *selector, *hosts, *rc;
+  char *config_name, *selector, *hosts, *rc;
   iterator_t prefs;
   GString *buffer;
 
-  config = task_config_name (task);
-  if (config == NULL) return -1;
+  config = task_config (task);
+
+  config_name = task_config_name (task);
+  if (config_name == NULL) return -1;
 
   target = task_target (task);
   if (target == 0)
     {
-      free (config);
+      free (config_name);
       return -1;
     }
 
-  selector = config_nvt_selector (config);
+  selector = config_nvt_selector (config_name);
   if (selector == NULL)
     {
-      free (config);
+      free (config_name);
       return -1;
     }
 
@@ -4489,7 +4492,7 @@ make_task_rcfile (task_t task)
   else
     {
       free (hosts);
-      free (config);
+      free (config_name);
       free (selector);
       g_string_free (buffer, TRUE);
       return -1;
@@ -4584,7 +4587,7 @@ make_task_rcfile (task_t task)
   g_string_append (buffer, "begin(SERVER_INFO)\n");
   g_string_append (buffer, "end(SERVER_INFO)\n");
 
-  free (config);
+  free (config_name);
   free (selector);
 
   rc = g_string_free (buffer, FALSE);
@@ -7758,33 +7761,29 @@ config_in_use (config_t config)
  * Assume the caller has permission to access the config.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  config    Config name.
+ * @param[in]  config    Config.
  * @param[in]  section   Preference section, NULL for general preferences.
  */
 static void
 init_preference_iterator (iterator_t* iterator,
-                          const char* config,
+                          config_t config,
                           const char* section)
 {
   gchar* sql;
-  gchar *quoted_config = sql_nquote (config, strlen (config));
   if (section)
     {
       gchar *quoted_section = sql_nquote (section, strlen (section));
       sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
-                             " WHERE config ="
-                             " (SELECT ROWID FROM configs WHERE name = '%s')"
+                             " WHERE config = %llu"
                              " AND type = '%s';",
-                             quoted_config, quoted_section);
+                             config, quoted_section);
       g_free (quoted_section);
     }
   else
     sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
-                           " WHERE config ="
-                           " (SELECT ROWID FROM configs WHERE name = '%s')"
+                           " WHERE config = %llu"
                            " AND type is NULL;",
-                           quoted_config);
-  g_free (quoted_config);
+                           config);
   init_iterator (iterator, sql);
   g_free (sql);
 }

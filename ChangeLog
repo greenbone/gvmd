@@ -1,5 +1,11 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_preference_iterator): Take config_t instead of
+	name.
+	(make_task_rcfile): Pass config_t to init_preference_iterator.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (delete_config): Take config_t instead of name.
 
 	* src/manage.h: Update header accordingly.
