@@ -1,5 +1,11 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (insert_nvt_selectors): Move to NVT selectors page.
+	(find_config): Move to top of page like on other pages.
+	(insert_rc_into_config): Doc config_name param.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (config_id_nvt_selector): Remove.  Rename
 	config_nvt_selector.  Update callers.
 	(config_nvt_selector): New function.  Was config_id_nvt_selector.

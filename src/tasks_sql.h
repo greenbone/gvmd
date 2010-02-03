@@ -105,6 +105,9 @@ task_threat_level (task_t);
 static char*
 task_owner_uuid (task_t);
 
+static int
+insert_nvt_selectors (const char *, const array_t*);
+
 
 /* Variables. */
 
@@ -6674,131 +6677,41 @@ DEF_ACCESS (target_task_iterator_uuid, 1);
 
 /* Configs. */
 
-/** @todo Access the config via config_t where possible.
- *
- * As noted in todos below, the permission check are easier and more solid
- * when the config user accesses these functions via config_t.
- */
-
 /**
- * @brief Insert NVT selectors.
+ * @brief Find a config given a name.
  *
- * @param[in]  quoted_name  Name of NVT selector.
- * @param[in]  selectors    NVT selectors.
+ * @param[in]   name    Config name.
+ * @param[out]  config  Config return, 0 if succesfully failed to find config.
  *
- * @return 0 success, -1 error, -3 input error.
+ * @return FALSE on success (including if failed to find config), TRUE on error.
  */
-static int
-insert_nvt_selectors (const char *quoted_name,
-                      const array_t* selectors /* nvt_selector_t. */)
+gboolean
+find_config (const char* name, config_t* config)
 {
-  int index = 0;
-  const nvt_selector_t *selector;
-  if (selectors == NULL) return -3;
-  while ((selector = (nvt_selector_t*) g_ptr_array_index (selectors, index++)))
+  gchar *quoted_name = sql_quote (name);
+  if (user_owns ("config", quoted_name) == 0)
     {
-      int type;
-
-      if (selector->type == NULL) return -3;
-
-      /** @todo Check that selector->type is actually an integer. */
-      type = atoi (selector->type);
-
-      if ((selector->family_or_nvt != NULL)
-          && (type == NVT_SELECTOR_TYPE_NVT))
-        {
-          gchar *quoted_family_or_nvt, *quoted_family, *family = NULL;
-          nvti_t *nvti = nvtis_lookup (nvti_cache, selector->family_or_nvt);
-
-          /* An NVT selector. */
-
-          if (nvti)
-            {
-              family = nvti_family (nvti);
-
-              if (family == NULL)
-                {
-                  g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                             " because the NVT is missing a family in the"
-                             " cache",
-                             __FUNCTION__,
-                             selector->family_or_nvt,
-                             quoted_name);
-                  continue;
-                }
-            }
-          else
-            {
-              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                         " because the NVT is missing from the cache",
-                         __FUNCTION__,
-                         selector->family_or_nvt,
-                         quoted_name);
-              continue;
-            }
-
-          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
-          quoted_family = sql_quote (family);
-          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
-               " family)"
-               " VALUES ('%s', %i, %i, '%s', '%s');",
-               quoted_name,
-               selector->include ? 0 : 1,
-               type,
-               quoted_family_or_nvt,
-               quoted_family);
-          g_free (quoted_family_or_nvt);
-          g_free (quoted_family);
-        }
-      else if (selector->family_or_nvt)
-        {
-          gchar *quoted_family_or_nvt;
-
-          /* A family selector. */
-
-          if (type != NVT_SELECTOR_TYPE_FAMILY)
-            {
-              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                         " because the type is wrong (expected family)",
-                         __FUNCTION__,
-                         selector->family_or_nvt,
-                         quoted_name);
-              continue;
-            }
-
-          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
-
-          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
-               " family)"
-               " VALUES ('%s', %i, %i, '%s', NULL);",
-               quoted_name,
-               selector->include ? 0 : 1,
-               type,
-               quoted_family_or_nvt);
-          g_free (quoted_family_or_nvt);
-        }
-      else
-        {
-          /* An "all" selector. */
-
-          if (type != NVT_SELECTOR_TYPE_ALL)
-            {
-              g_warning ("%s: skipping NVT from import of config '%s'"
-                         " because the type is wrong (expected all)",
-                         __FUNCTION__,
-                         quoted_name);
-              continue;
-            }
-
-          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
-               " family)"
-               " VALUES ('%s', %i, %i, NULL, NULL);",
-               quoted_name,
-               selector->include ? 0 : 1,
-               type);
-        }
+      g_free (quoted_name);
+      *config = 0;
+      return FALSE;
     }
-  return 0;
+  switch (sql_int64 (config, 0, 0,
+                     "SELECT ROWID FROM configs WHERE name = '%s';",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *config = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+  g_free (quoted_name);
+  return FALSE;
 }
 
 /**
@@ -7191,8 +7104,9 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
 /**
  * @brief Copy the preferences and nvt selector from an RC file to a config.
  *
- * @param[in]  config   Config.
- * @param[in]  rc       Text of RC file.
+ * @param[in]  config       Config to copy into.
+ * @param[in]  config_name  Name of config to copy into, SQL quoted.
+ * @param[in]  rc           Text of RC file.
  *
  * @return 0 success, -1 error.
  */
@@ -7845,43 +7759,6 @@ config_nvt_selector (config_t config)
   return sql_string (0, 0,
                      "SELECT nvt_selector FROM configs WHERE ROWID = %llu;",
                      config);
-}
-
-/**
- * @brief Find a config given a name.
- *
- * @param[in]   name    Config name.
- * @param[out]  config  Config return, 0 if succesfully failed to find config.
- *
- * @return FALSE on success (including if failed to find config), TRUE on error.
- */
-gboolean
-find_config (const char* name, config_t* config)
-{
-  gchar *quoted_name = sql_quote (name);
-  if (user_owns ("config", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      *config = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (config, 0, 0,
-                     "SELECT ROWID FROM configs WHERE name = '%s';",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *config = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-  g_free (quoted_name);
-  return FALSE;
 }
 
 /**
@@ -9970,6 +9847,127 @@ manage_set_config_families (config_t config,
 
   g_free (quoted_selector);
   free (selector);
+  return 0;
+}
+
+/**
+ * @brief Insert NVT selectors.
+ *
+ * @param[in]  quoted_name  Name of NVT selector.
+ * @param[in]  selectors    NVT selectors.
+ *
+ * @return 0 success, -1 error, -3 input error.
+ */
+static int
+insert_nvt_selectors (const char *quoted_name,
+                      const array_t* selectors /* nvt_selector_t. */)
+{
+  int index = 0;
+  const nvt_selector_t *selector;
+  if (selectors == NULL) return -3;
+  while ((selector = (nvt_selector_t*) g_ptr_array_index (selectors, index++)))
+    {
+      int type;
+
+      if (selector->type == NULL) return -3;
+
+      /** @todo Check that selector->type is actually an integer. */
+      type = atoi (selector->type);
+
+      if ((selector->family_or_nvt != NULL)
+          && (type == NVT_SELECTOR_TYPE_NVT))
+        {
+          gchar *quoted_family_or_nvt, *quoted_family, *family = NULL;
+          nvti_t *nvti = nvtis_lookup (nvti_cache, selector->family_or_nvt);
+
+          /* An NVT selector. */
+
+          if (nvti)
+            {
+              family = nvti_family (nvti);
+
+              if (family == NULL)
+                {
+                  g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                             " because the NVT is missing a family in the"
+                             " cache",
+                             __FUNCTION__,
+                             selector->family_or_nvt,
+                             quoted_name);
+                  continue;
+                }
+            }
+          else
+            {
+              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                         " because the NVT is missing from the cache",
+                         __FUNCTION__,
+                         selector->family_or_nvt,
+                         quoted_name);
+              continue;
+            }
+
+          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
+          quoted_family = sql_quote (family);
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, '%s', '%s');",
+               quoted_name,
+               selector->include ? 0 : 1,
+               type,
+               quoted_family_or_nvt,
+               quoted_family);
+          g_free (quoted_family_or_nvt);
+          g_free (quoted_family);
+        }
+      else if (selector->family_or_nvt)
+        {
+          gchar *quoted_family_or_nvt;
+
+          /* A family selector. */
+
+          if (type != NVT_SELECTOR_TYPE_FAMILY)
+            {
+              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
+                         " because the type is wrong (expected family)",
+                         __FUNCTION__,
+                         selector->family_or_nvt,
+                         quoted_name);
+              continue;
+            }
+
+          quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
+
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, '%s', NULL);",
+               quoted_name,
+               selector->include ? 0 : 1,
+               type,
+               quoted_family_or_nvt);
+          g_free (quoted_family_or_nvt);
+        }
+      else
+        {
+          /* An "all" selector. */
+
+          if (type != NVT_SELECTOR_TYPE_ALL)
+            {
+              g_warning ("%s: skipping NVT from import of config '%s'"
+                         " because the type is wrong (expected all)",
+                         __FUNCTION__,
+                         quoted_name);
+              continue;
+            }
+
+          sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
+               " family)"
+               " VALUES ('%s', %i, %i, NULL, NULL);",
+               quoted_name,
+               selector->include ? 0 : 1,
+               type);
+        }
+    }
   return 0;
 }
 
