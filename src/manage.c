@@ -693,14 +693,13 @@ preference_value (const char* name, const char* full_value)
 /**
  * @brief Send the preferences from a config to the scanner.
  *
- * @param[in]  task          Task.
+ * @param[in]  config        Config.
  * @param[in]  section_name  Name of preference section to send.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_preferences (const char* config,
-                         const char* section_name)
+send_config_preferences (config_t config, const char* section_name)
 {
   iterator_t prefs;
 
@@ -1027,11 +1026,13 @@ start_task (task_t task, char **report_id)
 
   if (find_config (config, &config_id) || (config_id == 0))
     {
+      free (config);
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
+  free (config);
 
   /* Send the plugin list. */
 
@@ -1044,7 +1045,6 @@ start_task (task_t task, char **report_id)
   if (fail)
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1055,7 +1055,6 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1063,7 +1062,6 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1072,7 +1070,6 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1080,7 +1077,6 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("ntp_short_status <|> no\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1088,18 +1084,16 @@ start_task (task_t task, char **report_id)
 
   /* Send the scanner and plugins preferences. */
 
-  if (send_config_preferences (config, "SERVER_PREFS"))
+  if (send_config_preferences (config_id, "SERVER_PREFS"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-  if (send_config_preferences (config, "PLUGINS_PREFS"))
+  if (send_config_preferences (config_id, "PLUGINS_PREFS"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1131,7 +1125,6 @@ start_task (task_t task, char **report_id)
                                   password))
             {
               free (hosts);
-              free (config);
               cleanup_iterator (&credentials);
               set_task_run_status (task, run_status);
               current_report = (report_t) 0;
@@ -1144,7 +1137,6 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("<|> CLIENT\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
@@ -1162,7 +1154,6 @@ start_task (task_t task, char **report_id)
       if (send_task_file (task, files->data))
         {
           free (hosts);
-          free (config);
           /* Free the data. */
           while (files)
             {
@@ -1185,12 +1176,10 @@ start_task (task_t task, char **report_id)
   if (send_to_server ("CLIENT <|> RULES <|>\n"))
     {
       free (hosts);
-      free (config);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-  free (config);
 
   if (send_user_rules ())
     {

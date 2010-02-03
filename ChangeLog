@@ -1,5 +1,14 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_otp_pref_iterator): Take config_t instead of
+	name.
+
+	* src/manage.c (send_config_preferences): Take config_t instead of
+	name.  Pass config_t to init_otp_pref_iterator.
+	(start_task): Pass config_t to send_config_preferences.
+
+2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_config_pref_iterator)
 	(config_pref_iterator_name, config_pref_iterator_value): Remove,
 	superceded by newer iterators.

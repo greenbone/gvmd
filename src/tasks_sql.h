@@ -55,7 +55,7 @@ static const char*
 preference_iterator_value (iterator_t*);
 
 static void
-init_otp_pref_iterator (iterator_t*, const char*, const char*);
+init_otp_pref_iterator (iterator_t*, config_t, const char*);
 
 static const char*
 otp_pref_iterator_name (iterator_t*);
@@ -7805,24 +7805,22 @@ static DEF_ACCESS (preference_iterator_value, 1);
  */
 static void
 init_otp_pref_iterator (iterator_t* iterator,
-                        const char* config,
+                        config_t config,
                         const char* section)
 {
-  gchar *quoted_config, *quoted_section;
+  gchar *quoted_section;
 
   assert (config);
   assert (section);
   assert ((strcmp (section, "PLUGINS_PREFS") == 0)
           || (strcmp (section, "SERVER_PREFS") == 0));
 
-  quoted_config = sql_quote (config);
   quoted_section = sql_quote (section);
 
   init_iterator (iterator,
                  "SELECT config_preferences.name, config_preferences.value"
                  " FROM config_preferences, nvt_preferences"
-                 " WHERE config_preferences.config ="
-                 "       (SELECT ROWID FROM configs WHERE name = '%s')"
+                 " WHERE config_preferences.config = %llu"
                  " AND config_preferences.type = '%s'"
                  " AND config_preferences.name = nvt_preferences.name"
                  " UNION"
@@ -7830,16 +7828,14 @@ init_otp_pref_iterator (iterator_t* iterator,
                  " FROM nvt_preferences"
                  " WHERE nvt_preferences.name %s"
                  " AND (SELECT COUNT(*) FROM config_preferences"
-                 "      WHERE config ="
-                 "            (SELECT ROWID FROM configs WHERE name = '%s')"
+                 "      WHERE config = %llu"
                  "      AND config_preferences.name = nvt_preferences.name) = 0;",
-                 quoted_config,
+                 config,
                  quoted_section,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
                   ? "NOT LIKE '%[%]%'" : "LIKE '%[%]%'",
-                 quoted_config);
+                 config);
   g_free (quoted_section);
-  g_free (quoted_config);
 }
 
 static DEF_ACCESS (otp_pref_iterator_name, 0);
