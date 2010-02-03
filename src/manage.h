@@ -779,7 +779,7 @@ int
 copy_config (const char*, const char*, const char*);
 
 int
-delete_config (const char*);
+delete_config (config_t);
 
 gboolean
 find_config (const char*, config_t*);

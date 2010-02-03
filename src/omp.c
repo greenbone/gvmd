@@ -5485,6 +5485,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_CONFIG:
         {
+          config_t config = 0;
+
           assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -5496,7 +5498,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_CONFIG name must be at least one"
                                   " character long"));
             }
-          else switch (delete_config (modify_task_name))
+          else if (find_config (modify_task_name, &config))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
+          else if (config == 0)
+            {
+              if (send_find_error_to_client ("delete_config",
+                                             "config",
+                                             modify_task_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (delete_config (config))
             {
               case 0:
                 openvas_free_string_var (&modify_task_name);
@@ -5506,10 +5520,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                           "Config is in use"));
-                break;
-              case 2:
-                openvas_free_string_var (&modify_task_name);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_config"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);

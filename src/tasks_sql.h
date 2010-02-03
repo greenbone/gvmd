@@ -7608,47 +7608,39 @@ copy_config (const char* name, const char* comment, const char* config)
 /**
  * @brief Delete a config.
  *
- * @param[in]  name   Name of config.
+ * @param[in]  config  Config.
  *
- * @return 0 success, 1 fail because a task refers to the config,
- *         2 access forbidden, -1 error.
+ * @return 0 success, 1 fail because a task refers to the config, -1 error.
  */
 int
-delete_config (const char* name)
+delete_config (config_t config)
 {
-  gchar* quoted_name;
-
-  if (strcmp (name, "Full and fast") == 0
-      || strcmp (name, "Full and fast ultimate") == 0
-      || strcmp (name, "Full and very deep") == 0
-      || strcmp (name, "Full and very deep ultimate") == 0
-      || strcmp (name, "empty") == 0)
+  if (config == CONFIG_ID_FULL_AND_FAST
+      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP
+      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
+      || config == sql_int (0, 0,
+                            "SELECT ROWID FROM configs WHERE name = 'empty';"))
     return 1;
 
-  quoted_name = sql_nquote (name, strlen (name));
   sql ("BEGIN IMMEDIATE;");
-  if (user_owns ("config", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 2;
-    }
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config = '%s'",
-               quoted_name))
+               "SELECT count(*) FROM tasks WHERE config ="
+               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               config))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
-  sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
-       quoted_name);
-  sql ("DELETE FROM config_preferences"
-       " WHERE config = (SELECT ROWID from configs WHERE name = '%s');",
-       quoted_name);
-  sql ("DELETE FROM configs WHERE name = '%s';", quoted_name);
+  sql ("DELETE FROM nvt_selectors WHERE name ="
+       " (SELECT name FROM configs WHERE ROWID = %llu);",
+       config);
+  sql ("DELETE FROM config_preferences WHERE config = %llu;",
+       config);
+  sql ("DELETE FROM configs WHERE name ="
+       " (SELECT name FROM configs WHERE ROWID = %llu);",
+       config);
   sql ("COMMIT;");
-  g_free (quoted_name);
   return 0;
 }
 
