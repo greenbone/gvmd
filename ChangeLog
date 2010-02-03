@@ -1,8 +1,13 @@
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/tasks_sql.h (config_nvt_selector): Remove.
-	(make_task_rcfile, set_task_parameter): Get selector via config_t instead
-	of via name.
+	* src/tasks_sql.h (config_id_nvt_selector): Remove.  Rename
+	config_nvt_selector.  Update callers.
+	(config_nvt_selector): New function.  Was config_id_nvt_selector.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK update
+	config_id_nvt_selector call name.
 
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 

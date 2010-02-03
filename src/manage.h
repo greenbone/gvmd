@@ -809,7 +809,7 @@ int
 config_iterator_families_growing (iterator_t*);
 
 char*
-config_id_nvt_selector (config_t);
+config_nvt_selector (config_t);
 
 int
 config_in_use (config_t);

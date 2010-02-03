@@ -4459,7 +4459,7 @@ make_task_rcfile (task_t task)
       return -1;
     }
 
-  selector = config_id_nvt_selector (config);
+  selector = config_nvt_selector (config);
   if (selector == NULL)
     {
       free (config_name);
@@ -5862,7 +5862,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
           {
             char *hosts, *selector;
 
-            selector = config_id_nvt_selector (config);
+            selector = config_nvt_selector (config);
             if (selector == NULL)
               {
                 free (config_name);
@@ -7502,7 +7502,7 @@ copy_config (const char* name, const char* comment, config_t config)
 
   assert (current_credentials.uuid);
 
-  config_selector = config_id_nvt_selector (config);
+  config_selector = config_nvt_selector (config);
   if (config_selector == NULL)
     return -1;
   quoted_config_selector = sql_quote (config_selector);
@@ -7831,7 +7831,6 @@ init_otp_pref_iterator (iterator_t* iterator,
 static DEF_ACCESS (otp_pref_iterator_name, 0);
 static DEF_ACCESS (otp_pref_iterator_value, 1);
 
-/** @todo Rename to config_nvt_selector. */
 /**
  * @brief Return the NVT selector associated with a config.
  *
@@ -7841,7 +7840,7 @@ static DEF_ACCESS (otp_pref_iterator_value, 1);
  *         NULL.
  */
 char*
-config_id_nvt_selector (config_t config)
+config_nvt_selector (config_t config)
 {
   return sql_string (0, 0,
                      "SELECT nvt_selector FROM configs WHERE ROWID = %llu;",
@@ -8072,7 +8071,7 @@ manage_set_config_nvts (config_t config, const char* family,
 
   quoted_family = sql_quote (family);
 
-  selector = config_id_nvt_selector (config);
+  selector = config_nvt_selector (config);
   if (selector == NULL)
     /* The config should always have a selector. */
     return -1;
@@ -8204,7 +8203,7 @@ switch_representation (config_t config, int constraining)
   char* selector;
   gchar *quoted_selector;
 
-  selector = config_id_nvt_selector (config);
+  selector = config_nvt_selector (config);
   if (selector == NULL)
     return -1;
   free (selector);
@@ -9282,7 +9281,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
   gchar *quoted_selector;
-  char *selector = config_id_nvt_selector (config);
+  char *selector = config_nvt_selector (config);
   if (selector == NULL)
     /* The config should always have a selector. */
     return NULL;
@@ -9671,7 +9670,7 @@ manage_set_config_families (config_t config,
       constraining = constraining == 0;
     }
 
-  selector = config_id_nvt_selector (config);
+  selector = config_nvt_selector (config);
   if (selector == NULL)
     {
       /* The config should always have a selector. */

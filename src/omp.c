@@ -7093,7 +7093,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              if (config_id_nvt_selector (config) == NULL)
+              if (config_nvt_selector (config) == NULL)
                 {
                   request_delete_task (&current_client_task);
                   free (tsk_uuid);
