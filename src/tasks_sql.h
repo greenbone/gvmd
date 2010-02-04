@@ -484,7 +484,7 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
- * @brief Return the UUID of a user.
+ * @brief Return the UUID of a user from openvas user uuid file.
  *
  * If the user exists, ensure that the user has a UUID.
  *
@@ -564,10 +564,12 @@ openvas_authenticate_uuid (const gchar * username, const gchar * password,
 {
   int ret;
 
+  // Authenticate against file.
   ret = openvas_authenticate (username, password);
   if (ret)
     return ret;
 
+  // Get the uuid from file (or create it).
   *uuid = openvas_user_uuid (username);
   if (*uuid)
     return 0;
@@ -3898,6 +3900,8 @@ manage_cleanup_process_error (/*@unused@*/ int signal)
 
 /**
  * @brief Authenticate credentials.
+ *
+ * The user "om" will never be authenticated with success.
  *
  * @param[in]  credentials  Credentials.
  *

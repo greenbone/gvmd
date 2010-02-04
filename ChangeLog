@@ -1,3 +1,8 @@
+2010-02-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/task_sql.h (openvas_user_uuid, authenticate): Minor doc.
+	(openvas_authenticate_uuid): Added comments.
+
 2010-02-03  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (latex_header): Switch encoding to UTF-8.
