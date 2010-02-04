@@ -6858,7 +6858,7 @@ config_insert_preferences (config_t config,
             while ((alt = (gchar*) g_ptr_array_index (preference->alts, alt_index++)))
               g_string_append_printf (value, ";%s", alt);
 
-            quoted_nvt_name = sql_quote (preference->name);
+            quoted_nvt_name = sql_quote (preference->nvt_name);
             quoted_preference_name = sql_quote (preference->name);
             quoted_type = sql_quote (preference->type);
             quoted_value = sql_quote (value->str);

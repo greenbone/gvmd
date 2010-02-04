@@ -1,5 +1,10 @@
 2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (config_insert_preferences): Init quoted_nvt_name from
+	NVT name instead of preference name.
+
+2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Remove UNIQUE constraint from name of user resource tables.  Hence
 	increase database version to 12.  Add database migration from 11 to 12.
 
