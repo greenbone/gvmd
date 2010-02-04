@@ -1,5 +1,20 @@
 2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Remove UNIQUE constraint from name of user resource tables.  Hence
+	increase database version to 12.  Add database migration from 11 to 12.
+
+	* src/tasks_sql.h (create_tables): Remove UNIQUE from name column of
+	tables agents, configs and escalators.
+	(migrate_11_to_12): New function.
+	(database_migrators): Add migrate_11_to_12.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 12.
+
+	* doc/db_postgres.sql (agents, escalators, targets, configs)
+	(lsc_credentials): Remove UNIQUE from name.
+
+2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_agent_iterator): Take config_t instead of name.
 
 	* src/manage.h: Update header accordingly.

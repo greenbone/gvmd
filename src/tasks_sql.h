@@ -585,13 +585,13 @@ openvas_authenticate_uuid (const gchar * username, const gchar * password,
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name UNIQUE, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
@@ -2085,6 +2085,87 @@ migrate_10_to_11 ()
 }
 
 /**
+ * @brief Migrate the database from version 11 to version 12.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_11_to_12 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 11. */
+
+  if (manage_db_version () != 11)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Tables agents, configs and escalators were relieved of the UNIQUE
+   * constraint on the name column.
+   *
+   * Recreate the tables, in order to remove the contraint. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE agents RENAME TO agents_11;");
+
+  sql ("CREATE TABLE agents"
+       " (id INTEGER PRIMARY KEY, owner INTEGER, name, comment,"
+       "  installer TEXT, howto_install TEXT, howto_use TEXT);");
+
+  sql ("INSERT into agents"
+       " (id, owner, name, comment, installer, howto_install, howto_use)"
+       " SELECT"
+       "  id, owner, name, comment, installer, howto_install, howto_use"
+       " FROM agents_11;");
+
+  sql ("DROP TABLE agents_11;");
+
+  sql ("ALTER TABLE configs RENAME TO configs_11;");
+
+  sql ("CREATE TABLE configs"
+       " (id INTEGER PRIMARY KEY, owner INTEGER, name, nvt_selector, comment,"
+       "  family_count INTEGER, nvt_count INTEGER, families_growing INTEGER,"
+       "  nvts_growing INTEGER);");
+
+  sql ("INSERT into configs"
+       " (id, owner, name, nvt_selector, comment, family_count, nvt_count,"
+       "  families_growing, nvts_growing)"
+       " SELECT"
+       "  id, owner, name, nvt_selector, comment, family_count, nvt_count,"
+       "  families_growing, nvts_growing"
+       " FROM configs_11;");
+
+  sql ("DROP TABLE configs_11;");
+
+  sql ("ALTER TABLE escalators RENAME TO escalators_11;");
+
+  sql ("CREATE TABLE escalators"
+       " (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, event INTEGER,"
+       "  condition INTEGER, method INTEGER);");
+
+  sql ("INSERT into escalators"
+       " (id, owner, name, comment, event, condition, method)"
+       " SELECT"
+       "  id, owner, name, comment, event, condition, method"
+       " FROM escalators_11;");
+
+  sql ("DROP TABLE escalators_11;");
+
+  /* Set the database version to 12. */
+
+  set_db_version (12);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2100,6 +2181,7 @@ static migrator_t database_migrators[]
     {9, migrate_8_to_9},
     {10, migrate_9_to_10},
     {11, migrate_10_to_11},
+    {12, migrate_11_to_12},
     /* End marker. */
     {-1, NULL}};
 
@@ -6394,6 +6476,7 @@ find_target (const char* name, target_t* target)
   return FALSE;
 }
 
+/** @todo Take credential_t instead of credential name, adjust omp.c callers. */
 /**
  * @brief Create a target.
  *

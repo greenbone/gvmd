@@ -6,7 +6,7 @@ CREATE TABLE meta (
 CREATE TABLE agents (
 	id integer PRIMARY KEY,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text UNIQUE NOT NULL,
+	name text NOT NULL,
 	comment text,
 	installer text,
 	howto_install text,
@@ -33,7 +33,7 @@ CREATE TABLE escalator_method_data (
 CREATE TABLE escalators (
 	id integer PRIMARY KEY,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text UNIQUE NOT NULL,
+	name text NOT NULL,
 	comment text,
 	event integer,
 	condition integer,
@@ -56,7 +56,7 @@ CREATE TABLE nvt_selectors (
 CREATE TABLE targets (
 	id integer PRIMARY KEY,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text UNIQUE NOT NULL,
+	name text NOT NULL,
 	hosts text,
 	comment text,
 	lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
@@ -64,7 +64,7 @@ CREATE TABLE targets (
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text UNIQUE NOT NULL,
+	name text NOT NULL,
 	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT,
 	comment text,
 	family_count integer,
@@ -164,7 +164,7 @@ CREATE TABLE nvts (
 CREATE TABLE lsc_credentials (
 	id integer PRIMARY KEY,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
-	name text UNIQUE NOT NULL,
+	name text NOT NULL,
 	login text,
 	password text,
 	comment text,
