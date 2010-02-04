@@ -484,7 +484,7 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
- * @brief Return the UUID of a user from openvas user uuid file.
+ * @brief Return the UUID of a user from the OpenVAS user UUID file.
  *
  * If the user exists, ensure that the user has a UUID.
  *
@@ -610,7 +610,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config, target);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -783,7 +783,10 @@ next (iterator_t* iterator)
  *
  *  - Add the migrator function in the style of the others.  In particular,
  *    the function must check the version, do the modification and then set
- *    the new version, all inside an exclusive transaction.
+ *    the new version, all inside an exclusive transaction.  Use the generic
+ *    iterator (init_iterator, iterator_string, iterator_int64...) because the
+ *    specialised iterators (like init_target_iterator) can change behaviour
+ *    across Manager SVN versions.
  *
  *  - Remember to ensure that tables exist in the migrator before the migrator
  *    modifies them.  If a migrator modifies a table then the table must either
@@ -2027,6 +2030,61 @@ migrate_9_to_10 ()
 }
 
 /**
+ * @brief Migrate the database from version 10 to version 11.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_10_to_11 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 10. */
+
+  if (manage_db_version () != 10)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The config and target columns of the tasks table changed from the name
+   * of the config/target to the ROWID of the config/target.
+   *
+   * Recreate the table, in order to add INTEGER to the column definitions. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE tasks RENAME TO tasks_10;");
+
+  sql ("CREATE TABLE tasks"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
+       "  time, comment, description, run_status INTEGER, start_time,"
+       "  end_time, config INTEGER, target INTEGER);");
+
+  sql ("INSERT into tasks"
+       " (id, uuid, owner, name, hidden, time, comment, description,"
+       "  run_status, start_time, end_time, config, target)"
+       " SELECT"
+       "  id, uuid, owner, name, hidden, time, comment, description,"
+       "  run_status, start_time, end_time,"
+       "  (SELECT ROWID FROM configs WHERE configs.name = tasks_10.config),"
+       "  (SELECT ROWID FROM targets WHERE targets.name = tasks_10.target)"
+       " FROM tasks_10;");
+
+  sql ("DROP TABLE tasks_10;");
+
+  /* Set the database version to 11. */
+
+  set_db_version (11);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2041,6 +2099,7 @@ static migrator_t database_migrators[]
     {8, migrate_7_to_8},
     {9, migrate_8_to_9},
     {10, migrate_9_to_10},
+    {11, migrate_10_to_11},
     /* End marker. */
     {-1, NULL}};
 
@@ -4064,9 +4123,7 @@ task_config (task_t task)
 {
   config_t config;
   switch (sql_int64 (&config, 0, 0,
-                     "SELECT ROWID FROM configs WHERE name ="
-                     " (SELECT config FROM tasks"
-                     "  WHERE ROWID = %llu);",
+                     "SELECT config FROM tasks WHERE ROWID = %llu;",
                      task))
     {
       case 0:
@@ -4092,7 +4149,8 @@ char*
 task_config_name (task_t task)
 {
   return sql_string (0, 0,
-                     "SELECT config FROM tasks WHERE ROWID = %llu;",
+                     "SELECT name FROM configs WHERE ROWID ="
+                     " (SELECT config FROM tasks WHERE ROWID = %llu);",
                      task);
 }
 
@@ -4103,13 +4161,9 @@ task_config_name (task_t task)
  * @param[in]  config  Config.
  */
 void
-set_task_config (task_t task, const char* config)
+set_task_config (task_t task, config_t config)
 {
-  gchar* quote = sql_nquote (config, strlen (config));
-  sql ("UPDATE tasks SET config = '%s' WHERE ROWID = %llu;",
-       quote,
-       task);
-  g_free (quote);
+  sql ("UPDATE tasks SET config = %llu WHERE ROWID = %llu;", config, task);
 }
 
 /**
@@ -4124,8 +4178,7 @@ task_target (task_t task)
 {
   target_t target = 0;
   switch (sql_int64 (&target, 0, 0,
-                     "SELECT ROWID FROM targets WHERE name ="
-                     " (SELECT target FROM tasks WHERE ROWID = %llu);",
+                     "SELECT target FROM tasks WHERE ROWID = %llu;",
                      task))
     {
       case 0:
@@ -4147,13 +4200,9 @@ task_target (task_t task)
  * @param[in]  target  Target.
  */
 void
-set_task_target (task_t task, const char* target)
+set_task_target (task_t task, target_t target)
 {
-  gchar* quote = sql_nquote (target, strlen (target));
-  sql ("UPDATE tasks SET target = '%s' WHERE ROWID = %llu;",
-       quote,
-       task);
-  g_free (quote);
+  sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu;", target, task);
 }
 
 /**
@@ -6039,22 +6088,6 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
 }
 
 /**
- * @brief Append text to the config associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
- */
-int
-append_to_task_config (task_t task, const char* text, /*@unused@*/ int length)
-{
-  append_to_task_string (task, "config", text);
-  return 0;
-}
-
-/**
  * @brief Append text to the name associated with a task.
  *
  * @param[in]  task    A pointer to the task.
@@ -6067,22 +6100,6 @@ int
 append_to_task_name (task_t task, const char* text, /*@unused@*/ int length)
 {
   append_to_task_string (task, "name", text);
-  return 0;
-}
-
-/**
- * @brief Append text to the target associated with a task.
- *
- * @param[in]  task    A pointer to the task.
- * @param[in]  text    The text to append.
- * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
- */
-int
-append_to_task_target (task_t task, const char* text, /*@unused@*/ int length)
-{
-  append_to_task_string (task, "target", text);
   return 0;
 }
 
@@ -6380,16 +6397,17 @@ find_target (const char* name, target_t* target)
 /**
  * @brief Create a target.
  *
- * @param[in]  name        Name of target.
- * @param[in]  hosts       Host list of target.
- * @param[in]  comment     Comment on target.
- * @param[in]  credential  Credential.
+ * @param[in]   name        Name of target.
+ * @param[in]   hosts       Host list of target.
+ * @param[in]   comment     Comment on target.
+ * @param[in]   credential  Credential.
+ * @param[out]  target      Created target.
  *
  * @return 0 success, 1 target exists already.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               const char* credential)
+               const char* credential, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
@@ -6452,6 +6470,9 @@ create_target (const char* name, const char* hosts, const char* comment,
          " '%s', '', %llu);",
          quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
 
+  if (target)
+    *target = sqlite3_last_insert_rowid (task_db);
+
   g_free (quoted_name);
   g_free (quoted_hosts);
 
@@ -6472,8 +6493,7 @@ delete_target (target_t target)
 {
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE target ="
-               " (SELECT name FROM targets WHERE ROWID = %llu);",
+               "SELECT count(*) FROM tasks WHERE target = %llu;",
                target))
     {
       sql ("ROLLBACK;");
@@ -6643,8 +6663,7 @@ int
 target_in_use (target_t target)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE target ="
-                  " (SELECT name FROM targets WHERE ROWID = %llu);",
+                  "SELECT count(*) FROM tasks WHERE target = %llu;",
                   target);
 }
 
@@ -6665,7 +6684,7 @@ init_target_task_iterator (iterator_t* iterator, target_t target,
 
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
-                 " WHERE target = (SELECT name FROM targets WHERE ROWID = %llu)"
+                 " WHERE target = %llu"
                  " AND hidden = 0"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -7332,18 +7351,20 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
 /**
  * @brief Create a config from an RC file.
  *
- * @param[in]  name     Name of config and NVT selector.
- * @param[in]  comment  Comment on config.
- * @param[in]  rc       RC file text.
+ * @param[in]   name     Name of config and NVT selector.
+ * @param[in]   comment  Comment on config.
+ * @param[in]   rc       RC file text.
+ * @param[out]  config   Created config.
  *
  * @return 0 success, 1 config exists already, -1 error.
  */
 int
-create_config_rc (const char* name, const char* comment, char* rc)
+create_config_rc (const char* name, const char* comment, char* rc,
+                  config_t *config)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment;
-  config_t config;
+  config_t new_config;
 
   assert (current_credentials.uuid);
 
@@ -7387,8 +7408,8 @@ create_config_rc (const char* name, const char* comment, char* rc)
 
   /* Insert the RC into the config_preferences table. */
 
-  config = sqlite3_last_insert_rowid (task_db);
-  if (insert_rc_into_config (config, quoted_name, rc))
+  new_config = sqlite3_last_insert_rowid (task_db);
+  if (insert_rc_into_config (new_config, quoted_name, rc))
     {
       sql ("ROLLBACK;");
       g_free (quoted_name);
@@ -7397,6 +7418,8 @@ create_config_rc (const char* name, const char* comment, char* rc)
 
   sql ("COMMIT;");
   g_free (quoted_name);
+  if (config)
+    *config = new_config;
   return 0;
 }
 
@@ -7536,8 +7559,7 @@ delete_config (config_t config)
 
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config ="
-               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               "SELECT count(*) FROM tasks WHERE config = %llu;",
                config))
     {
       sql ("ROLLBACK;");
@@ -7658,8 +7680,7 @@ config_in_use (config_t config)
     return 1;
 
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE config ="
-                  " (SELECT name FROM configs WHERE ROWID = %llu);",
+                  "SELECT count(*) FROM tasks WHERE config = %llu;",
                   config);
 }
 
@@ -7791,8 +7812,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
       sql ("BEGIN IMMEDIATE;");
 
       if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks WHERE config ="
-                   " (SELECT name FROM configs WHERE ROWID = %llu);",
+                   "SELECT count(*) FROM tasks WHERE config = %llu;",
                    config))
         {
           sql ("ROLLBACK;");
@@ -7825,8 +7845,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
   sql ("BEGIN IMMEDIATE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config ="
-               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               "SELECT count(*) FROM tasks WHERE config = %llu;",
                config))
     {
       sql ("ROLLBACK;");
@@ -7942,8 +7961,7 @@ manage_set_config_nvts (config_t config, const char* family,
   sql ("BEGIN EXCLUSIVE;");
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks WHERE config ="
-               " (SELECT name FROM configs WHERE ROWID = %llu);",
+               "SELECT count(*) FROM tasks WHERE config = %llu;",
                config))
     {
       sql ("ROLLBACK;");
@@ -8195,7 +8213,7 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
 {
   init_iterator (iterator,
                  "SELECT name, uuid FROM tasks"
-                 " WHERE config = (SELECT name FROM configs WHERE ROWID = %llu)"
+                 " WHERE config = %llu"
                  " AND hidden = 0"
                  " ORDER BY name %s;",
                  config,

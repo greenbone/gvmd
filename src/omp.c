@@ -1646,6 +1646,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             assert (current_client_task == (task_t) 0);
             assert (modify_task_name == NULL);
+            assert (current_name == NULL);
+            assert (current_uuid == NULL);
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == (task_t) 0) abort (); // FIX
             openvas_append_string (&modify_task_name, "");
@@ -6408,7 +6410,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               ret = create_config_rc (modify_task_name,
                                       modify_task_comment,
-                                      (char*) base64);
+                                      (char*) base64,
+                                      NULL);
               g_free (base64);
               switch (ret)
                 {
@@ -6884,7 +6887,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else if (create_target (modify_task_name,
                                   modify_task_value,
                                   modify_task_comment,
-                                  modify_task_parameter))
+                                  modify_task_parameter,
+                                  NULL))
             {
               openvas_free_string_var (&modify_task_comment);
               openvas_free_string_var (&modify_task_name);
@@ -6925,8 +6929,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK:
         {
           gchar* msg;
-          config_t config;
-          target_t target;
+          config_t config = 0;
+          target_t target = 0;
           char *tsk_uuid, *name, *description;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
@@ -6952,6 +6956,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               current_client_task = (task_t) 0;
               openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
@@ -6959,11 +6965,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* Check for the right combination of rcfile, target and config. */
 
           description = task_description (current_client_task);
-          config = task_config (current_client_task);
-          target = task_target (current_client_task);
-          if ((description && (config || target))
+          /* Config name is current_uuid.  Target name is current_name. */
+          if ((description && (current_uuid || current_name))
               || (description == NULL
-                  && (config == 0 || target == 0)))
+                  && (current_uuid == NULL || current_name == NULL)))
             {
               request_delete_task (&current_client_task);
               free (tsk_uuid);
@@ -6973,9 +6978,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " or both a config and a target"));
               current_client_task = (task_t) 0;
               openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
+
+          assert (description || (current_uuid && current_name));
 
           /* Set any escalator. */
 
@@ -6986,6 +6995,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   openvas_free_string_var (&modify_task_name);
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
+                  set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
               if (escalator == 0)
@@ -6994,6 +7006,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK escalator must exist"));
                   openvas_free_string_var (&modify_task_name);
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
+                  set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
               add_task_escalator (current_client_task, modify_task_name);
@@ -7012,6 +7027,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
               current_client_task = (task_t) 0;
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
@@ -7029,8 +7046,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               config_name = g_strdup_printf ("Imported config for task %s",
                                              tsk_uuid);
-              ret = create_config_rc (config_name, NULL, (char*) description);
-              set_task_config (current_client_task, config_name);
+              ret = create_config_rc (config_name, NULL, (char*) description,
+                                      &config);
+              set_task_config (current_client_task, config);
               g_free (config_name);
               if (ret)
                 {
@@ -7038,6 +7056,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -7055,6 +7075,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("create_task",
                       "CREATE_TASK rcfile must have targets"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -7062,8 +7084,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              set_task_target (current_client_task, target_name);
-              if (create_target (target_name, hosts, NULL, NULL))
+              if (create_target (target_name, hosts, NULL, NULL, &target))
                 {
                   request_delete_task (&current_client_task);
                   g_free (target_name);
@@ -7071,35 +7092,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_task"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
+              set_task_target (current_client_task, target);
               g_free (target_name);
+            }
+          else if (find_config (current_uuid, &config))
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              current_client_task = (task_t) 0;
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+            }
+          else if (config == 0)
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              current_client_task = (task_t) 0;
+              if (send_find_error_to_client ("create_task",
+                                             "config",
+                                             current_uuid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (find_target (current_name, &target))
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              current_client_task = (task_t) 0;
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+            }
+          else if (target == 0)
+            {
+              request_delete_task (&current_client_task);
+              free (tsk_uuid);
+              current_client_task = (task_t) 0;
+              if (send_find_error_to_client ("create_task",
+                                             "target",
+                                             current_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
             }
           else
             {
-              if (target_hosts (target) == NULL)
-                {
-                  request_delete_task (&current_client_task);
-                  free (tsk_uuid);
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "CREATE_TASK target must exist"));
-                  current_client_task = (task_t) 0;
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
-              if (config_nvt_selector (config) == NULL)
-                {
-                  request_delete_task (&current_client_task);
-                  free (tsk_uuid);
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "CREATE_TASK config must exist"));
-                  current_client_task = (task_t) 0;
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
-                }
+              set_task_config (current_client_task, config);
+              set_task_target (current_client_task, target);
 
               /* Generate the rcfile in the task. */
 
@@ -7111,6 +7155,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("create_task",
                                       "Failed to generate task rcfile"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
@@ -7134,6 +7180,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           g_free (msg);
           current_client_task = (task_t) 0;
+          openvas_free_string_var (&current_uuid);
+          openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -9069,7 +9117,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         append_to_task_comment (current_client_task, text, text_len);
         break;
       case CLIENT_CREATE_TASK_CONFIG:
-        append_to_task_config (current_client_task, text, text_len);
+        openvas_append_text (&current_uuid, text, text_len);
         break;
       case CLIENT_CREATE_TASK_ESCALATOR:
         openvas_append_text (&modify_task_name, text, text_len);
@@ -9085,7 +9133,7 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
           abort (); // FIX out of mem
         break;
       case CLIENT_CREATE_TASK_TARGET:
-        append_to_task_target (current_client_task, text, text_len);
+        openvas_append_text (&current_name, text, text_len);
         break;
 
       case CLIENT_DELETE_AGENT_NAME:

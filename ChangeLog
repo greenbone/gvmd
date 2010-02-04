@@ -1,3 +1,37 @@
+2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Reference targets and configs by ID in the tasks table, instead of by
+	name.  Hence increase database version to 11.  Add database migration
+	from 10 to 11.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 11.
+
+	* src/tasks_sql.h (create_tables): Make config and target in table tasks
+	INTEGERs.
+	(migrate_10_to_11): New function.
+	(database_migrators): Add migrate_10_to_11.
+	(task_config, task_config_name, delete_config, config_in_use)
+	(manage_set_config_preference, manage_set_config_preference)
+	(manage_set_config_nvts, init_config_task_iterator): Treat task config
+	reference as integer.
+	(set_task_config): Change config from name to integer.
+	(task_target, delete_target, target_in_use)
+	(init_target_task_iterator): Treat task target reference as integer.
+	(set_task_target): Change target from name to integer.
+	(append_to_task_config, append_to_task_target): Remove.
+	(create_target): Return created target via arg.
+	(create_config_rc): Return created config via arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_CONFIG and
+	CLIENT_CREATE_TARGET add dummy return args to create_target and
+	create_config_rc calls.  In CLIENT_CREATE_TASK set the task config and
+	target from the given names.
+	(omp_xml_handle_text): In CLIENT_CREATE_TASK_CONFIG and
+	CLIENT_CREATE_TASK_TARGET append to global instead of appending into
+	task.
+
 2010-02-04  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/task_sql.h (openvas_user_uuid, authenticate): Minor doc.

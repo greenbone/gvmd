@@ -374,13 +374,13 @@ char*
 task_config_name (task_t);
 
 void
-set_task_config (task_t, const char*);
+set_task_config (task_t, config_t);
 
 target_t
 task_target (task_t);
 
 void
-set_task_target (task_t, const char*);
+set_task_target (task_t, config_t);
 
 char*
 task_description (task_t);
@@ -476,13 +476,7 @@ int
 append_to_task_comment (task_t, const char*, int);
 
 int
-append_to_task_config (task_t, const char*, int);
-
-int
 append_to_task_name (task_t, const char*, int);
-
-int
-append_to_task_target (task_t, const char*, int);
 
 int
 add_task_description_line (task_t, const char*, size_t);
@@ -703,7 +697,7 @@ gboolean
 find_target (const char*, target_t*);
 
 int
-create_target (const char*, const char*, const char*, const char*);
+create_target (const char*, const char*, const char*, const char*, target_t*);
 
 int
 delete_target (target_t);
@@ -773,7 +767,7 @@ create_config (const char*, const char*, const array_t*, const array_t*,
                char**);
 
 int
-create_config_rc (const char*, const char*, char*);
+create_config_rc (const char*, const char*, char*, config_t*);
 
 int
 copy_config (const char*, const char*, config_t);
