@@ -1,5 +1,14 @@
 2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_agent_iterator): Take config_t instead of name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS pass
+	agent_t to init_agent_iterator instead of passing name.
+
+2010-02-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Reference targets and configs by ID in the tasks table, instead of by
 	name.  Hence increase database version to 11.  Add database migration
 	from 10 to 11.

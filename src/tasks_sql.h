@@ -10917,38 +10917,33 @@ delete_agent (agent_t agent)
   return 0;
 }
 
-/** @todo Adjust omp.c caller, replace name with a agent_t. */
 /**
  * @brief Initialise an agent iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of single agent to iterate, NULL for all.
+ * @param[in]  agent       Single agent to iterate, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_agent_iterator (iterator_t* iterator, const char *name,
+init_agent_iterator (iterator_t* iterator, agent_t agent,
                      int ascending, const char* sort_field)
 {
   assert (current_credentials.uuid);
 
-  if (name && strlen (name))
-    {
-      gchar *quoted_name = sql_quote (name);
-      init_iterator (iterator,
-                     "SELECT name, comment, installer,"
-                     " howto_install, howto_use"
-                     " FROM agents"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                     " ORDER BY %s %s;",
-                     quoted_name,
-                     current_credentials.uuid,
-                     sort_field ? sort_field : "ROWID",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_name);
-    }
+  if (agent)
+    init_iterator (iterator,
+                   "SELECT name, comment, installer,"
+                   " howto_install, howto_use"
+                   " FROM agents"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   agent,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
                    "SELECT name, comment, installer,"

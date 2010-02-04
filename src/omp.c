@@ -8038,6 +8038,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t targets;
           int format;
+          agent_t agent = 0;
+
           assert (strcasecmp ("GET_AGENTS", element_name) == 0);
 
           if (current_format)
@@ -8064,14 +8066,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
                                 " be \"installer\", \"howto_install\" or \"howto_use\"."));
+          else if (current_uuid && find_agent (current_uuid, &agent))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
+          else if (current_uuid && agent == 0)
+            {
+              if (send_find_error_to_client ("get_agents",
+                                             "agent",
+                                             current_uuid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           else
             {
-              /** @todo if (current_uuid && strlen (...)) find_agent... */
               SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_agent_iterator (&targets,
-                                   current_uuid,
+                                   agent,
                                    /* Attribute sort_order. */
                                    current_int_2,
                                    /* Attribute sort_field. */

@@ -1051,7 +1051,7 @@ int
 delete_agent (agent_t);
 
 void
-init_agent_iterator (iterator_t*, const char*, int, const char*);
+init_agent_iterator (iterator_t*, agent_t, int, const char*);
 
 const char*
 agent_iterator_name (iterator_t*);
