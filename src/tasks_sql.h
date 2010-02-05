@@ -8014,7 +8014,7 @@ manage_set_config_nvts (config_t config, const char* family,
 {
   char *selector;
   gchar *quoted_family, *quoted_selector;
-  int new_nvt_count, old_nvt_count;
+  int new_nvt_count = 0, old_nvt_count;
 
   sql ("BEGIN EXCLUSIVE;");
 
