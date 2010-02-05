@@ -236,7 +236,11 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                 }
 
 #if TRACE || LOG
-              logf ("<= client %.*s\n", count, from_client + from_client_end);
+              logf ("<= client %.*s\n",
+                    /* Cast is safe because count is bounded by from_client
+                     * size. */
+                    (int) count,
+                    from_client + from_client_end);
 #if TRACE_TEXT
               if (g_strstr_len (from_client + from_client_end,
                                 count,
@@ -244,7 +248,9 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                 tracef ("<= client  Input may contain password, suppressed.\n");
               else
                 tracef ("<= client  \"%.*s\"\n",
-                        count,
+                        /* Cast is safe because count is bounded by
+                         * from_client size. */
+                        (int) count,
                         from_client + from_client_end);
 #else
               tracef ("<= client  %i bytes\n", count);

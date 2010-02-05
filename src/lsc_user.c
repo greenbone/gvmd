@@ -221,7 +221,8 @@ file_utils_copy_file (const gchar *source_file, const gchar *dest_file)
 
   if (bytes_written != (size_t) src_file_size)
     {
-      g_debug ("%s: failed to write to %s (%d/%d)",
+      g_debug ("%s: failed to write to %s"
+               " (%zu/%" G_GSIZE_MODIFIER G_GSIZE_FORMAT ")",
                __FUNCTION__, dest_file, bytes_written, src_file_size);
       g_free (src_file_content);
       return FALSE;

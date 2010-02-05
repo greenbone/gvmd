@@ -1,5 +1,17 @@
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Thanks to Stephan Kleine for reporting these.
+
+	* src/omp.c (send_to_client, send_certificate): Use %zu for size_t.
+
+	* src/oxpd.c (read_protocol): Cast precision arg to int.
+
+	* src/lsc_user.c (file_utils_copy_file): Use the right format specifiers.
+
+	* src/tasks_sql.h (escalate_1): Return -1 if to_address is NULL.
+
+2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (latex_escape_text): New function.
 	(print_report_latex): Put close paren on line with code.  Pass port in
 	summary table column and subsubsection through latex_escape_text.

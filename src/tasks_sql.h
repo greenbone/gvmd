@@ -3006,16 +3006,19 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
     {
       case ESCALATOR_METHOD_EMAIL:
         {
-          int ret;
-          char *to_address, *from_address;
+          char *to_address;
 
           to_address = escalator_data (escalator, "method", "to_address");
-          from_address = escalator_data (escalator, "method", "from_address");
 
           if (to_address)
             {
+              int ret;
               gchar *body, *subject;
-              char *name, *notice;
+              char *name, *notice, *from_address;
+
+              from_address = escalator_data (escalator,
+                                             "method",
+                                             "from_address");
 
               notice = escalator_data (escalator, "method", "notice");
               name = task_name (task);
@@ -3060,8 +3063,9 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
               free (from_address);
               g_free (subject);
               g_free (body);
+              return ret;
             }
-          return ret;
+          return -1;
           break;
         }
       case ESCALATOR_METHOD_ERROR:

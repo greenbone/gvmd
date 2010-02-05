@@ -902,7 +902,7 @@ send_to_client (const char* msg)
   if (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
       < strlen (msg))
     {
-      tracef ("   send_to_client out of space (%i < %i)\n",
+      tracef ("   send_to_client out of space (%i < %zu)\n",
               ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
               strlen (msg));
       return TRUE;
@@ -2906,7 +2906,7 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
                          "<fingerprint>%s</fingerprint>"
                          "<owner>%s</owner>"
                          "<trust_level>%s</trust_level>"
-                         "<length>%u</length>"
+                         "<length>%zu</length>"
                          "<public_key>%s</public_key>"
                          "</certificate>",
                          certificate_fingerprint (cert),
