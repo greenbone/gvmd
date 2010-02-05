@@ -865,10 +865,12 @@ backup_db ()
 /**
  * @brief Restore the database from a file.
  *
+ * @param[in]  backup_file  File to restore from.
+ *
  * @return 0 success, -1 fail.
  */
 int
-restore_db ()
+restore_db (const gchar *backup_file)
 {
   // FIX ensure lock on db and db synced first
   return -1;

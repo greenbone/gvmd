@@ -1,5 +1,10 @@
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (restore_db): Add missing argument.  Thanks to
+	Stephan Kleine for reporting.
+
+2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Thanks to Stephan Kleine for reporting these.
 
 	* src/omp.c (send_to_client, send_certificate): Use %zu for size_t.
