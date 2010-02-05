@@ -250,7 +250,7 @@ create_escalator (const char*, const char*, event_t, GPtrArray*,
                   GPtrArray*);
 
 int
-delete_escalator (const char*);
+delete_escalator (escalator_t);
 
 gboolean
 find_escalator (const char*, escalator_t*);

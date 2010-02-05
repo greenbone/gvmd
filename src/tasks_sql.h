@@ -2497,6 +2497,45 @@ collate_ip (void* data,
 /* Events and Escalators. */
 
 /**
+ * @brief Find an escalator given a name.
+ *
+ * @param[in]   name       Escalator name.
+ * @param[out]  escalator  Return.  0 if succesfully failed to find escalator.
+ *
+ * @return FALSE on success (including if failed to find escalator), TRUE on
+ *         error.
+ */
+gboolean
+find_escalator (const char* name, escalator_t* escalator)
+{
+  gchar *quoted_name = sql_quote (name);
+  if (user_owns ("escalator", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      *escalator = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (escalator, 0, 0,
+                     "SELECT ROWID FROM escalators WHERE name = '%s';",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *escalator = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
  * @brief Create an escalator.
  *
  * @param[in]  name            Name of escalator.
@@ -2600,83 +2639,28 @@ create_escalator (const char* name, const char* comment,
 /**
  * @brief Delete an escalator.
  *
- * @param[in]  name  Name of escalator.
+ * @param[in]  escalator  Escalator.
  *
- * @return 0 success, 1 fail because a task refers to the escalator,
- *         2 access forbidden, -1 error.
+ * @return 0 success, 1 fail because a task refers to the escalator, -1 error.
  */
 int
-delete_escalator (const char* name)
+delete_escalator (escalator_t escalator)
 {
-  gchar* quoted_name = sql_quote (name);
   sql ("BEGIN IMMEDIATE;");
   if (sql_int (0, 0,
-               "SELECT count(*) FROM task_escalators WHERE escalator ="
-               " (SELECT ROWID FROM escalators where name = '%s');",
-               quoted_name))
+               "SELECT count(*) FROM task_escalators WHERE escalator = %llu;",
+               escalator))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
-  if (user_owns ("escalator", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 2;
-    }
-  sql ("DELETE FROM escalator_condition_data"
-       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
-       quoted_name);
-  sql ("DELETE FROM escalator_event_data"
-       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
-       quoted_name);
-  sql ("DELETE FROM escalator_method_data"
-       " WHERE escalator = (SELECT ROWID FROM escalators WHERE name = '%s');",
-       quoted_name);
-  sql ("DELETE FROM escalators WHERE name = '%s';", quoted_name);
+  sql ("DELETE FROM escalator_condition_data WHERE escalator = %llu;",
+       escalator);
+  sql ("DELETE FROM escalator_event_data WHERE escalator = %llu;", escalator);
+  sql ("DELETE FROM escalator_method_data WHERE escalator = %llu;", escalator);
+  sql ("DELETE FROM escalators WHERE ROWID = %llu;", escalator);
   sql ("COMMIT;");
-  g_free (quoted_name);
   return 0;
-}
-
-/**
- * @brief Find an escalator given a name.
- *
- * @param[in]   name       Escalator name.
- * @param[out]  escalator  Return.  0 if succesfully failed to find escalator.
- *
- * @return FALSE on success (including if failed to find escalator), TRUE on
- *         error.
- */
-gboolean
-find_escalator (const char* name, escalator_t* escalator)
-{
-  gchar *quoted_name = sql_quote (name);
-  if (user_owns ("escalator", quoted_name) == 0)
-    {
-      g_free (quoted_name);
-      *escalator = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (escalator, 0, 0,
-                     "SELECT ROWID FROM escalators WHERE name = '%s';",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *escalator = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-  g_free (quoted_name);
-  return FALSE;
 }
 
 /**

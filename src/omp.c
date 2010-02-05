@@ -5533,6 +5533,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_ESCALATOR:
         {
+          escalator_t escalator;
+
           assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
           assert (modify_task_name != NULL);
 
@@ -5544,7 +5546,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "DELETE_ESCALATOR name must be at least one"
                                   " character long"));
             }
-          else switch (delete_escalator (modify_task_name))
+          else if (find_escalator (modify_task_name, &escalator))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("delete_escalator"));
+          else if (escalator == 0)
+            {
+              if (send_find_error_to_client ("delete_escalator",
+                                             "escalator",
+                                             modify_task_name))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (delete_escalator (escalator))
             {
               case 0:
                 openvas_free_string_var (&modify_task_name);
@@ -5554,10 +5569,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_escalator",
                                                           "Escalator is in use"));
-                break;
-              case 2:
-                openvas_free_string_var (&modify_task_name);
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("delete_escalator"));
                 break;
               default:
                 openvas_free_string_var (&modify_task_name);
