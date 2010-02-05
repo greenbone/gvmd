@@ -3511,6 +3511,88 @@ latex_print_verbatim_text (FILE* file, const char* text)
 }
 
 /**
+ * @brief Make text safe for LaTeX.
+ *
+ * Replace LaTeX special characters with LaTeX equivalents.
+ *
+ * @return A newly allocated version of text.
+ */
+static gchar*
+latex_escape_text (const char *text)
+{
+  // TODO: Do this better.
+
+  gsize left = strlen (text);
+  gchar *new, *ch;
+
+  /* Allocate buffer of a safe length. */
+  {
+    int bs = 0;
+    const char *c = text;
+    while (*c) { if (*c == '\\') bs++; c++; }
+    new = g_strndup (text,
+                     (left - bs) * 2 + bs * (strlen ("$\\backslash$") - 1) + 1);
+  }
+
+  ch = new;
+  while (*ch)
+    {
+      /* FIX \~ becomes \verb{~} or \~{} */
+      if (*ch == '\\')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case 'r':
+                {
+                  /* \r is flushed */
+                  memmove (ch - 1, ch + 1, left);
+                  left--;
+                  ch -= 2;
+                  break;
+                }
+              case 'n':
+                {
+                  /* \n becomes "\n\n" (two newlines) */
+                  left--;
+                  *(ch - 1) = '\n';
+                  *ch = '\n';
+                  break;
+                }
+              default:
+                {
+                  /* \ becomes $\backslash$ */
+                  memmove (ch - 1 + strlen ("$\\backslash$"), ch, left);
+                  strncpy (ch - 1, "$\\backslash$", strlen ("$\\backslash$"));
+                  /* Get back to the position of the original backslash. */
+                  ch--;
+                  /* Move over the newly inserted characters. */
+                  ch += (strlen ("$\\backslash$") - 1);
+                  break;
+                }
+            }
+        }
+      else if (   *ch == '#' || *ch == '$' || *ch == '%'
+               || *ch == '&' || *ch == '_' || *ch == '^'
+               || *ch == '{' || *ch == '}')
+        {
+          ch++;
+          switch (*ch)
+            {
+              case '\0':
+                break;
+              default:
+                /* & becomes \& */
+                memmove (ch, ch - 1, left);
+                *(ch - 1) = '\\';
+            }
+        }
+      ch++; left--;
+    }
+  return new;
+}
+
+/**
  * @brief Convert \n's to real newline's.
  *
  * @return A newly allocated version of text.
@@ -3897,8 +3979,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                "\\multicolumn{2}{l}{\\ldots (continues) \\ldots}\\\\\n"
                "\\endfoot\n"
                "\\hline\n"
-               "\\endlastfoot\n"
-               );
+               "\\endlastfoot\n");
 
       init_result_iterator (&results, report, host,
                             get_report_data->first_result,
@@ -3914,12 +3995,12 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
               && (strcmp (last_port, result_iterator_port (&results)) == 0))
             continue;
           if (last_port) g_free (last_port);
-          last_port = g_strdup (result_iterator_port (&results));
+          last_port = latex_escape_text (result_iterator_port (&results));
           fprintf (out,
                    "\\hyperref[port:%s %s]{%s}&%s\\\\\n"
                    "\\hline\n",
                    host_iterator_host (&hosts),
-                   last_port,
+                   result_iterator_port (&results),
                    last_port,
                    result_type_threat (result_iterator_type (&results)));
         }
@@ -3952,6 +4033,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
           if (last_port == NULL
               || strcmp (last_port, result_iterator_port (&results)))
             {
+              gchar *result_port;
               if (last_port)
                 {
                   fprintf (out,
@@ -3964,13 +4046,15 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                   g_free (last_port);
                   last_port = NULL;
                 }
+              result_port = latex_escape_text (result_iterator_port (&results));
               fprintf (out,
                        "\\subsubsection{%s}\n"
                        "\\label{port:%s %s}\n\n"
                        "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
-                       result_iterator_port (&results),
+                       result_port,
                        host_iterator_host (&hosts),
                        result_iterator_port (&results));
+              g_free (result_port);
             }
           if (last_port == NULL)
             last_port = g_strdup (result_iterator_port (&results));

@@ -1,5 +1,11 @@
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (latex_escape_text): New function.
+	(print_report_latex): Put close paren on line with code.  Pass port in
+	summary table column and subsubsection through latex_escape_text.
+
+2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_target): Take lsc_credential_t instead of name.
 
 	* src/manage.h: Update header accordingly.
