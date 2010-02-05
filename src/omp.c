@@ -8556,7 +8556,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_escalator_task_iterator (&tasks,
-                                                    current_name,
+                                                    escalator,
                                                     /* Attribute sort_order. */
                                                     current_int_2);
                       while (next (&tasks))

@@ -317,7 +317,7 @@ const char*
 escalator_data_iterator_data (iterator_t*);
 
 void
-init_escalator_task_iterator (iterator_t*, const char *, int);
+init_escalator_task_iterator (iterator_t*, escalator_t, int);
 
 const char*
 escalator_task_iterator_name (iterator_t*);

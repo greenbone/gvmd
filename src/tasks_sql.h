@@ -3216,32 +3216,27 @@ event (task_t task, event_t event, void* event_data)
  * Iterate over all tasks that use the escalator.
  *
  * @param[in]  iterator   Iterator.
- * @param[in]  name       Name of escalator.
+ * @param[in]  escalator  Escalator.
  * @param[in]  ascending  Whether to sort ascending or descending.
  */
 void
-init_escalator_task_iterator (iterator_t* iterator, const char *name,
+init_escalator_task_iterator (iterator_t* iterator, escalator_t escalator,
                               int ascending)
 {
-  gchar *quoted_name;
-
-  assert (name);
+  assert (escalator);
   assert (current_credentials.uuid);
 
-  quoted_name = sql_quote (name);
   init_iterator (iterator,
                  "SELECT tasks.name, tasks.uuid FROM tasks, task_escalators"
                  " WHERE tasks.ROWID = task_escalators.task"
-                 " AND task_escalators.escalator ="
-                 " (SELECT ROWID FROM escalators WHERE escalators.name = '%s')"
+                 " AND task_escalators.escalator = %llu"
                  " AND hidden = 0"
                  " AND ((tasks.owner IS NULL) OR (tasks.owner ="
                  " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY tasks.name %s;",
-                 quoted_name,
+                 escalator,
                  current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
-  g_free (quoted_name);
 }
 
 /**
