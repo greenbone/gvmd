@@ -697,7 +697,8 @@ gboolean
 find_target (const char*, target_t*);
 
 int
-create_target (const char*, const char*, const char*, const char*, target_t*);
+create_target (const char*, const char*, const char*, lsc_credential_t,
+               target_t*);
 
 int
 delete_target (target_t);

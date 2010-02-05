@@ -6878,6 +6878,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TARGET:
         {
+          lsc_credential_t lsc_credential = 0;
+
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (modify_task_name != NULL);
           assert (modify_task_value != NULL);
@@ -6895,10 +6897,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_TARGET name and hosts must both be at"
                                   " least one character long"));
             }
+          else if (modify_task_parameter
+                   && find_lsc_credential (modify_task_parameter, &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("create_target"));
+          else if (modify_task_parameter && lsc_credential == 0)
+            {
+              if (send_find_error_to_client ("create_target",
+                                             "lsc_credential",
+                                             modify_task_parameter))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           else if (create_target (modify_task_name,
                                   modify_task_value,
                                   modify_task_comment,
-                                  modify_task_parameter,
+                                  lsc_credential,
                                   NULL))
             {
               openvas_free_string_var (&modify_task_comment);
@@ -7095,7 +7111,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, NULL, &target))
+              if (create_target (target_name, hosts, NULL, 0, &target))
                 {
                   request_delete_task (&current_client_task);
                   g_free (target_name);

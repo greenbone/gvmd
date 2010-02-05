@@ -6451,25 +6451,23 @@ find_target (const char* name, target_t* target)
   return FALSE;
 }
 
-/** @todo Take credential_t instead of credential name, adjust omp.c callers. */
 /**
  * @brief Create a target.
  *
- * @param[in]   name        Name of target.
- * @param[in]   hosts       Host list of target.
- * @param[in]   comment     Comment on target.
- * @param[in]   credential  Credential.
- * @param[out]  target      Created target.
+ * @param[in]   name            Name of target.
+ * @param[in]   hosts           Host list of target.
+ * @param[in]   comment         Comment on target.
+ * @param[in]   lsc_credential  LSC credential.
+ * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               const char* credential, target_t* target)
+               lsc_credential_t lsc_credential, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
-  lsc_credential_t lsc_credential;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -6484,31 +6482,6 @@ create_target (const char* name, const char* hosts, const char* comment,
     }
 
   quoted_hosts = sql_nquote (hosts, strlen (hosts));
-
-  if (credential)
-    {
-      gchar *quoted_credential = sql_quote (credential);
-      int ret = sql_int64 (&lsc_credential, 0, 0,
-                           "SELECT ROWID FROM lsc_credentials"
-                           " WHERE name = '%s';",
-                           quoted_credential);
-      g_free (quoted_credential);
-      switch (ret)
-        {
-          case 0:
-            break;
-          case 1:        /* Too few rows in result of query. */
-            lsc_credential = 0;
-            break;
-          default:       /* Programming error. */
-            assert (0);
-          case -1:
-            return -1;
-            break;
-        }
-    }
-  else
-    lsc_credential = 0;
 
   if (comment)
     {

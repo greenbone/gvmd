@@ -1,5 +1,14 @@
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_target): Take lsc_credential_t instead of name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET
+	pass lsc_credential_t instead of credential name to create_target.
+
+2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (manage_set_config_nvts): Init new_nvt_count.
 
 	* src/ompd.c (serve_omp): Ensure client_input_stalled in always
