@@ -1,5 +1,11 @@
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* TODO: Flush tabs from within entries.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Sync with generated version.
+
+2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (restore_db): Add missing argument.  Thanks to
 	Stephan Kleine for reporting.
 

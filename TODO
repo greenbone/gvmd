@@ -73,7 +73,7 @@
 	Consider dropping the file system based task storage backend entirely,
 	as the file system tasks are already out of date (nvti*, initial run
 	state) and would need considerable additional work to handle
-	simultaneous access to the task	information.  Looking at the openvasd
+	simultaneous access to the task information.  Looking at the openvasd
 	storage/backend/IPC may be a source of inspiration.  In either case use
 	a better mechanism than including tasks_sql.h and tasks_fs.h in manage.c.
 
@@ -106,7 +106,7 @@
 	that is running.  OMP specifies special output in this case.  The manager
 	simply responds as usual.
 
-	Consider using separate words for the task STATUS (the state of the	task,
+	Consider using separate words for the task STATUS (the state of the task,
 	like "Done") and the request STATUS (like "404").  Perhaps the request
 	status could be called CODE, as in "HTTP error code".
 
