@@ -259,7 +259,7 @@ int
 escalate (escalator_t, task_t, event_t, const void*);
 
 void
-init_escalator_iterator (iterator_t*, const char*, task_t, event_t, int,
+init_escalator_iterator (iterator_t*, escalator_t, task_t, event_t, int,
                          const char*);
 
 escalator_t

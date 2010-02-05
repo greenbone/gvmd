@@ -2697,8 +2697,7 @@ escalator_method (escalator_t escalator)
  * @brief Initialise an escalator iterator.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  name        Name of single escalator to iterator over, NULL for
- *                         all.
+ * @param[in]  escalator   Single escalator to iterator over, 0 for all.
  * @param[in]  task        Iterate over escalators for this task.  0 for all.
  * @param[in]  event       Iterate over escalators handling this event.  0 for
  *                         all.
@@ -2706,33 +2705,30 @@ escalator_method (escalator_t escalator)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_escalator_iterator (iterator_t *iterator, const char *name, task_t task,
-                         event_t event, int ascending, const char *sort_field)
+init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
+                         task_t task, event_t event, int ascending,
+                         const char *sort_field)
 {
-  assert (name ? task == 0 : (task ? name == NULL : 1));
-  assert (name ? event == 0 : (event ? name == NULL : 1));
+  assert (escalator ? task == 0 : (task ? escalator == 0 : 1));
+  assert (escalator ? event == 0 : (event ? escalator == 0 : 1));
   assert (event ? task : 1);
   assert (current_credentials.uuid);
 
-  if (name)
-    {
-      gchar *quoted_name = sql_quote (name);
-      init_iterator (iterator,
-                     "SELECT escalators.ROWID, name, comment,"
-                     " 0, event, condition, method,"
-                     " (SELECT count(*) > 0 FROM task_escalators"
-                     "  WHERE task_escalators.escalator = escalators.ROWID)"
-                     " FROM escalators"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                     " ORDER BY %s %s;",
-                     quoted_name,
-                     current_credentials.uuid,
-                     sort_field ? sort_field : "escalators.ROWID",
-                     ascending ? "ASC" : "DESC");
-      g_free (quoted_name);
-    }
+  if (escalator)
+    init_iterator (iterator,
+                   "SELECT escalators.ROWID, name, comment,"
+                   " 0, event, condition, method,"
+                   " (SELECT count(*) > 0 FROM task_escalators"
+                   "  WHERE task_escalators.escalator = escalators.ROWID)"
+                   " FROM escalators"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   escalator,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "escalators.ROWID",
+                   ascending ? "ASC" : "DESC");
   else if (task)
     init_iterator (iterator,
                    "SELECT escalators.ROWID, name, comment,"
@@ -3193,7 +3189,7 @@ event (task_t task, event_t event, void* event_data)
 {
   iterator_t escalators;
   tracef ("   EVENT %i on task %llu", event, task);
-  init_escalator_iterator (&escalators, NULL, task, event, 1, NULL);
+  init_escalator_iterator (&escalators, 0, task, event, 1, NULL);
   while (next (&escalators))
     {
       escalator_t escalator = escalator_iterator_escalator (&escalators);

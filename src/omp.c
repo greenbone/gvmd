@@ -8442,121 +8442,139 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_ESCALATORS:
         {
-          iterator_t escalators;
+          escalator_t escalator = 0;
+
           assert (strcasecmp ("GET_ESCALATORS", element_name) == 0);
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_escalators_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          init_escalator_iterator (&escalators,
-                                   current_name,
-                                   (task_t) 0,
-                                   (event_t) 0,
-                                   current_int_2,   /* Attribute sort_order. */
-                                   current_format); /* Attribute sort_field. */
-          while (next (&escalators))
+          if (current_name && find_escalator (current_name, &escalator))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_escalators"));
+          else if (current_name && escalator == 0)
             {
-              iterator_t data;
-
-              SENDF_TO_CLIENT_OR_FAIL ("<escalator>"
-                                       "<name>%s</name>"
-                                       "<comment>%s</comment>"
-                                       "<in_use>%i</in_use>",
-                                       escalator_iterator_name (&escalators),
-                                       escalator_iterator_comment (&escalators),
-                                       escalator_iterator_in_use (&escalators));
-
-              /* Condition. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
-                                       escalator_condition_name
-                                        (escalator_iterator_condition
-                                          (&escalators)));
-              init_escalator_data_iterator (&data,
-                                            escalator_iterator_escalator
-                                             (&escalators),
-                                            "condition");
-              while (next (&data))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
-                                         "%s"
-                                         "</data>",
-                                         escalator_data_iterator_name (&data),
-                                         escalator_data_iterator_data (&data));
-              cleanup_iterator (&data);
-              SEND_TO_CLIENT_OR_FAIL ("</condition>");
-
-              /* Event. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
-                                       event_name (escalator_iterator_event
-                                        (&escalators)));
-              init_escalator_data_iterator (&data,
-                                            escalator_iterator_escalator
-                                             (&escalators),
-                                            "event");
-              while (next (&data))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
-                                         "%s"
-                                         "</data>",
-                                         escalator_data_iterator_name (&data),
-                                         escalator_data_iterator_data (&data));
-              cleanup_iterator (&data);
-              SEND_TO_CLIENT_OR_FAIL ("</event>");
-
-              /* Method. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
-                                       escalator_method_name
-                                        (escalator_iterator_method
-                                          (&escalators)));
-              init_escalator_data_iterator (&data,
-                                            escalator_iterator_escalator
-                                             (&escalators),
-                                            "method");
-              while (next (&data))
-                SENDF_TO_CLIENT_OR_FAIL ("<data>"
-                                         "<name>%s</name>"
-                                         "%s"
-                                         "</data>",
-                                         escalator_data_iterator_name (&data),
-                                         escalator_data_iterator_data (&data));
-              cleanup_iterator (&data);
-              SEND_TO_CLIENT_OR_FAIL ("</method>");
-
-              /**
-               * @todo
-               * (OMP) For consistency, the operations should respond the
-               * same way if one, some or all elements are requested.  The
-               * level of details in the response should instead be controlled
-               * by some other mechanism, like a details flag.
-               */
-
-              if (current_name)
+              if (send_find_error_to_client ("get_escalators",
+                                             "escalator",
+                                             current_name))
                 {
-                  iterator_t tasks;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                  init_escalator_task_iterator (&tasks,
-                                                current_name,
-                                                /* Attribute sort_order. */
-                                                current_int_2);
-                  while (next (&tasks))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<task id=\"%s\">"
-                      "<name>%s</name>"
-                      "</task>",
-                      escalator_task_iterator_uuid (&tasks),
-                      escalator_task_iterator_name (&tasks));
-                  cleanup_iterator (&tasks);
-                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                  error_send_to_client (error);
+                  return;
                 }
-
-              SEND_TO_CLIENT_OR_FAIL ("</escalator>");
             }
-          cleanup_iterator (&escalators);
-          SEND_TO_CLIENT_OR_FAIL ("</get_escalators_response>");
+          else
+            {
+              iterator_t escalators;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_escalators_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_escalator_iterator (&escalators,
+                                       escalator,
+                                       (task_t) 0,
+                                       (event_t) 0,
+                                       current_int_2,   /* Attribute sort_order. */
+                                       current_format); /* Attribute sort_field. */
+              while (next (&escalators))
+                {
+                  iterator_t data;
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<escalator>"
+                                           "<name>%s</name>"
+                                           "<comment>%s</comment>"
+                                           "<in_use>%i</in_use>",
+                                           escalator_iterator_name (&escalators),
+                                           escalator_iterator_comment (&escalators),
+                                           escalator_iterator_in_use (&escalators));
+
+                  /* Condition. */
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<condition>%s",
+                                           escalator_condition_name
+                                            (escalator_iterator_condition
+                                              (&escalators)));
+                  init_escalator_data_iterator (&data,
+                                                escalator_iterator_escalator
+                                                 (&escalators),
+                                                "condition");
+                  while (next (&data))
+                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                             "<name>%s</name>"
+                                             "%s"
+                                             "</data>",
+                                             escalator_data_iterator_name (&data),
+                                             escalator_data_iterator_data (&data));
+                  cleanup_iterator (&data);
+                  SEND_TO_CLIENT_OR_FAIL ("</condition>");
+
+                  /* Event. */
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
+                                           event_name (escalator_iterator_event
+                                            (&escalators)));
+                  init_escalator_data_iterator (&data,
+                                                escalator_iterator_escalator
+                                                 (&escalators),
+                                                "event");
+                  while (next (&data))
+                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                             "<name>%s</name>"
+                                             "%s"
+                                             "</data>",
+                                             escalator_data_iterator_name (&data),
+                                             escalator_data_iterator_data (&data));
+                  cleanup_iterator (&data);
+                  SEND_TO_CLIENT_OR_FAIL ("</event>");
+
+                  /* Method. */
+
+                  SENDF_TO_CLIENT_OR_FAIL ("<method>%s",
+                                           escalator_method_name
+                                            (escalator_iterator_method
+                                              (&escalators)));
+                  init_escalator_data_iterator (&data,
+                                                escalator_iterator_escalator
+                                                 (&escalators),
+                                                "method");
+                  while (next (&data))
+                    SENDF_TO_CLIENT_OR_FAIL ("<data>"
+                                             "<name>%s</name>"
+                                             "%s"
+                                             "</data>",
+                                             escalator_data_iterator_name (&data),
+                                             escalator_data_iterator_data (&data));
+                  cleanup_iterator (&data);
+                  SEND_TO_CLIENT_OR_FAIL ("</method>");
+
+                  /**
+                   * @todo
+                   * (OMP) For consistency, the operations should respond the
+                   * same way if one, some or all elements are requested.  The
+                   * level of details in the response should instead be controlled
+                   * by some other mechanism, like a details flag.
+                   */
+
+                  if (escalator)
+                    {
+                      iterator_t tasks;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                      init_escalator_task_iterator (&tasks,
+                                                    current_name,
+                                                    /* Attribute sort_order. */
+                                                    current_int_2);
+                      while (next (&tasks))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<task id=\"%s\">"
+                          "<name>%s</name>"
+                          "</task>",
+                          escalator_task_iterator_uuid (&tasks),
+                          escalator_task_iterator_name (&tasks));
+                      cleanup_iterator (&tasks);
+                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL ("</escalator>");
+                }
+              cleanup_iterator (&escalators);
+              SEND_TO_CLIENT_OR_FAIL ("</get_escalators_response>");
+            }
           openvas_free_string_var (&current_format);
           openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
