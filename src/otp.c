@@ -48,6 +48,7 @@
 #include "types.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,6 +102,16 @@ category_number (const char *category)
     if (strcmp (category, categories[index]) == 0)
       return index;
   return ACT_UNKNOWN;
+}
+
+/** @brief Replace any control characters in string with spaces.
+ *
+ * @param[in,out]  string  String to replace in.
+ */
+static void
+blank_control_chars (char *string)
+{
+  for (; *string; string++) if (iscntrl (*string)) *string = ' ';
 }
 
 
@@ -1495,6 +1506,7 @@ process_otp_scanner_input ()
           {
             gsize size_dummy;
             char* iso_field = openvas_strip_space (message, match);
+            blank_control_chars (iso_field);
             field = g_convert (iso_field, match - message - 1,
                                "UTF-8", "ISO_8859-1",
                                NULL, &size_dummy, NULL);

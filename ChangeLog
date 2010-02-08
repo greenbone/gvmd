@@ -1,3 +1,9 @@
+2010-02-08  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/otp.c (blank_control_chars): New function.
+	(process_otp_scanner_input): Blank control chars in iso_field before
+	converting to UTF-8.
+
 2010-02-08  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Post-release version bump.
