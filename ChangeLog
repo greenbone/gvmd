@@ -1,3 +1,9 @@
+2010-02-08  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 1.0.0-beta4 release.
+
+	* CHANGES: Updated.
+
 2010-02-05  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* TODO: Flush tabs from within entries.

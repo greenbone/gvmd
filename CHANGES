@@ -1,3 +1,23 @@
+openvas-manager 1.0.0-beta4 (2010-02-08)
+
+This is the fourth beta release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS) leading up to the upcoming
+openvas-manager 1.0.
+
+Many thanks to everyone who has contributed to this release:
+Stephan Kleine and Matthew Mundell.
+
+Main changes since 1.0.0-beta3:
+
+* More internal data structures are now identified by UUID and not by
+  name.
+* A bug which prevented PDF reports to be generated from certain results due to
+  unescaped LaTeX characters has been fixed.
+* A number of formatting and casting issues found by Stephan Kleine have been
+  fixed.
+* The man page has been updated.
+
+
 openvas-manager 1.0.0-beta3 (2010-02-05)
 
 This is the third beta release of the openvas-manager module for the Open
