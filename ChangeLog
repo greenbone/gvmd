@@ -1,3 +1,8 @@
+2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage.h (manage_complete_nvt_cache_update): Add missing arg.
+	Thanks to Stephan Kleine.
+
 2010-02-08  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): Ensure all parameter lists
