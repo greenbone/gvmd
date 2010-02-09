@@ -1,5 +1,12 @@
 2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (find_target): Look for the target owned by the current
+	user.
+	(create_target): Limit the "already exists" check to the targets owned by
+	the current user.
+
+2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Use UUIDs for NVT selector names instead of using the name of the
 	associated config.  Hence increase database version to 13.  Add
 	database migration from 12 to 13.  Preparation for enabling users

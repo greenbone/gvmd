@@ -6527,14 +6527,19 @@ task_file_iterator_length (iterator_t* iterator)
 gboolean
 find_target (const char* name, target_t* target)
 {
+  assert (current_credentials.uuid);
   if (user_owns ("target", name) == 0)
     {
       *target = 0;
       return FALSE;
     }
   switch (sql_int64 (target, 0, 0,
-                     "SELECT ROWID FROM targets WHERE name = '%s';",
-                     name))
+                     "SELECT ROWID FROM targets"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                     name,
+                     current_credentials.uuid))
     {
       case 0:
         break;
@@ -6573,8 +6578,13 @@ create_target (const char* name, const char* hosts, const char* comment,
 
   assert (current_credentials.uuid);
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM targets WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM targets"
+               " WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+               quoted_name,
+               current_credentials.uuid))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
