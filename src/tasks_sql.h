@@ -42,6 +42,8 @@
 #define CONFIG_ID_FULL_AND_VERY_DEEP 3
 #define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
 
+#define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
+
 
 /* Static headers. */
 
@@ -82,7 +84,7 @@ static void
 nvt_selector_remove_selector (const char*, const char*, int);
 
 static int
-insert_rc_into_config (config_t, const char*, char*);
+insert_rc_into_config (config_t, const char*, const char*, char*);
 
 static void
 update_config_caches (config_t);
@@ -2168,6 +2170,88 @@ migrate_11_to_12 ()
 }
 
 /**
+ * @brief Migrate the database from version 12 to version 13.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_12_to_13 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 12. */
+
+  if (manage_db_version () != 12)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table nvt_selectors column name changed to a UUID.
+   *
+   * Replace names with UUIDs, ensuring that the 'All' selector gets the
+   * predefined UUID. */
+
+  /** @todo ROLLBACK on failure. */
+
+  init_iterator (&rows, "SELECT distinct name FROM nvt_selectors;");
+  while (next (&rows))
+    {
+      gchar *quoted_name, *uuid;
+
+      if (strcmp (iterator_string (&rows, 0), "All") == 0)
+        continue;
+
+      uuid = make_report_uuid ();
+      if (uuid == NULL)
+        {
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      quoted_name = sql_insert (iterator_string (&rows, 0));
+
+      sql ("UPDATE nvt_selectors SET name = '%s' WHERE name = %s;",
+           uuid,
+           quoted_name);
+
+      sql ("UPDATE configs SET nvt_selector = '%s' WHERE nvt_selector = %s;",
+           uuid,
+           quoted_name);
+
+      g_free (uuid);
+      g_free (quoted_name);
+    }
+  cleanup_iterator (&rows);
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '"
+               MANAGE_NVT_SELECTOR_UUID_ALL "';"))
+    sql ("DELETE FROM nvt_selectors WHERE name = 'All';");
+  else
+    sql ("UPDATE nvt_selectors"
+         " SET name = '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+         " WHERE name = 'All';");
+
+  sql ("UPDATE configs"
+       " SET nvt_selector = '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " WHERE nvt_selector = 'All';");
+
+  /* Set the database version to 13. */
+
+  set_db_version (13);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2184,6 +2268,7 @@ static migrator_t database_migrators[]
     {10, migrate_9_to_10},
     {11, migrate_10_to_11},
     {12, migrate_11_to_12},
+    {13, migrate_12_to_13},
     /* End marker. */
     {-1, NULL}};
 
@@ -3735,18 +3820,23 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined selectors and configs exist. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM nvt_selectors WHERE name = 'All';")
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "';")
       == 0)
     {
       sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
-           " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
-           " VALUES ('All', 1, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 1, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
            " 'Port scanners', 'Port scanners');");
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
-           " VALUES ('All', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
            /* OID of the "Nmap (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');");
     }
@@ -3761,7 +3851,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ", NULL,"
-           " 'Full and fast', 'All',"
+           " 'Full and fast', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
@@ -3782,7 +3872,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ", NULL,"
-           " 'Full and fast ultimate', 'All',"
+           " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
@@ -3804,7 +3894,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ", NULL,"
-           " 'Full and very deep', 'All',"
+           " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
@@ -3825,7 +3915,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
-           " NULL, 'Full and very deep ultimate', 'All',"
+           " NULL, 'Full and very deep ultimate',"
+           " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
@@ -6001,7 +6092,6 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
 
             sql ("DELETE FROM nvt_selectors WHERE name = '%s';",
                  quoted_selector);
-            free (quoted_selector);
 
             /* Replace targets. */
 
@@ -6009,6 +6099,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             if (hosts == NULL)
               {
                 free (config_name);
+                free (quoted_selector);
                 g_free (rc);
                 sql ("ROLLBACK");
                 return -1;
@@ -6021,12 +6112,15 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
             quoted_config_name = sql_quote (config_name);
             free (config_name);
             /* This modifies rc. */
-            if (insert_rc_into_config (config, quoted_config_name, (gchar*) rc))
+            if (insert_rc_into_config (config, quoted_config_name,
+                                       quoted_selector, (gchar*) rc))
               {
+                free (quoted_selector);
                 g_free (rc);
                 sql ("ROLLBACK");
                 return -1;
               }
+            free (quoted_selector);
             g_free (rc);
           }
 
@@ -6856,7 +6950,7 @@ config_insert_preferences (config_t config,
  * If a config with the same name exists already then add a unique integer
  * suffix onto the name.
  *
- * @param[in]   proposed_name  Proposed name of config and NVT selector.
+ * @param[in]   proposed_name  Proposed name of config.
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
@@ -6873,12 +6967,17 @@ create_config (const char* proposed_name, const char* comment,
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
+  char *uuid;
   config_t config;
   unsigned int num = 1;
 
   assert (current_credentials.uuid);
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
+
+  uuid = make_report_uuid ();
+  if (uuid == NULL)
+    return -1;
 
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
@@ -6887,15 +6986,10 @@ create_config (const char* proposed_name, const char* comment,
 
   while (1)
     {
-      if ((sql_int (0, 0,
-                    "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-                    quoted_candidate_name)
-           == 0)
-          /** @todo Reference selector in config by ROWID instead of by name. */
-          && (sql_int (0, 0,
-                       "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-                       quoted_candidate_name)
-              == 0))
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM configs WHERE name = '%s';",
+                   quoted_candidate_name)
+          == 0)
         break;
       g_free (candidate_name);
       g_free (quoted_candidate_name);
@@ -6912,7 +7006,7 @@ create_config (const char* proposed_name, const char* comment,
            " '%s', '%s');",
            quoted_candidate_name,
            current_credentials.uuid,
-           quoted_candidate_name,
+           uuid,
            quoted_comment);
       g_free (quoted_comment);
     }
@@ -6923,24 +7017,25 @@ create_config (const char* proposed_name, const char* comment,
          " '%s', '');",
          quoted_candidate_name,
          current_credentials.uuid,
-         quoted_candidate_name);
+         uuid);
+  g_free (quoted_candidate_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
   config = sqlite3_last_insert_rowid (task_db);
-  if ((ret = insert_nvt_selectors (quoted_candidate_name, selectors)))
+  if ((ret = insert_nvt_selectors (uuid, selectors)))
     {
       sql ("ROLLBACK;");
-      g_free (quoted_candidate_name);
+      free (uuid);
       return ret;
     }
+  free (uuid);
 
   /* Insert the preferences into the config_preferences table. */
 
   if ((ret = config_insert_preferences (config, preferences)))
     {
       sql ("ROLLBACK;");
-      g_free (quoted_candidate_name);
       return ret;
     }
 
@@ -6949,7 +7044,6 @@ create_config (const char* proposed_name, const char* comment,
   update_config_caches (config);
 
   sql ("COMMIT;");
-  g_free (quoted_candidate_name);
   *name = candidate_name;
   return 0;
 }
@@ -7003,13 +7097,13 @@ config_nvt_timeout (config_t config, const char *oid)
 /**
  * @brief Exclude or include an array of NVTs in a config.
  *
- * @param[in]  config_name  Config name.
- * @param[in]  array        Array of OIDs of NVTs.
- * @param[in]  array_size   Size of \ref array.
- * @param[in]  exclude      If true exclude, else include.
+ * @param[in]  nvt_selector  NVT selector name.
+ * @param[in]  array         Array of OIDs of NVTs.
+ * @param[in]  array_size    Size of \ref array.
+ * @param[in]  exclude       If true exclude, else include.
  */
 static void
-clude (const char *config_name, GArray *array, int array_size, int exclude,
+clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
        GHashTable *families)
 {
   gint index;
@@ -7022,13 +7116,13 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
     formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
                                  " (name, exclude, type, family_or_nvt, family)"
                                  " VALUES ('%s', %i, 2, $value, $family);",
-                                 config_name,
+                                 nvt_selector,
                                  exclude);
   else
     formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
                                  " (name, exclude, type, family_or_nvt, family)"
                                  " VALUES ('%s', %i, 2, $value, NULL);",
-                                 config_name,
+                                 nvt_selector,
                                  exclude);
 
   tracef ("   sql: %s\n", formatted);
@@ -7083,7 +7177,7 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
                              " cache",
                              __FUNCTION__,
                              id,
-                             config_name);
+                             nvt_selector);
                   continue;
                 }
             }
@@ -7093,7 +7187,7 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
                          " because the NVT is missing from the cache",
                          __FUNCTION__,
                          id,
-                         config_name);
+                         nvt_selector);
               continue;
             }
 
@@ -7164,14 +7258,17 @@ clude (const char *config_name, GArray *array, int array_size, int exclude,
 /**
  * @brief Copy the preferences and nvt selector from an RC file to a config.
  *
- * @param[in]  config       Config to copy into.
- * @param[in]  config_name  Name of config to copy into, SQL quoted.
- * @param[in]  rc           Text of RC file.
+ * @param[in]  config             Config to copy into.
+ * @param[in]  config_name        Name of config to copy into, SQL quoted.
+ * @param[in]  nvt_selector_name  Name of NVT selector associated with config,
+ *                                SQL quoted.
+ * @param[in]  rc                 Text of RC file.
  *
  * @return 0 success, -1 error.
  */
 static int
-insert_rc_into_config (config_t config, const char *config_name, char *rc)
+insert_rc_into_config (config_t config, const char *config_name,
+                       const char *nvt_selector_name, char *rc)
 {
   GArray *yes = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
   GArray *no = g_array_sized_new (FALSE, FALSE, sizeof (rc), 20000);
@@ -7344,11 +7441,11 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
         sql ("INSERT INTO nvt_selectors"
              " (name, exclude, type, family_or_nvt)"
              " VALUES ('%s', 0, 0, 0);",
-             config_name);
+             nvt_selector_name);
 
         /* Explicitly exclude any nos. */
 
-        clude (config_name, no, no_size, 1, NULL);
+        clude (nvt_selector_name, no, no_size, 1, NULL);
 
         /* Cache the counts and growth types. */
 
@@ -7356,8 +7453,8 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
              " SET families_growing = 1, nvts_growing = 1,"
              " family_count = %i, nvt_count = %i"
              " WHERE name = '%s';",
-             nvt_selector_family_count (config_name, 1),
-             nvt_selector_nvt_count (config_name, NULL, 1),
+             nvt_selector_family_count (nvt_selector_name, 1),
+             nvt_selector_nvt_count (nvt_selector_name, NULL, 1),
              config_name);
       }
     else
@@ -7366,8 +7463,8 @@ insert_rc_into_config (config_t config, const char *config_name, char *rc)
          * because the config may change to auto enable new plugins. */
         /** @todo The other selector manipulation functions may lose the nos. */
 
-        clude (config_name, yes, yes_size, 0, families);
-        clude (config_name, no, no_size, 1, NULL);
+        clude (nvt_selector_name, yes, yes_size, 0, families);
+        clude (nvt_selector_name, no, no_size, 1, NULL);
 
         /* Cache the family and NVT count and selector types. */
 
@@ -7401,6 +7498,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment;
+  char *uuid;
   config_t new_config;
 
   assert (current_credentials.uuid);
@@ -7416,15 +7514,25 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 1;
     }
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-               quoted_name))
+  uuid = make_report_uuid ();
+  if (uuid == NULL)
     {
-      tracef ("   NVT selector \"%s\" already exists\n", name);
+      tracef ("   failed to create UUID \n");
       sql ("ROLLBACK;");
       g_free (quoted_name);
       return -1;
     }
 
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
+               uuid))
+    {
+      tracef ("   NVT selector \"%s\" already exists\n", uuid);
+      sql ("ROLLBACK;");
+      free (uuid);
+      g_free (quoted_name);
+      return -1;
+    }
 
   if (comment)
     {
@@ -7433,7 +7541,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
            " VALUES ('%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s');",
-           quoted_name, current_credentials.uuid, quoted_name, quoted_comment);
+           quoted_name, current_credentials.uuid, uuid, quoted_comment);
       g_free (quoted_comment);
     }
   else
@@ -7441,19 +7549,21 @@ create_config_rc (const char* name, const char* comment, char* rc,
          " VALUES ('%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '');",
-         quoted_name, current_credentials.uuid, quoted_name);
+         quoted_name, current_credentials.uuid, uuid);
 
   /* Insert the RC into the config_preferences table. */
 
   new_config = sqlite3_last_insert_rowid (task_db);
-  if (insert_rc_into_config (new_config, quoted_name, rc))
+  if (insert_rc_into_config (new_config, quoted_name, uuid, rc))
     {
       sql ("ROLLBACK;");
+      free (uuid);
       g_free (quoted_name);
       return -1;
     }
 
   sql ("COMMIT;");
+  free (uuid);
   g_free (quoted_name);
   if (config)
     *config = new_config;
@@ -7473,7 +7583,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
 int
 copy_config (const char* name, const char* comment, config_t config)
 {
-  char* config_selector;
+  char *config_selector, *uuid;
   config_t id;
   gchar *quoted_name = sql_quote (name);
   gchar *quoted_comment, *quoted_config_selector;
@@ -7513,12 +7623,23 @@ copy_config (const char* name, const char* comment, config_t config)
       return 2;
     }
 
+  uuid = make_report_uuid ();
+  if (uuid == NULL)
+    {
+      tracef ("   failed to create UUID \n");
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      g_free (quoted_config_selector);
+      return -1;
+    }
+
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-               quoted_name))
+               uuid))
     {
-      tracef ("   NVT selector \"%s\" already exists\n", name);
+      tracef ("   NVT selector \"%s\" already exists\n", uuid);
       sql ("ROLLBACK;");
+      free (uuid);
       g_free (quoted_name);
       g_free (quoted_config_selector);
       return -1;
@@ -7538,7 +7659,7 @@ copy_config (const char* name, const char* comment, config_t config)
            " FROM configs WHERE ROWID = %llu;",
            quoted_name,
            current_credentials.uuid,
-           quoted_name,
+           uuid,
            quoted_comment,
            config);
       g_free (quoted_comment);
@@ -7553,7 +7674,7 @@ copy_config (const char* name, const char* comment, config_t config)
          " FROM configs WHERE ROWID = %llu",
          quoted_name,
          current_credentials.uuid,
-         quoted_name,
+         uuid,
          config);
 
   id = sqlite3_last_insert_rowid (task_db);
@@ -7567,10 +7688,11 @@ copy_config (const char* name, const char* comment, config_t config)
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " SELECT '%s', exclude, type, family_or_nvt, family FROM nvt_selectors"
        " WHERE name = '%s';",
-       quoted_name,
+       uuid,
        quoted_config_selector);
 
   sql ("COMMIT;");
+  free (uuid);
   g_free (quoted_name);
   g_free (quoted_config_selector);
   return 0;
@@ -7603,7 +7725,7 @@ delete_config (config_t config)
       return 1;
     }
   sql ("DELETE FROM nvt_selectors WHERE name ="
-       " (SELECT name FROM configs WHERE ROWID = %llu);",
+       " (SELECT nvt_selector FROM configs WHERE ROWID = %llu);",
        config);
   sql ("DELETE FROM config_preferences WHERE config = %llu;",
        config);
@@ -8880,7 +9002,6 @@ config_families_growing (config_t config)
                   config);
 }
 
-/** @todo Adjust omp.c caller, make config a config_t. */
 /**
  * @brief Initialise an NVT selector iterator.
  *

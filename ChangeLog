@@ -1,5 +1,25 @@
 2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Use UUIDs for NVT selector names instead of using the name of the
+	associated config.  Hence increase database version to 13.  Add
+	database migration from 12 to 13.  Preparation for enabling users
+	to name their configs with names used by other users.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 13.
+
+	* src/tasks_sql.h (MANAGE_NVT_SELECTOR_UUID_ALL): New define.
+	(insert_rc_into_config): Add NVT selector arg.  Update callers.
+	(migrate_12_to_13): New function.
+	(database_migrators): Add migrate_12_to_13.
+	(init_manage): Use UUID for predefined "All" NVT selector.
+	(create_config, create_config_rc, copy_config): Set NVT selector name to
+	generated UUID.
+	(clude): Rename arg config_name to nvt_selector.
+	(delete_config): Get NVT selector name from right column.
+	(init_nvt_selector_iterator): Remove completed todo.
+
+2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (sendn_to_server, write_string_to_server)
 	(write_to_server_buffer): Cast string format precision modifier to int.
 	Thanks to Stephan Kleine.
@@ -131,12 +151,12 @@
 	Remove UNIQUE constraint from name of user resource tables.  Hence
 	increase database version to 12.  Add database migration from 11 to 12.
 
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 12.
+
 	* src/tasks_sql.h (create_tables): Remove UNIQUE from name column of
 	tables agents, configs and escalators.
 	(migrate_11_to_12): New function.
 	(database_migrators): Add migrate_11_to_12.
-
-	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 12.
 
 	* doc/db_postgres.sql (agents, escalators, targets, configs)
 	(lsc_credentials): Remove UNIQUE from name.
