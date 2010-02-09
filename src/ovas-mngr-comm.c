@@ -137,7 +137,7 @@ sendn_to_server (const void * msg, size_t n)
     }
 
   memmove (to_server + to_server_end, msg, n);
-  tracef ("s> server  (string) %.*s\n", n, to_server + to_server_end);
+  tracef ("s> server  (string) %.*s\n", (int) n, to_server + to_server_end);
   tracef ("-> server  %zi bytes\n", n);
   to_server_end += n;
 
@@ -215,9 +215,9 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
           return -1;
         }
 #if LOG
-      if (count) logf ("=> server %.*s\n", count, point);
+      if (count) logf ("=> server %.*s\n", (int) count, point);
 #endif
-      tracef ("s> server  (string) %.*s\n", count, point);
+      tracef ("s> server  (string) %.*s\n", (int) count, point);
       point += count;
       tracef ("=> server  (string) %zi bytes\n", count);
     }
@@ -261,9 +261,11 @@ write_to_server_buffer (gnutls_session_t* server_session)
           return -1;
         }
 #if LOG
-      if (count) logf ("=> server %.*s\n", count, to_server + to_server_start);
+      if (count) logf ("=> server %.*s\n",
+                       (int) count,
+                       to_server + to_server_start);
 #endif
-      tracef ("s> server  %.*s\n", count, to_server + to_server_start);
+      tracef ("s> server  %.*s\n", (int) count, to_server + to_server_start);
       to_server_start += count;
       tracef ("=> server  %zi bytes\n", count);
     }
