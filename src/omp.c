@@ -4747,7 +4747,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       &filtered_result_count);
             report_scan_run_status (report, &run_status);
             SENDF_TO_CLIENT_OR_FAIL
-              ("<get_report_response"
+             ("<get_report_response"
               " status=\"" STATUS_OK "\""
               " status_text=\"" STATUS_OK_TEXT "\">"
               "<report id=\"%s\">"
@@ -4776,7 +4776,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
 
             SENDF_TO_CLIENT_OR_FAIL
-              ("</filters>"
+             ("</filters>"
               "<scan_run_status>%s</scan_run_status>"
               "<scan_result_count>"
               "%i"
@@ -4819,7 +4819,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
               init_result_iterator
-                (&results, report, NULL,
+               (&results, report, NULL,
                 get_report_data->first_result,
                 get_report_data->max_results,
                 /* Sort by port in order requested. */
@@ -4955,7 +4955,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
                 const char *name = result_iterator_nvt_name (&results);
                 SENDF_TO_CLIENT_OR_FAIL
-                  ("<result>"
+                 ("<result>"
                   "<subnet>%s</subnet>"
                   "<host>%s</host>"
                   "<port>%s</port>"
@@ -4968,8 +4968,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   result_iterator_port (&results),
                   result_iterator_nvt_oid (&results),
                   name ? name : "",
-                  result_type_threat
-                    (result_iterator_type (&results)),
+                  result_type_threat (result_iterator_type (&results)),
                   descr ? nl_descr : "");
                 if (descr) g_free (nl_descr);
               }
@@ -5107,7 +5106,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /* This is a missing resource, however the resource is
                       * the responsibility of the manager admin. */
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -5139,7 +5138,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (command);
                         g_free (html_file);
                         SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -5164,7 +5163,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                              (XML_INTERNAL_ERROR ("get_report"));
+                             (XML_INTERNAL_ERROR ("get_report"));
                           }
                         else
                           {
@@ -5175,7 +5174,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             /* Encode and send the HTML. */
 
                             SEND_TO_CLIENT_OR_FAIL
-                              ("<get_report_response"
+                             ("<get_report_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"html\">");
@@ -5195,7 +5194,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             g_free (html);
                             SEND_TO_CLIENT_OR_FAIL
-                              ("</report>"
+                             ("</report>"
                               "</get_report_response>");
                           }
                       }
@@ -5240,7 +5239,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /* This is a missing resource, however the resource is
                       * the responsibility of the manager admin. */
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -5276,7 +5275,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (command);
                         g_free (pdf_file);
                         SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -5301,7 +5300,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                              (XML_INTERNAL_ERROR ("get_report"));
+                             (XML_INTERNAL_ERROR ("get_report"));
                           }
                         else
                           {
@@ -5312,7 +5311,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             /* Encode and send the HTML. */
 
                             SEND_TO_CLIENT_OR_FAIL
-                              ("<get_report_response"
+                             ("<get_report_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"pdf\">");
@@ -5374,7 +5373,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 S_IRUSR | S_IWUSR);
 
                 command = g_strdup_printf
-                            ("pdflatex -output-directory %s %s"
+                           ("pdflatex -output-directory %s %s"
                             " > /tmp/openvasmd_pdflatex_out 2>&1"
                             " && pdflatex -output-directory %s %s"
                             " > /tmp/openvasmd_pdflatex_out 2>&1",
@@ -5394,7 +5393,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 pdf_file);
                     g_free (pdf_file);
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_report"));
                   }
                 /* RATS: ignore, command is defined above. */
                 else if (ret = system (command),
@@ -5411,7 +5410,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (pdf_file);
                     g_free (command);
                     SEND_TO_CLIENT_OR_FAIL
-                      (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_report"));
                   }
                 else
                   {
@@ -5437,7 +5436,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_error->message);
                         g_error_free (get_error);
                         SEND_TO_CLIENT_OR_FAIL
-                          (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_report"));
                       }
                     else
                       {
@@ -5448,7 +5447,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         /* Encode and send the PDF data. */
 
                         SEND_TO_CLIENT_OR_FAIL
-                          ("<get_report_response"
+                         ("<get_report_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">"
                           "<report format=\"pdf\">");
@@ -5476,8 +5475,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("get_report",
-                                 "Bogus report format in format attribute"));
+             (XML_ERROR_SYNTAX ("get_report",
+                                "Bogus report format in format attribute"));
           }
 
         get_report_data_reset (get_report_data);
@@ -8896,9 +8895,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       report_type_iterator_title (&types));
                   cleanup_report_type_iterator (&types);
                   SEND_TO_CLIENT_OR_FAIL
-                    ("</report>"
-                     "</system_report>"
-                     "</get_system_reports_response>");
+                   ("</report>"
+                    "</system_report>"
+                    "</get_system_reports_response>");
                 }
             }
           else
