@@ -2595,7 +2595,9 @@ collate_ip (void* data,
 gboolean
 find_escalator (const char* name, escalator_t* escalator)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
+  assert (current_credentials.uuid);
+  quoted_name = sql_quote (name);
   if (user_owns ("escalator", quoted_name) == 0)
     {
       g_free (quoted_name);
@@ -2603,8 +2605,12 @@ find_escalator (const char* name, escalator_t* escalator)
       return FALSE;
     }
   switch (sql_int64 (escalator, 0, 0,
-                     "SELECT ROWID FROM escalators WHERE name = '%s';",
-                     quoted_name))
+                     "SELECT ROWID FROM escalators"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                     quoted_name,
+                     current_credentials.uuid))
     {
       case 0:
         break;
@@ -2651,8 +2657,12 @@ create_escalator (const char* name, const char* comment,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM escalators WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM escalators WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
