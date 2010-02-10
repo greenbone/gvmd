@@ -10366,14 +10366,19 @@ nvt_preference_count (const char *name)
 gboolean
 find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
 {
+  assert (current_credentials.uuid);
   if (user_owns ("lsc_credential", name) == 0)
     {
       *lsc_credential = 0;
       return FALSE;
     }
   switch (sql_int64 (lsc_credential, 0, 0,
-                     "SELECT ROWID FROM lsc_credentials WHERE name = '%s';",
-                     name))
+                     "SELECT ROWID FROM lsc_credentials"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                     name,
+                     current_credentials.uuid))
     {
       case 0:
         break;
@@ -10428,8 +10433,12 @@ create_lsc_credential (const char* name, const char* comment,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM lsc_credentials WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM lsc_credentials WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");

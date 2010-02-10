@@ -1,5 +1,12 @@
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (find_lsc_credential): Look for the LSC credential owned
+	by the current user.
+	(create_lsc_credential): Limit the "already exists" check to the LSC
+	credentials owned by the current user.
+
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (user_owns, user_owns_uuid, find_target)
 	(create_target): Terminate SQL statements.
 	(find_agent): Look for the agent owned by the current user.
