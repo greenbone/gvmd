@@ -1,5 +1,10 @@
 2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 13.  (Missing
+	file from commit yesterday).
+
+2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (find_target): Look for the target owned by the current
 	user.
 	(create_target): Limit the "already exists" check to the targets owned by
