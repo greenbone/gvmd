@@ -3803,12 +3803,15 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
   fprintf (out,
            "\\begin{abstract}\n"
            "This document reports on the results of an automatic security scan.\n"
-           "The scan started at %s and ended at %s.  The\n"
+           "The scan started at %s and %s%s.  The\n"
            "report first summarises the results found.  Then, for each host,\n"
            "the report describes every issue found.  Please consider the\n"
            "advice given in each desciption, in order to rectify the issue.\n"
            "\\end{abstract}\n",
            start_time,
+           (strlen (end_time) > 0
+             ? "ended at "
+             : "was still running when the report was created"),
            end_time);
   free (start_time);
   free (end_time);
@@ -3960,7 +3963,10 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                host,
                host,
                host_iterator_start_time (&hosts),
-               host_iterator_end_time (&hosts));
+               ((host_iterator_end_time (&hosts)
+                 && strlen (host_iterator_end_time (&hosts)))
+                 ? host_iterator_end_time (&hosts)
+                 : ""));
 
       /* Print the result summary table. */
 
