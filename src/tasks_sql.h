@@ -6860,7 +6860,9 @@ DEF_ACCESS (target_task_iterator_uuid, 1);
 gboolean
 find_config (const char* name, config_t* config)
 {
-  gchar *quoted_name = sql_quote (name);
+  gchar *quoted_name;
+  assert (current_credentials.uuid);
+  quoted_name = sql_quote (name);
   if (user_owns ("config", quoted_name) == 0)
     {
       g_free (quoted_name);
@@ -6868,8 +6870,12 @@ find_config (const char* name, config_t* config)
       return FALSE;
     }
   switch (sql_int64 (config, 0, 0,
-                     "SELECT ROWID FROM configs WHERE name = '%s';",
-                     quoted_name))
+                     "SELECT ROWID FROM configs"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                     quoted_name,
+                     current_credentials.uuid))
     {
       case 0:
         break;
@@ -7005,8 +7011,11 @@ create_config (const char* proposed_name, const char* comment,
   while (1)
     {
       if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-                   quoted_candidate_name)
+                   "SELECT COUNT(*) FROM configs WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_candidate_name,
+                   current_credentials.uuid)
           == 0)
         break;
       g_free (candidate_name);
@@ -7523,8 +7532,12 @@ create_config_rc (const char* name, const char* comment, char* rc,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM configs WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
     {
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
@@ -7616,8 +7629,12 @@ copy_config (const char* name, const char* comment, config_t config)
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM configs WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM configs WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
     {
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
@@ -7747,8 +7764,7 @@ delete_config (config_t config)
        config);
   sql ("DELETE FROM config_preferences WHERE config = %llu;",
        config);
-  sql ("DELETE FROM configs WHERE name ="
-       " (SELECT name FROM configs WHERE ROWID = %llu);",
+  sql ("DELETE FROM configs WHERE ROWID = %llu;",
        config);
   sql ("COMMIT;");
   return 0;

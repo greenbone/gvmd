@@ -1,5 +1,13 @@
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (find_config): Look for the config owned by the current
+	user.
+	(create_config, create_config_rc, copy_config): Limit the "already exists"
+	check to the config owned by the current user.
+	(delete_config): Remove config by ROWID instead of by name.
+
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (find_escalator): Look for the escalator owned by the
 	current user.
 	(create_escalator): Limit the "already exists" check to the escalator
