@@ -7121,7 +7121,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
-              add_task_escalator (current_client_task, modify_task_name);
+              add_task_escalator (current_client_task, escalator);
             }
           openvas_free_string_var (&modify_task_name);
 

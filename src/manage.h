@@ -413,7 +413,7 @@ char*
 task_escalator (task_t);
 
 void
-add_task_escalator (task_t, const char*);
+add_task_escalator (task_t, escalator_t);
 
 unsigned int
 task_report_count (task_t);

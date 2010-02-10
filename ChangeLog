@@ -1,5 +1,14 @@
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (add_task_escalator): Take escalator_t instead of name.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK pass
+	escalator_t instead of name to add_task_escalator.
+
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (find_lsc_credential): Look for the LSC credential owned
 	by the current user.
 	(create_lsc_credential): Limit the "already exists" check to the LSC

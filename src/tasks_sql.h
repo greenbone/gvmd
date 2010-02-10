@@ -4572,14 +4572,12 @@ task_escalator (task_t task)
  * @param[in]  escalator  Escalator.
  */
 void
-add_task_escalator (task_t task, const char* escalator)
+add_task_escalator (task_t task, escalator_t escalator)
 {
-  gchar* quoted_escalator = sql_quote (escalator);
   sql ("INSERT INTO task_escalators (task, escalator)"
-       " VALUES (%llu, (SELECT ROWID FROM escalators WHERE name = '%s'));",
+       " VALUES (%llu, %llu);",
        task,
-       quoted_escalator);
-  g_free (quoted_escalator);
+       escalator);
 }
 
 /**
