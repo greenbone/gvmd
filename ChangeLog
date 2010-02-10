@@ -1,5 +1,13 @@
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (user_owns, user_owns_uuid, find_target)
+	(create_target): Terminate SQL statements.
+	(find_agent): Look for the agent owned by the current user.
+	(create_agent): Limit the "already exists" check to the agents owned by
+	the current user.
+
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/lsc_user.c (file_utils_copy_file): Remove G_GSIZE_MODIFIER from
 	format string.  Thanks to Stephan Kleine.
 

@@ -450,7 +450,7 @@ user_owns (const char *resource, const char *quoted_resource_name)
                  "SELECT count(*) FROM %ss"
                  " WHERE name = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                  resource,
                  quoted_resource_name,
                  current_credentials.uuid);
@@ -477,7 +477,7 @@ user_owns_uuid (const char *resource, const char *uuid)
                  "SELECT count(*) FROM %ss"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                  resource,
                  uuid,
                  current_credentials.uuid);
@@ -6537,7 +6537,7 @@ find_target (const char* name, target_t* target)
                      "SELECT ROWID FROM targets"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                      name,
                      current_credentials.uuid))
     {
@@ -6582,7 +6582,7 @@ create_target (const char* name, const char* hosts, const char* comment,
                "SELECT COUNT(*) FROM targets"
                " WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                quoted_name,
                current_credentials.uuid))
     {
@@ -10868,14 +10868,19 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 0);
 gboolean
 find_agent (const char* name, agent_t* agent)
 {
+  assert (current_credentials.uuid);
   if (user_owns ("agent", name) == 0)
     {
       *agent = 0;
       return FALSE;
     }
   switch (sql_int64 (agent, 0, 0,
-                     "SELECT ROWID FROM agents WHERE name = '%s';",
-                     name))
+                     "SELECT ROWID FROM agents"
+                     " WHERE name = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                     name,
+                     current_credentials.uuid))
     {
       case 0:
         break;
@@ -10915,8 +10920,12 @@ create_agent (const char* name, const char* comment, const char* installer,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM agents WHERE name = '%s';",
-               quoted_name))
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM agents WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
