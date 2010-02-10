@@ -1,3 +1,8 @@
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/lsc_user.c (file_utils_copy_file): Remove G_GSIZE_MODIFIER from
+	format string.  Thanks to Stephan Kleine.
+
 2010-02-09  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 13.  (Missing
