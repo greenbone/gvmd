@@ -6535,9 +6535,12 @@ task_file_iterator_length (iterator_t* iterator)
 gboolean
 find_target (const char* name, target_t* target)
 {
+  gchar *quoted_name;
   assert (current_credentials.uuid);
-  if (user_owns ("target", name) == 0)
+  quoted_name = sql_quote (name);
+  if (user_owns ("target", quoted_name) == 0)
     {
+      g_free (quoted_name);
       *target = 0;
       return FALSE;
     }
@@ -6546,7 +6549,7 @@ find_target (const char* name, target_t* target)
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
                      " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     name,
+                     quoted_name,
                      current_credentials.uuid))
     {
       case 0:
@@ -6557,10 +6560,12 @@ find_target (const char* name, target_t* target)
       default:       /* Programming error. */
         assert (0);
       case -1:
+        g_free (quoted_name);
         return TRUE;
         break;
     }
 
+  g_free (quoted_name);
   return FALSE;
 }
 
@@ -6885,6 +6890,7 @@ find_config (const char* name, config_t* config)
       default:       /* Programming error. */
         assert (0);
       case -1:
+        g_free (quoted_name);
         return TRUE;
         break;
     }
@@ -10390,9 +10396,12 @@ nvt_preference_count (const char *name)
 gboolean
 find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
 {
+  gchar *quoted_name;
   assert (current_credentials.uuid);
-  if (user_owns ("lsc_credential", name) == 0)
+  quoted_name = sql_quote (name);
+  if (user_owns ("lsc_credential", quoted_name) == 0)
     {
+      g_free (quoted_name);
       *lsc_credential = 0;
       return FALSE;
     }
@@ -10401,7 +10410,7 @@ find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
                      " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
-                     name,
+                     quoted_name,
                      current_credentials.uuid))
     {
       case 0:
@@ -10412,10 +10421,12 @@ find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
       default:       /* Programming error. */
         assert (0);
       case -1:
+        g_free (quoted_name);
         return TRUE;
         break;
     }
 
+  g_free (quoted_name);
   return FALSE;
 }
 
@@ -10901,9 +10912,12 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 0);
 gboolean
 find_agent (const char* name, agent_t* agent)
 {
+  gchar *quoted_name;
   assert (current_credentials.uuid);
-  if (user_owns ("agent", name) == 0)
+  quoted_name = sql_quote (name);
+  if (user_owns ("agent", quoted_name) == 0)
     {
+      g_free (quoted_name);
       *agent = 0;
       return FALSE;
     }
@@ -10912,7 +10926,7 @@ find_agent (const char* name, agent_t* agent)
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
                      " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     name,
+                     quoted_name,
                      current_credentials.uuid))
     {
       case 0:
@@ -10923,10 +10937,12 @@ find_agent (const char* name, agent_t* agent)
       default:       /* Programming error. */
         assert (0);
       case -1:
+        g_free (quoted_name);
         return TRUE;
         break;
     }
 
+  g_free (quoted_name);
   return FALSE;
 }
 

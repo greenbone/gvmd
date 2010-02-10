@@ -1,5 +1,11 @@
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (find_target, find_lsc_credential, find_agent): Quote
+	name.
+	(find_config): Free quoted_name on error too.
+
+2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (find_config): Look for the config owned by the current
 	user.
 	(create_config, create_config_rc, copy_config): Limit the "already exists"
