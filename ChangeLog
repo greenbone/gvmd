@@ -1,5 +1,23 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a "notes" attribute to GET_REPORT.
+
+	* src/tasks_sql.h (init_result_iterator): Add ROWID.
+	(result_iterator_result): New function.
+	(result_iterator_subnet, result_iterator_host)
+	(result_iterator_port, result_iterator_nvt_oid)
+	(result_iterator_type, result_iterator_descr): Increment positions.
+	(init_note_iterator): Add result arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_report_data_t): Add notes flag.
+	(omp_xml_handle_start_element): Parse GET_REPORT notes flag.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the XML case send
+	the notes if the notes flag is set.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (create_tables): Rename report to result in table notes.
 	(create_note, init_note_iterator): Use "result" instead of "report" for
 	result column.

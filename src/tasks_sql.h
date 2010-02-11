@@ -5409,7 +5409,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
   /* Allocate the query. */
 
   if (host)
-    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+                           " type, description"
                            " FROM results, report_results"
                            " WHERE report_results.report = %llu"
                            "%s"
@@ -5440,7 +5441,8 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
                            max_results,
                            first_result);
   else
-    sql = g_strdup_printf ("SELECT subnet, host, port, nvt, type, description"
+    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+                           " type, description"
                            " FROM results, report_results"
                            " WHERE report_results.report = %llu"
                            "%s"
@@ -5474,6 +5476,13 @@ init_result_iterator (iterator_t* iterator, report_t report, const char* host,
 
   init_iterator (iterator, sql);
   g_free (sql);
+}
+
+result_t
+result_iterator_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (result_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
 #if 0
@@ -5516,10 +5525,10 @@ result_iterator_ ## name (iterator_t* iterator) \
   return ret; \
 }
 
-DEF_ACCESS (subnet, 0);
-DEF_ACCESS (host, 1);
-DEF_ACCESS (port, 2);
-DEF_ACCESS (nvt_oid, 3);
+DEF_ACCESS (subnet, 1);
+DEF_ACCESS (host, 2);
+DEF_ACCESS (port, 3);
+DEF_ACCESS (nvt_oid, 4);
 
 /**
  * @brief Get the NVT name from a result iterator.
@@ -5539,8 +5548,8 @@ result_iterator_nvt_name (iterator_t *iterator)
   return NULL;
 }
 
-DEF_ACCESS (type, 4);
-DEF_ACCESS (descr, 5);
+DEF_ACCESS (type, 5);
+DEF_ACCESS (descr, 6);
 
 #undef DEF_ACCESS
 
@@ -11475,14 +11484,22 @@ delete_note (note_t note)
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  note        Single note to iterate, 0 for all.
+ * @param[in]  result      Result to limit notes to, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_note_iterator (iterator_t* iterator, note_t note,
+init_note_iterator (iterator_t* iterator, note_t note, result_t result,
                     int ascending, const char* sort_field)
 {
+  gchar *result_clause;
+
   assert (current_credentials.uuid);
+
+  if (result)
+    result_clause = g_strdup_printf (" AND result = %llu", result);
+  else
+    result_clause = NULL;
 
   if (note)
     init_iterator (iterator,
@@ -11492,9 +11509,11 @@ init_note_iterator (iterator_t* iterator, note_t note,
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
                    " ORDER BY %s %s;",
                    note,
                    current_credentials.uuid,
+                   result_clause ? result_clause : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
   else
@@ -11504,10 +11523,14 @@ init_note_iterator (iterator_t* iterator, note_t note,
                    " FROM notes"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
                    " ORDER BY %s %s;",
                    current_credentials.uuid,
+                   result_clause ? result_clause : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+
+  g_free (result_clause);
 }
 
 DEF_ACCESS (note_iterator_uuid, 1);

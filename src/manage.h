@@ -647,6 +647,9 @@ init_result_iterator (iterator_t*, task_t, const char*, int, int, int,
 gboolean
 next_report (iterator_t*, report_t*);
 
+result_t
+result_iterator_result (iterator_t*);
+
 const char*
 result_iterator_subnet (iterator_t*);
 
@@ -1094,7 +1097,7 @@ int
 delete_note (note_t);
 
 void
-init_note_iterator (iterator_t*, note_t, int, const char*);
+init_note_iterator (iterator_t*, note_t, result_t, int, const char*);
 
 const char*
 note_iterator_uuid (iterator_t*);

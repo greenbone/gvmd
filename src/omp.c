@@ -577,6 +577,7 @@ typedef struct
   int sort_order;
   char *levels;
   char *search_phrase;
+  int notes;
 } get_report_data_t;
 
 static void
@@ -1646,6 +1647,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "search_phrase", &attribute))
               openvas_append_string (&get_report_data->search_phrase, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "notes", &attribute))
+              get_report_data->notes = strcmp (attribute, "0");
+            else
+              get_report_data->notes = 0;
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -4558,6 +4565,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_note_iterator (&notes,
                                   note,
+                                  0,
                                   get_notes_data->sort_order,
                                   get_notes_data->sort_field);
               while (next (&notes))
@@ -5217,6 +5225,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 const char *descr = result_iterator_descr (&results);
                 gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
                 const char *name = result_iterator_nvt_name (&results);
+
                 SENDF_TO_CLIENT_OR_FAIL
                  ("<result>"
                   "<subnet>%s</subnet>"
@@ -5224,8 +5233,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   "<port>%s</port>"
                   "<nvt oid=\"%s\"><name>%s</name></nvt>"
                   "<threat>%s</threat>"
-                  "<description>%s</description>"
-                  "</result>",
+                  "<description>%s</description>",
                   result_iterator_subnet (&results),
                   result_iterator_host (&results),
                   result_iterator_port (&results),
@@ -5233,7 +5241,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   name ? name : "",
                   result_type_threat (result_iterator_type (&results)),
                   descr ? nl_descr : "");
+
                 if (descr) g_free (nl_descr);
+
+                if (get_report_data->notes)
+                  {
+                    iterator_t notes;
+
+                    SEND_TO_CLIENT_OR_FAIL ("<notes>");
+
+                    init_note_iterator (&notes,
+                                        0,
+                                        result_iterator_result (&results),
+                                        1,
+                                        "modification_time");
+                    while (next (&notes))
+                      SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
+                                               "<nvt oid=\"%s\">"
+                                               "<name>%s</name>"
+                                               "</nvt>"
+                                               "</note>",
+                                               note_iterator_uuid (&notes),
+                                               note_iterator_nvt_oid (&notes),
+                                               note_iterator_nvt_name (&notes));
+                    cleanup_iterator (&notes);
+
+                    SEND_TO_CLIENT_OR_FAIL ("</notes>");
+                  }
+                SEND_TO_CLIENT_OR_FAIL ("</result>");
               }
             SENDF_TO_CLIENT_OR_FAIL ("</results>");
             cleanup_iterator (&results);
