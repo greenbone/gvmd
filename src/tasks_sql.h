@@ -410,6 +410,32 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
   return 0;
 }
 
+/**
+ * @brief Make a UUID.
+ *
+ * This is a callback for a scalar SQL function of zero arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  char *uuid;
+
+  assert (argc == 0);
+
+  uuid = make_report_uuid ();
+  if (uuid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to create UUID", -1);
+      return;
+    }
+
+  sqlite3_result_text (context, uuid, -1, free);
+}
+
 
 /* General helpers. */
 
@@ -608,7 +634,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
@@ -2252,6 +2278,42 @@ migrate_12_to_13 ()
 }
 
 /**
+ * @brief Migrate the database from version 13 to version 14.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_13_to_14 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 13. */
+
+  if (manage_db_version () != 13)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table results got a UUID column. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE results ADD COLUMN uuid;");
+  sql ("UPDATE results SET uuid = make_uuid();");
+
+  /* Set the database version to 14. */
+
+  set_db_version (14);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2269,6 +2331,7 @@ static migrator_t database_migrators[]
     {11, migrate_10_to_11},
     {12, migrate_11_to_12},
     {13, migrate_12_to_13},
+    {14, migrate_13_to_14},
     /* End marker. */
     {-1, NULL}};
 
@@ -3565,7 +3628,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
   else
     {
-      /* Create the collate functions. */
+      /* Define functions for SQL. */
 
       if (sqlite3_create_collation (task_db,
                                     "collate_message_type",
@@ -3586,6 +3649,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           != SQLITE_OK)
         {
           g_message ("%s: failed to create collate_ip", __FUNCTION__);
+          abort ();
+        }
+
+      if (sqlite3_create_function (task_db,
+                                   "make_uuid",
+                                   0,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_make_uuid,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_message ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
     }

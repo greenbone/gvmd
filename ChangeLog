@@ -1,3 +1,15 @@
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add result UUIDs.  Hence increase database version to 14.  Add
+	database migration from 13 to 14.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 14.
+
+	* src/tasks_sql.h (sql_make_uuid, migrate_13_to_14): New functions.
+	(create_tables): Add UUID column to results.
+	(database_migrators): Add migrate_13_to_14.
+	(init_manage_process): Setup SQL function make_uuid.
+
 2010-02-10  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (print_report_latex): Note in the abstract if the task was
