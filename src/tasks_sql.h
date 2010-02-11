@@ -11360,9 +11360,7 @@ agent_name (agent_t agent)
 gboolean
 find_note (const char* uuid, note_t* note)
 {
-  gchar *quoted_uuid;
-  assert (current_credentials.uuid);
-  quoted_uuid = sql_quote (uuid);
+  gchar *quoted_uuid = sql_quote (uuid);
   if (user_owns_uuid ("note", quoted_uuid) == 0)
     {
       g_free (quoted_uuid);
@@ -11370,12 +11368,8 @@ find_note (const char* uuid, note_t* note)
       return FALSE;
     }
   switch (sql_int64 (note, 0, 0,
-                     "SELECT ROWID FROM notes"
-                     " WHERE uuid = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     quoted_uuid,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM notes WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
