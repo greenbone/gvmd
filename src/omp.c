@@ -262,6 +262,7 @@ static char* help_text = "\n"
 "    DELETE_CONFIG          Delete a config.\n"
 "    DELETE_ESCALATOR       Delete an escalator.\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
+"    DELETE_NOTE            Delete a note.\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
@@ -526,6 +527,19 @@ create_note_data_reset (create_note_data_t *data)
 
 typedef struct
 {
+  char *note_id;
+} delete_note_data_t;
+
+static void
+delete_note_data_reset (delete_note_data_t *data)
+{
+  free (data->note_id);
+
+  memset (data, 0, sizeof (delete_note_data_t));
+}
+
+typedef struct
+{
   char *name;
 } name_command_data_t;
 
@@ -579,6 +593,7 @@ typedef union
 {
   create_config_data_t create_config;
   create_note_data_t create_note;
+  delete_note_data_t delete_note;
   get_report_data_t get_report;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
@@ -612,6 +627,12 @@ create_config_data_t *create_config_data
  */
 create_note_data_t *create_note_data
  = (create_note_data_t*) &(command_data.create_note);
+
+/**
+ * @brief Parser callback data for DELETE_NOTE.
+ */
+delete_note_data_t *delete_note_data
+ = (delete_note_data_t*) &(command_data.delete_note);
 
 /**
  * @brief Parser callback data for GET_REPORT.
@@ -859,6 +880,7 @@ typedef enum
   CLIENT_DELETE_ESCALATOR_NAME,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_LSC_CREDENTIAL_NAME,
+  CLIENT_DELETE_NOTE,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
@@ -1369,6 +1391,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_task_name, "");
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
+        else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "note_id", &attribute))
+              openvas_append_string (&delete_note_data->note_id, attribute);
+            set_client_state (CLIENT_DELETE_NOTE);
+          }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
             const gchar* attribute;
@@ -1871,6 +1901,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_DELETE_NOTE:
+        if (send_element_error_to_client ("delete_note", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_REPORT:
@@ -4706,6 +4749,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("</families>"
                                   "</get_nvt_families_response>");
         }
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_NOTE:
+        assert (strcasecmp ("DELETE_NOTE", element_name) == 0);
+        if (delete_note_data->note_id)
+          {
+            note_t note;
+
+            if (find_note (delete_note_data->note_id, &note))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_note"));
+            else if (note == 0)
+              {
+                if (send_find_error_to_client ("delete_note",
+                                               "note",
+                                               delete_note_data->note_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_note (note))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_note"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_note"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_note",
+                              "DELETE_NOTE requires a note_id attribute"));
+        delete_note_data_reset (delete_note_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

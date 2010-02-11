@@ -1,5 +1,25 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP DELETE_NOTE.
+
+	* src/tasks_sql.h (find_note, delete_note): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(note_t): New type.
+
+	* src/omp.c (help_text): Add DELETE_NOTE.
+	(delete_note_data_t): New type.
+	(delete_note_data_reset): New function.
+	(command_data_t): Add delete_note.
+	(delete_note_data): New variable.
+	(client_state_t): Add CLIENT_DELETE_NOTE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	DELETE_NOTE handling.
+
+	* src/tests/omp_help_0.c (help_text): Add DELETE_NOTE.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP CREATE_NOTE.
 
 	* src/tasks_sql.h (user_owns_result, find_result, create_note): New

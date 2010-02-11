@@ -172,6 +172,7 @@ typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
+typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int lsc_credential_t;
 
@@ -197,6 +198,7 @@ typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
+typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int lsc_credential_t;
 
@@ -542,7 +544,7 @@ gboolean
 next (iterator_t*);
 
 
-/* Reports. */
+/* Results. */
 
 gboolean
 find_result (const char*, result_t*);
@@ -1081,9 +1083,15 @@ agent_name (lsc_credential_t);
 
 /* Notes. */
 
+gboolean
+find_note (const char*, note_t*);
+
 int
 create_note (const char*, const char*, const char*, const char*, const char*,
              task_t, result_t);
+
+int
+delete_note (note_t);
 
 
 /* Scanner messaging. */

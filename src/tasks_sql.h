@@ -11350,6 +11350,51 @@ agent_name (agent_t agent)
 /* Notes. */
 
 /**
+ * @brief Find a note given a UUID.
+ *
+ * @param[in]   uuid  UUID of note.
+ * @param[out]  note  Note return, 0 if succesfully failed to find note.
+ *
+ * @return FALSE on success (including if failed to find note), TRUE on error.
+ */
+gboolean
+find_note (const char* uuid, note_t* note)
+{
+  gchar *quoted_uuid;
+  assert (current_credentials.uuid);
+  quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("note", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *note = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (note, 0, 0,
+                     "SELECT ROWID FROM notes"
+                     " WHERE uuid = '%s'"
+                     " AND ((owner IS NULL) OR (owner ="
+                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                     quoted_uuid,
+                     current_credentials.uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *note = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Create a note.
  *
  * @param[in]  nvt         OID of noted NVT.
@@ -11414,6 +11459,20 @@ create_note (const char* nvt, const char* text, const char* hosts,
   g_free (quoted_port);
   g_free (quoted_threat);
 
+  return 0;
+}
+
+/**
+ * @brief Delete a note.
+ *
+ * @param[in]  note  Note.
+ *
+ * @return 0 success.
+ */
+int
+delete_note (note_t note)
+{
+  sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
   return 0;
 }
 
