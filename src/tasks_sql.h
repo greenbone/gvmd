@@ -527,10 +527,10 @@ user_owns_result (const char *uuid)
 
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM results, report_results, reports"
-                 " WHERE uuid = '%s'"
+                 " WHERE results.uuid = '%s'"
                  " AND report_results.result = results.ROWID"
                  " AND report_results.report = reports.ROWID"
-                 " AND ((report.owner IS NULL) OR (report.owner ="
+                 " AND ((reports.owner IS NULL) OR (reports.owner ="
                  " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
                  uuid,
                  current_credentials.uuid);
