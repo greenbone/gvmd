@@ -1,5 +1,23 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP GET_NOTES.
+
+	* src/tasks_sql.h (init_note_iterator, note_iterator_uuid)
+	(note_iterator_nvt_oid, note_iterator_nvt_name): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add GET_NOTES.
+	(get_notes_data_t): New type.
+	(get_notes_data_reset): New function.
+	(command_data_t): Add get_notes.
+	(get_notes_data): New variable.
+	(client_state_t): Add CLIENT_GET_NOTES.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_NOTES handling.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd.c (main): Include --rebuild in error message.
 
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>

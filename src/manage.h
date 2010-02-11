@@ -1093,6 +1093,18 @@ create_note (const char*, const char*, const char*, const char*, const char*,
 int
 delete_note (note_t);
 
+void
+init_note_iterator (iterator_t*, note_t, int, const char*);
+
+const char*
+note_iterator_uuid (iterator_t*);
+
+const char*
+note_iterator_nvt_oid (iterator_t*);
+
+const char*
+note_iterator_nvt_name (iterator_t *);
+
 
 /* Scanner messaging. */
 

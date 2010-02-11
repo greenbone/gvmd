@@ -11476,4 +11476,65 @@ delete_note (note_t note)
   return 0;
 }
 
+/**
+ * @brief Initialise a note iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  note        Single note to iterate, 0 for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_note_iterator (iterator_t* iterator, note_t note,
+                    int ascending, const char* sort_field)
+{
+  assert (current_credentials.uuid);
+
+  if (note)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
+                   " text, hosts, port, threat, task, report"
+                   " FROM notes"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   note,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
+                   " text, hosts, port, threat, task, report"
+                   " FROM notes"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+DEF_ACCESS (note_iterator_uuid, 1);
+DEF_ACCESS (note_iterator_nvt_oid, 2);
+
+/**
+ * @brief Get the NVT name from a nots iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the NVT associated with the note, or NULL on error.
+ */
+const char*
+note_iterator_nvt_name (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, note_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_name (nvti);
+  return NULL;
+}
+
 #undef DEF_ACCESS

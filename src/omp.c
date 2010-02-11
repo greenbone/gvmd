@@ -272,6 +272,7 @@ static char* help_text = "\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_ESCALATORS         Get all escalators.\n"
 "    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
+"    GET_NOTES              Get all notes.\n"
 "    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
@@ -554,6 +555,20 @@ name_command_data_reset (name_command_data_t *data)
 
 typedef struct
 {
+  char *note_id;
+  char *sort_field;
+  int sort_order;
+} get_notes_data_t;
+
+static void
+get_notes_data_reset (get_notes_data_t *data)
+{
+  free (data->note_id);
+  memset (data, 0, sizeof (get_notes_data_t));
+}
+
+typedef struct
+{
   char *format;
   char *report_id;
   int first_result;
@@ -594,6 +609,7 @@ typedef union
   create_config_data_t create_config;
   create_note_data_t create_note;
   delete_note_data_t delete_note;
+  get_notes_data_t get_notes;
   get_report_data_t get_report;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
@@ -633,6 +649,12 @@ create_note_data_t *create_note_data
  */
 delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
+
+/**
+ * @brief Parser callback data for GET_NOTES.
+ */
+get_notes_data_t *get_notes_data
+ = &(command_data.get_notes);
 
 /**
  * @brief Parser callback data for GET_REPORT.
@@ -891,6 +913,7 @@ typedef enum
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_ESCALATORS,
   CLIENT_GET_LSC_CREDENTIALS,
+  CLIENT_GET_NOTES,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_FAMILIES,
@@ -1511,6 +1534,26 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_2 = 1;
             set_client_state (CLIENT_GET_LSC_CREDENTIALS);
           }
+        else if (strcasecmp ("GET_NOTES", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "note_id", &attribute))
+              openvas_append_string (&get_notes_data->note_id, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&get_notes_data->sort_field, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_notes_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_notes_data->sort_order = 1;
+
+            set_client_state (CLIENT_GET_NOTES);
+          }
         else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
@@ -2050,6 +2093,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_GET_NOTES:
+        if (send_element_error_to_client ("get_notes", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_GET_NVT_ALL:
@@ -4472,6 +4528,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_GET_NOTES:
+        {
+          note_t note = 0;
+
+          assert (strcasecmp ("GET_NOTES", element_name) == 0);
+
+          if (get_notes_data->note_id
+              && find_note (get_notes_data->note_id, &note))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
+          else if (get_notes_data->note_id && note == 0)
+            {
+              if (send_find_error_to_client ("get_notes",
+                                             "note",
+                                             get_notes_data->note_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              iterator_t notes;
+
+              SENDF_TO_CLIENT_OR_FAIL ("<get_notes_response"
+                                       " status=\"" STATUS_OK "\""
+                                       " status_text=\"" STATUS_OK_TEXT "\">");
+
+              init_note_iterator (&notes,
+                                  note,
+                                  get_notes_data->sort_order,
+                                  get_notes_data->sort_field);
+              while (next (&notes))
+                SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
+                                         "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                                         "</note>",
+                                         note_iterator_uuid (&notes),
+                                         note_iterator_nvt_oid (&notes),
+                                         note_iterator_nvt_name (&notes));
+              cleanup_iterator (&notes);
+
+              SEND_TO_CLIENT_OR_FAIL ("</get_notes_response>");
+            }
+
+          get_notes_data_reset (get_notes_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         {
