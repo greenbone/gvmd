@@ -512,6 +512,33 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
+ * @brief Test whether a user owns a result.
+ *
+ * @param[in]  uuid      UUID of result.
+ *
+ * @return 1 if user owns result, else 0.
+ */
+static int
+user_owns_result (const char *uuid)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM results, report_results, reports"
+                 " WHERE uuid = '%s'"
+                 " AND report_results.result = results.ROWID"
+                 " AND report_results.report = reports.ROWID"
+                 " AND ((report.owner IS NULL) OR (report.owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 uuid,
+                 current_credentials.uuid);
+
+  return ret;
+}
+
+/**
  * @brief Return the UUID of a user from the OpenVAS user UUID file.
  *
  * If the user exists, ensure that the user has a UUID.
@@ -621,7 +648,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
-  sql ("CREATE TABLE IF NOT EXISTS meta    (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
+  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, report INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
@@ -4894,6 +4922,41 @@ make_task_rcfile (task_t task)
 /* Results. */
 
 /**
+ * @brief Find a result given a UUID.
+ *
+ * @param[in]   uuid    UUID of result.
+ * @param[out]  result  Result return, 0 if succesfully failed to find result.
+ *
+ * @return FALSE on success (including if failed to find result), TRUE on error.
+ */
+gboolean
+find_result (const char* uuid, result_t* result)
+{
+  if (user_owns_result (uuid) == 0)
+    {
+      *result = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (result, 0, 0,
+                     "SELECT ROWID FROM results WHERE uuid = '%s';",
+                     uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in outcome of query. */
+        *result = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return TRUE;
+        break;
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
@@ -6429,7 +6492,7 @@ find_task (const char* uuid, task_t* task)
  * @brief Find a report given an identifier.
  *
  * @param[in]   uuid    A report identifier.
- * @param[out]  report  Report return, 0 if succesfully failed to find task.
+ * @param[out]  report  Report return, 0 if succesfully failed to find report.
  *
  * @return FALSE on success (including if failed to find report), TRUE on error.
  */
@@ -11281,6 +11344,77 @@ agent_name (agent_t agent)
   return sql_string (0, 0,
                      "SELECT name FROM agents WHERE ROWID = %llu;",
                      agent);
+}
+
+
+/* Notes. */
+
+/**
+ * @brief Create a note.
+ *
+ * @param[in]  nvt         OID of noted NVT.
+ * @param[in]  text        Note text.
+ * @param[in]  hosts       Hosts to apply note to, NULL for any host.
+ * @param[in]  port        Port to apply note to, NULL for any port.
+ * @param[in]  threat      Threat to apply note to, NULL for any threat.
+ * @param[in]  task        Task to apply note to, 0 for any task.
+ * @param[in]  result      Result to apply note to, 0 for any result.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+create_note (const char* nvt, const char* text, const char* hosts,
+             const char* port, const char* threat, task_t task,
+             result_t result)
+{
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  char *uuid;
+
+  if (nvt == NULL)
+    return -1;
+
+  if (text == NULL)
+    return -1;
+
+  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
+      && strcmp (threat, "Low") && strcmp (threat, "Log")
+      && strcmp (threat, "Debug"))
+    return -1;
+
+  uuid = make_report_uuid ();
+  if (uuid == NULL)
+    return -1;
+
+  quoted_text = sql_insert (text);
+  quoted_hosts = sql_insert (hosts);
+  quoted_port = sql_insert (port);
+  quoted_threat = sql_insert (threat);
+
+  sql ("INSERT INTO notes"
+       " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+       "  port, threat, task, report)"
+       " VALUES"
+       " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu);",
+       uuid,
+       current_credentials.uuid,
+       nvt,
+       time (NULL),
+       time (NULL),
+       quoted_text,
+       quoted_hosts,
+       quoted_port,
+       quoted_threat,
+       task,
+       result);
+
+  free (uuid);
+  g_free (quoted_text);
+  g_free (quoted_hosts);
+  g_free (quoted_port);
+  g_free (quoted_threat);
+
+  return 0;
 }
 
 #undef DEF_ACCESS

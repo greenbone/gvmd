@@ -544,6 +544,12 @@ next (iterator_t*);
 
 /* Reports. */
 
+gboolean
+find_result (const char*, result_t*);
+
+
+/* Reports. */
+
 // FIX how is this doc'd?
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
@@ -1071,6 +1077,13 @@ agent_iterator_howto_use (iterator_t*);
 
 char*
 agent_name (lsc_credential_t);
+
+
+/* Notes. */
+
+int
+create_note (const char*, const char*, const char*, const char*, const char*,
+             task_t, result_t);
 
 
 /* Scanner messaging. */

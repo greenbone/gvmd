@@ -1,5 +1,29 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP CREATE_NOTE.
+
+	* src/tasks_sql.h (user_owns_result, find_result, create_note): New
+	functions.
+	(create_tables): Add notes table.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add CREATE_NOTE.
+	(create_note_data_t): New type.
+	(create_note_data_reset): New function.
+	(command_data_t): Add create_note.
+	(create_note_data): New variable.
+	(client_state_t): Add CREATE_NOTE states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_NOTE handling.
+
+	* doc/db_postgres.sql (notes): New table.
+	(results): Add uuid.
+
+	* src/tests/omp_help_0.c (help_text): Add CREATE_NOTE.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* README: Correct typo and grammar.
 
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>

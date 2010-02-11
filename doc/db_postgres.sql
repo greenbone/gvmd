@@ -105,6 +105,7 @@ CREATE TABLE task_escalators (
 
 CREATE TABLE results (
 	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
 	subnet text,
 	host text,
@@ -173,3 +174,17 @@ CREATE TABLE lsc_credentials (
 	rpm bytea,
 	deb bytea,
 	exe bytea);
+
+CREATE TABLE notes (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	nvt text NOT NULL,  -- OID of NVT
+	creation_time date,
+	modification_time date,
+	text text,
+	hosts text,
+	port text,
+	threat text,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	report integer REFERENCES reports (id) ON DELETE RESTRICT);

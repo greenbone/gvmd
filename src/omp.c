@@ -255,6 +255,7 @@ static char* help_text = "\n"
 "    CREATE_CONFIG          Create a config.\n"
 "    CREATE_ESCALATOR       Create an escalator.\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
+"    CREATE_NOTE            Create a note.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
 "    DELETE_AGENT           Delete an agent.\n"
@@ -500,6 +501,31 @@ create_config_data_reset (create_config_data_t *data)
 
 typedef struct
 {
+  char *hosts;
+  char *nvt;
+  char *port;
+  char *result;
+  char *task;
+  char *text;
+  char *threat;
+} create_note_data_t;
+
+static void
+create_note_data_reset (create_note_data_t *data)
+{
+  free (data->hosts);
+  free (data->nvt);
+  free (data->port);
+  free (data->result);
+  free (data->task);
+  free (data->text);
+  free (data->threat);
+
+  memset (data, 0, sizeof (create_note_data_t));
+}
+
+typedef struct
+{
   char *name;
 } name_command_data_t;
 
@@ -552,6 +578,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 typedef union
 {
   create_config_data_t create_config;
+  create_note_data_t create_note;
   get_report_data_t get_report;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
@@ -579,6 +606,12 @@ command_data_t command_data;
  */
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
+
+/**
+ * @brief Parser callback data for CREATE_NOTE.
+ */
+create_note_data_t *create_note_data
+ = (create_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Parser callback data for GET_REPORT.
@@ -795,6 +828,14 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
   CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
+  CLIENT_CREATE_NOTE,
+  CLIENT_CREATE_NOTE_HOSTS,
+  CLIENT_CREATE_NOTE_NVT,
+  CLIENT_CREATE_NOTE_PORT,
+  CLIENT_CREATE_NOTE_RESULT,
+  CLIENT_CREATE_NOTE_TASK,
+  CLIENT_CREATE_NOTE_TEXT,
+  CLIENT_CREATE_NOTE_THREAT,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -1642,6 +1683,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&current_name, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
           }
+        else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE);
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
             assert (current_client_task == (task_t) 0);
@@ -2754,6 +2797,36 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             if (send_element_error_to_client ("create_lsc_credential",
                                               element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_NOTE:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_HOSTS);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_NVT);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_PORT);
+        else if (strcasecmp ("RESULT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_RESULT);
+        else if (strcasecmp ("TASK", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_TASK);
+        else if (strcasecmp ("TEXT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_TEXT);
+        else if (strcasecmp ("THREAT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_THREAT);
+        else
+          {
+            if (send_element_error_to_client ("create_note", element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -6965,6 +7038,101 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
         break;
 
+      case CLIENT_CREATE_NOTE:
+        {
+          task_t task = 0;
+          result_t result = 0;
+
+          assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
+
+          if (create_note_data->nvt == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_note",
+                                "CREATE_NOTE requires an NVT entity"));
+          else if (create_note_data->text == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_note",
+                                "CREATE_NOTE requires an TEXT entity"));
+          else if (create_note_data->task
+              && find_task (create_note_data->task, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
+          else if (create_note_data->task && task == 0)
+            {
+              if (send_find_error_to_client ("create_note",
+                                             "task",
+                                             create_note_data->task))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (create_note_data->result
+                   && find_result (create_note_data->result, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
+          else if (create_note_data->result && result == 0)
+            {
+              if (send_find_error_to_client ("create_note",
+                                             "result",
+                                             create_note_data->result))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (create_note (create_note_data->nvt,
+                                    create_note_data->text,
+                                    create_note_data->hosts,
+                                    create_note_data->port,
+                                    create_note_data->threat,
+                                    task,
+                                    result))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_note"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_note"));
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_note"));
+                break;
+            }
+          create_note_data_reset (create_note_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_NOTE_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_RESULT:
+        assert (strcasecmp ("RESULT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_TEXT:
+        assert (strcasecmp ("TEXT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+      case CLIENT_CREATE_NOTE_THREAT:
+        assert (strcasecmp ("THREAT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_NOTE);
+        break;
+
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t lsc_credential = 0;
@@ -9245,6 +9413,28 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME:
         openvas_append_text (&current_uuid, text, text_len);
+        break;
+
+      case CLIENT_CREATE_NOTE_HOSTS:
+        openvas_append_text (&create_note_data->hosts, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_NVT:
+        openvas_append_text (&create_note_data->nvt, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_PORT:
+        openvas_append_text (&create_note_data->port, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_RESULT:
+        openvas_append_text (&create_note_data->result, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_TASK:
+        openvas_append_text (&create_note_data->task, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_TEXT:
+        openvas_append_text (&create_note_data->text, text, text_len);
+        break;
+      case CLIENT_CREATE_NOTE_THREAT:
+        openvas_append_text (&create_note_data->threat, text, text_len);
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:
