@@ -1,5 +1,9 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd.c (main): Include --rebuild in error message.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP DELETE_NOTE.
 
 	* src/tasks_sql.h (find_note, delete_note): New functions.

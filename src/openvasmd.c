@@ -881,7 +881,7 @@ main (int argc, char** argv)
         break;
       case -3:
         g_critical ("%s: database must be initialised"
-                    " (with the --update command line option)\n",
+                    " (with --update or --rebuild)\n",
                     __FUNCTION__);
         free_log_configuration (log_config);
         exit (EXIT_FAILURE);
