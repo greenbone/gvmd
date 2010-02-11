@@ -7251,7 +7251,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_note_data->result
-                   && find_result (create_note_data->result, &task))
+                   && find_result (create_note_data->result, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->result && result == 0)
             {
