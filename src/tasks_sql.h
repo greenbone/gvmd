@@ -649,7 +649,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
-  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, report INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
   /* nvt_selectors types: 0 all, 1 family, 2 NVT (NVT_SELECTOR_TYPE_* in manage.h). */
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
@@ -11431,7 +11431,7 @@ create_note (const char* nvt, const char* text, const char* hosts,
 
   sql ("INSERT INTO notes"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, task, report)"
+       "  port, threat, task, result)"
        " VALUES"
        " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu);",
@@ -11487,7 +11487,7 @@ init_note_iterator (iterator_t* iterator, note_t note,
   if (note)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
-                   " text, hosts, port, threat, task, report"
+                   " text, hosts, port, threat, task, result"
                    " FROM notes"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -11500,7 +11500,7 @@ init_note_iterator (iterator_t* iterator, note_t note,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
-                   " text, hosts, port, threat, task, report"
+                   " text, hosts, port, threat, task, result"
                    " FROM notes"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"

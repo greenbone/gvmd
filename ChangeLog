@@ -1,5 +1,11 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (create_tables): Rename report to result in table notes.
+	(create_note, init_note_iterator): Use "result" instead of "report" for
+	result column.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (user_owns_result): In SQL specify table for UUID
 	and correct table name.
 
