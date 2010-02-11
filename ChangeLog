@@ -1,5 +1,9 @@
 2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* README: Correct typo and grammar.
+
+2010-02-11  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add result UUIDs.  Hence increase database version to 14.  Add
 	database migration from 13 to 14.
 

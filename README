@@ -1,10 +1,11 @@
-About OpenVAS-Manger
---------------------
+About OpenVAS-Manager
+---------------------
 
 The OpenVAS-Manager is a layer between OpenVAS-Scanner and various client
 applications such as OpenVAS-Client or Greenbone Security Assistant.  Among
 other features, it adds server-side storage of scan results and it makes it
-unnecessary for scan clients to keep connection until a scan finishes.
+unnecessary for a scan client to keep the connection open until the scan
+finishes.
 
 OpenVAS-Manager is licensed under GNU General Public License Version 2 or
 any later version.  Please see file COPYING for details.
