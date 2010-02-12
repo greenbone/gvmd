@@ -11514,7 +11514,8 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
   assert (current_credentials.uuid);
 
   if (result)
-    result_clause = g_strdup_printf (" AND result = %llu", result);
+    result_clause = g_strdup_printf (" AND (result = %llu OR result = 0)",
+                                     result);
   else
     result_clause = NULL;
 
