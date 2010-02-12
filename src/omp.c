@@ -3467,13 +3467,15 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
     {
       gchar *descr;
       const char *name;
+      char *uuid;
 
+      result_uuid (result_iterator_result (&results), &uuid);
       name = result_iterator_nvt_name (&results);
       descr = g_markup_escape_text (result_iterator_descr (&results), -1);
       // FIX as in other <result response below?
       //gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
       fprintf (out,
-               "<result>"
+               "<result id=\"%s\">"
                "<subnet>%s</subnet>"
                "<host>%s</host>"
                "<port>%s</port>"
@@ -3481,6 +3483,7 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
                "<type>%s</type>"
                "<description>%s</description>"
                "</result>",
+               uuid,
                result_iterator_subnet (&results),
                result_iterator_host (&results),
                result_iterator_port (&results),
@@ -3488,6 +3491,7 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
                name ? name : "",
                result_iterator_type (&results),
                descr);
+      free (uuid);
       g_free (descr);
     }
   cleanup_iterator (&results);
@@ -5248,15 +5252,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 const char *descr = result_iterator_descr (&results);
                 gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
                 const char *name = result_iterator_nvt_name (&results);
+                char *uuid;
+
+                result_uuid (result_iterator_result (&results), &uuid);
 
                 SENDF_TO_CLIENT_OR_FAIL
-                 ("<result>"
+                 ("<result id=\"%s\">"
                   "<subnet>%s</subnet>"
                   "<host>%s</host>"
                   "<port>%s</port>"
                   "<nvt oid=\"%s\"><name>%s</name></nvt>"
                   "<threat>%s</threat>"
                   "<description>%s</description>",
+                  uuid,
                   result_iterator_subnet (&results),
                   result_iterator_host (&results),
                   result_iterator_port (&results),
@@ -5264,6 +5272,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   name ? name : "",
                   result_type_threat (result_iterator_type (&results)),
                   descr ? nl_descr : "");
+
+                free (uuid);
 
                 if (descr) g_free (nl_descr);
 

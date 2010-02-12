@@ -1,5 +1,11 @@
 2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (print_report_xml): Add id to RESULT.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the XML case, add
+	id to RESULT.
+
+2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ovas-mngr-comm.c (sendn_to_server): Use %zu for size_t's.
 
 2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
