@@ -244,6 +244,22 @@ file_utils_rmdir_rf (const gchar * pathname)
   return g_remove (pathname);
 }
 
+/**
+ * @brief Return string from ctime with newline replaces with terminator.
+ *
+ * @param[in]  time  Time.
+ *
+ * @return Return from ctime applied to time, with newline stripped off.
+ */
+static char*
+ctime_strip_newline (time_t *time)
+{
+  char* ret = ctime (time);
+  if (ret && strlen (ret) > 0)
+    ret[strlen (ret) - 1] = '\0';
+  return ret;
+}
+
 
 /* Help message. */
 
@@ -5277,6 +5293,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       while (next (&notes))
                         {
                           char *uuid_task, *uuid_result;
+                          time_t creation_time, mod_time;
 
                           if (note_iterator_task (&notes))
                             task_uuid (note_iterator_task (&notes),
@@ -5289,6 +5306,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          &uuid_result);
                           else
                             uuid_result = NULL;
+
+                          creation_time = note_iterator_creation_time (&notes);
+                          mod_time = note_iterator_modification_time (&notes);
 
                           SENDF_TO_CLIENT_OR_FAIL
                            ("<note id=\"%s\">"
@@ -5305,8 +5325,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             note_iterator_uuid (&notes),
                             note_iterator_nvt_oid (&notes),
                             note_iterator_nvt_name (&notes),
-                            note_iterator_creation_time (&notes),
-                            note_iterator_modification_time (&notes),
+                            ctime_strip_newline (&creation_time),
+                            ctime_strip_newline (&mod_time),
                             note_iterator_text (&notes),
                             note_iterator_hosts (&notes)
                              ? note_iterator_hosts (&notes) : "",

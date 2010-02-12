@@ -11514,7 +11514,12 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
   assert (current_credentials.uuid);
 
   if (result)
-    result_clause = g_strdup_printf (" AND (result = %llu OR result = 0)",
+    result_clause = g_strdup_printf (" AND"
+                                     " (result = %llu"
+                                     "  OR (result = 0 AND nvt ="
+                                     "      (SELECT results.nvt FROM results"
+                                     "       WHERE results.ROWID = %llu)))",
+                                     result,
                                      result);
   else
     result_clause = NULL;
@@ -11553,8 +11558,39 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
 
 DEF_ACCESS (note_iterator_uuid, 1);
 DEF_ACCESS (note_iterator_nvt_oid, 2);
-DEF_ACCESS (note_iterator_creation_time, 3);
-DEF_ACCESS (note_iterator_modification_time, 4);
+
+/**
+ * @brief Get the creation time from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time note was created.
+ */
+time_t
+note_iterator_creation_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
+}
+
+/**
+ * @brief Get the modification time from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time note was last modified.
+ */
+time_t
+note_iterator_modification_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
+  return ret;
+}
+
 DEF_ACCESS (note_iterator_text, 5);
 DEF_ACCESS (note_iterator_hosts, 6);
 DEF_ACCESS (note_iterator_port, 7);

@@ -1108,10 +1108,10 @@ note_iterator_uuid (iterator_t*);
 const char*
 note_iterator_nvt_oid (iterator_t*);
 
-const char*
+time_t
 note_iterator_creation_time (iterator_t*);
 
-const char*
+time_t
 note_iterator_modification_time (iterator_t*);
 
 const char*

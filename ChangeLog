@@ -1,5 +1,18 @@
 2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (init_note_iterator): Ensure the note applies to the NVT
+	of the result.
+	(note_iterator_creation_time, note_iterator_modification_time): Switch
+	return to int.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (ctime_strip_newline): New function.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT send formatted dates
+	instead of integers.
+
+2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_note_iterator): Include notes applied to all
 	results when the request is for a single result.
 
