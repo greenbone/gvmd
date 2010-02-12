@@ -131,14 +131,14 @@ sendn_to_server (const void * msg, size_t n)
 {
   if (TO_SERVER_BUFFER_SIZE - to_server_end < n)
     {
-      tracef ("   sendn_to_server: available space (%i) < n (%i)\n",
+      tracef ("   sendn_to_server: available space (%i) < n (%zu)\n",
               TO_SERVER_BUFFER_SIZE - to_server_end, n);
       return 1;
     }
 
   memmove (to_server + to_server_end, msg, n);
   tracef ("s> server  (string) %.*s\n", (int) n, to_server + to_server_end);
-  tracef ("-> server  %zi bytes\n", n);
+  tracef ("-> server  %zu bytes\n", n);
   to_server_end += n;
 
   return 0;

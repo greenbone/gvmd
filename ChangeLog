@@ -1,5 +1,9 @@
 2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/ovas-mngr-comm.c (sendn_to_server): Use %zu for size_t's.
+
+2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h (init_note_iterator): Ensure the note applies to the NVT
 	of the result.
 	(note_iterator_creation_time, note_iterator_modification_time): Switch
