@@ -549,6 +549,9 @@ next (iterator_t*);
 gboolean
 find_result (const char*, result_t*);
 
+int
+result_uuid (result_t, /*@out@*/ char **);
+
 
 /* Reports. */
 
@@ -1104,6 +1107,30 @@ note_iterator_uuid (iterator_t*);
 
 const char*
 note_iterator_nvt_oid (iterator_t*);
+
+const char*
+note_iterator_creation_time (iterator_t*);
+
+const char*
+note_iterator_modification_time (iterator_t*);
+
+const char*
+note_iterator_text (iterator_t*);
+
+const char*
+note_iterator_hosts (iterator_t*);
+
+const char*
+note_iterator_port (iterator_t*);
+
+const char*
+note_iterator_threat (iterator_t*);
+
+task_t
+note_iterator_task (iterator_t*);
+
+result_t
+note_iterator_result (iterator_t*);
 
 const char*
 note_iterator_nvt_name (iterator_t *);

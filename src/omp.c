@@ -578,6 +578,7 @@ typedef struct
   char *levels;
   char *search_phrase;
   int notes;
+  int notes_details;
 } get_report_data_t;
 
 static void
@@ -1653,6 +1654,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->notes = strcmp (attribute, "0");
             else
               get_report_data->notes = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "notes_details", &attribute))
+              get_report_data->notes_details = strcmp (attribute, "0");
+            else
+              get_report_data->notes_details = 0;
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -5255,15 +5262,64 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         result_iterator_result (&results),
                                         1,
                                         "modification_time");
-                    while (next (&notes))
-                      SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
-                                               "<nvt oid=\"%s\">"
-                                               "<name>%s</name>"
-                                               "</nvt>"
-                                               "</note>",
-                                               note_iterator_uuid (&notes),
-                                               note_iterator_nvt_oid (&notes),
-                                               note_iterator_nvt_name (&notes));
+                    if (get_report_data->notes_details == 0)
+                      while (next (&notes))
+                        SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
+                                                 "<nvt oid=\"%s\">"
+                                                 "<name>%s</name>"
+                                                 "</nvt>"
+                                                 "</note>",
+                                                 note_iterator_uuid (&notes),
+                                                 note_iterator_nvt_oid (&notes),
+                                                 note_iterator_nvt_name
+                                                  (&notes));
+                    else
+                      while (next (&notes))
+                        {
+                          char *uuid_task, *uuid_result;
+
+                          if (note_iterator_task (&notes))
+                            task_uuid (note_iterator_task (&notes),
+                                       &uuid_task);
+                          else
+                            uuid_task = NULL;
+
+                          if (note_iterator_result (&notes))
+                            result_uuid (note_iterator_result (&notes),
+                                         &uuid_result);
+                          else
+                            uuid_result = NULL;
+
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<note id=\"%s\">"
+                            "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                            "<creation_time>%s</creation_time>"
+                            "<modification_time>%s</modification_time>"
+                            "<text>%s</text>"
+                            "<hosts>%s</hosts>"
+                            "<port>%s</port>"
+                            "<threat>%s</threat>"
+                            "<task id=\"%s\"/>"
+                            "<result id=\"%s\"/>"
+                            "</note>",
+                            note_iterator_uuid (&notes),
+                            note_iterator_nvt_oid (&notes),
+                            note_iterator_nvt_name (&notes),
+                            note_iterator_creation_time (&notes),
+                            note_iterator_modification_time (&notes),
+                            note_iterator_text (&notes),
+                            note_iterator_hosts (&notes)
+                             ? note_iterator_hosts (&notes) : "",
+                            note_iterator_port (&notes)
+                             ? note_iterator_port (&notes) : "",
+                            note_iterator_threat (&notes)
+                             ? note_iterator_threat (&notes) : "",
+                            uuid_task ? uuid_task : "",
+                            uuid_result ? uuid_result : "");
+
+                          free (uuid_task);
+                          free (uuid_result);
+                        }
                     cleanup_iterator (&notes);
 
                     SEND_TO_CLIENT_OR_FAIL ("</notes>");

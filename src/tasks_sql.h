@@ -4984,6 +4984,23 @@ make_result (task_t task, const char* subnet, const char* host,
   return result;
 }
 
+/**
+ * @brief Return the UUID of a result.
+ *
+ * @param[in]   result  Result.
+ * @param[out]  id      Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+result_uuid (result_t result, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM results WHERE ROWID = %llu;",
+                    result);
+  return 0;
+}
+
 
 /* Reports. */
 
@@ -11535,9 +11552,43 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
 
 DEF_ACCESS (note_iterator_uuid, 1);
 DEF_ACCESS (note_iterator_nvt_oid, 2);
+DEF_ACCESS (note_iterator_creation_time, 3);
+DEF_ACCESS (note_iterator_modification_time, 4);
+DEF_ACCESS (note_iterator_text, 5);
+DEF_ACCESS (note_iterator_hosts, 6);
+DEF_ACCESS (note_iterator_port, 7);
+DEF_ACCESS (note_iterator_threat, 8);
 
 /**
- * @brief Get the NVT name from a nots iterator.
+ * @brief Get the task from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The task associated with the note, or 0 on error.
+ */
+task_t
+note_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 9);
+}
+
+/**
+ * @brief Get the result from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The result associated with the note, or 0 on error.
+ */
+result_t
+note_iterator_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (result_t) sqlite3_column_int64 (iterator->stmt, 10);
+}
+
+/**
+ * @brief Get the NVT name from a note iterator.
  *
  * @param[in]  iterator  Iterator.
  *
