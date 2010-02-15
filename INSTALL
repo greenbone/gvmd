@@ -3,11 +3,12 @@ The build might fail on any other systems.  Also it is necessary to install
 dependent development packages.
 
 Prerequisites:
-* openvas-libraries 2.0.4 or greater
-* gnutls
 * cmake
-* sqlite3
+* glib-2.0
+* gnutls
 * libuuid (from e2fsprogs)
+* openvas-libraries 3.0.3 or greater
+* sqlite3
 
 Prerequisites for building documentation:
 * Doxygen

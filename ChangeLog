@@ -1,3 +1,8 @@
+2010-02-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* INSTALL: Sorted library dependencies alphabetically, added glib,
+	raised required openvas-libraries version.
+
 2010-02-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (print_report_xml): Add id to RESULT.
