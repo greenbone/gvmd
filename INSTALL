@@ -36,6 +36,7 @@ Thereafter, the following commands are useful.
 
     $ make                # build the manager
     $ make doc            # build the documentation
+    $ make doc-full       # build more developer-oriented documentation
     $ make install        # install the build
     $ make rebuild_cache  # rebuild the make system cache
 

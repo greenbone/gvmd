@@ -1,5 +1,9 @@
 2010-02-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
+	* INSTALL: List doc-full as possible make target.
+
+2010-02-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
 	* INSTALL: Sorted library dependencies alphabetically, added glib,
 	raised required openvas-libraries version.
 
