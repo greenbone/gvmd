@@ -1,5 +1,10 @@
 2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/tasks_sql.h (insert_nvt_selectors): Set family when inserting family
+	selector.
+
+2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Implement more note constraints.  Create results with UUIDs.
 
 	* src/tasks_sql.h (sql_hosts_contains): New function.

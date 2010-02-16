@@ -10394,10 +10394,11 @@ insert_nvt_selectors (const char *quoted_name,
 
           sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
                " family)"
-               " VALUES ('%s', %i, %i, '%s', NULL);",
+               " VALUES ('%s', %i, %i, '%s', '%s');",
                quoted_name,
                selector->include ? 0 : 1,
                type,
+               quoted_family_or_nvt,
                quoted_family_or_nvt);
           g_free (quoted_family_or_nvt);
         }
