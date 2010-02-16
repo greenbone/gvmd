@@ -7399,7 +7399,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else if (create_note_data->text == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
-                                "CREATE_NOTE requires an TEXT entity"));
+                                "CREATE_NOTE requires a TEXT entity"));
           else if (create_note_data->task
               && find_task (create_note_data->task, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
