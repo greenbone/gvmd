@@ -436,6 +436,57 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
   sqlite3_result_text (context, uuid, -1, free);
 }
 
+/**
+ * @brief Check if a host list contains a host
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+static void
+sql_hosts_contains (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  gchar **split, **point, *stripped_host;
+  const unsigned char *hosts, *host;
+
+  assert (argc == 2);
+
+  hosts = sqlite3_value_text (argv[0]);
+  if (hosts == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get hosts argument", -1);
+      return;
+    }
+
+  host = sqlite3_value_text (argv[1]);
+  if (host == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get host argument", -1);
+      return;
+    }
+
+  stripped_host = g_strstrip (g_strdup ((gchar*) host));
+  split = g_strsplit ((gchar*) hosts, ",", 0);
+  point = split;
+  while (*point)
+    {
+      if (strcmp (g_strstrip (*point), stripped_host) == 0)
+        {
+          g_strfreev (split);
+          g_free (stripped_host);
+          sqlite3_result_int (context, 1);
+          return;
+        }
+      point++;
+    }
+  g_strfreev (split);
+  g_free (stripped_host);
+
+  sqlite3_result_int (context, 0);
+}
+
 
 /* General helpers. */
 
@@ -3693,6 +3744,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           g_message ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
+
+      if (sqlite3_create_function (task_db,
+                                   "hosts_contains",
+                                   2,               /* Number of args. */
+                                   SQLITE_UTF8,
+                                   NULL,            /* Callback data. */
+                                   sql_hosts_contains,
+                                   NULL,            /* xStep. */
+                                   NULL)            /* xFinal. */
+          != SQLITE_OK)
+        {
+          g_message ("%s: failed to create make_uuid", __FUNCTION__);
+          abort ();
+        }
     }
 }
 
@@ -4108,9 +4173,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
-          sql ("INSERT into results (task, subnet, host, port, nvt, type,"
+          sql ("INSERT into results (uuid, task, subnet, host, port, nvt, type,"
                " description)"
-               " VALUES (%llu, '', 'localhost', 'telnet (23/tcp)',"
+               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu, '',"
+               " 'localhost', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note',"
                " 'A telnet server seems to be running on this port');",
                task);
@@ -4976,8 +5042,10 @@ make_result (task_t task, const char* subnet, const char* host,
 {
   result_t result;
   gchar *quoted_descr = sql_quote (description);
-  sql ("INSERT into results (task, subnet, host, port, nvt, type, description)"
-       " VALUES (%llu, '%s', '%s', '%s', '%s', '%s', '%s');",
+  sql ("INSERT into results"
+       " (task, subnet, host, port, nvt, type, description, uuid)"
+       " VALUES"
+       " (%llu, '%s', '%s', '%s', '%s', '%s', '%s', make_uuid ());",
        task, subnet, host, port, nvt, type, quoted_descr);
   g_free (quoted_descr);
   result = sqlite3_last_insert_rowid (task_db);
@@ -11421,7 +11489,7 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
  * @param[in]  port        Port to apply note to, NULL for any port.
- * @param[in]  threat      Threat to apply note to, NULL for any threat.
+ * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
@@ -11443,7 +11511,7 @@ create_note (const char* nvt, const char* text, const char* hosts,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug"))
+      && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
 
   uuid = make_report_uuid ();
@@ -11453,7 +11521,8 @@ create_note (const char* nvt, const char* text, const char* hosts,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_threat = sql_insert (threat);
+  quoted_threat = sql_insert ((threat && strlen (threat))
+                                ? threat_message_type (threat) : NULL);
 
   sql ("INSERT INTO notes"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
@@ -11502,12 +11571,13 @@ delete_note (note_t note)
  * @param[in]  iterator    Iterator.
  * @param[in]  note        Single note to iterate, 0 for all.
  * @param[in]  result      Result to limit notes to, 0 for all.
+ * @param[in]  task        Task to limit notes to, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_note_iterator (iterator_t* iterator, note_t note, result_t result,
-                    int ascending, const char* sort_field)
+                    task_t task, int ascending, const char* sort_field)
 {
   gchar *result_clause;
 
@@ -11518,9 +11588,29 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
                                      " (result = %llu"
                                      "  OR (result = 0 AND nvt ="
                                      "      (SELECT results.nvt FROM results"
-                                     "       WHERE results.ROWID = %llu)))",
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (hosts is NULL"
+                                     "      OR hosts = \"\""
+                                     "      OR hosts_contains (hosts,"
+                                     "      (SELECT results.host FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (port is NULL"
+                                     "      OR port = \"\""
+                                     "      OR port ="
+                                     "      (SELECT results.port FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (threat is NULL"
+                                     "      OR threat = \"\""
+                                     "      OR threat ="
+                                     "      (SELECT results.type FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (task = 0 OR task = %llu)",
                                      result,
-                                     result);
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     task);
   else
     result_clause = NULL;
 

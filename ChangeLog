@@ -1,5 +1,26 @@
 2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Implement more note constraints.  Create results with UUIDs.
+
+	* src/tasks_sql.h (sql_hosts_contains): New function.
+	(init_manage_process): Add SQL function hosts_contains.
+	(init_manage): Give predefined result a UUID.
+	(make_result): Initialise result UUID.
+	(create_note): Translate the threat to a message type before inserting.
+	(init_note_iterator): Add task param.  Limit iteration according to hosts,
+	port, threat and task.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage.c (threat_message_type): New function.
+
+	* src/omp.c (buffer_results_xml): Get notes flags from params.  Add task
+	param and pass to init_note_iterator.  Update caller.
+	(omp_xml_handle_end_element): In CLIENT_GET_NOTES pass task to
+	init_note_iterator.
+
+2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_NOTE correct
 	message typo.
 

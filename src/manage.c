@@ -99,6 +99,32 @@ static char *
 escalator_data (escalator_t, const char *, const char *);
 
 
+/* Threats. */
+
+/**
+ * @brief Get the message type of a threat.
+ *
+ * @param  threat  Threat.
+ *
+ * @return Static message type name if threat names a threat, else NULL.
+ */
+static const char *
+threat_message_type (const char *threat)
+{
+  if (strcasecmp (threat, "High") == 0)
+    return "Security Hole";
+  if (strcasecmp (threat, "Medium") == 0)
+    return "Security Warning";
+  if (strcasecmp (threat, "Low") == 0)
+    return "Security Note";
+  if (strcasecmp (threat, "Log") == 0)
+    return "Log Message";
+  if (strcasecmp (threat, "Debug") == 0)
+    return "Debug Message";
+  return NULL;
+}
+
+
 /* Arrays. */
 
 /**

@@ -4349,13 +4349,14 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
 /**
  * @brief Buffer XML for some results.
  *
- * @param[in]  results        Result iterator.
- * @param[in]  notes          Whether to include notes.
- * @param[in]  notes_details  Whether to include details of notes.
+ * @param[in]  results                Result iterator.
+ * @param[in]  task                   Task associated with results.
+ * @param[in]  include_notes          Whether to include notes.
+ * @param[in]  include_notes_details  Whether to include details of notes.
  */
 static void
-buffer_results_xml (GString *buffer, iterator_t *results, int notes,
-                    int notes_details)
+buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
+                    int include_notes, int include_notes_details)
 {
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
@@ -4386,7 +4387,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, int notes,
 
   if (descr) g_free (nl_descr);
 
-  if (get_report_data->notes)
+  if (include_notes)
     {
       iterator_t notes;
 
@@ -4395,9 +4396,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, int notes,
       init_note_iterator (&notes,
                           0,
                           result_iterator_result (results),
+                          task,
                           1,
                           "modification_time");
-      if (get_report_data->notes_details == 0)
+      if (include_notes_details == 0)
         while (next (&notes))
           buffer_xml_append_printf (buffer,
                                     "<note id=\"%s\">"
@@ -4733,6 +4735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_note_iterator (&notes,
                                   note,
+                                  0,
                                   0,
                                   get_notes_data->sort_order,
                                   get_notes_data->sort_field);
@@ -5393,6 +5396,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 GString *buffer = g_string_new ("");
                 buffer_results_xml (buffer,
                                     &results,
+                                    task,
                                     get_report_data->notes,
                                     get_report_data->notes_details);
                 SEND_TO_CLIENT_OR_FAIL (buffer->str);
