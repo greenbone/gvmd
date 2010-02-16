@@ -1,3 +1,9 @@
+2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (buffer_xml_append_printf, buffer_results_xml): New functions.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the XML case, output
+	the results entity with buffer_results_xml.
+
 2010-02-15  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* INSTALL: List doc-full as possible make target.

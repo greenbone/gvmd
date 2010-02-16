@@ -4328,6 +4328,147 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
 }
 
 /**
+ * @brief Format XML into a buffer.
+ *
+ * @param[in]  buffer  Buffer.
+ * @param[in]  format  Format string for XML.
+ * @param[in]  args    Arguments for format string.
+ */
+static void
+buffer_xml_append_printf (GString *buffer, const char *format, ...)
+{
+  va_list args;
+  gchar *msg;
+  va_start (args, format);
+  msg = g_markup_vprintf_escaped (format, args);
+  va_end (args);
+  g_string_append (buffer, msg);
+  g_free (msg);
+}
+
+/**
+ * @brief Buffer XML for some results.
+ *
+ * @param[in]  results        Result iterator.
+ * @param[in]  notes          Whether to include notes.
+ * @param[in]  notes_details  Whether to include details of notes.
+ */
+static void
+buffer_results_xml (GString *buffer, iterator_t *results, int notes,
+                    int notes_details)
+{
+  const char *descr = result_iterator_descr (results);
+  gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
+  const char *name = result_iterator_nvt_name (results);
+  char *uuid;
+
+  result_uuid (result_iterator_result (results), &uuid);
+
+  buffer_xml_append_printf
+   (buffer,
+    "<result id=\"%s\">"
+    "<subnet>%s</subnet>"
+    "<host>%s</host>"
+    "<port>%s</port>"
+    "<nvt oid=\"%s\"><name>%s</name></nvt>"
+    "<threat>%s</threat>"
+    "<description>%s</description>",
+    uuid,
+    result_iterator_subnet (results),
+    result_iterator_host (results),
+    result_iterator_port (results),
+    result_iterator_nvt_oid (results),
+    name ? name : "",
+    result_type_threat (result_iterator_type (results)),
+    descr ? nl_descr : "");
+
+  free (uuid);
+
+  if (descr) g_free (nl_descr);
+
+  if (get_report_data->notes)
+    {
+      iterator_t notes;
+
+      g_string_append (buffer, "<notes>");
+
+      init_note_iterator (&notes,
+                          0,
+                          result_iterator_result (results),
+                          1,
+                          "modification_time");
+      if (get_report_data->notes_details == 0)
+        while (next (&notes))
+          buffer_xml_append_printf (buffer,
+                                    "<note id=\"%s\">"
+                                    "<nvt oid=\"%s\">"
+                                    "<name>%s</name>"
+                                    "</nvt>"
+                                    "</note>",
+                                    note_iterator_uuid (&notes),
+                                    note_iterator_nvt_oid (&notes),
+                                    note_iterator_nvt_name
+                                     (&notes));
+      else
+        while (next (&notes))
+          {
+            char *uuid_task, *uuid_result;
+            time_t creation_time, mod_time;
+
+            if (note_iterator_task (&notes))
+              task_uuid (note_iterator_task (&notes),
+                         &uuid_task);
+            else
+              uuid_task = NULL;
+
+            if (note_iterator_result (&notes))
+              result_uuid (note_iterator_result (&notes),
+                           &uuid_result);
+            else
+              uuid_result = NULL;
+
+            creation_time = note_iterator_creation_time (&notes);
+            mod_time = note_iterator_modification_time (&notes);
+
+            buffer_xml_append_printf
+             (buffer,
+              "<note id=\"%s\">"
+              "<nvt oid=\"%s\"><name>%s</name></nvt>"
+              "<creation_time>%s</creation_time>"
+              "<modification_time>%s</modification_time>"
+              "<text>%s</text>"
+              "<hosts>%s</hosts>"
+              "<port>%s</port>"
+              "<threat>%s</threat>"
+              "<task id=\"%s\"/>"
+              "<result id=\"%s\"/>"
+              "</note>",
+              note_iterator_uuid (&notes),
+              note_iterator_nvt_oid (&notes),
+              note_iterator_nvt_name (&notes),
+              ctime_strip_newline (&creation_time),
+              ctime_strip_newline (&mod_time),
+              note_iterator_text (&notes),
+              note_iterator_hosts (&notes)
+               ? note_iterator_hosts (&notes) : "",
+              note_iterator_port (&notes)
+               ? note_iterator_port (&notes) : "",
+              note_iterator_threat (&notes)
+               ? note_iterator_threat (&notes) : "",
+              uuid_task ? uuid_task : "",
+              uuid_result ? uuid_result : "");
+
+            free (uuid_task);
+            free (uuid_result);
+          }
+      cleanup_iterator (&notes);
+
+      g_string_append (buffer, "</notes>");
+    }
+  g_string_append (buffer, "</result>");
+}
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -5249,114 +5390,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_report_data->max_results);
             while (next (&results))
               {
-                const char *descr = result_iterator_descr (&results);
-                gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
-                const char *name = result_iterator_nvt_name (&results);
-                char *uuid;
-
-                result_uuid (result_iterator_result (&results), &uuid);
-
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<result id=\"%s\">"
-                  "<subnet>%s</subnet>"
-                  "<host>%s</host>"
-                  "<port>%s</port>"
-                  "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                  "<threat>%s</threat>"
-                  "<description>%s</description>",
-                  uuid,
-                  result_iterator_subnet (&results),
-                  result_iterator_host (&results),
-                  result_iterator_port (&results),
-                  result_iterator_nvt_oid (&results),
-                  name ? name : "",
-                  result_type_threat (result_iterator_type (&results)),
-                  descr ? nl_descr : "");
-
-                free (uuid);
-
-                if (descr) g_free (nl_descr);
-
-                if (get_report_data->notes)
-                  {
-                    iterator_t notes;
-
-                    SEND_TO_CLIENT_OR_FAIL ("<notes>");
-
-                    init_note_iterator (&notes,
-                                        0,
-                                        result_iterator_result (&results),
-                                        1,
-                                        "modification_time");
-                    if (get_report_data->notes_details == 0)
-                      while (next (&notes))
-                        SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
-                                                 "<nvt oid=\"%s\">"
-                                                 "<name>%s</name>"
-                                                 "</nvt>"
-                                                 "</note>",
-                                                 note_iterator_uuid (&notes),
-                                                 note_iterator_nvt_oid (&notes),
-                                                 note_iterator_nvt_name
-                                                  (&notes));
-                    else
-                      while (next (&notes))
-                        {
-                          char *uuid_task, *uuid_result;
-                          time_t creation_time, mod_time;
-
-                          if (note_iterator_task (&notes))
-                            task_uuid (note_iterator_task (&notes),
-                                       &uuid_task);
-                          else
-                            uuid_task = NULL;
-
-                          if (note_iterator_result (&notes))
-                            result_uuid (note_iterator_result (&notes),
-                                         &uuid_result);
-                          else
-                            uuid_result = NULL;
-
-                          creation_time = note_iterator_creation_time (&notes);
-                          mod_time = note_iterator_modification_time (&notes);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<note id=\"%s\">"
-                            "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                            "<creation_time>%s</creation_time>"
-                            "<modification_time>%s</modification_time>"
-                            "<text>%s</text>"
-                            "<hosts>%s</hosts>"
-                            "<port>%s</port>"
-                            "<threat>%s</threat>"
-                            "<task id=\"%s\"/>"
-                            "<result id=\"%s\"/>"
-                            "</note>",
-                            note_iterator_uuid (&notes),
-                            note_iterator_nvt_oid (&notes),
-                            note_iterator_nvt_name (&notes),
-                            ctime_strip_newline (&creation_time),
-                            ctime_strip_newline (&mod_time),
-                            note_iterator_text (&notes),
-                            note_iterator_hosts (&notes)
-                             ? note_iterator_hosts (&notes) : "",
-                            note_iterator_port (&notes)
-                             ? note_iterator_port (&notes) : "",
-                            note_iterator_threat (&notes)
-                             ? note_iterator_threat (&notes) : "",
-                            uuid_task ? uuid_task : "",
-                            uuid_result ? uuid_result : "");
-
-                          free (uuid_task);
-                          free (uuid_result);
-                        }
-                    cleanup_iterator (&notes);
-
-                    SEND_TO_CLIENT_OR_FAIL ("</notes>");
-                  }
-                SEND_TO_CLIENT_OR_FAIL ("</result>");
+                GString *buffer = g_string_new ("");
+                buffer_results_xml (buffer,
+                                    &results,
+                                    get_report_data->notes,
+                                    get_report_data->notes_details);
+                SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                g_string_free (buffer, TRUE);
               }
-            SENDF_TO_CLIENT_OR_FAIL ("</results>");
+            SEND_TO_CLIENT_OR_FAIL ("</results>");
             cleanup_iterator (&results);
 
             init_host_iterator (&hosts, report);
