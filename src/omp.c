@@ -295,6 +295,7 @@ static char* help_text = "\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
+"    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_STATUS             Get task status information.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
@@ -610,6 +611,22 @@ get_report_data_reset (get_report_data_t *data)
 
 typedef struct
 {
+  char *result_id;
+  char *task_id;
+  int notes;
+  int notes_details;
+} get_results_data_t;
+
+static void
+get_results_data_reset (get_results_data_t *data)
+{
+  free (data->result_id);
+  free (data->task_id);
+  memset (data, 0, sizeof (get_results_data_t));
+}
+
+typedef struct
+{
   char *name;
   char *duration;
 } get_system_reports_data_t;
@@ -629,6 +646,7 @@ typedef union
   delete_note_data_t delete_note;
   get_notes_data_t get_notes;
   get_report_data_t get_report;
+  get_results_data_t get_results;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
 } command_data_t;
@@ -679,6 +697,12 @@ get_notes_data_t *get_notes_data
  */
 get_report_data_t *get_report_data
  = &(command_data.get_report);
+
+/**
+ * @brief Parser callback data for GET_RESULTS.
+ */
+get_results_data_t *get_results_data
+ = &(command_data.get_results);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
@@ -938,6 +962,7 @@ typedef enum
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
+  CLIENT_GET_RESULTS,
   CLIENT_GET_RULES,
   CLIENT_GET_STATUS,
   CLIENT_GET_SYSTEM_REPORTS,
@@ -1679,6 +1704,32 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT);
           }
+        else if (strcasecmp ("GET_RESULTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "result_id", &attribute))
+              openvas_append_string (&get_results_data->result_id, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              openvas_append_string (&get_results_data->task_id, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "notes", &attribute))
+              get_results_data->notes = strcmp (attribute, "0");
+            else
+              get_results_data->notes = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "notes_details", &attribute))
+              get_results_data->notes_details = strcmp (attribute, "0");
+            else
+              get_results_data->notes_details = 0;
+
+            set_client_state (CLIENT_GET_RESULTS);
+          }
         else if (strcasecmp ("GET_RULES", element_name) == 0)
           set_client_state (CLIENT_GET_RULES);
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
@@ -2212,6 +2263,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORT:
         if (send_element_error_to_client ("get_report", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_GET_RESULTS:
+        if (send_element_error_to_client ("get_results", element_name))
           {
             error_send_to_client (error);
             return;
@@ -3455,7 +3519,7 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
              host_iterator_start_time (&hosts));
   cleanup_iterator (&hosts);
 
-  init_result_iterator (&results, report, NULL,
+  init_result_iterator (&results, report, 0, NULL,
                         get_report_data->first_result,
                         get_report_data->max_results,
                         ascending,
@@ -4193,7 +4257,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                "\\hline\n"
                "\\endlastfoot\n");
 
-      init_result_iterator (&results, report, host,
+      init_result_iterator (&results, report, 0, host,
                             get_report_data->first_result,
                             get_report_data->max_results,
                             ascending,
@@ -4227,7 +4291,7 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
 
       /* Print the result details. */
 
-      init_result_iterator (&results, report, host,
+      init_result_iterator (&results, report, 0, host,
                             get_report_data->first_result,
                             get_report_data->max_results,
                             ascending,
@@ -5261,7 +5325,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
               init_result_iterator
-               (&results, report, NULL,
+               (&results, report, 0, NULL,
                 get_report_data->first_result,
                 get_report_data->max_results,
                 /* Sort by port in order requested. */
@@ -5377,7 +5441,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             /* Results. */
 
-            init_result_iterator (&results, report, NULL,
+            init_result_iterator (&results, report, 0, NULL,
                                   get_report_data->first_result,
                                   get_report_data->max_results,
                                   get_report_data->sort_order,
@@ -5443,7 +5507,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       host_iterator_start_time (&hosts));
             cleanup_iterator (&hosts);
 
-            init_result_iterator (&results, report, NULL,
+            init_result_iterator (&results, report, 0, NULL,
                                   get_report_data->first_result,
                                   get_report_data->max_results,
                                   get_report_data->sort_order,
@@ -5912,6 +5976,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         get_report_data_reset (get_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_GET_RESULTS:
+        {
+          result_t result;
+          task_t task;
+
+          assert (strcasecmp ("GET_RESULTS", element_name) == 0);
+
+          if (current_credentials.username == NULL)
+            {
+              get_results_data_reset (get_results_data);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          if (get_results_data->result_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_results",
+                                "GET_RESULTS must have a result_id attribute"));
+          else if (get_results_data->task_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_results",
+                                "GET_RESULTS must have a task_id attribute"));
+          else if (find_result (get_results_data->result_id, &result))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+          else if (result == 0)
+            {
+              if (send_find_error_to_client ("get_results",
+                                             "result",
+                                             get_results_data->result_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (find_task (get_results_data->task_id, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
+          else if (task == 0)
+            {
+              if (send_find_error_to_client ("get_results",
+                                             "task",
+                                             get_results_data->task_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">"
+                                      "<results>");
+              init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
+                                    NULL, NULL);
+              while (next (&results))
+                {
+                  GString *buffer = g_string_new ("");
+                  buffer_results_xml (buffer,
+                                      &results,
+                                      task,
+                                      get_results_data->notes,
+                                      get_results_data->notes_details);
+                  SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                  g_string_free (buffer, TRUE);
+                }
+              cleanup_iterator (&results);
+              SEND_TO_CLIENT_OR_FAIL ("</results>"
+                                      "</get_results_response>");
+            }
+
+          get_results_data_reset (get_results_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_RULES:
         if (scanner.rules)

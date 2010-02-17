@@ -1,3 +1,21 @@
+2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP GET_RESULTS.
+
+	* src/tasks_sql.h (init_result_iterator): Add result arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c: Add result arg to init_result_iterator calls.
+	(help_text): Add GET_RESULTS.
+	(get_results_data_t): New type.
+	(get_results_data_reset): New function.
+	(command_data_t): Add get_results.
+	(get_results_data): New variable.
+	(client_state_t): Add CLIENT_GET_RESULTS.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_RESULTS handling.
+
 2010-02-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): When creating a task, break

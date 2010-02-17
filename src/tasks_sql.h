@@ -5458,8 +5458,10 @@ where_search_phrase (const char* search_phrase)
  * to sort_field.
  *
  * @param[in]  iterator       Iterator.
- * @param[in]  report         Report whose results the iterator loops over.
- *                            All results if NULL.
+ * @param[in]  report         Report whose results the iterator loops over,
+ *                            or 0 to use result.
+ * @param[in]  result         Single result to iterate over.  Overridden by
+ *                            report.
  * @param[in]  host           Host whose results the iterator loops over.  All
  *                            results if NULL.  Only considered if report given.
  * @param[in]  first_result   The result to start from.  The results are 0
@@ -5475,89 +5477,98 @@ where_search_phrase (const char* search_phrase)
  *                            NULL or "".
  */
 void
-init_result_iterator (iterator_t* iterator, report_t report, const char* host,
-                      int first_result, int max_results, int ascending,
-                      const char* sort_field, const char* levels,
+init_result_iterator (iterator_t* iterator, report_t report, result_t result,
+                      const char* host, int first_result, int max_results,
+                      int ascending, const char* sort_field, const char* levels,
                       const char* search_phrase)
 {
   GString *levels_sql, *phrase_sql;
   gchar* sql;
 
-  assert (report);
-
-  if (sort_field == NULL) sort_field = "type";
-  if (levels == NULL) levels = "hmlgd";
-
-  levels_sql = where_levels (levels);
-  phrase_sql = where_search_phrase (search_phrase);
+  assert (report || result);
 
   /* Allocate the query. */
 
-  if (host)
-    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                           " type, description"
-                           " FROM results, report_results"
-                           " WHERE report_results.report = %llu"
-                           "%s"
-                           " AND report_results.result = results.ROWID"
-                           " AND results.host = '%s'"
-                           "%s"
-                           "%s"
-                           " LIMIT %i OFFSET %i;",
-                           report,
-                           levels_sql ? levels_sql->str : "",
-                           host,
-                           phrase_sql ? phrase_sql->str : "",
-                           ascending
-                            ? ((strcmp (sort_field, "port") == 0)
-                                ? " ORDER BY"
-                                  " port,"
-                                  " type COLLATE collate_message_type DESC"
-                                : " ORDER BY"
-                                  " type COLLATE collate_message_type,"
-                                  " port")
-                            : ((strcmp (sort_field, "port") == 0)
-                                ? " ORDER BY"
-                                  " port DESC,"
-                                  " type COLLATE collate_message_type DESC"
-                                : " ORDER BY"
-                                  " type COLLATE collate_message_type DESC,"
-                                  " port"),
-                           max_results,
-                           first_result);
-  else
-    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                           " type, description"
-                           " FROM results, report_results"
-                           " WHERE report_results.report = %llu"
-                           "%s"
-                           "%s"
-                           " AND report_results.result = results.ROWID"
-                           "%s"
-                           " LIMIT %i OFFSET %i;",
-                           report,
-                           levels_sql ? levels_sql->str : "",
-                           phrase_sql ? phrase_sql->str : "",
-                           ascending
-                            ? ((strcmp (sort_field, "port") == 0)
-                                ? " ORDER BY host,"
-                                  " port,"
-                                  " type COLLATE collate_message_type DESC"
-                                : " ORDER BY host,"
-                                  " type COLLATE collate_message_type,"
-                                  " port")
-                            : ((strcmp (sort_field, "port") == 0)
-                                ? " ORDER BY host,"
-                                  " port DESC,"
-                                  " type COLLATE collate_message_type DESC"
-                                : " ORDER BY host,"
-                                  " type COLLATE collate_message_type DESC,"
-                                  " port"),
-                           max_results,
-                           first_result);
+  if (report)
+    {
+      if (sort_field == NULL) sort_field = "type";
+      if (levels == NULL) levels = "hmlgd";
 
-  if (levels_sql) g_string_free (levels_sql, TRUE);
-  if (phrase_sql) g_string_free (phrase_sql, TRUE);
+      levels_sql = where_levels (levels);
+      phrase_sql = where_search_phrase (search_phrase);
+
+      if (host)
+        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+                               " type, description"
+                               " FROM results, report_results"
+                               " WHERE report_results.report = %llu"
+                               "%s"
+                               " AND report_results.result = results.ROWID"
+                               " AND results.host = '%s'"
+                               "%s"
+                               "%s"
+                               " LIMIT %i OFFSET %i;",
+                               report,
+                               levels_sql ? levels_sql->str : "",
+                               host,
+                               phrase_sql ? phrase_sql->str : "",
+                               ascending
+                                ? ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY"
+                                      " port,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY"
+                                      " type COLLATE collate_message_type,"
+                                      " port")
+                                : ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY"
+                                      " port DESC,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY"
+                                      " type COLLATE collate_message_type DESC,"
+                                      " port"),
+                               max_results,
+                               first_result);
+      else
+        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+                               " type, description"
+                               " FROM results, report_results"
+                               " WHERE report_results.report = %llu"
+                               "%s"
+                               "%s"
+                               " AND report_results.result = results.ROWID"
+                               "%s"
+                               " LIMIT %i OFFSET %i;",
+                               report,
+                               levels_sql ? levels_sql->str : "",
+                               phrase_sql ? phrase_sql->str : "",
+                               ascending
+                                ? ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host,"
+                                      " port,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY host,"
+                                      " type COLLATE collate_message_type,"
+                                      " port")
+                                : ((strcmp (sort_field, "port") == 0)
+                                    ? " ORDER BY host,"
+                                      " port DESC,"
+                                      " type COLLATE collate_message_type DESC"
+                                    : " ORDER BY host,"
+                                      " type COLLATE collate_message_type DESC,"
+                                      " port"),
+                               max_results,
+                               first_result);
+
+      if (levels_sql) g_string_free (levels_sql, TRUE);
+      if (phrase_sql) g_string_free (phrase_sql, TRUE);
+    }
+  else
+    sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
+                           " type, description"
+                           " FROM results"
+                           " WHERE ROWID = %llu;",
+                           result);
 
   init_iterator (iterator, sql);
   g_free (sql);

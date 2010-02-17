@@ -644,8 +644,8 @@ void
 init_report_iterator (iterator_t*, task_t);
 
 void
-init_result_iterator (iterator_t*, task_t, const char*, int, int, int,
-                      const char *, const char *, const char *);
+init_result_iterator (iterator_t*, task_t, result_t, const char*, int, int,
+                      int, const char *, const char *, const char *);
 
 gboolean
 next_report (iterator_t*, report_t*);
