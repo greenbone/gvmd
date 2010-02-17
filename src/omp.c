@@ -4804,12 +4804,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_notes_data->sort_order,
                                   get_notes_data->sort_field);
               while (next (&notes))
-                SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
-                                         "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                                         "</note>",
-                                         note_iterator_uuid (&notes),
-                                         note_iterator_nvt_oid (&notes),
-                                         note_iterator_nvt_name (&notes));
+                {
+                  const char *text = note_iterator_text (&notes);
+                  gchar *excerpt = g_strndup (text, 40);
+                  SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
+                                           "<nvt oid=\"%s\">"
+                                           "<name>%s</name>"
+                                           "</nvt>"
+                                           "<text excerpt=\"%i\">%s</text>"
+                                           "</note>",
+                                           note_iterator_uuid (&notes),
+                                           note_iterator_nvt_oid (&notes),
+                                           note_iterator_nvt_name (&notes),
+                                           strlen (excerpt) < strlen (text),
+                                           excerpt);
+                  g_free (excerpt);
+                }
               cleanup_iterator (&notes);
 
               SEND_TO_CLIENT_OR_FAIL ("</get_notes_response>");
