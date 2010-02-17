@@ -1,5 +1,10 @@
 2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT in the XML
+	case include notes in filter details.
+
+2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP GET_RESULTS.
 
 	* src/tasks_sql.h (init_result_iterator): Add result arg.

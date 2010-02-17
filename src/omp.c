@@ -5260,7 +5260,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "<sort><field>%s<order>%s</order></field></sort>"
               "<filters>"
               "%s"
-              "<phrase>%s</phrase>",
+              "<phrase>%s</phrase>"
+              "<notes>%i</notes>",
               get_report_data->report_id,
               get_report_data->sort_field ? get_report_data->sort_field
                                           : "type",
@@ -5268,7 +5269,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               levels,
               get_report_data->search_phrase
                 ? get_report_data->search_phrase
-                : "");
+                : "",
+              get_report_data->notes ? 1 : 0);
 
             if (strchr (levels, 'h'))
               SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
