@@ -1,3 +1,8 @@
+2010-02-17  Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* src/omp.c (omp_xml_handle_end_element): When creating a task, break
+	if malcondition was found. Free modify_task_name in success condition.
+
 2010-02-16  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (insert_nvt_selectors): Set family when inserting family

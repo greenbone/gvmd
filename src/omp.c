@@ -7662,6 +7662,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
               current_client_task = (task_t) 0;
+              openvas_free_string_var (&modify_task_name);
               openvas_free_string_var (&current_uuid);
               openvas_free_string_var (&current_name);
               set_client_state (CLIENT_AUTHENTIC);
@@ -7691,6 +7692,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&modify_task_name);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -7710,6 +7712,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("create_task",
                       "CREATE_TASK rcfile must have targets"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&modify_task_name);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -7727,6 +7730,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_task"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&modify_task_name);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -7741,6 +7745,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               current_client_task = (task_t) 0;
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
             }
           else if (config == 0)
             {
@@ -7754,6 +7763,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   error_send_to_client (error);
                   return;
                 }
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
             }
           else if (find_target (current_name, &target))
             {
@@ -7761,6 +7775,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               current_client_task = (task_t) 0;
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
             }
           else if (target == 0)
             {
@@ -7771,9 +7790,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              "target",
                                              current_name))
                 {
+                  // Out of space
                   error_send_to_client (error);
                   return;
                 }
+              openvas_free_string_var (&modify_task_name);
+              openvas_free_string_var (&current_uuid);
+              openvas_free_string_var (&current_name);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
             }
           else
             {
@@ -7790,6 +7815,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("create_task",
                                       "Failed to generate task rcfile"));
                   current_client_task = (task_t) 0;
+                  openvas_free_string_var (&modify_task_name);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -7815,6 +7841,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           g_free (msg);
           current_client_task = (task_t) 0;
+          openvas_free_string_var (&modify_task_name);
           openvas_free_string_var (&current_uuid);
           openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
