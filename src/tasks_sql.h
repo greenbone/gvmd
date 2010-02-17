@@ -11714,7 +11714,23 @@ note_iterator_modification_time (iterator_t* iterator)
 DEF_ACCESS (note_iterator_text, 5);
 DEF_ACCESS (note_iterator_hosts, 6);
 DEF_ACCESS (note_iterator_port, 7);
-DEF_ACCESS (note_iterator_threat, 8);
+
+/**
+ * @brief Get the threat from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Threat.
+ */
+const char *
+note_iterator_threat (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 8);
+  if (ret == NULL) return NULL;
+  return message_type_threat (ret);
+}
 
 /**
  * @brief Get the task from a note iterator.

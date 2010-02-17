@@ -1,5 +1,11 @@
 2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (message_type_threat): New function.
+
+	* src/tasks_sql.h (note_iterator_threat): Convert message type to threat.
+
+2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add a details flag to OMP GET_NOTES.
 
 	* src/omp.c (get_results_data_t): Add details.

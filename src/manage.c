@@ -124,6 +124,29 @@ threat_message_type (const char *threat)
   return NULL;
 }
 
+/**
+ * @brief Get the threat of a message type.
+ *
+ * @param  type  Message type.
+ *
+ * @return Static threat name if type names a message type, else NULL.
+ */
+static const char *
+message_type_threat (const char *type)
+{
+  if (strcasecmp (type, "Security Hole") == 0)
+    return "High";
+  if (strcasecmp (type, "Security Warning") == 0)
+    return "Medium";
+  if (strcasecmp (type, "Security Note") == 0)
+    return "Low";
+  if (strcasecmp (type, "Log Message") == 0)
+    return "Log";
+  if (strcasecmp (type, "Debug Message") == 0)
+    return "Debug";
+  return NULL;
+}
+
 
 /* Arrays. */
 
