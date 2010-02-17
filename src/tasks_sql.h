@@ -11584,16 +11584,19 @@ delete_note (note_t note)
  * @param[in]  note        Single note to iterate, 0 for all.
  * @param[in]  result      Result to limit notes to, 0 for all.
  * @param[in]  task        Task to limit notes to, 0 for all.
+ * @param[in]  nvt         NVT to limit notes to, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_note_iterator (iterator_t* iterator, note_t note, result_t result,
-                    task_t task, int ascending, const char* sort_field)
+init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
+                    result_t result, task_t task, int ascending,
+                    const char* sort_field)
 {
   gchar *result_clause;
 
   assert (current_credentials.uuid);
+  assert ((nvt && note) == 0);
 
   if (result)
     result_clause = g_strdup_printf (" AND"
@@ -11637,6 +11640,21 @@ init_note_iterator (iterator_t* iterator, note_t note, result_t result,
                    "%s"
                    " ORDER BY %s %s;",
                    note,
+                   current_credentials.uuid,
+                   result_clause ? result_clause : "",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else if (nvt)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
+                   " text, hosts, port, threat, task, result"
+                   " FROM notes"
+                   " WHERE (nvt = (SELECT oid FROM nvts WHERE ROWID = %llu))"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   nvt,
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
                    sort_field ? sort_field : "ROWID",

@@ -1100,7 +1100,8 @@ int
 delete_note (note_t);
 
 void
-init_note_iterator (iterator_t*, note_t, result_t, task_t, int, const char*);
+init_note_iterator (iterator_t*, note_t, nvt_t, result_t, task_t, int,
+                    const char*);
 
 const char*
 note_iterator_uuid (iterator_t*);

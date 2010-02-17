@@ -1,5 +1,20 @@
 2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add NVT to OMP GET_NOTES.
+
+	* src/tasks_sql.h (init_note_iterator): Add nvt arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c: Update init_note_iterator callers.
+	(get_results_data_t): Add nvt_oid.
+	(get_notes_data_reset): Free nvt_oid.
+	(client_state_t): Add CLIENT_GET_NOTES_NVT.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add NVT to
+	GET_NOTES.
+
+2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NOTES also send
 	the note text.
 

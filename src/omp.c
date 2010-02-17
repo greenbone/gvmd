@@ -573,6 +573,7 @@ name_command_data_reset (name_command_data_t *data)
 typedef struct
 {
   char *note_id;
+  char *nvt_oid;
   char *sort_field;
   int sort_order;
 } get_notes_data_t;
@@ -581,6 +582,7 @@ static void
 get_notes_data_reset (get_notes_data_t *data)
 {
   free (data->note_id);
+  free (data->nvt_oid);
   memset (data, 0, sizeof (get_notes_data_t));
 }
 
@@ -956,6 +958,7 @@ typedef enum
   CLIENT_GET_ESCALATORS,
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
+  CLIENT_GET_NOTES_NVT,
   CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_FAMILIES,
@@ -2177,6 +2180,29 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NOTES:
+        if (strcasecmp ("NVT", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&get_notes_data->nvt_oid, attribute);
+            set_client_state (CLIENT_GET_NOTES_NVT);
+          }
+        else
+          {
+            if (send_element_error_to_client ("get_notes", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+      case CLIENT_GET_NOTES_NVT:
         if (send_element_error_to_client ("get_notes", element_name))
           {
             error_send_to_client (error);
@@ -4459,6 +4485,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
       init_note_iterator (&notes,
                           0,
+                          0,
                           result_iterator_result (results),
                           task,
                           1,
@@ -4773,10 +4800,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NOTES:
         {
           note_t note = 0;
+          nvt_t nvt = 0;
 
           assert (strcasecmp ("GET_NOTES", element_name) == 0);
 
-          if (get_notes_data->note_id
+          if (get_notes_data->note_id && get_notes_data->nvt_oid)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_notes",
+                                "Only one of NVT and the note attribute may be given"));
+          else if (get_notes_data->note_id
               && find_note (get_notes_data->note_id, &note))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
           else if (get_notes_data->note_id && note == 0)
@@ -4784,6 +4816,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (send_find_error_to_client ("get_notes",
                                              "note",
                                              get_notes_data->note_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (get_notes_data->nvt_oid
+                   && find_nvt (get_notes_data->nvt_oid, &nvt))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_notes"));
+          else if (get_notes_data->nvt_oid && nvt == 0)
+            {
+              if (send_find_error_to_client ("get_notes",
+                                             "NVT",
+                                             get_notes_data->nvt_oid))
                 {
                   error_send_to_client (error);
                   return;
@@ -4799,6 +4844,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_note_iterator (&notes,
                                   note,
+                                  nvt,
                                   0,
                                   0,
                                   get_notes_data->sort_order,
@@ -4829,6 +4875,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      case CLIENT_GET_NOTES_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_GET_NOTES);
+        break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         {
