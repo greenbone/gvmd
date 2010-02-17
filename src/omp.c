@@ -576,6 +576,7 @@ typedef struct
   char *nvt_oid;
   char *sort_field;
   int sort_order;
+  int details;
 } get_notes_data_t;
 
 static void
@@ -1587,6 +1588,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (find_attribute (attribute_names, attribute_values,
                                 "note_id", &attribute))
               openvas_append_string (&get_notes_data->note_id, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_notes_data->details = strcmp (attribute, "0");
+            else
+              get_notes_data->details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
@@ -4437,6 +4444,95 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
 }
 
 /**
+ * @brief Buffer XML for some notes.
+ *
+ * @param[in]  notes                  Notes iterator.
+ * @param[in]  include_notes_details  Whether to include details of notes.
+ */
+static void
+buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
+{
+  if (include_notes_details == 0)
+    while (next (notes))
+      {
+        const char *text = note_iterator_text (notes);
+        gchar *excerpt = g_strndup (text, 40);
+        buffer_xml_append_printf (buffer,
+                                  "<note id=\"%s\">"
+                                  "<nvt oid=\"%s\">"
+                                  "<name>%s</name>"
+                                  "</nvt>"
+                                  "<text excerpt=\"%i\">%s</text>"
+                                  "</note>",
+                                  note_iterator_uuid (notes),
+                                  note_iterator_nvt_oid (notes),
+                                  note_iterator_nvt_name (notes),
+                                  strlen (excerpt) < strlen (text),
+                                  excerpt);
+        g_free (excerpt);
+      }
+  else
+    while (next (notes))
+      {
+        char *uuid_task, *name_task, *uuid_result;
+        time_t creation_time, mod_time;
+
+        if (note_iterator_task (notes))
+          task_uuid (note_iterator_task (notes),
+                     &uuid_task);
+        else
+          uuid_task = NULL;
+
+        if (uuid_task)
+          name_task = task_name (note_iterator_task (notes));
+        else
+          name_task = NULL;
+
+        if (note_iterator_result (notes))
+          result_uuid (note_iterator_result (notes),
+                       &uuid_result);
+        else
+          uuid_result = NULL;
+
+        creation_time = note_iterator_creation_time (notes);
+        mod_time = note_iterator_modification_time (notes);
+
+        buffer_xml_append_printf
+         (buffer,
+          "<note id=\"%s\">"
+          "<nvt oid=\"%s\"><name>%s</name></nvt>"
+          "<creation_time>%s</creation_time>"
+          "<modification_time>%s</modification_time>"
+          "<text>%s</text>"
+          "<hosts>%s</hosts>"
+          "<port>%s</port>"
+          "<threat>%s</threat>"
+          "<task id=\"%s\"><name>%s</name></task>"
+          "<result id=\"%s\"/>"
+          "</note>",
+          note_iterator_uuid (notes),
+          note_iterator_nvt_oid (notes),
+          note_iterator_nvt_name (notes),
+          ctime_strip_newline (&creation_time),
+          ctime_strip_newline (&mod_time),
+          note_iterator_text (notes),
+          note_iterator_hosts (notes)
+           ? note_iterator_hosts (notes) : "",
+          note_iterator_port (notes)
+           ? note_iterator_port (notes) : "",
+          note_iterator_threat (notes)
+           ? note_iterator_threat (notes) : "",
+          uuid_task ? uuid_task : "",
+          name_task ? name_task : "",
+          uuid_result ? uuid_result : "");
+
+        free (uuid_task);
+        free (name_task);
+        free (uuid_result);
+      }
+}
+
+/**
  * @brief Buffer XML for some results.
  *
  * @param[in]  results                Result iterator.
@@ -4490,70 +4586,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           task,
                           1,
                           "modification_time");
-      if (include_notes_details == 0)
-        while (next (&notes))
-          buffer_xml_append_printf (buffer,
-                                    "<note id=\"%s\">"
-                                    "<nvt oid=\"%s\">"
-                                    "<name>%s</name>"
-                                    "</nvt>"
-                                    "</note>",
-                                    note_iterator_uuid (&notes),
-                                    note_iterator_nvt_oid (&notes),
-                                    note_iterator_nvt_name
-                                     (&notes));
-      else
-        while (next (&notes))
-          {
-            char *uuid_task, *uuid_result;
-            time_t creation_time, mod_time;
-
-            if (note_iterator_task (&notes))
-              task_uuid (note_iterator_task (&notes),
-                         &uuid_task);
-            else
-              uuid_task = NULL;
-
-            if (note_iterator_result (&notes))
-              result_uuid (note_iterator_result (&notes),
-                           &uuid_result);
-            else
-              uuid_result = NULL;
-
-            creation_time = note_iterator_creation_time (&notes);
-            mod_time = note_iterator_modification_time (&notes);
-
-            buffer_xml_append_printf
-             (buffer,
-              "<note id=\"%s\">"
-              "<nvt oid=\"%s\"><name>%s</name></nvt>"
-              "<creation_time>%s</creation_time>"
-              "<modification_time>%s</modification_time>"
-              "<text>%s</text>"
-              "<hosts>%s</hosts>"
-              "<port>%s</port>"
-              "<threat>%s</threat>"
-              "<task id=\"%s\"/>"
-              "<result id=\"%s\"/>"
-              "</note>",
-              note_iterator_uuid (&notes),
-              note_iterator_nvt_oid (&notes),
-              note_iterator_nvt_name (&notes),
-              ctime_strip_newline (&creation_time),
-              ctime_strip_newline (&mod_time),
-              note_iterator_text (&notes),
-              note_iterator_hosts (&notes)
-               ? note_iterator_hosts (&notes) : "",
-              note_iterator_port (&notes)
-               ? note_iterator_port (&notes) : "",
-              note_iterator_threat (&notes)
-               ? note_iterator_threat (&notes) : "",
-              uuid_task ? uuid_task : "",
-              uuid_result ? uuid_result : "");
-
-            free (uuid_task);
-            free (uuid_result);
-          }
+      buffer_notes_xml (buffer, &notes, include_notes_details);
       cleanup_iterator (&notes);
 
       g_string_append (buffer, "</notes>");
@@ -4837,10 +4870,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t notes;
+              GString *buffer;
 
               SENDF_TO_CLIENT_OR_FAIL ("<get_notes_response"
                                        " status=\"" STATUS_OK "\""
                                        " status_text=\"" STATUS_OK_TEXT "\">");
+
+              buffer = g_string_new ("");
 
               init_note_iterator (&notes,
                                   note,
@@ -4849,24 +4885,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   0,
                                   get_notes_data->sort_order,
                                   get_notes_data->sort_field);
-              while (next (&notes))
-                {
-                  const char *text = note_iterator_text (&notes);
-                  gchar *excerpt = g_strndup (text, 40);
-                  SENDF_TO_CLIENT_OR_FAIL ("<note id=\"%s\">"
-                                           "<nvt oid=\"%s\">"
-                                           "<name>%s</name>"
-                                           "</nvt>"
-                                           "<text excerpt=\"%i\">%s</text>"
-                                           "</note>",
-                                           note_iterator_uuid (&notes),
-                                           note_iterator_nvt_oid (&notes),
-                                           note_iterator_nvt_name (&notes),
-                                           strlen (excerpt) < strlen (text),
-                                           excerpt);
-                  g_free (excerpt);
-                }
+              buffer_notes_xml (buffer, &notes, get_notes_data->details);
               cleanup_iterator (&notes);
+
+              SEND_TO_CLIENT_OR_FAIL (buffer->str);
+              g_string_free (buffer, TRUE);
 
               SEND_TO_CLIENT_OR_FAIL ("</get_notes_response>");
             }
