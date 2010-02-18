@@ -1,5 +1,9 @@
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (buffer_results_xml): Sort notes most recent first.
+
+2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add TASK to OMP GET_NOTES.
 
 	* src/omp.c (get_notes_data_t): Add task_id.

@@ -4607,7 +4607,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           0,
                           result_iterator_result (results),
                           task,
-                          1,
+                          0, /* Most recent first. */
                           "modification_time");
       buffer_notes_xml (buffer, &notes, include_notes_details);
       cleanup_iterator (&notes);
