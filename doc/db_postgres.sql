@@ -187,4 +187,4 @@ CREATE TABLE notes (
 	port text,
 	threat text,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-	report integer REFERENCES reports (id) ON DELETE RESTRICT);
+	result integer REFERENCES results (id) ON DELETE RESTRICT);

@@ -1,3 +1,9 @@
+2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* doc/db_postgres.sql (notes): Link to result instead of report.
+
+	* doc/db.png: New file.
+
 2010-02-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage.c (message_type_threat): New function.
