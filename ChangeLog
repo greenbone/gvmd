@@ -1,5 +1,19 @@
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add TASK to OMP GET_NOTES.
+
+	* src/omp.c (get_notes_data_t): Add task_id.
+	(get_notes_data_reset): Free task_id.
+	(client_state_t): Add CLIENT_GET_NOTES_TASK.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add NVT to
+	GET_NOTES.
+
+	* src/tasks_sql.h (NOTE_COLUMNS): New define.
+	(init_note_iterator): If result is 0 and task is above 0, then select
+	all notes on the task, otherwise select all notes on the result as before.
+
+2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* ChangeLog: Restore overwritten entry.
 
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
@@ -34,7 +48,7 @@
 	* src/manage.h: Update header accordingly.
 
 	* src/omp.c: Update init_note_iterator callers.
-	(get_results_data_t): Add nvt_oid.
+	(get_notes_data_t): Add nvt_oid.
 	(get_notes_data_reset): Free nvt_oid.
 	(client_state_t): Add CLIENT_GET_NOTES_NVT.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add NVT to

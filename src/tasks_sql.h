@@ -11577,13 +11577,20 @@ delete_note (note_t note)
   return 0;
 }
 
+#define NOTE_COLUMNS "notes.ROWID, notes.uuid, notes.nvt,"                 \
+                     " notes.creation_time, notes.modification_time,"      \
+                     " notes.text, notes.hosts, notes.port, notes.threat," \
+                     " notes.task, notes.result"
+
 /**
  * @brief Initialise a note iterator.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  note        Single note to iterate, 0 for all.
  * @param[in]  result      Result to limit notes to, 0 for all.
- * @param[in]  task        Task to limit notes to, 0 for all.
+ * @param[in]  task        If result is > 0, task whose notes on result to
+ *                         include, otherwise task to limit notes to.  0 for
+ *                         all tasks.
  * @param[in]  nvt         NVT to limit notes to, 0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
@@ -11593,10 +11600,11 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                     result_t result, task_t task, int ascending,
                     const char* sort_field)
 {
-  gchar *result_clause;
+  gchar *result_clause, *join_clause = NULL;
 
   assert (current_credentials.uuid);
   assert ((nvt && note) == 0);
+  assert ((task && note) == 0);
 
   if (result)
     result_clause = g_strdup_printf (" AND"
@@ -11626,13 +11634,27 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                                      result,
                                      result,
                                      task);
+  else if (task)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (notes.task = %llu OR notes.task = 0)"
+                        " AND reports.task = %llu"
+                        " AND reports.ROWID = report_results.report"
+                        " AND report_results.result = results.ROWID"
+                        " AND results.nvt = notes.nvt"
+                        " AND"
+                        " (notes.result = 0"
+                        "  OR report_results.result = notes.result)",
+                        task,
+                        task);
+      join_clause = g_strdup (", reports, report_results, results");
+    }
   else
     result_clause = NULL;
 
   if (note)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
-                   " text, hosts, port, threat, task, result"
+                   "SELECT " NOTE_COLUMNS
                    " FROM notes"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -11646,14 +11668,15 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    ascending ? "ASC" : "DESC");
   else if (nvt)
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
-                   " text, hosts, port, threat, task, result"
-                   " FROM notes"
-                   " WHERE (nvt = (SELECT oid FROM nvts WHERE ROWID = %llu))"
-                   " AND ((owner IS NULL) OR (owner ="
+                   "SELECT DISTINCT " NOTE_COLUMNS
+                   " FROM notes%s"
+                   " WHERE (notes.nvt ="
+                   " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                   " AND ((notes.owner IS NULL) OR (notes.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s"
-                   " ORDER BY %s %s;",
+                   " ORDER BY notes.%s %s;",
+                   join_clause ? join_clause : "",
                    nvt,
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
@@ -11661,19 +11684,20 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, uuid, nvt, creation_time, modification_time,"
-                   " text, hosts, port, threat, task, result"
-                   " FROM notes"
-                   " WHERE ((owner IS NULL) OR (owner ="
+                   "SELECT DISTINCT " NOTE_COLUMNS
+                   " FROM notes%s"
+                   " WHERE ((notes.owner IS NULL) OR (notes.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s"
-                   " ORDER BY %s %s;",
+                   " ORDER BY notes.%s %s;",
+                   join_clause ? join_clause : "",
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
 
   g_free (result_clause);
+  g_free (join_clause);
 }
 
 DEF_ACCESS (note_iterator_uuid, 1);
