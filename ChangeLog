@@ -1,6 +1,7 @@
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/omp.c (buffer_results_xml): Sort notes most recent first.
+	* src/tasks_sql.h (init_note_iterator): Remove table specifier from sort
+	columns.
 
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
 

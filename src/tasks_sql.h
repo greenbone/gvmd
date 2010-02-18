@@ -11675,7 +11675,7 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    " AND ((notes.owner IS NULL) OR (notes.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s"
-                   " ORDER BY notes.%s %s;",
+                   " ORDER BY %s %s;",
                    join_clause ? join_clause : "",
                    nvt,
                    current_credentials.uuid,
@@ -11689,7 +11689,7 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    " WHERE ((notes.owner IS NULL) OR (notes.owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
                    "%s"
-                   " ORDER BY notes.%s %s;",
+                   " ORDER BY %s %s;",
                    join_clause ? join_clause : "",
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
