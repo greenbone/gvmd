@@ -71,6 +71,12 @@
 #define G_LOG_DOMAIN "md    omp"
 
 
+/* Static headers. */
+
+static void
+buffer_results_xml (GString *, iterator_t *, task_t, int, int);
+
+
 /* Helper functions. */
 
 /** @brief Return the name of a category.
@@ -3528,6 +3534,7 @@ send_reports (task_t task)
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
+ * @param[in]  task        Task associated with report.
  * @param[in]  xml_file    File name.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
@@ -3535,8 +3542,8 @@ send_reports (task_t task)
  * @return 0 on success, else -1 with errno set.
  */
 static int
-print_report_xml (report_t report, gchar* xml_file, int ascending,
-                  const char* sort_field)
+print_report_xml (report_t report, task_t task, gchar* xml_file,
+                  int ascending, const char* sort_field)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -3585,34 +3592,14 @@ print_report_xml (report_t report, gchar* xml_file, int ascending,
 
   while (next (&results))
     {
-      gchar *descr;
-      const char *name;
-      char *uuid;
-
-      result_uuid (result_iterator_result (&results), &uuid);
-      name = result_iterator_nvt_name (&results);
-      descr = g_markup_escape_text (result_iterator_descr (&results), -1);
-      // FIX as in other <result response below?
-      //gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
-      fprintf (out,
-               "<result id=\"%s\">"
-               "<subnet>%s</subnet>"
-               "<host>%s</host>"
-               "<port>%s</port>"
-               "<nvt oid=\"%s\"><name>%s</name></nvt>"
-               "<type>%s</type>"
-               "<description>%s</description>"
-               "</result>",
-               uuid,
-               result_iterator_subnet (&results),
-               result_iterator_host (&results),
-               result_iterator_port (&results),
-               result_iterator_nvt_oid (&results),
-               name ? name : "",
-               result_iterator_type (&results),
-               descr);
-      free (uuid);
-      g_free (descr);
+      GString *buffer = g_string_new ("");
+      buffer_results_xml (buffer,
+                          &results,
+                          task,
+                          get_report_data->notes,
+                          get_report_data->notes_details);
+      fputs (buffer->str, out);
+      g_string_free (buffer, TRUE);
     }
   cleanup_iterator (&results);
 
@@ -5698,8 +5685,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp (get_report_data->format, "html") == 0)
           {
+            task_t task;
             gchar *xml_file;
             char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            if (report_task (report, &task))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
 
             if (mkdtemp (xml_dir) == NULL)
               {
@@ -5708,6 +5704,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                       print_report_xml (report,
+                                        task,
                                         xml_file,
                                         get_report_data->sort_order,
                                         get_report_data->sort_field))
@@ -5741,7 +5738,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     html_file = g_strdup_printf ("%s/report.html", xml_dir);
 
-                    command = g_strdup_printf ("xsltproc -v %s %s -o %s 2> /dev/null",
+                    command = g_strdup_printf ("xsltproc -v %s %s -o %s"
+                                               " 2> /tmp/openvasmd_html",
                                                 xsl_file,
                                                 xml_file,
                                                 html_file);
@@ -5829,8 +5827,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp (get_report_data->format, "html-pdf") == 0)
           {
+            task_t task;
             gchar *xml_file;
             char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            if (report_task (report, &task))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
 
             // TODO: This block is very similar to the HTML block above.
 
@@ -5841,6 +5848,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                       print_report_xml (report,
+                                        task,
                                         xml_file,
                                         get_report_data->sort_order,
                                         get_report_data->sort_field))
@@ -5876,7 +5884,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     command = g_strdup_printf ("xsltproc -v %s %s"
                                                 " 2> /dev/null"
-                                                " | tee /tmp/openvasmd_html"
+                                                " | tee /tmp/openvasmd_html-pdf"
                                                 " | htmldoc -t pdf --webpage -f %s -"
                                                 " 2> /dev/null",
                                                 xsl_file,

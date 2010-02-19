@@ -10,6 +10,47 @@
   <!-- <xsl:key name="host_results" match="*/result" use="host" /> -->
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
 
+<!-- This is called within a PRE. -->
+<xsl:template name="wrap">
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:variable name="to-next-newline">
+    <xsl:value-of select="substring-before($string, '&#10;')"/>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="string-length($string) = 0">
+      <!-- The string is empty. -->
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) = 0) and (substring($string, 1, 1) != '&#10;')">
+      <!-- A single line missing a newline, output up to the edge. -->
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="wrap">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 90, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) + 1 &lt; string-length($string)) and (string-length($to-next-newline) &lt; 90)">
+      <!-- There's a newline before the edge, so output the line. -->
+<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
+<xsl:call-template name="wrap">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- Any newline comes after the edge, so output up to the edge. -->
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="wrap">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 90, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
+
+</xsl:template>
+
   <xsl:template match="scan_start">
 	Scan started: <xsl:apply-templates />
   </xsl:template>
@@ -20,6 +61,28 @@
 
   <xsl:template match="get_report_response">
 	<xsl:apply-templates />
+  </xsl:template>
+
+  <xsl:template match="note">
+    <tr>
+      <td>
+        <b>Note</b>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <pre>
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+          </xsl:call-template>
+        </pre>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Last modified: <xsl:value-of select="modification_time"/>.
+      </td>
+    </tr>
   </xsl:template>
 
   <xsl:template match="result" mode="list">
@@ -85,6 +148,7 @@
 			</a>
 		  </td>
 		</tr>
+        <xsl:apply-templates select="notes/note"/>
         </table>
 	  </xsl:when>
 	  <xsl:otherwise>
@@ -113,6 +177,7 @@
 			  </a>
 			</td>
 		  </tr>
+          <xsl:apply-templates select="notes/note"/>
 		</table>
 	  </xsl:otherwise>
 	</xsl:choose>

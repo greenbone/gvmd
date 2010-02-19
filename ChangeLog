@@ -1,3 +1,16 @@
+2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Get notes into the HTML report.
+
+	* src/omp.c (print_report_xml): Add task arg.  Call buffer_results_xml to
+	get results to print.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the "html" and
+	"html-pdf" cases pass task to print_report_xml and output the "html"
+	xsl tranform errors to a file.
+
+	* src/openvasmd_report_html.xsl (wrap, note): New templates.
+	(result) [issue]: Output notes.
+
 2010-02-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tasks_sql.h (init_note_iterator): Remove table specifier from sort
