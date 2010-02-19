@@ -1,5 +1,9 @@
 2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/openvasmd_report_html.xsl: Convert tabs to spaces.
+
+2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Get notes into the HTML report.
 
 	* src/omp.c (print_report_xml): Add task arg.  Call buffer_results_xml to
