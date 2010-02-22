@@ -1,5 +1,17 @@
 2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Get notes into the LaTeX report.
+
+	* src/omp.c (latex_print_verbatim_text): Add row_colour arg.  Update
+	callers.
+	(latex_header): Define colour openvas_user_note.
+	(print_report_notes_latex): New function.
+	(print_report_latex): Add task arg.  Update callers.  Print notes.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the "pdf" case, get
+	the task for print_report_latex.
+
+2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd_report_html.xsl: Convert tabs to spaces.
 
 2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>

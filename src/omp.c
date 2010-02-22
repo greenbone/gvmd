@@ -3730,18 +3730,22 @@ next_break (const char* text, int line_width)
  * environment.  It is up to the caller to ensure that file is positioned
  * within a tabular environment.
  *
- * @param[in]   file  Stream to write to.
- * @param[out]  text  Text to write to file.  Zero or more lines of newline
- *                    terminated text, where the final newline is optional.
+ * @param[in]   file        Stream to write to.
+ * @param[out]  text        Text to write to file.  Zero or more lines of
+ *                          newline terminated text, where the final newline
+ *                          is optional.
+ * @param[in]   row_colour  Row colour.
  */
 static void
-latex_print_verbatim_text (FILE* file, const char* text)
+latex_print_verbatim_text (FILE* file, const char* text, const char *row_colour)
 {
   const char* pos = text;
   /* The number of chars processed of the current line of the text. */
   int nchars = 0;
   int line_width = 80;
   int break_pos;
+
+  if (row_colour == NULL) row_colour = "white";
 
   /** @todo Do this better.  Word wrapping has problems with first line. */
 
@@ -3755,14 +3759,16 @@ latex_print_verbatim_text (FILE* file, const char* text)
    * calculate the next break position, and continue.  While writing out
    * the text, treat "\n" in the text like a newline, and skip over "\r". */
 
-  fputs ("\\verb=", file);
+  fprintf (file, "\\rowcolor{%s}{\\verb=", row_colour);
   while (*pos)
     {
       if (nchars == break_pos)
         {
           /* Reached the break position, start a new line in the LaTeX. */
-          fputs ("=\\\\\n", file);
-          fputs ("$\\hookrightarrow$\\verb=", file);
+          fputs ("=}\\\\\n", file);
+          fprintf (file,
+                   "\\rowcolor{%s}{$\\hookrightarrow$\\verb=",
+                   row_colour);
           nchars = 0;
           /* Subtract 2 because the hookrightarrow has taken up some space. */
           break_pos = next_break (pos, line_width - 2);
@@ -3777,7 +3783,7 @@ latex_print_verbatim_text (FILE* file, const char* text)
             if (*pos && *pos == 'n')
               {
                 /* Reached "\n", start a new line in the LaTeX. */
-                fputs ("=\\\\\n\\verb=", file);
+                fprintf (file, "=}\\\\\n\\rowcolor{%s}{\\verb=", row_colour);
                 nchars = 0;
                 pos++;
                 break_pos = next_break (pos, line_width);
@@ -3796,7 +3802,7 @@ latex_print_verbatim_text (FILE* file, const char* text)
             break;
           case '\n':
             /* Reached a real newline, start a new line in the LaTeX. */
-            fputs ("=\\\\\n\\verb=", file);
+            fprintf (file, "=}\\\\\n\\rowcolor{%s}{\\verb=", row_colour);
             nchars = 0;
             pos++;
             break_pos = next_break (pos, line_width);
@@ -3820,7 +3826,7 @@ latex_print_verbatim_text (FILE* file, const char* text)
    * @todo Handle special situations (empty string, newline at end etc)
    *       more clever, break at word boundaries.
    */
-  fputs ("=\\\\\n", file);
+  fputs ("=}\\\\\n", file);
 }
 
 /**
@@ -4036,6 +4042,8 @@ const char* latex_header
     /* Low: #539DCB */
     "\\definecolor{openvas_note}{rgb}{0.3255,0.6157,0.7961}\n"
     "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
+    /* Note: #FFFF90 */
+    "\\definecolor{openvas_user_note}{rgb}{1.0,1.0,0.5625}\n"
     /* Medium: #F99F31 */
     "\\definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}\n"
     "\\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}\n"
@@ -4071,9 +4079,45 @@ const char* latex_footer
     "\\end{document}\n";
 
 /**
+ * @brief Print LaTeX for notes on a report to a file.
+ *
+ * @param[in]  out      Destination.
+ * @param[in]  results  Result iterator.
+ * @param[in]  task     Task associated with report containing results.
+ */
+static void
+print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
+{
+  iterator_t notes;
+
+  init_note_iterator (&notes,
+                      0,
+                      0,
+                      result_iterator_result (results),
+                      task,
+                      0, /* Most recent first. */
+                      "modification_time");
+  while (next (&notes))
+    {
+      time_t mod_time = note_iterator_modification_time (&notes);
+      fprintf (out,
+               "\\hline\n"
+               "\\rowcolor{openvas_user_note}{\\textbf{Note}}\\\\\n");
+      latex_print_verbatim_text (out, note_iterator_text (&notes),
+                                 "openvas_user_note");
+      fprintf (out,
+               "\\rowcolor{openvas_user_note}{}\\\\\n"
+               "\\rowcolor{openvas_user_note}{Last modified: %s}\\\\\n",
+               ctime_strip_newline (&mod_time));
+    }
+  cleanup_iterator (&notes);
+}
+
+/**
  * @brief Print LaTeX for a report to a file.
  *
  * @param[in]  report      The report.
+ * @param[in]  task        Task associated with report.
  * @param[in]  latex_file  File name.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
@@ -4081,8 +4125,8 @@ const char* latex_footer
  * @return 0 on success, else -1 with errno set.
  */
 static int
-print_report_latex (report_t report, gchar* latex_file, int ascending,
-                    const char* sort_field)
+print_report_latex (report_t report, task_t task, gchar* latex_file,
+                    int ascending, const char* sort_field)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -4393,16 +4437,21 @@ print_report_latex (report_t report, gchar* latex_file, int ascending,
                    "\\endlastfoot\n",
                    latex_severity_colour (severity),
                    latex_severity_heading (severity));
-          latex_print_verbatim_text (out, result_iterator_descr (&results));
+          latex_print_verbatim_text (out,
+                                     result_iterator_descr (&results),
+                                     NULL);
           fprintf (out,
                    "\\\\\n"
-                   "OID of test routine: %s\\\\\n"
-                   //"\\hline\n"
-                   "\\end{longtable}\n"
-                   "\n"
-                   "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
+                   "OID of test routine: %s\\\\\n",
                    result_iterator_nvt_oid (&results));
 
+          if (get_report_data->notes)
+            print_report_notes_latex (out, &results, task);
+
+          fprintf (out,
+                   "\\end{longtable}\n"
+                   "\n"
+                   "\\begin{longtable}{|p{\\textwidth * 1}|}\n");
         }
       if (last_port)
         {
@@ -5973,8 +6022,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp (get_report_data->format, "pdf") == 0)
           {
+            task_t task;
             gchar *latex_file;
             char latex_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            if (report_task (report, &task))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
 
             if (mkdtemp (latex_dir) == NULL)
               {
@@ -5984,6 +6042,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (latex_file = g_strdup_printf ("%s/report.tex",
                                                     latex_dir),
                       print_report_latex (report,
+                                          task,
                                           latex_file,
                                           get_report_data->sort_order,
                                           get_report_data->sort_field))
