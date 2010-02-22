@@ -1,5 +1,10 @@
 2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT add a "dvi"
+	format with the "pdf" case.
+
+2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Get notes into the LaTeX report.
 
 	* src/omp.c (latex_print_verbatim_text): Add row_colour arg.  Update

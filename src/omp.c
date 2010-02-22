@@ -6020,11 +6020,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               }
           }
-        else if (strcasecmp (get_report_data->format, "pdf") == 0)
+        else if ((strcasecmp (get_report_data->format, "pdf") == 0)
+                 || (strcasecmp (get_report_data->format, "dvi") == 0))
           {
             task_t task;
             gchar *latex_file;
             char latex_dir[] = "/tmp/openvasmd_XXXXXX";
+            int dvi;
+
+            dvi = (strcasecmp (get_report_data->format, "dvi") == 0);
 
             if (report_task (report, &task))
               {
@@ -6057,23 +6061,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 int ret;
 
                 pdf_file = g_strdup (latex_file);
-                pdf_file[strlen (pdf_file) - 1] = 'f';
-                pdf_file[strlen (pdf_file) - 2] = 'd';
-                pdf_file[strlen (pdf_file) - 3] = 'p';
+                pdf_file[strlen (pdf_file) - 1] = dvi ? 'i' : 'f';
+                pdf_file[strlen (pdf_file) - 2] = dvi ? 'v' : 'd';
+                pdf_file[strlen (pdf_file) - 3] = dvi ? 'd' : 'p';
 
                 pdf_fd = open (pdf_file,
                                 O_RDWR | O_CREAT,
                                 S_IRUSR | S_IWUSR);
 
-                command = g_strdup_printf
-                           ("pdflatex -output-directory %s %s"
-                            " > /tmp/openvasmd_pdflatex_out 2>&1"
-                            " && pdflatex -output-directory %s %s"
-                            " > /tmp/openvasmd_pdflatex_out 2>&1",
-                            latex_dir,
-                            latex_file,
-                            latex_dir,
-                            latex_file);
+                if (dvi)
+                  command = g_strdup_printf
+                             ("latex -output-directory %s %s"
+                              " > /tmp/openvasmd_latex_out 2>&1"
+                              " && latex -output-directory %s %s"
+                              " > /tmp/openvasmd_latex_out 2>&1",
+                              latex_dir,
+                              latex_file,
+                              latex_dir,
+                              latex_file);
+                else
+                  command = g_strdup_printf
+                             ("pdflatex -output-directory %s %s"
+                              " > /tmp/openvasmd_pdflatex_out 2>&1"
+                              " && pdflatex -output-directory %s %s"
+                              " > /tmp/openvasmd_pdflatex_out 2>&1",
+                              latex_dir,
+                              latex_file,
+                              latex_dir,
+                              latex_file);
 
                 g_free (latex_file);
 
