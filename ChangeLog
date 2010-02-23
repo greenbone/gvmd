@@ -1,5 +1,9 @@
 2010-02-23  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (print_report_latex): Correct typo in abstract.
+
+2010-02-23  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Improve the HTML report.
 
 	* src/openvasmd_report_html.xsl (scan_start, scan_end, note): Switch from

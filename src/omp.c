@@ -4163,7 +4163,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            "The scan started at %s and %s%s.  The\n"
            "report first summarises the results found.  Then, for each host,\n"
            "the report describes every issue found.  Please consider the\n"
-           "advice given in each desciption, in order to rectify the issue.\n"
+           "advice given in each description, in order to rectify the issue.\n"
            "\\end{abstract}\n",
            start_time,
            (strlen (end_time) > 0
