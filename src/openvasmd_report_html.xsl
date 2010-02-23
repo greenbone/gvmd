@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet
     version="1.0"
-    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:set="http://exslt.org/sets">
   <xsl:output method="html"
               doctype-system="http://www.w3.org/TR/html4/strict.dtd"
               doctype-public="-//W3C//DTD HTML 4.01//EN"
@@ -52,11 +53,11 @@
 </xsl:template>
 
   <xsl:template match="scan_start">
-    Scan started: <xsl:apply-templates />
+    <tr><td>Scan started:</td><td><xsl:apply-templates /></td></tr>
   </xsl:template>
 
   <xsl:template match="scan_end">
-    Scan ended: <xsl:apply-templates />
+    <tr><td>Scan ended:</td><td><xsl:apply-templates /></td></tr>
   </xsl:template>
 
   <xsl:template match="get_report_response">
@@ -64,123 +65,60 @@
   </xsl:template>
 
   <xsl:template match="note">
-    <tr>
-      <td>
-        <b>Note</b>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <pre>
-          <xsl:call-template name="wrap">
-            <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
-          </xsl:call-template>
-        </pre>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        Last modified: <xsl:value-of select="modification_time"/>.
-      </td>
-    </tr>
-  </xsl:template>
-
-  <xsl:template match="result" mode="list">
-    <tr>
-      <td>
-        <xsl:apply-templates select="type"/><br/>
-        Host: <xsl:apply-templates select="host"/><br/>
-        Port: <xsl:apply-templates select="port"/><br/>
-        NVT OID: <xsl:apply-templates select="nvt"/><br/>
-        <xsl:apply-templates select="description"/><br/><br/>
-      </td>
-    </tr>
-  </xsl:template>
-
-  <xsl:template match="result" mode="table">
-    <tr>
-      <td>
-        <xsl:choose>
-          <xsl:when test="type[. = 'Security Hole']">Vulnerability</xsl:when>
-          <xsl:when test="type[. = 'Security Note']">Informational</xsl:when>
-          <xsl:when test="type[. = 'Security Warning']">Warning</xsl:when>
-        </xsl:choose>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <xsl:apply-templates select="description"/><br/>
-        OpenVAS ID:
-        <xsl:variable name="oid" select="nvt"/>
-        <a href="http://www.openvas.org/?oid={$oid}">
-          <xsl:value-of select="$oid"/>
-        </a>
-      </td>
-    </tr>
+    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+      <b>Note</b>
+      <pre>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+        </xsl:call-template>
+      </pre>
+      Last modified: <xsl:value-of select="modification_time"/>.
+    </div>
   </xsl:template>
 
   <xsl:template match="result" mode="issue">
 
-    <xsl:choose>
-      <!-- FIX This choose is an attempt to print the h5 only on the first
-           result of a certain port, however it fails, as preceding refers
-           to the original xml tree (instead of the sorted version currently
-           in use by the apply-template). -->
-      <xsl:when test="port/text() = preceding::port/text()">
-        <h5 id="port:{port}"><xsl:value-of select="port"/></h5>
-        <table>
-        <tr>
-          <td>
-            <xsl:choose>
-              <xsl:when test="type[. = 'Security Hole']">Vulnerability</xsl:when>
-              <xsl:when test="type[. = 'Security Note']">Informational</xsl:when>
-              <xsl:when test="type[. = 'Security Warning']">Warning</xsl:when>
-            </xsl:choose>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <xsl:apply-templates select="description"/><br/>
-            OpenVAS ID:
-            <xsl:variable name="oid" select="nvt"/>
-            <a href="http://www.openvas.org/?oid={$oid}">
-              <xsl:value-of select="$oid"/>
-            </a>
-          </td>
-        </tr>
-        <xsl:apply-templates select="notes/note"/>
-        </table>
-      </xsl:when>
-      <xsl:otherwise>
-        <h5 id="port:{port}"><xsl:value-of select="port"/></h5>
-        <table>
-          <tr>
-            <xsl:choose>
-              <xsl:when test="type[. = 'Security Hole']">
-                <td id="vulnerability">Vulnerability</td>
-              </xsl:when>
-              <xsl:when test="type[. = 'Security Note']">
-                <td id="informational">Informational</td>
-              </xsl:when>
-              <xsl:when test="type[. = 'Security Warning']">
-                <td id="warning">Warning</td>
-              </xsl:when>
-            </xsl:choose>
-          </tr>
-          <tr>
-            <td>
-              <xsl:apply-templates select="description"/><br/>
-              OpenVAS ID:
-              <xsl:variable name="oid" select="nvt"/>
-              <a href="http://www.openvas.org/?oid={$oid}">
-                <xsl:value-of select="$oid"/>
-              </a>
-            </td>
-          </tr>
-          <xsl:apply-templates select="notes/note"/>
-        </table>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:variable name="style">
+      <xsl:choose>
+         <xsl:when test="threat='Low'">background:#539dcb</xsl:when>
+         <xsl:when test="threat='Medium'">background:#f99f31</xsl:when>
+         <xsl:when test="threat='High'">background:#cb1d17</xsl:when>
+         <xsl:otherwise>background:#d5d5d5</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
+    <div style="{$style}; padding:4px; margin:3px; margin-bottom:0px; color: #FFFFFF; border: 1px solid #CCCCCC; border-bottom: 0px;">
+      <div style="float:right; text-align:right">
+        <xsl:value-of select="port"/>
+      </div>
+      <b><xsl:value-of select="threat"/></b>
+      <div style="width: 100%">
+        NVT:
+        <xsl:variable name="max" select="80"/>
+        <a href="?cmd=get_nvt_details&amp;oid={nvt/@oid}">
+          <xsl:choose>
+            <xsl:when test="string-length(nvt/name) &gt; $max">
+              <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="nvt/name"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </a>
+        (OID:
+         <a href="?cmd=get_nvt_details&amp;oid={nvt/@oid}">
+           <xsl:value-of select="nvt/@oid"/>
+         </a>)
+      </div>
+    </div>
+    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+      <pre>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string"><xsl:apply-templates select="description"/></xsl:with-param>
+        </xsl:call-template>
+      </pre>
+    </div>
+    <xsl:apply-templates select="notes/note"/>
 
   </xsl:template>
 
@@ -188,23 +126,26 @@
     <h1>Summary</h1>
 
     <p>
-      This report lists results from a scan, sorted by host.
-    </p>
-
-    <p>
-      <xsl:apply-templates select="scan_start" />
-      <br/>
-      <xsl:apply-templates select="scan_end" />
+      This document reports on the results of an automatic security scan.
+      The report first summarises the results found.  Then, for each host,
+      the report describes every issue found.  Please consider the
+      advice given in each description, in order to rectify the issue.
     </p>
 
     <table>
-      <tr>
+      <xsl:apply-templates select="scan_start" />
+      <xsl:apply-templates select="scan_end" />
+    </table>
+
+    <h2>Host Summary</h2>
+
+    <table>
+      <tr style="background-color: #d5d5d5;">
         <td>Host</td>
-        <td>Possible Issues</td>
-        <td>Holes</td>
-        <td>Warnings</td>
-        <td>Notes</td>
-        <td>False Positives</td>
+        <td>High</td>
+        <td>Medium</td>
+        <td>Low</td>
+        <td>Log</td>
       </tr>
       <xsl:for-each select="host_start" >
         <xsl:variable name="current_host" select="host/text()" />
@@ -212,20 +153,18 @@
           <td>
             <a href="#{$current_host}"><xsl:value-of select="$current_host"/></a>
           </td>
-          <td></td>
-          <td><xsl:value-of select="count(../result[host/text() = $current_host][type/text() = 'Security Hole'])"/></td>
-          <td><xsl:value-of select="count(../result[host/text() = $current_host][type/text() = 'Security Warning'])"/></td>
-          <td><xsl:value-of select="count(../result[host/text() = $current_host][type/text() = 'Security Note'])"/></td>
-          <td></td>
+          <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'High'])"/></td>
+          <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Medium'])"/></td>
+          <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Low'])"/></td>
+          <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Log'])"/></td>
         </tr>
       </xsl:for-each>
       <tr>
         <td>Total: <xsl:value-of select="count(host_start)"/></td>
-        <td></td>
-        <td><xsl:value-of select="count(result[type/text() = 'Security Hole'])"/></td>
-        <td><xsl:value-of select="count(result[type/text() = 'Security Warning'])"/></td>
-        <td><xsl:value-of select="count(result[type/text() = 'Security Note'])"/></td>
-        <td></td>
+        <td><xsl:value-of select="count(result[threat/text() = 'High'])"/></td>
+        <td><xsl:value-of select="count(result[threat/text() = 'Medium'])"/></td>
+        <td><xsl:value-of select="count(result[threat/text() = 'Low'])"/></td>
+        <td><xsl:value-of select="count(result[threat/text() = 'Log'])"/></td>
       </tr>
     </table>
 
@@ -234,27 +173,33 @@
     <xsl:for-each select="host_start" >
       <xsl:variable name="current_host" select="host/text()" />
 
-      <h2 id="{$current_host}"><xsl:value-of select="host/text()"/></h2>
-      <p>
-        Scanning of this host started at: <xsl:value-of select="text()"/><br/>
-        Number of results: <xsl:value-of select="count(../result[host/text()=$current_host])"/><br/>
-      <!-- Number of results: <xsl:value-of select="count(key('host_results', $current_host))"/> -->
-      </p>
-
+      <h2 id="{$current_host}">Host <xsl:value-of select="host/text()"/></h2>
       <table>
         <tr>
+          <td>Scanning of this host started at:</td>
+          <td><xsl:value-of select="text()"/></td>
+        </tr>
+        <tr>
+          <td>Number of results:</td>
+          <td>
+            <xsl:value-of select="count(../result[host/text()=$current_host])"/>
+          </td>
+        </tr>
+      <!-- Number of results: <xsl:value-of select="count(key('host_results', $current_host))"/> -->
+      </table>
+
+      <h3>Port Summary for Host <xsl:value-of select="$current_host" /></h3>
+
+      <table>
+        <tr style="background-color: #d5d5d5;">
           <td>Service (Port)</td>
-          <td>Issue regarding port</td>
+          <td>Threat Level</td>
         </tr>
 
-        <!-- FIX the preceding:: bit here just worked by luck on the test data. -->
-        <xsl:for-each select="../result[not(port/text() = preceding::port/text())]">
-          <xsl:sort select="port"/>
-          <xsl:sort select="type"/>
+        <xsl:for-each select="set:distinct(../result/port)">
           <tr>
-            <xsl:variable name="port" select="port"/>
-            <td><a href="#port:{port}"><xsl:value-of select="$port"/></a></td>
-            <td><xsl:value-of select="type"/>(s) found</td>
+            <td><xsl:value-of select="."/></td>
+            <td><xsl:value-of select="../threat"/></td>
           </tr>
         </xsl:for-each>
 
@@ -262,11 +207,11 @@
 
       </table>
 
-      <h3>Security Issues and Fixes -- Host <xsl:value-of select="$current_host" /></h3>
+      <h3>Security Issues for Host <xsl:value-of select="$current_host" /></h3>
 
       <xsl:apply-templates select="../result[host/text()=$current_host]" mode="issue">
+        <xsl:sort order="descending" select="threat"/>
         <xsl:sort select="port"/>
-        <xsl:sort select="type"/>
       </xsl:apply-templates>
 
     </xsl:for-each>
@@ -277,10 +222,21 @@
     <html>
       <head>
         <link rel="stylesheet" type="text/css" href="./style.css" />
-        <title>OpenVAS Scan Report</title>
+        <title>Scan Report</title>
       </head>
-      <body>
-        <xsl:apply-templates />
+      <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
+        <div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;">
+          <table style="width: 100%;" cellpadding="3" cellspacing="0">
+            <tr>
+              <td valign="top">
+                <xsl:apply-templates />
+                <div style="text-align: center;">
+                  This file was automatically generated.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
       </body>
     </html>
   </xsl:template>

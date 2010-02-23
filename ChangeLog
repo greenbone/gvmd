@@ -1,3 +1,16 @@
+2010-02-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Improve the HTML report.
+
+	* src/openvasmd_report_html.xsl (scan_start, scan_end, note): Switch from
+	tables to divs.  Add GSA-like style.
+	(result) [list] [table]: Remove.
+	(result) [issue]: Switch to divs.  Add GSA-like style.
+	(report): Make summary like LaTeX report.  Improve layout a bit.  Use new
+	issue names (High, Medium...).  Add more headings.  Ensure that each port
+	is listed only once in the port summary.
+	(/): Wrap everything in a styled table in a styled div.  Add end message.
+
 2010-02-19  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT add a "dvi"
