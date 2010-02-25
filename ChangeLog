@@ -1,5 +1,10 @@
 2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (buffer_notes_xml): Add ORPHAN entity to indicate if note's
+	task has been removed.
+
+2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add a result attribute to OMP GET_NOTES.
 
 	* src/omp.c (get_notes_data_t): Add result.
