@@ -309,6 +309,7 @@ static char* help_text = "\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
+"    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    TEST_ESCALATOR         Run an escalator.\n"
@@ -527,6 +528,7 @@ create_config_data_reset (create_config_data_t *data)
 typedef struct
 {
   char *hosts;
+  char *note_id;
   char *nvt;
   char *port;
   char *result;
@@ -539,6 +541,7 @@ static void
 create_note_data_reset (create_note_data_t *data)
 {
   free (data->hosts);
+  free (data->note_id);
   free (data->nvt);
   free (data->port);
   free (data->result);
@@ -548,6 +551,10 @@ create_note_data_reset (create_note_data_t *data)
 
   memset (data, 0, sizeof (create_note_data_t));
 }
+
+typedef create_note_data_t modify_note_data_t;
+
+#define modify_note_data_reset create_note_data_reset
 
 typedef struct
 {
@@ -726,6 +733,12 @@ get_system_reports_data_t *get_system_reports_data
  */
 import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
+
+/**
+ * @brief Parser callback data for MODIFY_NOTE.
+ */
+modify_note_data_t *modify_note_data
+ = (modify_note_data_t*) &(command_data.create_note);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
@@ -998,6 +1011,13 @@ typedef enum
   CLIENT_MODIFY_CONFIG_NVT_SELECTION,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
   CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
+  CLIENT_MODIFY_NOTE,
+  CLIENT_MODIFY_NOTE_HOSTS,
+  CLIENT_MODIFY_NOTE_PORT,
+  CLIENT_MODIFY_NOTE_RESULT,
+  CLIENT_MODIFY_NOTE_TASK,
+  CLIENT_MODIFY_NOTE_TEXT,
+  CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_FILE,
@@ -1917,6 +1937,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               current_int_2 = 1;
             set_client_state (CLIENT_GET_STATUS);
+          }
+        else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "note_id", &attribute))
+              openvas_append_string (&modify_note_data->note_id, attribute);
+            set_client_state (CLIENT_MODIFY_NOTE);
           }
         else
           {
@@ -3152,6 +3180,34 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_MODIFY_NOTE:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_HOSTS);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_PORT);
+        else if (strcasecmp ("RESULT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_RESULT);
+        else if (strcasecmp ("TASK", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_TASK);
+        else if (strcasecmp ("TEXT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_TEXT);
+        else if (strcasecmp ("THREAT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_THREAT);
+        else
+          {
+            if (send_element_error_to_client ("MODIFY_note", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_TEST_ESCALATOR:
         if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_TEST_ESCALATOR_NAME);
@@ -4096,7 +4152,7 @@ print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
                       result_iterator_result (results),
                       task,
                       0, /* Most recent first. */
-                      "modification_time");
+                      "creation_time");
   while (next (&notes))
     {
       time_t mod_time = note_iterator_modification_time (&notes);
@@ -4636,6 +4692,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       iterator_t notes;
 
+      assert (task);
+
       g_string_append (buffer, "<notes>");
 
       init_note_iterator (&notes,
@@ -4644,12 +4702,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           result_iterator_result (results),
                           task,
                           0, /* Most recent first. */
-                          "modification_time");
+                          "creation_time");
       buffer_notes_xml (buffer, &notes, include_notes_details);
       cleanup_iterator (&notes);
 
       g_string_append (buffer, "</notes>");
     }
+
   g_string_append (buffer, "</result>");
 }
 
@@ -6194,7 +6253,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_RESULTS:
         {
           result_t result;
-          task_t task;
+          task_t task = 0;
 
           assert (strcasecmp ("GET_RESULTS", element_name) == 0);
 
@@ -6210,10 +6269,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a result_id attribute"));
-          else if (get_results_data->task_id == NULL)
+          else if (get_results_data->notes
+                   && (get_results_data->task_id == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a task_id attribute"));
+                                "GET_RESULTS must have a task_id attribute"
+                                " if the notes attribute is true"));
           else if (find_result (get_results_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (result == 0)
@@ -6226,9 +6287,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (find_task (get_results_data->task_id, &task))
+          else if (get_results_data->task_id
+                   && find_task (get_results_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-          else if (task == 0)
+          else if (get_results_data->task_id && task == 0)
             {
               if (send_find_error_to_client ("get_results",
                                              "task",
@@ -8250,6 +8312,110 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
+      case CLIENT_MODIFY_NOTE:
+        {
+          task_t task = 0;
+          result_t result = 0;
+          note_t note = 0;
+
+          assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
+
+          if (modify_note_data->note_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_note",
+                                "MODIFY_NOTE requires a note_id attribute"));
+          else if (modify_note_data->text == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_note",
+                                "MODIFY_NOTE requires a TEXT entity"));
+          else if (find_note (modify_note_data->note_id, &note))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
+          else if (note == 0)
+            {
+              if (send_find_error_to_client ("modify_note",
+                                             "note",
+                                             modify_note_data->note_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (modify_note_data->task
+                   && find_task (modify_note_data->task, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
+          else if (modify_note_data->task && task == 0)
+            {
+              if (send_find_error_to_client ("modify_note",
+                                             "task",
+                                             modify_note_data->task))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (modify_note_data->result
+                   && find_result (modify_note_data->result, &result))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
+          else if (modify_note_data->result && result == 0)
+            {
+              if (send_find_error_to_client ("modify_note",
+                                             "result",
+                                             modify_note_data->result))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (modify_note (note,
+                                    modify_note_data->text,
+                                    modify_note_data->hosts,
+                                    modify_note_data->port,
+                                    modify_note_data->threat,
+                                    task,
+                                    result))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_note"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_note"));
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_note"));
+                break;
+            }
+          modify_note_data_reset (modify_note_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_MODIFY_NOTE_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+      case CLIENT_MODIFY_NOTE_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+      case CLIENT_MODIFY_NOTE_RESULT:
+        assert (strcasecmp ("RESULT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+      case CLIENT_MODIFY_NOTE_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+      case CLIENT_MODIFY_NOTE_TEXT:
+        assert (strcasecmp ("TEXT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+      case CLIENT_MODIFY_NOTE_THREAT:
+        assert (strcasecmp ("THREAT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_NOTE);
+        break;
+
       case CLIENT_TEST_ESCALATOR:
         if (current_name)
           {
@@ -10212,6 +10378,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_TARGET_NAME:
       case CLIENT_TEST_ESCALATOR_NAME:
         openvas_append_text (&modify_task_name, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_NOTE_HOSTS:
+        openvas_append_text (&modify_note_data->hosts, text, text_len);
+        break;
+      case CLIENT_MODIFY_NOTE_PORT:
+        openvas_append_text (&modify_note_data->port, text, text_len);
+        break;
+      case CLIENT_MODIFY_NOTE_RESULT:
+        openvas_append_text (&modify_note_data->result, text, text_len);
+        break;
+      case CLIENT_MODIFY_NOTE_TASK:
+        openvas_append_text (&modify_note_data->task, text, text_len);
+        break;
+      case CLIENT_MODIFY_NOTE_TEXT:
+        openvas_append_text (&modify_note_data->text, text, text_len);
+        break;
+      case CLIENT_MODIFY_NOTE_THREAT:
+        openvas_append_text (&modify_note_data->threat, text, text_len);
         break;
 
       default:

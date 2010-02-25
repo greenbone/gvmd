@@ -1099,6 +1099,10 @@ create_note (const char*, const char*, const char*, const char*, const char*,
 int
 delete_note (note_t);
 
+int
+modify_note (note_t, const char*, const char*, const char*, const char*,
+             task_t, result_t);
+
 void
 init_note_iterator (iterator_t*, note_t, nvt_t, result_t, task_t, int,
                     const char*);

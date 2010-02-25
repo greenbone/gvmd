@@ -11577,6 +11577,69 @@ delete_note (note_t note)
   return 0;
 }
 
+/**
+ * @brief Modify a note.
+ *
+ * @param[in]  note        Note.
+ * @param[in]  text        Note text.
+ * @param[in]  hosts       Hosts to apply note to, NULL for any host.
+ * @param[in]  port        Port to apply note to, NULL for any port.
+ * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
+ * @param[in]  task        Task to apply note to, 0 for any task.
+ * @param[in]  result      Result to apply note to, 0 for any result.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+modify_note (note_t note, const char* text, const char* hosts,
+             const char* port, const char* threat, task_t task,
+             result_t result)
+{
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+
+  if (note == 0)
+    return -1;
+
+  if (text == NULL)
+    return -1;
+
+  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
+      && strcmp (threat, "Low") && strcmp (threat, "Log")
+      && strcmp (threat, "Debug") && strcmp (threat, ""))
+    return -1;
+
+  quoted_text = sql_insert (text);
+  quoted_hosts = sql_insert (hosts);
+  quoted_port = sql_insert (port);
+  quoted_threat = sql_insert ((threat && strlen (threat))
+                                ? threat_message_type (threat) : NULL);
+
+  sql ("UPDATE notes SET"
+       " modification_time = %i,"
+       " text = %s,"
+       " hosts = %s,"
+       " port = %s,"
+       " threat = %s,"
+       " task = %llu,"
+       " result = %llu"
+       " WHERE ROWID = %llu;",
+       time (NULL),
+       quoted_text,
+       quoted_hosts,
+       quoted_port,
+       quoted_threat,
+       task,
+       result,
+       note);
+
+  g_free (quoted_text);
+  g_free (quoted_hosts);
+  g_free (quoted_port);
+  g_free (quoted_threat);
+
+  return 0;
+}
+
 #define NOTE_COLUMNS "notes.ROWID, notes.uuid, notes.nvt,"                 \
                      " notes.creation_time, notes.modification_time,"      \
                      " notes.text, notes.hosts, notes.port, notes.threat," \

@@ -1,3 +1,23 @@
+2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP MODIFY_NOTE.
+
+	* src/tasks_sql.h (modify_note): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text): Add MODIFY_NOTE.
+	(create_note_data_t): Add note_id.
+	(create_note_data_reset): Free note_id.
+	(modify_note_data_t): New type.
+	(modify_note_data_reset): New define.
+	(modify_note_data): New variable.
+	(client_state_t): Add MODIFY_NOTE states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_NOTE handling.
+	(print_report_notes_latex, buffer_results_xml): Sort notes by creation
+	time.
+
 2010-02-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (print_report_latex): Correct typo in abstract.
