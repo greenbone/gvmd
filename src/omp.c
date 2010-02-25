@@ -591,6 +591,7 @@ typedef struct
   char *sort_field;
   int sort_order;
   int details;
+  int result;
 } get_notes_data_t;
 
 static void
@@ -1623,6 +1624,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_notes_data->details = strcmp (attribute, "0");
             else
               get_notes_data->details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "result", &attribute))
+              get_notes_data->result = strcmp (attribute, "0");
+            else
+              get_notes_data->result = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
@@ -4563,9 +4570,11 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
  *
  * @param[in]  notes                  Notes iterator.
  * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  include_result         Whether to include associated result.
  */
 static void
-buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
+buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
+                  int include_result)
 {
   if (include_notes_details == 0)
     while (next (notes))
@@ -4589,7 +4598,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
   else
     while (next (notes))
       {
-        char *uuid_task, *name_task, *uuid_result;
+        char *uuid_task, *name_task;
         time_t creation_time, mod_time;
 
         if (note_iterator_task (notes))
@@ -4602,12 +4611,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
           name_task = task_name (note_iterator_task (notes));
         else
           name_task = NULL;
-
-        if (note_iterator_result (notes))
-          result_uuid (note_iterator_result (notes),
-                       &uuid_result);
-        else
-          uuid_result = NULL;
 
         creation_time = note_iterator_creation_time (notes);
         mod_time = note_iterator_modification_time (notes);
@@ -4622,9 +4625,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
           "<hosts>%s</hosts>"
           "<port>%s</port>"
           "<threat>%s</threat>"
-          "<task id=\"%s\"><name>%s</name></task>"
-          "<result id=\"%s\"/>"
-          "</note>",
+          "<task id=\"%s\"><name>%s</name></task>",
           note_iterator_uuid (notes),
           note_iterator_nvt_oid (notes),
           note_iterator_nvt_name (notes),
@@ -4638,12 +4639,45 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
           note_iterator_threat (notes)
            ? note_iterator_threat (notes) : "",
           uuid_task ? uuid_task : "",
-          name_task ? name_task : "",
-          uuid_result ? uuid_result : "");
+          name_task ? name_task : "");
 
         free (uuid_task);
         free (name_task);
-        free (uuid_result);
+
+        if (include_result && note_iterator_result (notes))
+          {
+            iterator_t results;
+
+            init_result_iterator (&results, 0,
+                                  note_iterator_result (notes),
+                                  NULL, 0, 1, 1, NULL, NULL, NULL);
+            while (next (&results))
+              buffer_results_xml (buffer,
+                                  &results,
+                                  0,
+                                  0,  /* Notes. */
+                                  0); /* Note details. */
+            cleanup_iterator (&results);
+
+            buffer_xml_append_printf (buffer, "</note>");
+          }
+        else
+          {
+            char *uuid_result;
+
+            if (note_iterator_result (notes))
+              result_uuid (note_iterator_result (notes),
+                           &uuid_result);
+            else
+              uuid_result = NULL;
+
+            buffer_xml_append_printf (buffer,
+                                      "<result id=\"%s\"/>"
+                                      "</note>",
+                                      uuid_result ? uuid_result : "");
+
+            free (uuid_result);
+          }
       }
 }
 
@@ -4651,7 +4685,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details)
  * @brief Buffer XML for some results.
  *
  * @param[in]  results                Result iterator.
- * @param[in]  task                   Task associated with results.
+ * @param[in]  task                   Task associated with results.  Only needed
+ *                                    with include_notes.
  * @param[in]  include_notes          Whether to include notes.
  * @param[in]  include_notes_details  Whether to include details of notes.
  */
@@ -4703,7 +4738,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                           task,
                           0, /* Most recent first. */
                           "creation_time");
-      buffer_notes_xml (buffer, &notes, include_notes_details);
+      buffer_notes_xml (buffer, &notes, include_notes_details, 0);
       cleanup_iterator (&notes);
 
       g_string_append (buffer, "</notes>");
@@ -5023,7 +5058,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   task,
                                   get_notes_data->sort_order,
                                   get_notes_data->sort_field);
-              buffer_notes_xml (buffer, &notes, get_notes_data->details);
+              buffer_notes_xml (buffer, &notes, get_notes_data->details,
+                                get_notes_data->result);
               cleanup_iterator (&notes);
 
               SEND_TO_CLIENT_OR_FAIL (buffer->str);

@@ -1,5 +1,14 @@
 2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add a result attribute to OMP GET_NOTES.
+
+	* src/omp.c (get_notes_data_t): Add result.
+	(omp_xml_handle_start_element): Parse result attribute.
+	(buffer_notes_xml): Add include_result arg.  Update caller.
+	(omp_xml_handle_end_element): Pass result attribute to buffer_notes_xml.
+
+2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP MODIFY_NOTE.
 
 	* src/tasks_sql.h (modify_note): New function.
