@@ -9685,10 +9685,13 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.type = "
                      G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                      " AND nvt_selectors.exclude = 0"
-                     " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                     " AND nvts.oid == nvt_selectors.family_or_nvt"
+                     " ORDER BY %s %s;",
                      family,
                      quoted_selector,
-                     family);
+                     family,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
 
           /* The family is included.  Iterate all NVT's minus excluded NVT's. */
           return g_strdup_printf
@@ -9709,11 +9712,14 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.type = "
                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    " AND nvt_selectors.exclude = 1"
-                   " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                   " AND nvts.oid == nvt_selectors.family_or_nvt"
+                   " ORDER BY %s %s;",
                    family,
                    family,
                    quoted_selector,
-                   family);
+                   family,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
         }
       else
         {
@@ -9750,11 +9756,14 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.type = "
                      G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                      " AND nvt_selectors.exclude = 1"
-                     " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                     " AND nvts.oid == nvt_selectors.family_or_nvt"
+                     " ORDER BY %s %s;",
                      family,
                      family,
                      quoted_selector,
-                     family);
+                     family,
+                     sort_field ? sort_field : "ROWID",
+                     ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
                   (" SELECT oid, version, nvts.name, summary, description,"
@@ -9768,10 +9777,13 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.type = "
                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    " AND nvt_selectors.exclude = 0"
-                   " AND nvts.oid == nvt_selectors.family_or_nvt;",
+                   " AND nvts.oid == nvt_selectors.family_or_nvt"
+                   " ORDER BY %s %s;",
                    family,
                    quoted_selector,
-                   family);
+                   family,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
         }
     }
   else

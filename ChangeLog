@@ -1,3 +1,7 @@
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/tasks_sql.h (select_config_nvts): Add missing "ORDER BY"s.
+
 2010-02-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (buffer_notes_xml): Add ORPHAN entity to indicate if note's
