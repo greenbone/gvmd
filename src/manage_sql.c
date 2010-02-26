@@ -4616,6 +4616,40 @@ set_task_run_status (task_t task, task_status_t status)
 }
 
 /**
+ * @brief Atomically set the run state of a task to requested.
+ *
+ * @param[in]  task    Task.
+ * @param[out] status  Old run status of task.
+ *
+ * @return 0 success, 1 task is active already.
+ */
+int
+set_task_requested (task_t task, task_status_t *status)
+{
+  task_status_t run_status;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_REQUESTED
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_DELETE_REQUESTED)
+    {
+      sql ("END;");
+      *status = run_status;
+      return 1;
+    }
+
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
+  sql ("COMMIT;");
+
+  *status = run_status;
+  return 0;
+}
+
+/**
  * @brief Return the report currently being produced.
  *
  * @param[in]  task  Task.

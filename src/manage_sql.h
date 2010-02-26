@@ -28,6 +28,8 @@
 
 #include "manage.h"
 
+int set_task_requested (task_t, task_status_t *);
+
 void init_task_file_iterator (iterator_t *, task_t, const char *);
 const char *task_file_iterator_name (iterator_t *);
 const char *task_file_iterator_content (iterator_t *);

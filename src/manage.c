@@ -916,21 +916,8 @@ start_task (task_t task, char **report_id)
 
   tracef ("   start task %u\n", task_id (task));
 
-  sql ("BEGIN EXCLUSIVE;");
-
-  run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING
-      || run_status == TASK_STATUS_STOP_REQUESTED
-      || run_status == TASK_STATUS_DELETE_REQUESTED)
-    {
-      sql ("END;");
-      return 1;
-    }
-
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
-
-  sql ("COMMIT;");
+  if (set_task_requested (task, &run_status))
+    return 1;
 
   /* Every fail exit from here must reset the run status. */
 
