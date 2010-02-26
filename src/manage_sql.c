@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Manager Manage library: SQL based tasks.
+ * Description: Manager Manage library: SQL backend.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -23,12 +23,21 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "manage_sql.h"
+#include "lsc_user.h"
+#include "tracef.h"
+
+#include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sqlite3.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
+#include <openvas/openvas_auth.h>
 #include <openvas/openvas_logging.h>
-#include "lsc_user.h"
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -45,6 +54,15 @@
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
 
+/* Headers for functions defined in manage.c which are private to libmanage. */
+
+const char *threat_message_type (const char *);
+
+const char *message_type_threat (const char *);
+
+int delete_reports (task_t);
+
+
 /* Static headers. */
 
 static void
@@ -55,15 +73,6 @@ preference_iterator_name (iterator_t*);
 
 static const char*
 preference_iterator_value (iterator_t*);
-
-static void
-init_otp_pref_iterator (iterator_t*, config_t, const char*);
-
-static const char*
-otp_pref_iterator_name (iterator_t*);
-
-static const char*
-otp_pref_iterator_value (iterator_t*);
 
 static void
 nvt_selector_add (const char*, const char*, const char*, int);
@@ -3149,7 +3158,7 @@ escalator_data_iterator_data (iterator_t* iterator)
  *
  * @return Freshly allocated data if it exists, else NULL.
  */
-static char *
+char *
 escalator_data (escalator_t escalator, const char *type, const char *name)
 {
   gchar *quoted_name;
@@ -5107,7 +5116,7 @@ make_report (task_t task, const char* uuid, task_status_t status)
  *
  * @return 0 success, -1 current_report is already set, -2 failed to generate ID.
  */
-static int
+int
 create_report (task_t task, char **report_id, task_status_t status)
 {
   assert (current_report == (report_t) 0);
@@ -6753,7 +6762,7 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
  *
  * @return Name of the file or NULL if iteration is complete.
  */
-static DEF_ACCESS (task_file_iterator_name, 0);
+DEF_ACCESS (task_file_iterator_name, 0);
 
 DEF_ACCESS (task_file_iterator_content, 1);
 
@@ -7007,7 +7016,7 @@ target_hosts (target_t target)
  *
  * @return Credential if any, else 0.
  */
-static lsc_credential_t
+lsc_credential_t
 target_lsc_credential (target_t target)
 {
   lsc_credential_t lsc_credential;
@@ -8176,7 +8185,7 @@ static DEF_ACCESS (preference_iterator_value, 1);
  * @param[in]  config    Config containing preferences.
  * @param[in]  section   Preference section, NULL for general preferences.
  */
-static void
+void
 init_otp_pref_iterator (iterator_t* iterator,
                         config_t config,
                         const char* section)
@@ -8211,8 +8220,8 @@ init_otp_pref_iterator (iterator_t* iterator,
   g_free (quoted_section);
 }
 
-static DEF_ACCESS (otp_pref_iterator_name, 0);
-static DEF_ACCESS (otp_pref_iterator_value, 1);
+DEF_ACCESS (otp_pref_iterator_name, 0);
+DEF_ACCESS (otp_pref_iterator_value, 1);
 
 /**
  * @brief Return the NVT selector associated with a config.

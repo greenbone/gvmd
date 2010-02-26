@@ -37,6 +37,7 @@
  */
 
 #include "manage.h"
+#include "manage_sql.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
@@ -48,8 +49,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/wait.h>
 
-#include <openvas/openvas_auth.h>
 #include <openvas/base/openvas_string.h>
 
 #ifdef S_SPLINT_S
@@ -68,37 +69,6 @@
 scanner_t scanner;
 
 
-/* Functions defined in task_*.h and used before the include. */
-
-/**
- * @brief Increment report count.
- *
- * @param[in]  task  Task.
- */
-void
-inc_task_report_count (task_t task);
-
-/**
- * @brief Decrement report count.
- *
- * @param[in]  task  Task.
- */
-void
-dec_task_report_count (task_t task);
-
-/**
- * @brief Return data associated with an escalator.
- *
- * @param[in]  escalator  Escalator.
- * @param[in]  type       Type of data: "condition", "event" or "method".
- * @param[in]  name       Name of the data.
- *
- * @return Freshly allocated data if it exists, else NULL.
- */
-static char *
-escalator_data (escalator_t, const char *, const char *);
-
-
 /* Threats. */
 
 /**
@@ -108,7 +78,7 @@ escalator_data (escalator_t, const char *, const char *);
  *
  * @return Static message type name if threat names a threat, else NULL.
  */
-static const char *
+const char *
 threat_message_type (const char *threat)
 {
   if (strcasecmp (threat, "High") == 0)
@@ -131,7 +101,7 @@ threat_message_type (const char *threat)
  *
  * @return Static threat name if type names a message type, else NULL.
  */
-static const char *
+const char *
 message_type_threat (const char *type)
 {
   if (strcasecmp (type, "Security Hole") == 0)
@@ -285,7 +255,7 @@ make_report_uuid ()
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 delete_reports (task_t task)
 {
   report_t report;
@@ -319,19 +289,6 @@ short scanner_active = 0;
  * @brief The report of the current task.
  */
 report_t current_report = (report_t) 0;
-
-
-/* Task code specific to the representation of tasks. */
-
-/* Headers of functions in the next page. */
-static int
-delete_reports (task_t);
-#if 0
-static void
-print_tasks ();
-#endif
-
-#include "tasks_sql.h"
 
 
 /* Escalators. */

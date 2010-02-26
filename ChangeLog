@@ -1,5 +1,27 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Make manage library work now that the SQL portion is a real C file.
+
+	* src/manage_sql.h: New file.
+
+	* src/manage.c: Include manage_sql.h instead of tasks_sql.h.
+	(inc_task_report_count, dec_task_report_count, print_tasks): Remove.  Old
+	headers.
+	(escalator_data): Move to manage_sql.h.
+	(threat_message_type, message_type_threat, delete_reports): Make external
+	so manage_sql.c can use them.
+
+	* src/manage_sql.c: Add includes.
+	(threat_message_type, message_type_threat, delete_reports): New
+	declarations.  For private functions defined in manage.c.
+	(init_otp_pref_iterator, otp_pref_iterator_name, otp_pref_iterator_value)
+	(escalator_data, create_report, task_file_iterator_name)
+	(target_lsc_credential): Make external so manage.c can use them.
+
+	* TODO: Remove entry about file system backend.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/CMakeLists.txt: Link manage_sql to manage.
 
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>

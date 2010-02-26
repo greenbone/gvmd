@@ -70,15 +70,6 @@
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Consider dropping the file system based task storage backend entirely,
-	as the file system tasks are already out of date (nvti*, initial run
-	state) and would need considerable additional work to handle
-	simultaneous access to the task information.  Looking at the openvasd
-	storage/backend/IPC may be a source of inspiration.  In either case use
-	a better mechanism than including tasks_sql.h and tasks_fs.h in manage.c.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
 	Clear the "FIX"es out of the code.  Either resolve the issue or convert
 	the FIX into a (longer term) FIXME or (long term) TODO.  There are about
 	120 of these.  Some of them are duplicates.  Many are about the code
