@@ -26,8 +26,6 @@
 
 add_definitions (-Werror)
 
-set (TASKS_CFLAG "-DTASKS_SQL")
-
 message (STATUS "Looking for sqlite3...")
 find_library (SQLITE3 sqlite3)
 message (STATUS "Looking for sqlite3... ${SQLITE3}")
@@ -70,13 +68,13 @@ add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (manage STATIC manage.c lsc_user.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 add_library (omp STATIC omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 add_library (otp STATIC otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${TASKS_CFLAG} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+set_target_properties (otp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Program
 
@@ -133,7 +131,7 @@ set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} -lsqlite3 -lgnutls -luuid ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${TASKS_CFLAG} ${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+                       "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 MARK_AS_ADVANCED (LIB_TEMP)
 MARK_AS_ADVANCED (HEADER_TEMP)

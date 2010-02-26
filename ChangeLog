@@ -1,5 +1,9 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/CMakeLists.txt: Remove TASKS_SQL directive.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.h, src/manage.c: Remove file system based task alternatives.
 
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
