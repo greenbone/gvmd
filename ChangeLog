@@ -1,5 +1,9 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage_sql.h: Use work email address.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Make manage library work now that the SQL portion is a real C file.
 
 	* src/manage_sql.h: New file.
