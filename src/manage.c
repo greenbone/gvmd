@@ -331,9 +331,7 @@ static void
 print_tasks ();
 #endif
 
-#ifdef TASKS_SQL
 #include "tasks_sql.h"
-#endif
 
 
 /* Escalators. */
@@ -1252,12 +1250,11 @@ start_task (task_t task, char **report_id)
 
   current_scanner_task = task;
 
-#if TASKS_FS
+#if 0
+  // FIX This is what the file based tasks did.
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, (guint) sizeof (port_t));
   task->open_ports_size = 0;
-#else
-  // FIX
 #endif
 
   return 2;

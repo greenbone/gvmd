@@ -164,7 +164,6 @@ typedef enum
   TASK_STATUS_INTERNAL_ERROR
 } task_status_t;
 
-#ifdef TASKS_SQL
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
@@ -190,30 +189,6 @@ typedef struct
   sqlite3_stmt* stmt;
   gboolean done;
 } iterator_t;
-#else /* not TASKS_SQL */
-typedef long long int agent_t;
-typedef long long int config_t;
-typedef long long int escalator_t;
-typedef long long int target_t;
-typedef long long int task_t;
-typedef long long int result_t;
-typedef long long int report_t;
-typedef long long int note_t;
-typedef long long int nvt_t;
-typedef long long int lsc_credential_t;
-
-typedef struct
-{
-  void* stmt;
-  gboolean done;
-} task_iterator_t;
-
-typedef struct
-{
-  void* stmt;
-  gboolean done;
-} iterator_t;
-#endif /* not TASKS_SQL */
 
 
 /* Events and Escalators. */
