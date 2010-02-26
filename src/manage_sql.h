@@ -38,8 +38,6 @@ void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
-void sql (char *, ...);
-
 lsc_credential_t target_lsc_credential (target_t);
 const char* lsc_credential_iterator_password (iterator_t *);
 

@@ -1,5 +1,12 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage_sql.c (sql, sql_x, sql_int, sql_string, sql_int64): Make
+	static.
+
+	* src/manage_sql.h (sql): Remove.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.c (set_task_requested): New function.
 
 	* src/manage_sql.h: Add header accordingly.

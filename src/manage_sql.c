@@ -192,7 +192,7 @@ sql_insert (const char *value)
   return g_strdup ("NULL");
 }
 
-void
+static void
 sql (char* sql, ...)
 {
   const char* tail;
@@ -262,7 +262,7 @@ sql (char* sql, ...)
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
+static int
 sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
        va_list args, sqlite3_stmt** stmt_return)
 {
@@ -331,7 +331,7 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
   return 0;
 }
 
-int
+static int
 sql_int (unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
@@ -352,7 +352,7 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
   return ret;
 }
 
-char*
+static char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
@@ -388,7 +388,7 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
+static int
 sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ...)
 {
   sqlite3_stmt* stmt;
