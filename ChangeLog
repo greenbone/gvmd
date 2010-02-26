@@ -1,5 +1,9 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/CMakeLists.txt: Link manage_sql to manage.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/tasks_sql.h: Rename to src/manage_sql.c.
 
 	* src/manage_sql.c: New file.  Was src/tasks_sql.h.
