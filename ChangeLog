@@ -1,5 +1,10 @@
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage_sql.c (init_nvt_iterator, select_config_nvts): If sort_field
+	is NULL use name instead of ROWID, because name is selected.
+
+2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.h: Use work email address.
 
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
