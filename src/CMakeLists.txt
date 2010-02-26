@@ -27,7 +27,6 @@
 add_definitions (-Werror)
 
 set (TASKS_CFLAG "-DTASKS_SQL")
-set (TASKS_LDFLAG "-lsqlite3")
 
 message (STATUS "Looking for sqlite3...")
 find_library (SQLITE3 sqlite3)
@@ -131,7 +130,7 @@ if (OPENVAS_DATA_DIR)
 endif (OPENVAS_DATA_DIR)
 
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
-                       "${LIB_TEMP} -lgnutls -luuid ${GLIB_LDFLAGS} ${TASKS_LDFLAG} ${OPENVAS_LDFLAGS}")
+                       "${LIB_TEMP} -lsqlite3 -lgnutls -luuid ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
                        "${TASKS_CFLAG} ${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
