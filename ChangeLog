@@ -1,3 +1,8 @@
+2010-03-02  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/openvasmd_report_html.xsl (wrap): Select substring correctly after
+	wrap.
+
 2010-02-26  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage_sql.c (sql, sql_x, sql_int, sql_string, sql_int64): Make
