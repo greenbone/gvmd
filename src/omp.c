@@ -6283,9 +6283,152 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_report",
-                                "Bogus report format in format attribute"));
+            task_t task;
+            gchar *xml_file;
+            char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+            /* Try apply a stylesheet from the SYSCONF/manager/ dir. */
+
+            if (report_task (report, &task))
+              {
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                get_report_data_reset (get_report_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
+
+            if (mkdtemp (xml_dir) == NULL)
+              {
+                g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
+                     print_report_xml (report,
+                                       task,
+                                       xml_file,
+                                       get_report_data->sort_order,
+                                       get_report_data->sort_field))
+              {
+                g_free (xml_file);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+              }
+            else
+              {
+                gchar *xsl_name, *xsl_file;
+
+                xsl_name = g_strdup_printf ("%s.xsl", get_report_data->format);
+
+                xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                             "openvasmd",
+                                             "xsl",
+                                             xsl_name,
+                                             NULL);
+
+                g_free (xsl_name);
+
+                if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
+                  {
+                    g_free (xsl_file);
+                    g_free (xml_file);
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("get_report",
+                                        "Bogus report format in format"
+                                        " attribute"));
+                  }
+                else
+                  {
+                    gchar *output_file, *command;
+                    int ret;
+
+                    output_file = g_strdup_printf ("%s/report.out", xml_dir);
+
+                    command = g_strdup_printf ("xsltproc -v %s %s -o %s"
+                                               " 2> /tmp/openvasmd_generic",
+                                                xsl_file,
+                                                xml_file,
+                                                output_file);
+                    g_free (xsl_file);
+                    g_free (xml_file);
+
+                    g_message ("   command: %s\n", command);
+
+                    /* RATS: ignore, command is defined above. */
+                    if (ret = system (command),
+                        // FIX ret is always -1
+                        0 && ((ret) == -1
+                              || WEXITSTATUS (ret)))
+                      {
+                        g_warning ("%s: system failed with ret %i, %i, %s\n",
+                                    __FUNCTION__,
+                                    ret,
+                                    WEXITSTATUS (ret),
+                                    command);
+                        g_free (command);
+                        g_free (output_file);
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_report"));
+                      }
+                    else
+                      {
+                        GError *get_error;
+                        gchar *output;
+                        gsize output_len;
+
+                        g_free (command);
+
+                        /* Send the output to the client. */
+
+                        get_error = NULL;
+                        g_file_get_contents (output_file,
+                                             &output,
+                                             &output_len,
+                                             &get_error);
+                        g_free (output_file);
+                        if (get_error)
+                          {
+                            g_warning ("%s: Failed to get output: %s\n",
+                                        __FUNCTION__,
+                                        get_error->message);
+                            g_error_free (get_error);
+                            SEND_TO_CLIENT_OR_FAIL
+                             (XML_INTERNAL_ERROR ("get_report"));
+                          }
+                        else
+                          {
+                            /* Remove the directory. */
+
+                            file_utils_rmdir_rf (xml_dir);
+
+                            /* Encode and send the output. */
+
+                            SENDF_TO_CLIENT_OR_FAIL
+                             ("<get_report_response"
+                              " status=\"" STATUS_OK "\""
+                              " status_text=\"" STATUS_OK_TEXT "\">"
+                              "<report format=\"%s\">",
+                              get_report_data->format);
+                            if (output && strlen (output))
+                              {
+                                gchar *base64;
+                                base64 = g_base64_encode ((guchar*) output,
+                                                          output_len);
+                                if (send_to_client (base64))
+                                  {
+                                    g_free (output);
+                                    g_free (base64);
+                                    error_send_to_client (error);
+                                    return;
+                                  }
+                                g_free (base64);
+                              }
+                            g_free (output);
+                            SEND_TO_CLIENT_OR_FAIL
+                             ("</report>"
+                              "</get_report_response>");
+                          }
+                      }
+                  }
+              }
           }
 
         get_report_data_reset (get_report_data);
