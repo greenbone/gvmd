@@ -220,6 +220,11 @@ static gchar *database = NULL;
  */
 int is_parent = 1;
 
+/**
+ * @brief Whether to serve OTP.
+ */
+gboolean otp = FALSE;
+
 
 /* Forking, serving the client. */
 
@@ -305,6 +310,8 @@ serve_client (int client_socket)
   switch (read_protocol (&client_session, client_socket))
     {
       case PROTOCOL_OTP:
+        if (otp == FALSE)
+          goto fail;
         /* It's up to serve_otp to openvas_server_free client_*. */
         if (serve_otp (&client_session, &scanner_session,
                        &client_credentials,
@@ -586,6 +593,7 @@ main (int argc, char** argv)
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
+        { "otp", '\0', 0, G_OPTION_ARG_NONE, &otp, "Serve OTP too.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },

@@ -52,6 +52,7 @@ The program usage message follows.
       -f, --foreground            Run in foreground.
       -a, --listen=<address>      Listen on <address>.
       -m, --migrate               Migrate the database and exit.
+      --otp                       Serve OTP too.
       -p, --port=<number>         Use port number <number>.
       --rebuild                   Rebuild the NVT cache and exit.
       -l, --slisten=<address>     Scanner (openvassd) address.

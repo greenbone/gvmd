@@ -1,5 +1,13 @@
 2010-03-02  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* README: Update usage.
+
+	* src/openvasmd.c (otp): New variable.
+	(serve_client): Only serve OTP if OTP is enabled.
+	(main): Add --otp.
+
+2010-03-02  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/openvasmd_report_html.xsl (wrap): Select substring correctly after
 	wrap.
 
