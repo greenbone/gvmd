@@ -1,3 +1,9 @@
+2010-03-03  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/ITG.xsl: New file.
+
+	* src/CMakeLists.txt: Install ITG.xsl.
+
 2010-03-02  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT try create
