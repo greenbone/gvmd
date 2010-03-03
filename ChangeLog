@@ -1,5 +1,10 @@
 2010-03-03  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage_sql.c (init_manage): Improve test for example task.  Insert
+	config and target of example task as IDs instead of names.
+
+2010-03-03  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/ITG.xsl: New file.
 
 	* src/CMakeLists.txt: Install ITG.xsl.

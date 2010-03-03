@@ -4144,14 +4144,18 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined example task and report exists. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM tasks WHERE hidden = 1;") == 0)
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks"
+               " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';")
+      == 0)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
            " run_status, start_time, end_time, config, target)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
-           " 'Full and fast', 'Localhost');",
+           " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
+           " (SELECT ROWID FROM targets WHERE name = 'Localhost'));",
            TASK_STATUS_DONE);
     }
 
