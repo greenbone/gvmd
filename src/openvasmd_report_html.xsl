@@ -8,6 +8,32 @@
               doctype-public="-//W3C//DTD HTML 4.01//EN"
               encoding="UTF-8" />
 
+<!--
+OpenVAS Manager
+$Id$
+Description: Report stylesheet for HTML format.
+
+Authors:
+Matthew Mundell <matthew.mundell@intevation.de>
+
+Copyright:
+Copyright (C) 2010 Greenbone Networks GmbH
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2,
+or, at your option, any later version as published by the Free
+Software Foundation
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+
   <!-- <xsl:key name="host_results" match="*/result" use="host" /> -->
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
 
