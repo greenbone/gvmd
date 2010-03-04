@@ -6,6 +6,12 @@
 
 2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT pipe
+	xsltproc output instead of using -o, so that the file is still created
+	when the transformation result is empty.
+
+2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.c (select_config_nvts, init_note_iterator): Ensure
 	fallback sort fields include table when selecting in multiple tables.
 

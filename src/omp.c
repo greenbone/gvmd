@@ -5888,7 +5888,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     html_file = g_strdup_printf ("%s/report.html", xml_dir);
 
-                    command = g_strdup_printf ("xsltproc -v %s %s -o %s"
+                    command = g_strdup_printf ("xsltproc -v %s %s > %s"
                                                " 2> /tmp/openvasmd_html",
                                                 xsl_file,
                                                 xml_file,
@@ -6342,7 +6342,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     output_file = g_strdup_printf ("%s/report.out", xml_dir);
 
-                    command = g_strdup_printf ("xsltproc -v %s %s -o %s"
+                    command = g_strdup_printf ("xsltproc -v %s %s > %s"
                                                " 2> /tmp/openvasmd_generic",
                                                 xsl_file,
                                                 xml_file,
