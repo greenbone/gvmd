@@ -1,5 +1,11 @@
 2010-03-04  Michael Wiegand <michael.wiegand@intevation.de>
 
+	Post-release version bump.
+
+	* CMakeLists.txt: Updated version number.
+
+2010-03-04  Michael Wiegand <michael.wiegand@intevation.de>
+
 	Preparing the openvas-manager 1.0.0-beta5 release.
 
 	* CHANGES: Updated.
