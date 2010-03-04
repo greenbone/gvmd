@@ -1,3 +1,8 @@
+2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage_sql.c (select_config_nvts, init_note_iterator): Ensure
+	fallback sort fields include table when selecting in multiple tables.
+
 2010-03-04  Michael Wiegand <michael.wiegand@intevation.de>
 
 	* src/CPE.xsl: New file.

@@ -9661,7 +9661,7 @@ nvt_selector_nvt_count (const char *selector,
  * @param[in]  config      Config.
  * @param[in]  family      Family to limit selection to.
  * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  sort_field  Field to sort on, or NULL for "nvts.ROWID".
  *
  * @return Freshly allocated SELECT statement on success, or NULL on error.
  */
@@ -9737,7 +9737,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      family,
                      quoted_selector,
                      family,
-                     sort_field ? sort_field : "name",
+                     sort_field ? sort_field : "nvts.name",
                      ascending ? "ASC" : "DESC");
 
           /* The family is included.  Iterate all NVT's minus excluded NVT's. */
@@ -9765,7 +9765,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    family,
                    quoted_selector,
                    family,
-                   sort_field ? sort_field : "name",
+                   sort_field ? sort_field : "nvts.name",
                    ascending ? "ASC" : "DESC");
         }
       else
@@ -9809,7 +9809,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      family,
                      quoted_selector,
                      family,
-                     sort_field ? sort_field : "name",
+                     sort_field ? sort_field : "nvts.name",
                      ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
@@ -9829,7 +9829,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    family,
                    quoted_selector,
                    family,
-                   sort_field ? sort_field : "name",
+                   sort_field ? sort_field : "nvts.name",
                    ascending ? "ASC" : "DESC");
         }
     }
@@ -9854,7 +9854,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               " ORDER BY nvts.%s %s;",
               quoted_family,
               quoted_selector,
-              sort_field ? sort_field : "ROWID",
+              sort_field ? sort_field : "nvts.ROWID",
               ascending ? "ASC" : "DESC");
       g_free (quoted_family);
 
@@ -11802,7 +11802,7 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    nvt,
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
-                   sort_field ? sort_field : "ROWID",
+                   sort_field ? sort_field : "notes.ROWID",
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
@@ -11815,7 +11815,7 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
                    join_clause ? join_clause : "",
                    current_credentials.uuid,
                    result_clause ? result_clause : "",
-                   sort_field ? sort_field : "ROWID",
+                   sort_field ? sort_field : "notes.ROWID",
                    ascending ? "ASC" : "DESC");
 
   g_free (result_clause);
