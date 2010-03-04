@@ -1,5 +1,18 @@
 2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add task trends.
+
+	* src/manage_sql.c (task_last_report, task_second_last_report)
+	(task_trend): New functions.
+	(REPORT_COUNT): Only set the variable if an address is given.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS send TREND
+	in TASK.
+
+2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.c (manage_set_config_families): When updating the cache
 	when the entire family is selected, increment the family count if the
 	family is being newly selected instead of if the family was already

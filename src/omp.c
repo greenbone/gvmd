@@ -9030,6 +9030,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<report_count>"
                                  "%u<finished>%u</finished>"
                                  "</report_count>"
+                                 "<trend>%s</trend>"
                                  "%s%s%s",
                                  tsk_uuid,
                                  name,
@@ -9046,6 +9047,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_warnings_size (task),
                                  task_report_count (task),
                                  task_finished_report_count (task),
+                                 task_trend (task),
                                  first_report,
                                  last_report,
                                  second_last_report);
@@ -9356,6 +9358,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<report_count>"
                                         "%u<finished>%u</finished>"
                                         "</report_count>"
+                                        "<trend>%s</trend>"
                                         "%s%s%s"
                                         "</task>",
                                         tsk_uuid,
@@ -9373,6 +9376,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_warnings_size (index),
                                         task_report_count (index),
                                         task_finished_report_count (index),
+                                        task_trend (index),
                                         first_report,
                                         last_report,
                                         second_last_report);

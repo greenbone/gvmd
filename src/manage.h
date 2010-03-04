@@ -398,6 +398,9 @@ task_report_count (task_t);
 unsigned int
 task_finished_report_count (task_t);
 
+const char *
+task_trend (task_t);
+
 void
 set_scan_attack_state (report_t, const char*, const char*);
 

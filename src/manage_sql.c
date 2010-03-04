@@ -4722,6 +4722,72 @@ task_end_time (task_t task)
 }
 
 /**
+ * @brief Get the report from the most recently completed invocation of task.
+ *
+ * @param[in]  task    The task.
+ * @param[out] report  Report return, 0 if succesfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+task_last_report (task_t task, report_t *report)
+{
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE task = %llu"
+                     " AND scan_run_status = %u"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task,
+                     TASK_STATUS_DONE))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
+}
+
+/**
+ * @brief Get the report from second most recently completed invocation of task.
+ *
+ * @param[in]  task    The task.
+ * @param[out] report  Report return, 0 if succesfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+task_second_last_report (task_t task, report_t *report)
+{
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE task = %llu"
+                     " AND scan_run_status = %u"
+                     " ORDER BY date DESC LIMIT 2;",
+                     task,
+                     TASK_STATUS_DONE))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
+}
+
+/**
  * @brief Get the report ID from the very first completed invocation of task.
  *
  * @param[in]  task  The task.
@@ -5964,13 +6030,14 @@ report_scan_result_count (report_t report, const char* levels,
   return 0;
 }
 
-#define REPORT_COUNT(report, var, name) \
-  *var = sql_int (0, 0, \
-                  "SELECT count(*) FROM results, report_results" \
-                  " WHERE results.type = '" name "'" \
-                  " AND results.ROWID = report_results.result" \
-                  " AND report_results.report = '%llu';", \
-                  report)
+#define REPORT_COUNT(report, var, name)                             \
+  if (var)                                                          \
+    *var = sql_int (0, 0,                                           \
+                    "SELECT count(*) FROM results, report_results"  \
+                    " WHERE results.type = '" name "'"              \
+                    " AND results.ROWID = report_results.result"    \
+                    " AND report_results.report = '%llu';",         \
+                    report)
 
 /**
  * @brief Get the message counts for a report given the UUID.
@@ -6115,6 +6182,115 @@ task_finished_report_count (task_t task)
                                  " AND scan_run_status = %u;",
                                  task,
                                  TASK_STATUS_DONE);
+}
+
+/**
+ * @brief Return the trend of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return "up", "down", "more", "less", "same" or if too few reports "".
+ */
+const char *
+task_trend (task_t task)
+{
+  report_t last_report, second_last_report;
+  int holes_a, warns_a, infos_a, threat_a;
+  int holes_b, warns_b, infos_b, threat_b;
+
+  /* Ensure there are enough reports. */
+
+  if (task_finished_report_count (task) <= 1)
+    return "";
+
+  /* Skip running tasks. */
+
+  if (task_run_status (task) == TASK_STATUS_RUNNING)
+    return "";
+
+  /* Get details of last report. */
+
+  task_last_report (task, &last_report);
+  if (last_report == 0)
+    return "";
+
+  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a))
+    abort (); // FIX fail better
+
+  holes_a = task_holes_size (task);
+  warns_a = task_warnings_size (task);
+  infos_a = task_infos_size (task);
+
+  if (holes_a > 0)
+    threat_a = 4;
+  else if (warns_a > 0)
+    threat_a = 3;
+  else if (infos_a > 0)
+    threat_a = 2;
+  else
+    threat_a = 1;
+
+  /* Get details of second last report. */
+
+  task_second_last_report (task, &second_last_report);
+  if (second_last_report == 0)
+    return "";
+
+  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
+                        &warns_b))
+    abort (); // FIX fail better
+
+  holes_b = task_holes_size (task);
+  warns_b = task_warnings_size (task);
+  infos_b = task_infos_size (task);
+
+  if (holes_b > 0)
+    threat_b = 4;
+  else if (warns_b > 0)
+    threat_b = 3;
+  else if (infos_b > 0)
+    threat_b = 2;
+  else
+    threat_b = 1;
+
+  /* Check if the threat level changed. */
+
+  if (threat_a > threat_b)
+    return "up";
+
+  if (threat_a < threat_b)
+    return "down";
+
+  /* Check if the threat count changed in the highest level. */
+
+  if (holes_a)
+    {
+      if (holes_a > holes_b)
+        return "more";
+      if (holes_a < holes_b)
+        return "less";
+      return "same";
+    }
+
+  if (warns_a)
+    {
+      if (warns_a > warns_b)
+        return "more";
+      if (warns_a < warns_b)
+        return "less";
+      return "same";
+    }
+
+  if (infos_a)
+    {
+      if (infos_a > infos_b)
+        return "more";
+      if (infos_a < infos_b)
+        return "less";
+      return "same";
+    }
+
+  return "same";
 }
 
 /**
