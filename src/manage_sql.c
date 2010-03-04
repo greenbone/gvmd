@@ -10195,7 +10195,7 @@ manage_set_config_families (config_t config,
                    old_nvt_count,
                    new_nvt_count,
                    growing_all ? 1 : 0,
-                   was_selected ? 1 : 0,
+                   was_selected ? 0 : 1,
                    config);
             }
           else
