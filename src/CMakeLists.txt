@@ -148,7 +148,7 @@ install (TARGETS openvasmd
 
 install (FILES openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
-install (FILES ITG.xsl
+install (FILES ITG.xsl CPE.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/xsl/)
 install (FILES openvasmd_report_html.xsl
          DESTINATION ${OPENVAS_DATA_DIR})
