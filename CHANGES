@@ -1,3 +1,22 @@
+openvas-manager 1.0.0-beta5 (2010-03-04)
+
+This is the fifth beta release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS) leading up to the upcoming
+openvas-manager 1.0.
+
+Many thanks to everyone who has contributed to this release:
+Stephan Kleine, Matthew Mundell and Felix Wolfsteller.
+
+Main changes since 1.0.0-beta4:
+
+* More internal data structures are now identified by UUID and not by
+  name.
+* Several build issues have been fixed.
+* Note management has been introduced.
+* Support for handling ITG and CPE reports has been added.
+* OTP forwarding is now disabled by default.
+
+
 openvas-manager 1.0.0-beta4 (2010-02-08)
 
 This is the fourth beta release of the openvas-manager module for the Open

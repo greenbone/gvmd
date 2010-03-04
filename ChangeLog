@@ -1,3 +1,9 @@
+2010-03-04  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Preparing the openvas-manager 1.0.0-beta5 release.
+
+	* CHANGES: Updated.
+
 2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage_sql.c (select_config_nvts, init_note_iterator): Ensure
