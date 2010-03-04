@@ -9851,7 +9851,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               " AND nvt_selectors.type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
               " AND nvt_selectors.name = '%s'"
               " AND nvts.oid = nvt_selectors.family_or_nvt"
-              " ORDER BY nvts.%s %s;",
+              " ORDER BY %s %s;",
               quoted_family,
               quoted_selector,
               sort_field ? sort_field : "nvts.ROWID",
