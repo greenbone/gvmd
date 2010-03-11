@@ -346,7 +346,9 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         break;
       case SCANNER_INIT_GOT_PASSWORD:
         {
-          char* const password = "om\n";
+          /* We don't use password based authentication, but have to send
+           * something to stay compatible with OTP. */
+          char* const password = "*\n";
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         password + scanner_init_offset);
           if (scanner_init_offset == 0)

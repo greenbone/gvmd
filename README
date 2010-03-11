@@ -17,10 +17,10 @@ All parts of OpenVAS-Manager are Copyright (C) by Greenbone Networks GmbH
 Howto use
 ---------
 
-Note that the Manager always connects to the scanner as user "om" with
-password "om", so that user must exist on the scanner.  This user is not
-installed by the build process, so you must add the "om" user to the scanner
-manually.
+Note that the Manager always connects to the scanner as user "om" and
+uses certificate based authentication exclusively. This user is not
+installed by the build process, so you must add the "om" user to the
+scanner manually.  Please see the file INSTALL for instructions.
 
 For example, if openvassd is running on port 9391, the following command
 starts the Manager on port 9390.  The client can then connect to port 9390

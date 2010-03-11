@@ -1,3 +1,26 @@
+2010-03-11  Michael Wiegand <michael.wiegand@intevation.de>
+
+	Switched to certificate based authentication.
+
+	* src/openvasmd.c (serve_client, main): Pass our client
+	certificate to openvas_server_new when establishing a
+	connection. Add fallback defines for CLIENTCERT and CLIENTKEY if
+	the are not defined externally.
+
+	* CMakeLists.txt: Set OPENVAS_CLIENT_CERTIFICATE and
+	OPENVAS_CLIENT_KEY to the expected certificate and key
+	locations.
+
+	* src/CMakeLists.txt: Set defines for certificate and key.
+
+	* src/ompd.c (write_to_scanner): Set the password to a dummy
+	value to stay OTP compatible and explain the reason in a
+	comment.
+
+	* INSTALL: Document setup for certificate based authentication.
+
+	* README: Updated.
+
 2010-03-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add task trends.

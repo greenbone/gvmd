@@ -165,6 +165,20 @@
 #endif
 
 /**
+ * @brief Location of client certificate.
+ */
+#ifndef CLIENTCERT
+#define CLIENTCERT "/var/lib/openvas/CA/clientcert.pem"
+#endif
+
+/**
+ * @brief Location of client certificate private key.
+ */
+#ifndef CLIENTKEY
+#define CLIENTKEY  "/var/lib/openvas/private/CA/clientkey.pem"
+#endif
+
+/**
  * @brief Scanner port.
  *
  * Used if /etc/services "otp" and --port missing.
@@ -262,9 +276,9 @@ serve_client (int client_socket)
     }
 
   if (openvas_server_new (GNUTLS_CLIENT,
-                          NULL,
-                          NULL,
-                          NULL,
+                          CACERT,
+                          CLIENTCERT,
+                          CLIENTKEY,
                           &scanner_session,
                           &scanner_credentials))
     {
@@ -779,9 +793,9 @@ main (int argc, char** argv)
         }
 
       if (openvas_server_new (GNUTLS_CLIENT,
-                              NULL,
-                              NULL,
-                              NULL,
+                              CACERT,
+                              CLIENTCERT,
+                              CLIENTKEY,
                               &scanner_session,
                               &scanner_credentials))
         return EXIT_FAILURE;
