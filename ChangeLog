@@ -1,3 +1,7 @@
+2010-03-11  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* CMakeLists.txt: Indent certificate values like others.
+
 2010-03-11  Michael Wiegand <michael.wiegand@intevation.de>
 
 	Switched to certificate based authentication.
