@@ -780,12 +780,13 @@ send_config_rules (const char* config)
 /**
  * @brief Send the rules listed in the users directory.
  *
- * @param[in]  config  Config.
+ * @param[in]  config          Config.
+ * @param[in]  stopped_report  Report whose finished hosts to deny.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_user_rules ()
+send_user_rules (report_t stopped_report)
 {
   gchar *rules_file, *rules;
   GError *error = NULL;
@@ -810,6 +811,31 @@ send_user_rules ()
 
   split = rule = g_strsplit (rules, "\n", 0);
   g_free (rules);
+
+  if (stopped_report && (*rule == NULL))
+    {
+      iterator_t hosts;
+
+      /* Empty rules file.  Send rules to deny all finished hosts. */
+
+      init_host_iterator (&hosts, stopped_report);
+      while (next (&hosts))
+        if (host_iterator_end_time (&hosts)
+            && strlen (host_iterator_end_time (&hosts))
+            && sendf_to_server ("deny %s\n",
+                                host_iterator_host (&hosts)))
+          {
+            cleanup_iterator (&hosts);
+            g_strfreev (split);
+            return -1;
+          }
+      cleanup_iterator (&hosts);
+
+      g_strfreev (split);
+
+      return send_to_server ("default accept\n") ? -1 : 0;
+    }
+
   while (*rule)
     {
       *rule = g_strstrip (*rule);
@@ -818,12 +844,68 @@ send_user_rules ()
           rule++;
           continue;
         }
+
       /* Presume the rule is correctly formatted. */
-      if (send_to_server (*rule))
+
+      if (stopped_report)
+        {
+          gboolean send_rule = TRUE;
+          iterator_t hosts;
+
+          /* Send deny rules for finished hosts before "allow all" rule. */
+
+          if (strncmp (*rule, "default accept", strlen ("default accept")) == 0)
+            {
+              init_host_iterator (&hosts, stopped_report);
+              while (next (&hosts))
+                if (host_iterator_end_time (&hosts)
+                    && strlen (host_iterator_end_time (&hosts))
+                    && sendf_to_server ("deny %s\n",
+                                        host_iterator_host (&hosts)))
+                  {
+                    cleanup_iterator (&hosts);
+                    g_strfreev (split);
+                    return -1;
+                  }
+              cleanup_iterator (&hosts);
+            }
+          else
+            {
+              /* Prevent allow rules for finished hosts. */
+
+              init_host_iterator (&hosts, stopped_report);
+              while (next (&hosts))
+                if (host_iterator_end_time (&hosts)
+                    && strlen (host_iterator_end_time (&hosts)))
+                  {
+                    if ((strncmp (*rule, "allow ", strlen ("allow "))
+                         == 0)
+                        && (strncmp (*rule + strlen ("allow "),
+                                     host_iterator_host (&hosts),
+                                     strlen (host_iterator_host (&hosts)))
+                            == 0))
+                      {
+                        send_rule = FALSE;
+                        break;
+                      }
+                  }
+              cleanup_iterator (&hosts);
+            }
+
+          /* Send the rule. */
+
+          if (send_rule && send_to_server (*rule))
+            {
+              g_strfreev (split);
+              return -1;
+            }
+        }
+      else if (send_to_server (*rule))
         {
           g_strfreev (split);
           return -1;
         }
+
       if (sendn_to_server ("\n", 1))
         {
           g_strfreev (split);
@@ -892,18 +974,19 @@ send_task_file (task_t task, const char* file)
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task       The task.
- * @param[out]  report_id  The report ID.
+ * @param[in]   task          The task.
+ * @param[out]  report_id     The report ID.
+ * @param[in]   from_stopped  Continue task from stopped state if true.
  *
- * @return Before forking: 1 task is active already,
+ * @return Before forking: 1 task is active already, -1 error,
  *         -2 task is missing a target, -3 creating the report failed,
  *         -4 target missing hosts, -6 already a task running in this process,
  *         -9 fork failed.
  *         After forking: 0 success (parent), 2 success (child),
  *         -10 error (child).
  */
-int
-start_task (task_t task, char **report_id)
+static int
+run_task (task_t task, char **report_id, gboolean from_stopped)
 {
   target_t target;
   char *hosts;
@@ -913,6 +996,7 @@ start_task (task_t task, char **report_id)
   task_status_t run_status;
   config_t config;
   lsc_credential_t credential;
+  report_t last_stopped_report;
 
   tracef ("   start task %u\n", task_id (task));
 
@@ -945,13 +1029,39 @@ start_task (task_t task, char **report_id)
 
   credential = target_lsc_credential (target);
 
-  /* Create the report. */
-
-  if (create_report (task, report_id, TASK_STATUS_REQUESTED))
+  if (from_stopped)
     {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      return -3;
+      if (task_last_stopped_report (task, &last_stopped_report))
+        {
+          tracef ("   error getting last stopped report.\n");
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+
+      current_report = last_stopped_report;
+      *report_id = report_uuid (last_stopped_report);
+
+      /* Remove partial host information from the report. */
+
+      trim_partial_report (last_stopped_report);
+
+      /* Clear the end times of the task and partial report. */
+
+      set_task_end_time (task, NULL);
+      set_scan_end_time (last_stopped_report, NULL);
+    }
+  else
+    {
+      last_stopped_report = 0;
+
+      /* Create the report. */
+
+      if (create_report (task, report_id, TASK_STATUS_REQUESTED))
+        {
+          free (hosts);
+          set_task_run_status (task, run_status);
+          return -3;
+        }
     }
 
   /* Fork a child to start and handle the task while the parent responds to
@@ -1162,7 +1272,7 @@ start_task (task_t task, char **report_id)
       return -10;
     }
 
-  if (send_user_rules ())
+  if (send_user_rules (last_stopped_report))
     {
       free (hosts);
       set_task_run_status (task, run_status);
@@ -1205,6 +1315,30 @@ start_task (task_t task, char **report_id)
 }
 
 /**
+ * @brief Start a task.
+ *
+ * Use \ref send_to_server to queue the task start sequence in the scanner
+ * output buffer.
+ *
+ * Only one task can run at a time in a process.
+ *
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return Before forking: 1 task is active already,
+ *         -2 task is missing a target, -3 creating the report failed,
+ *         -4 target missing hosts, -6 already a task running in this process,
+ *         -9 fork failed.
+ *         After forking: 0 success (parent), 2 success (child),
+ *         -10 error (child).
+ */
+int
+start_task (task_t task, char **report_id)
+{
+  return run_task (task, report_id, FALSE);
+}
+
+/**
  * @brief Initiate stopping a task.
  *
  * Use \ref send_to_server to queue the task stop sequence in the
@@ -1232,6 +1366,25 @@ stop_task (task_t task)
       return 1;
     }
   return 0;
+}
+
+/**
+ * @brief Resume a stopped task.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 22 caller error (task must be in "stopped" state), -1 error or any
+ *         start_task error.
+ */
+int
+resume_stopped_task (task_t task, char **report_id)
+{
+  task_status_t run_status;
+  // FIX something should check safety credential before this
+  run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_STOPPED)
+    return run_task (task, report_id, TRUE);
+  return 22;
 }
 
 

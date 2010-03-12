@@ -4788,6 +4788,39 @@ task_second_last_report (task_t task, report_t *report)
 }
 
 /**
+ * @brief Get the report from the most recently stopped invocation of task.
+ *
+ * @param[in]  task    The task.
+ * @param[out] report  Report return, 0 if succesfully failed to select report.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+task_last_stopped_report (task_t task, report_t *report)
+{
+  switch (sql_int64 (report, 0, 0,
+                     "SELECT ROWID FROM reports WHERE task = %llu"
+                     " AND scan_run_status = %u"
+                     " ORDER BY date DESC LIMIT 1;",
+                     task,
+                     TASK_STATUS_STOPPED))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report = 0;
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return 0;
+}
+
+/**
  * @brief Get the report ID from the very first completed invocation of task.
  *
  * @param[in]  task  The task.
@@ -5833,16 +5866,22 @@ host_iterator_max_port (iterator_t* iterator)
  * @brief Set the end time of a task.
  *
  * @param[in]  task  Task.
- * @param[in]  time  New time.  Freed before return.
+ * @param[in]  time  New time.  Freed before return.  If NULL, clear end time.
  */
 void
 set_task_end_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET end_time = '%.*s' WHERE ROWID = %llu;",
-       strlen (time),
-       time,
-       task);
-  free (time);
+  if (time)
+    {
+      sql ("UPDATE tasks SET end_time = '%.*s' WHERE ROWID = %llu;",
+           strlen (time),
+           time,
+           task);
+      free (time);
+    }
+  else
+    sql ("UPDATE tasks SET end_time = NULL WHERE ROWID = %llu;",
+         task);
 }
 
 /**
@@ -5894,13 +5933,17 @@ scan_end_time (report_t report)
  * @brief Set the end time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  End time.
+ * @param[in]  timestamp  End time.  If NULL, clear end time.
  */
 void
 set_scan_end_time (report_t report, const char* timestamp)
 {
-  sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
-       timestamp, report);
+  if (timestamp)
+    sql ("UPDATE reports SET end_time = '%s' WHERE ROWID = %llu;",
+         timestamp, report);
+  else
+    sql ("UPDATE reports SET end_time = NULL WHERE ROWID = %llu;",
+         report);
 }
 
 /**
@@ -6146,6 +6189,45 @@ set_report_parameter (report_t report, const char* parameter, char* value)
   else
     return -2;
   return 0;
+}
+
+/**
+ * @brief Prepare a partial report for resumption of the scan.
+ *
+ * @param[in]  report  The report.
+ */
+void
+trim_partial_report (report_t report)
+{
+  /* Remove results for partial hosts. */
+
+  sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
+       " (SELECT results.ROWID FROM report_results, results, report_hosts"
+       "  WHERE report_results.report = %llu"
+       "  AND report_results.result = results.ROWID"
+       "  AND report_hosts.report = %llu"
+       "  AND results.host = report_hosts.host"
+       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
+       report,
+       report,
+       report);
+
+  sql ("DELETE FROM results WHERE ROWID IN"
+       " (SELECT results.ROWID FROM report_results, results, report_hosts"
+       "  WHERE report_results.report = %llu"
+       "  AND report_results.result = results.ROWID"
+       "  AND report_hosts.report = %llu"
+       "  AND results.host = report_hosts.host"
+       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
+       report,
+       report);
+
+  /* Remove partial hosts. */
+
+  sql ("DELETE FROM report_hosts"
+       " WHERE report = %llu"
+       " AND (end_time is NULL OR end_time = '');",
+       report);
 }
 
 

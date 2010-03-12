@@ -512,6 +512,9 @@ start_task (task_t, char**);
 int
 stop_task (task_t);
 
+int
+resume_stopped_task (task_t, char **);
+
 
 /* Iteration. */
 
@@ -565,6 +568,9 @@ make_report_uuid ();
 
 gchar*
 task_first_report_id (task_t);
+
+int
+task_last_stopped_report (task_t, report_t *);
 
 gchar*
 task_last_report_id (task_t);
@@ -675,6 +681,9 @@ host_iterator_max_port (iterator_t*);
 
 int
 collate_message_type (void* data, int, const void*, int, const void*);
+
+void
+trim_partial_report (report_t);
 
 
 /* RC's. */

@@ -1,3 +1,27 @@
+2010-03-12  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add resuming of stopped tasks, and hence new OMP command
+	RESUME_STOPPED_TASK.
+
+	* src/manage_sql.c (task_last_stopped_report, trim_partial_report): New
+	functions.
+	(set_task_end_time, set_scan_end_time): If time is NULL, NULL the field.
+
+	* src/manage.c (send_user_rules): Add stopped_report arg.  If given ensure
+	that already-completed hosts are denied.
+	(run_task): New function.  Body from start_task.  If from_stopped arg is
+	true, setup task report for resuming task, and pass report to
+	send_user_rules.
+	(start_task): Call through to run_task.
+	(resume_stopped_task): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add RESUME_STOPPED_TASK.
+	(client_state_t): Add CLIENT_RESUME_STOPPED_TASK.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add RESUME_STOPPED_TASK handling.
+
 2010-03-11  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* CMakeLists.txt: Indent certificate values like others.
