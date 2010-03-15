@@ -1,3 +1,9 @@
+2010-03-15  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* README: Add testing heading and note about authenticating "om".
+	Thanks to Hartmut Goebel for suggestion.  Also add a space and an
+	apostrophe.
+
 2010-03-12  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add resuming of stopped tasks, and hence new OMP command
