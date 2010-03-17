@@ -527,7 +527,7 @@ handle_sigabrt (/*@unused@*/ int signal)
 void
 handle_sigterm (/*@unused@*/ int signal)
 {
-  cleanup_manage_process ();
+  cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }
 
@@ -539,7 +539,7 @@ handle_sigterm (/*@unused@*/ int signal)
 void
 handle_sighup (/*@unused@*/ int signal)
 {
-  cleanup_manage_process ();
+  cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }
 
@@ -551,7 +551,7 @@ handle_sighup (/*@unused@*/ int signal)
 void
 handle_sigint (/*@unused@*/ int signal)
 {
-  cleanup_manage_process ();
+  cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }
 
@@ -1075,17 +1075,19 @@ main (int argc, char** argv)
 
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
+  /* Initialise the process for manage_schedule. */
+
+  init_manage_process (0, database);
+
   /* Loop waiting for connections and passing the work to
-   * `accept_and_maybe_fork'.
-   *
-   * FIX This could just loop accept_and_maybe_fork.  Might the manager
-   *     want to communicate with anything else here, like the scanner?
+   * `accept_and_maybe_fork'.  Call the manage schedular periodically.
    */
 
   while (1)
     {
       int ret, nfds;
       fd_set readfds, exceptfds;
+      struct timeval timeout;
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
@@ -1093,11 +1095,21 @@ main (int argc, char** argv)
       FD_SET (manager_socket, &exceptfds);
       nfds = manager_socket + 1;
 
-      ret = select (nfds, &readfds, NULL, &exceptfds, NULL);
+      timeout.tv_usec = 0;
+      timeout.tv_sec = 10;
+      ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
 
       if (ret == -1)
         {
-          if (errno == EINTR) continue;
+          if (errno == EINTR)
+            {
+              if (manage_schedule (manager_address_string
+                                    ? manager_address_string
+                                    : "localhost",
+                                   ntohs (manager_address.sin_port)))
+                exit (EXIT_FAILURE);
+              continue;
+            }
           g_critical ("%s: select failed: %s\n",
                       __FUNCTION__,
                       strerror (errno));
@@ -1113,6 +1125,12 @@ main (int argc, char** argv)
           if (FD_ISSET (manager_socket, &readfds))
             accept_and_maybe_fork ();
         }
+
+      if (manage_schedule (manager_address_string
+                            ? manager_address_string
+                            : "localhost",
+                           ntohs (manager_address.sin_port)))
+        exit (EXIT_FAILURE);
     }
 
   return EXIT_SUCCESS;

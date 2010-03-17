@@ -174,6 +174,7 @@ typedef long long int report_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int lsc_credential_t;
+typedef long long int schedule_t;
 
 #include <sqlite3.h>
 
@@ -400,6 +401,9 @@ task_finished_report_count (task_t);
 
 const char *
 task_trend (task_t);
+
+schedule_t
+task_schedule (task_t);
 
 void
 set_scan_attack_state (report_t, const char*, const char*);
@@ -1174,5 +1178,17 @@ report_type_iterator_title (report_type_iterator_t*);
 
 int
 manage_system_report (const char *, const char *, char **);
+
+
+/* Scheduling. */
+
+char *
+schedule_uuid (schedule_t);
+
+char *
+schedule_name (schedule_t);
+
+int
+manage_schedule (const char *, int);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

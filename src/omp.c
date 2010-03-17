@@ -8917,11 +8917,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *response, *progress_xml;
                     target_t target;
                     char *name, *config, *escalator, *task_target_name, *hosts;
+                    char *task_schedule_uuid, *task_schedule_name;
                     gchar *first_report_id, *first_report;
                     char* description;
                     gchar *description64, *last_report_id, *last_report;
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
+                    schedule_t schedule;
 
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
@@ -9140,6 +9142,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator = task_escalator (task);
                     config = task_config_name (task);
                     task_target_name = target_name (target);
+                    schedule = task_schedule (task);
+                    if (schedule)
+                      {
+                        task_schedule_uuid = schedule_uuid (schedule);
+                        task_schedule_name = schedule_name (schedule);
+                      }
+                    else
+                      {
+                        task_schedule_uuid = (char*) g_strdup ("");
+                        task_schedule_name = (char*) g_strdup ("");
+                      }
                     response = g_strdup_printf
                                 ("<get_status_response"
                                  " status=\"" STATUS_OK "\""
@@ -9163,6 +9176,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "%u<finished>%u</finished>"
                                  "</report_count>"
                                  "<trend>%s</trend>"
+                                 "<schedule id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</schedule>"
                                  "%s%s%s",
                                  tsk_uuid,
                                  name,
@@ -9180,6 +9196,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_report_count (task),
                                  task_finished_report_count (task),
                                  task_trend (task),
+                                 task_schedule_uuid,
+                                 task_schedule_name,
                                  first_report,
                                  last_report,
                                  second_last_report);
@@ -9194,6 +9212,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (name);
                     g_free (description64);
                     free (tsk_uuid);
+                    free (task_schedule_uuid);
+                    free (task_schedule_name);
                     if (ret)
                       {
                         error_send_to_client (error);
@@ -9251,12 +9271,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char *name = task_name (index);
                 target_t target;
                 char *tsk_uuid, *config, *escalator, *task_target_name, *hosts;
+                char *task_schedule_uuid, *task_schedule_name;
                 gchar *first_report_id, *first_report;
                 char *description;
                 gchar *description64, *last_report_id, *last_report;
                 gchar *second_last_report_id, *second_last_report;
                 report_t running_report;
                 int maximum_hosts;
+                schedule_t schedule;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
@@ -9471,6 +9493,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 config = task_config_name (index);
                 escalator = task_escalator (index);
                 task_target_name = target_name (target);
+                schedule = task_schedule (index);
+                if (schedule)
+                  {
+                    task_schedule_uuid = schedule_uuid (schedule);
+                    task_schedule_name = schedule_name (schedule);
+                  }
+                else
+                  {
+                    task_schedule_uuid = (char*) g_strdup ("");
+                    task_schedule_name = (char*) g_strdup ("");
+                  }
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
@@ -9491,6 +9524,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "%u<finished>%u</finished>"
                                         "</report_count>"
                                         "<trend>%s</trend>"
+                                        "<schedule id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "</schedule>"
                                         "%s%s%s"
                                         "</task>",
                                         tsk_uuid,
@@ -9509,6 +9545,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_report_count (index),
                                         task_finished_report_count (index),
                                         task_trend (index),
+                                        task_schedule_uuid,
+                                        task_schedule_name,
                                         first_report,
                                         last_report,
                                         second_last_report);
@@ -9521,6 +9559,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 free (name);
                 g_free (description64);
                 free (tsk_uuid);
+                free (task_schedule_uuid);
+                free (task_schedule_name);
                 if (send_to_client (line))
                   {
                     g_free (line);

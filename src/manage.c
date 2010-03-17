@@ -52,6 +52,8 @@
 #include <sys/wait.h>
 
 #include <openvas/base/openvas_string.h>
+#include <openvas/omp/omp.h>
+#include <openvas/openvas_server.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -1039,7 +1041,7 @@ run_task (task_t task, char **report_id, gboolean from_stopped)
         }
 
       current_report = last_stopped_report;
-      *report_id = report_uuid (last_stopped_report);
+      if (report_id) *report_id = report_uuid (last_stopped_report);
 
       /* Remove partial host information from the report. */
 
@@ -1677,5 +1679,97 @@ manage_system_report (const char *name, const char *duration, char **report)
     }
   else
     *report = astdout;
+  return 0;
+}
+
+
+/* Scheduling. */
+
+/**
+ * @brief Schedule any actions that are due.
+ *
+ * Fork a process to run each required action.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_schedule (const char *host, int port)
+{
+  iterator_t schedules;
+  init_task_schedule_iterator (&schedules);
+  while (next (&schedules))
+    if (task_schedule_iterator_start_due (&schedules))
+      {
+        int pid;
+        gchar *uuid;
+
+        /* Mark the task as scheduled. */
+
+        current_credentials.username = "mattm";
+        current_credentials.password = "mattm";
+        current_credentials.uuid = "8c814a31-7229-4d56-8cae-9472560e1218";
+
+        set_schedule_next_time (task_schedule_iterator_schedule (&schedules),
+                                0);
+
+        /* Fork a child to initiate the task. */
+
+        uuid = g_strdup (task_schedule_iterator_task_uuid (&schedules));
+        pid = fork ();
+        switch (pid)
+          {
+            case 0:
+              {
+                gnutls_session_t session;
+                int socket;
+
+                /* Child.  Start the task and exit. */
+
+                cleanup_manage_process (FALSE);
+
+                socket = openvas_server_open (&session, host, port);
+                if (socket == -1)
+                  {
+                    g_free (uuid);
+                    exit (EXIT_FAILURE);
+                  }
+
+                if (omp_authenticate (&session,
+                                      current_credentials.username,
+                                      current_credentials.password))
+                  {
+                    openvas_server_close (socket, session);
+                    g_free (uuid);
+                    exit (EXIT_FAILURE);
+                  }
+
+                if (omp_start_task (&session, uuid))
+                  {
+                    openvas_server_close (socket, session);
+                    g_free (uuid);
+                    exit (EXIT_FAILURE);
+                  }
+
+                openvas_server_close (socket, session);
+              }
+              g_free (uuid);
+              exit (EXIT_SUCCESS);
+              break;
+            case -1:
+              /* Parent when error. */
+              g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+            default:
+              /* Parent. */
+              break;
+          }
+        g_free (uuid);
+        current_credentials.username = NULL;
+        current_credentials.password = NULL;
+      }
+    else if (task_schedule_iterator_stop_due (&schedules))
+      {
+
+      }
+  cleanup_task_schedule_iterator (&schedules);
   return 0;
 }

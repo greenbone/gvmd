@@ -1,7 +1,39 @@
 2010-03-17  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add basis for task scheduling.  Hence increase database version to 15.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 15.
+
+	* src/openvasmd.c (main): Add periodic manage_schedule call to the
+	listen loop.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add
+	SCHEDULE to TASK.
+
+	* src/manage.c (run_task): Only set report_id if an address.
+	(manage_schedule): New function.  Forks processes to start scheduled
+	tasks.
+
+	* src/manage_sql.c (create_tables): Add table schedules.  Add field
+	"schedule" to table tasks.
+	(cleanup_manage_process): Add cleanup arg.  Just clear db handle if
+	false, for forked processes.
+	(task_schedule, schedule_uuid, schedule_name, set_schedule_next_time)
+	(init_task_schedule_iterator, cleanup_task_schedule_iterator)
+	(task_schedule_iterator_task, task_schedule_iterator_schedule)
+	(task_schedule_iterator_next_time, task_schedule_iterator_start_due)
+	(task_schedule_iterator_stop_due): New functions.
+	(create_report): Allow report_id to be NULL.
+
+	* src/manage.h: Add headers accordingly.
+	(schedule_t): New type.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+2010-03-17  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Correct command names in
-	CLIENT_GET_TARGETS.
+	CLIENT_GET_TARGETS.  Closes #1329 (http://bugs.openvas.org/1329).
 
 2010-03-15  Matthew Mundell <matthew.mundell@intevation.de>
 

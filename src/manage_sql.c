@@ -723,10 +723,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, next_time, period, duration);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -2475,23 +2476,23 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   if (old_version == -1)
     {
-      cleanup_manage_process ();
+      cleanup_manage_process (TRUE);
       return -1;
     }
 
   if (old_version == new_version)
     {
-      cleanup_manage_process ();
+      cleanup_manage_process (TRUE);
       return 1;
     }
 
   switch (migrate_is_available (old_version, new_version))
     {
       case -1:
-        cleanup_manage_process ();
+        cleanup_manage_process (TRUE);
         return -1;
       case  0:
-        cleanup_manage_process ();
+        cleanup_manage_process (TRUE);
         return  2;
     }
 
@@ -2508,7 +2509,7 @@ manage_migrate (GSList *log_config, const gchar *database)
         {
           restore_db (backup_file);
           g_free (backup_file);
-          cleanup_manage_process ();
+          cleanup_manage_process (TRUE);
           return -1;
         }
 
@@ -2516,7 +2517,7 @@ manage_migrate (GSList *log_config, const gchar *database)
         {
           restore_db (backup_file);
           g_free (backup_file);
-          cleanup_manage_process ();
+          cleanup_manage_process (TRUE);
           return -1;
         }
       migrators++;
@@ -2524,7 +2525,7 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   // FIX remove backup_file
   g_free (backup_file);
-  cleanup_manage_process ();
+  cleanup_manage_process (TRUE);
   return 0;
 }
 
@@ -4270,10 +4271,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 /**
  * @brief Cleanup the manage library.
  *
+ * @param[in]  cleanup  If true perform the cleanup operations, else just clear
+ *                      the database handle (for use in forked processes).
+ *
  * Put any running task in the stopped state and close the database.
  */
 void
-cleanup_manage_process ()
+cleanup_manage_process (gboolean cleanup)
 {
   if (task_db)
     {
@@ -4967,6 +4971,33 @@ task_threat_level (task_t task)
 }
 
 /**
+ * @brief Return the schedule of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Schedule.
+ */
+schedule_t
+task_schedule (task_t task)
+{
+  schedule_t schedule = 0;
+  switch (sql_int64 (&schedule, 0, 0,
+                     "SELECT schedule FROM tasks WHERE ROWID = %llu;",
+                     task))
+    {
+      case 0:
+        return schedule;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
  * @brief Generate rcfile in task from config and target.
  *
  * @param[in]  task  The task.
@@ -5256,10 +5287,13 @@ make_report (task_t task, const char* uuid, task_status_t status)
 int
 create_report (task_t task, char **report_id, task_status_t status)
 {
+  char *id;
+
   assert (current_report == (report_t) 0);
+
   if (current_report) return -1;
 
-  if (report_id == NULL) return -1;
+  if (report_id == NULL) report_id = &id;
 
   /* Generate report UUID. */
 
@@ -12180,6 +12214,133 @@ note_iterator_nvt_name (iterator_t *iterator)
   if (nvti)
     return nvti_name (nvti);
   return NULL;
+}
+
+
+/* Schedules. */
+
+/**
+ * @brief Return the UUID of a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Newly allocated UUID.
+ */
+char *
+schedule_uuid (schedule_t schedule)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM schedules WHERE ROWID = %llu;",
+                     schedule);
+}
+
+/**
+ * @brief Return the name of a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Newly allocated name.
+ */
+char *
+schedule_name (schedule_t schedule)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM schedules WHERE ROWID = %llu;",
+                     schedule);
+}
+
+/**
+ * @brief Set the next time a schedule will be due.
+ *
+ * @param[in]  schedule  Schedule.
+ * @param[in]  time      New next time.
+ */
+void
+set_schedule_next_time (schedule_t schedule, time_t time)
+{
+  sql ("UPDATE schedules SET next_time = %i WHERE ROWID = %llu;",
+       time, schedule);
+}
+
+/**
+ * @brief Initialise a task schedule iterator.
+ *
+ * Lock the database before initialising.
+ *
+ * @param[in]  iterator        Iterator.
+ */
+void
+init_task_schedule_iterator (iterator_t* iterator)
+{
+  sql ("BEGIN EXCLUSIVE;");
+  init_iterator (iterator,
+                 "SELECT tasks.ROWID, tasks.uuid,"
+                 " schedules.ROWID, schedules.next_time"
+                 " FROM tasks, schedules"
+                 " WHERE tasks.schedule = schedules.ROWID;");
+}
+
+/**
+ * @brief Cleanup a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+cleanup_task_schedule_iterator (iterator_t* iterator)
+{
+  cleanup_iterator (iterator);
+  sql ("COMMIT;");
+}
+
+task_t
+task_schedule_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
+
+schedule_t
+task_schedule_iterator_schedule (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (schedule_t) sqlite3_column_int64 (iterator->stmt, 2);
+}
+
+static time_t
+task_schedule_iterator_next_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 3);
+}
+
+gboolean
+task_schedule_iterator_start_due (iterator_t* iterator)
+{
+  task_status_t run_status;
+  time_t start_time;
+
+  if (iterator->done) return FALSE;
+
+  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  start_time = task_schedule_iterator_next_time (iterator);
+
+  if ((run_status == TASK_STATUS_DONE
+       || run_status == TASK_STATUS_INTERNAL_ERROR
+       || run_status == TASK_STATUS_NEW
+       || run_status == TASK_STATUS_STOPPED)
+      && (start_time > 0)
+      && (start_time <= time (NULL)))
+    return TRUE;
+
+  return FALSE;
+}
+
+gboolean
+task_schedule_iterator_stop_due (iterator_t* iterator)
+{
+  return FALSE;
 }
 
 #undef DEF_ACCESS
