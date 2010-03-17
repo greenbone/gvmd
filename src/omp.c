@@ -10339,10 +10339,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
           if (current_name && find_target (current_name, &target))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
           else if (current_name && target == 0)
             {
-              if (send_find_error_to_client ("delete_target",
+              if (send_find_error_to_client ("get_targets",
                                              "target",
                                              current_name))
                 {
