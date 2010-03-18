@@ -1,3 +1,24 @@
+2010-03-18  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP command GET_SCHEDULES.
+
+	* src/manage_sql.c (find_schedule, init_schedule_iterator)
+	(schedule_iterator_uuid, schedule_iterator_name, schedule_iterator_name)
+	(schedule_iterator_first_time, schedule_iterator_next_time)
+	(schedule_iterator_period, schedule_iterator_duration): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add GET_SCHEDULES.
+	(get_schedules_data_t): New type.
+	(get_schedules_data_reset): New define.
+	(command_data_t): Add get_schedules.
+	(get_schedules_data): New variable.
+	(client_state_t): Add CLIENT_GET_SCHEDULES.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	GET_SCHEDULES handling.
+	(buffer_schedules_xml): New function.
+
 2010-03-17  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add basis for task scheduling.  Hence increase database version to 15.

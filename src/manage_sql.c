@@ -12220,6 +12220,45 @@ note_iterator_nvt_name (iterator_t *iterator)
 /* Schedules. */
 
 /**
+ * @brief Find a schedule given a UUID.
+ *
+ * @param[in]   uuid      UUID of schedule.
+ * @param[out]  schedule  Schedule return, 0 if succesfully failed to find schedule.
+ *
+ * @return FALSE on success (including if failed to find schedule), TRUE on error.
+ */
+gboolean
+find_schedule (const char* uuid, schedule_t* schedule)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("schedule", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *schedule = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (schedule, 0, 0,
+                     "SELECT ROWID FROM schedules WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *schedule = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
  * @brief Return the UUID of a schedule.
  *
  * @param[in]  schedule  Schedule.
@@ -12261,6 +12300,52 @@ set_schedule_next_time (schedule_t schedule, time_t time)
   sql ("UPDATE schedules SET next_time = %i WHERE ROWID = %llu;",
        time, schedule);
 }
+
+/**
+ * @brief Initialise a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  schedule  Single schedule to iterate over, or 0 for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
+                        int ascending, const char* sort_field)
+{
+  if (schedule)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, first_time,"
+                   " next_time, period, duration"
+                   " FROM schedules"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   schedule,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, first_time,"
+                   " next_time, period, duration"
+                   " FROM schedules"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+DEF_ACCESS (schedule_iterator_uuid, 1);
+DEF_ACCESS (schedule_iterator_name, 2);
+DEF_ACCESS (schedule_iterator_comment, 3);
+DEF_ACCESS (schedule_iterator_first_time, 4);
+DEF_ACCESS (schedule_iterator_next_time, 5);
+DEF_ACCESS (schedule_iterator_period, 6);
+DEF_ACCESS (schedule_iterator_duration, 7);
 
 /**
  * @brief Initialise a task schedule iterator.

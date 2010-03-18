@@ -1182,13 +1182,43 @@ manage_system_report (const char *, const char *, char **);
 
 /* Scheduling. */
 
+gboolean
+find_schedule (const char*, schedule_t*);
+
+int
+manage_schedule (const char *, int);
+
 char *
 schedule_uuid (schedule_t);
 
 char *
 schedule_name (schedule_t);
 
-int
-manage_schedule (const char *, int);
+void
+init_schedule_iterator (iterator_t*, schedule_t, int, const char*);
+
+const char*
+schedule_iterator_uuid (iterator_t *);
+
+const char*
+schedule_iterator_name (iterator_t *);
+
+const char*
+schedule_iterator_uuid (iterator_t *);
+
+const char*
+schedule_iterator_comment (iterator_t *);
+
+const char*
+schedule_iterator_first_time (iterator_t *);
+
+const char*
+schedule_iterator_next_time (iterator_t *);
+
+const char*
+schedule_iterator_period (iterator_t *);
+
+const char*
+schedule_iterator_duration (iterator_t *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

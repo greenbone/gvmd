@@ -303,6 +303,7 @@ static char* help_text = "\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
+"    GET_SCHEDULES          Get all schedules.\n"
 "    GET_STATUS             Get task status information.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGETS            Get all targets.\n"
@@ -647,6 +648,21 @@ get_results_data_reset (get_results_data_t *data)
 
 typedef struct
 {
+  char *schedule_id;
+  char *sort_field;
+  int sort_order;
+  int details;
+} get_schedules_data_t;
+
+static void
+get_schedules_data_reset (get_schedules_data_t *data)
+{
+  free (data->schedule_id);
+  memset (data, 0, sizeof (get_schedules_data_t));
+}
+
+typedef struct
+{
   char *name;
   char *duration;
 } get_system_reports_data_t;
@@ -667,6 +683,7 @@ typedef union
   get_notes_data_t get_notes;
   get_report_data_t get_report;
   get_results_data_t get_results;
+  get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
   name_command_data_t name_command;
 } command_data_t;
@@ -723,6 +740,12 @@ get_report_data_t *get_report_data
  */
 get_results_data_t *get_results_data
  = &(command_data.get_results);
+
+/**
+ * @brief Parser callback data for GET_SCHEDULES.
+ */
+get_schedules_data_t *get_schedules_data
+ = &(command_data.get_schedules);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
@@ -992,6 +1015,7 @@ typedef enum
   CLIENT_GET_REPORT,
   CLIENT_GET_RESULTS,
   CLIENT_GET_RULES,
+  CLIENT_GET_SCHEDULES,
   CLIENT_GET_STATUS,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
@@ -1780,6 +1804,33 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_RULES", element_name) == 0)
           set_client_state (CLIENT_GET_RULES);
+        else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "schedule_id", &attribute))
+              openvas_append_string (&get_schedules_data->schedule_id,
+                                     attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_schedules_data->details = strcmp (attribute, "0");
+            else
+              get_schedules_data->details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&get_schedules_data->sort_field, attribute);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_schedules_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_schedules_data->sort_order = 1;
+
+            set_client_state (CLIENT_GET_SCHEDULES);
+          }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -2397,6 +2448,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_RULES:
           {
             if (send_element_error_to_client ("get_rules", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_SCHEDULES:
+          {
+            if (send_element_error_to_client ("get_schedules", element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -4777,6 +4843,71 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 }
 
 /**
+ * @brief Buffer XML for some schedules.
+ *
+ * @param[in]  buffer           Buffer.
+ * @param[in]  schedules        Schedules iterator.
+ * @param[in]  include_details  Whether to include details.
+ */
+static void
+buffer_schedules_xml (GString *buffer, iterator_t *schedules,
+                      int include_details)
+{
+  while (next (schedules))
+    {
+      if (include_details == 0)
+        {
+          buffer_xml_append_printf (buffer,
+                                    "<schedule id=\"%s\">"
+                                    "<name>%s</name>"
+                                    "</schedule>",
+                                    schedule_iterator_uuid (schedules),
+                                    schedule_iterator_name (schedules));
+        }
+      else
+        {
+          buffer_xml_append_printf
+           (buffer,
+            "<schedule id=\"%s\">"
+            "<name>%s</name>"
+            "<comment>%s</comment>"
+            "<first_time>%s</first_time>"
+            "<next_time>%s</next_time>"
+            "<period>%s</period>"
+            "<duration>%s</duration>",
+            schedule_iterator_uuid (schedules),
+            schedule_iterator_name (schedules),
+            schedule_iterator_comment (schedules),
+            schedule_iterator_first_time (schedules),
+            schedule_iterator_next_time (schedules),
+            schedule_iterator_period (schedules),
+            schedule_iterator_duration (schedules));
+
+#if 0
+          if (include_tasks)
+            {
+              iterator_t tasks;
+
+              buffer_xml_append_printf (buffer, "<tasks>");
+              init_task_iterator (&results, 0,
+                                    schedule_iterator_result (schedules),
+                                    NULL, 0, 1, 1, NULL, NULL, NULL);
+              while (next (&results))
+                buffer_results_xml (buffer,
+                                    &results,
+                                    0,
+                                    0,  /* Schedules. */
+                                    0); /* Schedule details. */
+              cleanup_iterator (&results);
+              buffer_xml_append_printf (buffer, "</tasks>");
+            }
+#endif
+          buffer_xml_append_printf (buffer, "</schedule>");
+        }
+    }
+}
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -6565,6 +6696,55 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "</get_version_response>");
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_GET_SCHEDULES:
+        {
+          schedule_t schedule = 0;
+
+          assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
+
+          if (get_schedules_data->schedule_id
+              && find_schedule (get_schedules_data->schedule_id, &schedule))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_schedules"));
+          else if (get_schedules_data->schedule_id && schedule == 0)
+            {
+              if (send_find_error_to_client ("get_schedules",
+                                             "schedule",
+                                             get_schedules_data->schedule_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              iterator_t schedules;
+              GString *buffer;
+
+              SENDF_TO_CLIENT_OR_FAIL ("<get_schedules_response"
+                                       " status=\"" STATUS_OK "\""
+                                       " status_text=\"" STATUS_OK_TEXT "\">");
+
+              buffer = g_string_new ("");
+
+              init_schedule_iterator (&schedules,
+                                      schedule,
+                                      get_schedules_data->sort_order,
+                                      get_schedules_data->sort_field);
+              buffer_schedules_xml (buffer, &schedules, get_schedules_data->details
+                                    /* get_schedules_data->tasks */);
+              cleanup_iterator (&schedules);
+
+              SEND_TO_CLIENT_OR_FAIL (buffer->str);
+              g_string_free (buffer, TRUE);
+
+              SEND_TO_CLIENT_OR_FAIL ("</get_schedules_response>");
+            }
+
+          get_schedules_data_reset (get_schedules_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_DELETE_AGENT:
         {
