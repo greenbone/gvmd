@@ -405,6 +405,9 @@ task_trend (task_t);
 schedule_t
 task_schedule (task_t);
 
+int
+task_schedule_next_time (task_t);
+
 void
 set_scan_attack_state (report_t, const char*, const char*);
 
@@ -1209,16 +1212,16 @@ schedule_iterator_uuid (iterator_t *);
 const char*
 schedule_iterator_comment (iterator_t *);
 
-const char*
+time_t
 schedule_iterator_first_time (iterator_t *);
 
-const char*
+time_t
 schedule_iterator_next_time (iterator_t *);
 
-const char*
+time_t
 schedule_iterator_period (iterator_t *);
 
-const char*
+time_t
 schedule_iterator_duration (iterator_t *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

@@ -4871,10 +4871,10 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             "<schedule id=\"%s\">"
             "<name>%s</name>"
             "<comment>%s</comment>"
-            "<first_time>%s</first_time>"
-            "<next_time>%s</next_time>"
-            "<period>%s</period>"
-            "<duration>%s</duration>",
+            "<first_time>%i</first_time>"
+            "<next_time>%i</next_time>"
+            "<period>%i</period>"
+            "<duration>%i</duration>",
             schedule_iterator_uuid (schedules),
             schedule_iterator_name (schedules),
             schedule_iterator_comment (schedules),
@@ -9358,6 +9358,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<trend>%s</trend>"
                                  "<schedule id=\"%s\">"
                                  "<name>%s</name>"
+                                 "<next_time>%i</next_time>"
                                  "</schedule>"
                                  "%s%s%s",
                                  tsk_uuid,
@@ -9378,6 +9379,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_trend (task),
                                  task_schedule_uuid,
                                  task_schedule_name,
+                                 task_schedule_next_time (task),
                                  first_report,
                                  last_report,
                                  second_last_report);
@@ -9706,6 +9708,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<trend>%s</trend>"
                                         "<schedule id=\"%s\">"
                                         "<name>%s</name>"
+                                        "<next_time>%i</next_time>"
                                         "</schedule>"
                                         "%s%s%s"
                                         "</task>",
@@ -9727,6 +9730,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_trend (index),
                                         task_schedule_uuid,
                                         task_schedule_name,
+                                        task_schedule_next_time (index),
                                         first_report,
                                         last_report,
                                         second_last_report);

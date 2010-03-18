@@ -34,6 +34,8 @@ void init_task_file_iterator (iterator_t *, task_t, const char *);
 const char *task_file_iterator_name (iterator_t *);
 const char *task_file_iterator_content (iterator_t *);
 
+void set_task_schedule_next_time (task_t, time_t);
+
 void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
@@ -44,8 +46,6 @@ const char* lsc_credential_iterator_password (iterator_t *);
 int create_report (task_t, char **, task_status_t);
 
 char *escalator_data (escalator_t, const char *, const char *);
-
-void set_schedule_next_time (schedule_t, time_t);
 
 void init_task_schedule_iterator (iterator_t*);
 

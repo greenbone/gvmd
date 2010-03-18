@@ -1,5 +1,31 @@
 2010-03-18  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Move schedule "next time" from schedule to task.  Add the task "next time"
+	to the GET_STATUS response.
+
+	* src/manage_sql.c (create_tables): Remove column next_time from
+	schedules.  Add column schedule_next_time to tasks.
+	(task_schedule_next_time, set_task_schedule_next_time): New functions.
+	(set_schedule_next_time): Remove.
+	(init_schedule_iterator): Remove next_time from SELECT columns.
+	(schedule_iterator_first_time, schedule_iterator_period)
+	(schedule_iterator_duration): Change returns to time_t's.
+	(schedule_iterator_next_time): Calculate the hypothetical next time.
+	(init_task_schedule_iterator): Get next time from tasks instead of
+	schedules.
+
+	* src/manage_sql.h, src/manage.h: Update headers accordingly.
+
+	* src/manage.c (manage_schedule): Set next time on task instead of
+	schedule.
+
+	* src/omp.c (buffer_schedules_xml): Adjust format to new schedule iterator
+	time_t types.
+	(omp_xml_handle_end_element): In CLIENT_GET_STATUS add task NEXT_TIME to
+	SCHEDULE.
+
+2010-03-18  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP command GET_SCHEDULES.
 
 	* src/manage_sql.c (find_schedule, init_schedule_iterator)

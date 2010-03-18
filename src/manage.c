@@ -1709,8 +1709,8 @@ manage_schedule (const char *host, int port)
         current_credentials.password = "mattm";
         current_credentials.uuid = "8c814a31-7229-4d56-8cae-9472560e1218";
 
-        set_schedule_next_time (task_schedule_iterator_schedule (&schedules),
-                                0);
+        set_task_schedule_next_time
+         (task_schedule_iterator_task (&schedules), 0);
 
         /* Fork a child to initiate the task. */
 

@@ -723,11 +723,11 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, next_time, period, duration);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, duration);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -4995,6 +4995,36 @@ task_schedule (task_t task)
         return 0;
         break;
     }
+}
+
+/**
+ * @brief Get the next time a task with a schedule will run.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return If the task has a schedule, the next time the task will run (0 if it
+ *         has already run), otherwise 0.
+ */
+int
+task_schedule_next_time (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT schedule_next_time FROM tasks"
+                  " WHERE ROWID = %llu;",
+                  task);
+}
+
+/**
+ * @brief Set the next time a scheduled task will be due.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  time  New next time.
+ */
+void
+set_task_schedule_next_time (task_t task, time_t time)
+{
+  sql ("UPDATE tasks SET schedule_next_time = %i WHERE ROWID = %llu;",
+       time, task);
 }
 
 /**
@@ -12289,19 +12319,6 @@ schedule_name (schedule_t schedule)
 }
 
 /**
- * @brief Set the next time a schedule will be due.
- *
- * @param[in]  schedule  Schedule.
- * @param[in]  time      New next time.
- */
-void
-set_schedule_next_time (schedule_t schedule, time_t time)
-{
-  sql ("UPDATE schedules SET next_time = %i WHERE ROWID = %llu;",
-       time, schedule);
-}
-
-/**
  * @brief Initialise a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12316,7 +12333,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   if (schedule)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " next_time, period, duration"
+                   " period, duration"
                    " FROM schedules"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -12329,7 +12346,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " next_time, period, duration"
+                   " period, duration"
                    " FROM schedules"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -12342,10 +12359,75 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
 DEF_ACCESS (schedule_iterator_uuid, 1);
 DEF_ACCESS (schedule_iterator_name, 2);
 DEF_ACCESS (schedule_iterator_comment, 3);
-DEF_ACCESS (schedule_iterator_first_time, 4);
-DEF_ACCESS (schedule_iterator_next_time, 5);
-DEF_ACCESS (schedule_iterator_period, 6);
-DEF_ACCESS (schedule_iterator_duration, 7);
+
+/**
+ * @brief Get the first time from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return First time of schedule.
+ */
+time_t
+schedule_iterator_first_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
+  return ret;
+}
+
+/**
+ * @brief Get the next time a schedule could be schedulable.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Next time an action associated with schedule could be run.
+ */
+time_t
+schedule_iterator_next_time (iterator_t* iterator)
+{
+  if (schedule_iterator_period (iterator) > 0)
+    {
+
+    }
+  else if (schedule_iterator_first_time (iterator) >= time (NULL))
+    {
+      return (time_t) schedule_iterator_first_time (iterator);
+    }
+  return 0;
+}
+
+/**
+ * @brief Get the period from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Period of schedule.
+ */
+time_t
+schedule_iterator_period (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 5);
+  return ret;
+}
+
+/**
+ * @brief Get the duration from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return duration of schedule.
+ */
+time_t
+schedule_iterator_duration (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
 
 /**
  * @brief Initialise a task schedule iterator.
@@ -12360,7 +12442,7 @@ init_task_schedule_iterator (iterator_t* iterator)
   sql ("BEGIN EXCLUSIVE;");
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
-                 " schedules.ROWID, schedules.next_time"
+                 " schedules.ROWID, tasks.schedule_next_time"
                  " FROM tasks, schedules"
                  " WHERE tasks.schedule = schedules.ROWID;");
 }
