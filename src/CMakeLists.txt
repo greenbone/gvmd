@@ -150,7 +150,7 @@ CONFIGURE_FILE (openvasmd_log_conf.cmake_in
 ## Install
 
 install (TARGETS openvasmd
-         RUNTIME DESTINATION ${BINDIR}
+         RUNTIME DESTINATION ${SBINDIR}
          LIBRARY DESTINATION ${LIBDIR}
          ARCHIVE DESTINATION ${LIBDIR}/static)
 

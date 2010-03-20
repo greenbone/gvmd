@@ -1,3 +1,7 @@
+2010-03-20  Stephan Kleine
+
+	* src/CMakeLists.txt: Install openvasmd into ${SBINDIR} since it is a service.
+
 2010-03-18  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Move schedule "next time" from schedule to task.  Add the task "next time"
