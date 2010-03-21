@@ -198,6 +198,11 @@
 #define MAX_CONNECTIONS 512
 
 /**
+ * @brief Seconds between calls to manage_schedule.
+ */
+#define SCHEDULE_PERIOD 10
+
+/**
  * @brief The socket accepting OMP connections from clients.
  */
 int manager_socket = -1;
@@ -473,6 +478,140 @@ accept_and_maybe_fork ()
 }
 
 
+/* Connection forker for schedular. */
+
+/**
+ * @brief Fork a child connected to the Manager.
+ *
+ * @return 0 parent on success, 1 child on success, -1 error.
+ */
+static int
+fork_connection_for_schedular (int *client_socket,
+                               gnutls_session_t *client_session,
+                               gnutls_certificate_credentials_t
+                               *client_credentials)
+{
+  int pid, parent_client_socket, ret;
+  int sockets[2];
+
+  /* Fork a child to use as schedular client and server. */
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child. */
+        cleanup_manage_process (FALSE);
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        return -1;
+        break;
+
+      default:
+        /* Parent.  Return to caller. */
+        return 0;
+        break;
+    }
+
+  /* This is now a child of the main Manager process.  It forks again.  The
+   * only case that returns is the child after a connection is successfully
+   * set up.  The caller must exit this child.
+   *
+   * Create a connected pair of sockets. */
+
+  if (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets))
+    {
+      g_warning ("%s: socketpair: %s\n", __FUNCTION__, strerror (errno));
+      exit (EXIT_FAILURE);
+    }
+
+  /* Split into a Manager client for the schedular, and a Manager serving
+   * OMP to that client. */
+
+  is_parent = 0;
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.  */
+
+        /* FIX Give the parent time to prepare. */
+        sleep (5);
+
+        *client_socket = sockets[1];
+
+        if (openvas_server_new (GNUTLS_CLIENT, NULL, NULL, NULL,
+                                client_session, client_credentials))
+          exit (EXIT_FAILURE);
+
+        if (openvas_server_attach (*client_socket, client_session))
+          exit (EXIT_FAILURE);
+
+        return 1;
+        break;
+
+      case -1:
+        /* Parent when error. */
+
+        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        exit (EXIT_FAILURE);
+        break;
+
+      default:
+        /* Parent.  Serve the schedular OMP, then exit. */
+
+        parent_client_socket = sockets[0];
+
+        /* RATS: ignore, this is SIG_DFL damnit. */
+        if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+          {
+            g_critical ("%s: failed to set client SIGCHLD handler: %s\n",
+                        __FUNCTION__,
+                        strerror (errno));
+            shutdown (parent_client_socket, SHUT_RDWR);
+            close (parent_client_socket);
+            exit (EXIT_FAILURE);
+          }
+
+        // FIX get flags first
+        /* The socket must have O_NONBLOCK set, in case an "asynchronous
+         * network error" removes the data between `select' and `read'.
+         */
+        if (fcntl (parent_client_socket, F_SETFL, O_NONBLOCK) == -1)
+          {
+            g_critical ("%s: failed to set client socket flag: %s\n",
+                        __FUNCTION__,
+                        strerror (errno));
+            shutdown (parent_client_socket, SHUT_RDWR);
+            close (parent_client_socket);
+            exit (EXIT_FAILURE);
+          }
+
+        if (init_ompd (log_config, 0, database))
+          exit (EXIT_FAILURE);
+
+        /* Make any further authentications to this process succeed.  This
+         * enables the schedular to login as the owner of the scheduled
+         * task. */
+        manage_auth_allow_all ();
+
+        ret = serve_client (parent_client_socket);
+        /** @todo This should be done through libomp. */
+        save_tasks ();
+        exit (ret);
+        break;
+    }
+
+  exit (EXIT_FAILURE);
+  /*@notreached@*/
+  return -1;
+}
+
+
 /* Maintenance functions. */
 
 /**
@@ -586,6 +725,7 @@ int
 main (int argc, char** argv)
 {
   int scanner_port, manager_port;
+  time_t last_schedule_time = 0;
 
   /* Process options. */
 
@@ -1095,21 +1235,22 @@ main (int argc, char** argv)
       FD_SET (manager_socket, &exceptfds);
       nfds = manager_socket + 1;
 
+      if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
+        {
+          if (manage_schedule (fork_connection_for_schedular))
+            exit (EXIT_FAILURE);
+          last_schedule_time = time (NULL);
+          timeout.tv_sec = SCHEDULE_PERIOD;
+        }
+      else
+        timeout.tv_sec = SCHEDULE_PERIOD;
       timeout.tv_usec = 0;
-      timeout.tv_sec = 10;
       ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
 
       if (ret == -1)
         {
           if (errno == EINTR)
-            {
-              if (manage_schedule (manager_address_string
-                                    ? manager_address_string
-                                    : "localhost",
-                                   ntohs (manager_address.sin_port)))
-                exit (EXIT_FAILURE);
-              continue;
-            }
+            continue;
           g_critical ("%s: select failed: %s\n",
                       __FUNCTION__,
                       strerror (errno));
@@ -1126,11 +1267,9 @@ main (int argc, char** argv)
             accept_and_maybe_fork ();
         }
 
-      if (manage_schedule (manager_address_string
-                            ? manager_address_string
-                            : "localhost",
-                           ntohs (manager_address.sin_port)))
+      if (manage_schedule (fork_connection_for_schedular))
         exit (EXIT_FAILURE);
+      last_schedule_time = time (NULL);
     }
 
   return EXIT_SUCCESS;

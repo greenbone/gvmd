@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <glib.h>
+#include <gnutls/gnutls.h>
 
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/nvti.h> /* for nvti_t */
@@ -1188,8 +1189,13 @@ manage_system_report (const char *, const char *, char **);
 gboolean
 find_schedule (const char*, schedule_t*);
 
+void
+manage_auth_allow_all ();
+
 int
-manage_schedule (const char *, int);
+manage_schedule (int (*) (int *,
+                          gnutls_session_t *,
+                          gnutls_certificate_credentials_t *));
 
 char *
 schedule_uuid (schedule_t);

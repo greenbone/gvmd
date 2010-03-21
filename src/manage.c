@@ -1686,90 +1686,137 @@ manage_system_report (const char *name, const char *duration, char **report)
 /* Scheduling. */
 
 /**
+ * @brief Flag for manage_auth_allow_all.
+ */
+int authenticate_allow_all = 0;
+
+/**
+ * @brief Ensure that any subsequent authentications succeed.
+ */
+void
+manage_auth_allow_all ()
+{
+  authenticate_allow_all = 1;
+}
+
+/**
  * @brief Schedule any actions that are due.
  *
- * Fork a process to run each required action.
+ * @param[in]  fork_connection  Function that forks a child which is connected
+ *                              to the Manager.  Must return 0 in parent, PID
+ *                              in child, or -1 on error.
  *
  * @return 0 success, -1 error.
  */
 int
-manage_schedule (const char *host, int port)
+manage_schedule (int (*fork_connection) (int *,
+                                         gnutls_session_t *,
+                                         gnutls_certificate_credentials_t *))
 {
   iterator_t schedules;
+  GSList *starts = NULL;
+
+  /* Collect tasks. */
+
   init_task_schedule_iterator (&schedules);
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
-        int pid;
-        gchar *uuid;
-
         /* Mark the task as scheduled. */
-
-        current_credentials.username = "mattm";
-        current_credentials.password = "mattm";
-        current_credentials.uuid = "8c814a31-7229-4d56-8cae-9472560e1218";
 
         set_task_schedule_next_time
          (task_schedule_iterator_task (&schedules), 0);
 
-        /* Fork a child to initiate the task. */
+        /* Add task and owner UUIDs to the list. */
 
-        uuid = g_strdup (task_schedule_iterator_task_uuid (&schedules));
-        pid = fork ();
-        switch (pid)
-          {
-            case 0:
-              {
-                gnutls_session_t session;
-                int socket;
-
-                /* Child.  Start the task and exit. */
-
-                cleanup_manage_process (FALSE);
-
-                socket = openvas_server_open (&session, host, port);
-                if (socket == -1)
-                  {
-                    g_free (uuid);
-                    exit (EXIT_FAILURE);
-                  }
-
-                if (omp_authenticate (&session,
-                                      current_credentials.username,
-                                      current_credentials.password))
-                  {
-                    openvas_server_close (socket, session);
-                    g_free (uuid);
-                    exit (EXIT_FAILURE);
-                  }
-
-                if (omp_start_task (&session, uuid))
-                  {
-                    openvas_server_close (socket, session);
-                    g_free (uuid);
-                    exit (EXIT_FAILURE);
-                  }
-
-                openvas_server_close (socket, session);
-              }
-              g_free (uuid);
-              exit (EXIT_SUCCESS);
-              break;
-            case -1:
-              /* Parent when error. */
-              g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-            default:
-              /* Parent. */
-              break;
-          }
-        g_free (uuid);
-        current_credentials.username = NULL;
-        current_credentials.password = NULL;
+        starts = g_slist_prepend
+                  (starts,
+                   g_strdup (task_schedule_iterator_task_uuid (&schedules)));
+        starts = g_slist_prepend
+                  (starts,
+                   g_strdup (task_schedule_iterator_owner_name (&schedules)));
       }
     else if (task_schedule_iterator_stop_due (&schedules))
       {
 
       }
   cleanup_task_schedule_iterator (&schedules);
+
+  /* Start tasks in forked processes, now that SQL statement is closed. */
+
+  while (starts)
+    {
+      int socket;
+      gnutls_session_t session;
+      gnutls_certificate_credentials_t credentials;
+      gchar *uuid, *owner;
+      GSList *head;
+
+      owner = starts->data;
+      assert (starts->next);
+      uuid = starts->next->data;
+
+      head = starts;
+      starts = starts->next->next;
+      g_slist_free_1 (head->next);
+      g_slist_free_1 (head);
+
+      /* Run the callback to fork a child connected to the Manager. */
+
+      switch (fork_connection (&socket, &session, &credentials))
+        {
+          case 0:
+            /* Parent.  Continue to next task. */
+            g_free (uuid);
+            g_free (owner);
+            continue;
+            break;
+
+          case -1:
+            /* Parent on error. */
+            g_free (uuid);
+            g_free (owner);
+            while (starts)
+              {
+                g_free (starts->data);
+                starts = g_slist_delete_link (starts, starts);
+              }
+            return -1;
+            break;
+
+          default:
+            /* Child.  Break, start task, exit. */
+            while (starts)
+              {
+                g_free (starts->data);
+                starts = g_slist_delete_link (starts, starts);
+              }
+            break;
+        }
+
+      /* Start the task. */
+
+      if (omp_authenticate (&session, owner, ""))
+        {
+          g_free (uuid);
+          g_free (owner);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      if (omp_start_task (&session, uuid))
+        {
+          g_free (uuid);
+          g_free (owner);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      g_free (uuid);
+      g_free (owner);
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_SUCCESS);
+   }
+
   return 0;
 }

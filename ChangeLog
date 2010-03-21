@@ -1,3 +1,31 @@
+2010-03-21  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Give the schedular a socket to a forked Manager, instead of having it
+	connect to the main Manager process.
+
+	* src/manage.c (authenticate_allow_all): New variable.
+	(manage_auth_allow_all): New function.
+	(manage_schedule): Take a callback instead of a host and port.  Call the
+	callback to get a child that is already connected to the manager, and
+	start the task from the child.
+
+	* src/manage_sql.c (authenticate_allow_all): New header.
+	(cleanup_manage_process): Only set the current task if doing all cleanups.
+	(authenticate): Always auth with success if authenticate_allow_all is set.
+	(init_task_schedule_iterator): Add columns for task owner info.
+	(task_schedule_iterator_owner_uuid, task_schedule_iterator_owner_name):
+	New functions.
+
+	* src/manage_sql.h, src/manage.h: Add headers accordingly.
+
+	* src/openvasmd.c (SCHEDULE_PERIOD): New define.
+	(fork_connection_for_schedular): New function.
+	(main): Make manage_schedule run only about every SCHEDULE_PERIOD, instead
+	of letting in run after any interrupt.
+
+	* src/omp.c (omp_xml_handle_start_element): In CLIENT_AUTHENTICATE
+	initialise the password so that it can be empty.
+
 2010-03-20  Stephan Kleine
 
 	* src/CMakeLists.txt: Install openvasmd into ${SBINDIR} since it is a service.

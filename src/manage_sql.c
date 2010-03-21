@@ -54,7 +54,9 @@
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
 
-/* Headers for functions defined in manage.c which are private to libmanage. */
+/* Headers for symbols defined in manage.c which are private to libmanage. */
+
+int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
@@ -4271,17 +4273,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 /**
  * @brief Cleanup the manage library.
  *
- * @param[in]  cleanup  If true perform the cleanup operations, else just clear
- *                      the database handle (for use in forked processes).
- *
  * Put any running task in the stopped state and close the database.
+ *
+ * @param[in]  cleanup  If true perform all cleanup operations, else only
+ *                      those required at the start of a forked process.
  */
 void
 cleanup_manage_process (gboolean cleanup)
 {
   if (task_db)
     {
-      if (current_scanner_task)
+      if (cleanup && current_scanner_task)
         set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
       sqlite3_close (task_db);
       task_db = NULL;
@@ -4326,6 +4328,14 @@ authenticate (credentials_t* credentials)
       int fail;
 
       if (strcmp (credentials->username, "om") == 0) return 1;
+
+      if (authenticate_allow_all)
+        {
+          credentials->uuid = openvas_user_uuid (credentials->username);
+          if (*credentials->uuid)
+            return 0;
+          return -1;
+        }
 
       fail = openvas_authenticate_uuid (credentials->username,
                                         credentials->password,
@@ -12442,9 +12452,11 @@ init_task_schedule_iterator (iterator_t* iterator)
   sql ("BEGIN EXCLUSIVE;");
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
-                 " schedules.ROWID, tasks.schedule_next_time"
-                 " FROM tasks, schedules"
-                 " WHERE tasks.schedule = schedules.ROWID;");
+                 " schedules.ROWID, tasks.schedule_next_time,"
+                 " users.uuid, users.name"
+                 " FROM tasks, schedules, users"
+                 " WHERE tasks.schedule = schedules.ROWID"
+                 " AND tasks.owner = users.ROWID;");
 }
 
 /**
@@ -12481,6 +12493,9 @@ task_schedule_iterator_next_time (iterator_t* iterator)
   if (iterator->done) return 0;
   return (time_t) sqlite3_column_int64 (iterator->stmt, 3);
 }
+
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 4);
+DEF_ACCESS (task_schedule_iterator_owner_name, 5);
 
 gboolean
 task_schedule_iterator_start_due (iterator_t* iterator)

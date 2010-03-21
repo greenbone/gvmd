@@ -2030,7 +2030,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_AUTHENTICATE:
         if (strcasecmp ("CREDENTIALS", element_name) == 0)
-          set_client_state (CLIENT_CREDENTIALS);
+          {
+            /* Init, so it's the empty string when the entity is empty. */
+            append_to_credentials_password (&current_credentials, "", 0);
+            set_client_state (CLIENT_CREDENTIALS);
+          }
         else
           {
             if (send_element_error_to_client ("authenticate", element_name))

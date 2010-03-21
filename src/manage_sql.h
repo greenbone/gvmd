@@ -61,4 +61,8 @@ gboolean task_schedule_iterator_start_due (iterator_t*);
 
 gboolean task_schedule_iterator_stop_due (iterator_t*);
 
+const char *task_schedule_iterator_owner_uuid (iterator_t*);
+
+const char *task_schedule_iterator_owner_name (iterator_t*);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */
