@@ -1206,6 +1206,9 @@ schedule_name (schedule_t);
 void
 init_schedule_iterator (iterator_t*, schedule_t, int, const char*);
 
+schedule_t
+schedule_iterator_schedule (iterator_t*);
+
 const char*
 schedule_iterator_uuid (iterator_t *);
 
@@ -1229,5 +1232,14 @@ schedule_iterator_period (iterator_t *);
 
 time_t
 schedule_iterator_duration (iterator_t *);
+
+void
+init_schedule_task_iterator (iterator_t*, schedule_t);
+
+const char*
+schedule_task_iterator_uuid (iterator_t *);
+
+const char*
+schedule_task_iterator_name (iterator_t *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

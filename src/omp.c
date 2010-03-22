@@ -4870,6 +4870,8 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
         }
       else
         {
+          iterator_t tasks;
+
           buffer_xml_append_printf
            (buffer,
             "<schedule id=\"%s\">"
@@ -4887,26 +4889,20 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             schedule_iterator_period (schedules),
             schedule_iterator_duration (schedules));
 
-#if 0
-          if (include_tasks)
-            {
-              iterator_t tasks;
-
-              buffer_xml_append_printf (buffer, "<tasks>");
-              init_task_iterator (&results, 0,
-                                    schedule_iterator_result (schedules),
-                                    NULL, 0, 1, 1, NULL, NULL, NULL);
-              while (next (&results))
-                buffer_results_xml (buffer,
-                                    &results,
-                                    0,
-                                    0,  /* Schedules. */
-                                    0); /* Schedule details. */
-              cleanup_iterator (&results);
-              buffer_xml_append_printf (buffer, "</tasks>");
-            }
-#endif
-          buffer_xml_append_printf (buffer, "</schedule>");
+          buffer_xml_append_printf (buffer, "<tasks>");
+          init_schedule_task_iterator (&tasks,
+                                       schedule_iterator_schedule (schedules));
+          while (next (&tasks))
+            buffer_xml_append_printf (buffer,
+                                      "<task id=\"%s\">"
+                                      "<name>%s</name>"
+                                      "</task>",
+                                      schedule_task_iterator_uuid (&tasks),
+                                      schedule_task_iterator_name (&tasks));
+          cleanup_iterator (&tasks);
+          buffer_xml_append_printf (buffer,
+                                    "</tasks>"
+                                    "</schedule>");
         }
     }
 }

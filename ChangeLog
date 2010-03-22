@@ -1,3 +1,14 @@
+2010-03-22  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/omp.c (buffer_schedules_xml): Add tasks that use the schedular to
+	response.
+
+	* src/manage_sql.c (schedule_iterator_schedule)
+	(init_schedule_task_iterator, schedule_task_iterator_uuid)
+	(schedule_task_iterator_name): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
 2010-03-21  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Give the schedular a socket to a forked Manager, instead of having it

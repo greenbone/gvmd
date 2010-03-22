@@ -12366,6 +12366,13 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
                    ascending ? "ASC" : "DESC");
 }
 
+schedule_t
+schedule_iterator_schedule (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
 DEF_ACCESS (schedule_iterator_uuid, 1);
 DEF_ACCESS (schedule_iterator_name, 2);
 DEF_ACCESS (schedule_iterator_comment, 3);
@@ -12524,5 +12531,22 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 {
   return FALSE;
 }
+
+/**
+ * @brief Initialise a schedule task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  schedule  Schedule.
+ */
+void
+init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
+{
+  init_iterator (iterator,
+                 "SELECT ROWID, uuid, name FROM tasks WHERE schedule = %llu;",
+                 schedule);
+}
+
+DEF_ACCESS (schedule_task_iterator_uuid, 1);
+DEF_ACCESS (schedule_task_iterator_name, 2);
 
 #undef DEF_ACCESS
