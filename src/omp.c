@@ -286,6 +286,7 @@ static char* help_text = "\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
 "    DELETE_NOTE            Delete a note.\n"
 "    DELETE_REPORT          Delete a report.\n"
+"    DELETE_SCHEDULE        Delete a schedule.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
 "    GET_AGENTS             Get all agents.\n"
@@ -573,6 +574,19 @@ delete_note_data_reset (delete_note_data_t *data)
 
 typedef struct
 {
+  char *schedule_id;
+} delete_schedule_data_t;
+
+static void
+delete_schedule_data_reset (delete_schedule_data_t *data)
+{
+  free (data->schedule_id);
+
+  memset (data, 0, sizeof (delete_schedule_data_t));
+}
+
+typedef struct
+{
   char *name;
 } name_command_data_t;
 
@@ -680,6 +694,7 @@ typedef union
   create_config_data_t create_config;
   create_note_data_t create_note;
   delete_note_data_t delete_note;
+  delete_schedule_data_t delete_schedule;
   get_notes_data_t get_notes;
   get_report_data_t get_report;
   get_results_data_t get_results;
@@ -722,6 +737,12 @@ create_note_data_t *create_note_data
  */
 delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
+
+/**
+ * @brief Parser callback data for DELETE_SCHEDULE.
+ */
+delete_schedule_data_t *delete_schedule_data
+ = (delete_schedule_data_t*) &(command_data.delete_schedule);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -995,6 +1016,7 @@ typedef enum
   CLIENT_DELETE_LSC_CREDENTIAL_NAME,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_REPORT,
+  CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_DELETE_TARGET_NAME,
@@ -1532,6 +1554,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "report_id", &attribute))
               openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
+          }
+        else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "schedule_id", &attribute))
+              openvas_append_string (&delete_schedule_data->schedule_id,
+                                     attribute);
+            set_client_state (CLIENT_DELETE_SCHEDULE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
@@ -2161,6 +2192,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_REPORT:
         if (send_element_error_to_client ("delete_report", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_DELETE_SCHEDULE:
+        if (send_element_error_to_client ("delete_schedule", element_name))
           {
             error_send_to_client (error);
             return;
@@ -5602,6 +5646,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_report",
                               "DELETE_REPORT requires a report_id attribute"));
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_SCHEDULE:
+        assert (strcasecmp ("DELETE_SCHEDULE", element_name) == 0);
+        if (delete_schedule_data->schedule_id)
+          {
+            schedule_t schedule;
+
+            if (find_schedule (delete_schedule_data->schedule_id, &schedule))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_schedule"));
+            else if (schedule == 0)
+              {
+                if (send_find_error_to_client
+                     ("delete_schedule",
+                      "schedule",
+                      delete_schedule_data->schedule_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_schedule (schedule))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_schedule"));
+                  break;
+                case 1:
+                  openvas_free_string_var (&modify_task_name);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_schedule",
+                                      "Schedule is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_schedule"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_schedule",
+                              "DELETE_SCHEDULE requires a schedule_id"
+                              " attribute"));
+        delete_schedule_data_reset (delete_schedule_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

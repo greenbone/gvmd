@@ -1189,6 +1189,9 @@ manage_system_report (const char *, const char *, char **);
 gboolean
 find_schedule (const char*, schedule_t*);
 
+int
+delete_schedule (schedule_t);
+
 void
 manage_auth_allow_all ();
 

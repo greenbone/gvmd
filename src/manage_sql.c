@@ -12299,6 +12299,29 @@ find_schedule (const char* uuid, schedule_t* schedule)
 }
 
 /**
+ * @brief Delete a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 0 success, 1 fail because a task refers to the schedule, -1 error.
+ */
+int
+delete_schedule (schedule_t schedule)
+{
+  sql ("BEGIN IMMEDIATE;");
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE schedule = %llu;",
+               schedule))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
  * @brief Return the UUID of a schedule.
  *
  * @param[in]  schedule  Schedule.

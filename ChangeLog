@@ -1,5 +1,22 @@
 2010-03-22  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP command DELETE_SCHEDULE.
+
+	* src/manage_sql.c (delete_schedule): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text): Add DELETE_SCHEDULE.
+	(delete_schedule_data_t): New type.
+	(delete_schedule_data_reset): New define.
+	(command_data_t): Add delete_schedule.
+	(delete_schedule_data): New variable.
+	(client_state_t): Add CLIENT_DELETE_SCHEDULE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	DELETE_SCHEDULE handling.
+
+2010-03-22  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (buffer_schedules_xml): Add tasks that use the schedular to
 	response.
 
