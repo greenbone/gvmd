@@ -266,6 +266,43 @@ ctime_strip_newline (time_t *time)
   return ret;
 }
 
+/**
+ * @brief Return time defined by broken down time strings.
+ *
+ * If any argument is NULL, use the value from the current time.
+ *
+ * @param[in]   hour          Hour (0 to 23).
+ * @param[in]   minute        Minute (0 to 59).
+ * @param[in]   day_of_month  Day of month (1 to 31).
+ * @param[in]   month         Month (1 to 12).
+ * @param[in]   year          Year.
+ *
+ * @return Time described by arguments on success, else -1.
+ */
+static time_t
+time_from_strings (const char *hour, const char *minute,
+                   const char *day_of_month, const char *month,
+                   const char *year)
+{
+  struct tm given_broken, *now_broken;
+  time_t now;
+
+  time (&now);
+  now_broken = localtime (&now);
+
+  given_broken.tm_sec = 0;
+  given_broken.tm_min = (minute ? atoi (minute) : now_broken->tm_min);
+  given_broken.tm_hour = (hour ? atoi (hour) : now_broken->tm_hour);
+  given_broken.tm_mday = (day_of_month
+                           ? (atoi (day_of_month) - 1)
+                           : now_broken->tm_mday);
+  given_broken.tm_mon = (month ? atoi (month) : now_broken->tm_mon);
+  given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
+  given_broken.tm_isdst = 0;
+
+  return mktime (&given_broken);
+}
+
 
 /* Help message. */
 
@@ -278,6 +315,7 @@ static char* help_text = "\n"
 "    CREATE_ESCALATOR       Create an escalator.\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_NOTE            Create a note.\n"
+"    CREATE_SCHEDULE        Create a schedule.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
 "    DELETE_AGENT           Delete an agent.\n"
@@ -588,6 +626,35 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
 typedef struct
 {
   char *name;
+  char *comment;
+  char *first_time_day_of_month;
+  char *first_time_hour;
+  char *first_time_minute;
+  char *first_time_month;
+  char *first_time_year;
+  char *period;
+  char *duration;
+} create_schedule_data_t;
+
+static void
+create_schedule_data_reset (create_schedule_data_t *data)
+{
+  free (data->name);
+  free (data->comment);
+  free (data->first_time_day_of_month);
+  free (data->first_time_hour);
+  free (data->first_time_minute);
+  free (data->first_time_month);
+  free (data->first_time_year);
+  free (data->period);
+  free (data->duration);
+
+  memset (data, 0, sizeof (create_schedule_data_t));
+}
+
+typedef struct
+{
+  char *name;
 } name_command_data_t;
 
 #if 0
@@ -693,6 +760,7 @@ typedef union
 {
   create_config_data_t create_config;
   create_note_data_t create_note;
+  create_schedule_data_t create_schedule;
   delete_note_data_t delete_note;
   delete_schedule_data_t delete_schedule;
   get_notes_data_t get_notes;
@@ -731,6 +799,12 @@ create_config_data_t *create_config_data
  */
 create_note_data_t *create_note_data
  = (create_note_data_t*) &(command_data.create_note);
+
+/**
+ * @brief Parser callback data for CREATE_SCHEDULE.
+ */
+create_schedule_data_t *create_schedule_data
+ = (create_schedule_data_t*) &(command_data.create_schedule);
 
 /**
  * @brief Parser callback data for DELETE_NOTE.
@@ -991,6 +1065,17 @@ typedef enum
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
+  CLIENT_CREATE_SCHEDULE,
+  CLIENT_CREATE_SCHEDULE_NAME,
+  CLIENT_CREATE_SCHEDULE_COMMENT,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
+  CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
+  CLIENT_CREATE_SCHEDULE_DURATION,
+  CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -1515,6 +1600,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
             set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
+        else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
             assert (modify_task_name == NULL);
@@ -2080,6 +2167,77 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_CREATE_SCHEDULE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_COMMENT);
+        else if (strcasecmp ("DURATION", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
+        else if (strcasecmp ("FIRST_TIME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_NAME);
+        else if (strcasecmp ("PERIOD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
+        else
+          {
+            if (send_element_error_to_client ("create_schedule", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
+        if (strcasecmp ("DAY_OF_MONTH", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH);
+        else if (strcasecmp ("HOUR", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR);
+        else if (strcasecmp ("MINUTE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE);
+        else if (strcasecmp ("MONTH", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH);
+        else if (strcasecmp ("YEAR", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
+        else
+          {
+            if (send_element_error_to_client ("create_schedule", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_COMMENT:
+      case CLIENT_CREATE_SCHEDULE_NAME:
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR:
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
+        if (send_element_error_to_client ("create_schedule", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_CREDENTIALS:
@@ -8377,6 +8535,102 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_NOTE);
         break;
 
+      case CLIENT_CREATE_SCHEDULE:
+        {
+          time_t first_time;
+
+          assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
+
+          if (create_schedule_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "CREATE_SCHEDULE requires a NAME entity"));
+          else if ((first_time = time_from_strings
+                                  (create_schedule_data->first_time_hour,
+                                   create_schedule_data->first_time_minute,
+                                   create_schedule_data->first_time_day_of_month,
+                                   create_schedule_data->first_time_month,
+                                   create_schedule_data->first_time_year))
+                   == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "Failed to create time from FIRST_TIME"
+                                " elements"));
+          else switch (create_schedule (create_schedule_data->name,
+                                        create_schedule_data->comment,
+                                        first_time,
+                                        create_schedule_data->period
+                                         ? atoi (create_schedule_data->period)
+                                         : 0,
+                                        create_schedule_data->duration
+                                         ? atoi (create_schedule_data->duration)
+                                         : 0,
+                                        NULL))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_schedule"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_schedule",
+                                    "Schedule exists already"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_schedule"));
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_schedule"));
+                break;
+            }
+          create_schedule_data_reset (create_schedule_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_SCHEDULE_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE);
+        break;
+      case CLIENT_CREATE_SCHEDULE_DURATION:
+        assert (strcasecmp ("DURATION", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME:
+        assert (strcasecmp ("FIRST_TIME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE);
+        break;
+      case CLIENT_CREATE_SCHEDULE_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE);
+        break;
+      case CLIENT_CREATE_SCHEDULE_PERIOD:
+        assert (strcasecmp ("PERIOD", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE);
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
+        assert (strcasecmp ("DAY_OF_MONTH", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR:
+        assert (strcasecmp ("HOUR", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
+        assert (strcasecmp ("MINUTE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
+        assert (strcasecmp ("MONTH", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
+        assert (strcasecmp ("YEAR", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t lsc_credential = 0;
@@ -10967,6 +11221,44 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_NOTE_THREAT:
         openvas_append_text (&create_note_data->threat, text, text_len);
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_COMMENT:
+        openvas_append_text (&create_schedule_data->comment, text, text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_DURATION:
+        openvas_append_text (&create_schedule_data->duration, text, text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
+        openvas_append_text (&create_schedule_data->first_time_day_of_month,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_HOUR:
+        openvas_append_text (&create_schedule_data->first_time_hour,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
+        openvas_append_text (&create_schedule_data->first_time_minute,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
+        openvas_append_text (&create_schedule_data->first_time_month,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
+        openvas_append_text (&create_schedule_data->first_time_year,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_NAME:
+        openvas_append_text (&create_schedule_data->name, text, text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_PERIOD:
+        openvas_append_text (&create_schedule_data->period, text, text_len);
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:

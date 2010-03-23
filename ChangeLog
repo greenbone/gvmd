@@ -1,3 +1,21 @@
+2010-03-23  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP command CREATE_SCHEDULE.
+
+	* src/manage_sql.c (create_schedule): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (time_from_strings): New function.
+	(help_text): Add CREATE_SCHEDULE.
+	(create_schedule_data_t): New type.
+	(create_schedule_data_reset): New define.
+	(command_data_t): Add create_schedule.
+	(create_schedule_data): New variable.
+	(client_state_t): Add CREATE_SCHEDULE states.
+	(omp_xml_handle_end_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Add CREATE_SCHEDULE handling.
+
 2010-03-22  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP command DELETE_SCHEDULE.

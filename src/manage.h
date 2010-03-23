@@ -1190,6 +1190,10 @@ gboolean
 find_schedule (const char*, schedule_t*);
 
 int
+create_schedule (const char*, const char *, time_t, time_t, time_t,
+                 schedule_t *);
+
+int
 delete_schedule (schedule_t);
 
 void

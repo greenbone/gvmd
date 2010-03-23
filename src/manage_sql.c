@@ -12299,6 +12299,73 @@ find_schedule (const char* uuid, schedule_t* schedule)
 }
 
 /**
+ * @brief Create a schedule.
+ *
+ * @param[in]   name        Name of schedule.
+ * @param[in]   comment     Comment on schedule.
+ * @param[in]   first_time  First time action will run.
+ * @param[in]   period      How often the action will run in seconds.  0 means
+ *                          once.
+ * @param[in]   duration    The length of the time window the action will run
+ *                          in.  0 means entire duration of action.
+ * @param[out]  schedule    Created schedule.
+ *
+ * @return 0 success, 1 schedule exists already.
+ */
+int
+create_schedule (const char* name, const char *comment, time_t first_time,
+                 time_t period, time_t duration, schedule_t *schedule)
+{
+  gchar *quoted_name = sql_quote (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM schedules"
+               " WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  if (comment)
+    {
+      gchar *quoted_comment = sql_nquote (comment, strlen (comment));
+      sql ("INSERT INTO schedules"
+           " (uuid, name, owner, comment, first_time, period, duration)"
+           " VALUES (make_uuid (), '%s',"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           " '%s', %i, %i, %i);",
+           quoted_name, current_credentials.uuid, quoted_comment, first_time,
+           period, duration);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO schedules"
+         " (uuid, name, owner, comment, first_time, period, duration)"
+         " VALUES (make_uuid (), '%s',"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         " '', %i, %i, %i);",
+         quoted_name, current_credentials.uuid, first_time, period, duration);
+
+  if (schedule)
+    *schedule = sqlite3_last_insert_rowid (task_db);
+
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete a schedule.
  *
  * @param[in]  schedule  Schedule.
