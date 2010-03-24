@@ -1087,6 +1087,7 @@ typedef enum
   CLIENT_CREATE_TASK_ESCALATOR,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_RCFILE,
+  CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREDENTIALS,
   CLIENT_CREDENTIALS_PASSWORD,
@@ -2060,11 +2061,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             assert (current_client_task == (task_t) 0);
             assert (modify_task_name == NULL);
+            assert (modify_task_parameter == NULL);
             assert (current_name == NULL);
             assert (current_uuid == NULL);
             current_client_task = make_task (NULL, 0, NULL);
             if (current_client_task == (task_t) 0) abort (); // FIX
             openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_parameter, "");
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -3452,6 +3455,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_CONFIG);
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
+        else if (strcasecmp ("SCHEDULE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
         else if (strcasecmp ("TARGET", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_TARGET);
         else
@@ -8777,6 +8782,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   openvas_free_string_var (&modify_task_name);
+                  openvas_free_string_var (&modify_task_parameter);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8788,6 +8794,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK escalator must exist"));
                   openvas_free_string_var (&modify_task_name);
+                  openvas_free_string_var (&modify_task_parameter);
                   openvas_free_string_var (&current_uuid);
                   openvas_free_string_var (&current_name);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8796,6 +8803,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               add_task_escalator (current_client_task, escalator);
             }
           openvas_free_string_var (&modify_task_name);
+
+          /* Set any schedule. */
+
+          if (strlen (modify_task_parameter))
+            {
+              schedule_t schedule;
+              if (find_schedule (modify_task_parameter, &schedule))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  openvas_free_string_var (&modify_task_parameter);
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              if (schedule == 0)
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "CREATE_TASK schedule must exist"));
+                  openvas_free_string_var (&modify_task_parameter);
+                  openvas_free_string_var (&current_uuid);
+                  openvas_free_string_var (&current_name);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              set_task_schedule (current_client_task, schedule);
+            }
+          openvas_free_string_var (&modify_task_parameter);
 
           /* Check for name. */
 
@@ -9040,6 +9076,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_TARGET:
         assert (strcasecmp ("TARGET", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
+      case CLIENT_CREATE_TASK_SCHEDULE:
+        assert (strcasecmp ("SCHEDULE", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
@@ -11292,6 +11332,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
+        break;
+      case CLIENT_CREATE_TASK_SCHEDULE:
+        openvas_append_text (&modify_task_parameter, text, text_len);
         break;
       case CLIENT_CREATE_TASK_TARGET:
         openvas_append_text (&current_name, text, text_len);

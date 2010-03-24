@@ -394,6 +394,9 @@ task_escalator (task_t);
 void
 add_task_escalator (task_t, escalator_t);
 
+void
+set_task_schedule (task_t, schedule_t);
+
 unsigned int
 task_report_count (task_t);
 

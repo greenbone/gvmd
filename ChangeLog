@@ -1,3 +1,16 @@
+2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add SCHEDULE to OMP command CREATE_TASK.
+
+	* src/manage_sql.c (set_task_schedule): New function.
+	(make_task): Clear schedule.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (client_state_t): Add CLIENT_CREATE_TASK_SCHEDULE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add SCHEDULE to CREATE_TASK.
+
 2010-03-23  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP command CREATE_SCHEDULE.

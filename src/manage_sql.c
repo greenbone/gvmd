@@ -4922,6 +4922,23 @@ add_task_escalator (task_t task, escalator_t escalator)
 }
 
 /**
+ * @brief Set the schedule of a task.
+ *
+ * @param[in]  task      Task.
+ * @param[in]  schedule  Schedule.
+ */
+void
+set_task_schedule (task_t task, schedule_t schedule)
+{
+  sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
+       " (SELECT schedules.first_time FROM schedules WHERE ROWID = %llu)"
+       " WHERE ROWID = %llu;",
+       schedule,
+       schedule,
+       task);
+}
+
+/**
  * @brief Return the threat level of a task.
  *
  * @param[in]  task  Task.
@@ -6575,9 +6592,9 @@ make_task (char* name, unsigned int time, char* comment)
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment)"
+  sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment, schedule)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', %s, 0, %u, %s);",
+       "         '%s', %s, 0, %u, %s, 0);",
        current_credentials.uuid, uuid, name, time, comment);
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
