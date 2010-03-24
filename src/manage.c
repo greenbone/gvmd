@@ -1733,10 +1733,25 @@ manage_schedule (int (*fork_connection) (int *,
           {
             time_t now = time (NULL);
             time_t first = task_schedule_iterator_first_time (&schedules);
+            time_t next_time = task_schedule_iterator_next_time (&schedules);
+
             assert (first <= now);
+
             set_task_schedule_next_time
              (task_schedule_iterator_task (&schedules),
               first + ((((now - first) / period) + 1) * period));
+
+            /* Ensure that the task is scheduled within a short interval after
+             * the start of the period.
+             *
+             * A periodic task that becomes due while the previous instantiation
+             * of the task is still running will be runnable as soon as the
+             * previous instantiation completes.  This could be any time, so
+             * skip the task and let is start again at the proper time.
+             */
+            assert (next_time > first);
+            if (((now - first) % period) > (3 * 60))
+              continue;
           }
         else
           set_task_schedule_next_time

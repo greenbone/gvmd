@@ -12602,7 +12602,7 @@ task_schedule_iterator_schedule (iterator_t* iterator)
   return (schedule_t) sqlite3_column_int64 (iterator->stmt, 2);
 }
 
-static time_t
+time_t
 task_schedule_iterator_next_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;

@@ -1,16 +1,11 @@
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
-	Account for period in scheduling.
+	* src/manage_sql.c (task_schedule_iterator_first_time): Make external.
 
-	* src/manage_sql.c (init_task_schedule_iterator): Add schedule period and
-	first_time.  Adjust iterator accessor columns accordingly.
-	(task_schedule_iterator_period, task_schedule_iterator_first_time): New
-	function.
+	* src/manage_sql.h: Add header accordingly.
 
-	* src/manage.c (manage_schedule): Account for period when setting next
-	schedule time of task.
-
-	* src/manage_sql.h: Add headers accordingly.
+	* src/manage.c (manage_schedule): Ensure periodic task starts within a
+	short interval at the beginning of the schedule period.
 
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
