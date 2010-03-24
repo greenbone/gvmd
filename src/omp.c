@@ -296,9 +296,9 @@ time_from_strings (const char *hour, const char *minute,
   given_broken.tm_mday = (day_of_month
                            ? (atoi (day_of_month) - 1)
                            : now_broken->tm_mday);
-  given_broken.tm_mon = (month ? atoi (month) : now_broken->tm_mon);
+  given_broken.tm_mon = (month ? (atoi (month) - 1) : now_broken->tm_mon);
   given_broken.tm_year = (year ? (atoi (year) - 1900) : now_broken->tm_year);
-  given_broken.tm_isdst = 0;
+  given_broken.tm_isdst = now_broken->tm_isdst;
 
   return mktime (&given_broken);
 }

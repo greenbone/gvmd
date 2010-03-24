@@ -1,10 +1,19 @@
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (time_from_strings): Turn month into offset for mktime.  Match
+	daylight saving value of local time.
+
+2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.c (schedule_iterator_next_time): Add calculation for
 	periodic case.
 
 	* src/omp.c (buffer_schedules_xml): Send schedule times as formatted strings.
 	(omp_xml_handle_end_element): Ditto in CLIENT_GET_STATUS.
+
+2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* ChangeLog: Resurrect overwritten entry.
 
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
