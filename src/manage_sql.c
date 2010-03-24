@@ -12510,13 +12510,16 @@ schedule_iterator_first_time (iterator_t* iterator)
 time_t
 schedule_iterator_next_time (iterator_t* iterator)
 {
-  if (schedule_iterator_period (iterator) > 0)
+  time_t period = schedule_iterator_period (iterator);
+  time_t now = time (NULL);
+  if (period > 0)
     {
-
+      time_t first = schedule_iterator_first_time (iterator);
+      return first + ((((now - first) / period) + 1) * period);
     }
-  else if (schedule_iterator_first_time (iterator) >= time (NULL))
+  else if (schedule_iterator_first_time (iterator) >= now)
     {
-      return (time_t) schedule_iterator_first_time (iterator);
+      return schedule_iterator_first_time (iterator);
     }
   return 0;
 }

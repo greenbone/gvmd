@@ -5078,23 +5078,28 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
       else
         {
           iterator_t tasks;
+          time_t first_time = schedule_iterator_first_time (schedules);
+          time_t next_time = schedule_iterator_next_time (schedules);
+          gchar *first_ctime = g_strdup (ctime_strip_newline (&first_time));
 
           buffer_xml_append_printf
            (buffer,
             "<schedule id=\"%s\">"
             "<name>%s</name>"
             "<comment>%s</comment>"
-            "<first_time>%i</first_time>"
-            "<next_time>%i</next_time>"
+            "<first_time>%s</first_time>"
+            "<next_time>%s</next_time>"
             "<period>%i</period>"
             "<duration>%i</duration>",
             schedule_iterator_uuid (schedules),
             schedule_iterator_name (schedules),
             schedule_iterator_comment (schedules),
-            schedule_iterator_first_time (schedules),
-            schedule_iterator_next_time (schedules),
+            first_ctime,
+            (next_time == 0 ? "over" : ctime_strip_newline (&next_time)),
             schedule_iterator_period (schedules),
             schedule_iterator_duration (schedules));
+
+          g_free (first_ctime);
 
           buffer_xml_append_printf (buffer, "<tasks>");
           init_schedule_task_iterator (&tasks,
@@ -9487,6 +9492,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *second_last_report_id, *second_last_report;
                     report_t running_report;
                     schedule_t schedule;
+                    time_t next_time;
 
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
@@ -9716,6 +9722,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         task_schedule_uuid = (char*) g_strdup ("");
                         task_schedule_name = (char*) g_strdup ("");
                       }
+                    next_time = task_schedule_next_time (task);
                     response = g_strdup_printf
                                 ("<get_status_response"
                                  " status=\"" STATUS_OK "\""
@@ -9741,7 +9748,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<trend>%s</trend>"
                                  "<schedule id=\"%s\">"
                                  "<name>%s</name>"
-                                 "<next_time>%i</next_time>"
+                                 "<next_time>%s</next_time>"
                                  "</schedule>"
                                  "%s%s%s",
                                  tsk_uuid,
@@ -9762,7 +9769,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_trend (task),
                                  task_schedule_uuid,
                                  task_schedule_name,
-                                 task_schedule_next_time (task),
+                                 (next_time == 0
+                                   ? "over"
+                                   : ctime_strip_newline (&next_time)),
                                  first_report,
                                  last_report,
                                  second_last_report);
@@ -9844,6 +9853,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 report_t running_report;
                 int maximum_hosts;
                 schedule_t schedule;
+                time_t next_time;
 
                 // FIX buffer entire response so this can respond on err
                 if (task_uuid (index, &tsk_uuid)) abort ();
@@ -10069,6 +10079,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     task_schedule_uuid = (char*) g_strdup ("");
                     task_schedule_name = (char*) g_strdup ("");
                   }
+                next_time = task_schedule_next_time (index);
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
@@ -10091,7 +10102,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<trend>%s</trend>"
                                         "<schedule id=\"%s\">"
                                         "<name>%s</name>"
-                                        "<next_time>%i</next_time>"
+                                        "<next_time>%s</next_time>"
                                         "</schedule>"
                                         "%s%s%s"
                                         "</task>",
@@ -10113,7 +10124,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         task_trend (index),
                                         task_schedule_uuid,
                                         task_schedule_name,
-                                        task_schedule_next_time (index),
+                                        (next_time == 0
+                                          ? "over"
+                                          : ctime_strip_newline (&next_time)),
                                         first_report,
                                         last_report,
                                         second_last_report);
