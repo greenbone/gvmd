@@ -1,5 +1,9 @@
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (time_from_strings): Remove offsetting of day of month.
+
+2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (time_from_strings): Turn month into offset for mktime.  Match
 	daylight saving value of local time.
 
