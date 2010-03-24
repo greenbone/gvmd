@@ -1,5 +1,19 @@
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Account for period in scheduling.
+
+	* src/manage_sql.c (init_task_schedule_iterator): Add schedule period and
+	first_time.  Adjust iterator accessor columns accordingly.
+	(task_schedule_iterator_period, task_schedule_iterator_first_time): New
+	function.
+
+	* src/manage.c (manage_schedule): Account for period when setting next
+	schedule time of task.
+
+	* src/manage_sql.h: Add headers accordingly.
+
+2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add SCHEDULE to OMP command CREATE_TASK.
 
 	* src/manage_sql.c (set_task_schedule): New function.

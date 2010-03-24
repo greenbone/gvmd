@@ -12567,6 +12567,7 @@ init_task_schedule_iterator (iterator_t* iterator)
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
                  " schedules.ROWID, tasks.schedule_next_time,"
+                 " schedules.period, schedules.first_time,"
                  " users.uuid, users.name"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.ROWID"
@@ -12608,8 +12609,22 @@ task_schedule_iterator_next_time (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 3);
 }
 
-DEF_ACCESS (task_schedule_iterator_owner_uuid, 4);
-DEF_ACCESS (task_schedule_iterator_owner_name, 5);
+time_t
+task_schedule_iterator_period (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 4);
+}
+
+time_t
+task_schedule_iterator_first_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 5);
+}
+
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 6);
+DEF_ACCESS (task_schedule_iterator_owner_name, 7);
 
 gboolean
 task_schedule_iterator_start_due (iterator_t* iterator)

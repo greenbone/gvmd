@@ -1719,13 +1719,28 @@ manage_schedule (int (*fork_connection) (int *,
   /* Collect tasks. */
 
   init_task_schedule_iterator (&schedules);
+  /* This iterator runs in an exclusive transaction, so this loop is atomic. */
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
-        /* Mark the task as scheduled. */
+        time_t period;
 
-        set_task_schedule_next_time
-         (task_schedule_iterator_task (&schedules), 0);
+        /* Update the task schedule info to prevent multiple schedules. */
+
+        period = task_schedule_iterator_period (&schedules);
+
+        if (period)
+          {
+            time_t now = time (NULL);
+            time_t first = task_schedule_iterator_first_time (&schedules);
+            assert (first <= now);
+            set_task_schedule_next_time
+             (task_schedule_iterator_task (&schedules),
+              first + ((((now - first) / period) + 1) * period));
+          }
+        else
+          set_task_schedule_next_time
+           (task_schedule_iterator_task (&schedules), 0);
 
         /* Add task and owner UUIDs to the list. */
 
