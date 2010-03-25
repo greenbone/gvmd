@@ -1,5 +1,10 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_SCHEDULE ensure
+	that the period is at least as big as the duration.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Init forked child in schedular callback with init_manage_process instead
 	of with init_manage, otherwise it resets all the tasks.
 
