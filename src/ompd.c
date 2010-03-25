@@ -109,6 +109,17 @@ init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database)
 }
 
 /**
+ * @brief Initialise a process forked within the OMP daemon.
+ *
+ * @param[in]  database  Location of manage database.
+ */
+void
+init_ompd_process (const gchar *database)
+{
+  init_omp_process (0, database);
+}
+
+/**
  * @brief Read as much from the client as the \ref from_client buffer will hold.
  *
  * @param[in]  client_session  The TLS session with the client.

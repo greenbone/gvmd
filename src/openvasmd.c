@@ -591,8 +591,7 @@ fork_connection_for_schedular (int *client_socket,
             exit (EXIT_FAILURE);
           }
 
-        if (init_ompd (log_config, 0, database))
-          exit (EXIT_FAILURE);
+        init_ompd_process (database);
 
         /* Make any further authentications to this process succeed.  This
          * enables the schedular to login as the owner of the scheduled

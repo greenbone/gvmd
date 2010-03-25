@@ -1,3 +1,15 @@
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Init forked child in schedular callback with init_manage_process instead
+	of with init_manage, otherwise it resets all the tasks.
+
+	* src/ompd.c (init_ompd_process): New function.
+
+	* src/ompd.h: Add header accordingly.
+
+	* src/openvasmd.c (fork_connection_for_schedular): Init child with
+	init_ompd_process.
+
 2010-03-24  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (time_from_strings): Remove offsetting of day of month.

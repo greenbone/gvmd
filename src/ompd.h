@@ -33,6 +33,9 @@
 int
 init_ompd (GSList*, int, const gchar*);
 
+void
+init_ompd_process (const gchar *);
+
 int
 serve_omp (gnutls_session_t*, gnutls_session_t*,
            gnutls_certificate_credentials_t*,
