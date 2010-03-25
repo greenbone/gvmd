@@ -1,5 +1,15 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* doc/CMakeLists.txt: Replace tasks_sql.h with manage_sql.c.
+
+	* doc/db_postgres.sql (tasks): Add columns schedule and
+	schedule_next_time.
+	(schedules): New table.
+
+	* doc/db.png: Update from SQL.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add IN_USE to the details case of OMP GET_SCHEDULE.
 
 	* src/manage_sql.c (init_schedule_iterator): Add field for "in use".

@@ -90,7 +90,9 @@ CREATE TABLE tasks (
 	start_time date,
 	end_time date,
 	config integer REFERENCES configs (id) ON DELETE RESTRICT,
-	target integer REFERENCES targets (id) ON DELETE RESTRICT);
+	target integer REFERENCES targets (id) ON DELETE RESTRICT,
+	schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
+	schedule_next_time date);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
@@ -188,3 +190,13 @@ CREATE TABLE notes (
 	threat text,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
 	result integer REFERENCES results (id) ON DELETE RESTRICT);
+
+CREATE TABLE schedules (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	first_time date,
+	period integer,
+	duration integer);

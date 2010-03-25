@@ -70,7 +70,7 @@ set (DOC_FILES
      ../src/openvasmd.c ../src/ovas-mngr-comm.c
 	 ../src/oxpd.c ../src/ompd.c ../src/otpd.c
 	 ../src/manage.c ../src/omp.c ../src/otp.c
-	 ../src/tasks_sql.h ../src/tracef.h
+	 ../src/manage_sql.c ../src/tracef.h
 	 ../src/logf.h ../src/tests/common.c
 	 ../README ../INSTALL)
 
