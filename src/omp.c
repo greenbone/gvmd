@@ -352,6 +352,7 @@ static char* help_text = "\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
+"    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
 "    TEST_ESCALATOR         Run an escalator.\n"
 "    START_TASK             Manually start an existing task.\n";
@@ -1158,6 +1159,7 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
+  CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
   CLIENT_TEST_ESCALATOR,
@@ -2089,6 +2091,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "name", &attribute))
               openvas_append_string (&current_name, attribute);
             set_client_state (CLIENT_TEST_ESCALATOR);
+          }
+        else if (strcasecmp ("RESUME_OR_START_TASK", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_RESUME_OR_START_TASK);
           }
         else if (strcasecmp ("RESUME_STOPPED_TASK", element_name) == 0)
           {
@@ -3519,6 +3529,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_RESUME_OR_START_TASK:
+        if (send_element_error_to_client ("resume_or_start_task", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_RESUME_STOPPED_TASK:
@@ -9250,6 +9273,115 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_TEST_ESCALATOR_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_TEST_ESCALATOR);
+        break;
+
+      case CLIENT_RESUME_OR_START_TASK:
+        if (current_uuid)
+          {
+            task_t task;
+            assert (current_client_task == (task_t) 0);
+            if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_INTERNAL_ERROR ("resume_or_start_task"));
+            else if (task == 0)
+              {
+                if (send_find_error_to_client ("resume_or_start_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else if (forked == 2)
+              /* Prevent the forked child from forking again, as then both
+               * forked children would be using the same server session. */
+              abort (); // FIX respond with error or something
+            else
+              {
+                char *report_id;
+                switch (resume_or_start_task (task, &report_id))
+                  {
+                    case 0:
+                      {
+                        gchar *msg;
+                        msg = g_strdup_printf
+                               ("<resume_or_start_task_response"
+                                " status=\"" STATUS_OK_REQUESTED "\""
+                                " status_text=\""
+                                STATUS_OK_REQUESTED_TEXT
+                                "\">"
+                                "<report_id>%s</report_id>"
+                                "</resume_or_start_task_response>",
+                                report_id);
+                        free (report_id);
+                        if (send_to_client (msg))
+                          {
+                            g_free (msg);
+                            error_send_to_client (error);
+                            return;
+                          }
+                        g_free (msg);
+                      }
+                      forked = 1;
+                      break;
+                    case 1:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_or_start_task",
+                                          "Task is active already"));
+                      break;
+                    case 22:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_or_start_task",
+                                          "Task must be in \"Stopped\" state"));
+                      break;
+                    case 2:
+                      /* Forked task process: success. */
+                      current_error = 2;
+                      g_set_error (error,
+                                   G_MARKUP_ERROR,
+                                   G_MARKUP_ERROR_INVALID_CONTENT,
+                                   "Dummy error for current_error");
+                      break;
+                    case -10:
+                      /* Forked task process: error. */
+                      current_error = -10;
+                      g_set_error (error,
+                                   G_MARKUP_ERROR,
+                                   G_MARKUP_ERROR_INVALID_CONTENT,
+                                   "Dummy error for current_error");
+                      break;
+                    case -6:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_or_start_task",
+                                          "There is already a task running in"
+                                          " this process"));
+                      break;
+                    case -2:
+                      /* Task target lacks hosts.  This is checked when the
+                       * target is created. */
+                      assert (0);
+                      /*@fallthrough@*/
+                    case -4:
+                      /* Task lacks target.  This is checked when the task is
+                       * created anyway. */
+                      assert (0);
+                      /*@fallthrough@*/
+                    case -1:
+                    case -3: /* Failed to create report. */
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+                      break;
+                    default: /* Programming error. */
+                      assert (0);
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+                      break;
+                  }
+              }
+            openvas_free_string_var (&current_uuid);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_RESUME_STOPPED_TASK:

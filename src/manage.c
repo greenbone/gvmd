@@ -976,9 +976,10 @@ send_task_file (task_t task, const char* file)
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task          The task.
- * @param[out]  report_id     The report ID.
- * @param[in]   from_stopped  Continue task from stopped state if true.
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
+ *                         continue if stopped else start from beginning.
  *
  * @return Before forking: 1 task is active already, -1 error,
  *         -2 task is missing a target, -3 creating the report failed,
@@ -988,7 +989,7 @@ send_task_file (task_t task, const char* file)
  *         -10 error (child).
  */
 static int
-run_task (task_t task, char **report_id, gboolean from_stopped)
+run_task (task_t task, char **report_id, int from)
 {
   target_t target;
   char *hosts;
@@ -1031,7 +1032,9 @@ run_task (task_t task, char **report_id, gboolean from_stopped)
 
   credential = target_lsc_credential (target);
 
-  if (from_stopped)
+  if ((from == 1)
+      || ((from == 2)
+          && (run_status == TASK_STATUS_STOPPED)))
     {
       if (task_last_stopped_report (task, &last_stopped_report))
         {
@@ -1052,7 +1055,7 @@ run_task (task_t task, char **report_id, gboolean from_stopped)
       set_task_end_time (task, NULL);
       set_scan_end_time (last_stopped_report, NULL);
     }
-  else
+  else if ((from == 0) || (from == 2))
     {
       last_stopped_report = 0;
 
@@ -1064,6 +1067,12 @@ run_task (task_t task, char **report_id, gboolean from_stopped)
           set_task_run_status (task, run_status);
           return -3;
         }
+    }
+  else
+    {
+      /* from_stopped must be 0, 1 or 2. */
+      assert (0);
+      return -1;
     }
 
   /* Fork a child to start and handle the task while the parent responds to
@@ -1337,7 +1346,7 @@ run_task (task_t task, char **report_id, gboolean from_stopped)
 int
 start_task (task_t task, char **report_id)
 {
-  return run_task (task, report_id, FALSE);
+  return run_task (task, report_id, 0);
 }
 
 /**
@@ -1385,8 +1394,25 @@ resume_stopped_task (task_t task, char **report_id)
   // FIX something should check safety credential before this
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
-    return run_task (task, report_id, TRUE);
+    return run_task (task, report_id, 1);
   return 22;
+}
+
+/**
+ * @brief Resume task if stopped, else start task.
+ *
+ * Only one task can run at a time in a process.
+ *
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return 23 caller error (task must be in "stopped" state), -1 error or any
+ *         start_task error.
+ */
+int
+resume_or_start_task (task_t task, char **report_id)
+{
+  return run_task (task, report_id, 2);
 }
 
 

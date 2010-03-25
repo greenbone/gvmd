@@ -1,5 +1,19 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add OMP command RESUME_OR_START_TASK.
+
+	* src/manage.c (run_task): Convert arg from_stopped to from, and add
+	"resume or start" behaviour if from is 2.  Update callers.
+	(resume_or_start_task): New function.  Wraps run_task.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text): Add RESUME_OR_START_TASK.
+	(omp_xml_handle_end_element, omp_xml_handle_start_element): Add
+	RESUME_OR_START_TASK handling.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	In the schedular, stop tasks with durations at the end of their durations.
 
 	* src/manage.c (manage_schedule): Ensure that start happens within the

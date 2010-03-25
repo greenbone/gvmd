@@ -526,6 +526,9 @@ stop_task (task_t);
 int
 resume_stopped_task (task_t, char **);
 
+int
+resume_or_start_task (task_t, char **);
+
 
 /* Iteration. */
 
