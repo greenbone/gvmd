@@ -1,8 +1,19 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add IN_USE to the details case of OMP GET_SCHEDULE.
+
+	* src/manage_sql.c (init_schedule_iterator): Add field for "in use".
+	(schedule_iterator_in_use): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (buffer_schedules_xml): Add IN_USE in details case.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 14 to 15.
 
-	* src/tasks_sql.h (migrate_14_to_15): New function.
+	* src/manage_sql.c (migrate_14_to_15): New function.
 	(database_migrators): Add migrate_14_to_15.
 
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>

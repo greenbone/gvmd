@@ -1246,6 +1246,9 @@ schedule_iterator_period (iterator_t *);
 time_t
 schedule_iterator_duration (iterator_t *);
 
+int
+schedule_iterator_in_use (iterator_t*);
+
 void
 init_schedule_task_iterator (iterator_t*, schedule_t);
 

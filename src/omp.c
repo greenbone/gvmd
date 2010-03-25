@@ -5113,14 +5113,16 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             "<first_time>%s</first_time>"
             "<next_time>%s</next_time>"
             "<period>%i</period>"
-            "<duration>%i</duration>",
+            "<duration>%i</duration>"
+            "<in_use>%i</in_use>",
             schedule_iterator_uuid (schedules),
             schedule_iterator_name (schedules),
             schedule_iterator_comment (schedules),
             first_ctime,
             (next_time == 0 ? "over" : ctime_strip_newline (&next_time)),
             schedule_iterator_period (schedules),
-            schedule_iterator_duration (schedules));
+            schedule_iterator_duration (schedules),
+            schedule_iterator_in_use (schedules));
 
           g_free (first_ctime);
 

@@ -12488,7 +12488,9 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   if (schedule)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, duration"
+                   " period, duration,"
+                   " (SELECT count(*) > 0 FROM tasks"
+                   "  WHERE tasks.schedule = schedules.ROWID)"
                    " FROM schedules"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -12501,7 +12503,9 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, duration"
+                   " period, duration,"
+                   " (SELECT count(*) > 0 FROM tasks"
+                   "  WHERE tasks.schedule = schedules.ROWID)"
                    " FROM schedules"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -12583,7 +12587,7 @@ schedule_iterator_period (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return duration of schedule.
+ * @return Duration of schedule.
  */
 time_t
 schedule_iterator_duration (iterator_t* iterator)
@@ -12591,6 +12595,22 @@ schedule_iterator_duration (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
+
+/**
+ * @brief Get whether a schedule iterator is in use by any tasks.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if schedule is in use, else 0.
+ */
+int
+schedule_iterator_in_use (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt, 7);
   return ret;
 }
 
