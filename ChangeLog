@@ -1,5 +1,21 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	In the schedular, stop tasks with durations at the end of their durations.
+
+	* src/manage.c (manage_schedule): Ensure that start happens within the
+	duration if the schedule has a duration.  Correct assert about next and
+	first time in start of periodic task.  Collect and stop tasks due for
+	stopping.
+
+	* src/manage_sql.c (init_task_schedule_iterator): Add duration.  Adjust
+	iterator accessor columns accordingly.
+	(task_schedule_iterator_duration): New function.
+	(task_schedule_iterator_stop_due): Implement.
+
+	* src/manage_sql.h: Add header accordingly.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_SCHEDULE ensure
 	that the period is at least as big as the duration.
 

@@ -1714,7 +1714,7 @@ manage_schedule (int (*fork_connection) (int *,
                                          gnutls_certificate_credentials_t *))
 {
   iterator_t schedules;
-  GSList *starts = NULL;
+  GSList *starts = NULL, *stops = NULL;
 
   /* Collect tasks. */
 
@@ -1734,12 +1734,17 @@ manage_schedule (int (*fork_connection) (int *,
             time_t now = time (NULL);
             time_t first = task_schedule_iterator_first_time (&schedules);
             time_t next_time = task_schedule_iterator_next_time (&schedules);
+            time_t duration = task_schedule_iterator_duration (&schedules);
 
             assert (first <= now);
 
             set_task_schedule_next_time
              (task_schedule_iterator_task (&schedules),
               first + ((((now - first) / period) + 1) * period));
+
+            /* Ensure that the task starts within the duration if it has one. */
+            if (duration && (((now - first) % period) > duration))
+              continue;
 
             /* Ensure that the task is scheduled within a short interval after
              * the start of the period.
@@ -1749,7 +1754,7 @@ manage_schedule (int (*fork_connection) (int *,
              * previous instantiation completes.  This could be any time, so
              * skip the task and let is start again at the proper time.
              */
-            assert (next_time > first);
+            assert (next_time >= first);
             if (((now - first) % period) > (3 * 60))
               continue;
           }
@@ -1768,7 +1773,14 @@ manage_schedule (int (*fork_connection) (int *,
       }
     else if (task_schedule_iterator_stop_due (&schedules))
       {
+        /* Add task and owner UUIDs to the list. */
 
+        stops = g_slist_prepend
+                 (stops,
+                  g_strdup (task_schedule_iterator_task_uuid (&schedules)));
+        stops = g_slist_prepend
+                 (stops,
+                  g_strdup (task_schedule_iterator_owner_name (&schedules)));
       }
   cleanup_task_schedule_iterator (&schedules);
 
@@ -1835,6 +1847,82 @@ manage_schedule (int (*fork_connection) (int *,
         }
 
       if (omp_start_task (&session, uuid))
+        {
+          g_free (uuid);
+          g_free (owner);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      g_free (uuid);
+      g_free (owner);
+      openvas_server_free (socket, session, credentials);
+      exit (EXIT_SUCCESS);
+   }
+
+  /* Stop tasks in forked processes, now that SQL statement is closed. */
+
+  while (stops)
+    {
+      int socket;
+      gnutls_session_t session;
+      gnutls_certificate_credentials_t credentials;
+      gchar *uuid, *owner;
+      GSList *head;
+
+      owner = stops->data;
+      assert (stops->next);
+      uuid = stops->next->data;
+
+      head = stops;
+      stops = stops->next->next;
+      g_slist_free_1 (head->next);
+      g_slist_free_1 (head);
+
+      /* Run the callback to fork a child connected to the Manager. */
+
+      switch (fork_connection (&socket, &session, &credentials))
+        {
+          case 0:
+            /* Parent.  Continue to next task. */
+            g_free (uuid);
+            g_free (owner);
+            continue;
+            break;
+
+          case -1:
+            /* Parent on error. */
+            g_free (uuid);
+            g_free (owner);
+            while (stops)
+              {
+                g_free (stops->data);
+                stops = g_slist_delete_link (stops, stops);
+              }
+            return -1;
+            break;
+
+          default:
+            /* Child.  Break, stop task, exit. */
+            while (stops)
+              {
+                g_free (stops->data);
+                stops = g_slist_delete_link (stops, stops);
+              }
+            break;
+        }
+
+      /* Stop the task. */
+
+      if (omp_authenticate (&session, owner, ""))
+        {
+          g_free (uuid);
+          g_free (owner);
+          openvas_server_free (socket, session, credentials);
+          exit (EXIT_FAILURE);
+        }
+
+      if (omp_abort_task (&session, uuid))
         {
           g_free (uuid);
           g_free (owner);

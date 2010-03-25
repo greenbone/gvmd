@@ -61,6 +61,8 @@ time_t task_schedule_iterator_next_time (iterator_t*);
 
 time_t task_schedule_iterator_period (iterator_t*);
 
+time_t task_schedule_iterator_duration (iterator_t*);
+
 gboolean task_schedule_iterator_start_due (iterator_t*);
 
 gboolean task_schedule_iterator_stop_due (iterator_t*);

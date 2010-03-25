@@ -12571,6 +12571,7 @@ init_task_schedule_iterator (iterator_t* iterator)
                  "SELECT tasks.ROWID, tasks.uuid,"
                  " schedules.ROWID, tasks.schedule_next_time,"
                  " schedules.period, schedules.first_time,"
+                 " schedules.duration,"
                  " users.uuid, users.name"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.ROWID"
@@ -12626,8 +12627,15 @@ task_schedule_iterator_first_time (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 5);
 }
 
-DEF_ACCESS (task_schedule_iterator_owner_uuid, 6);
-DEF_ACCESS (task_schedule_iterator_owner_name, 7);
+time_t
+task_schedule_iterator_duration (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 6);
+}
+
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 7);
+DEF_ACCESS (task_schedule_iterator_owner_name, 8);
 
 gboolean
 task_schedule_iterator_start_due (iterator_t* iterator)
@@ -12654,6 +12662,31 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
+  time_t period, duration;
+
+  if (iterator->done) return FALSE;
+
+  period = task_schedule_iterator_period (iterator);
+  duration = task_schedule_iterator_duration (iterator);
+  if (period && duration)
+    {
+      task_status_t run_status;
+
+      run_status = task_run_status (task_schedule_iterator_task (iterator));
+
+      if (run_status == TASK_STATUS_RUNNING
+          || run_status == TASK_STATUS_REQUESTED)
+        {
+          time_t now, first, start;
+
+          now = time (NULL);
+          first = task_schedule_iterator_first_time (iterator);
+          start = first + (((now - first) / period) * period);
+          if ((start + duration) < now)
+            return TRUE;
+        }
+    }
+
   return FALSE;
 }
 
