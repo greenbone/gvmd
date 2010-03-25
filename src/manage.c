@@ -1872,7 +1872,7 @@ manage_schedule (int (*fork_connection) (int *,
           exit (EXIT_FAILURE);
         }
 
-      if (omp_start_task (&session, uuid))
+      if (omp_resume_or_start_task (&session, uuid))
         {
           g_free (uuid);
           g_free (owner);

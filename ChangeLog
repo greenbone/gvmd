@@ -1,5 +1,10 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage.c (manage_schedule): Call omp_resume_or_start_task instead
+	of omp_start_task to start tasks.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add OMP command RESUME_OR_START_TASK.
 
 	* src/manage.c (run_task): Convert arg from_stopped to from, and add
