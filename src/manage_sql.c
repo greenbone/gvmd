@@ -2405,6 +2405,43 @@ migrate_13_to_14 ()
 }
 
 /**
+ * @brief Migrate the database from version 14 to version 15.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_14_to_15 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 14. */
+
+  if (manage_db_version () != 14)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table tasks got columns for scheduling info. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE tasks ADD COLUMN schedule INTEGER;");
+  sql ("ALTER TABLE tasks ADD COLUMN schedule_next_time;");
+  sql ("UPDATE tasks SET schedule = 0, schedule_next_time = 0;");
+
+  /* Set the database version to 15. */
+
+  set_db_version (15);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2423,6 +2460,7 @@ static migrator_t database_migrators[]
     {12, migrate_11_to_12},
     {13, migrate_12_to_13},
     {14, migrate_13_to_14},
+    {15, migrate_14_to_15},
     /* End marker. */
     {-1, NULL}};
 

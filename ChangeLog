@@ -1,5 +1,12 @@
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 14 to 15.
+
+	* src/tasks_sql.h (migrate_14_to_15): New function.
+	(database_migrators): Add migrate_14_to_15.
+
+2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage.c (manage_schedule): Call omp_resume_or_start_task instead
 	of omp_start_task to start tasks.
 
