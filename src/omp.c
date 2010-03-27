@@ -303,6 +303,61 @@ time_from_strings (const char *hour, const char *minute,
   return mktime (&given_broken);
 }
 
+/**
+ * @brief Return interval defined by time and unit strings.
+ *
+ * @param[in]   value   Value.  0 if NULL.
+ * @param[in]   unit    Calendar unit: second, minute, hour, day, week,
+ *                      month, year or decade.  "second" if NULL.
+ * @param[out]  months  Months return.
+ *
+ * @return Interval described by arguments on success, else -1.
+ */
+static time_t
+interval_from_strings (const char *value, const char *unit, time_t *months)
+{
+  if (value == NULL)
+    return 0;
+
+  if ((unit == NULL) || (strcasecmp (unit, "second") == 0))
+    return atoi (value);
+
+  if (strcasecmp (unit, "minute") == 0)
+    return atoi (value) * 60;
+
+  if (strcasecmp (unit, "hour") == 0)
+    return atoi (value) * 60 * 60;
+
+  if (strcasecmp (unit, "day") == 0)
+    return atoi (value) * 60 * 60 * 24;
+
+  if (strcasecmp (unit, "week") == 0)
+    return atoi (value) * 60 * 60 * 24 * 7;
+
+  if (months)
+    {
+      if (strcasecmp (unit, "month") == 0)
+        {
+          *months = atoi (value);
+          return 0;
+        }
+
+      if (strcasecmp (unit, "year") == 0)
+        {
+          *months = atoi (value) * 12;
+          return 0;
+        }
+
+      if (strcasecmp (unit, "decade") == 0)
+        {
+          *months = atoi (value) * 12 * 10;
+          return 0;
+        }
+    }
+
+  return -1;
+}
+
 
 /* Help message. */
 
@@ -634,7 +689,9 @@ typedef struct
   char *first_time_month;
   char *first_time_year;
   char *period;
+  char *period_unit;
   char *duration;
+  char *duration_unit;
 } create_schedule_data_t;
 
 static void
@@ -648,7 +705,9 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->first_time_month);
   free (data->first_time_year);
   free (data->period);
+  free (data->period_unit);
   free (data->duration);
+  free (data->duration_unit);
 
   memset (data, 0, sizeof (create_schedule_data_t));
 }
@@ -1076,7 +1135,9 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH,
   CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR,
   CLIENT_CREATE_SCHEDULE_DURATION,
+  CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
   CLIENT_CREATE_SCHEDULE_PERIOD,
+  CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -2234,6 +2295,42 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_CREATE_SCHEDULE_DURATION:
+        if (strcasecmp ("UNIT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
+        else
+          {
+            if (send_element_error_to_client ("create_schedule", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_PERIOD:
+        if (strcasecmp ("UNIT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
+        else
+          {
+            if (send_element_error_to_client ("create_schedule", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_CREATE_SCHEDULE_COMMENT:
       case CLIENT_CREATE_SCHEDULE_NAME:
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
@@ -2241,6 +2338,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MINUTE:
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_MONTH:
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
+      case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
+      case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
         if (send_element_error_to_client ("create_schedule", element_name))
           {
             error_send_to_client (error);
@@ -5113,6 +5212,7 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             "<first_time>%s</first_time>"
             "<next_time>%s</next_time>"
             "<period>%i</period>"
+            "<period_months>%i</period_months>"
             "<duration>%i</duration>"
             "<in_use>%i</in_use>",
             schedule_iterator_uuid (schedules),
@@ -5121,6 +5221,7 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
             first_ctime,
             (next_time == 0 ? "over" : ctime_strip_newline (&next_time)),
             schedule_iterator_period (schedules),
+            schedule_iterator_period_months (schedules),
             schedule_iterator_duration (schedules),
             schedule_iterator_in_use (schedules));
 
@@ -8572,7 +8673,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_SCHEDULE:
         {
-          time_t first_time;
+          time_t first_time, period, period_months, duration;
+
+          period_months = 0;
 
           assert (strcasecmp ("CREATE_SCHEDULE", element_name) == 0);
 
@@ -8598,15 +8701,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create time from FIRST_TIME"
                                 " elements"));
+          else if ((period = interval_from_strings
+                              (create_schedule_data->period,
+                               create_schedule_data->period_unit,
+                               &period_months))
+                   == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "Failed to create interval from PERIOD"));
+          else if ((duration = interval_from_strings
+                                (create_schedule_data->duration,
+                                 create_schedule_data->duration_unit,
+                                 NULL))
+                   == -1)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "Failed to create interval from DURATION"));
           else switch (create_schedule (create_schedule_data->name,
                                         create_schedule_data->comment,
                                         first_time,
-                                        create_schedule_data->period
-                                         ? atoi (create_schedule_data->period)
-                                         : 0,
-                                        create_schedule_data->duration
-                                         ? atoi (create_schedule_data->duration)
-                                         : 0,
+                                        period,
+                                        period_months,
+                                        duration,
                                         NULL))
             {
               case 0:
@@ -8671,6 +8787,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
         assert (strcasecmp ("YEAR", element_name) == 0);
         set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME);
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
+        assert (strcasecmp ("UNIT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_DURATION);
+        break;
+
+      case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
+        assert (strcasecmp ("UNIT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         break;
 
       case CLIENT_CREATE_TARGET:
@@ -11423,6 +11549,11 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE_DURATION:
         openvas_append_text (&create_schedule_data->duration, text, text_len);
         break;
+      case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
+        openvas_append_text (&create_schedule_data->duration_unit,
+                             text,
+                             text_len);
+        break;
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_DAY_OF_MONTH:
         openvas_append_text (&create_schedule_data->first_time_day_of_month,
                              text,
@@ -11453,6 +11584,11 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_SCHEDULE_PERIOD:
         openvas_append_text (&create_schedule_data->period, text, text_len);
+        break;
+      case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
+        openvas_append_text (&create_schedule_data->period_unit,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:

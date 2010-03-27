@@ -1197,7 +1197,7 @@ find_schedule (const char*, schedule_t*);
 
 int
 create_schedule (const char*, const char *, time_t, time_t, time_t,
-                 schedule_t *);
+                 time_t, schedule_t *);
 
 int
 delete_schedule (schedule_t);
@@ -1242,6 +1242,9 @@ schedule_iterator_next_time (iterator_t *);
 
 time_t
 schedule_iterator_period (iterator_t *);
+
+time_t
+schedule_iterator_period_months (iterator_t *);
 
 time_t
 schedule_iterator_duration (iterator_t *);

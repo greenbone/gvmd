@@ -1,3 +1,35 @@
+2010-03-27  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add calendar month periods to scheduling.  Hence increase database
+	version to 16.  Extend OMP SCHEDULE command so clients can specify
+	duration and period in months or other calendar units.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 16.
+
+	* src/manage_sql.c (create_tables): Add period_months to table schedules.
+	(create_schedule): Add period_months arg.
+	(MONTHS_WITHIN_YEAR): New macro.
+	(months_between, add_months, schedule_iterator_period_months)
+	(task_schedule_iterator_period_months): New functions.
+	(init_schedule_iterator, init_task_schedule_iterator): Add period_months to
+	columns.  Adjust iterator accessor columns accordingly.
+	(task_schedule_iterator_stop_due): Add calendar month period handling.
+
+	* src/manage_sql.h, src/manage.h: Update headers accordingly.
+
+	* src/manage.c (manage_schedule): Remove next time assert from periodic
+	case.  Add case for calendar month periods.
+
+	* src/omp.c (interval_from_strings): New function.
+	(create_schedule_data_t): Add period_unit and duration_unit.
+	(create_schedule_data_reset): Free period_unit and duration_unit.
+	(client_state_t): Add duration and period unit states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add UNIT to PERIOD and DURATION in OMP SCHEDULE.
+	(buffer_schedules_xml): Add PERIOD_MONTHS to SCHEDULE.
+
+	* src/openvasmd.c (main): Set timezone to UTC.
+
 2010-03-25  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/tests/omp_help_0.c (help_text): Bring in line with Manager.

@@ -778,6 +778,15 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
+  /* Switch to UTC for scheduling. */
+
+  if (setenv ("TZ", "utc 0", 1) == -1)
+    {
+      g_critical ("%s: failed to set timezone\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+  tzset ();
+
   /* Setup logging. */
 
   rc_name = g_build_filename (OPENVAS_SYSCONF_DIR,

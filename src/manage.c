@@ -1749,17 +1749,17 @@ manage_schedule (int (*fork_connection) (int *,
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
       {
-        time_t period;
+        time_t period, period_months;
 
         /* Update the task schedule info to prevent multiple schedules. */
 
         period = task_schedule_iterator_period (&schedules);
+        period_months = task_schedule_iterator_period_months (&schedules);
 
         if (period)
           {
             time_t now = time (NULL);
             time_t first = task_schedule_iterator_first_time (&schedules);
-            time_t next_time = task_schedule_iterator_next_time (&schedules);
             time_t duration = task_schedule_iterator_duration (&schedules);
 
             assert (first <= now);
@@ -1780,8 +1780,37 @@ manage_schedule (int (*fork_connection) (int *,
              * previous instantiation completes.  This could be any time, so
              * skip the task and let is start again at the proper time.
              */
-            assert (next_time >= first);
             if (((now - first) % period) > (3 * 60))
+              continue;
+          }
+        else if (period_months)
+          {
+            time_t now = time (NULL);
+            time_t first = task_schedule_iterator_first_time (&schedules);
+            time_t duration = task_schedule_iterator_duration (&schedules);
+
+            assert (first <= now);
+
+            set_task_schedule_next_time
+             (task_schedule_iterator_task (&schedules),
+              add_months (first, months_between (first, now) + 1));
+
+            /* Ensure that the task starts within the duration if it has one. */
+            if (duration
+                && ((now - add_months (first, months_between (first, now)))
+                    > duration))
+              continue;
+
+            /* Ensure that the task is scheduled within a short interval after
+             * the start of the period.
+             *
+             * A periodic task that becomes due while the previous instantiation
+             * of the task is still running will be runnable as soon as the
+             * previous instantiation completes.  This could be any time, so
+             * skip the task and let is start again at the proper time.
+             */
+            if ((now - add_months (first, months_between (first, now)))
+                > (3 * 60))
               continue;
           }
         else

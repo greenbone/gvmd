@@ -47,6 +47,10 @@ int create_report (task_t, char **, task_status_t);
 
 char *escalator_data (escalator_t, const char *, const char *);
 
+time_t add_months (time_t, int);
+
+time_t months_between (time_t, time_t);
+
 void init_task_schedule_iterator (iterator_t*);
 
 void cleanup_task_schedule_iterator (iterator_t*);
@@ -60,6 +64,8 @@ schedule_t task_schedule_iterator_schedule (iterator_t*);
 time_t task_schedule_iterator_next_time (iterator_t*);
 
 time_t task_schedule_iterator_period (iterator_t*);
+
+time_t task_schedule_iterator_period_months (iterator_t*);
 
 time_t task_schedule_iterator_duration (iterator_t*);
 

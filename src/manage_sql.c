@@ -725,7 +725,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
-  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, duration);");
+  sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
@@ -12361,6 +12361,7 @@ find_schedule (const char* uuid, schedule_t* schedule)
  * @param[in]   first_time  First time action will run.
  * @param[in]   period      How often the action will run in seconds.  0 means
  *                          once.
+ * @param[in]   period_months  The months part of the period.
  * @param[in]   duration    The length of the time window the action will run
  *                          in.  0 means entire duration of action.
  * @param[out]  schedule    Created schedule.
@@ -12369,7 +12370,8 @@ find_schedule (const char* uuid, schedule_t* schedule)
  */
 int
 create_schedule (const char* name, const char *comment, time_t first_time,
-                 time_t period, time_t duration, schedule_t *schedule)
+                 time_t period, time_t period_months, time_t duration,
+                 schedule_t *schedule)
 {
   gchar *quoted_name = sql_quote (name);
 
@@ -12394,21 +12396,24 @@ create_schedule (const char* name, const char *comment, time_t first_time,
     {
       gchar *quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO schedules"
-           " (uuid, name, owner, comment, first_time, period, duration)"
+           " (uuid, name, owner, comment, first_time, period, period_months,"
+           "  duration)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', %i, %i, %i);",
+           " '%s', %i, %i, %i, %i);",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, duration);
+           period, period_months, duration);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO schedules"
-         " (uuid, name, owner, comment, first_time, period, duration)"
+         " (uuid, name, owner, comment, first_time, period, period_months,"
+         "  duration)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '', %i, %i, %i);",
-         quoted_name, current_credentials.uuid, first_time, period, duration);
+         " '', %i, %i, %i, %i);",
+         quoted_name, current_credentials.uuid, first_time, period,
+         period_months, duration);
 
   if (schedule)
     *schedule = sqlite3_last_insert_rowid (task_db);
@@ -12441,6 +12446,106 @@ delete_schedule (schedule_t schedule)
   sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
   sql ("COMMIT;");
   return 0;
+}
+
+#define MONTHS_WITHIN_YEAR()                                 \
+  (same_month                                                \
+    ? 0                                                      \
+    : ((broken2->tm_mon - broken1.tm_mon)                    \
+       - (same_day                                           \
+           ? (same_hour                                      \
+               ? (same_minute                                \
+                   ? (same_second                            \
+                       ? 0                                   \
+                       : (broken2->tm_sec < broken1.tm_sec)) \
+                   : (broken2->tm_min < broken1.tm_min))     \
+               : (broken2->tm_hour < broken1.tm_hour))       \
+           : (broken2->tm_mday < broken1.tm_mday))))
+
+/**
+ * @brief Count number of full months between two times.
+ *
+ * There are two full months between 0h00.00 1 February 2010 and 0h00.00 1
+ * April 2010.  There is one full month between 0h00.00 1 February 2010 and
+ * 23h59.59 31 March 2010.
+ *
+ * @param[in]  time1  Earlier time.
+ * @param[in]  time2  Later time.
+ *
+ * @return Number of full months between time1 and time2.
+ */
+time_t
+months_between (time_t time1, time_t time2)
+{
+  struct tm broken1, *broken2;
+  int same_year, same_month, same_day, same_hour, same_minute, same_second;
+  int year1_less, month1_less, day1_less, hour1_less, minute1_less;
+  int second1_less;
+
+  assert (time1 < time2);
+
+  localtime_r (&time1, &broken1);
+  broken2 = localtime (&time2);
+
+  same_year = (broken1.tm_year == broken2->tm_year);
+  same_month = (broken1.tm_mon == broken2->tm_mon);
+  same_day = (broken1.tm_mday == broken2->tm_mday);
+  same_hour = (broken1.tm_hour == broken2->tm_hour);
+  same_minute = (broken1.tm_min == broken2->tm_min);
+  same_second = (broken1.tm_sec == broken2->tm_sec);
+
+  year1_less = (broken1.tm_year < broken2->tm_year);
+  month1_less = (broken1.tm_mon < broken2->tm_mon);
+  day1_less = (broken1.tm_mday < broken2->tm_mday);
+  hour1_less = (broken1.tm_hour < broken2->tm_hour);
+  minute1_less = (broken1.tm_min < broken2->tm_min);
+  second1_less = (broken1.tm_sec < broken2->tm_sec);
+
+  return
+    (same_year
+      ? MONTHS_WITHIN_YEAR ()
+      : ((month1_less
+          || (same_month
+              && (day1_less
+                  || (same_day
+                      && (hour1_less
+                          || (same_hour
+                              && (minute1_less
+                                  || (same_minute
+                                      && second1_less))))))))
+         ? (/* time1 is earlier in the year than time2. */
+            ((broken2->tm_year - broken1.tm_year) * 12)
+            + MONTHS_WITHIN_YEAR ())
+         : (/* time1 is later in the year than time2. */
+            ((broken2->tm_year - broken1.tm_year - 1) * 12)
+            /* Months left in year of time1. */
+            + (11 - broken1.tm_mon)
+            /* Months past in year of time2. */
+            + broken2->tm_mon
+            /* Possible extra month due to position in month of each time. */
+            + (day1_less
+               || (same_day
+                   && (hour1_less
+                       || (same_hour
+                           && (minute1_less
+                               || (same_minute
+                                   && second1_less)))))))));
+}
+
+/**
+ * @brief Add months to a time.
+ *
+ * @param[in]  time    Time.
+ * @param[in]  months  Months.
+ *
+ * @return Time plus given number of months.
+ */
+time_t
+add_months (time_t time, int months)
+{
+  struct tm *broken = localtime (&time);
+  broken->tm_mon += months;
+  return mktime (broken);
 }
 
 /**
@@ -12488,7 +12593,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   if (schedule)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, duration,"
+                   " period, period_months, duration,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules.ROWID)"
                    " FROM schedules"
@@ -12503,7 +12608,7 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, comment, first_time,"
-                   " period, duration,"
+                   " period, period_months, duration,"
                    " (SELECT count(*) > 0 FROM tasks"
                    "  WHERE tasks.schedule = schedules.ROWID)"
                    " FROM schedules"
@@ -12583,6 +12688,22 @@ schedule_iterator_period (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the period months from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Period of schedule (months).
+ */
+time_t
+schedule_iterator_period_months (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
+
+/**
  * @brief Get the duration from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12594,7 +12715,7 @@ schedule_iterator_duration (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 7);
   return ret;
 }
 
@@ -12610,7 +12731,7 @@ schedule_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 7);
+  ret = (int) sqlite3_column_int (iterator->stmt, 8);
   return ret;
 }
 
@@ -12628,7 +12749,8 @@ init_task_schedule_iterator (iterator_t* iterator)
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
                  " schedules.ROWID, tasks.schedule_next_time,"
-                 " schedules.period, schedules.first_time,"
+                 " schedules.period, schedules.period_months,"
+                 " schedules.first_time,"
                  " schedules.duration,"
                  " users.uuid, users.name"
                  " FROM tasks, schedules, users"
@@ -12679,21 +12801,28 @@ task_schedule_iterator_period (iterator_t* iterator)
 }
 
 time_t
-task_schedule_iterator_first_time (iterator_t* iterator)
+task_schedule_iterator_period_months (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (time_t) sqlite3_column_int64 (iterator->stmt, 5);
 }
 
 time_t
-task_schedule_iterator_duration (iterator_t* iterator)
+task_schedule_iterator_first_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (time_t) sqlite3_column_int64 (iterator->stmt, 6);
 }
 
-DEF_ACCESS (task_schedule_iterator_owner_uuid, 7);
-DEF_ACCESS (task_schedule_iterator_owner_name, 8);
+time_t
+task_schedule_iterator_duration (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (time_t) sqlite3_column_int64 (iterator->stmt, 7);
+}
+
+DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
+DEF_ACCESS (task_schedule_iterator_owner_name, 9);
 
 gboolean
 task_schedule_iterator_start_due (iterator_t* iterator)
@@ -12720,12 +12849,14 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
-  time_t period, duration;
+  time_t period, period_months, duration;
 
   if (iterator->done) return FALSE;
 
   period = task_schedule_iterator_period (iterator);
+  period_months = task_schedule_iterator_period_months (iterator);
   duration = task_schedule_iterator_duration (iterator);
+
   if (period && duration)
     {
       task_status_t run_status;
@@ -12740,6 +12871,24 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
           now = time (NULL);
           first = task_schedule_iterator_first_time (iterator);
           start = first + (((now - first) / period) * period);
+          if ((start + duration) < now)
+            return TRUE;
+        }
+    }
+  else if (period_months && duration)
+    {
+      task_status_t run_status;
+
+      run_status = task_run_status (task_schedule_iterator_task (iterator));
+
+      if (run_status == TASK_STATUS_RUNNING
+          || run_status == TASK_STATUS_REQUESTED)
+        {
+          time_t now, first, start;
+
+          now = time (NULL);
+          first = task_schedule_iterator_first_time (iterator);
+          start = add_months (first, months_between (first, now));
           if ((start + duration) < now)
             return TRUE;
         }
