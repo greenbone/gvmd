@@ -1,5 +1,10 @@
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/manage_sql.c (make_task): Allow comment to be NULL.  Add SQL quotes
+	for comment.  Init schedule_next_time.
+
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add SCHEDULE to OMP command MODIFY_TASK.
 
 	* src/omp.c (modify_task_data_t): New type.

@@ -6671,10 +6671,12 @@ make_task (char* name, unsigned int time, char* comment)
   char* uuid = make_task_uuid ();
   if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
-  sql ("INSERT into tasks (owner, uuid, name, hidden, time, comment, schedule)"
+  sql ("INSERT into tasks"
+       " (owner, uuid, name, hidden, time, comment, schedule,"
+       "  schedule_next_time)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', %s, 0, %u, %s, 0);",
-       current_credentials.uuid, uuid, name, time, comment);
+       "         '%s', %s, 0, %u, '%s', 0, 0);",
+       current_credentials.uuid, uuid, name, time, comment ? comment : "");
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
   free (uuid);
