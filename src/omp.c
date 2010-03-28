@@ -9754,7 +9754,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *response, *progress_xml;
                     target_t target;
                     char *name, *config, *escalator, *task_target_name, *hosts;
-                    char *task_schedule_uuid, *task_schedule_name;
+                    char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
                     char* description;
                     gchar *description64, *last_report_id, *last_report;
@@ -9977,6 +9977,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       description64 = g_strdup ("");
 
                     name = task_name (task);
+                    comment = task_comment (task);
                     escalator = task_escalator (task);
                     config = task_config_name (task);
                     task_target_name = target_name (target);
@@ -9998,6 +9999,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  " status_text=\"" STATUS_OK_TEXT "\">"
                                  "<task id=\"%s\">"
                                  "<name>%s</name>"
+                                 "<comment>%s</comment>"
                                  "<config><name>%s</name></config>"
                                  "<escalator><name>%s</name></escalator>"
                                  "<target><name>%s</name></target>"
@@ -10022,6 +10024,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "%s%s%s",
                                  tsk_uuid,
                                  name,
+                                 comment,
                                  config ? config : "",
                                  escalator ? escalator : "",
                                  task_target_name ? task_target_name : "",
@@ -10053,6 +10056,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     ret = send_to_client (response);
                     g_free (response);
                     g_free (name);
+                    g_free (comment);
                     g_free (description64);
                     free (tsk_uuid);
                     free (task_schedule_uuid);
@@ -10112,6 +10116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 gchar *line, *progress_xml;
                 char *name = task_name (index);
+                char *comment = task_comment (index);
                 target_t target;
                 char *tsk_uuid, *config, *escalator, *task_target_name, *hosts;
                 char *task_schedule_uuid, *task_schedule_name;
@@ -10352,6 +10357,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 line = g_strdup_printf ("<task"
                                         " id=\"%s\">"
                                         "<name>%s</name>"
+                                        "<comment>%s</comment>"
                                         "<config><name>%s</name></config>"
                                         "<escalator><name>%s</name></escalator>"
                                         "<target><name>%s</name></target>"
@@ -10377,6 +10383,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "</task>",
                                         tsk_uuid,
                                         name,
+                                        comment,
                                         config ? config : "",
                                         escalator ? escalator : "",
                                         task_target_name ? task_target_name : "",
@@ -10406,6 +10413,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 g_free (last_report);
                 g_free (second_last_report);
                 free (name);
+                free (comment);
                 g_free (description64);
                 free (tsk_uuid);
                 free (task_schedule_uuid);

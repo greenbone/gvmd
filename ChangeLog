@@ -1,5 +1,10 @@
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add COMMENT
+	to TASK.
+
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* doc/db_postgres.sql (schedules): Add column period_months.
 
 	* doc/db.png: Update from SQL.
