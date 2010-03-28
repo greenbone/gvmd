@@ -1,5 +1,12 @@
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add database migration from version 15 to 16.
+
+	* src/manage_sql.c (migrate_15_to_16): New function.
+	(database_migrators): Add migrate_15_to_16.
+
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): Check period and duration last.
 	Ensure that duration is less than period when period is given in months.
 

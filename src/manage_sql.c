@@ -2442,6 +2442,46 @@ migrate_14_to_15 ()
 }
 
 /**
+ * @brief Migrate the database from version 15 to version 16.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_15_to_16 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 15. */
+
+  if (manage_db_version () != 15)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table schedules got a period_months column. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("CREATE TABLE IF NOT EXISTS schedules"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  first_time, period, duration);");
+
+  sql ("ALTER TABLE schedules ADD COLUMN period_months;");
+  sql ("UPDATE schedules SET period_months = 0;");
+
+  /* Set the database version to 16. */
+
+  set_db_version (16);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2461,6 +2501,7 @@ static migrator_t database_migrators[]
     {13, migrate_12_to_13},
     {14, migrate_13_to_14},
     {15, migrate_14_to_15},
+    {16, migrate_15_to_16},
     /* End marker. */
     {-1, NULL}};
 
