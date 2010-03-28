@@ -816,6 +816,18 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
 
+typedef struct
+{
+  char *schedule_id;
+} modify_task_data_t;
+
+static void
+modify_task_data_reset (modify_task_data_t *data)
+{
+  free (data->schedule_id);
+  memset (data, 0, sizeof (modify_task_data_t));
+}
+
 typedef union
 {
   create_config_data_t create_config;
@@ -828,6 +840,7 @@ typedef union
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
+  modify_task_data_t modify_task;
   name_command_data_t name_command;
 } command_data_t;
 
@@ -919,6 +932,12 @@ import_config_data_t *import_config_data
  */
 modify_note_data_t *modify_note_data
  = (modify_note_data_t*) &(command_data.create_note);
+
+/**
+ * @brief Parser callback data for MODIFY_TASK.
+ */
+modify_task_data_t *modify_task_data
+ = &(command_data.modify_task);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
@@ -1220,6 +1239,7 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
+  CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
@@ -3023,6 +3043,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
+        else if (strcasecmp ("SCHEDULE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&(modify_task_data->schedule_id),
+                                     attribute);
+            set_client_state (CLIENT_MODIFY_TASK_SCHEDULE);
+          }
         else if (strcasecmp ("FILE", element_name) == 0)
           {
             const gchar* attribute;
@@ -7878,6 +7907,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       first = 0;
                   }
 
+                if (fail == 0 && modify_task_data->schedule_id)
+                  {
+                    int fail;
+                    schedule_t schedule = 0;
+
+                    if (strcmp (modify_task_data->schedule_id, "0") == 0)
+                      {
+                        set_task_schedule (task, 0);
+                        first = 0;
+                      }
+                    else if ((fail = find_schedule
+                                      (modify_task_data->schedule_id,
+                                       &schedule)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (schedule == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "schedule",
+                              modify_task_data->schedule_id))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      {
+                        set_task_schedule (task, schedule);
+                        first = 0;
+                      }
+                  }
+
                 if (fail == 0)
                   {
                     if (modify_task_parameter && modify_task_value)
@@ -7937,7 +8000,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("modify_task",
                               "MODIFY_TASK requires a task_id attribute"));
+        modify_task_data_reset (modify_task_data);
         set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_TASK_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
@@ -7949,6 +8017,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         assert (strcasecmp ("RCFILE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_SCHEDULE:
+        assert (strcasecmp ("SCHEDULE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_FILE:

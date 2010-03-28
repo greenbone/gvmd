@@ -1,5 +1,17 @@
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add SCHEDULE to OMP command MODIFY_TASK.
+
+	* src/omp.c (modify_task_data_t): New type.
+	(modify_task_data_reset): New function.
+	(command_data_t): Add modify_task.
+	(modify_task_data): New variable.
+	(client_state_t): Add CLIENT_MODIFY_TASK_SCHEDULE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add SCHEDULE
+	to MODIFY_TASK handling.  Add missing CLIENT_MODIFY_TASK_COMMENT end case.
+
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add COMMENT
 	to TASK.
 
