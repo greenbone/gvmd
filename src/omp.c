@@ -8683,13 +8683,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "CREATE_SCHEDULE requires a NAME entity"));
-          else if (create_schedule_data->period
-                   && create_schedule_data->duration
-                   && (atoi (create_schedule_data->duration)
-                       > atoi (create_schedule_data->period)))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_schedule",
-                                "Duration is longer than period"));
           else if ((first_time = time_from_strings
                                   (create_schedule_data->first_time_hour,
                                    create_schedule_data->first_time_minute,
@@ -8717,6 +8710,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_schedule",
                                 "Failed to create interval from DURATION"));
+          else if (period_months
+                   && (duration > (period_months * 60 * 60 * 24 * 28)))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "Duration too long for number of months"));
+          else if (period && (duration > period))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_schedule",
+                                "Duration is longer than period"));
           else switch (create_schedule (create_schedule_data->name,
                                         create_schedule_data->comment,
                                         first_time,
