@@ -1,5 +1,11 @@
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* doc/db_postgres.sql (schedules): Add column period_months.
+
+	* doc/db.png: Update from SQL.
+
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add database migration from version 15 to 16.
 
 	* src/manage_sql.c (migrate_15_to_16): New function.

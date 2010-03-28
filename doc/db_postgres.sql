@@ -199,4 +199,5 @@ CREATE TABLE schedules (
 	comment text,
 	first_time date,
 	period integer,
+	period_months integer,
 	duration integer);
