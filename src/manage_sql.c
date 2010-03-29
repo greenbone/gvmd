@@ -2472,6 +2472,11 @@ migrate_15_to_16 ()
   sql ("ALTER TABLE schedules ADD COLUMN period_months;");
   sql ("UPDATE schedules SET period_months = 0;");
 
+  /* GSA was hardcoded to set the comment to "comment" before revision 7157,
+   * so clear all task comments here. */
+
+  sql ("UPDATE tasks SET comment = '';");
+
   /* Set the database version to 16. */
 
   set_db_version (16);

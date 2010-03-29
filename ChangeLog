@@ -1,3 +1,7 @@
+2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage_sql.c (migrate_15_to_16): Also clear all task comments.
+
 2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c (omp_xml_handle_start_element): In CLIENT_MODIFY_TASK
