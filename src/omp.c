@@ -3033,7 +3033,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TASK_COMMENT);
+          {
+            openvas_append_string (&modify_task_comment, "");
+            set_client_state (CLIENT_MODIFY_TASK_COMMENT);
+          }
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
           {
             const gchar* attribute;

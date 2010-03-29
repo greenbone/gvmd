@@ -1,5 +1,10 @@
 2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c (omp_xml_handle_start_element): In CLIENT_MODIFY_TASK
+	initialise modify_task_comment in case the comment is empty.
+
+2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	Add ESCALATOR to OMP command MODIFY_TASK.
 
 	* src/omp.c (modify_task_data_t): Add escalator_id.
