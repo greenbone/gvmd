@@ -10050,7 +10050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     name = task_name (task);
                     comment = task_comment (task);
-                    escalator = task_escalator (task);
+                    escalator = task_escalator_name (task);
                     config = task_config_name (task);
                     task_target_name = target_name (target);
                     schedule = task_schedule (task);
@@ -10412,7 +10412,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   progress_xml = g_strdup ("-1");
 
                 config = task_config_name (index);
-                escalator = task_escalator (index);
+                escalator = task_escalator_name (index);
                 task_target_name = target_name (target);
                 schedule = task_schedule (index);
                 if (schedule)

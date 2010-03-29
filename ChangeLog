@@ -1,3 +1,13 @@
+2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* src/manage_sql.c (task_escalator): Remove.  Renamed to
+	task_escalator_name.
+	(task_escalator_name): New function.  Was task_escalator.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Rename task_escalator calls.
+
 2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage_sql.c (make_task): Allow comment to be NULL.  Add SQL quotes

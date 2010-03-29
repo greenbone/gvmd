@@ -4975,7 +4975,7 @@ task_second_last_report_id (task_t task)
  * @return Escalator of task if any, else NULL.
  */
 char*
-task_escalator (task_t task)
+task_escalator_name (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT name FROM escalators"
