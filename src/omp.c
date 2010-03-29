@@ -818,12 +818,14 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
+  char *escalator_id;
   char *schedule_id;
 } modify_task_data_t;
 
 static void
 modify_task_data_reset (modify_task_data_t *data)
 {
+  free (data->escalator_id);
   free (data->schedule_id);
   memset (data, 0, sizeof (modify_task_data_t));
 }
@@ -1235,6 +1237,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
+  CLIENT_MODIFY_TASK_ESCALATOR,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_PARAMETER,
@@ -3031,6 +3034,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TASK:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_COMMENT);
+        else if (strcasecmp ("ESCALATOR", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&(modify_task_data->escalator_id),
+                                     attribute);
+            set_client_state (CLIENT_MODIFY_TASK_ESCALATOR);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
         else if (strcasecmp ("PARAMETER", element_name) == 0)
@@ -7907,6 +7919,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       first = 0;
                   }
 
+                if (fail == 0 && modify_task_data->escalator_id)
+                  {
+                    int fail;
+                    escalator_t escalator = 0;
+
+                    if (strcmp (modify_task_data->escalator_id, "") == 0)
+                      {
+                        set_task_escalator (task, 0);
+                        first = 0;
+                      }
+                    else if ((fail = find_escalator
+                                      (modify_task_data->escalator_id,
+                                       &escalator)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (escalator == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "escalator",
+                              modify_task_data->escalator_id))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      {
+                        set_task_escalator (task, escalator);
+                        first = 0;
+                      }
+                  }
+
                 if (fail == 0 && modify_task_data->schedule_id)
                   {
                     int fail;
@@ -8005,6 +8051,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_ESCALATOR:
+        assert (strcasecmp ("ESCALATOR", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_NAME:

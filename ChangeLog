@@ -1,5 +1,19 @@
 2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
 
+	Add ESCALATOR to OMP command MODIFY_TASK.
+
+	* src/omp.c (modify_task_data_t): Add escalator_id.
+	(modify_task_data_reset): Free escalator_id.
+	(client_state_t): Add CLIENT_MODIFY_TASK_ESCALATOR.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add ESCALATOR
+	to MODIFY_TASK handling.
+
+	* src/manage_sql.c (task_escalator, set_task_escalator): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/manage_sql.c (task_escalator): Remove.  Renamed to
 	task_escalator_name.
 	(task_escalator_name): New function.  Was task_escalator.

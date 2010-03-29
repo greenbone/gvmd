@@ -391,8 +391,14 @@ set_task_end_time (task_t task, char* time);
 char*
 task_escalator_name (task_t);
 
+escalator_t
+task_escalator (task_t);
+
 void
 add_task_escalator (task_t, escalator_t);
+
+void
+set_task_escalator (task_t, escalator_t);
 
 void
 set_task_schedule (task_t, schedule_t);

@@ -4986,6 +4986,33 @@ task_escalator_name (task_t task)
 }
 
 /**
+ * @brief Return the escalator of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Escalator of task if any, else NULL.
+ */
+escalator_t
+task_escalator (task_t task)
+{
+  escalator_t escalator = 0;
+  switch (sql_int64 (&escalator, 0, 0,
+                     "SELECT escalator FROM tasks WHERE ROWID = %llu;",
+                     task))
+    {
+      case 0:
+        return escalator;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
  * @brief Add an escalator to a task.
  *
  * @param[in]  task       Task.
@@ -4994,6 +5021,22 @@ task_escalator_name (task_t task)
 void
 add_task_escalator (task_t task, escalator_t escalator)
 {
+  sql ("INSERT INTO task_escalators (task, escalator)"
+       " VALUES (%llu, %llu);",
+       task,
+       escalator);
+}
+
+/**
+ * @brief Add an escalator to a task, removing any existing ones.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  escalator  Escalator.
+ */
+void
+set_task_escalator (task_t task, escalator_t escalator)
+{
+  sql ("DELETE FROM task_escalators where task = %llu;", task);
   sql ("INSERT INTO task_escalators (task, escalator)"
        " VALUES (%llu, %llu);",
        task,
