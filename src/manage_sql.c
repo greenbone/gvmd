@@ -4292,7 +4292,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       current_credentials.uuid = NULL;
     }
 
-  /* Set requested and running tasks to stopped. */
+  /* Set requested, paused and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
   init_task_iterator (&iterator, 1, NULL);
@@ -4301,9 +4301,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       switch (task_run_status (index))
         {
           case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_PAUSE_REQUESTED:
+          case TASK_STATUS_PAUSE_WAITING:
+          case TASK_STATUS_PAUSED:
           case TASK_STATUS_REQUESTED:
+          case TASK_STATUS_RESUME_REQUESTED:
+          case TASK_STATUS_RESUME_WAITING:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_REQUESTED:
+          case TASK_STATUS_STOP_WAITING:
             /* Set the current user, for event checks. */
             current_credentials.uuid = task_owner_uuid (index);
             set_task_run_status (index, TASK_STATUS_STOPPED);
@@ -4322,12 +4328,24 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
        " WHERE scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_STOPPED,
        TASK_STATUS_DELETE_REQUESTED,
+       TASK_STATUS_PAUSE_REQUESTED,
+       TASK_STATUS_PAUSE_WAITING,
+       TASK_STATUS_PAUSED,
        TASK_STATUS_REQUESTED,
+       TASK_STATUS_RESUME_REQUESTED,
+       TASK_STATUS_RESUME_WAITING,
        TASK_STATUS_RUNNING,
-       TASK_STATUS_STOP_REQUESTED);
+       TASK_STATUS_STOP_REQUESTED,
+       TASK_STATUS_STOP_WAITING);
 
   /* Load the NVT cache into memory. */
 
@@ -4735,7 +4753,13 @@ set_task_requested (task_t task, task_status_t *status)
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_PAUSE_REQUESTED
+      || run_status == TASK_STATUS_PAUSE_WAITING
+      || run_status == TASK_STATUS_PAUSED
+      || run_status == TASK_STATUS_RESUME_REQUESTED
+      || run_status == TASK_STATUS_RESUME_WAITING
       || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_STOP_WAITING
       || run_status == TASK_STATUS_DELETE_REQUESTED)
     {
       sql ("END;");
@@ -6367,12 +6391,21 @@ delete_report (report_t report)
   if (sql_int (0, 0,
                "SELECT count(*) FROM reports WHERE ROWID = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
+               " OR scan_run_status = %u OR scan_run_status = %u"
+               " OR scan_run_status = %u OR scan_run_status = %u"
+               " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
+               TASK_STATUS_PAUSE_REQUESTED,
+               TASK_STATUS_PAUSE_WAITING,
+               TASK_STATUS_PAUSED,
+               TASK_STATUS_RESUME_REQUESTED,
+               TASK_STATUS_RESUME_WAITING,
                TASK_STATUS_REQUESTED,
                TASK_STATUS_DELETE_REQUESTED,
-               TASK_STATUS_STOP_REQUESTED))
+               TASK_STATUS_STOP_REQUESTED,
+               TASK_STATUS_STOP_WAITING))
     return 2;
 
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);

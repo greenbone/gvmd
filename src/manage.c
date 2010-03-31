@@ -479,9 +479,24 @@ run_status_name (task_status_t status)
       case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
+
+      case TASK_STATUS_PAUSE_REQUESTED:
+      case TASK_STATUS_PAUSE_WAITING:
+        return "Pause Requested";
+
+      case TASK_STATUS_PAUSED:           return "Paused";
       case TASK_STATUS_REQUESTED:        return "Requested";
+
+      case TASK_STATUS_RESUME_REQUESTED:
+      case TASK_STATUS_RESUME_WAITING:
+        return "Resume Requested";
+
       case TASK_STATUS_RUNNING:          return "Running";
-      case TASK_STATUS_STOP_REQUESTED:   return "Stop Requested";
+
+      case TASK_STATUS_STOP_REQUESTED:
+      case TASK_STATUS_STOP_WAITING:
+        return "Stop Requested";
+
       case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Internal Error";
     }
@@ -1367,13 +1382,78 @@ stop_task (task_t task)
   tracef ("   request task stop %u\n", task_id (task));
   // FIX something should check safety credential before this
   run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_REQUESTED
+  if (run_status == TASK_STATUS_PAUSE_REQUESTED
+      || run_status == TASK_STATUS_PAUSE_WAITING
+      || run_status == TASK_STATUS_PAUSED
+      || run_status == TASK_STATUS_RESUME_REQUESTED
+      || run_status == TASK_STATUS_RESUME_WAITING
+      || run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
       if (current_scanner_task == task
           && send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
         return -1;
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Initiate pausing of a task.
+ *
+ * Use \ref send_to_server to queue the task pause sequence in the
+ * scanner output buffer.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 0 on success, 1 if pause requested, -1 if out of space in scanner
+ *         output buffer.
+ */
+int
+pause_task (task_t task)
+{
+  task_status_t run_status;
+  tracef ("   request task pause %u\n", task_id (task));
+  // FIX something should check safety credential before this
+  run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_REQUESTED
+      || run_status == TASK_STATUS_RUNNING)
+    {
+      if (current_scanner_task == task
+          && send_to_server ("CLIENT <|> PAUSE_WHOLE_TEST <|> CLIENT\n"))
+        return -1;
+      set_task_run_status (task, TASK_STATUS_PAUSE_REQUESTED);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Initiate resuming of a task.
+ *
+ * Use \ref send_to_server to queue the task resume sequence in the
+ * scanner output buffer.
+ *
+ * @param[in]  task  A pointer to the task.
+ *
+ * @return 0 on success, 1 if resume requested, -1 if out of space in scanner
+ *         output buffer.
+ */
+int
+resume_paused_task (task_t task)
+{
+  task_status_t run_status;
+  tracef ("   request task resume %u\n", task_id (task));
+  // FIX something should check safety credential before this
+  run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_PAUSE_REQUESTED
+      || run_status == TASK_STATUS_PAUSED)
+    {
+      if (current_scanner_task == task
+          && send_to_server ("CLIENT <|> RESUME_WHOLE_TEST <|> CLIENT\n"))
+        return -1;
+      set_task_run_status (task, TASK_STATUS_RESUME_REQUESTED);
       return 1;
     }
   return 0;
@@ -1496,19 +1576,45 @@ manage_check_current_task ()
     {
       task_status_t run_status;
 
-#if 0
-      // FIX should prevent this from repeating somehow
-      if (current_scanner_task_stop_requested) return;
-#endif
+      /* Check if some other process changed the status. */
 
       // FIX something should check safety credential before this
       run_status = task_run_status (current_scanner_task);
-      if (run_status == TASK_STATUS_STOP_REQUESTED)
+      switch (run_status)
         {
-          /* Some other process changed to this status, so request the stop. */
-          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-            return -1;
-          return 1;
+          case TASK_STATUS_PAUSE_REQUESTED:
+            if (send_to_server ("CLIENT <|> PAUSE_WHOLE_TEST <|> CLIENT\n"))
+              return -1;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_PAUSE_WAITING);
+            return 1;
+            break;
+          case TASK_STATUS_RESUME_REQUESTED:
+            if (send_to_server ("CLIENT <|> RESUME_WHOLE_TEST <|> CLIENT\n"))
+              return -1;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_RESUME_WAITING);
+            return 1;
+            break;
+          case TASK_STATUS_STOP_REQUESTED:
+            if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+              return -1;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_STOP_WAITING);
+            return 1;
+            break;
+          case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DONE:
+          case TASK_STATUS_NEW:
+          case TASK_STATUS_REQUESTED:
+          case TASK_STATUS_RESUME_WAITING:
+          case TASK_STATUS_RUNNING:
+          case TASK_STATUS_PAUSE_WAITING:
+          case TASK_STATUS_PAUSED:
+          case TASK_STATUS_STOP_WAITING:
+          case TASK_STATUS_STOPPED:
+          case TASK_STATUS_INTERNAL_ERROR:
+            break;
         }
     }
   return 0;

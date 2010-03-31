@@ -47,6 +47,9 @@ process_omp_client_input ();
 short
 scanner_is_active ();
 
+int
+process_omp_change ();
+
 // FIX probably should be passed to process_omp_client_input/init_omp_data
 //     and defined in caller
 extern char to_client[];

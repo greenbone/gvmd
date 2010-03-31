@@ -727,11 +727,9 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_active)
         {
-          timeout.tv_usec = 0;
           // FIX time check error
-          timeout.tv_sec = CLIENT_TIMEOUT
-                           - (time (NULL) - last_client_activity_time);
-          if (timeout.tv_sec <= 0)
+          if ((CLIENT_TIMEOUT - (time (NULL) - last_client_activity_time))
+              <= 0)
             {
               tracef ("client timeout (1)\n");
               openvas_server_free (client_socket,
@@ -793,11 +791,24 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Select, then handle result. */
 
-      ret = select (nfds, &readfds, &writefds, &exceptfds,
-                    client_active ? &timeout : NULL);
+      /* Timeout periodically, so that process_omp_change runs periodically. */
+      timeout.tv_usec = 0;
+      timeout.tv_sec = 1;
+      ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
       if (ret < 0)
         {
-          if (errno == EINTR) continue;
+          if (errno == EINTR)
+            {
+              if (process_omp_change () == -1)
+                {
+                  if (client_active)
+                    openvas_server_free (client_socket,
+                                         *client_session,
+                                         *client_credentials);
+                  return -1;
+                }
+              continue;
+            }
           g_warning ("%s: child select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
@@ -806,7 +817,18 @@ serve_omp (gnutls_session_t* client_session,
                                *client_credentials);
           return -1;
         }
-      if (ret == 0) continue;
+      if (ret == 0)
+        {
+          if (process_omp_change () == -1)
+            {
+              if (client_active)
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
+              return -1;
+            }
+          continue;
+        }
 
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
@@ -1325,6 +1347,15 @@ serve_omp (gnutls_session_t* client_session,
           else
             /* Programming error. */
             assert (0);
+        }
+
+      if (process_omp_change () == -1)
+        {
+          if (client_active)
+            openvas_server_free (client_socket,
+                                 *client_session,
+                                 *client_credentials);
+          return -1;
         }
 
       if (client_active)

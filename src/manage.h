@@ -160,7 +160,13 @@ typedef enum
   TASK_STATUS_NEW,
   TASK_STATUS_REQUESTED,
   TASK_STATUS_RUNNING,
+  TASK_STATUS_PAUSE_REQUESTED,
+  TASK_STATUS_PAUSE_WAITING,
+  TASK_STATUS_PAUSED,
+  TASK_STATUS_RESUME_REQUESTED,
+  TASK_STATUS_RESUME_WAITING,
   TASK_STATUS_STOP_REQUESTED,
+  TASK_STATUS_STOP_WAITING,
   TASK_STATUS_STOPPED,
   TASK_STATUS_INTERNAL_ERROR
 } task_status_t;
@@ -530,10 +536,16 @@ int
 stop_task (task_t);
 
 int
+pause_task (task_t);
+
+int
 resume_stopped_task (task_t, char **);
 
 int
 resume_or_start_task (task_t, char **);
+
+int
+resume_paused_task (task_t);
 
 
 /* Iteration. */

@@ -407,7 +407,9 @@ static char* help_text = "\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
+"    PAUSE_TASK             Pause a running task.\n"
 "    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
+"    RESUME_PAUSED_TASK     Resume a paused task.\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
 "    TEST_ESCALATOR         Run an escalator.\n"
 "    START_TASK             Manually start an existing task.\n";
@@ -1243,7 +1245,9 @@ typedef enum
   CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
+  CLIENT_PAUSE_TASK,
   CLIENT_RESUME_OR_START_TASK,
+  CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
   CLIENT_TEST_ESCALATOR,
@@ -2176,6 +2180,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&current_name, attribute);
             set_client_state (CLIENT_TEST_ESCALATOR);
           }
+        else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_PAUSE_TASK);
+          }
         else if (strcasecmp ("RESUME_OR_START_TASK", element_name) == 0)
           {
             const gchar* attribute;
@@ -2183,6 +2195,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "task_id", &attribute))
               openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_RESUME_OR_START_TASK);
+          }
+        else if (strcasecmp ("RESUME_PAUSED_TASK", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            set_client_state (CLIENT_RESUME_PAUSED_TASK);
           }
         else if (strcasecmp ("RESUME_STOPPED_TASK", element_name) == 0)
           {
@@ -3674,8 +3694,34 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_PAUSE_TASK:
+        if (send_element_error_to_client ("pause_task", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_RESUME_OR_START_TASK:
         if (send_element_error_to_client ("resume_or_start_task", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_RESUME_PAUSED_TASK:
+        if (send_element_error_to_client ("resume_paused_task", element_name))
           {
             error_send_to_client (error);
             return;
@@ -9530,6 +9576,46 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_TEST_ESCALATOR);
         break;
 
+      case CLIENT_PAUSE_TASK:
+        if (current_uuid)
+          {
+            task_t task;
+            assert (current_client_task == (task_t) 0);
+            if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
+            else if (task == 0)
+              {
+                if (send_find_error_to_client ("pause_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (pause_task (task))
+              {
+                case 0:   /* Paused. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("pause_task"));
+                  break;
+                case 1:   /* Pause requested. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("pause_task"));
+                  break;
+                default:  /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_scanner is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
+              }
+            openvas_free_string_var (&current_uuid);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_RESUME_OR_START_TASK:
         if (current_uuid)
           {
@@ -9636,6 +9722,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_RESUME_PAUSED_TASK:
+        if (current_uuid)
+          {
+            task_t task;
+            assert (current_client_task == (task_t) 0);
+            if (find_task (current_uuid, &task))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_INTERNAL_ERROR ("resume_paused_task"));
+            else if (task == 0)
+              {
+                if (send_find_error_to_client ("resume_paused_task",
+                                               "task",
+                                               current_uuid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (resume_paused_task (task))
+              {
+                case 0:   /* Resumed. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("resume_paused_task"));
+                  break;
+                case 1:   /* Resume requested. */
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_OK_REQUESTED ("resume_paused_task"));
+                  break;
+                default:  /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_scanner is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
+              }
+            openvas_free_string_var (&current_uuid);
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_paused_task"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -11963,4 +12091,19 @@ short
 scanner_is_active ()
 {
   return scanner_active;
+}
+
+
+/* OMP change processor. */
+
+/**
+ * @brief Deal with any changes caused by other processes.
+ *
+ * @return 0 success, 1 did something, -1 too little space in the scanner
+ *         output buffer.
+ */
+int
+process_omp_change ()
+{
+  return manage_check_current_task ();
 }

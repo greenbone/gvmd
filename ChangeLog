@@ -1,4 +1,30 @@
-2010-03-28  Matthew Mundell <matthew.mundell@intevation.de>
+2010-03-31  Matthew Mundell <matthew.mundell@intevation.de>
+
+	Add OMP commands PAUSE_TASK and RESUME_PAUSED_TASK.
+
+	* src/omp.c (help_text): Add new commands.
+	(client_state_t): Add new command states.
+	(omp_xml_handle_end_element, omp_xml_handle_start_element): Add
+	RESUME_OR_START_TASK handling.
+	(process_omp_change): New function.
+
+	* src/omp.h: Add header accordingly.
+
+	* src/manage.c (run_status_name, stop_task): Add pause and resume states.
+	(pause_task, resume_paused_task): New functions.
+	(manage_check_current_task): Add pausing and resuming.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/ompd.c (serve_omp): Periodically call process_omp_change.
+
+	* src/otp.c (process_otp_scanner_input): Add OTP pause and resume
+	handling.
+
+	* src/manage_sql.c (init_manage, set_task_requested, delete_report):
+	Include pause and resume states.
+
+2010-03-29  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/manage_sql.c (migrate_15_to_16): Also clear all task comments.
 
