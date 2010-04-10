@@ -1,3 +1,7 @@
+2010-04-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* INSTALL: Improved hint on prerequisites for credentials packages.
+
 2010-03-31  Matthew Mundell <matthew.mundell@intevation.de>
 
 	Add OMP commands PAUSE_TASK and RESUME_PAUSED_TASK.
