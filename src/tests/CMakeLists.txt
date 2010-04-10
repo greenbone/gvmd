@@ -57,6 +57,8 @@ exec_program (pkg-config
               ARGS --libs glib-2.0
 			  OUTPUT_VARIABLE GLIB_LDFLAGS)
 
+LINK_LIBRARIES(openvas_omp)
+
 ## Libraries
 
 add_library (common common.c)

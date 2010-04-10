@@ -69,6 +69,7 @@ set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
 add_library (manage STATIC manage.c manage_sql.c lsc_user.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+target_link_libraries (manage sqlite3 uuid)
 
 add_library (omp STATIC omp.c)
 set_target_properties (omp PROPERTIES COMPILE_FLAGS "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
