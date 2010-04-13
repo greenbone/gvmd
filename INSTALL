@@ -82,10 +82,16 @@ Certain features of the Manager also require some programs at run time:
 Prerequisites for generating PDF reports:
 * pdflatex
 
+Prerequisites for generating HTML reports:
+* xmltproc
+
 Prerequisites for generating credentials RPM / DEB packages:
 * rpm
 * fakeroot
 * alien
+
+Prerequisites for generating credentials .exe packages:
+* makensis (usually distributed as part of nsis)
 
 Prerequisites for generating system reports:
 * A program in the PATH, with usage "openvasmr seconds type", where

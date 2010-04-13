@@ -1,3 +1,8 @@
+2010-04-13 Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	* INSTALL: Added some missing optional runtime dependencies, as
+	suggested by "seph" on the openvas-devel mailinglist.
+
 2010-04-10 Stephan Kleine
 
 	* src/CMakeLists.txt: Fix build with as-needed
