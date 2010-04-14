@@ -1,3 +1,11 @@
+2010-04-14 Felix Wolfsteller <felix.wolfsteller@intevation.de>
+
+	Cosmetics.
+
+	* src/otp.c (category_number): Doc string formatting.
+
+	* src/omp.c (omp_xml_handle_end_element): Added comments.
+
 2010-04-13 Felix Wolfsteller <felix.wolfsteller@intevation.de>
 
 	* INSTALL: Added some missing optional runtime dependencies, as

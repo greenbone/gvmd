@@ -5423,6 +5423,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_AUTHENTICATE:
         switch (authenticate (&current_credentials))
           {
+            // Authentication succeeded.
             case 0:
               if (load_tasks ())
                 {
@@ -5439,11 +5440,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;
+            // Authentication failed.
             case 1:
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
+            // Error while authenticating.
             case -1:
             default:
               free_credentials (&current_credentials);

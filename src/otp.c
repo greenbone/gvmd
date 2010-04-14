@@ -87,7 +87,8 @@ free_g_slist (gpointer list)
   g_slist_free ((GSList*) list);
 }
 
-/** @brief Return the number associated with a category name.
+/**
+ * @brief Return the number associated with a category name.
  *
  * @param  category  The category name.
  *
