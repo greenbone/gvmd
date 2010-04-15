@@ -1,3 +1,28 @@
+openvas-manager 1.0.0-beta6 (2010-04-15)
+
+This is the sixth beta release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS) leading up to the upcoming
+openvas-manager 1.0.
+
+IMPORTANT: The manager now uses certificate based authentication to authenticate
+against an openvas-scanner. Please do read the INSTALL file provided with
+openvas-manager and make sure you have openvas-scanner 3.0.2 or higher before
+installing this manager version!
+
+Many thanks to everyone who has contributed to this release:
+Hartmut Goebel, Stephan Kleine, Matthew Mundell, Joseph Sokol-Margolis,
+Jan-Oliver Wagner, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 1.0.0-beta5:
+
+* A bug which caused incorrect NVT counts in the scan config under certain
+  circumstances has been fixed.
+* The manager now uses certificate based authentication.
+* Support for resuming stopped tasks has been added.
+* Support for task scheduling has been added.
+* The openvasmd binary will now install into /usr/sbin instead of /usr/bin.
+
+
 openvas-manager 1.0.0-beta5 (2010-03-04)
 
 This is the fifth beta release of the openvas-manager module for the Open

@@ -88,6 +88,10 @@ set (CPACK_SOURCE_IGNORE_FILES
 "install_manifest.txt"
 "Makefile"
 "/doc/generated/"
+"log.conf$"
+"Doxyfile$"
+"Doxyfile_full$"
+"VERSION$"
 )
 
 include (CPack)
