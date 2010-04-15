@@ -1,5 +1,13 @@
 2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Moved code to openvas-libraries/misc/openvas_auth module.
+
+	* src/manage_sql.c (openvas_user_uuid, openvas_authenticate_uuid):
+	Moved to openvas-libraries/misc/openvas_auth module.
+	(authenticate): Added comment.
+
+2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Moved code to openvas-libraries/misc/openvas_uuid module.
 
 	* src/manage.c (make_report_uuid): Removed.

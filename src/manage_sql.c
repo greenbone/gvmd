@@ -601,99 +601,6 @@ user_owns_result (const char *uuid)
   return ret;
 }
 
-/**
- * @brief Return the UUID of a user from the OpenVAS user UUID file.
- *
- * If the user exists, ensure that the user has a UUID.
- *
- * @param[in]  name   User name.
- *
- * @return UUID of given user if user exists, else NULL.
- */
-static gchar *
-openvas_user_uuid (const char *name)
-{
-  gchar *user_dir = g_build_filename (OPENVAS_USERS_DIR, name, NULL);
-  if (g_file_test (user_dir, G_FILE_TEST_EXISTS))
-    {
-      gchar *uuid_file = g_build_filename (user_dir, "uuid", NULL);
-      if (g_file_test (uuid_file, G_FILE_TEST_EXISTS))
-        {
-          gsize size;
-          gchar *uuid;
-          if (g_file_get_contents (uuid_file, &uuid, &size, NULL))
-            {
-              if (strlen (uuid) < 36)
-                g_free (uuid);
-              else
-                {
-                  g_free (user_dir);
-                  g_free (uuid_file);
-                  /* Drop any trailing characters. */
-                  uuid[36] = '\0';
-                  return uuid;
-                }
-            }
-        }
-      else
-        {
-          gchar *contents;
-          char *uuid;
-
-          uuid = openvas_uuid_make ();
-          if (uuid == NULL)
-            {
-              g_free (user_dir);
-              g_free (uuid_file);
-              return NULL;
-            }
-
-          contents = g_strdup_printf ("%s\n", uuid);
-
-          if (g_file_set_contents (uuid_file, contents, -1, NULL))
-            {
-              g_free (contents);
-              g_free (user_dir);
-              g_free (uuid_file);
-              return uuid;
-            }
-
-          g_free (contents);
-          free (uuid);
-        }
-      g_free (uuid_file);
-    }
-  g_free (user_dir);
-  return NULL;
-}
-
-/**
- * @brief Authenticate a credential pair, returning the user UUID.
- *
- * @param  username  Username.
- * @param  password  Password.
- * @param  uuid      UUID return.
- *
- * @return 0 authentication success, 1 authentication failure, -1 error.
- */
-static int
-openvas_authenticate_uuid (const gchar * username, const gchar * password,
-                           gchar **uuid)
-{
-  int ret;
-
-  // Authenticate against file.
-  ret = openvas_authenticate (username, password);
-  if (ret)
-    return ret;
-
-  // Get the uuid from file (or create it).
-  *uuid = openvas_user_uuid (username);
-  if (*uuid)
-    return 0;
-  return -1;
-}
-
 
 /* Creation. */
 
@@ -4443,6 +4350,7 @@ authenticate (credentials_t* credentials)
       fail = openvas_authenticate_uuid (credentials->username,
                                         credentials->password,
                                         &credentials->uuid);
+      // Authentication succeeded.
       if (fail == 0)
         {
           gchar* quoted_name;
