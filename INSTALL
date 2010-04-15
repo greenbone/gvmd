@@ -7,7 +7,7 @@ Prerequisites:
 * glib-2.0
 * gnutls
 * libuuid (from e2fsprogs)
-* openvas-libraries 3.0.3 or greater
+* openvas-libraries 3.0.6 or greater
 * sqlite3
 
 Prerequisites for building documentation:

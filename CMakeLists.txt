@@ -198,13 +198,13 @@ if (PATH_TO_LIBOPENVASCONFIG)
   #      issues with the conditionals, thus this clumsy implementation.
   if (   ${LO_MAJOR_VER} LESS 3
       OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 0
-      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 1 )
-      message (FATAL_ERROR "openvas-libraries version >= 3.0.1 not found.")
+      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 6 )
+      message (FATAL_ERROR "openvas-libraries version >= 3.0.6 not found.")
   endif (   ${LO_MAJOR_VER} LESS 3
         OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 0
-        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 1 )
+        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 0 AND ${LO_PATCH_VER} LESS 6 )
 else (PATH_TO_LIBOPENVASCONFIG)
-   message (FATAL_ERROR "openvas-libraries version >= 3.0.1 not found.")
+   message (FATAL_ERROR "openvas-libraries version >= 3.0.6 not found.")
 endif (PATH_TO_LIBOPENVASCONFIG)
 
 message (STATUS "Looking for gnutls...")

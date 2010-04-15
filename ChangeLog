@@ -1,5 +1,10 @@
 2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* CMakeLists.txt, INSTALL: Raised required version of openvas-libraries
+	to 3.0.6 .
+
+2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Moved code to openvas-libraries/misc/openvas_auth module.
 
 	* src/manage_sql.c (openvas_user_uuid, openvas_authenticate_uuid):
