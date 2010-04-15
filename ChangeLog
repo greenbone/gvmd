@@ -1,3 +1,7 @@
+2010-04-15  Stephan Kleine
+
+	* src/CMakeLists.txt, src/tests/CMakeLists.txt: Fix linking issues.
+
 2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* CMakeLists.txt, INSTALL: Raised required version of openvas-libraries

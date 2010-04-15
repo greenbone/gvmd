@@ -57,7 +57,7 @@ exec_program (pkg-config
               ARGS --libs glib-2.0
 			  OUTPUT_VARIABLE GLIB_LDFLAGS)
 
-LINK_LIBRARIES(openvas_omp)
+LINK_LIBRARIES(openvas_omp openvas_base openvas_misc)
 
 ## Libraries
 
