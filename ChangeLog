@@ -1,4 +1,22 @@
-2010-03-04  Michael Wiegand <michael.wiegand@greenbone.net>
+2010-04-15  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Moved code to openvas-libraries/misc/openvas_uuid module.
+
+	* src/manage.c (make_report_uuid): Removed.
+	(make_task_uuid): Removed.
+	
+	* src/manage.h (make_report_uuid, make_task_uuid): Removed headers
+	accordingly.
+
+	* src/manage_sql.c (sql_make_uuid, openvas_user_uuid, migrate_9_to_10)
+	(migrate_12_to_13, create_report, make_task, create_config)
+	(create_config_rc, copy_config, create_note): Added include, reflect
+	function name change.
+
+	* src/tests/make_report_uuid_0.c (main): Added include.
+	Reflect function name change in code.
+
+2010-04-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
 

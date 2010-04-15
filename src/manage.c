@@ -217,40 +217,6 @@ append_to_credentials_password (credentials_t* credentials,
 /* Reports. */
 
 /**
- * @brief Make a new universal identifier for a report.
- *
- * @return A newly allocated string holding the identifier, which the
- *         caller must free, or NULL on failure.
- */
-char*
-make_report_uuid ()
-{
-  char* id;
-  uuid_t uuid;
-
-  /* Generate an UUID. */
-  uuid_generate (uuid);
-  if (uuid_is_null (uuid) == 1)
-    {
-      g_warning ("%s: failed to generate UUID", __FUNCTION__);
-      return NULL;
-    }
-
-  /* Allocate mem for string to hold UUID. */
-  id = malloc (sizeof (char) * 37);
-  if (id == NULL)
-    {
-      g_warning ("%s: Cannot export UUID to text: out of memory", __FUNCTION__);
-      return NULL;
-    }
-
-  /* Export the UUID to text. */
-  uuid_unparse (uuid, id);
-
-  return id;
-}
-
-/**
  * @brief Delete all the reports for a task.
  *
  * @param[in]  task  A task descriptor.
@@ -451,18 +417,6 @@ escalator_method_from_name (const char* name)
 
 
 /* General task facilities. */
-
-/**
- * @brief Make a new universal identifier for a task.
- *
- * @return A newly allocated string holding the identifier on success, or NULL
- *         on failure.
- */
-char*
-make_task_uuid ()
-{
-  return make_report_uuid ();
-}
 
 /**
  * @brief Get the name of a run status.

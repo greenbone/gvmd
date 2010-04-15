@@ -1,6 +1,6 @@
 /* Test 0 of make_report_uuid.
  * $Id$
- * Description: Test make_report_uuid.
+ * Description: Test make_uuid.
  *
  * Authors:
  * Matthew Mundell <matt@mundell.ukfsn.org>
@@ -29,6 +29,8 @@
 
 #include "../manage.h"
 
+#include <openvas/openvas_uuid.h>
+
 /**
  * @brief The log stream, for ovas-mngr-comm.
  */
@@ -37,8 +39,8 @@ FILE* log_stream = NULL;
 int
 main ()
 {
-  char* id1 = make_report_uuid ();
-  char* id2 = make_report_uuid ();
+  char* id1 = openvas_uuid_make ();
+  char* id2 = openvas_uuid_make ();
   int ret = strcmp (id1, id2);
   free (id1);
   free (id2);

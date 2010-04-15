@@ -38,6 +38,7 @@
 
 #include <openvas/openvas_auth.h>
 #include <openvas/openvas_logging.h>
+#include <openvas/openvas_uuid.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -437,7 +438,7 @@ sql_make_uuid (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   assert (argc == 0);
 
-  uuid = make_report_uuid ();
+  uuid = openvas_uuid_make ();
   if (uuid == NULL)
     {
       sqlite3_result_error (context, "Failed to create UUID", -1);
@@ -639,7 +640,7 @@ openvas_user_uuid (const char *name)
           gchar *contents;
           char *uuid;
 
-          uuid = make_report_uuid ();
+          uuid = openvas_uuid_make ();
           if (uuid == NULL)
             {
               g_free (user_dir);
@@ -2117,7 +2118,7 @@ migrate_9_to_10 ()
       uuid = openvas_user_uuid (iterator_string (&rows, 1));
       if (uuid == NULL)
         {
-          uuid = make_report_uuid ();
+          uuid = openvas_uuid_make ();
           if (uuid == NULL)
             {
               cleanup_iterator (&rows);
@@ -2323,7 +2324,7 @@ migrate_12_to_13 ()
       if (strcmp (iterator_string (&rows, 0), "All") == 0)
         continue;
 
-      uuid = make_report_uuid ();
+      uuid = openvas_uuid_make ();
       if (uuid == NULL)
         {
           cleanup_iterator (&rows);
@@ -5505,7 +5506,7 @@ create_report (task_t task, char **report_id, task_status_t status)
 
   /* Generate report UUID. */
 
-  *report_id = make_report_uuid ();
+  *report_id = openvas_uuid_make ();
   if (*report_id == NULL) return -2;
 
   /* Create the report. */
@@ -6749,7 +6750,7 @@ task_t
 make_task (char* name, unsigned int time, char* comment)
 {
   task_t task;
-  char* uuid = make_task_uuid ();
+  char* uuid = openvas_uuid_make ();
   if (uuid == NULL) return (task_t) 0;
   // TODO: Escape name and comment.
   sql ("INSERT into tasks"
@@ -7808,7 +7809,7 @@ create_config (const char* proposed_name, const char* comment,
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  uuid = make_report_uuid ();
+  uuid = openvas_uuid_make ();
   if (uuid == NULL)
     return -1;
 
@@ -8354,7 +8355,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 1;
     }
 
-  uuid = make_report_uuid ();
+  uuid = openvas_uuid_make ();
   if (uuid == NULL)
     {
       tracef ("   failed to create UUID \n");
@@ -8467,7 +8468,7 @@ copy_config (const char* name, const char* comment, config_t config)
       return 2;
     }
 
-  uuid = make_report_uuid ();
+  uuid = openvas_uuid_make ();
   if (uuid == NULL)
     {
       tracef ("   failed to create UUID \n");
@@ -12096,7 +12097,7 @@ create_note (const char* nvt, const char* text, const char* hosts,
       && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
 
-  uuid = make_report_uuid ();
+  uuid = openvas_uuid_make ();
   if (uuid == NULL)
     return -1;
 

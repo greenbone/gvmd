@@ -30,6 +30,7 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
+#include <openvas/openvas_auth.h>
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/nvti.h> /* for nvti_t */
 
@@ -520,9 +521,6 @@ config_task_iterator_uuid (iterator_t*);
 
 /* General task facilities. */
 
-char*
-make_task_uuid ();
-
 const char*
 run_status_name (task_status_t status);
 
@@ -595,9 +593,6 @@ report_warnings (report_t, const char*, int*);
 
 /*@-exportlocal@*/
 /*@only@*/ /*@null@*/
-char*
-make_report_uuid ();
-
 gchar*
 task_first_report_id (task_t);
 
