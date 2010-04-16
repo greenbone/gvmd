@@ -1223,6 +1223,9 @@ main (int argc, char** argv)
 
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
+  /* Initialize the authentication system. */
+  openvas_auth_init ();
+
   /* Initialise the process for manage_schedule. */
 
   init_manage_process (0, database);
@@ -1279,6 +1282,8 @@ main (int argc, char** argv)
         exit (EXIT_FAILURE);
       last_schedule_time = time (NULL);
     }
+
+  openvas_auth_tear_down ();
 
   return EXIT_SUCCESS;
 }
