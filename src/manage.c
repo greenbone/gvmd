@@ -181,6 +181,8 @@ free_credentials (credentials_t* credentials)
       g_free (credentials->password);
       credentials->password = NULL;
     }
+  /** @todo Check whether uuid has to be freed, too and whether its not safe
+   *        to call g_free (NULL) . */
 }
 
 /**
@@ -759,26 +761,19 @@ send_config_rules (const char* config)
 static int
 send_user_rules (report_t stopped_report)
 {
-  gchar *rules_file, *rules;
-  GError *error = NULL;
+  gchar *rules;
   gchar **rule, **split;
 
   assert (current_credentials.username);
 
-  rules_file = g_build_filename (OPENVAS_USERS_DIR,
-                                 current_credentials.username,
-                                 "auth",
-                                 "rules",
-                                 NULL);
-  g_file_get_contents (rules_file, &rules, NULL, &error);
-  if (error)
+  /** @todo to discern two users with same username but authenticated
+   *        differently, pass username + uuid, or username + passw or
+   *        store the rules in memory at time of authentication. */
+  if (openvas_auth_user_rules (current_credentials.username, &rules) == 0)
     {
-      tracef ("   failed to get rules: %s", error->message);
-      g_error_free (error);
-      g_free (rules_file);
+      tracef ("   failed to get rules.");
       return -1;
     }
-  g_free (rules_file);
 
   split = rule = g_strsplit (rules, "\n", 0);
   g_free (rules);

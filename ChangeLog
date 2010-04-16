@@ -1,5 +1,13 @@
 2010-04-16  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.c (send_config_rules): Extracted code to
+	openvas-libraries/openvas_auth module to allow easier future
+	integration of remote authentication methods.
+	(free_credentials): Added todo about possible memleak and improvability
+	of readability.
+
+2010-04-16  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/openvasmd.c (main): Initialize and tear down authentication
 	system.
 
