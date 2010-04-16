@@ -623,7 +623,7 @@ cleanup ()
 {
   tracef ("   Cleaning up.\n");
   // FIX should be via omp, maybe cleanup_omp ();
-  cleanup_manage_process ();
+  cleanup_manage_process (TRUE);
   if (manager_socket > -1) close (manager_socket);
 #if LOG
   if (log_stream != NULL)

@@ -59,7 +59,7 @@ void
 init_manage_process (int, const gchar*);
 
 void
-cleanup_manage_process ();
+cleanup_manage_process (gboolean);
 
 void
 manage_cleanup_process_error (int);

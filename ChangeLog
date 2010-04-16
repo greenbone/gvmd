@@ -1,3 +1,9 @@
+2010-04-16  Stephan Kleine
+
+	* src/manage.h (cleanup_manage_process): Add gboolean parameter.
+
+	* src/openvasmd.c (cleanup): Add TRUE to cleanup_manage_process call.
+
 2010-04-16  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage.c (send_config_rules): Extracted code to
