@@ -463,6 +463,7 @@ INPUT                  = src/tests/common.c \
                          src/logf.h \
                          src/tracef.h \
                          src/manage.c \
+                         src/manage_sql.c \
                          src/tasks_sql.h \
                          src/ovas-mngr-comm.c \
                          src/otp.c \
