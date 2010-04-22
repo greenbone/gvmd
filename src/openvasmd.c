@@ -637,6 +637,9 @@ cleanup ()
   tracef ("   Exiting.\n");
   if (log_config) free_log_configuration (log_config);
 
+  /* Tear down authentication system conf, if any. */
+  openvas_auth_tear_down ();
+
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove ("openvasmd");
 }
@@ -1282,8 +1285,6 @@ main (int argc, char** argv)
         exit (EXIT_FAILURE);
       last_schedule_time = time (NULL);
     }
-
-  openvas_auth_tear_down ();
 
   return EXIT_SUCCESS;
 }

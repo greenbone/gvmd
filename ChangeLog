@@ -1,3 +1,9 @@
+2010-04-22  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/openvasmd.c (main, cleanup): Moved call to
+	openvas_auth_tear_down to cleanup function as suggested by Matthew
+	Mundell.
+
 2010-04-21  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* doc/Doxyfile.in, doc/Doxyfile_full.in: Added missing file to INPUT
