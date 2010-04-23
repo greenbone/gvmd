@@ -1,5 +1,10 @@
 2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Improved doc.
+	(authenticate): Added todo wrt remotely authenticated users.
+
+2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Extracted two functions from main to enhance readability.
 
 	* src/openvasmd.c (update_or_rebuild_nvt_cache): New function

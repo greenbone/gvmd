@@ -4283,9 +4283,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 /**
  * @brief Cleanup the manage library.
  *
- * Put any running task in the stopped state and close the database.
+ * Optionally put any running task in the stopped state and close the database.
  *
- * @param[in]  cleanup  If true perform all cleanup operations, else only
+ * @param[in]  cleanup  If TRUE perform all cleanup operations, else only
  *                      those required at the start of a forked process.
  */
 void
@@ -4341,6 +4341,7 @@ authenticate (credentials_t* credentials)
 
       if (authenticate_allow_all)
         {
+          /** @todo overcome this by storing the users uuid at fork time. */
           credentials->uuid = openvas_user_uuid (credentials->username);
           if (*credentials->uuid)
             return 0;
