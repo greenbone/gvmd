@@ -1,5 +1,12 @@
 2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/openvasmd.c: Added stub for documentation subsection about
+	forking behaviour of openvasmd.
+	(accept_and_maybe_fork): Made static.
+	(main): Added comments, collapsed unconditioned statement.
+
+2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/openvasmd.c: Removed setting of experimental FORK flag.
 	(accept_and_maybe_fork): Removed pathes that were started to have a
 	non-forking manager.

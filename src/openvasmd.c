@@ -68,6 +68,11 @@
  *
  * The Manager tests share some code in src/tests/\ref common.c.
  *
+ * \subsection Forking
+ *
+ * The main daemon manager process will fork for every incoming connection and
+ * for every scheduled task.
+ *
  * \section copying License Information
  * \verbinclude COPYING
  */
@@ -380,7 +385,7 @@ serve_client (int client_socket)
  * Accept the client connection and fork a child process to serve the client.
  * The child calls \ref serve_client to do the rest of the work.
  */
-void
+static void
 accept_and_maybe_fork ()
 {
   /* Accept the client connection. */
@@ -1236,13 +1241,13 @@ main (int argc, char** argv)
           if (manage_schedule (fork_connection_for_schedular))
             exit (EXIT_FAILURE);
           last_schedule_time = time (NULL);
-          timeout.tv_sec = SCHEDULE_PERIOD;
         }
-      else
-        timeout.tv_sec = SCHEDULE_PERIOD;
+
+      timeout.tv_sec = SCHEDULE_PERIOD;
       timeout.tv_usec = 0;
       ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
 
+      // Error while selecting socket.
       if (ret == -1)
         {
           if (errno == EINTR)
@@ -1252,6 +1257,7 @@ main (int argc, char** argv)
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
+      // Incoming connection.
       if (ret > 0)
         {
           if (FD_ISSET (manager_socket, &exceptfds))
