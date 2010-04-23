@@ -697,6 +697,206 @@ handle_sigsegv (/*@unused@*/ int signal)
 }
 
 
+
+/**
+ * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
+ *
+ * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
+ *                                     (1) or rebuilt (0).
+ * @param[in]  scanner_address_string  Adress of the scanner as string.
+ * @param[in]  port                    Port of the scanner.
+ *
+ * @return If this function did not exit itself, returns exit code.
+ */
+static int
+update_or_rebuild_nvt_cache (int update_nvt_cache,
+                             gchar* scanner_address_string, int scanner_port)
+{
+  int scanner_socket;
+  gnutls_session_t scanner_session;
+  gnutls_certificate_credentials_t scanner_credentials;
+
+  /* Initialise OMP daemon. */
+
+  switch (init_ompd (log_config,
+                      update_nvt_cache ? -1 : -2,
+                      database))
+    {
+      case 0:
+        break;
+      case -2:
+        g_critical ("%s: database is wrong version\n", __FUNCTION__);
+        free_log_configuration (log_config);
+        exit (EXIT_FAILURE);
+        break;
+      case -3:
+        assert (0);
+      case -1:
+      default:
+        g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
+        free_log_configuration (log_config);
+        exit (EXIT_FAILURE);
+    }
+
+  /* Register the `cleanup' function. */
+
+  if (atexit (&cleanup))
+    {
+      g_critical ("%s: failed to register `atexit' cleanup function\n",
+                  __FUNCTION__);
+      free_log_configuration (log_config);
+      exit (EXIT_FAILURE);
+    }
+
+  /* Register the signal handlers. */
+
+  /** @todo Use sigaction. */
+  /* Warning from RATS heeded (signals now use small, separate handlers)
+    * hence annotations. */
+  if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
+      || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
+      || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
+      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
+    {
+      g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+
+  /* Setup the scanner address. */
+
+  scanner_address.sin_family = AF_INET;
+  scanner_address.sin_port = scanner_port;
+  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
+    {
+      g_critical ("%s: failed to create scanner address %s\n",
+                  __FUNCTION__,
+                  scanner_address_string);
+      exit (EXIT_FAILURE);
+    }
+
+  /* Setup security. */
+
+  tracef ("   Set to connect to address %s port %i\n",
+          scanner_address_string,
+          ntohs (scanner_address.sin_port));
+
+  /* Make the scanner socket. */
+  scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
+  if (scanner_socket == -1)
+    {
+      g_warning ("%s: failed to create scanner socket: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      return EXIT_FAILURE;
+    }
+
+  if (openvas_server_new (GNUTLS_CLIENT,
+                          CACERT,
+                          CLIENTCERT,
+                          CLIENTKEY,
+                          &scanner_session,
+                          &scanner_credentials))
+    return EXIT_FAILURE;
+
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+    * error" removes the data between `select' and `read'. */
+  if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("%s: failed to set scanner socket flag: %s\n",
+                  __FUNCTION__,
+                  strerror (errno));
+      return EXIT_FAILURE;
+    }
+
+  /* Call the OMP client serving function with a special client socket
+    * value.  This invokes a scanner-only manager loop which will
+    * request and cache the plugins, then exit. */
+
+  if (serve_omp (NULL, &scanner_session,
+                  NULL, &scanner_credentials,
+                  update_nvt_cache ? -1 : -2,
+                  &scanner_socket,
+                  database))
+    {
+      openvas_server_free (scanner_socket,
+                            scanner_session,
+                            scanner_credentials);
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      openvas_server_free (scanner_socket,
+                            scanner_session,
+                            scanner_credentials);
+      return EXIT_SUCCESS;
+    }
+}
+
+/**
+ * @brief Enter an infinite loop, waiting for connections and passing the 
+ * @brief work to `accept_and_maybe_fork'.
+ *
+ * Periodically, call the manage schedular to start and stop scheduled tasks.
+ */
+static void
+main_loop ()
+{
+  time_t last_schedule_time = 0;
+
+  while (1)
+    {
+      int ret, nfds;
+      fd_set readfds, exceptfds;
+      struct timeval timeout;
+
+      FD_ZERO (&readfds);
+      FD_SET (manager_socket, &readfds);
+      FD_ZERO (&exceptfds);
+      FD_SET (manager_socket, &exceptfds);
+      nfds = manager_socket + 1;
+
+      if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
+        {
+          if (manage_schedule (fork_connection_for_schedular))
+            exit (EXIT_FAILURE);
+          last_schedule_time = time (NULL);
+        }
+
+      timeout.tv_sec = SCHEDULE_PERIOD;
+      timeout.tv_usec = 0;
+      ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
+
+      /* Error while selecting socket occurred. */
+      if (ret == -1)
+        {
+          if (errno == EINTR)
+            continue;
+          g_critical ("%s: select failed: %s\n",
+                      __FUNCTION__,
+                      strerror (errno));
+          exit (EXIT_FAILURE);
+        }
+      /* Have an incoming connection. */
+      if (ret > 0)
+        {
+          if (FD_ISSET (manager_socket, &exceptfds))
+            {
+              g_critical ("%s: exception in select\n", __FUNCTION__);
+              exit (EXIT_FAILURE);
+            }
+          if (FD_ISSET (manager_socket, &readfds))
+            accept_and_maybe_fork ();
+        }
+
+      if (manage_schedule (fork_connection_for_schedular))
+        exit (EXIT_FAILURE);
+      last_schedule_time = time (NULL);
+    }
+  // unreachable
+}
+
 /* Main. */
 
 /**
@@ -714,7 +914,6 @@ int
 main (int argc, char** argv)
 {
   int scanner_port, manager_port;
-  time_t last_schedule_time = 0;
 
   /* Process options. */
 
@@ -850,126 +1049,9 @@ main (int argc, char** argv)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
 
-      int scanner_socket;
-      gnutls_session_t scanner_session;
-      gnutls_certificate_credentials_t scanner_credentials;
-
-      /* Initialise OMP daemon. */
-
-      switch (init_ompd (log_config,
-                         update_nvt_cache ? -1 : -2,
-                         database))
-        {
-          case 0:
-            break;
-          case -2:
-            g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            free_log_configuration (log_config);
-            exit (EXIT_FAILURE);
-            break;
-          case -3:
-            assert (0);
-          case -1:
-          default:
-            g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
-            free_log_configuration (log_config);
-            exit (EXIT_FAILURE);
-        }
-
-      /* Register the `cleanup' function. */
-
-      if (atexit (&cleanup))
-        {
-          g_critical ("%s: failed to register `atexit' cleanup function\n",
-                      __FUNCTION__);
-          free_log_configuration (log_config);
-          exit (EXIT_FAILURE);
-        }
-
-      /* Register the signal handlers. */
-
-      /** @todo Use sigaction. */
-      /* Warning from RATS heeded (signals now use small, separate handlers)
-       * hence annotations. */
-      if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
-          || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
-          || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
-          || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
-          || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
-          || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
-        {
-          g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
-          exit (EXIT_FAILURE);
-        }
-
-      /* Setup the scanner address. */
-
-      scanner_address.sin_family = AF_INET;
-      scanner_address.sin_port = scanner_port;
-      if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
-        {
-          g_critical ("%s: failed to create scanner address %s\n",
-                      __FUNCTION__,
-                      scanner_address_string);
-          exit (EXIT_FAILURE);
-        }
-
-      /* Setup security. */
-
-      tracef ("   Set to connect to address %s port %i\n",
-              scanner_address_string,
-              ntohs (scanner_address.sin_port));
-
-      /* Make the scanner socket. */
-      scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
-      if (scanner_socket == -1)
-        {
-          g_warning ("%s: failed to create scanner socket: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return EXIT_FAILURE;
-        }
-
-      if (openvas_server_new (GNUTLS_CLIENT,
-                              CACERT,
-                              CLIENTCERT,
-                              CLIENTKEY,
-                              &scanner_session,
-                              &scanner_credentials))
-        return EXIT_FAILURE;
-
-      /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-       * error" removes the data between `select' and `read'. */
-      if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-        {
-          g_warning ("%s: failed to set scanner socket flag: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return EXIT_FAILURE;
-        }
-
-      /* Call the OMP client serving function with a special client socket
-       * value.  This invokes a scanner-only manager loop which will
-       * request and cache the plugins, then exit. */
-
-      if (serve_omp (NULL, &scanner_session,
-                     NULL, &scanner_credentials,
-                     update_nvt_cache ? -1 : -2,
-                     &scanner_socket,
-                     database))
-        {
-          openvas_server_free (scanner_socket,
-                               scanner_session,
-                               scanner_credentials);
-          return EXIT_FAILURE;
-        }
-      else
-        {
-          openvas_server_free (scanner_socket,
-                               scanner_session,
-                               scanner_credentials);
-          return EXIT_SUCCESS;
-        }
+      return update_or_rebuild_nvt_cache (update_nvt_cache,
+                                          scanner_address_string,
+                                          scanner_port);
     }
 
   /* Run the standard manager. */
@@ -1220,59 +1302,9 @@ main (int argc, char** argv)
 
   init_manage_process (0, database);
 
-  /* Loop waiting for connections and passing the work to
-   * `accept_and_maybe_fork'.  Call the manage schedular periodically.
-   */
+  /* Enter the main forever-loop. */
 
-  while (1)
-    {
-      int ret, nfds;
-      fd_set readfds, exceptfds;
-      struct timeval timeout;
-
-      FD_ZERO (&readfds);
-      FD_SET (manager_socket, &readfds);
-      FD_ZERO (&exceptfds);
-      FD_SET (manager_socket, &exceptfds);
-      nfds = manager_socket + 1;
-
-      if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
-        {
-          if (manage_schedule (fork_connection_for_schedular))
-            exit (EXIT_FAILURE);
-          last_schedule_time = time (NULL);
-        }
-
-      timeout.tv_sec = SCHEDULE_PERIOD;
-      timeout.tv_usec = 0;
-      ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
-
-      /* Error while selecting socket occurred. */
-      if (ret == -1)
-        {
-          if (errno == EINTR)
-            continue;
-          g_critical ("%s: select failed: %s\n",
-                      __FUNCTION__,
-                      strerror (errno));
-          exit (EXIT_FAILURE);
-        }
-      /* Have an incoming connection. */
-      if (ret > 0)
-        {
-          if (FD_ISSET (manager_socket, &exceptfds))
-            {
-              g_critical ("%s: exception in select\n", __FUNCTION__);
-              exit (EXIT_FAILURE);
-            }
-          if (FD_ISSET (manager_socket, &readfds))
-            accept_and_maybe_fork ();
-        }
-
-      if (manage_schedule (fork_connection_for_schedular))
-        exit (EXIT_FAILURE);
-      last_schedule_time = time (NULL);
-    }
+  main_loop ();
 
   return EXIT_SUCCESS;
 }
