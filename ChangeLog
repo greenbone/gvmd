@@ -1,3 +1,9 @@
+2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/openvasmd.c: Removed setting of experimental FORK flag.
+	(accept_and_maybe_fork): Removed pathes that were started to have a
+	non-forking manager.
+
 2010-04-22  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/openvasmd.c (main, cleanup): Moved call to

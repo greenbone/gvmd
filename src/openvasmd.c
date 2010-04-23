@@ -375,11 +375,6 @@ serve_client (int client_socket)
 }
 
 /**
- * @brief Experimental flag for turning off forking.
- */
-#define FORK 1
-
-/**
  * @brief Accept and fork.
  *
  * Accept the client connection and fork a child process to serve the client.
@@ -410,7 +405,6 @@ accept_and_maybe_fork ()
       exit (EXIT_FAILURE);
     }
 
-#if FORK
   /* Fork a child to serve the client. */
   pid = fork ();
   switch (pid)
@@ -433,7 +427,6 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
 
-#endif /* FORK */
           // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
@@ -447,17 +440,9 @@ accept_and_maybe_fork ()
               close (client_socket);
               exit (EXIT_FAILURE);
             }
-#if FORK
           ret = serve_client (client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
-#else
-          serve_client (client_socket);
-          /** @todo This should be done through libomp. */
-          save_tasks ();
-          cleanup_manage_process ();
-#endif
-#if FORK
           exit (ret);
         }
       case -1:
@@ -469,12 +454,9 @@ accept_and_maybe_fork ()
         break;
       default:
         /* Parent.  Return to select. */
-#endif /* FORK */
         close (client_socket);
-#if FORK
         break;
     }
-#endif /* FORK */
 }
 
 
