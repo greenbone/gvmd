@@ -802,6 +802,8 @@ send_user_rules (report_t stopped_report)
       return send_to_server ("default accept\n") ? -1 : 0;
     }
 
+  /** @todo Code to access the rules also occurs in openvas-administrator and
+   *        should be consolidated into openvas-libraries. */
   while (*rule)
     {
       *rule = g_strstrip (*rule);
@@ -1783,6 +1785,8 @@ manage_auth_allow_all ()
 /**
  * @brief Schedule any actions that are due.
  *
+ * In openvasmd, periodically called from the main daemon loop.
+ *
  * @param[in]  fork_connection  Function that forks a child which is connected
  *                              to the Manager.  Must return 0 in parent, PID
  *                              in child, or -1 on error.
@@ -1797,7 +1801,8 @@ manage_schedule (int (*fork_connection) (int *,
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
 
-  /* Collect tasks. */
+  /* Assemble "starts" and "stops" list containing task uuid and owner name
+   * for each (scheduled) task to start or stop. */
 
   init_task_schedule_iterator (&schedules);
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */
@@ -1833,8 +1838,7 @@ manage_schedule (int (*fork_connection) (int *,
              * A periodic task that becomes due while the previous instantiation
              * of the task is still running will be runnable as soon as the
              * previous instantiation completes.  This could be any time, so
-             * skip the task and let is start again at the proper time.
-             */
+             * skip the task and let is start again at the proper time. */
             if (((now - first) % period) > (3 * 60))
               continue;
           }
@@ -1862,8 +1866,7 @@ manage_schedule (int (*fork_connection) (int *,
              * A periodic task that becomes due while the previous instantiation
              * of the task is still running will be runnable as soon as the
              * previous instantiation completes.  This could be any time, so
-             * skip the task and let is start again at the proper time.
-             */
+             * skip the task and let is start again at the proper time. */
             if ((now - add_months (first, months_between (first, now)))
                 > (3 * 60))
               continue;
@@ -1894,19 +1897,19 @@ manage_schedule (int (*fork_connection) (int *,
       }
   cleanup_task_schedule_iterator (&schedules);
 
-  /* Start tasks in forked processes, now that SQL statement is closed. */
+  /* Start tasks in forked processes, now that the SQL statement is closed. */
 
   while (starts)
     {
       int socket;
       gnutls_session_t session;
       gnutls_certificate_credentials_t credentials;
-      gchar *uuid, *owner;
+      gchar *task_uuid, *owner;
       GSList *head;
 
       owner = starts->data;
       assert (starts->next);
-      uuid = starts->next->data;
+      task_uuid = starts->next->data;
 
       head = starts;
       starts = starts->next->next;
@@ -1919,14 +1922,14 @@ manage_schedule (int (*fork_connection) (int *,
         {
           case 0:
             /* Parent.  Continue to next task. */
-            g_free (uuid);
+            g_free (task_uuid);
             g_free (owner);
             continue;
             break;
 
           case -1:
             /* Parent on error. */
-            g_free (uuid);
+            g_free (task_uuid);
             g_free (owner);
             while (starts)
               {
@@ -1950,39 +1953,39 @@ manage_schedule (int (*fork_connection) (int *,
 
       if (omp_authenticate (&session, owner, ""))
         {
-          g_free (uuid);
+          g_free (task_uuid);
           g_free (owner);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
-      if (omp_resume_or_start_task (&session, uuid))
+      if (omp_resume_or_start_task (&session, task_uuid))
         {
-          g_free (uuid);
+          g_free (task_uuid);
           g_free (owner);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
-      g_free (uuid);
+      g_free (task_uuid);
       g_free (owner);
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);
    }
 
-  /* Stop tasks in forked processes, now that SQL statement is closed. */
+  /* Stop tasks in forked processes, now that the SQL statement is closed. */
 
   while (stops)
     {
       int socket;
       gnutls_session_t session;
       gnutls_certificate_credentials_t credentials;
-      gchar *uuid, *owner;
+      gchar *task_uuid, *owner;
       GSList *head;
 
       owner = stops->data;
       assert (stops->next);
-      uuid = stops->next->data;
+      task_uuid = stops->next->data;
 
       head = stops;
       stops = stops->next->next;
@@ -1995,14 +1998,14 @@ manage_schedule (int (*fork_connection) (int *,
         {
           case 0:
             /* Parent.  Continue to next task. */
-            g_free (uuid);
+            g_free (task_uuid);
             g_free (owner);
             continue;
             break;
 
           case -1:
             /* Parent on error. */
-            g_free (uuid);
+            g_free (task_uuid);
             g_free (owner);
             while (stops)
               {
@@ -2026,21 +2029,21 @@ manage_schedule (int (*fork_connection) (int *,
 
       if (omp_authenticate (&session, owner, ""))
         {
-          g_free (uuid);
+          g_free (task_uuid);
           g_free (owner);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
-      if (omp_abort_task (&session, uuid))
+      if (omp_abort_task (&session, task_uuid))
         {
-          g_free (uuid);
+          g_free (task_uuid);
           g_free (owner);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
-      g_free (uuid);
+      g_free (task_uuid);
       g_free (owner);
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);

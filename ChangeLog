@@ -1,5 +1,14 @@
 2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.c (send_user_rules): Added todo, as function has to be
+	consolidated and moved into libraries to allow proper rules sending
+	of remotely authenticated users.
+	(manage_schedule): Added comments, renamed local uuid variables in
+	task_uuid to make future addition of a user_uuid variable easier to
+	comprehend.
+
+2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/openvasmd.c: Added stub for documentation subsection about
 	forking behaviour of openvasmd.
 	(accept_and_maybe_fork): Made static.
