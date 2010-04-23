@@ -605,7 +605,7 @@ fork_connection_for_schedular (int *client_socket,
  *
  * Close sockets and streams.
  */
-void
+static void
 cleanup ()
 {
   tracef ("   Cleaning up.\n");
@@ -1247,7 +1247,7 @@ main (int argc, char** argv)
       timeout.tv_usec = 0;
       ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
 
-      // Error while selecting socket.
+      /* Error while selecting socket occurred. */
       if (ret == -1)
         {
           if (errno == EINTR)
@@ -1257,7 +1257,7 @@ main (int argc, char** argv)
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
-      // Incoming connection.
+      /* Have an incoming connection. */
       if (ret > 0)
         {
           if (FD_ISSET (manager_socket, &exceptfds))

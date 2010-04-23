@@ -1,5 +1,11 @@
 2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/openvasmd.c (cleanup): Made function static.
+	(main): Use multiline comments as in the rest of the module, made
+	comments full sentences.
+
+2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage.c (send_user_rules): Added todo, as function has to be
 	consolidated and moved into libraries to allow proper rules sending
 	of remotely authenticated users.
