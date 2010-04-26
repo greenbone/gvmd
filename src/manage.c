@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009,2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -171,18 +171,13 @@ credentials_t current_credentials;
 void
 free_credentials (credentials_t* credentials)
 {
-  if (credentials->username)
-    {
-      g_free (credentials->username);
-      credentials->username = NULL;
-    }
-  if (credentials->password)
-    {
-      g_free (credentials->password);
-      credentials->password = NULL;
-    }
-  /** @todo Check whether uuid has to be freed, too and whether its not safe
-   *        to call g_free (NULL) . */
+  g_free (credentials->username);
+  credentials->username = NULL;
+
+  g_free (credentials->password);
+  credentials->password = NULL;
+
+  /** @todo Check whether uuid has to be freed, too. */
 }
 
 /**

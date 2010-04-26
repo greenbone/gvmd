@@ -1,5 +1,11 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.c: Added 2010 to copyright statement.
+	(free_credentials): Removed unneeded conditional, resolves part of
+	todo.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage_sql.c: Added 2010 to copyright statement.
 	(sql_x): Removed newline in log messages.
 
