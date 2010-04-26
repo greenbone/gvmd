@@ -1,6 +1,10 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
-	* CMakeLists.txt: lower-cased cmake commands as in CMakeLists.txt files
+	* src/manage_sql.c (sql_quote, sql_nquote): Added documentation.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* CMakeLists.txt: Lower-cased cmake commands as in CMakeLists.txt files
 	of other modules.
 
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>

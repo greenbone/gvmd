@@ -137,6 +137,14 @@ gchar* task_db_name = NULL;
 
 /* SQL helpers. */
 
+/**
+ * @brief Quotes a string of a known length to be passed to sql statements.
+ *
+ * @param[in]  string  String to quote.
+ * @param[in]  length  Size of \ref length.
+ *
+ * @return Freshly allocated, quoted string. Free with g_free.
+ */
 static gchar*
 sql_nquote (const char* string, size_t length)
 {
@@ -173,6 +181,13 @@ sql_nquote (const char* string, size_t length)
   return new_start;
 }
 
+/**
+ * @brief Quotes a string to be passed to sql statements.
+ *
+ * @param[in]  string  String to quote, has to be \0 terminated.
+ *
+ * @return Freshly allocated, quoted string. Free with g_free.
+ */
 static gchar*
 sql_quote (const char* string)
 {
