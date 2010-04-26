@@ -1048,7 +1048,9 @@ run_task (task_t task, char **report_id, int from)
   switch (pid)
     {
       case 0:
-        /* Child.  Carry on starting the task. */
+        /* Child.  Carry on starting the task, reopen the database (required
+         * after fork). */
+        reinit_manage_process ();
         break;
       case -1:
         /* Parent when error. */

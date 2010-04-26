@@ -79,4 +79,6 @@ const char *task_schedule_iterator_owner_uuid (iterator_t*);
 
 const char *task_schedule_iterator_owner_name (iterator_t*);
 
+void reinit_manage_process ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

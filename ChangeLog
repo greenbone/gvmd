@@ -1,3 +1,19 @@
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Ensure that after every fork the database is reopened in the child.
+	This is required by sqlite3 in order to prevent race conditions that
+	lead to "malformed disk image"s of the database.
+
+	* src/manage_sql.c (task_db_name): New variable to hold the database
+	file name.
+	(reinit_manage_process): New function.
+	(init_manage): Store the database name in new variable.
+
+	* src/manage_sql.h: Added proto.
+
+	* src/manage.c (run_task), src/openvasmd.c (accept_and_maybe_fork):
+	Reinit manage process after fork.
+
 2010-04-23  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Improved doc.

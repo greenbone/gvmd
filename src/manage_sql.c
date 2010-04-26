@@ -129,6 +129,11 @@ sqlite3* task_db = NULL;
 
 nvtis_t* nvti_cache = NULL;
 
+/**
+ * @brief Name of the database file.
+ */
+gchar* task_db_name = NULL;
+
 
 /* SQL helpers. */
 
@@ -3766,6 +3771,19 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 }
 
 /**
+ * @brief Reinitialize the manage library for a process.
+ *
+ * This is essentially needed after a fork, to not carry open databases around
+ * (refer to sqlite3 documentation).
+ */
+void
+reinit_manage_process ()
+{
+  cleanup_manage_process (FALSE);
+  init_manage_process (0, task_db_name);
+}
+
+/**
  * @brief Setup config preferences for a config.
  *
  * @param[in]  config         The config.
@@ -4277,6 +4295,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   sqlite3_close (task_db);
   task_db = NULL;
+  task_db_name = g_strdup (database);
   return 0;
 }
 

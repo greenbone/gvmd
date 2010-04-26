@@ -445,6 +445,8 @@ accept_and_maybe_fork ()
               close (client_socket);
               exit (EXIT_FAILURE);
             }
+          /* Reopen the database (required after fork). */
+          cleanup_manage_process (FALSE);
           ret = serve_client (client_socket);
           /** @todo This should be done through libomp. */
           save_tasks ();
