@@ -1,5 +1,13 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Reverting last commit due to not yet identified bug that leads to
+	crashes with most authentication attempts.
+
+	* src/manage.h, src/manage.c, src/manage_sql.c, src/openvasmd.c:
+	Reverted last commit.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Use openvas libraries to access the correct users rules, even if user
 	is remotely authenticated.
 	Therefore, store users uuid for scheduled tasks.
