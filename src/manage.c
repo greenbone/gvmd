@@ -764,7 +764,7 @@ send_user_rules (report_t stopped_report)
   /** @todo to discern two users with same username but authenticated
    *        differently, pass username + uuid, or username + passw or
    *        store the rules in memory at time of authentication. */
-  if (openvas_auth_user_rules (current_credentials.username, &rules) == 0)
+  if (openvas_auth_user_uuid_rules (current_credentials.username, current_credentials.uuid, &rules) == 0)
     {
       tracef ("   failed to get rules.");
       return -1;
@@ -1771,12 +1771,40 @@ manage_system_report (const char *name, const char *duration, char **report)
 int authenticate_allow_all = 0;
 
 /**
+ * @brief UUID of user whose scheduled task is to be started (in connection
+ *        with authenticate_allow_all).
+ */
+gchar* schedule_user_uuid = 0;
+
+/**
  * @brief Ensure that any subsequent authentications succeed.
  */
 void
 manage_auth_allow_all ()
 {
   authenticate_allow_all = 1;
+}
+
+/**
+ * @brief Access UUID of user that scheduled the current task.
+ *
+ * @return UUID of user that scheduled the current task.
+ */
+gchar*
+get_scheduled_user_uuid ()
+{
+  return schedule_user_uuid;
+}
+
+/**
+ * @brief Set UUID of user that scheduled the current task.
+ *
+ * @param user_uuid UUID of user that scheduled the current task.
+ */
+void
+set_scheduled_user_uuid (gchar* user_uuid)
+{
+  schedule_user_uuid = user_uuid;
 }
 
 /**
@@ -1793,7 +1821,8 @@ manage_auth_allow_all ()
 int
 manage_schedule (int (*fork_connection) (int *,
                                          gnutls_session_t *,
-                                         gnutls_certificate_credentials_t *))
+                                         gnutls_certificate_credentials_t *,
+                                         gchar*))
 {
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
@@ -1872,22 +1901,28 @@ manage_schedule (int (*fork_connection) (int *,
           set_task_schedule_next_time
            (task_schedule_iterator_task (&schedules), 0);
 
-        /* Add task and owner UUIDs to the list. */
+        /* Add task UUID and owner name and UUID to the list. */
 
         starts = g_slist_prepend
                   (starts,
                    g_strdup (task_schedule_iterator_task_uuid (&schedules)));
         starts = g_slist_prepend
                   (starts,
+                   g_strdup (task_schedule_iterator_owner_uuid (&schedules)));
+        starts = g_slist_prepend
+                  (starts,
                    g_strdup (task_schedule_iterator_owner_name (&schedules)));
       }
     else if (task_schedule_iterator_stop_due (&schedules))
       {
-        /* Add task and owner UUIDs to the list. */
+        /* Add task UUID and owner name and UUID to the list. */
 
         stops = g_slist_prepend
                  (stops,
                   g_strdup (task_schedule_iterator_task_uuid (&schedules)));
+        stops = g_slist_prepend
+                 (stops,
+                  g_strdup (task_schedule_iterator_owner_uuid (&schedules)));
         stops = g_slist_prepend
                  (stops,
                   g_strdup (task_schedule_iterator_owner_name (&schedules)));
@@ -1901,26 +1936,30 @@ manage_schedule (int (*fork_connection) (int *,
       int socket;
       gnutls_session_t session;
       gnutls_certificate_credentials_t credentials;
-      gchar *task_uuid, *owner;
+      gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
 
       owner = starts->data;
       assert (starts->next);
-      task_uuid = starts->next->data;
+      owner_uuid = starts->next->data;
+      assert (starts->next->next);
+      task_uuid = starts->next->next->data;
 
       head = starts;
-      starts = starts->next->next;
+      starts = starts->next->next->next;
+      g_slist_free_1 (head->next->next);
       g_slist_free_1 (head->next);
       g_slist_free_1 (head);
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&socket, &session, &credentials))
+      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
         {
           case 0:
             /* Parent.  Continue to next task. */
             g_free (task_uuid);
             g_free (owner);
+            g_free (owner_uuid);
             continue;
             break;
 
@@ -1928,6 +1967,7 @@ manage_schedule (int (*fork_connection) (int *,
             /* Parent on error. */
             g_free (task_uuid);
             g_free (owner);
+            g_free (owner_uuid);
             while (starts)
               {
                 g_free (starts->data);
@@ -1952,6 +1992,7 @@ manage_schedule (int (*fork_connection) (int *,
         {
           g_free (task_uuid);
           g_free (owner);
+          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
@@ -1960,12 +2001,14 @@ manage_schedule (int (*fork_connection) (int *,
         {
           g_free (task_uuid);
           g_free (owner);
+          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
       g_free (task_uuid);
       g_free (owner);
+      g_free (owner_uuid);
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);
    }
@@ -1977,26 +2020,30 @@ manage_schedule (int (*fork_connection) (int *,
       int socket;
       gnutls_session_t session;
       gnutls_certificate_credentials_t credentials;
-      gchar *task_uuid, *owner;
+      gchar *task_uuid, *owner, *owner_uuid;
       GSList *head;
 
       owner = stops->data;
       assert (stops->next);
-      task_uuid = stops->next->data;
+      owner_uuid = stops->next->next->data;
+      assert (stops->next->next);
+      task_uuid = stops->next->next->data;
 
       head = stops;
-      stops = stops->next->next;
+      stops = stops->next->next->next;
+      g_slist_free_1 (head->next->next);
       g_slist_free_1 (head->next);
       g_slist_free_1 (head);
 
       /* Run the callback to fork a child connected to the Manager. */
 
-      switch (fork_connection (&socket, &session, &credentials))
+      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
         {
           case 0:
             /* Parent.  Continue to next task. */
             g_free (task_uuid);
             g_free (owner);
+            g_free (owner_uuid);
             continue;
             break;
 
@@ -2004,6 +2051,7 @@ manage_schedule (int (*fork_connection) (int *,
             /* Parent on error. */
             g_free (task_uuid);
             g_free (owner);
+            g_free (owner_uuid);
             while (stops)
               {
                 g_free (stops->data);
@@ -2028,6 +2076,7 @@ manage_schedule (int (*fork_connection) (int *,
         {
           g_free (task_uuid);
           g_free (owner);
+          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
@@ -2036,12 +2085,14 @@ manage_schedule (int (*fork_connection) (int *,
         {
           g_free (task_uuid);
           g_free (owner);
+          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
       g_free (task_uuid);
       g_free (owner);
+      g_free (owner_uuid);
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);
    }

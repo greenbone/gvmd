@@ -1,5 +1,32 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Use openvas libraries to access the correct users rules, even if user
+	is remotely authenticated.
+	Therefore, store users uuid for scheduled tasks.
+
+	* src/manage.h: Added 2010 to copyright statement.
+	(get_scheduled_user_uuid, set_scheduled_user_uuid): Added protos.
+	(manage_schedule): Adjusted proto.
+
+	* src/manage.c (send_user_rules): Call openvas_auth_user_uuid_rules and
+	pass current credentials uuid to access the correct rules for
+	remotely authenticated users.
+	(schedule_user_uuid): New variable that holds uuid of user in case of
+	a scheduled task.
+	(get_scheduled_user_uuid): New. Getter for schedule_user_uuid.
+	(set_scheduled_user_uuid): New. Setter for schedule_user_uuid.
+	(manage_schedule): Adjusted signature, get, set, use and free the
+	uuid of a user that scheduled a task.
+
+	* src/manage_sql.c (authenticate): In case of a scheduled task, set the
+	previously stored uuid.
+
+	* src/openvasmd.c: Added 2010 to copyright statement.
+	(fork_connection_for_schedular): Added new parameter to signature,
+	set users uuid for scheduled tasks.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage.c: Added 2010 to copyright statement.
 	(free_credentials): Removed unneeded conditional, resolves part of
 	todo.

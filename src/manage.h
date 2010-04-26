@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009.2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -1218,10 +1218,17 @@ delete_schedule (schedule_t);
 void
 manage_auth_allow_all ();
 
+gchar*
+get_scheduled_user_uuid ();
+
+void
+set_scheduled_user_uuid (gchar* uuid);
+
 int
 manage_schedule (int (*) (int *,
                           gnutls_session_t *,
-                          gnutls_certificate_credentials_t *));
+                          gnutls_certificate_credentials_t *,
+                          gchar*));
 
 char *
 schedule_uuid (schedule_t);
