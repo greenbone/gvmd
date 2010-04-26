@@ -1,5 +1,10 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage_sql.c: Added 2010 to copyright statement.
+	(sql_x): Removed newline in log messages.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage_sql.c (sql_quote, sql_nquote): Added documentation.
 
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>

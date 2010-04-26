@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009,2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -312,14 +312,14 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
         {
           if (stmt == NULL)
             {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s",
                          __FUNCTION__,
                          sqlite3_errmsg (task_db));
               return -1;
             }
           break;
         }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
+      g_warning ("%s: sqlite3_prepare failed: %s",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
       return -1;
@@ -333,14 +333,14 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE)
         {
-          g_warning ("%s: sqlite3_step finished too soon\n",
+          g_warning ("%s: sqlite3_step finished too soon",
                      __FUNCTION__);
           return 1;
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
           if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          g_warning ("%s: sqlite3_step failed: %s\n",
+          g_warning ("%s: sqlite3_step failed: %s",
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
           return -1;
