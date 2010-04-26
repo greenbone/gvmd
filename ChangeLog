@@ -1,5 +1,10 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* CMakeLists.txt: lower-cased cmake commands as in CMakeLists.txt files
+	of other modules.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Improve SQL statement to fetch the ROWID of an report in progress of
 	a running task. This change can prevent issues that occurred when the
 	database was left in an inconsistent state (e.g. due to

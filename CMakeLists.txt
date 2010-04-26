@@ -32,28 +32,28 @@ if (POLICY CMP0005)
   cmake_policy (SET CMP0005 OLD)
 endif (POLICY CMP0005)
 
-SET (CMAKE_BUILD_TYPE debug)
+set (CMAKE_BUILD_TYPE debug)
 
 ## Retrieve svn revision (at configure time)
 #  Not using Subversion_WC_INFO, as it would have to connect to the repo
-FIND_PROGRAM(SVN_EXECUTABLE svn DOC "subversion command line client")
+find_program (SVN_EXECUTABLE svn DOC "subversion command line client")
 
-MACRO(Subversion_GET_REVISION dir variable)
-  EXECUTE_PROCESS(COMMAND ${SVN_EXECUTABLE} info ${CMAKE_SOURCE_DIR}/${dir}
+macro (Subversion_GET_REVISION dir variable)
+  execute_process (COMMAND ${SVN_EXECUTABLE} info ${CMAKE_SOURCE_DIR}/${dir}
     OUTPUT_VARIABLE ${variable}
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  STRING(REGEX REPLACE "^(.*\n)?Revision: ([^\n]+).*"
+  string (REGEX REPLACE "^(.*\n)?Revision: ([^\n]+).*"
     "\\2" ${variable} "${${variable}}")
-ENDMACRO(Subversion_GET_REVISION)
+endmacro (Subversion_GET_REVISION)
 
-IF(NOT PREPARE_RELEASE)
-  IF(SVN_EXECUTABLE)
+if (NOT PREPARE_RELEASE)
+  if (SVN_EXECUTABLE)
     Subversion_GET_REVISION(. ProjectRevision)
-    SET (SVN_REVISION ".SVN.r${ProjectRevision}")
-  ELSE(SVN_EXECUTABLE)
-    SET (SVN_REVISION ".SVN")
-  ENDIF(SVN_EXECUTABLE)
-ENDIF(NOT PREPARE_RELEASE)
+    set (SVN_REVISION ".SVN.r${ProjectRevision}")
+  else (SVN_EXECUTABLE)
+    set (SVN_REVISION ".SVN")
+  endif (SVN_EXECUTABLE)
+endif (NOT PREPARE_RELEASE)
 
 # TODO: Check sqlite3, pkg-config (maybe with code like in gsa/CMakeLists.txt).
 
@@ -215,35 +215,35 @@ if (NOT GNUTLS)
 endif (NOT GNUTLS)
 
 message (STATUS "Looking for pcap...")
-FIND_LIBRARY (PCAP pcap)
+find_library (PCAP pcap)
 message (STATUS "Looking for pcap... ${PCAP}")
 if (NOT PCAP)
   message (FATAL_ERROR "The pcap library is required.")
 endif (NOT PCAP)
 
 message (STATUS "Looking for gpgme...")
-FIND_LIBRARY (GPGME gpgme)
+find_library (GPGME gpgme)
 message (STATUS "Looking for gpgme... ${GPGME}")
 if (NOT GPGME)
   message (FATAL_ERROR "The gpgme library is required.")
 endif (NOT GPGME)
 
 message (STATUS "Looking for openvas_base...")
-FIND_LIBRARY (OPENVAS_BASE openvas_base)
+find_library (OPENVAS_BASE openvas_base)
 message (STATUS "Looking for openvas_base... ${OPENVAS_BASE}")
 if (NOT OPENVAS_BASE)
   message (FATAL_ERROR "The openvas_base library is required.")
 endif (NOT OPENVAS_BASE)
 
 message (STATUS "Looking for glib-2.0...")
-FIND_LIBRARY (GLIB2 glib-2.0)
+find_library (GLIB2 glib-2.0)
 message (STATUS "Looking for glib-2.0... ${GLIB2}")
 if (NOT GLIB2)
   message (FATAL_ERROR "The glib-2.0 library is required.")
 endif (NOT GLIB2)
 
 message (STATUS "Looking for uuid...")
-FIND_LIBRARY (UUID uuid)
+find_library (UUID uuid)
 message (STATUS "Looking for uuid... ${UUID}")
 if (NOT UUID)
   message (FATAL_ERROR "The uuid library is required.")
@@ -251,13 +251,13 @@ endif (NOT UUID)
 
 ## Version
 
-STRING (REPLACE "
+string (REPLACE "
 " "" OPENVASMD_VERSION ${CPACK_PACKAGE_VERSION})
 
 # Configure Doxyfile with version number
-CONFIGURE_FILE (doc/Doxyfile.in doc/Doxyfile)
-CONFIGURE_FILE (doc/Doxyfile_full.in doc/Doxyfile_full)
-CONFIGURE_FILE (VERSION.in VERSION)
+configure_file (doc/Doxyfile.in doc/Doxyfile)
+configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
+configure_file (VERSION.in VERSION)
 
 ## Program
 
@@ -272,6 +272,6 @@ add_subdirectory (doc)
 
 ## Tests
 
-ENABLE_TESTING ()
+enable_testing ()
 
 ## End
