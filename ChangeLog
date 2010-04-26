@@ -1,5 +1,18 @@
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Improve SQL statement to fetch the ROWID of an report in progress of
+	a running task. This change can prevent issues that occurred when the
+	database was left in an inconsistent state (e.g. due to
+	"malformed disk image" issues).
+
+	* src/manage_sql.c (task_running_report): Made the SQL
+	statement to fetch the ROWID of the report in progress of a running
+	task more robust. Ensure that the report is in "running" state.
+	If multiple such reports should exist (should occur only if serious
+	errors came up before), select the last one.
+
+2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Ensure that after every fork the database is reopened in the child.
 	This is required by sqlite3 in order to prevent race conditions that
 	lead to "malformed disk image"s of the database.

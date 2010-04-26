@@ -4719,9 +4719,11 @@ task_running_report (task_t task)
       || run_status == TASK_STATUS_RUNNING)
     {
       return (unsigned int) sql_int (0, 0,
-                                     "SELECT ROWID FROM reports"
-                                     " WHERE task = %llu AND end_time IS NULL;",
-                                     task);
+                                     "SELECT max(ROWID) FROM reports"
+                                     " WHERE task = %llu AND end_time IS NULL"
+                                     " AND scan_run_status = %u;",
+                                     task,
+                                     TASK_STATUS_RUNNING);
     }
   return (report_t) 0;
 }
