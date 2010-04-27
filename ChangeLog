@@ -1,5 +1,9 @@
 2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.h (task_status_t): Document, fix numerical values.
+
+2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Reviving formerly reverted changes (penultimate commit). The issue
 	was solved elsewhere, two minor additional changes.
 

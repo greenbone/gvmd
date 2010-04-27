@@ -154,22 +154,29 @@ typedef struct
   char* oid;            ///< NVT identifier.
 } message_t;
 
+
+/**
+ * @brief Task stati, also referred to as scan- or report stati.
+ *
+ * Be carefull to keep the order or adding a migrator when adding new stati,
+ * as it might render old databases useless.
+ */
 typedef enum
 {
-  TASK_STATUS_DELETE_REQUESTED,
-  TASK_STATUS_DONE,
-  TASK_STATUS_NEW,
-  TASK_STATUS_REQUESTED,
-  TASK_STATUS_RUNNING,
-  TASK_STATUS_PAUSE_REQUESTED,
-  TASK_STATUS_PAUSE_WAITING,
-  TASK_STATUS_PAUSED,
-  TASK_STATUS_RESUME_REQUESTED,
-  TASK_STATUS_RESUME_WAITING,
-  TASK_STATUS_STOP_REQUESTED,
-  TASK_STATUS_STOP_WAITING,
-  TASK_STATUS_STOPPED,
-  TASK_STATUS_INTERNAL_ERROR
+  TASK_STATUS_DELETE_REQUESTED = 0,
+  TASK_STATUS_DONE = 1,
+  TASK_STATUS_NEW  = 2,
+  TASK_STATUS_REQUESTED = 3,
+  TASK_STATUS_RUNNING   = 4,
+  TASK_STATUS_PAUSE_REQUESTED = 5,
+  TASK_STATUS_PAUSE_WAITING   = 6,
+  TASK_STATUS_PAUSED = 7,
+  TASK_STATUS_RESUME_REQUESTED = 8,
+  TASK_STATUS_RESUME_WAITING   = 9,
+  TASK_STATUS_STOP_REQUESTED   = 10,
+  TASK_STATUS_STOP_WAITING     = 11,
+  TASK_STATUS_STOPPED = 12,
+  TASK_STATUS_INTERNAL_ERROR = 13
 } task_status_t;
 
 typedef long long int agent_t;
