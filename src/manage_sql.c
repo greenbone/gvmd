@@ -4375,8 +4375,10 @@ authenticate (credentials_t* credentials)
 
       if (authenticate_allow_all)
         {
-          /** @todo overcome this by storing the users uuid at fork time. */
-          credentials->uuid = openvas_user_uuid (credentials->username);
+          /* This flag is set for scheduled tasks only. Take the stored uuid
+           * to be able to tell apart locally authenticated vs remotely
+           * authenticated users (in order to fetch the correct rules). */
+          credentials->uuid = get_scheduled_user_uuid ();
           if (*credentials->uuid)
             return 0;
           return -1;

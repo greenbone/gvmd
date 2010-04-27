@@ -1,3 +1,14 @@
+2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Reviving formerly reverted changes (penultimate commit). The issue
+	was solved elsewhere, two minor additional changes.
+
+	* src/manage.h, src/manage.c, src/manage_sql.c, src/openvasmd.c:
+	Reverted to penultimate commit.
+
+	* src/manage.c (run_task): Added todo about possible code collapse.
+	(manage_schedule): Fixed setting of owner_uuid (second in list).
+
 2010-04-26  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	Reverting last commit due to not yet identified bug that leads to

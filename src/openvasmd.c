@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009 Greenbone Networks GmbH
+ * Copyright (C) 2009,2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -478,7 +478,7 @@ static int
 fork_connection_for_schedular (int *client_socket,
                                gnutls_session_t *client_session,
                                gnutls_certificate_credentials_t
-                               *client_credentials)
+                               *client_credentials, gchar* uuid)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -586,6 +586,7 @@ fork_connection_for_schedular (int *client_socket,
          * enables the schedular to login as the owner of the scheduled
          * task. */
         manage_auth_allow_all ();
+        set_scheduled_user_uuid (uuid);
 
         ret = serve_client (parent_client_socket);
         /** @todo This should be done through libomp. */
