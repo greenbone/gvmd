@@ -1,3 +1,8 @@
+2010-04-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* INSTALL: Updated instructions for certificate generation, added a
+	few headings and moved paragraphs to improve readability.
+
 2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	Use new openvas-libraries/base/credentials module, removed duplicate

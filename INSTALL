@@ -1,6 +1,13 @@
-The reference system used by the developers is Debian GNU Linux 'Lenny' 5.0.
-The build might fail on any other systems.  Also it is necessary to install
-dependent development packages.
+INSTALLATION INSTRUCTIONS FOR OPENVAS-MANAGER
+=============================================
+
+Please note: The reference system used by the developers is Debian
+GNU/Linux 'Lenny' 5.0.  The build might fail on any other systems.  Also
+it is necessary to install dependent development packages.
+
+
+Compiling openvas-manager
+-------------------------
 
 Prerequisites:
 * cmake
@@ -40,26 +47,43 @@ Thereafter, the following commands are useful.
     $ make install        # install the build
     $ make rebuild_cache  # rebuild the make system cache
 
+In case you want to install openvas-manager to a different path from the
+other OpenVAS modules, you might need to set some paths explicitly
+before running cmake:
+
+Adjust any values in the Variables section of CMakeLists.txt: The
+variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
+enabled and edited in order to link to a custom installation of OpenVAS.
+The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
+OPENVAS_SERVER_KEY, OPENVAS_CLIENT_CERTIFICATE, OPENVAS_CLIENT_KEY and
+OPENVAS_CA_CERTIFICATE may also need modifying.
+
+
+Certificate Generation
+----------------------
+
 Note that the manager always connects to the scanner as user "om" and
 uses certificate based authentication exclusively. This means that you
 have to create this user, generate the certificate and key for this user
 and provide them to the manager. The easiest way to do this is to use
 the "openvas-mkcert-client" script provided by the openvas-scanner
-module.  You can create the user "om", generate the certificates and
-register the user with the OpenVAS scanner with a single command:
+module.  You can create the user "om", generate the certificates,
+register the user with the OpenVAS scanner and install the client
+certificates into the proper location for use with openvas-manager with
+a single command:
 
-    $ openvas-mkcert-client -n om
+    $ openvas-mkcert-client -n om -i
 
 Or you can call the script without parameters if you want to have finer
 control over the process:
 
     $ openvas-mkcert-client
 
-The script will create the client certificate and key in a temporary
-directory. In order to have the manager use the certificate and key, you
-have to copy the files into a specific location. Change into the
-temporary directory created by openvas-mkcert-client and execute the
-following commands:
+If you did not use the "-i" option described aboved, the script will
+create the client certificate and key in a temporary directory. In order
+to have the manager use the certificate and key, you have to copy the
+files into a specific location. Change into the temporary directory
+created by openvas-mkcert-client and execute the following commands:
 
     $ cp key_om.pem /var/lib/openvas/private/CA/clientkey.pem
     $ cp cert_om.pem /var/lib/openvas/CA/clientcert.pem
@@ -67,15 +91,9 @@ following commands:
 Please note that the target directory in the commands above might have
 to be prefixed with the prefix you have set earlier.
 
-In case you install openvas-manager to a different path from the other
-OpenVAS modules, you might need to set some paths explicitly before running
-cmake:
 
-Adjust any values in the Variables section of CMakeLists.txt: The
-variables OPENVAS_LIB_INSTALL_DIR and OPENVAS_HEADER_INSTALL_DIR can be
-enabled and edited in order to link to a custom installation of OpenVAS.
-The certificate and key locations in OPENVAS_SERVER_CERTIFICATE,
-OPENVAS_SERVER_KEY and OPENVAS_CA_CERTIFICATE may also need modifying.
+Prerequisites for Optional Features
+-----------------------------------
 
 Certain features of the Manager also require some programs at run time:
 
