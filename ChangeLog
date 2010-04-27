@@ -1,5 +1,15 @@
 2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Use new openvas-libraries/base/credentials module, removed duplicate
+	code.
+
+	* src/manage.h (task_status_t): Include new header, removed protos.
+
+	* src/manage.c (free_credentials, append_to_credentials_username)
+	(append_to_credentials_password): Moved to new module.
+
+2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage.h (task_status_t): Document, fix numerical values.
 
 2010-04-27  Felix Wolfsteller <felix.wolfsteller@greenbone.net>

@@ -161,55 +161,6 @@ free_array (GPtrArray *array)
  */
 credentials_t current_credentials;
 
-/**
- * @brief Free credentials.
- *
- * Free the members of a credentials pair.
- *
- * @param[in]  credentials  Pointer to the credentials.
- */
-void
-free_credentials (credentials_t* credentials)
-{
-  g_free (credentials->username);
-  credentials->username = NULL;
-
-  g_free (credentials->password);
-  credentials->password = NULL;
-
-  /** @todo Check whether uuid has to be freed, too. */
-}
-
-/**
- * @brief Append text to the username of a credential pair.
- *
- * @param[in]  credentials  Credentials.
- * @param[in]  text         The text to append.
- * @param[in]  length       Length of the text.
- */
-void
-append_to_credentials_username (credentials_t* credentials,
-                                const char* text,
-                                gsize length)
-{
-  openvas_append_text (&credentials->username, text, length);
-}
-
-/**
- * @brief Append text to the password of a credential pair.
- *
- * @param[in]  credentials  Credentials.
- * @param[in]  text         The text to append.
- * @param[in]  length       Length of the text.
- */
-void
-append_to_credentials_password (credentials_t* credentials,
-                                const char* text,
-                                gsize length)
-{
-  openvas_append_text (&credentials->password, text, length);
-}
-
 
 /* Reports. */
 

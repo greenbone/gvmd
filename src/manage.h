@@ -32,6 +32,7 @@
 
 #include <openvas/openvas_auth.h>
 #include <openvas/base/certificate.h> /* for certificate_t */
+#include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
 
 /**
@@ -78,26 +79,7 @@ free_array (array_t *);
 
 /* Credentials. */
 
-/**
- * @brief User authentication details.
- */
-typedef struct
-{
-  /*@null@*/ gchar* username; ///< Login name of user.
-  /*@null@*/ gchar* password; ///< Password of user.
-  /*@null@*/ gchar* uuid;     ///< UUID of user.
-} credentials_t;
-
 extern credentials_t current_credentials;
-
-void
-free_credentials (credentials_t*);
-
-void
-append_to_credentials_username (credentials_t*, const char*, gsize);
-
-void
-append_to_credentials_password (credentials_t*, const char*, gsize);
 
 int
 authenticate (credentials_t*);
