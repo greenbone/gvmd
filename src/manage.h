@@ -31,6 +31,7 @@
 #include <gnutls/gnutls.h>
 
 #include <openvas/openvas_auth.h>
+#include <openvas/base/array.h> /* for array_t */
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
@@ -64,17 +65,6 @@ cleanup_manage_process (gboolean);
 
 void
 manage_cleanup_process_error (int);
-
-
-/* Arrays. */
-
-typedef GPtrArray array_t;
-
-array_t *
-make_array ();
-
-void
-free_array (array_t *);
 
 
 /* Credentials. */

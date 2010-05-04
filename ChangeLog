@@ -1,3 +1,17 @@
+2010-05-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Moved shared code between openvas-administrator and openvas-manager
+	into openvas-libraries.
+
+	* src/manage.c (make_array, free_array): Moved to
+	openvas-libraries/base/array module.
+	
+	* src/manage.h: Removed typedef and protos, include array module from
+	openvas-libraries/base .
+
+	* src/omp.c (array_add, array_terminate, array_reset): Moved to array module in
+	openvas-libraries/base .
+
 2010-04-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* INSTALL: Updated instructions for certificate generation, added a

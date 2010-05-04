@@ -120,40 +120,6 @@ message_type_threat (const char *type)
 }
 
 
-/* Arrays. */
-
-/**
- * @brief Make a global array.
- *
- * @return New array.
- */
-GPtrArray *
-make_array ()
-{
-  return g_ptr_array_new ();
-}
-
-/**
- * @brief Free global array value.
- *
- * Also g_free any elements.
- *
- * @param[in]  array  Pointer to array.
- */
-void
-free_array (GPtrArray *array)
-{
-  if (array)
-    {
-      int index = 0;
-      gpointer item;
-      while ((item = g_ptr_array_index (array, index++)))
-        g_free (item);
-      g_ptr_array_free (array, TRUE);
-    }
-}
-
-
 /* Credentials. */
 
 /**

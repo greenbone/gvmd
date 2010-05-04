@@ -134,39 +134,6 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
                                strlen (two), two);
 }
 
-/**
- * @brief Push a generic pointer onto a global array.
- *
- * @param[in]  array    Array.
- * @param[in]  pointer  Pointer.
- */
-static void
-array_add (GPtrArray *array, gpointer pointer)
-{
-  if (array) g_ptr_array_add (array, pointer);
-}
-
-/**
- * @brief Terminate a global array.
- */
-static void
-array_terminate (GPtrArray *array)
-{
-  if (array) g_ptr_array_add (array, NULL);
-}
-
-/**
- * @brief Reset an array.
- *
- * @param[in]  array  Pointer to array.
- */
-static void
-array_reset (array_t **array)
-{
-  free_array (*array);
-  *array = make_array ();
-}
-
 /** @todo Duplicated from lsc_user.c. */
 /**
  * @brief Checks whether a file is a directory or not.
