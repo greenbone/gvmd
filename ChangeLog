@@ -1,3 +1,7 @@
+2010-05-04  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* INSTALL: Add spaces after full stops.
+
 2010-05-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	Moved shared code between openvas-administrator and openvas-manager
@@ -5,7 +9,7 @@
 
 	* src/manage.c (make_array, free_array): Moved to
 	openvas-libraries/base/array module.
-	
+
 	* src/manage.h: Removed typedef and protos, include array module from
 	openvas-libraries/base .
 
@@ -221,7 +225,7 @@
 
 	* src/manage.c (make_report_uuid): Removed.
 	(make_task_uuid): Removed.
-	
+
 	* src/manage.h (make_report_uuid, make_task_uuid): Removed headers
 	accordingly.
 
