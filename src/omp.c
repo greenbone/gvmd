@@ -568,7 +568,7 @@ create_config_data_reset (create_config_data_t *data)
 
   free (import->comment);
   free (import->name);
-  free_array (import->nvt_selectors);
+  array_free (import->nvt_selectors);
   free (import->nvt_selector_name);
   free (import->nvt_selector_type);
   free (import->nvt_selector_family_or_nvt);
@@ -577,8 +577,8 @@ create_config_data_reset (create_config_data_t *data)
     {
       while ((preference = (preference_t*) g_ptr_array_index (import->preferences,
                                                               index++)))
-        free_array (preference->alts);
-      free_array (import->preferences);
+        array_free (preference->alts);
+      array_free (import->preferences);
     }
 
   free (import->preference_alt);
@@ -7564,7 +7564,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
 
-              free_array (current_array_1);
+              array_free (current_array_1);
               current_array_1 = NULL;
             }
           else if (current_array_2)    /* Implies FAMILY_SELECTION. */
@@ -7603,9 +7603,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
 
-              free_array (current_array_1);
-              free_array (current_array_2);
-              free_array (current_array_3);
+              array_free (current_array_1);
+              array_free (current_array_2);
+              array_free (current_array_3);
               current_array_1 = NULL;
               current_array_2 = NULL;
               current_array_3 = NULL;
@@ -8542,9 +8542,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           openvas_free_string_var (&modify_task_parameter);
           openvas_free_string_var (&modify_task_rcfile);
           openvas_free_string_var (&modify_task_value);
-          free_array (current_array_1);
-          free_array (current_array_2);
-          free_array (current_array_3);
+          array_free (current_array_1);
+          array_free (current_array_2);
+          array_free (current_array_3);
           current_array_1 = NULL;
           current_array_2 = NULL;
           current_array_3 = NULL;

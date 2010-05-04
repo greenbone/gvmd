@@ -1,5 +1,9 @@
 2010-05-04  Matthew Mundell <matthew.mundell@intevation.de>
 
+	* src/omp.c: Update free_array calls to array_free.
+
+2010-05-04  Matthew Mundell <matthew.mundell@intevation.de>
+
 	* src/CMakeLists.txt: Replace tasks_sql.h with manage_sql.c in tags files.
 
 2010-05-04  Matthew Mundell <matthew.mundell@intevation.de>
