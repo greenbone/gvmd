@@ -187,7 +187,7 @@ ADD_DEPENDENCIES (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "openvasmd.c" "oxpd.c" "otpd.c" "ompd.c" "omp.c" "otp.c"
-             "manage.c" "ovas-mngr-comm.c" "tasks_sql.h")
+             "manage.c" "manage_sql.c" "ovas-mngr-comm.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."
