@@ -44,6 +44,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <dirent.h>
+#include <glib.h>
 #include <uuid/uuid.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +55,7 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/omp/omp.h>
 #include <openvas/openvas_server.h>
+#include <openvas/openvas_uuid.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -584,11 +586,13 @@ preference_value (const char* name, const char* full_value)
  *
  * @param[in]  config        Config.
  * @param[in]  section_name  Name of preference section to send.
+ * @param[out] files         Files to send to server (UUID, contents, ...).
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_preferences (config_t config, const char* section_name)
+send_config_preferences (config_t config, const char* section_name,
+                         GPtrArray *files)
 {
   iterator_t prefs;
 
@@ -608,6 +612,52 @@ send_config_preferences (config_t config, const char* section_name)
         {
           cleanup_iterator (&prefs);
           return -1;
+        }
+
+      if (files)
+        {
+          int type_start = -1, type_end = -1, count;
+
+          /* LDAPsearch[entry]:Timeout value */
+          count = sscanf (pref_name, "%*[^[][%n%*[^]]%n]:", &type_start,
+                          &type_end);
+          if (count == 0
+              && type_start > 0
+              && type_end > 0
+              && (strncmp (pref_name + type_start,
+                           "file",
+                           type_end - type_start)
+                  == 0))
+            {
+              char *uuid;
+              uuid = openvas_uuid_make ();
+              if (uuid == NULL)
+                {
+                  cleanup_iterator (&prefs);
+                  return -1;
+                }
+
+              value = preference_value (pref_name,
+                                        otp_pref_iterator_value (&prefs));
+
+              g_ptr_array_add (files, (gpointer) uuid);
+              g_ptr_array_add (files, (gpointer) value);
+
+              if (send_to_server (uuid))
+                {
+                  g_free (value);
+                  cleanup_iterator (&prefs);
+                  return -1;
+                }
+
+              if (sendn_to_server ("\n", 1))
+                {
+                  cleanup_iterator (&prefs);
+                  return -1;
+                }
+
+              continue;
+            }
         }
 
       value = preference_value (pref_name,
@@ -799,6 +849,33 @@ send_user_rules (report_t stopped_report)
 }
 
 /**
+ * @brief Send a file to the scanner.
+ *
+ * @param[in]  name     File name.
+ * @param[in]  content  File contents.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_file (const char* name, const char* content)
+{
+  size_t content_len = strlen (content);
+
+  if (sendf_to_server ("CLIENT <|> ATTACHED_FILE\n"
+                       "name: %s\n"
+                       "content: octet/stream\n"
+                       "bytes: %i\n",
+                       name,
+                       content_len))
+    return -1;
+
+  if (sendn_to_server (content, content_len))
+    return -1;
+
+  return 0;
+}
+
+/**
  * @brief Send a file from a config to the scanner.
  *
  * @param[in]  config  Config.
@@ -874,6 +951,7 @@ run_task (task_t task, char **report_id, int from)
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
+  GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
   lsc_credential_t credential;
@@ -1067,20 +1145,23 @@ run_task (task_t task, char **report_id, int from)
 
   /* Send the scanner and plugins preferences. */
 
-  if (send_config_preferences (config, "SERVER_PREFS"))
+  if (send_config_preferences (config, "SERVER_PREFS", NULL))
     {
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-  if (send_config_preferences (config, "PLUGINS_PREFS"))
+  preference_files = g_ptr_array_new ();
+  if (send_config_preferences (config, "PLUGINS_PREFS", preference_files))
     {
+      g_ptr_array_free (preference_files, TRUE);
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
+  g_ptr_array_add (preference_files, NULL);
 
   /* Send credential preferences if there's a credential linked to target. */
 
@@ -1109,6 +1190,7 @@ run_task (task_t task, char **report_id, int from)
             {
               free (hosts);
               cleanup_iterator (&credentials);
+              array_free (preference_files);
               set_task_run_status (task, run_status);
               current_report = (report_t) 0;
               return -10;
@@ -1120,10 +1202,33 @@ run_task (task_t task, char **report_id, int from)
   if (send_to_server ("<|> CLIENT\n"))
     {
       free (hosts);
+      array_free (preference_files);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
+
+  /* Send any files stored in the config preferences. */
+
+  {
+    gchar *file;
+    int index = 0;
+    while ((file = g_ptr_array_index (preference_files, index)))
+      {
+        index++;
+        if (send_file (file, g_ptr_array_index (preference_files, index)))
+          {
+            free (hosts);
+            array_free (preference_files);
+            set_task_run_status (task, run_status);
+            current_report = (report_t) 0;
+            return -10;
+          }
+        index++;
+      }
+
+    array_free (preference_files);
+  }
 
   /* Collect files to send. */
 

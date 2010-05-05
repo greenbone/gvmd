@@ -1,3 +1,10 @@
+2010-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (send_config_preferences): Add arg for collecting files
+	to send to scanner.
+	(send_file): New function.
+	(run_task): Send files stored in config preferences to scanner.
+
 2010-05-04  Matthew Mundell <matthew.mundell@intevation.de>
 
 	* src/omp.c: Update free_array calls to array_free.
