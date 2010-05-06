@@ -193,6 +193,8 @@ escalator_condition_name (escalator_condition_t condition)
         return "Always";
       case ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST:
         return "Threat level at least";
+      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+        return "Threat level changed";
       default:
         return "Internal Error";
     }
@@ -237,6 +239,15 @@ escalator_condition_description (escalator_condition_t condition,
           gchar *ret = g_strdup_printf ("Task threat level is at least '%s'",
                                         level);
           free (level);
+          return ret;
+          break;
+        }
+      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+        {
+          char *direction;
+          direction = escalator_data (escalator, "condition", "direction");
+          gchar *ret = g_strdup_printf ("Task threat level %s", direction);
+          free (direction);
           return ret;
           break;
         }
@@ -298,6 +309,8 @@ escalator_condition_from_name (const char* name)
     return ESCALATOR_CONDITION_ALWAYS;
   if (strcasecmp (name, "Threat level at least") == 0)
     return ESCALATOR_CONDITION_THREAT_LEVEL_AT_LEAST;
+  if (strcasecmp (name, "Threat level changed") == 0)
+    return ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED;
   return ESCALATOR_CONDITION_ERROR;
 }
 

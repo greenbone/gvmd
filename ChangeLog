@@ -1,5 +1,18 @@
 2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add "threat level changed" escalator condition.
+
+	* src/manage.h (escalator_condition_t): Add THREAT_LEVEL_CHANGED entry.
+
+	* src/manage.c (escalator_condition_name)
+	(escalator_condition_description, escalator_condition_from_name): Add
+	THREAT_LEVEL_CHANGED cases.
+
+	* src/manage_sql.c (task_previous_threat_level): New function.
+	(condition_met): Add THREAT_LEVEL_CHANGED check.
+
+2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (send_config_preferences): Add task files arg.  Send the
 	preference value instead of a UUID when there is a task file named by the
 	preference value.

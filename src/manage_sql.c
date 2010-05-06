@@ -116,6 +116,9 @@ family_count ();
 const char*
 task_threat_level (task_t);
 
+static const char*
+task_previous_threat_level (task_t);
+
 static char*
 task_owner_uuid (task_t);
 
@@ -3438,6 +3441,42 @@ condition_met (task_t task, escalator_t escalator,
           free (condition_level);
           break;
         }
+      case ESCALATOR_CONDITION_THREAT_LEVEL_CHANGED:
+        {
+          char *direction;
+          const char *last_level, *second_last_level;
+
+          /* True if the threat level of the last finished report changed
+           * in the given direction with respect to the second last finished
+           * report. */
+
+          direction = escalator_data (escalator, "condition", "direction");
+          last_level = task_threat_level (task);
+          second_last_level = task_previous_threat_level (task);
+          if (direction
+              && last_level
+              && second_last_level)
+            {
+              int cmp = collate_threat (NULL,
+                                        strlen (last_level),
+                                        last_level,
+                                        strlen (second_last_level),
+                                        second_last_level);
+              tracef ("cmp: %i\n", cmp);
+              tracef ("direction: %s\n", direction);
+              tracef ("last_level: %s\n", last_level);
+              tracef ("second_last_level: %s\n", second_last_level);
+              if (((strcasecmp (direction, "changed") == 0) && cmp)
+                  || ((strcasecmp (direction, "increased") == 0) && (cmp > 0))
+                  || ((strcasecmp (direction, "decreased") == 0) && (cmp < 0)))
+                {
+                  free (direction);
+                  return 1;
+                }
+            }
+          free (direction);
+          break;
+        }
       default:
         break;
     }
@@ -5056,6 +5095,65 @@ task_threat_level (task_t task)
                      " (SELECT ROWID FROM reports WHERE reports.task = %llu"
                      "  AND reports.scan_run_status = %u"
                      "  ORDER BY reports.date DESC LIMIT 1)"
+                     " AND results.ROWID = report_results.result"
+                     " ORDER BY type COLLATE collate_message_type DESC"
+                     " LIMIT 1",
+                     task,
+                     TASK_STATUS_DONE);
+
+  if (strcmp (type, "Security Hole") == 0)
+    {
+      free (type);
+      return "High";
+    }
+
+  if (strcmp (type, "Security Warning") == 0)
+    {
+      free (type);
+      return "Medium";
+    }
+
+  if (strcmp (type, "Security Note") == 0)
+    {
+      free (type);
+      return "Low";
+    }
+
+  if (strcmp (type, "Log Message") == 0)
+    {
+      free (type);
+      return "Log";
+    }
+
+  if (strcmp (type, "Debug Message") == 0)
+    {
+      free (type);
+      return "Debug";
+    }
+
+  free (type);
+  return NULL;
+}
+
+/**
+ * @brief Return the previous threat level of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Threat level of the second last report on task if there is one, as a
+ *         static string, else NULL.
+ */
+static const char*
+task_previous_threat_level (task_t task)
+{
+  char *type;
+
+  type = sql_string (0, 0,
+                     " SELECT results.type FROM results, report_results"
+                     " WHERE report_results.report ="
+                     " (SELECT ROWID FROM reports WHERE reports.task = %llu"
+                     "  AND reports.scan_run_status = %u"
+                     "  ORDER BY reports.date DESC LIMIT 2 OFFSET 1)"
                      " AND results.ROWID = report_results.result"
                      " ORDER BY type COLLATE collate_message_type DESC"
                      " LIMIT 1",
