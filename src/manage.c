@@ -1208,6 +1208,10 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
+  /* Collect task files to send. */
+
+  files = get_files_to_send (task);
+
   /* Send any files stored in the config preferences. */
 
   {
@@ -1215,13 +1219,35 @@ run_task (task_t task, char **report_id, int from)
     int index = 0;
     while ((file = g_ptr_array_index (preference_files, index)))
       {
+        GSList *head;
+        gchar *value;
+
         index++;
-        if (send_file (file, g_ptr_array_index (preference_files, index)))
+
+        /* Skip the file if the value of the preference is the name of a
+         * file associated with the task. */
+        value = g_ptr_array_index (preference_files, index);
+        head = files;
+        while (head)
+          {
+            if (strcmp (head->data, value) == 0)
+              break;
+            head = g_slist_next (head);
+          }
+
+        if (head == NULL && send_file (file, value))
           {
             free (hosts);
             array_free (preference_files);
             set_task_run_status (task, run_status);
             current_report = (report_t) 0;
+            head = files;
+            while (files)
+              {
+                g_free (files->data);
+                files = g_slist_next (files);
+              }
+            g_slist_free (head);
             return -10;
           }
         index++;
@@ -1229,10 +1255,6 @@ run_task (task_t task, char **report_id, int from)
 
     array_free (preference_files);
   }
-
-  /* Collect files to send. */
-
-  files = get_files_to_send (task);
 
   /* Send any files. */
 

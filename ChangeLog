@@ -1,3 +1,9 @@
+2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): When sending preference files, if there's a
+	task file with the same name as value of the preference file, then skip
+	sending the preference value as a file.
+
 2010-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (send_config_preferences): Add arg for collecting files
