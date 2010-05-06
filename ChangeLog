@@ -1,5 +1,13 @@
 2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (send_config_preferences): Add task files arg.  Send the
+	preference value instead of a UUID when there is a task file named by the
+	preference value.
+	(slist_free): New function.
+	(run_task): Pass the task files to send_config_preferences.
+
+2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): When sending preference files, if there's a
 	task file with the same name as value of the preference file, then skip
 	sending the preference value as a file.

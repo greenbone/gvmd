@@ -586,13 +586,14 @@ preference_value (const char* name, const char* full_value)
  *
  * @param[in]  config        Config.
  * @param[in]  section_name  Name of preference section to send.
- * @param[out] files         Files to send to server (UUID, contents, ...).
+ * @param[in]  task_files    Files associated with the task.
+ * @param[out] pref_files    Files associated with config (UUID, contents, ...).
  *
  * @return 0 on success, -1 on failure.
  */
 static int
 send_config_preferences (config_t config, const char* section_name,
-                         GPtrArray *files)
+                         GSList *task_files, GPtrArray *pref_files)
 {
   iterator_t prefs;
 
@@ -614,7 +615,10 @@ send_config_preferences (config_t config, const char* section_name,
           return -1;
         }
 
-      if (files)
+      value = preference_value (pref_name,
+                                otp_pref_iterator_value (&prefs));
+
+      if (pref_files)
         {
           int type_start = -1, type_end = -1, count;
 
@@ -629,39 +633,54 @@ send_config_preferences (config_t config, const char* section_name,
                            type_end - type_start)
                   == 0))
             {
+              GSList *head;
               char *uuid;
-              uuid = openvas_uuid_make ();
-              if (uuid == NULL)
+
+              /* A "file" preference.
+               *
+               * If the value of the preference is the name of a task file,
+               * then just send the preference value, otherwise send a UUID and
+               * add the value to the list of preference files (pref_files). */
+
+              head = task_files;
+              while (head)
                 {
-                  cleanup_iterator (&prefs);
-                  return -1;
+                  if (strcmp (head->data, value) == 0)
+                    break;
+                  head = g_slist_next (head);
                 }
 
-              value = preference_value (pref_name,
-                                        otp_pref_iterator_value (&prefs));
-
-              g_ptr_array_add (files, (gpointer) uuid);
-              g_ptr_array_add (files, (gpointer) value);
-
-              if (send_to_server (uuid))
+              if (head == NULL)
                 {
-                  g_free (value);
-                  cleanup_iterator (&prefs);
-                  return -1;
-                }
+                  uuid = openvas_uuid_make ();
+                  if (uuid == NULL)
+                    {
+                      g_free (value);
+                      cleanup_iterator (&prefs);
+                      return -1;
+                    }
 
-              if (sendn_to_server ("\n", 1))
-                {
-                  cleanup_iterator (&prefs);
-                  return -1;
-                }
+                  g_ptr_array_add (pref_files, (gpointer) uuid);
+                  g_ptr_array_add (pref_files, (gpointer) value);
 
-              continue;
+                  if (send_to_server (uuid))
+                    {
+                      g_free (value);
+                      cleanup_iterator (&prefs);
+                      return -1;
+                    }
+
+                  if (sendn_to_server ("\n", 1))
+                    {
+                      cleanup_iterator (&prefs);
+                      return -1;
+                    }
+
+                  continue;
+                }
             }
         }
 
-      value = preference_value (pref_name,
-                                otp_pref_iterator_value (&prefs));
       if (send_to_server (value))
         {
           g_free (value);
@@ -924,6 +943,23 @@ send_task_file (task_t task, const char* file)
 /** @todo g_convert back to ISO-8559-1 for scanner? */
 
 /**
+ * @brief Free an slist of pointers, including the pointers.
+ *
+ * @param[in]  list  The list.
+ */
+void
+slist_free (GSList* list)
+{
+  GSList *head = list;
+  while (list)
+    {
+      g_free (list->data);
+      list = g_slist_next (list);
+    }
+  g_slist_free (head);
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -1143,19 +1179,27 @@ run_task (task_t task, char **report_id, int from)
       return -10;
     }
 
-  /* Send the scanner and plugins preferences. */
+  /* Send the scanner preferences. */
 
-  if (send_config_preferences (config, "SERVER_PREFS", NULL))
+  if (send_config_preferences (config, "SERVER_PREFS", NULL, NULL))
     {
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
+
+  /* Collect task files to send. */
+
+  files = get_files_to_send (task);
+
+  /* Send the plugins preferences. */
+
   preference_files = g_ptr_array_new ();
-  if (send_config_preferences (config, "PLUGINS_PREFS", preference_files))
+  if (send_config_preferences (config, "PLUGINS_PREFS", files, preference_files))
     {
       g_ptr_array_free (preference_files, TRUE);
+      slist_free (files);
       free (hosts);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
@@ -1191,6 +1235,7 @@ run_task (task_t task, char **report_id, int from)
               free (hosts);
               cleanup_iterator (&credentials);
               array_free (preference_files);
+              slist_free (files);
               set_task_run_status (task, run_status);
               current_report = (report_t) 0;
               return -10;
@@ -1203,14 +1248,11 @@ run_task (task_t task, char **report_id, int from)
     {
       free (hosts);
       array_free (preference_files);
+      slist_free (files);
       set_task_run_status (task, run_status);
       current_report = (report_t) 0;
       return -10;
     }
-
-  /* Collect task files to send. */
-
-  files = get_files_to_send (task);
 
   /* Send any files stored in the config preferences. */
 
@@ -1239,15 +1281,9 @@ run_task (task_t task, char **report_id, int from)
           {
             free (hosts);
             array_free (preference_files);
+            slist_free (files);
             set_task_run_status (task, run_status);
             current_report = (report_t) 0;
-            head = files;
-            while (files)
-              {
-                g_free (files->data);
-                files = g_slist_next (files);
-              }
-            g_slist_free (head);
             return -10;
           }
         index++;
@@ -1264,14 +1300,7 @@ run_task (task_t task, char **report_id, int from)
       if (send_task_file (task, files->data))
         {
           free (hosts);
-          /* Free the data. */
-          while (files)
-            {
-              g_free (files->data);
-              files = g_slist_next (files);
-            }
-          /* Free the list. */
-          g_slist_free (last);
+          slist_free (files);
           set_task_run_status (task, run_status);
           current_report = (report_t) 0;
           return -10;
