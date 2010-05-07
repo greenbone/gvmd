@@ -11324,7 +11324,7 @@ create_lsc_credential (const char* name, const char* comment,
   assert (login && strlen (login) > 0);
   assert (current_credentials.uuid);
 
-  while (*s) if (isalnum (*s) || (*s == '\\')) s++; else return 2;
+  while (*s) if (isalnum (*s) || (*s == '\\') || (*s == '.') || (*s == '@')) s++; else return 2;
 
   quoted_name = sql_quote (name);
 

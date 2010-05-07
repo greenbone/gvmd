@@ -1,3 +1,8 @@
+2010-05-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (create_lsc_credential): Allow "." and "@"
+	characters in LSC credentials.
+
 2010-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add "threat level changed" escalator condition.
