@@ -4272,60 +4272,63 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       current_credentials.uuid = NULL;
     }
 
-  /* Set requested, paused and running tasks to stopped. */
-
-  assert (current_credentials.uuid == NULL);
-  init_task_iterator (&iterator, 1, NULL);
-  while (next_task (&iterator, &index))
+  if (nvt_cache_mode == 0)
     {
-      switch (task_run_status (index))
+      /* Set requested, paused and running tasks to stopped. */
+
+      assert (current_credentials.uuid == NULL);
+      init_task_iterator (&iterator, 1, NULL);
+      while (next_task (&iterator, &index))
         {
-          case TASK_STATUS_DELETE_REQUESTED:
-          case TASK_STATUS_PAUSE_REQUESTED:
-          case TASK_STATUS_PAUSE_WAITING:
-          case TASK_STATUS_PAUSED:
-          case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RESUME_REQUESTED:
-          case TASK_STATUS_RESUME_WAITING:
-          case TASK_STATUS_RUNNING:
-          case TASK_STATUS_STOP_REQUESTED:
-          case TASK_STATUS_STOP_WAITING:
-            /* Set the current user, for event checks. */
-            current_credentials.uuid = task_owner_uuid (index);
-            set_task_run_status (index, TASK_STATUS_STOPPED);
-            free (current_credentials.uuid);
-            break;
-          default:
-            break;
+          switch (task_run_status (index))
+            {
+              case TASK_STATUS_DELETE_REQUESTED:
+              case TASK_STATUS_PAUSE_REQUESTED:
+              case TASK_STATUS_PAUSE_WAITING:
+              case TASK_STATUS_PAUSED:
+              case TASK_STATUS_REQUESTED:
+              case TASK_STATUS_RESUME_REQUESTED:
+              case TASK_STATUS_RESUME_WAITING:
+              case TASK_STATUS_RUNNING:
+              case TASK_STATUS_STOP_REQUESTED:
+              case TASK_STATUS_STOP_WAITING:
+                /* Set the current user, for event checks. */
+                current_credentials.uuid = task_owner_uuid (index);
+                set_task_run_status (index, TASK_STATUS_STOPPED);
+                free (current_credentials.uuid);
+                break;
+              default:
+                break;
+            }
         }
+      cleanup_task_iterator (&iterator);
+      current_credentials.uuid = NULL;
+
+      /* Set requested and running reports to stopped. */
+
+      sql ("UPDATE reports SET scan_run_status = %u"
+           " WHERE scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u"
+           " OR scan_run_status = %u;",
+           TASK_STATUS_STOPPED,
+           TASK_STATUS_DELETE_REQUESTED,
+           TASK_STATUS_PAUSE_REQUESTED,
+           TASK_STATUS_PAUSE_WAITING,
+           TASK_STATUS_PAUSED,
+           TASK_STATUS_REQUESTED,
+           TASK_STATUS_RESUME_REQUESTED,
+           TASK_STATUS_RESUME_WAITING,
+           TASK_STATUS_RUNNING,
+           TASK_STATUS_STOP_REQUESTED,
+           TASK_STATUS_STOP_WAITING);
     }
-  cleanup_task_iterator (&iterator);
-  current_credentials.uuid = NULL;
-
-  /* Set requested and running reports to stopped. */
-
-  sql ("UPDATE reports SET scan_run_status = %u"
-       " WHERE scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u;",
-       TASK_STATUS_STOPPED,
-       TASK_STATUS_DELETE_REQUESTED,
-       TASK_STATUS_PAUSE_REQUESTED,
-       TASK_STATUS_PAUSE_WAITING,
-       TASK_STATUS_PAUSED,
-       TASK_STATUS_REQUESTED,
-       TASK_STATUS_RESUME_REQUESTED,
-       TASK_STATUS_RESUME_WAITING,
-       TASK_STATUS_RUNNING,
-       TASK_STATUS_STOP_REQUESTED,
-       TASK_STATUS_STOP_WAITING);
 
   /* Load the NVT cache into memory. */
 

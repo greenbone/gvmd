@@ -1,5 +1,10 @@
 2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Skip task consistency checks when in
+	cache update mode.
+
+2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_current_report): Correct SQL.
 
 2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
