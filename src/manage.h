@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009.2010 Greenbone Networks GmbH
+ * Copyright (C) 2009, 2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -128,10 +128,10 @@ typedef struct
 
 
 /**
- * @brief Task stati, also referred to as scan- or report stati.
+ * @brief Task statuses, also used as scan/report statuses.
  *
- * Be carefull to keep the order or adding a migrator when adding new stati,
- * as it might render old databases useless.
+ * These numbers are used in the database, so if the number associated with
+ * any symbol changes then a migrator must be added to update existing data.
  */
 typedef enum
 {

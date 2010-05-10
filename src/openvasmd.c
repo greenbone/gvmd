@@ -6,7 +6,7 @@
  * Matthew Mundell <matt@mundell.ukfsn.org>
  *
  * Copyright:
- * Copyright (C) 2009,2010 Greenbone Networks GmbH
+ * Copyright (C) 2009, 2010 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -478,7 +478,8 @@ static int
 fork_connection_for_schedular (int *client_socket,
                                gnutls_session_t *client_session,
                                gnutls_certificate_credentials_t
-                               *client_credentials, gchar* uuid)
+                               *client_credentials,
+                               gchar* uuid)
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
@@ -722,8 +723,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
   /* Initialise OMP daemon. */
 
   switch (init_ompd (log_config,
-                      update_nvt_cache ? -1 : -2,
-                      database))
+                     update_nvt_cache ? -1 : -2,
+                     database))
     {
       case 0:
         break;
@@ -838,7 +839,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 }
 
 /**
- * @brief Enter an infinite loop, waiting for connections and passing the 
+ * @brief Enter an infinite loop, waiting for connections and passing the
  * @brief work to `accept_and_maybe_fork'.
  *
  * Periodically, call the manage schedular to start and stop scheduled tasks.

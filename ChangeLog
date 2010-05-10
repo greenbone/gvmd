@@ -1,5 +1,17 @@
 2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.h: Neaten copyright date.
+	(task_status_t): Improve doc.
+
+	* src/openvasmd.c: Neaten copyright date.  Flush trailing whitespace.
+	(fork_connection_for_schedular): Move arg to separate line for clarity.
+	(update_or_rebuild_nvt_cache): Align two lines properly.
+
+	* src/manage.c (send_user_rules): Remove resolved todo.  Reduce line
+	length.  Remove trivial todo.
+
+2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Skip task consistency checks when in
 	cache update mode.
 

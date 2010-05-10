@@ -760,10 +760,10 @@ send_user_rules (report_t stopped_report)
 
   assert (current_credentials.username);
 
-  /** @todo to discern two users with same username but authenticated
-   *        differently, pass username + uuid, or username + passw or
-   *        store the rules in memory at time of authentication. */
-  if (openvas_auth_user_uuid_rules (current_credentials.username, current_credentials.uuid, &rules) == 0)
+  if (openvas_auth_user_uuid_rules (current_credentials.username,
+                                    current_credentials.uuid,
+                                    &rules)
+      == 0)
     {
       tracef ("   failed to get rules.");
       return -1;
@@ -1122,7 +1122,6 @@ run_task (task_t task, char **report_id, int from)
   reset_task (task);
 
   /* Send the preferences header. */
-  /** @todo collapse/OR-connect code, nearly all -10 returners do the same if failed. */
 
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
