@@ -363,6 +363,9 @@ set_task_run_status (task_t, task_status_t);
 report_t
 task_running_report (task_t);
 
+report_t
+task_current_report (task_t);
+
 char*
 task_start_time (task_t);
 

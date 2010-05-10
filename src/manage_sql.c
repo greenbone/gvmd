@@ -4761,7 +4761,7 @@ set_task_requested (task_t task, task_status_t *status)
 }
 
 /**
- * @brief Return the report currently being produced.
+ * @brief Return the running report of a task.
  *
  * @param[in]  task  Task.
  *
@@ -4780,6 +4780,47 @@ task_running_report (task_t task)
                                      " AND scan_run_status = %u;",
                                      task,
                                      TASK_STATUS_RUNNING);
+    }
+  return (report_t) 0;
+}
+
+/**
+ * @brief Return the current report of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Current report of task if task is active, else (report_t) 0.
+ */
+report_t
+task_current_report (task_t task)
+{
+  task_status_t run_status = task_run_status (task);
+  if (run_status == TASK_STATUS_REQUESTED
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_STOPPED
+      || run_status == TASK_STATUS_PAUSE_REQUESTED
+      || run_status == TASK_STATUS_PAUSED
+      || run_status == TASK_STATUS_RESUME_REQUESTED)
+    {
+      return (unsigned int) sql_int (0, 0,
+                                     "SELECT max(ROWID) FROM reports"
+                                     " WHERE task = %llu AND end_time IS NULL"
+                                     " AND scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u"
+                                     " OR scan_run_status = %u;",
+                                     task,
+                                     TASK_STATUS_REQUESTED,
+                                     TASK_STATUS_RUNNING,
+                                     TASK_STATUS_STOP_REQUESTED,
+                                     TASK_STATUS_STOPPED,
+                                     TASK_STATUS_PAUSE_REQUESTED,
+                                     TASK_STATUS_PAUSED,
+                                     TASK_STATUS_RESUME_REQUESTED);
     }
   return (report_t) 0;
 }

@@ -1,3 +1,13 @@
+2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_current_report): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS get the
+	current report instead of the running report, so that the response
+	includes progress info for stopped and paused tasks.
+
 2010-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_lsc_credential): Bring line within 80 chars.

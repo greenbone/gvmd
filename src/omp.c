@@ -10115,7 +10115,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       second_last_report = g_strdup ("");
 
-                    running_report = task_running_report (task);
+                    running_report = task_current_report (task);
                     if (running_report)
                       {
                         long total = 0;
@@ -10500,7 +10500,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   second_last_report = g_strdup ("");
 
-                running_report = task_running_report (index);
+                running_report = task_current_report (index);
                 if (running_report)
                   {
                     long total = 0;
