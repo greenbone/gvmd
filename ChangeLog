@@ -1,5 +1,9 @@
 2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_current_report): Correct SQL.
+
+2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_current_report): New function.
 
 	* src/manage.h: Add header accordingly.
