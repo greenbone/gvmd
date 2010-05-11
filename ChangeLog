@@ -1,5 +1,13 @@
 2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_config_preference_xml): Neaten formatting.  Free
+	data.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVT_DETAILS and
+	CLIENT_GET_CONFIGS, buffer preferences with buffer_config_preference_xml
+	instead of doing the work directly.
+
+2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Extend OMP GET_PREFERENCES for getting subsets of all preferences and
 	for getting the values of preferences on a particular config.
 

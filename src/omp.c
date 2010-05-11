@@ -5217,12 +5217,12 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
 {
   char *real_name, *type, *value, *nvt;
   char *oid = NULL;
-  real_name
-   = nvt_preference_iterator_real_name (prefs);
+
+  real_name = nvt_preference_iterator_real_name (prefs);
   type = nvt_preference_iterator_type (prefs);
-  value = nvt_preference_iterator_config_value
-           (prefs, config);
+  value = nvt_preference_iterator_config_value (prefs, config);
   nvt = nvt_preference_iterator_nvt (prefs);
+
   if (nvt) oid = nvt_oid (nvt);
 
   buffer_xml_append_printf (buffer,
@@ -5259,6 +5259,12 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
     buffer_xml_append_printf (buffer, "<value>%s</value>", value ? value : "");
 
   buffer_xml_append_printf (buffer, "</preference>");
+
+  free (real_name);
+  free (type);
+  free (value);
+  free (nvt);
+  free (oid);
 }
 
 /**
@@ -5906,54 +5912,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               init_nvt_preference_iterator (&prefs, nvt_name);
                               while (next (&prefs))
                                 {
-                                  char *real_name, *type, *value, *nvt;
-                                  char *oid = NULL;
-                                  real_name
-                                   = nvt_preference_iterator_real_name (&prefs);
-                                  type = nvt_preference_iterator_type (&prefs);
-                                  value = nvt_preference_iterator_config_value
-                                           (&prefs, config);
-                                  nvt = nvt_preference_iterator_nvt (&prefs);
-                                  if (nvt) oid = nvt_oid (nvt);
-
-                                  SENDF_TO_CLIENT_OR_FAIL
-                                   ("<preference>"
-                                    "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                                    "<name>%s</name>"
-                                    "<type>%s</type>",
-                                    oid ? oid : "",
-                                    nvt ? nvt : "",
-                                    real_name ? real_name : "",
-                                    type ? type : "");
-
-                                  if (value
-                                      && type
-                                      && (strcmp (type, "radio") == 0))
-                                    {
-                                      /* Handle the other possible values. */
-                                      char *pos = strchr (value, ';');
-                                      if (pos) *pos = '\0';
-                                      SENDF_TO_CLIENT_OR_FAIL
-                                       ("<value>%s</value>", value);
-                                      while (pos)
-                                        {
-                                          char *pos2 = strchr (++pos, ';');
-                                          if (pos2) *pos2 = '\0';
-                                          SENDF_TO_CLIENT_OR_FAIL
-                                           ("<alt>%s</alt>", pos);
-                                          pos = pos2;
-                                        }
-                                    }
-                                  else if (value
-                                           && type
-                                           && (strcmp (type, "password") == 0))
-                                    SEND_TO_CLIENT_OR_FAIL ("<value></value>");
-                                  else
-                                    SENDF_TO_CLIENT_OR_FAIL
-                                     ("<value>%s</value>", value ? value : "");
-
-                                  SEND_TO_CLIENT_OR_FAIL ("</preference>");
-
+                                  GString *buffer = g_string_new ("");
+                                  buffer_config_preference_xml (buffer, &prefs, config);
+                                  SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                                  g_string_free (buffer, TRUE);
                                 }
                               cleanup_iterator (&prefs);
 
@@ -11105,8 +11067,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       assert (config);
 
-                      /** @todo Similar to block in CLIENT_GET_NVT_DETAILS. */
-
                       /* The "preferences" and/or "export" attribute was
                        * true. */
 
@@ -11115,54 +11075,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       init_nvt_preference_iterator (&prefs, NULL);
                       while (next (&prefs))
                         {
-                          char *real_name, *type, *value, *nvt, *oid = NULL;
-                          real_name
-                           = nvt_preference_iterator_real_name (&prefs);
-                          type = nvt_preference_iterator_type (&prefs);
-                          value = nvt_preference_iterator_config_value
-                                   (&prefs, config);
-                          nvt = nvt_preference_iterator_nvt (&prefs);
-                          if (nvt) oid = nvt_oid (nvt);
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<preference>"
-                            "<nvt oid=\"%s\"><name>%s</name></nvt>"
-                            "<name>%s</name>"
-                            "<type>%s</type>",
-                            oid ? oid : "",
-                            nvt ? nvt : "",
-                            real_name ? real_name : "",
-                            type ? type : "");
-
-                          if (value && type && (strcmp (type, "radio") == 0))
-                            {
-                              /* Handle the other possible values. */
-                              char *pos = strchr (value, ';');
-                              if (pos) *pos = '\0';
-                              SENDF_TO_CLIENT_OR_FAIL ("<value>%s</value>",
-                                                       value);
-                              while (pos)
-                                {
-                                  char *pos2 = strchr (++pos, ';');
-                                  if (pos2) *pos2 = '\0';
-                                  SENDF_TO_CLIENT_OR_FAIL ("<alt>%s</alt>",
-                                                           pos);
-                                  pos = pos2;
-                                }
-                            }
-                          else if (type && (strcmp (type, "password") == 0))
-                            SEND_TO_CLIENT_OR_FAIL ("<value></value>");
-                          else
-                            SENDF_TO_CLIENT_OR_FAIL ("<value>%s</value>",
-                                                     value ? value : "");
-
-                          SEND_TO_CLIENT_OR_FAIL ("</preference>");
-
-                          free (real_name);
-                          free (type);
-                          free (value);
-                          free (nvt);
-                          free (oid);
+                          GString *buffer = g_string_new ("");
+                          buffer_config_preference_xml (buffer, &prefs, config);
+                          SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                          g_string_free (buffer, TRUE);
                         }
                       cleanup_iterator (&prefs);
 
