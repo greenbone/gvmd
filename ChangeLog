@@ -1,3 +1,8 @@
+2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_nvt_preference_iterator): Remove stray semicolon
+	from SQL.
+
 2010-05-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h: Neaten copyright date.

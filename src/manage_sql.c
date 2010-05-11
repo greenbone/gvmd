@@ -11154,7 +11154,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
       gchar *quoted_name = sql_quote (name);
       init_iterator (iterator,
                      "SELECT name, value FROM nvt_preferences"
-                     " WHERE name LIKE '%s[%%';"
+                     " WHERE name LIKE '%s[%%'"
                      " AND name != 'cache_folder'"
                      " AND name != 'include_folders'"
                      " AND name != 'nasl_no_signature_check'"
