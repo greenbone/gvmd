@@ -1075,7 +1075,7 @@ run_task (task_t task, char **report_id, int from)
     }
   else
     {
-      /* from_stopped must be 0, 1 or 2. */
+      /* "from" must be 0, 1 or 2. */
       assert (0);
       return -1;
     }
