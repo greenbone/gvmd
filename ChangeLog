@@ -1,5 +1,21 @@
 2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Extend OMP GET_PREFERENCES for getting subsets of all preferences and
+	for getting the values of preferences on a particular config.
+
+	* src/manage_sql.c (manage_nvt_name): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (get_preferences_data_t): New type.
+	(get_preferences_data_reset, buffer_config_preference_xml): New functions.
+	(command_data_t): Add get_preferences.
+	(get_preferences_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add "oid",
+	"config" and "preference" attribs to GET_PREFERENCES.
+
+2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Correct var name in comment.
 
 2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -717,6 +717,22 @@ get_notes_data_reset (get_notes_data_t *data)
 
 typedef struct
 {
+  char *config;
+  char *oid;
+  char *preference;
+} get_preferences_data_t;
+
+static void
+get_preferences_data_reset (get_preferences_data_t *data)
+{
+  free (data->config);
+  free (data->oid);
+  free (data->preference);
+  memset (data, 0, sizeof (get_preferences_data_t));
+}
+
+typedef struct
+{
   char *format;
   char *report_id;
   int first_result;
@@ -807,6 +823,7 @@ typedef union
   delete_note_data_t delete_note;
   delete_schedule_data_t delete_schedule;
   get_notes_data_t get_notes;
+  get_preferences_data_t get_preferences;
   get_report_data_t get_report;
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
@@ -867,6 +884,12 @@ delete_schedule_data_t *delete_schedule_data
  */
 get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
+
+/**
+ * @brief Parser callback data for GET_PREFERENCES.
+ */
+get_preferences_data_t *get_preferences_data
+ = &(command_data.get_preferences);
 
 /**
  * @brief Parser callback data for GET_REPORT.
@@ -1888,7 +1911,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
-          set_client_state (CLIENT_GET_PREFERENCES);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "oid", &attribute))
+              openvas_append_string (&get_preferences_data->oid,
+                                     attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "config", &attribute))
+              openvas_append_string (&get_preferences_data->config,
+                                     attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "preference", &attribute))
+              openvas_append_string (&get_preferences_data->preference,
+                                     attribute);
+            set_client_state (CLIENT_GET_PREFERENCES);
+          }
         else if (strcasecmp ("GET_REPORT", element_name) == 0)
           {
             const gchar* attribute;
@@ -5167,6 +5205,63 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 }
 
 /**
+ * @brief Buffer XML for the NVT preference of a config.
+ *
+ * @param[in]  buffer  Buffer.
+ * @param[in]  prefs   NVT preference iterator.
+ * @param[in]  config  Config.
+ */
+static void
+buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
+                              config_t config)
+{
+  char *real_name, *type, *value, *nvt;
+  char *oid = NULL;
+  real_name
+   = nvt_preference_iterator_real_name (prefs);
+  type = nvt_preference_iterator_type (prefs);
+  value = nvt_preference_iterator_config_value
+           (prefs, config);
+  nvt = nvt_preference_iterator_nvt (prefs);
+  if (nvt) oid = nvt_oid (nvt);
+
+  buffer_xml_append_printf (buffer,
+                            "<preference>"
+                            "<nvt oid=\"%s\"><name>%s</name></nvt>"
+                            "<name>%s</name>"
+                            "<type>%s</type>",
+                            oid ? oid : "",
+                            nvt ? nvt : "",
+                            real_name ? real_name : "",
+                            type ? type : "");
+
+  if (value
+      && type
+      && (strcmp (type, "radio") == 0))
+    {
+      /* Handle the other possible values. */
+      char *pos = strchr (value, ';');
+      if (pos) *pos = '\0';
+      buffer_xml_append_printf (buffer, "<value>%s</value>", value);
+      while (pos)
+        {
+          char *pos2 = strchr (++pos, ';');
+          if (pos2) *pos2 = '\0';
+          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
+          pos = pos2;
+        }
+    }
+  else if (value
+           && type
+           && (strcmp (type, "password") == 0))
+    buffer_xml_append_printf (buffer, "<value></value>");
+  else
+    buffer_xml_append_printf (buffer, "<value>%s</value>", value ? value : "");
+
+  buffer_xml_append_printf (buffer, "</preference>");
+}
+
+/**
  * @brief Buffer XML for some results.
  *
  * @param[in]  results                Result iterator.
@@ -5448,21 +5543,88 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_PREFERENCES:
         {
           iterator_t prefs;
-          SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-          init_nvt_preference_iterator (&prefs, NULL);
-          while (next (&prefs))
+          nvt_t nvt = 0;
+          config_t config = 0;
+          if (get_preferences_data->oid
+              && find_nvt (get_preferences_data->oid, &nvt))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
+          else if (get_preferences_data->oid && nvt == 0)
             {
-              SENDF_TO_CLIENT_OR_FAIL ("<preference>"
-                                       "<name>%s</name>"
-                                       "<value>%s</value>"
-                                       "</preference>",
-                                       nvt_preference_iterator_name (&prefs),
-                                       nvt_preference_iterator_value (&prefs));
+              if (send_find_error_to_client ("get_preferences",
+                                             "NVT",
+                                             get_preferences_data->oid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
             }
-          cleanup_iterator (&prefs);
-          SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
+          else if (get_preferences_data->config
+                   && find_config (get_preferences_data->config, &config))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
+          else if (get_preferences_data->config && config == 0)
+            {
+              if (send_find_error_to_client ("get_preferences",
+                                             "config",
+                                             get_preferences_data->config))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              char *nvt_name = manage_nvt_name (nvt);
+              SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_nvt_preference_iterator (&prefs, nvt_name);
+              free (nvt_name);
+              if (get_preferences_data->preference)
+                while (next (&prefs))
+                  {
+                    char *name = strstr (nvt_preference_iterator_name (&prefs), "]:");
+                    if (name
+                        && (strcmp (name + 2,
+                                    get_preferences_data->preference)
+                            == 0))
+                      {
+                        if (config)
+                          {
+                            GString *buffer = g_string_new ("");
+                            buffer_config_preference_xml (buffer, &prefs, config);
+                            SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                            g_string_free (buffer, TRUE);
+                          }
+                        else
+                          SENDF_TO_CLIENT_OR_FAIL ("<preference>"
+                                                   "<name>%s</name>"
+                                                   "<value>%s</value>"
+                                                   "</preference>",
+                                                   nvt_preference_iterator_name (&prefs),
+                                                   nvt_preference_iterator_value (&prefs));
+                        break;
+                      }
+                  }
+              else
+                while (next (&prefs))
+                  if (config)
+                    {
+                      GString *buffer = g_string_new ("");
+                      buffer_config_preference_xml (buffer, &prefs, config);
+                      SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                      g_string_free (buffer, TRUE);
+                    }
+                  else
+                    SENDF_TO_CLIENT_OR_FAIL ("<preference>"
+                                             "<name>%s</name>"
+                                             "<value>%s</value>"
+                                             "</preference>",
+                                             nvt_preference_iterator_name (&prefs),
+                                             nvt_preference_iterator_value (&prefs));
+              cleanup_iterator (&prefs);
+              SEND_TO_CLIENT_OR_FAIL ("</get_preferences_response>");
+            }
+          get_preferences_data_reset (get_preferences_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

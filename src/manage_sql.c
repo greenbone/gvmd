@@ -9319,6 +9319,19 @@ DEF_ACCESS (config_task_iterator_uuid, 1);
 /* NVT's. */
 
 /**
+ * @brief Get the name of an NVT.
+ *
+ * @param[in]  nvt  NVT.
+ *
+ * @return Freshly allocated name of NVT if possible, else NULL.
+ */
+char *
+manage_nvt_name (nvt_t nvt)
+{
+  return sql_string (0, 0, "SELECT name FROM nvts WHERE ROWID = %llu;", nvt);
+}
+
+/**
  * @brief Guess the OID of an NVT given a name.
  *
  * @param[in]  name  Name of NVT.

@@ -847,6 +847,9 @@ manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*,
 /* NVT's. */
 
 char *
+manage_nvt_name (nvt_t);
+
+char *
 nvt_oid (const char *);
 
 int
