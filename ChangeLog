@@ -1,5 +1,27 @@
 2010-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add CVSS base and risk factor to NVTs.  Hence increase database
+	version to 17.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 17.
+
+	* src/manage_sql.c (create_tables): Add cvss_base and risk_factor to nvts.
+	(make_nvt_from_nvti): Set CVSS base and risk factor.
+	(init_nvt_iterator, select_config_nvts): Add CVSS base and risk factor to
+	selection.
+	(nvt_iterator_cvss_base, nvt_iterator_risk_factor): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (send_nvt): Add CVSS base and risk factor to detailed
+	response.
+
+	* src/otp.c (parse_tags): New function.
+	(parse_scanner_plugin_list_tags): Separate out CVSS base and risk factor
+	from other tags.
+
+2010-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add open ports to report results.
 
 	* src/manage_sql.c (append_task_open_port): Add host arg.  Take port as

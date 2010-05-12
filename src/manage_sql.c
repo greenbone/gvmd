@@ -648,7 +648,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors (id INTEGER PRIMARY KEY, name, exclude INTEGER, type INTEGER, family_or_nvt, family);");
   sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_name ON nvt_selectors (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvt_selectors_by_family_or_nvt ON nvt_selectors (type, family_or_nvt);");
-  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvts (id INTEGER PRIMARY KEY, oid, version, name, summary, description, copyright, cve, bid, xref, tag, sign_key_ids, category INTEGER, family, cvss_base, risk_factor);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
@@ -9447,7 +9447,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_sign_key_ids, *quoted_family;
+  gchar *quoted_cvss_base, *quoted_risk_factor, *quoted_sign_key_ids;
+  gchar *quoted_family;
 
   quoted_version = sql_quote (nvti_version (nvti));
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
@@ -9462,6 +9463,12 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_bid = sql_quote (nvti_bid (nvti) ? nvti_bid (nvti) : "");
   quoted_xref = sql_quote (nvti_xref (nvti) ? nvti_xref (nvti) : "");
   quoted_tag = sql_quote (nvti_tag (nvti) ? nvti_tag (nvti) : "");
+  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
+                                 ? nvti_cvss_base (nvti)
+                                 : "");
+  quoted_risk_factor = sql_quote (nvti_risk_factor (nvti)
+                                   ? nvti_risk_factor (nvti)
+                                   : "");
   quoted_sign_key_ids = sql_quote (nvti_sign_key_ids (nvti)
                                    ? nvti_sign_key_ids (nvti)
                                    : "");
@@ -9474,9 +9481,10 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     }
 
   sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
-       " cve, bid, xref, tag, sign_key_ids, category, family)"
+       " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
+       " risk_factor)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s');",
+       " '%s', %i, '%s', '%s', '%s');",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
@@ -9489,7 +9497,9 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        quoted_tag,
        quoted_sign_key_ids,
        nvti_category (nvti),
-       quoted_family);
+       quoted_family,
+       quoted_cvss_base,
+       quoted_risk_factor);
 
   if (remove)
     sql ("COMMIT;");
@@ -9503,6 +9513,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_bid);
   g_free (quoted_xref);
   g_free (quoted_tag);
+  g_free (quoted_cvss_base);
+  g_free (quoted_risk_factor);
   g_free (quoted_sign_key_ids);
   g_free (quoted_family);
 
@@ -9529,7 +9541,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
       gchar* sql;
       sql = g_strdup_printf ("SELECT oid, version, name, summary, description,"
                              " copyright, cve, bid, xref, tag, sign_key_ids,"
-                             " category, family"
+                             " category, family, cvss_base, risk_factor"
                              " FROM nvts WHERE ROWID = %llu;",
                              nvt);
       init_iterator (iterator, sql);
@@ -9549,7 +9561,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
         init_iterator (iterator,
                        "SELECT oid, version, name, summary, description,"
                        " copyright, cve, bid, xref, tag, sign_key_ids,"
-                       " category, family"
+                       " category, family, cvss_base, risk_factor"
                        " FROM nvts LIMIT 0;");
     }
   else if (family)
@@ -9558,7 +9570,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
       init_iterator (iterator,
                      "SELECT oid, version, name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family"
+                     " category, family, cvss_base, risk_factor"
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " ORDER BY %s %s;",
@@ -9571,7 +9583,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
     init_iterator (iterator,
                    "SELECT oid, version, name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, family"
+                   " category, family, cvss_base, risk_factor"
                    " FROM nvts"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "name",
@@ -9600,6 +9612,8 @@ nvt_iterator_category (iterator_t* iterator)
 }
 
 DEF_ACCESS (nvt_iterator_family, 12);
+DEF_ACCESS (nvt_iterator_cvss_base, 13);
+DEF_ACCESS (nvt_iterator_risk_factor, 14);
 
 /**
  * @brief Get the number of NVTs in one or all families.
@@ -10318,7 +10332,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
             return g_strdup_printf
                     ("SELECT oid, version, name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family"
+                     " category, family, cvss_base, risk_factor"
                      " FROM nvts WHERE family = '%s'"
                      " ORDER BY %s %s;",
                      family,
@@ -10340,7 +10354,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
             return g_strdup_printf
                     ("SELECT oid, version, nvts.name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, nvts.family"
+                     " category, nvts.family, cvss_base, risk_factor"
                      " FROM nvts, nvt_selectors"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -10361,13 +10375,13 @@ select_config_nvts (const config_t config, const char* family, int ascending,
           return g_strdup_printf
                   ("SELECT oid, version, name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, family"
+                   " category, family, cvss_base, risk_factor"
                    " FROM nvts"
                    " WHERE family = '%s'"
                    " EXCEPT"
                    " SELECT oid, version, nvts.name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, nvts.family"
+                   " category, nvts.family, cvss_base, risk_factor"
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -10405,13 +10419,13 @@ select_config_nvts (const config_t config, const char* family, int ascending,
             return g_strdup_printf
                     ("SELECT oid, version, name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, family"
+                     " category, family, cvss_base, risk_factor"
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " EXCEPT"
                      " SELECT oid, version, nvts.name, summary, description,"
                      " copyright, cve, bid, xref, tag, sign_key_ids,"
-                     " category, nvts.family"
+                     " category, nvts.family, cvss_base, risk_factor"
                      " FROM nvt_selectors, nvts"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -10432,7 +10446,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
           return g_strdup_printf
                   (" SELECT oid, version, nvts.name, summary, description,"
                    " copyright, cve, bid, xref, tag, sign_key_ids,"
-                   " category, nvts.family"
+                   " category, nvts.family, cvss_base, risk_factor"
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -10461,7 +10475,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
       sql = g_strdup_printf
              ("SELECT oid, version, nvts.name, summary, description,"
               " copyright, cve, bid, xref, tag, sign_key_ids,"
-              " category, nvts.family"
+              " category, nvts.family, cvss_base, risk_factor"
               " FROM nvt_selectors, nvts"
               " WHERE nvts.family = '%s'"
               " AND nvt_selectors.exclude = 0"

@@ -1030,6 +1030,62 @@ parse_scanner_preference_value (char** messages)
 }
 
 /**
+ * @brief Split up the tags received from the scanner.
+ *
+ * @param[in]  scanner_tags  The tags sent by the scanner.
+ * @param[out] tags          Tags.
+ * @param[out] cvss_base     CVSS base.
+ * @param[out] risk_factor   Risk factor.
+ */
+static void
+parse_tags (char *scanner_tags, gchar **tags, gchar **cvss_base,
+            gchar **risk_factor)
+{
+  gchar **split, **point;
+  GString *tags_buffer;
+  gboolean first;
+
+  tags_buffer = g_string_new ("");
+  split = g_strsplit (scanner_tags, "|", 0);
+  point = split;
+  *cvss_base = NULL;
+  *risk_factor = NULL;
+  first = TRUE;
+
+  while (*point)
+    {
+      if (strncmp (*point, "cvss_base=", strlen ("cvss_base=")) == 0)
+        {
+          if (*cvss_base == NULL)
+            *cvss_base = g_strdup (*point + strlen ("cvss_base="));
+        }
+      else if (strncmp (*point, "risk_factor=", strlen ("risk_factor=")) == 0)
+        {
+          if (*risk_factor == NULL)
+            *risk_factor = g_strdup (*point + strlen ("risk_factor="));
+        }
+      else
+        {
+          if (first)
+            first = FALSE;
+          else
+            g_string_append_c (tags_buffer, '|');
+          g_string_append (tags_buffer, *point);
+        }
+      point++;
+    }
+
+  if (tags_buffer->len == 0)
+    {
+      g_string_free (tags_buffer, TRUE);
+      *tags = g_strdup ("NOTAG");
+    }
+  else
+    *tags = g_string_free (tags_buffer, FALSE);
+  g_strfreev (split);
+}
+
+/**
  * @brief Parse the final field of a plugin in a plugin list.
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -1052,7 +1108,14 @@ parse_scanner_plugin_list_tags (char** messages)
       value = g_strdup (*messages);
       if (current_plugin)
         {
-          nvti_set_tag (current_plugin, value);
+          gchar *tags, *cvss_base, *risk_factor;
+          parse_tags (value, &tags, &cvss_base, &risk_factor);
+          nvti_set_tag (current_plugin, tags);
+          nvti_set_cvss_base (current_plugin, cvss_base);
+          nvti_set_risk_factor (current_plugin, risk_factor);
+          g_free (tags);
+          g_free (cvss_base);
+          g_free (risk_factor);
           make_nvt_from_nvti (current_plugin,
                               scanner_init_state
                               == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE);

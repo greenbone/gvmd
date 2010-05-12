@@ -3945,6 +3945,8 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                              "<summary>%s</summary>"
                              "<family>%s</family>"
                              "<version>%s</version>"
+                             "<cvss_base>%s</cvss_base>"
+                             "<risk_factor>%s</risk_factor>"
                              // FIX spec has multiple <cve_id>s
                              "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
@@ -3967,6 +3969,12 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                              summary_text,
                              family_text,
                              version_text,
+                             nvt_iterator_cvss_base (nvts)
+                              ? nvt_iterator_cvss_base (nvts)
+                              : "",
+                             nvt_iterator_risk_factor (nvts)
+                              ? nvt_iterator_risk_factor (nvts)
+                              : "",
                              nvt_iterator_cve (nvts),
                              nvt_iterator_bid (nvts),
                              nvt_iterator_xref (nvts),

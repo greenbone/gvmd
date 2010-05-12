@@ -910,6 +910,12 @@ nvt_iterator_category (iterator_t*);
 const char*
 nvt_iterator_family (iterator_t*);
 
+const char*
+nvt_iterator_cvss_base (iterator_t*);
+
+const char*
+nvt_iterator_risk_factor (iterator_t*);
+
 int
 family_nvt_count (const char *);
 
