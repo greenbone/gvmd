@@ -1,3 +1,16 @@
+2010-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add open ports to report results.
+
+	* src/manage_sql.c (append_task_open_port): Add host arg.  Take port as
+	string.  Add port to results as log message.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/otp.c (process_otp_scanner_input): Set current_host in
+	SCANNER_PORT_HOST.  Adjust SCANNER_PORT_NUMBER to updated
+	append_task_open_port, freeing current_host.
+
 2010-05-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_config_preference_xml): Neaten formatting.  Free

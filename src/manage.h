@@ -472,7 +472,7 @@ void
 set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 
 void
-append_task_open_port (task_t, unsigned int, char*);
+append_task_open_port (task_t task, const char *, const char*);
 
 int
 make_task_rcfile (task_t);

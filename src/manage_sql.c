@@ -7194,16 +7194,19 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
 }
 
 /**
- * @brief Add an open port to a task.
+ * @brief Add an open port as a result to a task.
  *
- * @param[in]  task       The task.
- * @param[in]  number     The port number.
- * @param[in]  protocol   The port protocol.
+ * @param[in]  task  The task.
+ * @param[in]  host  The host the port is on.
+ * @param[in]  port  The port string.
  */
 void
-append_task_open_port (task_t task, unsigned int number, char* protocol)
+append_task_open_port (task_t task, const char *host, const char *port)
 {
-  // FIX
+  result_t result;
+  result = make_result (task, host, host, port, "0", "Log Message",
+                        "Open port.");
+  if (current_report) report_add_result (current_report, result);
 }
 
 /**

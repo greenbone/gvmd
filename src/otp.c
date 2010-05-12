@@ -2131,34 +2131,18 @@ process_otp_scanner_input ()
                 }
               case SCANNER_PORT_HOST:
                 {
-                  //if (strcasecmp ("chiles", field) == 0) // FIX
+                  current_host = g_strdup (field);
                   set_scanner_state (SCANNER_PORT_NUMBER);
                   break;
                 }
               case SCANNER_PORT_NUMBER:
                 {
                   if (current_scanner_task)
-                    {
-                      int number;
-                      char *name = g_malloc0 (strlen (field));
-                      char *protocol = g_malloc0 (strlen (field));
-
-                      /* RATS: ignore, buffers are allocated to field length. */
-                      if (sscanf (field, "%s (%i/%[^)])",
-                                  name, &number, protocol)
-                          != 3)
-                        {
-                          number = atoi (field);
-                          protocol[0] = '\0';
-                        }
-                      tracef ("   scanner got open port, number: %i, protocol: %s\n",
-                              number, protocol);
-                      append_task_open_port (current_scanner_task,
-                                             number,
-                                             protocol);
-                      g_free (name);
-                      g_free (protocol);
-                    }
+                    append_task_open_port (current_scanner_task,
+                                           current_host,
+                                           field);
+                  g_free (current_host);
+                  current_host = NULL;
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
