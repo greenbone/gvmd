@@ -1,5 +1,18 @@
 2010-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migration from version 16 to 17.
+
+	* src/manage_sql.c (migrate_16_to_17): New function.
+	(database_migrators): Add migrate_16_to_17.
+
+	* src/otp.c (parse_tags): Remove.  To manage.c.
+
+	* src/manage.c (parse_tags): New function.  From otp.c.
+
+	* src/manage.h: Add header accordingly.
+
+2010-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add CVSS base and risk factor to NVTs.  Hence increase database
 	version to 17.
 

@@ -2185,3 +2185,62 @@ manage_schedule (int (*fork_connection) (int *,
 
   return 0;
 }
+
+
+/* Tags. */
+
+/**
+ * @brief Split up the tags received from the scanner.
+ *
+ * @param[in]  scanner_tags  The tags sent by the scanner.
+ * @param[out] tags          Tags.
+ * @param[out] cvss_base     CVSS base.
+ * @param[out] risk_factor   Risk factor.
+ */
+void
+parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
+            gchar **risk_factor)
+{
+  gchar **split, **point;
+  GString *tags_buffer;
+  gboolean first;
+
+  tags_buffer = g_string_new ("");
+  split = g_strsplit (scanner_tags, "|", 0);
+  point = split;
+  *cvss_base = NULL;
+  *risk_factor = NULL;
+  first = TRUE;
+
+  while (*point)
+    {
+      if (strncmp (*point, "cvss_base=", strlen ("cvss_base=")) == 0)
+        {
+          if (*cvss_base == NULL)
+            *cvss_base = g_strdup (*point + strlen ("cvss_base="));
+        }
+      else if (strncmp (*point, "risk_factor=", strlen ("risk_factor=")) == 0)
+        {
+          if (*risk_factor == NULL)
+            *risk_factor = g_strdup (*point + strlen ("risk_factor="));
+        }
+      else
+        {
+          if (first)
+            first = FALSE;
+          else
+            g_string_append_c (tags_buffer, '|');
+          g_string_append (tags_buffer, *point);
+        }
+      point++;
+    }
+
+  if (tags_buffer->len == 0)
+    {
+      g_string_free (tags_buffer, TRUE);
+      *tags = g_strdup ("NOTAG");
+    }
+  else
+    *tags = g_string_free (tags_buffer, FALSE);
+  g_strfreev (split);
+}

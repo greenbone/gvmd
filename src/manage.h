@@ -1273,4 +1273,10 @@ schedule_task_iterator_uuid (iterator_t *);
 const char*
 schedule_task_iterator_name (iterator_t *);
 
+
+/* Tags. */
+
+void
+parse_tags (const char *, gchar **, gchar **, gchar **);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

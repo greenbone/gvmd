@@ -2418,6 +2418,66 @@ migrate_15_to_16 ()
 }
 
 /**
+ * @brief Migrate the database from version 16 to version 17.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_16_to_17 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 16. */
+
+  if (manage_db_version () != 16)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table nvts got columns for CVSS base and risk factor. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE nvts ADD COLUMN cvss_base;");
+  sql ("ALTER TABLE nvts ADD COLUMN risk_factor;");
+
+  /* Move the CVSS and risk values out of any existing tags. */
+
+  init_iterator (&rows, "SELECT ROWID, tag FROM nvts;");
+  while (next (&rows))
+    {
+      gchar *tags, *cvss_base, *risk_factor;
+
+      parse_tags (iterator_string (&rows, 1), &tags, &cvss_base, &risk_factor);
+
+      sql ("UPDATE nvts SET cvss_base = '%s', risk_factor = '%s', tag = '%s'"
+           " WHERE ROWID = %llu;",
+           cvss_base ? cvss_base : "",
+           risk_factor ? risk_factor : "",
+           tags ? tags : "",
+           iterator_int64 (&rows, 0));
+
+      g_free (tags);
+      g_free (cvss_base);
+      g_free (risk_factor);
+    }
+  cleanup_iterator (&rows);
+
+  /* Set the database version to 17. */
+
+  set_db_version (17);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2438,6 +2498,7 @@ static migrator_t database_migrators[]
     {14, migrate_13_to_14},
     {15, migrate_14_to_15},
     {16, migrate_15_to_16},
+    {17, migrate_16_to_17},
     /* End marker. */
     {-1, NULL}};
 
