@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch RESUME_OR_START_TASK to the new callback data mechanism.
+
+	* src/omp.c (resume_or_start_task_data_t): New type.
+	(resume_or_start_task_data_reset): New function.
+	(command_data_t): Add resume_or_start_task.
+	(resume_or_start_task_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Make
+	RESUME_OR_START_TASK cases use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch PAUSE_TASK to the new callback data mechanism.
 
 	* src/omp.c (pause_task_data_t): New type.
