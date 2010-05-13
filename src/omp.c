@@ -885,6 +885,19 @@ resume_stopped_task_data_reset (resume_stopped_task_data_t *data)
   memset (data, 0, sizeof (resume_stopped_task_data_t));
 }
 
+typedef struct
+{
+  char *task_id;
+} start_task_data_t;
+
+static void
+start_task_data_reset (start_task_data_t *data)
+{
+  free (data->task_id);
+
+  memset (data, 0, sizeof (start_task_data_t));
+}
+
 typedef union
 {
   abort_task_data_t abort_task;
@@ -905,6 +918,7 @@ typedef union
   resume_or_start_task_data_t resume_or_start_task;
   resume_paused_task_data_t resume_paused_task;
   resume_stopped_task_data_t resume_stopped_task;
+  start_task_data_t start_task;
 } command_data_t;
 
 /**
@@ -1043,6 +1057,12 @@ resume_paused_task_data_t *resume_paused_task_data
  */
 resume_stopped_task_data_t *resume_stopped_task_data
  = (resume_stopped_task_data_t*) &(command_data.resume_stopped_task);
+
+/**
+ * @brief Parser callback data for START_TASK.
+ */
+start_task_data_t *start_task_data
+ = (start_task_data_t*) &(command_data.start_task);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
@@ -2329,7 +2349,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&start_task_data->task_id, attribute);
             set_client_state (CLIENT_START_TASK);
           }
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
@@ -10050,17 +10070,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_START_TASK:
-        if (current_uuid)
+        if (start_task_data->task_id)
           {
             task_t task;
             assert (current_client_task == (task_t) 0);
-            if (find_task (current_uuid, &task))
+            if (find_task (start_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
             else if (task == 0)
               {
                 if (send_find_error_to_client ("start_task",
                                                "task",
-                                               current_uuid))
+                                               start_task_data->task_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -10144,10 +10164,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       break;
                   }
               }
-            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+        start_task_data_reset (start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
