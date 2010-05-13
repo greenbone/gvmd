@@ -568,7 +568,11 @@ typedef struct
 
 typedef struct
 {
+  char *comment;
+  char *copy;
   import_config_data_t import;
+  char *name;
+  char *rcfile;
 } create_config_data_t;
 
 // array members must be created separately
@@ -578,6 +582,9 @@ create_config_data_reset (create_config_data_t *data)
   int index = 0;
   const preference_t *preference;
   import_config_data_t *import = (import_config_data_t*) &data->import;
+
+  free (data->comment);
+  free (data->copy);
 
   free (import->comment);
   free (import->name);
@@ -600,6 +607,9 @@ create_config_data_reset (create_config_data_t *data)
   free (import->preference_nvt_oid);
   free (import->preference_type);
   free (import->preference_value);
+
+  free (data->name);
+  free (data->rcfile);
 
   memset (data, 0, sizeof (create_config_data_t));
 }
@@ -2007,11 +2017,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
           {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            assert (modify_task_value == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&create_config_data->comment, "");
+            openvas_append_string (&create_config_data->name, "");
             set_client_state (CLIENT_CREATE_CONFIG);
           }
         else if (strcasecmp ("CREATE_ESCALATOR", element_name) == 0)
@@ -8569,7 +8576,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           config_t config = 0;
 
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (import_config_data->import
+                  || (create_config_data->name != NULL));
 
           /* For now the import element, GET_CONFIGS_RESPONSE, overrides
            * any other elements. */
@@ -8621,7 +8629,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          else if (strlen (modify_task_name) == 0)
+          else if (strlen (create_config_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
@@ -8629,31 +8637,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_CONFIG name and rcfile must be at"
                                   " least one character long"));
             }
-          else if ((modify_task_value && current_name)
-                   || (modify_task_value == NULL && current_name == NULL))
+          else if ((create_config_data->rcfile
+                    && create_config_data->copy)
+                   || (create_config_data->rcfile == NULL
+                       && create_config_data->copy == NULL))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
                                   "CREATE_CONFIG requires either a COPY or an"
                                   " RCFILE element"));
             }
-          else if (modify_task_value)
+          else if (create_config_data->rcfile)
             {
               int ret;
               gsize base64_len;
               guchar *base64;
 
-              base64 = g_base64_decode (modify_task_value, &base64_len);
+              base64 = g_base64_decode (create_config_data->rcfile,
+                                        &base64_len);
               /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
-               * when modify_task_value is zero length. */
+               * when create_config_data->rcfile is zero length. */
               if (base64 == NULL)
                 {
                   base64 = (guchar*) g_strdup ("");
                   base64_len = 0;
                 }
 
-              ret = create_config_rc (modify_task_name,
-                                      modify_task_comment,
+              ret = create_config_rc (create_config_data->name,
+                                      create_config_data->comment,
                                       (char*) base64,
                                       NULL);
               g_free (base64);
@@ -8673,20 +8684,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          else if (find_config (current_name, &config))
+          else if (find_config (create_config_data->copy, &config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_config"));
           else if (config == 0)
             {
               if (send_find_error_to_client ("create_config",
                                              "config",
-                                             current_name))
+                                             create_config_data->copy))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else switch (copy_config (modify_task_name,
-                                    modify_task_comment,
+          else switch (copy_config (create_config_data->name,
+                                    create_config_data->comment,
                                     config))
             {
               case 0:
@@ -8703,10 +8714,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
             }
           create_config_data_reset (create_config_data);
-          openvas_free_string_var (&modify_task_comment);
-          openvas_free_string_var (&modify_task_name);
-          openvas_free_string_var (&modify_task_value);
-          openvas_free_string_var (&current_name);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -11966,16 +11973,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_CONFIG_COMMENT:
-        openvas_append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&create_config_data->comment, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_COPY:
-        openvas_append_text (&current_name, text, text_len);
+        openvas_append_text (&create_config_data->copy, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&create_config_data->name, text, text_len);
         break;
       case CLIENT_CREATE_CONFIG_RCFILE:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&create_config_data->rcfile, text, text_len);
         break;
 
       case CLIENT_C_C_GCR_CONFIG_COMMENT:
