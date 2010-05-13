@@ -4869,7 +4869,7 @@ task_current_report (task_t task)
     {
       return (unsigned int) sql_int (0, 0,
                                      "SELECT max(ROWID) FROM reports"
-                                     " WHERE task = %llu AND end_time IS NULL"
+                                     " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"

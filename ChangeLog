@@ -1,5 +1,10 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_current_report): Include reports with end times,
+	as the report gets an end time when the task is stopped.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove code for potential ABORT_TASK extension.
 
 	* src/omp.c (client_state_t): Remove CLIENT_ABORT_TASK_CRITERION.
