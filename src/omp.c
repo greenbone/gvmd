@@ -750,6 +750,19 @@ delete_note_data_reset (delete_note_data_t *data)
 
 typedef struct
 {
+  char *report_id;
+} delete_report_data_t;
+
+static void
+delete_report_data_reset (delete_report_data_t *data)
+{
+  free (data->report_id);
+
+  memset (data, 0, sizeof (delete_report_data_t));
+}
+
+typedef struct
+{
   char *schedule_id;
 } delete_schedule_data_t;
 
@@ -772,6 +785,19 @@ delete_target_data_reset (delete_target_data_t *data)
   free (data->name);
 
   memset (data, 0, sizeof (delete_target_data_t));
+}
+
+typedef struct
+{
+  char *task_id;
+} delete_task_data_t;
+
+static void
+delete_task_data_reset (delete_task_data_t *data)
+{
+  free (data->task_id);
+
+  memset (data, 0, sizeof (delete_task_data_t));
 }
 
 typedef struct
@@ -975,8 +1001,10 @@ typedef union
   delete_escalator_data_t delete_escalator;
   delete_lsc_credential_data_t delete_lsc_credential;
   delete_note_data_t delete_note;
+  delete_report_data_t delete_report;
   delete_schedule_data_t delete_schedule;
   delete_target_data_t delete_target;
+  delete_task_data_t delete_task;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1069,6 +1097,12 @@ delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
 
 /**
+ * @brief Parser callback data for DELETE_REPORT.
+ */
+delete_report_data_t *delete_report_data
+ = (delete_report_data_t*) &(command_data.delete_report);
+
+/**
  * @brief Parser callback data for DELETE_SCHEDULE.
  */
 delete_schedule_data_t *delete_schedule_data
@@ -1079,6 +1113,12 @@ delete_schedule_data_t *delete_schedule_data
  */
 delete_target_data_t *delete_target_data
  = (delete_target_data_t*) &(command_data.delete_target);
+
+/**
+ * @brief Parser callback data for DELETE_TASK.
+ */
+delete_task_data_t *delete_task_data
+ = (delete_task_data_t*) &(command_data.delete_task);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -1943,7 +1983,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&delete_report_data->report_id, attribute);
             set_client_state (CLIENT_DELETE_REPORT);
           }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
@@ -1965,7 +2005,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&delete_task_data->task_id, attribute);
             set_client_state (CLIENT_DELETE_TASK);
           }
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
@@ -6290,18 +6330,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_REPORT:
         assert (strcasecmp ("DELETE_REPORT", element_name) == 0);
-        if (current_uuid)
+        if (delete_report_data->report_id)
           {
             report_t report;
 
-            // FIX check syntax of current_uuid  STATUS_ERROR_SYNTAX
-            if (find_report (current_uuid, &report))
+            // FIX check syntax of delete_report_data->report_id  STATUS_ERROR_SYNTAX
+            if (find_report (delete_report_data->report_id, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report"));
             else if (report == 0)
               {
                 if (send_find_error_to_client ("delete_report",
                                                "report",
-                                               current_uuid))
+                                               delete_report_data->report_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -6327,12 +6367,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_INTERNAL_ERROR ("delete_report"));
                   break;
               }
-            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_report",
                               "DELETE_REPORT requires a report_id attribute"));
+        delete_report_data_reset (delete_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -7755,17 +7795,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TASK:
-        if (current_uuid)
+        if (delete_task_data->task_id)
           {
             task_t task;
             assert (current_client_task == (task_t) 0);
-            if (find_task (current_uuid, &task))
+            if (find_task (delete_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
             else if (task == 0)
               {
                 if (send_find_error_to_client ("delete_task",
                                                "task",
-                                               current_uuid))
+                                               delete_task_data->task_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -7795,12 +7835,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   abort ();
                   break;
               }
-            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("delete_task",
                               "DELETE_TASK requires a task_id attribute"));
+        delete_task_data_reset (delete_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

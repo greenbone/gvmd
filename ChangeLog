@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch DELETE_REPORT and DELETE_TASK to the new callback data mechanism.
+
+	* src/omp.c (delete_report_data_t, delete_task_data_t): New types.
+	(delete_report_data_reset, delete_task_data_reset): New functions.
+	(command_data_t): Add fields for delete commands.
+	(delete_report_data, delete_task_data): New variables.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Make delete
+	command cases use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch DELETE_AGENT, DELETE_CONFIG, DELETE_ESCALATOR,
 	DELETE_LSC_CREDENTIAL and DELETE_TARGET to the new callback data
 	mechanism.
