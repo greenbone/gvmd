@@ -989,6 +989,19 @@ start_task_data_reset (start_task_data_t *data)
   memset (data, 0, sizeof (start_task_data_t));
 }
 
+typedef struct
+{
+  char *name;
+} test_escalator_data_t;
+
+static void
+test_escalator_data_reset (test_escalator_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (test_escalator_data_t));
+}
+
 typedef union
 {
   abort_task_data_t abort_task;
@@ -1017,6 +1030,7 @@ typedef union
   resume_paused_task_data_t resume_paused_task;
   resume_stopped_task_data_t resume_stopped_task;
   start_task_data_t start_task;
+  test_escalator_data_t test_escalator;
 } command_data_t;
 
 /**
@@ -1203,6 +1217,12 @@ resume_stopped_task_data_t *resume_stopped_task_data
  */
 start_task_data_t *start_task_data
  = (start_task_data_t*) &(command_data.start_task);
+
+/**
+ * @brief Parser callback data for TEST_ESCALATOR.
+ */
+test_escalator_data_t *test_escalator_data
+ = (test_escalator_data_t*) &(command_data.test_escalator);
 
 /**
  * @brief Hack for returning forked process status from the callbacks.
@@ -2513,7 +2533,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&test_escalator_data->name, attribute);
             set_client_state (CLIENT_TEST_ESCALATOR);
           }
         else
@@ -9826,12 +9846,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_TEST_ESCALATOR:
-        if (current_name)
+        if (test_escalator_data->name)
           {
             escalator_t escalator;
             task_t task;
 
-            if (find_escalator (current_name, &escalator))
+            if (find_escalator (test_escalator_data->name, &escalator))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
             else if (escalator == 0)
               {
@@ -9865,12 +9885,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    (XML_INTERNAL_ERROR ("test_escalator"));
                   break;
               }
-            openvas_free_string_var (&current_name);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("test_escalator",
                               "TEST_ESCALATOR requires a name element"));
+        test_escalator_data_reset (test_escalator_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_TEST_ESCALATOR_NAME:

@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch TEST_ESCALATOR to the new callback data mechanism.
+
+	* src/omp.c (test_escalator_data_t): New type.
+	(test_escalator_data_reset): New function.
+	(command_data_t): Add test_escalator.
+	(test_escalator_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Make
+	TEST_ESCALATOR cases use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (help_text): Sort lines.
 	(omp_xml_handle_start_element): Sort comparisons in CLIENT_AUTHENTIC.
 
