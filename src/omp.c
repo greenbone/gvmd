@@ -683,20 +683,6 @@ create_schedule_data_reset (create_schedule_data_t *data)
 
 typedef struct
 {
-  char *name;
-} name_command_data_t;
-
-#if 0
-static void
-name_command_data_reset (name_command_data_t *data)
-{
-  free (data->name);
-  memset (data, 0, sizeof (name_command_data_t));
-}
-#endif
-
-typedef struct
-{
   char *note_id;
   char *nvt_oid;
   char *task_id;
@@ -829,7 +815,6 @@ typedef union
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
   modify_task_data_t modify_task;
-  name_command_data_t name_command;
 } command_data_t;
 
 /**
