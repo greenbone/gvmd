@@ -535,6 +535,19 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
 
 typedef struct
 {
+  char *task_id;
+} abort_task_data_t;
+
+static void
+abort_task_data_reset (abort_task_data_t *data)
+{
+  free (data->task_id);
+
+  memset (data, 0, sizeof (abort_task_data_t));
+}
+
+typedef struct
+{
   int import;                        /* The import element was present. */
   char *comment;
   char *name;
@@ -822,6 +835,7 @@ typedef create_note_data_t modify_note_data_t;
 
 typedef union
 {
+  abort_task_data_t abort_task;
   create_config_data_t create_config;
   create_note_data_t create_note;
   create_schedule_data_t create_schedule;
@@ -853,6 +867,12 @@ command_data_init (command_data_t *data)
  * @brief Parser callback data.
  */
 command_data_t command_data;
+
+/**
+ * @brief Parser callback data for ABORT_TASK.
+ */
+abort_task_data_t *abort_task_data
+ = (abort_task_data_t*) &(command_data.abort_task);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG.
@@ -1678,7 +1698,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&abort_task_data->task_id, attribute);
             set_client_state (CLIENT_ABORT_TASK);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
@@ -5436,19 +5456,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK:
-        if (current_uuid)
+        if (abort_task_data->task_id)
           {
             task_t task;
 
             assert (current_client_task == (task_t) 0);
 
-            if (find_task (current_uuid, &task))
+            if (find_task (abort_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
             else if (task == 0)
               {
                 if (send_find_error_to_client ("abort_task",
                                                "task",
-                                               current_uuid))
+                                               abort_task_data->task_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -5470,12 +5490,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   // process_omp_client_input must return -2
                   abort ();
               }
-            openvas_free_string_var (&current_uuid);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("abort_task",
                               "ABORT_TASK requires a task_id attribute"));
+        abort_task_data_reset (abort_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

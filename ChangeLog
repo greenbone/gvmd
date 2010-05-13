@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch ABORT_TASK to the new callback data mechanism.
+
+	* src/omp.c (abort_task_data_t): New type.
+	(abort_task_data_reset): New function.
+	(command_data_t): Add abort_task.
+	(abort_task_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Make
+	ABORT_TASK cases use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_current_report): Include reports with end times,
 	as the report gets an end time when the task is stopped.
 
