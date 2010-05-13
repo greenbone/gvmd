@@ -1,5 +1,10 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (help_text): Sort lines.
+	(omp_xml_handle_start_element): Sort comparisons in CLIENT_AUTHENTIC.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch DELETE_REPORT and DELETE_TASK to the new callback data mechanism.
 
 	* src/omp.c (delete_report_data_t, delete_task_data_t): New types.

@@ -378,8 +378,8 @@ static char* help_text = "\n"
 "    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
 "    RESUME_PAUSED_TASK     Resume a paused task.\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
-"    TEST_ESCALATOR         Run an escalator.\n"
-"    START_TASK             Manually start an existing task.\n";
+"    START_TASK             Manually start an existing task.\n"
+"    TEST_ESCALATOR         Run an escalator.\n";
 
 
 /* Status codes. */
@@ -1948,8 +1948,86 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">");
             set_client_state (CLIENT_AUTHENTIC_COMMANDS);
           }
+        else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
+          {
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_file, "");
+            openvas_append_string (&modify_task_parameter, "");
+            openvas_append_string (&modify_task_value, "");
+            set_client_state (CLIENT_CREATE_AGENT);
+          }
+        else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
+          {
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            assert (modify_task_value == NULL);
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            set_client_state (CLIENT_CREATE_CONFIG);
+          }
+        else if (strcasecmp ("CREATE_ESCALATOR", element_name) == 0)
+          {
+            assert (current_array_1 == NULL);
+            assert (current_array_2 == NULL);
+            assert (current_array_3 == NULL);
+            assert (current_format == NULL);
+            assert (current_uuid == NULL);
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            assert (modify_task_parameter == NULL);
+            assert (modify_task_rcfile == NULL);
+            assert (modify_task_value == NULL);
+
+            current_array_1 = make_array ();
+            current_array_2 = make_array ();
+            current_array_3 = make_array ();
+
+            openvas_append_string (&current_format, "");
+            openvas_append_string (&current_uuid, "");
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_parameter, "");
+            openvas_append_string (&modify_task_rcfile, "");
+            openvas_append_string (&modify_task_value, "");
+
+            set_client_state (CLIENT_CREATE_ESCALATOR);
+          }
+        else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
+          {
+            assert (modify_task_comment == NULL);
+            assert (modify_task_name == NULL);
+            openvas_append_string (&modify_task_comment, "");
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&current_name, "");
+            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
+          }
+        else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE);
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
+        else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
+          {
+            openvas_append_string (&create_target_data->comment, "");
+            openvas_append_string (&create_target_data->name, "");
+            openvas_append_string (&create_target_data->hosts, "");
+            set_client_state (CLIENT_CREATE_TARGET);
+          }
+        else if (strcasecmp ("CREATE_TASK", element_name) == 0)
+          {
+            assert (current_client_task == (task_t) 0);
+            assert (modify_task_name == NULL);
+            assert (modify_task_parameter == NULL);
+            assert (current_name == NULL);
+            assert (current_uuid == NULL);
+            current_client_task = make_task (NULL, 0, NULL);
+            if (current_client_task == (task_t) 0) abort (); // FIX
+            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&modify_task_parameter, "");
+            set_client_state (CLIENT_CREATE_TASK);
+          }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
             openvas_append_string (&delete_agent_data->name, "");
@@ -2307,6 +2385,27 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_SCHEDULES);
           }
+        else if (strcasecmp ("GET_STATUS", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "task_id", &attribute))
+              openvas_append_string (&current_uuid, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "rcfile", &attribute))
+              current_int_1 = atoi (attribute);
+            else
+              current_int_1 = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_field", &attribute))
+              openvas_append_string (&current_format, attribute);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              current_int_2 = strcmp (attribute, "descending");
+            else
+              current_int_2 = 1;
+            set_client_state (CLIENT_GET_STATUS);
+          }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -2336,10 +2435,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               current_int_2 = 1;
             set_client_state (CLIENT_GET_TARGETS);
           }
+        else if (strcasecmp ("GET_VERSION", element_name) == 0)
+          set_client_state (CLIENT_VERSION);
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           set_client_state (CLIENT_MODIFY_CONFIG);
+        else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "note_id", &attribute))
+              openvas_append_string (&modify_note_data->note_id, attribute);
+            set_client_state (CLIENT_MODIFY_NOTE);
+          }
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
             const gchar* attribute;
@@ -2355,94 +2464,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                 "task_id", &attribute))
               openvas_append_string (&current_uuid, attribute);
             set_client_state (CLIENT_MODIFY_TASK);
-          }
-        else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
-          {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_file, "");
-            openvas_append_string (&modify_task_parameter, "");
-            openvas_append_string (&modify_task_value, "");
-            set_client_state (CLIENT_CREATE_AGENT);
-          }
-        else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
-          {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            assert (modify_task_value == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            set_client_state (CLIENT_CREATE_CONFIG);
-          }
-        else if (strcasecmp ("CREATE_ESCALATOR", element_name) == 0)
-          {
-            assert (current_array_1 == NULL);
-            assert (current_array_2 == NULL);
-            assert (current_array_3 == NULL);
-            assert (current_format == NULL);
-            assert (current_uuid == NULL);
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            assert (modify_task_parameter == NULL);
-            assert (modify_task_rcfile == NULL);
-            assert (modify_task_value == NULL);
-
-            current_array_1 = make_array ();
-            current_array_2 = make_array ();
-            current_array_3 = make_array ();
-
-            openvas_append_string (&current_format, "");
-            openvas_append_string (&current_uuid, "");
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_parameter, "");
-            openvas_append_string (&modify_task_rcfile, "");
-            openvas_append_string (&modify_task_value, "");
-
-            set_client_state (CLIENT_CREATE_ESCALATOR);
-          }
-        else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
-          {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&current_name, "");
-            set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
-          }
-        else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_NOTE);
-        else if (strcasecmp ("CREATE_TASK", element_name) == 0)
-          {
-            assert (current_client_task == (task_t) 0);
-            assert (modify_task_name == NULL);
-            assert (modify_task_parameter == NULL);
-            assert (current_name == NULL);
-            assert (current_uuid == NULL);
-            current_client_task = make_task (NULL, 0, NULL);
-            if (current_client_task == (task_t) 0) abort (); // FIX
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_parameter, "");
-            set_client_state (CLIENT_CREATE_TASK);
-          }
-        else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
-          {
-            openvas_append_string (&create_target_data->comment, "");
-            openvas_append_string (&create_target_data->name, "");
-            openvas_append_string (&create_target_data->hosts, "");
-            set_client_state (CLIENT_CREATE_TARGET);
-          }
-        else if (strcasecmp ("GET_VERSION", element_name) == 0)
-          set_client_state (CLIENT_VERSION);
-        else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
-          {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&current_name, attribute);
-            set_client_state (CLIENT_TEST_ESCALATOR);
           }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
@@ -2487,34 +2508,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               openvas_append_string (&start_task_data->task_id, attribute);
             set_client_state (CLIENT_START_TASK);
           }
-        else if (strcasecmp ("GET_STATUS", element_name) == 0)
+        else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "rcfile", &attribute))
-              current_int_1 = atoi (attribute);
-            else
-              current_int_1 = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&current_format, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
-            else
-              current_int_2 = 1;
-            set_client_state (CLIENT_GET_STATUS);
-          }
-        else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
-          {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "note_id", &attribute))
-              openvas_append_string (&modify_note_data->note_id, attribute);
-            set_client_state (CLIENT_MODIFY_NOTE);
+                                "name", &attribute))
+              openvas_append_string (&current_name, attribute);
+            set_client_state (CLIENT_TEST_ESCALATOR);
           }
         else
           {
