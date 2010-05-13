@@ -606,6 +606,25 @@ create_config_data_reset (create_config_data_t *data)
 
 typedef struct
 {
+  char *comment;
+  char *login;
+  char *name;
+  char *password;
+} create_lsc_credential_data_t;
+
+static void
+create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
+{
+  free (data->comment);
+  free (data->login);
+  free (data->name);
+  free (data->password);
+
+  memset (data, 0, sizeof (create_lsc_credential_data_t));
+}
+
+typedef struct
+{
   char *hosts;
   char *note_id;
   char *nvt;
@@ -1006,6 +1025,7 @@ typedef union
 {
   abort_task_data_t abort_task;
   create_config_data_t create_config;
+  create_lsc_credential_data_t create_lsc_credential;
   create_note_data_t create_note;
   create_schedule_data_t create_schedule;
   create_target_data_t create_target;
@@ -1061,6 +1081,12 @@ abort_task_data_t *abort_task_data
  */
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
+
+/**
+ * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
+ */
+create_lsc_credential_data_t *create_lsc_credential_data
+ = (create_lsc_credential_data_t*) &(command_data.create_lsc_credential);
 
 /**
  * @brief Parser callback data for CREATE_NOTE.
@@ -2017,11 +2043,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
           {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&current_name, "");
+            openvas_append_string (&create_lsc_credential_data->comment, "");
+            openvas_append_string (&create_lsc_credential_data->login, "");
+            openvas_append_string (&create_lsc_credential_data->name, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
@@ -3814,8 +3838,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           {
-            assert (modify_task_parameter == NULL);
-            openvas_append_string (&modify_task_parameter, "");
+            openvas_append_string (&create_lsc_credential_data->password, "");
             set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD);
           }
         else
@@ -9019,27 +9042,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
           assert (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0);
-          assert (modify_task_name != NULL);
-          assert (current_name != NULL);
+          assert (create_lsc_credential_data->name != NULL);
+          assert (create_lsc_credential_data->login != NULL);
 
-          if (strlen (modify_task_name) == 0)
+          if (strlen (create_lsc_credential_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
                                   "CREATE_LSC_CREDENTIAL name must be at"
                                   " least one character long"));
             }
-          else if (strlen (current_name) == 0)
+          else if (strlen (create_lsc_credential_data->login) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
                                   "CREATE_LSC_CREDENTIAL login must be at"
                                   " least one character long"));
             }
-          else switch (create_lsc_credential (modify_task_name,
-                                              modify_task_comment,
-                                              current_name,
-                                              modify_task_parameter))
+          else switch (create_lsc_credential
+                        (create_lsc_credential_data->name,
+                         create_lsc_credential_data->comment,
+                         create_lsc_credential_data->login,
+                         create_lsc_credential_data->password))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
@@ -9062,10 +9086,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_INTERNAL_ERROR ("create_lsc_credential"));
                 break;
             }
-          openvas_free_string_var (&modify_task_comment);
-          openvas_free_string_var (&current_name);
-          openvas_free_string_var (&modify_task_name);
-          openvas_free_string_var (&modify_task_parameter);
+          create_lsc_credential_data_reset (create_lsc_credential_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -12014,16 +12035,24 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_LSC_CREDENTIAL_COMMENT:
-        openvas_append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&create_lsc_credential_data->comment,
+                             text,
+                             text_len);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_LOGIN:
-        openvas_append_text (&current_name, text, text_len);
+        openvas_append_text (&create_lsc_credential_data->login,
+                             text,
+                             text_len);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&create_lsc_credential_data->name,
+                             text,
+                             text_len);
         break;
       case CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD:
-        openvas_append_text (&modify_task_parameter, text, text_len);
+        openvas_append_text (&create_lsc_credential_data->password,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_CREATE_ESCALATOR_COMMENT:
