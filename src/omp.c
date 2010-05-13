@@ -685,6 +685,58 @@ create_target_data_reset (create_target_data_t *data)
 
 typedef struct
 {
+  char *name;
+} delete_agent_data_t;
+
+static void
+delete_agent_data_reset (delete_agent_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (delete_agent_data_t));
+}
+
+typedef struct
+{
+  char *name;
+} delete_config_data_t;
+
+static void
+delete_config_data_reset (delete_config_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (delete_config_data_t));
+}
+
+typedef struct
+{
+  char *name;
+} delete_escalator_data_t;
+
+static void
+delete_escalator_data_reset (delete_escalator_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (delete_escalator_data_t));
+}
+
+typedef struct
+{
+  char *name;
+} delete_lsc_credential_data_t;
+
+static void
+delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (delete_lsc_credential_data_t));
+}
+
+typedef struct
+{
   char *note_id;
 } delete_note_data_t;
 
@@ -707,6 +759,19 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
   free (data->schedule_id);
 
   memset (data, 0, sizeof (delete_schedule_data_t));
+}
+
+typedef struct
+{
+  char *name;
+} delete_target_data_t;
+
+static void
+delete_target_data_reset (delete_target_data_t *data)
+{
+  free (data->name);
+
+  memset (data, 0, sizeof (delete_target_data_t));
 }
 
 typedef struct
@@ -905,8 +970,13 @@ typedef union
   create_note_data_t create_note;
   create_schedule_data_t create_schedule;
   create_target_data_t create_target;
+  delete_agent_data_t delete_agent;
+  delete_config_data_t delete_config;
+  delete_escalator_data_t delete_escalator;
+  delete_lsc_credential_data_t delete_lsc_credential;
   delete_note_data_t delete_note;
   delete_schedule_data_t delete_schedule;
+  delete_target_data_t delete_target;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -969,6 +1039,30 @@ create_target_data_t *create_target_data
  = (create_target_data_t*) &(command_data.create_target);
 
 /**
+ * @brief Parser callback data for DELETE_AGENT.
+ */
+delete_agent_data_t *delete_agent_data
+ = (delete_agent_data_t*) &(command_data.delete_agent);
+
+/**
+ * @brief Parser callback data for DELETE_CONFIG.
+ */
+delete_config_data_t *delete_config_data
+ = (delete_config_data_t*) &(command_data.delete_config);
+
+/**
+ * @brief Parser callback data for DELETE_ESCALATOR.
+ */
+delete_escalator_data_t *delete_escalator_data
+ = (delete_escalator_data_t*) &(command_data.delete_escalator);
+
+/**
+ * @brief Parser callback data for DELETE_LSC_CREDENTIAL.
+ */
+delete_lsc_credential_data_t *delete_lsc_credential_data
+ = (delete_lsc_credential_data_t*) &(command_data.delete_lsc_credential);
+
+/**
  * @brief Parser callback data for DELETE_NOTE.
  */
 delete_note_data_t *delete_note_data
@@ -979,6 +1073,12 @@ delete_note_data_t *delete_note_data
  */
 delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
+
+/**
+ * @brief Parser callback data for DELETE_TARGET.
+ */
+delete_target_data_t *delete_target_data
+ = (delete_target_data_t*) &(command_data.delete_target);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -1812,26 +1912,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&delete_agent_data->name, "");
             set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&delete_config_data->name, "");
             set_client_state (CLIENT_DELETE_CONFIG);
           }
         else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
           {
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&delete_escalator_data->name, "");
             set_client_state (CLIENT_DELETE_ESCALATOR);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&delete_lsc_credential_data->name, "");
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
@@ -1861,8 +1957,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_name, "");
+            openvas_append_string (&delete_target_data->name, "");
             set_client_state (CLIENT_DELETE_TARGET);
           }
         else if (strcasecmp ("DELETE_TASK", element_name) == 0)
@@ -7432,23 +7527,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           agent_t agent;
 
           assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (delete_agent_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
-            {
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("delete_agent",
-                                  "DELETE_AGENT name must be at least"
-                                  " one character long"));
-            }
-          else if (find_agent (modify_task_name, &agent))
+          if (strlen (delete_agent_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("delete_agent",
+                                "DELETE_AGENT name must be at least"
+                                " one character long"));
+          else if (find_agent (delete_agent_data->name, &agent))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
           else if (agent == 0)
             {
               if (send_find_error_to_client ("delete_agent",
                                              "agent",
-                                             modify_task_name))
+                                             delete_agent_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -7457,20 +7549,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_agent (agent))
             {
               case 0:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_agent",
                                     "Agent is in use"));
                 break;
               default:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("delete_agent"));
             }
+          delete_agent_data_reset (delete_agent_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -7484,23 +7574,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           config_t config = 0;
 
           assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (delete_config_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
-            {
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("delete_config",
-                                  "DELETE_CONFIG name must be at least one"
-                                  " character long"));
-            }
-          else if (find_config (modify_task_name, &config))
+          if (strlen (delete_config_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("delete_config",
+                                "DELETE_CONFIG name must be at least one"
+                                " character long"));
+          else if (find_config (delete_config_data->name, &config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
           else if (config == 0)
             {
               if (send_find_error_to_client ("delete_config",
                                              "config",
-                                             modify_task_name))
+                                             delete_config_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -7509,18 +7596,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_config (config))
             {
               case 0:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                           "Config is in use"));
                 break;
               default:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
             }
+          delete_config_data_reset (delete_config_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -7534,24 +7619,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           escalator_t escalator;
 
           assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (delete_escalator_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
-            {
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("delete_escalator",
-                                  "DELETE_ESCALATOR name must be at least one"
-                                  " character long"));
-            }
-          else if (find_escalator (modify_task_name, &escalator))
+          if (strlen (delete_escalator_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("delete_escalator",
+                                "DELETE_ESCALATOR name must be at least one"
+                                " character long"));
+          else if (find_escalator (delete_escalator_data->name, &escalator))
             SEND_TO_CLIENT_OR_FAIL
              (XML_INTERNAL_ERROR ("delete_escalator"));
           else if (escalator == 0)
             {
               if (send_find_error_to_client ("delete_escalator",
                                              "escalator",
-                                             modify_task_name))
+                                             delete_escalator_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -7560,18 +7642,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_escalator (escalator))
             {
               case 0:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_escalator",
                                                           "Escalator is in use"));
                 break;
               default:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_escalator"));
             }
+          delete_escalator_data_reset (delete_escalator_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -7585,24 +7665,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           lsc_credential_t lsc_credential = 0;
 
           assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (delete_lsc_credential_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
-            {
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                                  "DELETE_LSC_CREDENTIAL name must be at least"
-                                  " one character long"));
-            }
-          else if (find_lsc_credential (modify_task_name, &lsc_credential))
+          if (strlen (delete_lsc_credential_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                                "DELETE_LSC_CREDENTIAL name must be at least"
+                                " one character long"));
+          else if (find_lsc_credential (delete_lsc_credential_data->name,
+                                        &lsc_credential))
             SEND_TO_CLIENT_OR_FAIL
              (XML_INTERNAL_ERROR ("delete_lsc_credential"));
           else if (lsc_credential == 0)
             {
               if (send_find_error_to_client ("delete_lsc_credential",
                                              "lsc_credential",
-                                             modify_task_name))
+                                             delete_lsc_credential_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -7611,20 +7689,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_lsc_credential (lsc_credential))
             {
               case 0:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_lsc_credential",
                                     "LSC credential is in use"));
                 break;
               default:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("delete_lsc_credential"));
             }
+          delete_lsc_credential_data_reset (delete_lsc_credential_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -7638,23 +7714,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t target = 0;
 
           assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (delete_target_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
-            {
-              openvas_free_string_var (&modify_task_name);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("delete_target",
-                                  "DELETE_TARGET name must be at least one"
-                                  " character long"));
-            }
-          else if (find_target (modify_task_name, &target))
+          if (strlen (delete_target_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("delete_target",
+                                "DELETE_TARGET name must be at least one"
+                                " character long"));
+          else if (find_target (delete_target_data->name, &target))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
           else if (target == 0)
             {
               if (send_find_error_to_client ("delete_target",
                                              "target",
-                                             modify_task_name))
+                                             delete_target_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -7663,18 +7736,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (delete_target (target))
             {
               case 0:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
                 break;
               case 1:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
                                                           "Target is in use"));
                 break;
               default:
-                openvas_free_string_var (&modify_task_name);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
             }
+          delete_target_data_reset (delete_target_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -12043,10 +12114,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_AGENT_NAME:
+        openvas_append_text (&delete_agent_data->name, text, text_len);
+        break;
+
       case CLIENT_DELETE_CONFIG_NAME:
+        openvas_append_text (&delete_config_data->name, text, text_len);
+        break;
+
       case CLIENT_DELETE_ESCALATOR_NAME:
+        openvas_append_text (&delete_escalator_data->name, text, text_len);
+        break;
+
       case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
+        openvas_append_text (&delete_lsc_credential_data->name, text, text_len);
+        break;
+
       case CLIENT_DELETE_TARGET_NAME:
+        openvas_append_text (&delete_target_data->name, text, text_len);
+        break;
+
       case CLIENT_TEST_ESCALATOR_NAME:
         openvas_append_text (&modify_task_name, text, text_len);
         break;
