@@ -653,6 +653,25 @@ create_schedule_data_reset (create_schedule_data_t *data)
 
 typedef struct
 {
+  char *comment;
+  char *hosts;
+  char *lsc_credential;
+  char *name;
+} create_target_data_t;
+
+static void
+create_target_data_reset (create_target_data_t *data)
+{
+  free (data->comment);
+  free (data->hosts);
+  free (data->lsc_credential);
+  free (data->name);
+
+  memset (data, 0, sizeof (create_target_data_t));
+}
+
+typedef struct
+{
   char *note_id;
 } delete_note_data_t;
 
@@ -806,6 +825,7 @@ typedef union
   create_config_data_t create_config;
   create_note_data_t create_note;
   create_schedule_data_t create_schedule;
+  create_target_data_t create_target;
   delete_note_data_t delete_note;
   delete_schedule_data_t delete_schedule;
   get_notes_data_t get_notes;
@@ -851,6 +871,12 @@ create_note_data_t *create_note_data
  */
 create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
+
+/**
+ * @brief Parser callback data for CREATE_TARGET.
+ */
+create_target_data_t *create_target_data
+ = (create_target_data_t*) &(command_data.create_target);
 
 /**
  * @brief Parser callback data for DELETE_NOTE.
@@ -2152,12 +2178,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            assert (modify_task_value == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_value, "");
+            openvas_append_string (&create_target_data->comment, "");
+            openvas_append_string (&create_target_data->name, "");
+            openvas_append_string (&create_target_data->hosts, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
@@ -9064,58 +9087,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           lsc_credential_t lsc_credential = 0;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
-          assert (modify_task_name != NULL);
-          assert (modify_task_value != NULL);
+          assert (&create_target_data->name != NULL);
+          assert (&create_target_data->hosts != NULL);
 
-          if (strlen (modify_task_name) == 0
-              || strlen (modify_task_value) == 0)
-            {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
-              openvas_free_string_var (&modify_task_value);
-              openvas_free_string_var (&modify_task_parameter);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_target",
-                                  // FIX could pass an empty hosts element?
-                                  "CREATE_TARGET name and hosts must both be at"
-                                  " least one character long"));
-            }
-          else if (modify_task_parameter
-                   && find_lsc_credential (modify_task_parameter, &lsc_credential))
+          if (strlen (create_target_data->name) == 0
+              || strlen (create_target_data->hosts) == 0)
             SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("create_target"));
-          else if (modify_task_parameter && lsc_credential == 0)
+             (XML_ERROR_SYNTAX ("create_target",
+                                // FIX could pass an empty hosts element?
+                                "CREATE_TARGET name and hosts must both be at"
+                                " least one character long"));
+          else if (create_target_data->lsc_credential
+                   && find_lsc_credential (create_target_data->lsc_credential,
+                                           &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->lsc_credential && lsc_credential == 0)
             {
-              if (send_find_error_to_client ("create_target",
-                                             "lsc_credential",
-                                             modify_task_parameter))
+              if (send_find_error_to_client
+                   ("create_target",
+                    "lsc_credential",
+                    create_target_data->lsc_credential))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else if (create_target (modify_task_name,
-                                  modify_task_value,
-                                  modify_task_comment,
+          else if (create_target (create_target_data->name,
+                                  create_target_data->hosts,
+                                  create_target_data->comment,
                                   lsc_credential,
                                   NULL))
-            {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
-              openvas_free_string_var (&modify_task_value);
-              openvas_free_string_var (&modify_task_parameter);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_target",
-                                  "Target exists already"));
-            }
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
+                                                      "Target exists already"));
           else
-            {
-              openvas_free_string_var (&modify_task_comment);
-              openvas_free_string_var (&modify_task_name);
-              openvas_free_string_var (&modify_task_value);
-              openvas_free_string_var (&modify_task_parameter);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
-            }
+            SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
+          create_target_data_reset (create_target_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -11896,16 +11902,18 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:
-        openvas_append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&create_target_data->comment, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_HOSTS:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&create_target_data->hosts, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
-        openvas_append_text (&modify_task_parameter, text, text_len);
+        openvas_append_text (&create_target_data->lsc_credential,
+                             text,
+                             text_len);
         break;
       case CLIENT_CREATE_TARGET_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&create_target_data->name, text, text_len);
         break;
 
       case CLIENT_CREATE_TASK_COMMENT:

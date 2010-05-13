@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch CREATE_TARGET to the new callback data mechanism.
+
+	* src/omp.c (create_target_data_t): New type.
+	(create_target_data_reset): New function.
+	(command_data_t): Add create_target.
+	(create_target_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Switch CREATE_TARGET cases to use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c: Sort command data types and functions alphabetically.
 
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
