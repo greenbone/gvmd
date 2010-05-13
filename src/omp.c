@@ -618,36 +618,6 @@ create_note_data_reset (create_note_data_t *data)
   memset (data, 0, sizeof (create_note_data_t));
 }
 
-typedef create_note_data_t modify_note_data_t;
-
-#define modify_note_data_reset create_note_data_reset
-
-typedef struct
-{
-  char *note_id;
-} delete_note_data_t;
-
-static void
-delete_note_data_reset (delete_note_data_t *data)
-{
-  free (data->note_id);
-
-  memset (data, 0, sizeof (delete_note_data_t));
-}
-
-typedef struct
-{
-  char *schedule_id;
-} delete_schedule_data_t;
-
-static void
-delete_schedule_data_reset (delete_schedule_data_t *data)
-{
-  free (data->schedule_id);
-
-  memset (data, 0, sizeof (delete_schedule_data_t));
-}
-
 typedef struct
 {
   char *name;
@@ -679,6 +649,32 @@ create_schedule_data_reset (create_schedule_data_t *data)
   free (data->duration_unit);
 
   memset (data, 0, sizeof (create_schedule_data_t));
+}
+
+typedef struct
+{
+  char *note_id;
+} delete_note_data_t;
+
+static void
+delete_note_data_reset (delete_note_data_t *data)
+{
+  free (data->note_id);
+
+  memset (data, 0, sizeof (delete_note_data_t));
+}
+
+typedef struct
+{
+  char *schedule_id;
+} delete_schedule_data_t;
+
+static void
+delete_schedule_data_reset (delete_schedule_data_t *data)
+{
+  free (data->schedule_id);
+
+  memset (data, 0, sizeof (delete_schedule_data_t));
 }
 
 typedef struct
@@ -800,6 +796,10 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_id);
   memset (data, 0, sizeof (modify_task_data_t));
 }
+
+typedef create_note_data_t modify_note_data_t;
+
+#define modify_note_data_reset create_note_data_reset
 
 typedef union
 {

@@ -1,5 +1,9 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c: Sort command data types and functions alphabetically.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove experimental command data type.
 
 	* src/omp.c (name_command_data_t, name_command_data_reset): Remove.
