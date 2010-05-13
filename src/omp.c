@@ -1086,10 +1086,6 @@ typedef enum
   CLIENT_AUTHENTIC,
 
   CLIENT_ABORT_TASK,
-  // FIX
-#if 0
-  CLIENT_ABORT_TASK_CRITERION,
-#endif
   CLIENT_AUTHENTICATE,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
@@ -3131,26 +3127,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_ABORT_TASK:
-#if 0
-        if (strcasecmp ("CRITERION", element_name) == 0)
-          set_client_state (CLIENT_ABORT_TASK_CRITERION);
-#else
-        if (0)
-          ;
-#endif
-        else
+        if (send_element_error_to_client ("abort_task", element_name))
           {
-            if (send_element_error_to_client ("abort_task", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_CREATE_AGENT:
@@ -5492,17 +5478,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "ABORT_TASK requires a task_id attribute"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
-#if 0
-      case CLIENT_ABORT_TASK_CRITERION:
-        assert (strcasecmp ("CRITERION", element_name) == 0);
-        set_client_state (CLIENT_ABORT_TASK);
-        break;
-      case CLIENT_ABORT_TASK_CRITERION_VALUE:
-        assert (strcasecmp ("TASK_ID", element_name) == 0);
-        set_client_state (CLIENT_ABORT_TASK);
-        break;
-#endif
 
       case CLIENT_AUTHENTICATE:
         switch (authenticate (&current_credentials))

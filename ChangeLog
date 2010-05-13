@@ -1,5 +1,13 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove code for potential ABORT_TASK extension.
+
+	* src/omp.c (client_state_t): Remove CLIENT_ABORT_TASK_CRITERION.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Remove
+	ABORT_TASK CRITERION handling.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch CREATE_TARGET to the new callback data mechanism.
 
 	* src/omp.c (create_target_data_t): New type.
