@@ -1,5 +1,16 @@
 2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch CREATE_AGENT to the new callback data mechanism.
+
+	* src/omp.c (create_agent_data_t): New type.
+	(create_agent_data_reset): New function.
+	(command_data_t): Add create_agent.
+	(create_agent_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Make CREATE_AGENT cases use command_data.
+
+2010-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch CREATE_CONFIG to the new callback data mechanism.
 
 	* src/omp.c (create_config_data_t): Add remaining elements.

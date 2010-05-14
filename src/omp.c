@@ -548,6 +548,27 @@ abort_task_data_reset (abort_task_data_t *data)
 
 typedef struct
 {
+  char *comment;
+  char *howto_install;
+  char *howto_use;
+  char *installer;
+  char *name;
+} create_agent_data_t;
+
+static void
+create_agent_data_reset (create_agent_data_t *data)
+{
+  free (data->comment);
+  free (data->howto_install);
+  free (data->howto_use);
+  free (data->installer);
+  free (data->name);
+
+  memset (data, 0, sizeof (create_agent_data_t));
+}
+
+typedef struct
+{
   int import;                        /* The import element was present. */
   char *comment;
   char *name;
@@ -1034,6 +1055,7 @@ test_escalator_data_reset (test_escalator_data_t *data)
 typedef union
 {
   abort_task_data_t abort_task;
+  create_agent_data_t create_agent;
   create_config_data_t create_config;
   create_lsc_credential_data_t create_lsc_credential;
   create_note_data_t create_note;
@@ -1085,6 +1107,12 @@ command_data_t command_data;
  */
 abort_task_data_t *abort_task_data
  = (abort_task_data_t*) &(command_data.abort_task);
+
+/**
+ * @brief Parser callback data for CREATE_AGENT.
+ */
+create_agent_data_t *create_agent_data
+ = (create_agent_data_t*) &(command_data.create_agent);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG.
@@ -2006,13 +2034,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_AGENT", element_name) == 0)
           {
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_file, "");
-            openvas_append_string (&modify_task_parameter, "");
-            openvas_append_string (&modify_task_value, "");
+            openvas_append_string (&create_agent_data->comment, "");
+            openvas_append_string (&create_agent_data->name, "");
+            openvas_append_string (&create_agent_data->installer, "");
+            openvas_append_string (&create_agent_data->howto_install, "");
+            openvas_append_string (&create_agent_data->howto_use, "");
             set_client_state (CLIENT_CREATE_AGENT);
           }
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -8499,27 +8525,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_AGENT:
         {
           assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
-          assert (modify_task_name != NULL);
+          assert (create_agent_data->name != NULL);
 
-          if (strlen (modify_task_name) == 0)
+          if (strlen (create_agent_data->name) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_agent",
                                   "CREATE_AGENT name must be at"
                                   " least one character long"));
             }
-          else if (strlen (modify_task_file) == 0)
+          else if (strlen (create_agent_data->installer) == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_agent",
                                   "CREATE_AGENT installer must be at"
                                   " least one byte long"));
             }
-          else switch (create_agent (modify_task_name,
-                                     modify_task_comment,
-                                     modify_task_file,      /* Installer. */
-                                     modify_task_parameter, /* HOWTO Install. */
-                                     modify_task_value))    /* HOWTO Use. */
+          else switch (create_agent (create_agent_data->name,
+                                     create_agent_data->comment,
+                                     create_agent_data->installer,
+                                     create_agent_data->howto_install,
+                                     create_agent_data->howto_use))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_agent"));
@@ -8542,11 +8568,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_INTERNAL_ERROR ("create_agent"));
                 break;
             }
-          openvas_free_string_var (&modify_task_comment);
-          openvas_free_string_var (&modify_task_name);
-          openvas_free_string_var (&modify_task_file);
-          openvas_free_string_var (&modify_task_parameter);
-          openvas_free_string_var (&modify_task_value);
+          create_agent_data_reset (create_agent_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -11957,19 +11979,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_AGENT_COMMENT:
-        openvas_append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&create_agent_data->comment, text, text_len);
         break;
       case CLIENT_CREATE_AGENT_HOWTO_INSTALL:
-        openvas_append_text (&modify_task_parameter, text, text_len);
+        openvas_append_text (&create_agent_data->howto_install, text, text_len);
         break;
       case CLIENT_CREATE_AGENT_HOWTO_USE:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&create_agent_data->howto_use, text, text_len);
         break;
       case CLIENT_CREATE_AGENT_INSTALLER:
-        openvas_append_text (&modify_task_file, text, text_len);
+        openvas_append_text (&create_agent_data->installer, text, text_len);
         break;
       case CLIENT_CREATE_AGENT_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&create_agent_data->name, text, text_len);
         break;
 
       case CLIENT_CREATE_CONFIG_COMMENT:
