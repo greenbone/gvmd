@@ -638,6 +638,37 @@ create_config_data_reset (create_config_data_t *data)
 typedef struct
 {
   char *comment;
+  char *condition;
+  array_t *condition_data;
+  char *event;
+  array_t *event_data;
+  char *method;
+  array_t *method_data;
+  char *name;
+  char *part_data;
+  char *part_name;
+} create_escalator_data_t;
+
+static void
+create_escalator_data_reset (create_escalator_data_t *data)
+{
+  free (data->comment);
+  free (data->condition);
+  array_free (data->condition_data);
+  free (data->event);
+  array_free (data->event_data);
+  free (data->method);
+  array_free (data->method_data);
+  free (data->name);
+  free (data->part_data);
+  free (data->part_name);
+
+  memset (data, 0, sizeof (create_escalator_data_t));
+}
+
+typedef struct
+{
+  char *comment;
   char *login;
   char *name;
   char *password;
@@ -1077,6 +1108,7 @@ typedef union
   abort_task_data_t abort_task;
   create_agent_data_t create_agent;
   create_config_data_t create_config;
+  create_escalator_data_t create_escalator;
   create_lsc_credential_data_t create_lsc_credential;
   create_note_data_t create_note;
   create_schedule_data_t create_schedule;
@@ -1140,6 +1172,12 @@ create_agent_data_t *create_agent_data
  */
 create_config_data_t *create_config_data
  = (create_config_data_t*) &(command_data.create_config);
+
+/**
+ * @brief Parser callback data for CREATE_ESCALATOR.
+ */
+create_escalator_data_t *create_escalator_data
+ = (create_escalator_data_t*) &(command_data.create_escalator);
 
 /**
  * @brief Parser callback data for CREATE_LSC_CREDENTIAL.
@@ -2076,28 +2114,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_ESCALATOR", element_name) == 0)
           {
-            assert (current_array_1 == NULL);
-            assert (current_array_2 == NULL);
-            assert (current_array_3 == NULL);
-            assert (current_format == NULL);
-            assert (current_uuid == NULL);
-            assert (modify_task_comment == NULL);
-            assert (modify_task_name == NULL);
-            assert (modify_task_parameter == NULL);
-            assert (modify_task_rcfile == NULL);
-            assert (modify_task_value == NULL);
+            create_escalator_data->condition_data = make_array ();
+            create_escalator_data->event_data = make_array ();
+            create_escalator_data->method_data = make_array ();
 
-            current_array_1 = make_array ();
-            current_array_2 = make_array ();
-            current_array_3 = make_array ();
-
-            openvas_append_string (&current_format, "");
-            openvas_append_string (&current_uuid, "");
-            openvas_append_string (&modify_task_comment, "");
-            openvas_append_string (&modify_task_name, "");
-            openvas_append_string (&modify_task_parameter, "");
-            openvas_append_string (&modify_task_rcfile, "");
-            openvas_append_string (&modify_task_value, "");
+            openvas_append_string (&create_escalator_data->part_data, "");
+            openvas_append_string (&create_escalator_data->part_name, "");
+            openvas_append_string (&create_escalator_data->comment, "");
+            openvas_append_string (&create_escalator_data->name, "");
+            openvas_append_string (&create_escalator_data->condition, "");
+            openvas_append_string (&create_escalator_data->method, "");
+            openvas_append_string (&create_escalator_data->event, "");
 
             set_client_state (CLIENT_CREATE_ESCALATOR);
           }
@@ -8900,66 +8927,62 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           escalator_method_t method;
 
           assert (strcasecmp ("CREATE_ESCALATOR", element_name) == 0);
-          assert (modify_task_name != NULL);
-          assert (modify_task_parameter != NULL);
-          assert (modify_task_rcfile != NULL);
-          assert (modify_task_value != NULL);
+          assert (create_escalator_data->name != NULL);
+          assert (create_escalator_data->condition != NULL);
+          assert (create_escalator_data->method != NULL);
+          assert (create_escalator_data->event != NULL);
 
-          array_terminate (current_array_1);
-          array_terminate (current_array_2);
-          array_terminate (current_array_3);
+          array_terminate (create_escalator_data->condition_data);
+          array_terminate (create_escalator_data->event_data);
+          array_terminate (create_escalator_data->method_data);
 
-          if (strlen (modify_task_name) == 0)
+          if (strlen (create_escalator_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "CREATE_ESCALATOR requires NAME element which"
                                 " is at least one character long"));
-          else if (strlen (modify_task_parameter) == 0)
+          else if (strlen (create_escalator_data->condition) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "CREATE_ESCALATOR requires a value in a"
                                 " CONDITION element"));
-          else if (strlen (modify_task_value) == 0)
+          else if (strlen (create_escalator_data->event) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "CREATE_ESCALATOR requires a value in an"
                                 " EVENT element"));
-          else if (strlen (modify_task_rcfile) == 0)
+          else if (strlen (create_escalator_data->method) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "CREATE_ESCALATOR requires a value in a"
                                 " METHOD element"));
           else if ((condition = escalator_condition_from_name
-                                 (modify_task_parameter))
+                                 (create_escalator_data->condition))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "Failed to recognise condition name"));
-          else if ((event = event_from_name (modify_task_value)) == 0)
+          else if ((event = event_from_name (create_escalator_data->event))
+                   == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "Failed to recognise event name"));
-          else if ((method = escalator_method_from_name (modify_task_rcfile))
+          else if ((method = escalator_method_from_name
+                              (create_escalator_data->method))
                    == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_escalator",
                                 "Failed to recognise method name"));
           else
             {
-              switch (create_escalator (modify_task_name,
-                                        modify_task_comment,
-                                        /* Event. */
+              switch (create_escalator (create_escalator_data->name,
+                                        create_escalator_data->comment,
                                         event,
-                                        /* Event data. */
-                                        current_array_2,
-                                        /* Condition. */
+                                        create_escalator_data->event_data,
                                         condition,
-                                        /* Condition data. */
-                                        current_array_1,
-                                        /* Method. */
+                                        create_escalator_data->condition_data,
                                         method,
-                                        /* Method data. */
-                                        current_array_3))
+                                        create_escalator_data->method_data))
                 {
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL
@@ -8978,19 +9001,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_uuid);
-          openvas_free_string_var (&modify_task_comment);
-          openvas_free_string_var (&modify_task_name);
-          openvas_free_string_var (&modify_task_parameter);
-          openvas_free_string_var (&modify_task_rcfile);
-          openvas_free_string_var (&modify_task_value);
-          array_free (current_array_1);
-          array_free (current_array_2);
-          array_free (current_array_3);
-          current_array_1 = NULL;
-          current_array_2 = NULL;
-          current_array_3 = NULL;
+          create_escalator_data_reset (create_escalator_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -9020,18 +9031,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (current_array_1);
-          assert (current_format);
-          assert (current_uuid);
+          assert (create_escalator_data->condition_data);
+          assert (create_escalator_data->part_data);
+          assert (create_escalator_data->part_name);
 
-          string = g_strconcat (current_uuid, "0", current_format, NULL);
-          string[strlen (current_uuid)] = '\0';
-          array_add (current_array_1, string);
+          string = g_strconcat (create_escalator_data->part_name,
+                                "0",
+                                create_escalator_data->part_data,
+                                NULL);
+          string[strlen (create_escalator_data->part_name)] = '\0';
+          array_add (create_escalator_data->condition_data, string);
 
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_uuid);
-          openvas_append_string (&current_format, "");
-          openvas_append_string (&current_uuid, "");
+          openvas_free_string_var (&create_escalator_data->part_data);
+          openvas_free_string_var (&create_escalator_data->part_name);
+          openvas_append_string (&create_escalator_data->part_data, "");
+          openvas_append_string (&create_escalator_data->part_name, "");
           set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION);
           break;
         }
@@ -9045,18 +9059,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (current_array_2);
-          assert (current_format);
-          assert (current_uuid);
+          assert (create_escalator_data->event_data);
+          assert (create_escalator_data->part_data);
+          assert (create_escalator_data->part_name);
 
-          string = g_strconcat (current_uuid, "0", current_format, NULL);
-          string[strlen (current_uuid)] = '\0';
-          array_add (current_array_2, string);
+          string = g_strconcat (create_escalator_data->part_name,
+                                "0",
+                                create_escalator_data->part_data,
+                                NULL);
+          string[strlen (create_escalator_data->part_name)] = '\0';
+          array_add (create_escalator_data->event_data, string);
 
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_uuid);
-          openvas_append_string (&current_format, "");
-          openvas_append_string (&current_uuid, "");
+          openvas_free_string_var (&create_escalator_data->part_data);
+          openvas_free_string_var (&create_escalator_data->part_name);
+          openvas_append_string (&create_escalator_data->part_data, "");
+          openvas_append_string (&create_escalator_data->part_name, "");
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT);
           break;
         }
@@ -9070,18 +9087,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           gchar *string;
 
           assert (strcasecmp ("DATA", element_name) == 0);
-          assert (current_array_3);
-          assert (current_format);
-          assert (current_uuid);
+          assert (create_escalator_data->method_data);
+          assert (create_escalator_data->part_data);
+          assert (create_escalator_data->part_name);
 
-          string = g_strconcat (current_uuid, "0", current_format, NULL);
-          string[strlen (current_uuid)] = '\0';
-          array_add (current_array_3, string);
+          string = g_strconcat (create_escalator_data->part_name,
+                                "0",
+                                create_escalator_data->part_data,
+                                NULL);
+          string[strlen (create_escalator_data->part_name)] = '\0';
+          array_add (create_escalator_data->method_data, string);
 
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_uuid);
-          openvas_append_string (&current_format, "");
-          openvas_append_string (&current_uuid, "");
+          openvas_free_string_var (&create_escalator_data->part_data);
+          openvas_free_string_var (&create_escalator_data->part_name);
+          openvas_append_string (&create_escalator_data->part_data, "");
+          openvas_append_string (&create_escalator_data->part_name, "");
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD);
           break;
         }
@@ -12061,39 +12081,39 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CREATE_ESCALATOR_COMMENT:
-        openvas_append_text (&modify_task_comment, text, text_len);
+        openvas_append_text (&create_escalator_data->comment, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_CONDITION:
-        openvas_append_text (&modify_task_parameter, text, text_len);
+        openvas_append_text (&create_escalator_data->condition, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_EVENT:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&create_escalator_data->event, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_METHOD:
-        openvas_append_text (&modify_task_rcfile, text, text_len);
+        openvas_append_text (&create_escalator_data->method, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&create_escalator_data->name, text, text_len);
         break;
 
       case CLIENT_CREATE_ESCALATOR_CONDITION_DATA:
-        openvas_append_text (&current_format, text, text_len);
+        openvas_append_text (&create_escalator_data->part_data, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_EVENT_DATA:
-        openvas_append_text (&current_format, text, text_len);
+        openvas_append_text (&create_escalator_data->part_data, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_METHOD_DATA:
-        openvas_append_text (&current_format, text, text_len);
+        openvas_append_text (&create_escalator_data->part_data, text, text_len);
         break;
 
       case CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME:
-        openvas_append_text (&current_uuid, text, text_len);
+        openvas_append_text (&create_escalator_data->part_name, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME:
-        openvas_append_text (&current_uuid, text, text_len);
+        openvas_append_text (&create_escalator_data->part_name, text, text_len);
         break;
       case CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME:
-        openvas_append_text (&current_uuid, text, text_len);
+        openvas_append_text (&create_escalator_data->part_name, text, text_len);
         break;
 
       case CLIENT_CREATE_NOTE_HOSTS:
