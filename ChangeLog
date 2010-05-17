@@ -1,5 +1,10 @@
 2010-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT align
+	SEND* args properly.
+
+2010-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_TEST_ESCALATOR replace
 	old current_uuid with command_data.
 

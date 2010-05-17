@@ -6670,24 +6670,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 char* tsk_name = task_name (task);
                 SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                          "<name>%s</name>"
-                                          "</task>",
-                                          tsk_uuid,
-                                          tsk_name ? tsk_name : "");
+                                         "<name>%s</name>"
+                                         "</task>",
+                                         tsk_uuid,
+                                         tsk_name ? tsk_name : "");
                 free (tsk_name);
                 free (tsk_uuid);
               }
 
             start_time = scan_start_time (report);
             SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
-                                      start_time);
+                                     start_time);
             free (start_time);
 
             init_host_iterator (&hosts, report);
             while (next (&hosts))
               SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
-                                        host_iterator_host (&hosts),
-                                        host_iterator_start_time (&hosts));
+                                       host_iterator_host (&hosts),
+                                       host_iterator_start_time (&hosts));
             cleanup_iterator (&hosts);
 
             /* Port summary. */
@@ -6758,11 +6758,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               /* Send from the buffer. */
 
               SENDF_TO_CLIENT_OR_FAIL ("<ports"
-                                        " start=\"%i\""
-                                        " max=\"%i\">",
-                                        /* Add 1 for 1 indexing. */
-                                        get_report_data->first_result + 1,
-                                        get_report_data->max_results);
+                                       " start=\"%i\""
+                                       " max=\"%i\">",
+                                       /* Add 1 for 1 indexing. */
+                                       get_report_data->first_result + 1,
+                                       get_report_data->max_results);
               {
                 gchar *item;
                 int index = 0;
@@ -6772,15 +6772,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int type_len = strlen (item);
                     int host_len = strlen (item + type_len + 1);
                     SENDF_TO_CLIENT_OR_FAIL ("<port>"
-                                              "<host>%s</host>"
-                                              "%s"
-                                              "<threat>%s</threat>"
-                                              "</port>",
-                                              item + type_len + 1,
-                                              item + type_len
-                                                  + host_len
-                                                  + 2,
-                                              result_type_threat (item));
+                                             "<host>%s</host>"
+                                             "%s"
+                                             "<threat>%s</threat>"
+                                             "</port>",
+                                             item + type_len + 1,
+                                             item + type_len
+                                                 + host_len
+                                                 + 2,
+                                             result_type_threat (item));
                     g_free (item);
                   }
                 g_array_free (ports, TRUE);
@@ -6798,17 +6798,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 &warnings);
 
               SENDF_TO_CLIENT_OR_FAIL ("<messages>"
-                                        "<debug>%i</debug>"
-                                        "<hole>%i</hole>"
-                                        "<info>%i</info>"
-                                        "<log>%i</log>"
-                                        "<warning>%i</warning>"
-                                        "</messages>",
-                                        debugs,
-                                        holes,
-                                        infos,
-                                        logs,
-                                        warnings);
+                                       "<debug>%i</debug>"
+                                       "<hole>%i</hole>"
+                                       "<info>%i</info>"
+                                       "<log>%i</log>"
+                                       "<warning>%i</warning>"
+                                       "</messages>",
+                                       debugs,
+                                       holes,
+                                       infos,
+                                       logs,
+                                       warnings);
             }
 
             /* Results. */
@@ -6822,11 +6822,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->search_phrase);
 
             SENDF_TO_CLIENT_OR_FAIL ("<results"
-                                      " start=\"%i\""
-                                      " max=\"%i\">",
-                                      /* Add 1 for 1 indexing. */
-                                      get_report_data->first_result + 1,
-                                      get_report_data->max_results);
+                                     " start=\"%i\""
+                                     " max=\"%i\">",
+                                     /* Add 1 for 1 indexing. */
+                                     get_report_data->first_result + 1,
+                                     get_report_data->max_results);
             while (next (&results))
               {
                 GString *buffer = g_string_new ("");
@@ -6844,13 +6844,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             init_host_iterator (&hosts, report);
             while (next (&hosts))
               SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
-                                        host_iterator_host (&hosts),
-                                        host_iterator_end_time (&hosts));
+                                       host_iterator_host (&hosts),
+                                       host_iterator_end_time (&hosts));
             cleanup_iterator (&hosts);
 
             end_time = scan_end_time (report);
             SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
-                                      end_time);
+                                     end_time);
             free (end_time);
 
             SEND_TO_CLIENT_OR_FAIL ("</report>"
