@@ -5668,6 +5668,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
   const char *name = result_iterator_nvt_name (results);
+  const char *cvss_base = result_iterator_nvt_cvss_base (results);
+  const char *risk_factor = result_iterator_nvt_risk_factor (results);
   char *uuid;
 
   result_uuid (result_iterator_result (results), &uuid);
@@ -5678,7 +5680,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<subnet>%s</subnet>"
     "<host>%s</host>"
     "<port>%s</port>"
-    "<nvt oid=\"%s\"><name>%s</name></nvt>"
+    "<nvt oid=\"%s\">"
+    "<name>%s</name>"
+    "<cvss_base>%s</cvss_base>"
+    "<risk_factor>%s</risk_factor>"
+    "</nvt>"
     "<threat>%s</threat>"
     "<description>%s</description>",
     uuid,
@@ -5687,6 +5693,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     result_iterator_port (results),
     result_iterator_nvt_oid (results),
     name ? name : "",
+    cvss_base ? cvss_base : "",
+    risk_factor ? risk_factor : "",
     result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");
 

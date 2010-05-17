@@ -4406,6 +4406,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
           nvti_set_name (nvti, nvt_iterator_name (&nvts));
           nvti_set_family (nvti, nvt_iterator_family (&nvts));
+          nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
+          nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
           nvtis_add (nvti_cache, nvti);
         }
       cleanup_iterator (&nvts);
@@ -6180,6 +6182,42 @@ result_iterator_nvt_name (iterator_t *iterator)
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_name (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT CVSS base value from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS base of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_cvss_base (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_cvss_base (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT risk factor from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The risk factor of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_risk_factor (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_risk_factor (nvti);
   return NULL;
 }
 

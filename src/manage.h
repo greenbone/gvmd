@@ -663,6 +663,12 @@ const char*
 result_iterator_nvt_name (iterator_t *);
 
 const char*
+result_iterator_nvt_cvss_base (iterator_t *);
+
+const char*
+result_iterator_nvt_risk_factor (iterator_t *);
+
+const char*
 result_iterator_type (iterator_t*);
 
 const char*

@@ -1,3 +1,15 @@
+2010-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Add CVSS base and risk factor to nvti
+	cache.
+	(result_iterator_nvt_cvss_base, result_iterator_nvt_risk_factor): New
+	functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (buffer_results_xml): Add CVSS_BASE and RISK_FACTOR to
+	RESULT/NVT.
+
 2010-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch CREATE_ESCALATOR to the new callback data mechanism.
