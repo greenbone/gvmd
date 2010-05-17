@@ -1,3 +1,21 @@
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add an attrib to OMP GET_REPORT to limit the host info to hosts that have
+	results.
+
+	* src/omp.c (get_report_data_t): Add result_hosts_only.
+	(omp_xml_handle_start_element): Parse GET_REPORT result_hosts_only attrib.
+	(array_add_new_string): New function.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT send host info
+	according to result_hosts_only.
+
+	* src/manage_sql.c (init_host_iterator): Add host constraint arg.  Update
+	all callers.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage.c: Update init_host_iterator callers.
+
 2010-05-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT align

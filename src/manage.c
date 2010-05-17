@@ -778,7 +778,7 @@ send_user_rules (report_t stopped_report)
 
       /* Empty rules file.  Send rules to deny all finished hosts. */
 
-      init_host_iterator (&hosts, stopped_report);
+      init_host_iterator (&hosts, stopped_report, NULL);
       while (next (&hosts))
         if (host_iterator_end_time (&hosts)
             && strlen (host_iterator_end_time (&hosts))
@@ -818,7 +818,7 @@ send_user_rules (report_t stopped_report)
 
           if (strncmp (*rule, "default accept", strlen ("default accept")) == 0)
             {
-              init_host_iterator (&hosts, stopped_report);
+              init_host_iterator (&hosts, stopped_report, NULL);
               while (next (&hosts))
                 if (host_iterator_end_time (&hosts)
                     && strlen (host_iterator_end_time (&hosts))
@@ -835,7 +835,7 @@ send_user_rules (report_t stopped_report)
             {
               /* Prevent allow rules for finished hosts. */
 
-              init_host_iterator (&hosts, stopped_report);
+              init_host_iterator (&hosts, stopped_report, NULL);
               while (next (&hosts))
                 if (host_iterator_end_time (&hosts)
                     && strlen (host_iterator_end_time (&hosts)))

@@ -949,6 +949,7 @@ typedef struct
   char *search_phrase;
   int notes;
   int notes_details;
+  int result_hosts_only;
 } get_report_data_t;
 
 static void
@@ -2453,6 +2454,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->notes_details = strcmp (attribute, "0");
             else
               get_report_data->notes_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "result_hosts_only", &attribute))
+              get_report_data->result_hosts_only = strcmp (attribute, "0");
+            else
+              get_report_data->result_hosts_only = 1;
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -4539,7 +4546,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
            start_time);
   free (start_time);
 
-  init_host_iterator (&hosts, report);
+  init_host_iterator (&hosts, report, NULL);
   while (next (&hosts))
     fprintf (out,
              "<host_start><host>%s</host>%s</host_start>",
@@ -4568,7 +4575,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
     }
   cleanup_iterator (&results);
 
-  init_host_iterator (&hosts, report);
+  init_host_iterator (&hosts, report, NULL);
   while (next (&hosts))
     fprintf (out,
              "<host_end><host>%s</host>%s</host_end>",
@@ -5165,7 +5172,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
 
   /* In Overview, print the list of hosts. */
 
-  init_host_iterator (&hosts, report);
+  init_host_iterator (&hosts, report, NULL);
   /** @todo Either modify this table or show another table in which the
    *        filtered result count is shown. Also, one could alter columns
    *        in the table, e.g. with \\cellcolor{inactive}. */
@@ -5266,7 +5273,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
 
   /* Print a subsection for each host. */
 
-  init_host_iterator (&hosts, report);
+  init_host_iterator (&hosts, report, NULL);
   while (next (&hosts))
     {
       gchar *last_port;
@@ -5794,6 +5801,22 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
                                     "</schedule>");
         }
     }
+}
+
+/**
+ * @brief Ensure a string is in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.  Copied into array.
+ */
+static void
+array_add_new_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    if (strcmp (g_ptr_array_index (array, index), string) == 0)
+      return;
+  array_add (array, g_strdup (string));
 }
 
 /**
@@ -6597,6 +6620,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             char *tsk_uuid = NULL, *start_time, *end_time;
             int result_count, filtered_result_count, run_status;
             const char *levels;
+            array_t *result_hosts;
 
             levels = get_report_data->levels
                       ? get_report_data->levels : "hmlgd";
@@ -6631,7 +6655,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "<filters>"
               "%s"
               "<phrase>%s</phrase>"
-              "<notes>%i</notes>",
+              "<notes>%i</notes>"
+              "<result_hosts_only>%i</result_hosts_only>",
               get_report_data->report_id,
               get_report_data->sort_field ? get_report_data->sort_field
                                           : "type",
@@ -6640,7 +6665,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->search_phrase
                 ? get_report_data->search_phrase
                 : "",
-              get_report_data->notes ? 1 : 0);
+              get_report_data->notes ? 1 : 0,
+              get_report_data->result_hosts_only ? 1 : 0);
 
             if (strchr (levels, 'h'))
               SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
@@ -6682,13 +6708,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SENDF_TO_CLIENT_OR_FAIL ("<scan_start>%s</scan_start>",
                                      start_time);
             free (start_time);
-
-            init_host_iterator (&hosts, report);
-            while (next (&hosts))
-              SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
-                                       host_iterator_host (&hosts),
-                                       host_iterator_start_time (&hosts));
-            cleanup_iterator (&hosts);
 
             /* Port summary. */
 
@@ -6827,6 +6846,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      /* Add 1 for 1 indexing. */
                                      get_report_data->first_result + 1,
                                      get_report_data->max_results);
+            if (get_report_data->result_hosts_only)
+              result_hosts = make_array ();
             while (next (&results))
               {
                 GString *buffer = g_string_new ("");
@@ -6837,17 +6858,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_report_data->notes_details);
                 SEND_TO_CLIENT_OR_FAIL (buffer->str);
                 g_string_free (buffer, TRUE);
+                if (get_report_data->result_hosts_only)
+                  array_add_new_string (result_hosts,
+                                        result_iterator_host (&results));
               }
             SEND_TO_CLIENT_OR_FAIL ("</results>");
             cleanup_iterator (&results);
 
-            init_host_iterator (&hosts, report);
-            while (next (&hosts))
-              SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
-                                       host_iterator_host (&hosts),
-                                       host_iterator_end_time (&hosts));
-            cleanup_iterator (&hosts);
+            if (get_report_data->result_hosts_only)
+              {
+                gchar *host;
+                int index = 0;
+                array_terminate (result_hosts);
+                while ((host = g_ptr_array_index (result_hosts, index++)))
+                  {
+                    init_host_iterator (&hosts, report, host);
+                    if (next (&hosts))
+                      {
+                        SENDF_TO_CLIENT_OR_FAIL ("<host_start>"
+                                                 "<host>%s</host>%s"
+                                                 "</host_start>",
+                                                 host,
+                                                 host_iterator_start_time (&hosts));
+                        SENDF_TO_CLIENT_OR_FAIL ("<host_end>"
+                                                 "<host>%s</host>%s"
+                                                 "</host_end>",
+                                                 host,
+                                                 host_iterator_end_time (&hosts));
+                      }
+                    cleanup_iterator (&hosts);
+                  }
+                array_free (result_hosts);
+              }
+            else
+              {
+                init_host_iterator (&hosts, report, NULL);
+                while (next (&hosts))
+                  SENDF_TO_CLIENT_OR_FAIL ("<host_start><host>%s</host>%s</host_start>",
+                                           host_iterator_host (&hosts),
+                                           host_iterator_start_time (&hosts));
+                cleanup_iterator (&hosts);
 
+                init_host_iterator (&hosts, report, NULL);
+                while (next (&hosts))
+                  SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
+                                           host_iterator_host (&hosts),
+                                           host_iterator_end_time (&hosts));
+                cleanup_iterator (&hosts);
+              }
             end_time = scan_end_time (report);
             SENDF_TO_CLIENT_OR_FAIL ("<scan_end>%s</scan_end>",
                                      end_time);
@@ -6871,7 +6929,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     start_time);
             free (start_time);
 
-            init_host_iterator (&hosts, report);
+            init_host_iterator (&hosts, report, NULL);
             while (next (&hosts))
               g_string_append_printf (nbe,
                                       "timestamps||%s|host_start|%s|\n",
@@ -6897,7 +6955,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       result_iterator_descr (&results));
             cleanup_iterator (&results);
 
-            init_host_iterator (&hosts, report);
+            init_host_iterator (&hosts, report, NULL);
             while (next (&hosts))
               g_string_append_printf (nbe,
                                       "timestamps||%s|host_end|%s|\n",
@@ -10531,7 +10589,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         iterator_t hosts;
                         GString *string = g_string_new ("");
 
-                        init_host_iterator (&hosts, running_report);
+                        init_host_iterator (&hosts, running_report, NULL);
                         while (next (&hosts))
                           {
                             unsigned int max_port, current_port;
@@ -10916,7 +10974,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     iterator_t hosts;
                     GString *string = g_string_new ("");
 
-                    init_host_iterator (&hosts, running_report);
+                    init_host_iterator (&hosts, running_report, NULL);
                     while (next (&hosts))
                       {
                         unsigned int max_port, current_port;

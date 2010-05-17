@@ -675,7 +675,7 @@ const char*
 result_iterator_descr (iterator_t*);
 
 void
-init_host_iterator (iterator_t*, report_t);
+init_host_iterator (iterator_t*, report_t, char *);
 
 const char*
 host_iterator_host (iterator_t*);

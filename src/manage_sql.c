@@ -6232,9 +6232,10 @@ DEF_ACCESS (descr, 6);
  * @param[in]  iterator  Iterator.
  * @param[in]  report    Report whose hosts the iterator loops over.
  *                       All hosts if NULL.
+ * @param[in]  host      Single host to iterate over.  All hosts if NULL.
  */
 void
-init_host_iterator (iterator_t* iterator, report_t report)
+init_host_iterator (iterator_t* iterator, report_t report, char *host)
 {
   gchar* sql;
 
@@ -6243,8 +6244,12 @@ init_host_iterator (iterator_t* iterator, report_t report)
   sql = g_strdup_printf ("SELECT host, start_time, end_time, attack_state,"
                          " current_port, max_port"
                          " FROM report_hosts WHERE report = %llu"
+                         "%s%s%s"
                          " ORDER BY host COLLATE collate_ip;",
-                         report);
+                         report,
+                         host ? " AND host = '" : "",
+                         host ? host : "",
+                         host ? "'" : "");
   init_iterator (iterator, sql);
   g_free (sql);
 }
