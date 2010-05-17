@@ -9911,7 +9911,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("test_escalator",
                                                "escalator",
-                                               current_uuid))
+                                               test_escalator_data->name))
                   {
                     error_send_to_client (error);
                     return;
