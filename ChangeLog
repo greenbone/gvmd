@@ -1,5 +1,10 @@
 2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT in the "nbe"
+	case, respect the OMP GET_REPORT result_hosts_only attribute.
+
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Respect the OMP GET_REPORT result_hosts_only attrib for XML based reports.
 
 	* src/omp.c (array_add_new_string): Move up in file.

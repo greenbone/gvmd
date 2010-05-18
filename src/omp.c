@@ -6965,6 +6965,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp (get_report_data->format, "nbe") == 0)
           {
             char *start_time, *end_time;
+            array_t *result_hosts;
 
             /* TODO: Encode and send in chunks, after each printf. */
 
@@ -6977,14 +6978,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     start_time);
             free (start_time);
 
-            init_host_iterator (&hosts, report, NULL);
-            while (next (&hosts))
-              g_string_append_printf (nbe,
-                                      "timestamps||%s|host_start|%s|\n",
-                                      host_iterator_host (&hosts),
-                                      host_iterator_start_time (&hosts));
-            cleanup_iterator (&hosts);
-
             init_result_iterator (&results, report, 0, NULL,
                                   get_report_data->first_result,
                                   get_report_data->max_results,
@@ -6992,24 +6985,65 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_field,
                                   get_report_data->levels,
                                   get_report_data->search_phrase);
+            if (get_report_data->result_hosts_only)
+              result_hosts = make_array ();
             while (next (&results))
-              g_string_append_printf (nbe,
-                                      "results|%s|%s|%s|%s|%s|%s\n",
-                                      result_iterator_subnet (&results),
-                                      result_iterator_host (&results),
-                                      result_iterator_port (&results),
-                                      result_iterator_nvt_oid (&results),
-                                      result_iterator_type (&results),
-                                      result_iterator_descr (&results));
+              {
+                g_string_append_printf (nbe,
+                                        "results|%s|%s|%s|%s|%s|%s\n",
+                                        result_iterator_subnet (&results),
+                                        result_iterator_host (&results),
+                                        result_iterator_port (&results),
+                                        result_iterator_nvt_oid (&results),
+                                        result_iterator_type (&results),
+                                        result_iterator_descr (&results));
+                if (get_report_data->result_hosts_only)
+                  array_add_new_string (result_hosts,
+                                        result_iterator_host (&results));
+              }
             cleanup_iterator (&results);
 
-            init_host_iterator (&hosts, report, NULL);
-            while (next (&hosts))
-              g_string_append_printf (nbe,
-                                      "timestamps||%s|host_end|%s|\n",
-                                      host_iterator_host (&hosts),
-                                      host_iterator_end_time (&hosts));
-            cleanup_iterator (&hosts);
+            if (get_report_data->result_hosts_only)
+              {
+                gchar *host;
+                int index = 0;
+                array_terminate (result_hosts);
+                while ((host = g_ptr_array_index (result_hosts, index++)))
+                  {
+                    init_host_iterator (&hosts, report, host);
+                    if (next (&hosts))
+                      {
+                        g_string_append_printf (nbe,
+                                                "timestamps||%s|host_start|%s|\n",
+                                                host,
+                                                host_iterator_start_time (&hosts));
+                        g_string_append_printf (nbe,
+                                                "timestamps||%s|host_end|%s|\n",
+                                                host,
+                                                host_iterator_end_time (&hosts));
+                      }
+                    cleanup_iterator (&hosts);
+                  }
+                array_free (result_hosts);
+              }
+            else
+              {
+                init_host_iterator (&hosts, report, NULL);
+                while (next (&hosts))
+                  g_string_append_printf (nbe,
+                                          "timestamps||%s|host_start|%s|\n",
+                                          host_iterator_host (&hosts),
+                                          host_iterator_start_time (&hosts));
+                cleanup_iterator (&hosts);
+
+                init_host_iterator (&hosts, report, NULL);
+                while (next (&hosts))
+                  g_string_append_printf (nbe,
+                                          "timestamps||%s|host_end|%s|\n",
+                                          host_iterator_host (&hosts),
+                                          host_iterator_end_time (&hosts));
+                cleanup_iterator (&hosts);
+              }
 
             end_time = scan_end_time (report);
             g_string_append_printf (nbe,
