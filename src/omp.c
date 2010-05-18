@@ -6599,8 +6599,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if (get_report_data->report_id == NULL)
           {
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_report",
-                               "GET_REPORT must have a report_id attribute"));
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_report",
+                                "GET_REPORT must have a report_id attribute"));
             get_report_data_reset (get_report_data);
             set_client_state (CLIENT_AUTHENTIC);
             break;
@@ -6616,8 +6617,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else if (report == 0)
           {
             if (send_find_error_to_client ("get_report",
-                                            "report",
-                                            get_report_data->report_id))
+                                           "report",
+                                           get_report_data->report_id))
               {
                 error_send_to_client (error);
                 return;
@@ -7038,13 +7039,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar *xsl_file;
 
                 xsl_file = g_build_filename (OPENVAS_DATA_DIR,
-                                              "openvasmd_report_html.xsl",
-                                              NULL);
+                                             "openvasmd_report_html.xsl",
+                                             NULL);
                 if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
                   {
                     g_warning ("%s: XSL missing: %s\n",
-                                __FUNCTION__,
-                                xsl_file);
+                               __FUNCTION__,
+                               xsl_file);
                     g_free (xsl_file);
                     g_free (xml_file);
                     /* This is a missing resource, however the resource is
@@ -7061,9 +7062,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     command = g_strdup_printf ("xsltproc -v %s %s > %s"
                                                " 2> /tmp/openvasmd_html",
-                                                xsl_file,
-                                                xml_file,
-                                                html_file);
+                                               xsl_file,
+                                               xml_file,
+                                               html_file);
                     g_free (xsl_file);
                     g_free (xml_file);
 
@@ -7076,10 +7077,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               || WEXITSTATUS (ret)))
                       {
                         g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                    __FUNCTION__,
-                                    ret,
-                                    WEXITSTATUS (ret),
-                                    command);
+                                   __FUNCTION__,
+                                   ret,
+                                   WEXITSTATUS (ret),
+                                   command);
                         g_free (command);
                         g_free (html_file);
                         SEND_TO_CLIENT_OR_FAIL
@@ -7097,15 +7098,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         get_error = NULL;
                         g_file_get_contents (html_file,
-                                              &html,
-                                              &html_len,
-                                              &get_error);
+                                             &html,
+                                             &html_len,
+                                             &get_error);
                         g_free (html_file);
                         if (get_error)
                           {
                             g_warning ("%s: Failed to get HTML: %s\n",
-                                        __FUNCTION__,
-                                        get_error->message);
+                                       __FUNCTION__,
+                                       get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("get_report"));
@@ -7182,13 +7183,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 gchar *xsl_file;
 
                 xsl_file = g_build_filename (OPENVAS_DATA_DIR,
-                                              "openvasmd_report_html.xsl",
-                                              NULL);
+                                             "openvasmd_report_html.xsl",
+                                             NULL);
                 if (!g_file_test (xsl_file, G_FILE_TEST_EXISTS))
                   {
                     g_warning ("%s: XSL missing: %s\n",
-                                __FUNCTION__,
-                                xsl_file);
+                               __FUNCTION__,
+                               xsl_file);
                     g_free (xsl_file);
                     g_free (xml_file);
                     /* This is a missing resource, however the resource is
@@ -7204,13 +7205,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     pdf_file = g_strdup_printf ("%s/report.pdf", xml_dir);
 
                     command = g_strdup_printf ("xsltproc -v %s %s"
-                                                " 2> /dev/null"
-                                                " | tee /tmp/openvasmd_html-pdf"
-                                                " | htmldoc -t pdf --webpage -f %s -"
-                                                " 2> /dev/null",
-                                                xsl_file,
-                                                xml_file,
-                                                pdf_file);
+                                               " 2> /dev/null"
+                                               " | tee /tmp/openvasmd_html-pdf"
+                                               " | htmldoc -t pdf --webpage -f %s -"
+                                               " 2> /dev/null",
+                                               xsl_file,
+                                               xml_file,
+                                               pdf_file);
                     g_free (xsl_file);
                     g_free (xml_file);
 
@@ -7223,10 +7224,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               || WEXITSTATUS (ret)))
                       {
                         g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                    __FUNCTION__,
-                                    ret,
-                                    WEXITSTATUS (ret),
-                                    command);
+                                   __FUNCTION__,
+                                   ret,
+                                   WEXITSTATUS (ret),
+                                   command);
                         g_free (command);
                         g_free (pdf_file);
                         SEND_TO_CLIENT_OR_FAIL
@@ -7244,15 +7245,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         get_error = NULL;
                         g_file_get_contents (pdf_file,
-                                              &pdf,
-                                              &pdf_len,
-                                              &get_error);
+                                             &pdf,
+                                             &pdf_len,
+                                             &get_error);
                         g_free (pdf_file);
                         if (get_error)
                           {
                             g_warning ("%s: Failed to get PDF: %s\n",
-                                        __FUNCTION__,
-                                        get_error->message);
+                                       __FUNCTION__,
+                                       get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("get_report"));
@@ -7316,13 +7317,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
               }
             else if (latex_file = g_strdup_printf ("%s/report.tex",
-                                                    latex_dir),
-                      print_report_latex (report,
-                                          task,
-                                          latex_file,
-                                          get_report_data->sort_order,
-                                          get_report_data->sort_field,
-                                          get_report_data->result_hosts_only))
+                                                   latex_dir),
+                     print_report_latex (report,
+                                         task,
+                                         latex_file,
+                                         get_report_data->sort_order,
+                                         get_report_data->sort_field,
+                                         get_report_data->result_hosts_only))
               {
                 g_free (latex_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7339,8 +7340,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 pdf_file[strlen (pdf_file) - 3] = dvi ? 'd' : 'p';
 
                 pdf_fd = open (pdf_file,
-                                O_RDWR | O_CREAT,
-                                S_IRUSR | S_IWUSR);
+                               O_RDWR | O_CREAT,
+                               S_IRUSR | S_IWUSR);
 
                 if (dvi)
                   command = g_strdup_printf
@@ -7370,8 +7371,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (pdf_fd == -1)
                   {
                     g_warning ("%s: open of %s failed\n",
-                                __FUNCTION__,
-                                pdf_file);
+                               __FUNCTION__,
+                               pdf_file);
                     g_free (pdf_file);
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("get_report"));
@@ -7383,10 +7384,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 || WEXITSTATUS (ret)))
                   {
                     g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                __FUNCTION__,
-                                ret,
-                                WEXITSTATUS (ret),
-                                command);
+                               __FUNCTION__,
+                               ret,
+                               WEXITSTATUS (ret),
+                               command);
                     close (pdf_fd);
                     g_free (pdf_file);
                     g_free (command);
@@ -7406,15 +7407,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     get_error = NULL;
                     g_file_get_contents (pdf_file,
-                                          &pdf,
-                                          &pdf_len,
-                                          &get_error);
+                                         &pdf,
+                                         &pdf_len,
+                                         &get_error);
                     g_free (pdf_file);
                     if (get_error)
                       {
                         g_warning ("%s: Failed to get PDF: %s\n",
-                                    __FUNCTION__,
-                                    get_error->message);
+                                   __FUNCTION__,
+                                   get_error->message);
                         g_error_free (get_error);
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_report"));
@@ -7516,9 +7517,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     command = g_strdup_printf ("xsltproc -v %s %s > %s"
                                                " 2> /tmp/openvasmd_generic",
-                                                xsl_file,
-                                                xml_file,
-                                                output_file);
+                                               xsl_file,
+                                               xml_file,
+                                               output_file);
                     g_free (xsl_file);
                     g_free (xml_file);
 
@@ -7531,10 +7532,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               || WEXITSTATUS (ret)))
                       {
                         g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                    __FUNCTION__,
-                                    ret,
-                                    WEXITSTATUS (ret),
-                                    command);
+                                   __FUNCTION__,
+                                   ret,
+                                   WEXITSTATUS (ret),
+                                   command);
                         g_free (command);
                         g_free (output_file);
                         SEND_TO_CLIENT_OR_FAIL
@@ -7559,8 +7560,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (get_error)
                           {
                             g_warning ("%s: Failed to get output: %s\n",
-                                        __FUNCTION__,
-                                        get_error->message);
+                                       __FUNCTION__,
+                                       get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
                              (XML_INTERNAL_ERROR ("get_report"));
