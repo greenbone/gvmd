@@ -1,5 +1,14 @@
 2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Respect the OMP GET_REPORT result_hosts_only attrib for XML based reports.
+
+	* src/omp.c (array_add_new_string): Move up in file.
+	(print_report_xml): Add result_hosts_only arg.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT pass result_hosts_only
+	attrib to print_report_xml.
+
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Repair more CLIENT_GET_REPORT
 	formatting put out in revision 6521.
 
@@ -12,7 +21,7 @@
 
 	Respect the OMP GET_REPORT result_hosts_only attrib for LaTeX reports.
 
-	* src/omp.c (print_report_latex): Add result_hosts_only arg
+	* src/omp.c (print_report_latex): Add result_hosts_only arg.
 	(omp_xml_handle_end_element): In CLIENT_GET_REPORT pass result_hosts_only
 	attrib to print_report_latex.
 

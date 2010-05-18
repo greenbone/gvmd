@@ -325,6 +325,22 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
   return -1;
 }
 
+/**
+ * @brief Ensure a string is in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.  Copied into array.
+ */
+static void
+array_add_new_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    if (strcmp (g_ptr_array_index (array, index), string) == 0)
+      return;
+  array_add (array, g_strdup (string));
+}
+
 
 /* Help message. */
 
@@ -4510,16 +4526,18 @@ send_reports (task_t task)
  * @param[in]  xml_file    File name.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
 print_report_xml (report_t report, task_t task, gchar* xml_file,
-                  int ascending, const char* sort_field)
+                  int ascending, const char* sort_field, int result_hosts_only)
 {
   FILE *out;
   iterator_t results, hosts;
   char *end_time, *start_time;
+  array_t *result_hosts;
 
   /* TODO: This is now out of sync with the XML report.  It is only used to
    *       generate the "html" report and the "html-pdf", which need extensive
@@ -4546,14 +4564,6 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
            start_time);
   free (start_time);
 
-  init_host_iterator (&hosts, report, NULL);
-  while (next (&hosts))
-    fprintf (out,
-             "<host_start><host>%s</host>%s</host_start>",
-             host_iterator_host (&hosts),
-             host_iterator_start_time (&hosts));
-  cleanup_iterator (&hosts);
-
   init_result_iterator (&results, report, 0, NULL,
                         get_report_data->first_result,
                         get_report_data->max_results,
@@ -4562,6 +4572,8 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         get_report_data->levels,
                         get_report_data->search_phrase);
 
+  if (result_hosts_only)
+    result_hosts = make_array ();
   while (next (&results))
     {
       GString *buffer = g_string_new ("");
@@ -4572,16 +4584,57 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                           get_report_data->notes_details);
       fputs (buffer->str, out);
       g_string_free (buffer, TRUE);
+      if (result_hosts_only)
+        array_add_new_string (result_hosts,
+                              result_iterator_host (&results));
     }
   cleanup_iterator (&results);
 
-  init_host_iterator (&hosts, report, NULL);
-  while (next (&hosts))
-    fprintf (out,
-             "<host_end><host>%s</host>%s</host_end>",
-             host_iterator_host (&hosts),
-             host_iterator_end_time (&hosts));
-  cleanup_iterator (&hosts);
+  if (result_hosts_only)
+    {
+      gchar *host;
+      int index = 0;
+      array_terminate (result_hosts);
+      while ((host = g_ptr_array_index (result_hosts, index++)))
+        {
+          init_host_iterator (&hosts, report, host);
+          if (next (&hosts))
+            {
+              fprintf (out,
+                       "<host_start>"
+                       "<host>%s</host>%s"
+                       "</host_start>",
+                       host,
+                       host_iterator_start_time (&hosts));
+              fprintf (out,
+                       "<host_end>"
+                       "<host>%s</host>%s"
+                       "</host_end>",
+                       host,
+                       host_iterator_end_time (&hosts));
+            }
+          cleanup_iterator (&hosts);
+        }
+      array_free (result_hosts);
+    }
+  else
+    {
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        fprintf (out,
+                 "<host_start><host>%s</host>%s</host_start>",
+                 host_iterator_host (&hosts),
+                 host_iterator_start_time (&hosts));
+      cleanup_iterator (&hosts);
+
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        fprintf (out,
+                 "<host_end><host>%s</host>%s</host_end>",
+                 host_iterator_host (&hosts),
+                 host_iterator_end_time (&hosts));
+      cleanup_iterator (&hosts);
+    }
 
   end_time = scan_end_time (report);
   fprintf (out, "<scan_end>%s</scan_end>", end_time);
@@ -5814,22 +5867,6 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
 }
 
 /**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
-}
-
-/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -7029,7 +7066,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        task,
                                        xml_file,
                                        get_report_data->sort_order,
-                                       get_report_data->sort_field))
+                                       get_report_data->sort_field,
+                                       get_report_data->result_hosts_only))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7173,7 +7211,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        task,
                                        xml_file,
                                        get_report_data->sort_order,
-                                       get_report_data->sort_field))
+                                       get_report_data->sort_field,
+                                       get_report_data->result_hosts_only))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7480,7 +7519,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        task,
                                        xml_file,
                                        get_report_data->sort_order,
-                                       get_report_data->sort_field))
+                                       get_report_data->sort_field,
+                                       get_report_data->result_hosts_only))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
