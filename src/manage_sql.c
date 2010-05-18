@@ -6299,6 +6299,29 @@ host_iterator_max_port (iterator_t* iterator)
 }
 
 /**
+ * @brief Return whether a host has results on a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host.
+ *
+ * @return 1 if host has results, else 0.
+ */
+int
+manage_report_host_has_results (report_t report, const char *host)
+{
+  char *quoted_host = sql_quote ((gchar*) host);
+  int ret = sql_int (0, 0,
+                     "SELECT COUNT(*) > 0 FROM results, report_results"
+                     " WHERE report_results.report = %llu"
+                     " AND report_results.result = results.ROWID"
+                     " AND results.host = '%s';",
+                     report,
+                     quoted_host);
+  g_free (quoted_host);
+  return ret ? 1 : 0;
+}
+
+/**
  * @brief Set the end time of a task.
  *
  * @param[in]  task  Task.

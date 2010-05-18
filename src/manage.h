@@ -696,6 +696,9 @@ int
 host_iterator_max_port (iterator_t*);
 
 int
+manage_report_host_has_results (report_t, const char *);
+
+int
 collate_message_type (void* data, int, const void*, int, const void*);
 
 void

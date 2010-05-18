@@ -1,5 +1,17 @@
 2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Respect the OMP GET_REPORT result_hosts_only attrib for LaTeX reports.
+
+	* src/omp.c (print_report_latex): Add result_hosts_only arg
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT pass result_hosts_only
+	attrib to print_report_latex.
+
+	* src/manage_sql.c (manage_report_host_has_results): New function.
+
+	* src/manage.h: Add header accordingly.
+
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add an attrib to OMP GET_REPORT to limit the host info to hosts that have
 	results.
 

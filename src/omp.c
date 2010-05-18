@@ -5093,12 +5093,14 @@ print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
  * @param[in]  latex_file  File name.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
 print_report_latex (report_t report, task_t task, gchar* latex_file,
-                    int ascending, const char* sort_field)
+                    int ascending, const char* sort_field,
+                    int result_hosts_only)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -5180,6 +5182,10 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
     {
       int holes, warnings, notes;
       const char *host = host_iterator_host (&hosts);
+
+      if (result_hosts_only
+          && manage_report_host_has_results (report, host) == 0)
+        continue;
 
       report_holes (report, host, &holes);
       report_warnings (report, host, &warnings);
@@ -5278,6 +5284,10 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
     {
       gchar *last_port;
       const char *host = host_iterator_host (&hosts);
+
+      if (result_hosts_only
+          && manage_report_host_has_results (report, host) == 0)
+        continue;
 
       /* Print the times. */
 
@@ -7311,7 +7321,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           task,
                                           latex_file,
                                           get_report_data->sort_order,
-                                          get_report_data->sort_field))
+                                          get_report_data->sort_field,
+                                          get_report_data->result_hosts_only))
               {
                 g_free (latex_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
