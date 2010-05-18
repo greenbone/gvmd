@@ -7025,11 +7025,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
-                      print_report_xml (report,
-                                        task,
-                                        xml_file,
-                                        get_report_data->sort_order,
-                                        get_report_data->sort_field))
+                     print_report_xml (report,
+                                       task,
+                                       xml_file,
+                                       get_report_data->sort_order,
+                                       get_report_data->sort_field))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7169,11 +7169,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
-                      print_report_xml (report,
-                                        task,
-                                        xml_file,
-                                        get_report_data->sort_order,
-                                        get_report_data->sort_field))
+                     print_report_xml (report,
+                                       task,
+                                       xml_file,
+                                       get_report_data->sort_order,
+                                       get_report_data->sort_field))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));

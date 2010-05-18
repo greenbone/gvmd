@@ -1,5 +1,10 @@
 2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Repair more CLIENT_GET_REPORT
+	formatting put out in revision 6521.
+
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Repair CLIENT_GET_REPORT arg
 	overhang formatting put out in revision 6521.
 
