@@ -1,5 +1,19 @@
 2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add CVSS constraint to OMP GET_REPORT.
+
+	* src/omp.c (get_report_data_t): Add min_cvss_base.
+	(get_report_data_reset): Free min_cvss_base.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	min_cvss_base handle to the XML format of GET_REPORT.
+
+	* src/manage_sql.c (where_cvss_base): New function.
+	(init_result_iterator, report_scan_result_count): Add min_cvss_base arg.
+
+	* src/manage.h: Update headers accordingly.
+
+2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT in the "nbe"
 	case, respect the OMP GET_REPORT result_hosts_only attribute.
 

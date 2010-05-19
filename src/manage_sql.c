@@ -5958,6 +5958,38 @@ where_levels (const char* levels)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to a minimum CVSS base.
+ *
+ * @param[in]  min_cvss_base  Minimum value for CVSS.
+ *
+ * @return WHERE clause if one is required, else NULL.
+ */
+static GString *
+where_cvss_base (const char* min_cvss_base)
+{
+  if (min_cvss_base)
+    {
+      GString *cvss_sql;
+      gchar *quoted_min_cvss_base;
+
+      if (strlen (min_cvss_base) == 0)
+        return NULL;
+
+      quoted_min_cvss_base = sql_quote (min_cvss_base);
+      cvss_sql = g_string_new ("");
+      g_string_append_printf (cvss_sql,
+                              " AND nvts.oid = results.nvt"
+                              " AND CAST (nvts.cvss_base AS REAL)"
+                              " >= CAST ('%s' AS REAL)",
+                              quoted_min_cvss_base);
+      g_free (quoted_min_cvss_base);
+
+      return cvss_sql;
+    }
+  return NULL;
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
  *
  * @param[in]  search_phrase  Phrase that results must include.  All results if
@@ -6016,14 +6048,15 @@ where_search_phrase (const char* search_phrase)
  *                            NULL.
  * @param[in]  search_phrase  Phrase that results must include.  All results if
  *                            NULL or "".
+ * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       const char* host, int first_result, int max_results,
                       int ascending, const char* sort_field, const char* levels,
-                      const char* search_phrase)
+                      const char* search_phrase, const char* min_cvss_base)
 {
-  GString *levels_sql, *phrase_sql;
+  GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
 
   assert (report || result);
@@ -6037,15 +6070,17 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       levels_sql = where_levels (levels);
       phrase_sql = where_search_phrase (search_phrase);
+      cvss_sql = where_cvss_base (min_cvss_base);
 
       if (host)
-        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                               " type, description"
-                               " FROM results, report_results"
+        sql = g_strdup_printf ("SELECT DISTINCT results.ROWID, subnet, host, port,"
+                               " nvt, type, results.description"
+                               " FROM results, report_results, nvts"
                                " WHERE report_results.report = %llu"
                                "%s"
                                " AND report_results.result = results.ROWID"
                                " AND results.host = '%s'"
+                               "%s"
                                "%s"
                                "%s"
                                " LIMIT %i OFFSET %i;",
@@ -6053,6 +6088,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                levels_sql ? levels_sql->str : "",
                                host,
                                phrase_sql ? phrase_sql->str : "",
+                               cvss_sql ? cvss_sql->str : "",
                                ascending
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
@@ -6071,10 +6107,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                max_results,
                                first_result);
       else
-        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                               " type, description"
-                               " FROM results, report_results"
+        sql = g_strdup_printf ("SELECT DISTINCT results.ROWID, subnet, host, port,"
+                               " nvt, type, results.description"
+                               " FROM results, report_results, nvts"
                                " WHERE report_results.report = %llu"
+                               "%s"
                                "%s"
                                "%s"
                                " AND report_results.result = results.ROWID"
@@ -6083,6 +6120,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                report,
                                levels_sql ? levels_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
+                               cvss_sql ? cvss_sql->str : "",
                                ascending
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY host,"
@@ -6103,6 +6141,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
+      if (cvss_sql) g_string_free (cvss_sql, TRUE);
     }
   else
     sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
@@ -6507,28 +6546,35 @@ report_scan_run_status (report_t report, int* status)
  *                             NULL.
  * @param[in]   search_phrase  Phrase that results must include.  All results if
  *                             NULL or "".
+ * @param[in]   min_cvss_base  Minimum CVSS base of included results.  All
+ *                             results if NULL.
  * @param[out]  count          Total number of results in the scan.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_scan_result_count (report_t report, const char* levels,
-                          const char* search_phrase, int* count)
+                          const char* search_phrase, const char* min_cvss_base,
+                          int* count)
 {
-  GString *levels_sql, *phrase_sql;
+  GString *levels_sql, *phrase_sql, *cvss_sql;
 
   levels_sql = where_levels (levels);
   phrase_sql = where_search_phrase (search_phrase);
+  cvss_sql = where_cvss_base (min_cvss_base);
   *count = sql_int (0, 0,
-                    "SELECT count(*) FROM results, report_results"
+                    "SELECT count(DISTINCT results.ROWID)"
+                    " FROM results, report_results, nvts"
                     " WHERE results.ROWID = report_results.result"
-                    "%s%s"
+                    "%s%s%s"
                     " AND report_results.report = %llu;",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
+                    cvss_sql ? cvss_sql->str : "",
                     report);
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
+  if (cvss_sql) g_string_free (cvss_sql, TRUE);
   return 0;
 }
 

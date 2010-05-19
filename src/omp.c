@@ -963,6 +963,7 @@ typedef struct
   int sort_order;
   char *levels;
   char *search_phrase;
+  char *min_cvss_base;
   int notes;
   int notes_details;
   int result_hosts_only;
@@ -976,6 +977,7 @@ get_report_data_reset (get_report_data_t *data)
   free (data->sort_field);
   free (data->levels);
   free (data->search_phrase);
+  free (data->min_cvss_base);
   memset (data, 0, sizeof (get_report_data_t));
 }
 
@@ -2476,6 +2478,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->result_hosts_only = strcmp (attribute, "0");
             else
               get_report_data->result_hosts_only = 1;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "min_cvss_base", &attribute))
+              openvas_append_string (&get_report_data->min_cvss_base,
+                                     attribute);
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -4570,7 +4577,8 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         ascending,
                         sort_field,
                         get_report_data->levels,
-                        get_report_data->search_phrase);
+                        get_report_data->search_phrase,
+                        NULL);
 
   if (result_hosts_only)
     result_hosts = make_array ();
@@ -5385,7 +5393,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             ascending,
                             sort_field,
                             get_report_data->levels,
-                            get_report_data->search_phrase);
+                            get_report_data->search_phrase,
+                            NULL);
       last_port = NULL;
       while (next (&results))
         {
@@ -5419,7 +5428,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             ascending,
                             sort_field,
                             get_report_data->levels,
-                            get_report_data->search_phrase);
+                            get_report_data->search_phrase,
+                            NULL);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -5637,7 +5647,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               init_result_iterator (&results, 0,
                                     note_iterator_result (notes),
-                                    NULL, 0, 1, 1, NULL, NULL, NULL);
+                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -6648,6 +6658,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         iterator_t results, hosts;
         GString *nbe;
         gchar *content;
+        float min_cvss_base;
 
         if (find_report (get_report_data->report_id, &report))
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -6661,6 +6672,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 return;
               }
           }
+        else if (get_report_data->min_cvss_base
+                 && strlen (get_report_data->min_cvss_base)
+                 && (sscanf (get_report_data->min_cvss_base,
+                             "%f",
+                             &min_cvss_base)
+                     != 1))
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_report",
+                              "GET_REPORT min_cvss_base must be a float"
+                              " or the empty string"));
         else if (get_report_data->format == NULL
                   || strcasecmp (get_report_data->format, "xml") == 0)
           {
@@ -6688,10 +6709,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               }
 
-            report_scan_result_count (report, NULL, NULL, &result_count);
+            report_scan_result_count (report, NULL, NULL, NULL, &result_count);
             report_scan_result_count (report,
                                       levels,
                                       get_report_data->search_phrase,
+                                      get_report_data->min_cvss_base,
                                       &filtered_result_count);
             report_scan_run_status (report, &run_status);
             SENDF_TO_CLIENT_OR_FAIL
@@ -6704,7 +6726,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "%s"
               "<phrase>%s</phrase>"
               "<notes>%i</notes>"
-              "<result_hosts_only>%i</result_hosts_only>",
+              "<result_hosts_only>%i</result_hosts_only>"
+              "<min_cvss_base>%s</min_cvss_base>",
               get_report_data->report_id,
               get_report_data->sort_field ? get_report_data->sort_field
                                           : "type",
@@ -6714,7 +6737,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 ? get_report_data->search_phrase
                 : "",
               get_report_data->notes ? 1 : 0,
-              get_report_data->result_hosts_only ? 1 : 0);
+              get_report_data->result_hosts_only ? 1 : 0,
+              get_report_data->min_cvss_base
+                ? get_report_data->min_cvss_base
+                : "");
 
             if (strchr (levels, 'h'))
               SEND_TO_CLIENT_OR_FAIL ("<filter>High</filter>");
@@ -6775,7 +6801,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   : 1),
                 "port",
                 levels,
-                get_report_data->search_phrase);
+                get_report_data->search_phrase,
+                get_report_data->min_cvss_base);
 
               /* Buffer the results. */
 
@@ -6886,7 +6913,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_order,
                                   get_report_data->sort_field,
                                   levels,
-                                  get_report_data->search_phrase);
+                                  get_report_data->search_phrase,
+                                  get_report_data->min_cvss_base);
 
             SENDF_TO_CLIENT_OR_FAIL ("<results"
                                      " start=\"%i\""
@@ -6984,7 +7012,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_order,
                                   get_report_data->sort_field,
                                   get_report_data->levels,
-                                  get_report_data->search_phrase);
+                                  get_report_data->search_phrase,
+                                  NULL);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
             while (next (&results))
@@ -7739,7 +7768,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
               init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
-                                    NULL, NULL);
+                                    NULL, NULL, NULL);
               while (next (&results))
                 {
                   GString *buffer = g_string_new ("");

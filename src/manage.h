@@ -599,7 +599,8 @@ int
 report_scan_run_status (report_t, int*);
 
 int
-report_scan_result_count (report_t, const char*, const char*, int*);
+report_scan_result_count (report_t, const char*, const char*, const char*,
+                          int*);
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*);
@@ -639,7 +640,7 @@ init_report_iterator (iterator_t*, task_t);
 
 void
 init_result_iterator (iterator_t*, task_t, result_t, const char*, int, int,
-                      int, const char *, const char *, const char *);
+                      int, const char *, const char *, const char *, const char *);
 
 gboolean
 next_report (iterator_t*, report_t*);
