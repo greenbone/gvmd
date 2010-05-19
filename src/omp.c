@@ -4534,12 +4534,15 @@ send_reports (task_t task)
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
 print_report_xml (report_t report, task_t task, gchar* xml_file,
-                  int ascending, const char* sort_field, int result_hosts_only)
+                  int ascending, const char* sort_field, int result_hosts_only,
+                  const char *min_cvss_base)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -4578,7 +4581,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         sort_field,
                         get_report_data->levels,
                         get_report_data->search_phrase,
-                        NULL);
+                        min_cvss_base);
 
   if (result_hosts_only)
     result_hosts = make_array ();
@@ -5155,13 +5158,15 @@ print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
  *
  * @return 0 on success, else -1 with errno set.
  */
 static int
 print_report_latex (report_t report, task_t task, gchar* latex_file,
                     int ascending, const char* sort_field,
-                    int result_hosts_only)
+                    int result_hosts_only, const char* min_cvss_base)
 {
   FILE *out;
   iterator_t results, hosts;
@@ -5396,7 +5401,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             sort_field,
                             get_report_data->levels,
                             get_report_data->search_phrase,
-                            NULL);
+                            min_cvss_base);
       last_port = NULL;
       while (next (&results))
         {
@@ -5431,7 +5436,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             sort_field,
                             get_report_data->levels,
                             get_report_data->search_phrase,
-                            NULL);
+                            min_cvss_base);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -7022,7 +7027,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_field,
                                   get_report_data->levels,
                                   get_report_data->search_phrase,
-                                  NULL);
+                                  get_report_data->min_cvss_base);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
             while (next (&results))
@@ -7139,7 +7144,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        xml_file,
                                        get_report_data->sort_order,
                                        get_report_data->sort_field,
-                                       get_report_data->result_hosts_only))
+                                       get_report_data->result_hosts_only,
+                                       get_report_data->min_cvss_base))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7284,7 +7290,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        xml_file,
                                        get_report_data->sort_order,
                                        get_report_data->sort_field,
-                                       get_report_data->result_hosts_only))
+                                       get_report_data->result_hosts_only,
+                                       get_report_data->min_cvss_base))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7434,7 +7441,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          latex_file,
                                          get_report_data->sort_order,
                                          get_report_data->sort_field,
-                                         get_report_data->result_hosts_only))
+                                         get_report_data->result_hosts_only,
+                                         get_report_data->min_cvss_base))
               {
                 g_free (latex_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
@@ -7592,7 +7600,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        xml_file,
                                        get_report_data->sort_order,
                                        get_report_data->sort_field,
-                                       get_report_data->result_hosts_only))
+                                       get_report_data->result_hosts_only,
+                                       get_report_data->min_cvss_base))
               {
                 g_free (xml_file);
                 SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));

@@ -1,3 +1,12 @@
+2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Respect OMP GET_REPORT min_cvss_base for XML based and NBE formats.
+
+	* src/omp.c (print_report_xml, print_report_latex): Add min_cvss_base
+	arg.  Pass through to init_result_iterator.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORT in the "nbe" and XML
+	based cases, respect the min_cvss_base attribute.
+
 2010-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd_report_html.xsl (issue): Add CVSS to header.
