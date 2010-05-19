@@ -5297,6 +5297,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
       fputs ("This report might not show details of all issues that were"
              " found.\\\\\n",
              out);
+      if (result_hosts_only)
+        fputs ("It only lists hosts that produced issues.\\\\\n", out);
       if (get_report_data->search_phrase
           && strcmp (get_report_data->search_phrase, ""))
         fprintf (out,

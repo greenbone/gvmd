@@ -1,4 +1,9 @@
-2010-05-18  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (print_report_latex): Include result_hosts_only in details of
+	report contents.
+
+2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add CVSS constraint to OMP GET_REPORT.
 
