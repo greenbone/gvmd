@@ -1,5 +1,9 @@
 2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (print_report_latex): Add NVT name and CVSS to result headers.
+
+2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (print_report_latex): Include result_hosts_only in details of
 	report contents.
 

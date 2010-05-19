@@ -5438,7 +5438,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
       // FIX severity ordering is alphabetical on severity name
       while (next (&results))
         {
-          const char *severity;
+          const char *severity, *cvss_base;
 
           if (last_port == NULL
               || strcmp (last_port, result_iterator_port (&results)))
@@ -5469,9 +5469,11 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
           if (last_port == NULL)
             last_port = g_strdup (result_iterator_port (&results));
           severity = result_iterator_type (&results);
+          cvss_base = result_iterator_nvt_cvss_base (&results);
           fprintf (out,
                    "\\hline\n"
-                   "\\rowcolor%s{\\color{white}{%s}}\\\\\n"
+                   "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n"
+                   "\\rowcolor%s{\\color{white}{NVT: %s}}\\\\\n"
                    "\\hline\n"
                    "\\endfirsthead\n"
                    "\\hfill\\ldots continued from previous page \\ldots \\\\\n"
@@ -5483,7 +5485,12 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                    "\\hline\n"
                    "\\endlastfoot\n",
                    latex_severity_colour (severity),
-                   latex_severity_heading (severity));
+                   latex_severity_heading (severity),
+                   cvss_base ? " (CVSS: " : "",
+                   cvss_base ? cvss_base : "",
+                   cvss_base ? ") " : "",
+                   latex_severity_colour (severity),
+                   result_iterator_nvt_name (&results));
           latex_print_verbatim_text (out,
                                      result_iterator_descr (&results),
                                      NULL);
