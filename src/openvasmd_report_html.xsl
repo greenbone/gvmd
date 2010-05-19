@@ -118,6 +118,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:value-of select="port"/>
       </div>
       <b><xsl:value-of select="threat"/></b>
+      <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+         (CVSS: <xsl:value-of select="nvt/cvss_base"/>)
+      </xsl:if>
       <div style="width: 100%">
         NVT:
         <xsl:variable name="max" select="80"/>
