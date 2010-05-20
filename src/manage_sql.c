@@ -9904,6 +9904,19 @@ update_all_config_caches ()
 void
 manage_complete_nvt_cache_update (int mode)
 {
+  iterator_t configs;
+
+  /* Remove preferences from configs where the preference has vanished from
+   * the associated NVT. */
+  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_FIELDS " FROM configs;");
+  while (next (&configs))
+    sql ("DELETE FROM config_preferences"
+         " WHERE config = %llu"
+         " AND type = 'PLUGINS_PREFS'"
+         " AND name NOT IN (SELECT nvt_preferences.name FROM nvt_preferences);",
+         config_iterator_config (&configs));
+  cleanup_iterator (&configs);
+
   update_all_config_caches ();
   if (mode == -2) sql ("COMMIT;");
 }

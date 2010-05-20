@@ -1,3 +1,8 @@
+2010-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_complete_nvt_cache_update): Remove prefs from
+	configs where the pref has vanished from the NVT.
+
 2010-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Respect OMP GET_REPORT min_cvss_base for XML based and NBE formats.
