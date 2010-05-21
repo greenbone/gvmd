@@ -5978,8 +5978,7 @@ where_cvss_base (const char* min_cvss_base)
       quoted_min_cvss_base = sql_quote (min_cvss_base);
       cvss_sql = g_string_new ("");
       g_string_append_printf (cvss_sql,
-                              " AND nvts.oid = results.nvt"
-                              " AND CAST (nvts.cvss_base AS REAL)"
+                              " AND CAST ((SELECT cvss_base FROM nvts WHERE nvts.oid = results.nvt) AS REAL)"
                               " >= CAST ('%s' AS REAL)",
                               quoted_min_cvss_base);
       g_free (quoted_min_cvss_base);
@@ -6073,9 +6072,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       cvss_sql = where_cvss_base (min_cvss_base);
 
       if (host)
-        sql = g_strdup_printf ("SELECT DISTINCT results.ROWID, subnet, host, port,"
+        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
                                " nvt, type, results.description"
-                               " FROM results, report_results, nvts"
+                               " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
                                " AND report_results.result = results.ROWID"
@@ -6107,9 +6106,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                max_results,
                                first_result);
       else
-        sql = g_strdup_printf ("SELECT DISTINCT results.ROWID, subnet, host, port,"
+        sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
                                " nvt, type, results.description"
-                               " FROM results, report_results, nvts"
+                               " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
                                "%s"
@@ -6563,8 +6562,8 @@ report_scan_result_count (report_t report, const char* levels,
   phrase_sql = where_search_phrase (search_phrase);
   cvss_sql = where_cvss_base (min_cvss_base);
   *count = sql_int (0, 0,
-                    "SELECT count(DISTINCT results.ROWID)"
-                    " FROM results, report_results, nvts"
+                    "SELECT count(results.ROWID)"
+                    " FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"
                     "%s%s%s"
                     " AND report_results.report = %llu;",

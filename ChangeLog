@@ -1,3 +1,12 @@
+2010-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Recover speed of report result iteration.
+
+	* src/manage_sql.c (where_cvss_base): Get the cvss_base with an embedded
+	SELECT.
+	(init_result_iterator, report_scan_result_count): Remove "nvts" from the
+	selected tables, as the WHERE clause now SELECTs on that table.
+
 2010-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_complete_nvt_cache_update): Remove prefs from
