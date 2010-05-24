@@ -1,3 +1,8 @@
+2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Add "Ping Host" portscanner to "All" NVT
+	selector.
+
 2010-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Recover speed of report result iteration.

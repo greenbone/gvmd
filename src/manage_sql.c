@@ -4156,6 +4156,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
            /* OID of the "Nmap (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');");
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "Ping Host" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
     }
 
   if (sql_int (0, 0,
