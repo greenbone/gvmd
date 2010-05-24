@@ -2478,6 +2478,53 @@ migrate_16_to_17 ()
 }
 
 /**
+ * @brief Migrate the database from version 17 to version 18.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_17_to_18 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 17. */
+
+  if (manage_db_version () != 17)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* NVT "Ping Host" was added to the "All" NVT selector. */
+
+  /** @todo ROLLBACK on failure. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
+      == 0)
+    {
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "Ping Host" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
+    }
+
+  /* Set the database version to 18. */
+
+  set_db_version (18);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2499,6 +2546,7 @@ static migrator_t database_migrators[]
     {15, migrate_14_to_15},
     {16, migrate_15_to_16},
     {17, migrate_16_to_17},
+    {18, migrate_17_to_18},
     /* End marker. */
     {-1, NULL}};
 

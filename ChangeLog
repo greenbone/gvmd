@@ -1,5 +1,15 @@
 2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Increase database version to 18 to ensure "Ping Host" is in the "All"
+	NVT selector.  Add database migration from version 17 to 18.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 18.
+
+	* src/manage_sql.c (migrate_17_to_18): New function.
+	(database_migrators): Add migrate_17_to_18.
+
+2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Add "Ping Host" portscanner to "All" NVT
 	selector.
 
