@@ -1,5 +1,11 @@
 2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_17_to_18_set_pref): New function.
+	(migrate_17_to_18): Ensure "Mark unrechable Hosts as dead" is set to "yes"
+	for "Ping Host" NVT in predefined configs.
+
+2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (setup_full_config_prefs): Set "Mark unrechable Hosts
 	as dead" to "yes" for "Ping Host" NVT.
 

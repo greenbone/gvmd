@@ -2478,6 +2478,29 @@ migrate_16_to_17 ()
 }
 
 /**
+ * @brief Set the pref for migrate_17_to_18.
+ *
+ * @param[in]  config  Config to set pref on.
+ */
+static void
+migrate_17_to_18_set_pref (config_t config)
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM config_preferences"
+               " WHERE config = %llu"
+               " AND name ="
+               " 'Ping Host[checkbox]:Mark unrechable Hosts as dead"
+               " (not scanning)'",
+               config)
+      == 0)
+    sql ("INSERT into config_preferences (config, type, name, value)"
+         " VALUES (%llu, 'PLUGINS_PREFS',"
+         " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+         " 'yes');",
+         config);
+}
+
+/**
  * @brief Migrate the database from version 17 to version 18.
  *
  * @return 0 success, -1 error.
@@ -2497,9 +2520,12 @@ migrate_17_to_18 ()
 
   /* Update the database. */
 
-  /* NVT "Ping Host" was added to the "All" NVT selector. */
+  /* NVT "Ping Host" was added to the predefined configs, with the
+   * "Mark unrechable..." preference set to "yes". */
 
   /** @todo ROLLBACK on failure. */
+
+  /* Add "Ping Host" to the "All" NVT selector. */
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM nvt_selectors WHERE name ="
@@ -2514,6 +2540,13 @@ migrate_17_to_18 ()
            /* OID of the "Ping Host" NVT. */
            " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
     }
+
+  /* Ensure the preference is set on the predefined configs. */
+
+  migrate_17_to_18_set_pref (CONFIG_ID_FULL_AND_FAST);
+  migrate_17_to_18_set_pref (CONFIG_ID_FULL_AND_FAST_ULTIMATE);
+  migrate_17_to_18_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP);
+  migrate_17_to_18_set_pref (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE);
 
   /* Set the database version to 18. */
 
