@@ -4072,6 +4072,12 @@ setup_full_config_prefs (config_t config, int safe_checks,
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'no');",
        config);
+
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'PLUGINS_PREFS',"
+       " 'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
+       " 'yes');",
+       config);
 }
 
 /**

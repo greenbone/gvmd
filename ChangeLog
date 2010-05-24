@@ -1,5 +1,10 @@
 2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (setup_full_config_prefs): Set "Mark unrechable Hosts
+	as dead" to "yes" for "Ping Host" NVT.
+
+2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Increase database version to 18 to ensure "Ping Host" is in the "All"
 	NVT selector.  Add database migration from version 17 to 18.
 
