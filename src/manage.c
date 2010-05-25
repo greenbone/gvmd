@@ -1217,7 +1217,6 @@ run_task (task_t task, char **report_id, int from)
       current_report = (report_t) 0;
       return -10;
     }
-  g_ptr_array_add (preference_files, NULL);
 
   /* Send credential preferences if there's a credential linked to target. */
 
@@ -1239,11 +1238,18 @@ run_task (task_t task, char **report_id, int from)
               || sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                   " <|> %s\n",
                                   user)
-              || sendf_to_server ("SSH Authorization[password]:"
-                                  "SSH password (unsafe!):"
-                                  " <|> %s\n",
-                                  password))
+              || (lsc_credential_iterator_public_key (&credentials)
+                   ? sendf_to_server ("SSH Authorization[password]:"
+                                      "SSH key passphrase:"
+                                      " <|> %s\n",
+                                      password)
+                   : sendf_to_server ("SSH Authorization[password]:"
+                                      "SSH password (unsafe!):"
+                                      " <|> %s\n",
+                                      password)))
+
             {
+ fail:
               free (hosts);
               cleanup_iterator (&credentials);
               array_free (preference_files);
@@ -1252,9 +1258,49 @@ run_task (task_t task, char **report_id, int from)
               current_report = (report_t) 0;
               return -10;
             }
+
+          if (lsc_credential_iterator_public_key (&credentials))
+            {
+              char *uuid = openvas_uuid_make ();
+              if (uuid == NULL)
+                goto fail;
+
+              g_ptr_array_add (preference_files, (gpointer) uuid);
+              g_ptr_array_add
+               (preference_files,
+                (gpointer) g_strdup (lsc_credential_iterator_public_key
+                                      (&credentials)));
+
+              if (sendf_to_server ("SSH Authorization[file]:"
+                                   "SSH public key:"
+                                   " <|> %s\n",
+                                   uuid))
+                goto fail;
+            }
+
+          if (lsc_credential_iterator_private_key (&credentials))
+            {
+              char *uuid = openvas_uuid_make ();
+              if (uuid == NULL)
+                goto fail;
+
+              g_ptr_array_add (preference_files, (gpointer) uuid);
+              g_ptr_array_add
+               (preference_files,
+                (gpointer) g_strdup (lsc_credential_iterator_private_key
+                                      (&credentials)));
+
+              if (sendf_to_server ("SSH Authorization[file]:"
+                                   "SSH private key:"
+                                   " <|> %s\n",
+                                   uuid))
+                goto fail;
+            }
         }
       cleanup_iterator (&credentials);
     }
+
+  g_ptr_array_add (preference_files, NULL);
 
   if (send_to_server ("<|> CLIENT\n"))
     {

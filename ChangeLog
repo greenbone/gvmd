@@ -1,5 +1,11 @@
 2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): If the credential has a public key, send the
+	passphrase for the "SSH Authorization" NVT.  Also send public and private
+	keys as attached files.
+
+2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_17_to_18_set_pref): New function.
 	(migrate_17_to_18): Ensure "Mark unrechable Hosts as dead" is set to "yes"
 	for "Ping Host" NVT in predefined configs.
