@@ -1,5 +1,16 @@
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch MODIFY_REPORT to the new callback data mechanism.
+
+	* src/omp.c (modify_report_data_t): New type.
+	(modify_report_data_reset): New function.
+	(command_data_t): Add modify_report.
+	(modify_report_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Make MODIFY_REPORT cases use command_data.
+
+2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/CMakeLists.txt: Lowercase commands.
 
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>

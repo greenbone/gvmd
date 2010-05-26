@@ -1028,6 +1028,22 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
+  char *report_id;
+  char *parameter_id;
+  char *parameter_value;
+} modify_report_data_t;
+
+static void
+modify_report_data_reset (modify_report_data_t *data)
+{
+  free (data->report_id);
+  free (data->parameter_id);
+  free (data->parameter_value);
+  memset (data, 0, sizeof (modify_report_data_t));
+}
+
+typedef struct
+{
   char *escalator_id;
   char *schedule_id;
 } modify_task_data_t;
@@ -1148,6 +1164,7 @@ typedef union
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
+  modify_report_data_t modify_report;
   modify_task_data_t modify_task;
   pause_task_data_t pause_task;
   resume_or_start_task_data_t resume_or_start_task;
@@ -1329,6 +1346,12 @@ import_config_data_t *import_config_data
  */
 modify_note_data_t *modify_note_data
  = (modify_note_data_t*) &(command_data.create_note);
+
+/**
+ * @brief Parser callback data for MODIFY_REPORT.
+ */
+modify_report_data_t *modify_report_data
+ = &(command_data.modify_report);
 
 /**
  * @brief Parser callback data for MODIFY_TASK.
@@ -2610,7 +2633,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "report_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&modify_report_data->report_id, attribute);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
@@ -3456,7 +3479,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "id", &attribute))
-              openvas_append_string (&modify_task_parameter, attribute);
+              openvas_append_string (&modify_report_data->parameter_id,
+                                     attribute);
             set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
           }
         else
@@ -8427,30 +8451,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (modify_task_parameter != NULL
-            && modify_task_value != NULL)
+        if (modify_report_data->parameter_id != NULL
+            && modify_report_data->parameter_value != NULL)
           {
             report_t report;
 
-            if (current_uuid == NULL)
+            if (modify_report_data->report_id == NULL)
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_report",
                                   "MODIFY_REPORT requires a report_id attribute"));
-            else if (find_report (current_uuid, &report))
-              {
-                openvas_free_string_var (&current_uuid);
-                openvas_free_string_var (&modify_task_parameter);
-                openvas_free_string_var (&modify_task_value);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-              }
+            else if (find_report (modify_report_data->report_id, &report))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
             else if (report == 0)
               {
-                openvas_free_string_var (&current_uuid);
-                openvas_free_string_var (&modify_task_parameter);
-                openvas_free_string_var (&modify_task_value);
                 if (send_find_error_to_client ("modify_report",
                                                "report",
-                                               current_uuid))
+                                               modify_report_data->report_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -8458,11 +8474,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else
               {
-                int ret = set_report_parameter (report,
-                                                modify_task_parameter,
-                                                modify_task_value);
-                openvas_free_string_var (&modify_task_parameter);
-                openvas_free_string_var (&modify_task_value);
+                int ret = set_report_parameter
+                           (report,
+                            modify_report_data->parameter_id,
+                            modify_report_data->parameter_value);
                 switch (ret)
                   {
                     case 0:
@@ -8482,12 +8497,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          {
-            openvas_free_string_var (&modify_task_parameter);
-            openvas_free_string_var (&modify_task_value);
-            openvas_free_string_var (&current_uuid);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-          }
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+        modify_report_data_reset (modify_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_REPORT_PARAMETER:
@@ -12147,7 +12158,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT_PARAMETER:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_report_data->parameter_value,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_MODIFY_TASK_COMMENT:
