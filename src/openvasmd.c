@@ -791,8 +791,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
   if (scanner_socket == -1)
     {
       g_warning ("%s: failed to create scanner socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
+                 __FUNCTION__,
+                 strerror (errno));
       return EXIT_FAILURE;
     }
 
@@ -809,8 +809,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
   if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
     {
       g_warning ("%s: failed to set scanner socket flag: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
+                 __FUNCTION__,
+                 strerror (errno));
       return EXIT_FAILURE;
     }
 
@@ -819,21 +819,21 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     * request and cache the plugins, then exit. */
 
   if (serve_omp (NULL, &scanner_session,
-                  NULL, &scanner_credentials,
-                  update_nvt_cache ? -1 : -2,
-                  &scanner_socket,
-                  database))
+                 NULL, &scanner_credentials,
+                 update_nvt_cache ? -1 : -2,
+                 &scanner_socket,
+                 database))
     {
       openvas_server_free (scanner_socket,
-                            scanner_session,
-                            scanner_credentials);
+                           scanner_session,
+                           scanner_credentials);
       return EXIT_FAILURE;
     }
   else
     {
       openvas_server_free (scanner_socket,
-                            scanner_session,
-                            scanner_credentials);
+                           scanner_session,
+                           scanner_credentials);
       return EXIT_SUCCESS;
     }
 }
