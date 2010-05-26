@@ -1,5 +1,9 @@
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/CMakeLists.txt: Lowercase commands.
+
+2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (fork_connection_for_schedular): Add certificates to
 	openvas_server_new call.
 

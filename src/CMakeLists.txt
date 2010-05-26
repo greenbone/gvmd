@@ -164,7 +164,7 @@ install (FILES openvasmd_report_html.xsl
 
 ## Tests
 
-ENABLE_TESTING ()
+enable_testing ()
 
 add_subdirectory (tests)
 
@@ -182,7 +182,7 @@ add_custom_target (flawfinder COMMENT "Running flawfinder..."
                    COMMAND sh -c \"flawfinder *.[ch]\")
 
 add_custom_target (check COMMENT "Checking code...")
-ADD_DEPENDENCIES (check splint rats flawfinder)
+add_dependencies (check splint rats flawfinder)
 
 ## Tag files
 
@@ -193,6 +193,6 @@ add_custom_target (etags COMMENT "Building TAGS..."
 add_custom_target (ctags COMMENT "Building tags..."
                    COMMAND ctags ${C_FILES})
 add_custom_target (tags COMMENT "Building tags files...")
-ADD_DEPENDENCIES (tags etags ctags)
+add_dependencies (tags etags ctags)
 
 ## End
