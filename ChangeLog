@@ -1,5 +1,13 @@
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (fork_connection_for_schedular): Add certificates to
+	openvas_server_new call.
+
+	* src/ompd.c (CACERT, CLIENTCERT, CLIENTKEY): New defines.
+	(recreate_session): Add certificates to openvas_server_new call.
+
+2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c: Repair indentation put out in revision 7409.
 
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>

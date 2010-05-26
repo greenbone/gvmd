@@ -65,6 +65,27 @@ int socket(int domain, int type, int protocol);
 #endif
 
 /**
+ * @brief Location of Certificate Authority certificate.
+ */
+#ifndef CACERT
+#define CACERT     "/var/lib/openvas/CA/cacert.pem"
+#endif
+
+/**
+ * @brief Location of client certificate.
+ */
+#ifndef CLIENTCERT
+#define CLIENTCERT "/var/lib/openvas/CA/clientcert.pem"
+#endif
+
+/**
+ * @brief Location of client certificate private key.
+ */
+#ifndef CLIENTKEY
+#define CLIENTKEY  "/var/lib/openvas/private/CA/clientkey.pem"
+#endif
+
+/**
  * @brief Seconds of client idleness before manager closes client connection.
  */
 #define CLIENT_TIMEOUT 900
@@ -467,9 +488,9 @@ recreate_session (int server_socket,
       return -1;
     }
   if (openvas_server_new (GNUTLS_CLIENT,
-                          NULL,
-                          NULL,
-                          NULL,
+                          CACERT,
+                          CLIENTCERT,
+                          CLIENTKEY,
                           server_session,
                           server_credentials))
     return -1;
