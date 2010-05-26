@@ -1259,17 +1259,24 @@ run_task (task_t task, char **report_id, int from)
               return -10;
             }
 
-          if (lsc_credential_iterator_public_key (&credentials))
+          if (lsc_credential_iterator_public_key (&credentials)
+              && (strlen (lsc_credential_iterator_public_key (&credentials))
+                  > 7))
             {
+              gchar *public_key, *space;
               char *uuid = openvas_uuid_make ();
               if (uuid == NULL)
                 goto fail;
 
+              public_key = g_strdup (lsc_credential_iterator_public_key
+                                      (&credentials)
+                                     + 8);
+              space = memchr (public_key, ' ', strlen (public_key));
+              if (space)
+                *space = '\0';
+
               g_ptr_array_add (preference_files, (gpointer) uuid);
-              g_ptr_array_add
-               (preference_files,
-                (gpointer) g_strdup (lsc_credential_iterator_public_key
-                                      (&credentials)));
+              g_ptr_array_add (preference_files, (gpointer) public_key);
 
               if (sendf_to_server ("SSH Authorization[file]:"
                                    "SSH public key:"

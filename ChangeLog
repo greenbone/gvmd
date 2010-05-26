@@ -1,4 +1,8 @@
-2010-05-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): Only send the base64 part of the public key.
+
+2010-05-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task): If the credential has a public key, send the
 	passphrase for the "SSH Authorization" NVT.  Also send public and private
