@@ -1028,6 +1028,47 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
+  array_t *families_growing_empty;
+  array_t *families_growing_all;
+  array_t *families_static_all;
+  int family_selection_family_all;
+  char *family_selection_family_all_text;
+  int family_selection_family_growing;
+  char *family_selection_family_growing_text;
+  char *family_selection_family_name;
+  int family_selection_growing;
+  char *family_selection_growing_text;
+  char *name;
+  array_t *nvt_selection;
+  char *nvt_selection_family;
+  char *nvt_selection_nvt_oid;
+  char *preference_name;
+  char *preference_nvt_oid;
+  char *preference_value;
+} modify_config_data_t;
+
+static void
+modify_config_data_reset (modify_config_data_t *data)
+{
+  array_free (data->families_growing_empty);
+  array_free (data->families_growing_all);
+  array_free (data->families_static_all);
+  free (data->family_selection_family_all_text);
+  free (data->family_selection_family_growing_text);
+  free (data->family_selection_family_name);
+  free (data->family_selection_growing_text);
+  free (data->name);
+  array_free (data->nvt_selection);
+  free (data->nvt_selection_family);
+  free (data->nvt_selection_nvt_oid);
+  free (data->preference_name);
+  free (data->preference_nvt_oid);
+  free (data->preference_value);
+  memset (data, 0, sizeof (modify_config_data_t));
+}
+
+typedef struct
+{
   char *report_id;
   char *parameter_id;
   char *parameter_value;
@@ -1164,6 +1205,7 @@ typedef union
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
+  modify_config_data_t modify_config;
   modify_report_data_t modify_report;
   modify_task_data_t modify_task;
   pause_task_data_t pause_task;
@@ -1340,6 +1382,12 @@ get_system_reports_data_t *get_system_reports_data
  */
 import_config_data_t *import_config_data
  = (import_config_data_t*) &(command_data.create_config.import);
+
+/**
+ * @brief Parser callback data for MODIFY_CONFIG.
+ */
+modify_config_data_t *modify_config_data
+ = &(command_data.modify_config);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
@@ -3332,19 +3380,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_NAME);
         else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
           {
-            assert (current_array_1 == NULL);
-            assert (current_array_2 == NULL);
-            assert (current_array_3 == NULL);
-            current_array_1 = make_array ();
-            current_array_2 = make_array ();
-            current_array_3 = make_array ();
-            current_int_3 = 0; /* For GROWING entity, in case missing. */
+            modify_config_data->families_growing_all = make_array ();
+            modify_config_data->families_static_all = make_array ();
+            modify_config_data->families_growing_empty = make_array ();
+            /* For GROWING entity, in case missing. */
+            modify_config_data->family_selection_growing = 0;
             set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
           }
         else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
           {
-            assert (current_array_1 == NULL);
-            current_array_1 = make_array ();
+            modify_config_data->nvt_selection = make_array ();
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
           }
         else if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -3366,16 +3411,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_task_comment);
-            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
-          }
+          set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
         else if (strcasecmp ("NVT", element_name) == 0)
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "oid", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&modify_config_data->nvt_selection_nvt_oid,
+                                     attribute);
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
           }
         else
@@ -3396,16 +3439,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         if (strcasecmp ("FAMILY", element_name) == 0)
           {
-            openvas_free_string_var (&modify_task_comment);
-            current_int_2 = 0; /* For ALL entity, in case missing. */
-            current_int_1 = 0; /* For GROWING entity, in case missing. */
+            /* For ALL entity, in case missing. */
+            modify_config_data->family_selection_family_all = 0;
+            /* For GROWING entity, in case missing. */
+            modify_config_data->family_selection_family_growing = 0;
             set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
           }
         else if (strcasecmp ("GROWING", element_name) == 0)
-          {
-            openvas_free_string_var (&modify_task_comment);
-            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
-          }
+          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
         else
           {
             if (send_element_error_to_client ("modify_config", element_name))
@@ -3453,7 +3494,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "oid", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&modify_config_data->preference_nvt_oid,
+                                     attribute);
             set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NVT);
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
@@ -8204,40 +8246,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG:
         {
           config_t config;
-          if (current_name == NULL || strlen (current_name) == 0)
+          if (modify_config_data->name == NULL
+              || strlen (modify_config_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
                                 "MODIFY_CONFIG requires a NAME element"));
-          else if ((current_format         /* NVT_SELECTION family. */
-                    && current_array_2)    /* Implies FAMILY_SELECTION. */
-                   || ((current_format || current_array_2)
-                       && (modify_task_name
-                           || modify_task_value
-                           || current_uuid)))
+          else if ((modify_config_data->nvt_selection_family
+                    /* This array implies FAMILY_SELECTION. */
+                    && modify_config_data->families_static_all)
+                   || ((modify_config_data->nvt_selection_family
+                        || modify_config_data->families_static_all)
+                       && (modify_config_data->preference_name
+                           || modify_config_data->preference_value
+                           || modify_config_data->preference_nvt_oid)))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
                                 "MODIFY_CONFIG requires either a PREFERENCE or"
                                 " an NVT_SELECTION or a FAMILY_SELECTION"));
-          else if (find_config (current_name, &config))
+          else if (find_config (modify_config_data->name, &config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
           else if (config == 0)
             {
               if (send_find_error_to_client ("modify_config",
                                              "config",
-                                             current_name))
+                                             modify_config_data->name))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else if (current_format)
+          else if (modify_config_data->nvt_selection_family)
             {
-              assert (current_array_1);
+              assert (modify_config_data->nvt_selection);
 
-              array_terminate (current_array_1);
-              switch (manage_set_config_nvts (config,
-                                              current_format,
-                                              current_array_1))
+              array_terminate (modify_config_data->nvt_selection);
+              switch (manage_set_config_nvts
+                       (config,
+                        modify_config_data->nvt_selection_family,
+                        modify_config_data->nvt_selection))
                 {
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
@@ -8260,23 +8306,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      (XML_INTERNAL_ERROR ("modify_config"));
                     break;
                 }
-
-              array_free (current_array_1);
-              current_array_1 = NULL;
             }
-          else if (current_array_2)    /* Implies FAMILY_SELECTION. */
+          else if (modify_config_data->families_static_all)
             {
-              assert (current_array_1);
-              assert (current_array_3);
+              /* There was a FAMILY_SELECTION. */
 
-              array_terminate (current_array_1);
-              array_terminate (current_array_2);
-              array_terminate (current_array_3);
-              switch (manage_set_config_families (config,
-                                                  current_array_1,
-                                                  current_array_2,
-                                                  current_array_3,
-                                                  current_int_3))
+              assert (modify_config_data->families_growing_all);
+              assert (modify_config_data->families_static_all);
+
+              array_terminate (modify_config_data->families_growing_all);
+              array_terminate (modify_config_data->families_static_all);
+              array_terminate (modify_config_data->families_growing_empty);
+              switch (manage_set_config_families
+                       (config,
+                        modify_config_data->families_growing_all,
+                        modify_config_data->families_static_all,
+                        modify_config_data->families_growing_empty,
+                        modify_config_data->family_selection_growing))
                 {
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
@@ -8299,23 +8345,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      (XML_INTERNAL_ERROR ("modify_report"));
                     break;
                 }
-
-              array_free (current_array_1);
-              array_free (current_array_2);
-              array_free (current_array_3);
-              current_array_1 = NULL;
-              current_array_2 = NULL;
-              current_array_3 = NULL;
             }
-          else if (modify_task_name == NULL || strlen (modify_task_name) == 0)
+          else if (modify_config_data->preference_name == NULL
+                   || strlen (modify_config_data->preference_name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
                                 "MODIFY_CONFIG PREFERENCE requires a NAME"
                                 " element"));
-          else switch (manage_set_config_preference (config,
-                                                     current_uuid,
-                                                     modify_task_name,
-                                                     modify_task_value))
+          else switch (manage_set_config_preference
+                        (config,
+                         modify_config_data->preference_nvt_oid,
+                         modify_config_data->preference_name,
+                         modify_config_data->preference_value))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
@@ -8336,11 +8377,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
             }
         }
-        openvas_free_string_var (&current_format);
-        openvas_free_string_var (&current_name);
-        openvas_free_string_var (&modify_task_name);
-        openvas_free_string_var (&modify_task_value);
-        openvas_free_string_var (&current_uuid);
+        modify_config_data_reset (modify_config_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
       case CLIENT_MODIFY_CONFIG_NAME:
@@ -8362,49 +8399,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
         assert (strcasecmp ("FAMILY", element_name) == 0);
-        if (current_uuid)
+        if (modify_config_data->family_selection_family_name)
           {
-            if (current_int_1)
+            if (modify_config_data->family_selection_family_growing)
               {
-                if (current_int_2)
+                if (modify_config_data->family_selection_family_all)
                   /* Growing 1 and select all 1. */
-                  array_add (current_array_1, current_uuid);
+                  array_add (modify_config_data->families_growing_all,
+                             modify_config_data->family_selection_family_name);
                 else
                   /* Growing 1 and select all 0. */
-                  array_add (current_array_3, current_uuid);
+                  array_add (modify_config_data->families_growing_empty,
+                             modify_config_data->family_selection_family_name);
               }
             else
               {
-                if (current_int_2)
+                if (modify_config_data->family_selection_family_all)
                   /* Growing 0 and select all 1. */
-                  array_add (current_array_2, current_uuid);
+                  array_add (modify_config_data->families_static_all,
+                             modify_config_data->family_selection_family_name);
                 /* Else growing 0 and select all 0. */
               }
           }
-        current_uuid = NULL;
+        modify_config_data->family_selection_family_name = NULL;
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
         assert (strcasecmp ("GROWING", element_name) == 0);
-        if (modify_task_rcfile)
+        if (modify_config_data->family_selection_growing_text)
           {
-            current_int_3 = atoi (modify_task_rcfile);
-            openvas_free_string_var (&modify_task_rcfile);
+            modify_config_data->family_selection_growing
+             = atoi (modify_config_data->family_selection_growing_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_growing_text);
           }
         else
-          current_int_3 = 0;
+          modify_config_data->family_selection_growing = 0;
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
         break;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
         assert (strcasecmp ("ALL", element_name) == 0);
-        if (modify_task_rcfile)
+        if (modify_config_data->family_selection_family_all_text)
           {
-            current_int_2 = atoi (modify_task_rcfile);
-            openvas_free_string_var (&modify_task_rcfile);
+            modify_config_data->family_selection_family_all
+             = atoi (modify_config_data->family_selection_family_all_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_family_all_text);
           }
         else
-          current_int_2 = 0;
+          modify_config_data->family_selection_family_all = 0;
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
@@ -8413,13 +8457,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
         assert (strcasecmp ("GROWING", element_name) == 0);
-        if (modify_task_rcfile)
+        if (modify_config_data->family_selection_family_growing_text)
           {
-            current_int_1 = atoi (modify_task_rcfile);
-            openvas_free_string_var (&modify_task_rcfile);
+            modify_config_data->family_selection_family_growing
+             = atoi (modify_config_data->family_selection_family_growing_text);
+            openvas_free_string_var
+             (&modify_config_data->family_selection_family_growing_text);
           }
         else
-          current_int_1 = 0;
+          modify_config_data->family_selection_family_growing = 0;
         set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
         break;
 
@@ -8429,9 +8475,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
         assert (strcasecmp ("NVT", element_name) == 0);
-        if (current_uuid)
-          array_add (current_array_1, current_uuid);
-        current_uuid = NULL;
+        if (modify_config_data->nvt_selection_nvt_oid)
+          array_add (modify_config_data->nvt_selection,
+                     modify_config_data->nvt_selection_nvt_oid);
+        modify_config_data->nvt_selection_nvt_oid = NULL;
         set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
         break;
 
@@ -8446,7 +8493,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
         assert (strcasecmp ("VALUE", element_name) == 0);
         /* Init, so it's the empty string when the value is empty. */
-        openvas_append_string (&modify_task_value, "");
+        openvas_append_string (&modify_config_data->preference_value, "");
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
         break;
 
@@ -12132,29 +12179,47 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_MODIFY_CONFIG_NAME:
-        openvas_append_text (&current_name, text, text_len);
+        openvas_append_text (&modify_config_data->name, text, text_len);
         break;
 
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
-        openvas_append_text (&current_format, text, text_len);
+        openvas_append_text (&modify_config_data->nvt_selection_family,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
+        openvas_append_text
+         (&modify_config_data->family_selection_family_all_text,
+          text,
+          text_len);
+        break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        openvas_append_text (&modify_task_rcfile, text, text_len);
+        openvas_append_text
+         (&modify_config_data->family_selection_family_growing_text,
+          text,
+          text_len);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME:
-        openvas_append_text (&current_uuid, text, text_len);
+        openvas_append_text (&modify_config_data->family_selection_family_name,
+                             text,
+                             text_len);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        openvas_append_text (&modify_task_rcfile, text, text_len);
+        openvas_append_text (&modify_config_data->family_selection_growing_text,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_MODIFY_CONFIG_PREFERENCE_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
+        openvas_append_text (&modify_config_data->preference_name,
+                             text,
+                             text_len);
         break;
       case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        openvas_append_text (&modify_task_value, text, text_len);
+        openvas_append_text (&modify_config_data->preference_value,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_MODIFY_REPORT_PARAMETER:

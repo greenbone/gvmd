@@ -1,3 +1,14 @@
+2010-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Switch MODIFY_CONFIG to the new callback data mechanism.
+
+	* src/omp.c (modify_config_data_t): New type.
+	(modify_config_data_reset): New function.
+	(command_data_t): Add modify_config.
+	(modify_config_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Make MODIFY_CONFIG cases use command_data.
+
 2010-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch MODIFY_REPORT to the new callback data mechanism.
