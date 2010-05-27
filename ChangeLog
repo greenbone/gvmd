@@ -1,5 +1,17 @@
 2010-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch MODIFY_TASK to the new callback data mechanism.
+
+	* src/omp.c (modify_task_data_t): Add fields for remaining values.
+	(modify_task_data_reset): Free new fields.
+	(modify_task_parameter, modify_task_comment, modify_task_file)
+	(modify_task_rcfile): Remove.  Out of use global vars.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Make MODIFY_TASK cases use command_data for all
+	data.
+
+2010-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch MODIFY_CONFIG to the new callback data mechanism.
 
 	* src/omp.c (modify_config_data_t): New type.
