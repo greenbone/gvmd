@@ -1,3 +1,32 @@
+openvas-manager 1.0.0-beta7 (2010-05-28)
+
+This is the seventh beta release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS) leading up to the upcoming
+openvas-manager 1.0.
+
+IMPORTANT: Since version 1.0.0-beta6, the manager uses certificate based
+authentication to authenticate against an openvas-scanner. Please do read the
+INSTALL file provided with openvas-manager and make sure you have
+openvas-scanner 3.0.2 or higher before installing this manager version!
+
+Many thanks to everyone who has contributed to this release:
+Stephan Kleine, Matthew Mundell, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 1.0.0-beta6:
+
+* A large amount of code which was present in both openvas-manager and
+  openvas-administrator has been moved to openvas-libraries.
+* An issue that caused started tasks to remain in the "Requested" stage
+  indefinitely has been fixed.
+* An issue that caused incorrect values of the scan progress under certain
+  conditions has been fixed.
+* A new escalator condition has been add: Threat Level Changed.
+* Open ports are now included in scan reports even if no vulnerability was
+  detected on that port.
+* Support for CVSS scores and Risk Factors has been improved.
+* Support for excluding host without any results from the report has been added.
+
+
 openvas-manager 1.0.0-beta6 (2010-04-15)
 
 This is the sixth beta release of the openvas-manager module for the Open

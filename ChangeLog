@@ -1,3 +1,9 @@
+2010-05-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 1.0.0-beta7 release.
+
+	* CHANGES: Updated.
+
 2010-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch MODIFY_TASK to the new callback data mechanism.
