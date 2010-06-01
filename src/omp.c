@@ -919,6 +919,23 @@ delete_task_data_reset (delete_task_data_t *data)
 
 typedef struct
 {
+  char *format;
+  char *name;
+  char *sort_field;
+  int sort_order;
+} get_agents_data_t;
+
+static void
+get_agents_data_reset (get_agents_data_t *data)
+{
+  free (data->format);
+  free (data->name);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_agents_data_t));
+}
+
+typedef struct
+{
   char *note_id;
   char *nvt_oid;
   char *task_id;
@@ -1217,6 +1234,7 @@ typedef union
   delete_schedule_data_t delete_schedule;
   delete_target_data_t delete_target;
   delete_task_data_t delete_task;
+  get_agents_data_t get_agents;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1358,6 +1376,12 @@ delete_target_data_t *delete_target_data
  */
 delete_task_data_t *delete_task_data
  = (delete_task_data_t*) &(command_data.delete_task);
+
+/**
+ * @brief Parser callback data for GET_AGENTS.
+ */
+get_agents_data_t *get_agents_data
+ = &(command_data.get_agents);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -2301,18 +2325,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_agents_data->name, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_agents_data->format, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_agents_data->sort_field, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_agents_data->sort_order = strcmp (attribute, "descending");
             else
-              current_int_2 = 1;
+              get_agents_data->sort_order = 1;
             set_client_state (CLIENT_GET_AGENTS);
           }
         else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
@@ -11294,22 +11318,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_AGENTS", element_name) == 0);
 
-          if (current_format)
+          if (get_agents_data->format)
             {
-              if (strlen (current_format))
+              if (strlen (get_agents_data->format))
                 {
-                  if (strcasecmp (current_format, "installer") == 0)
+                  if (strcasecmp (get_agents_data->format, "installer") == 0)
                     format = 1;
-                  else if (strcasecmp (current_format, "howto_install") == 0)
+                  else if (strcasecmp (get_agents_data->format,
+                                       "howto_install")
+                           == 0)
                     format = 2;
-                  else if (strcasecmp (current_format, "howto_use") == 0)
+                  else if (strcasecmp (get_agents_data->format, "howto_use")
+                           == 0)
                     format = 3;
                   else
                     format = -1;
                 }
               else
                 format = 0;
-              openvas_free_string_var (&current_format);
             }
           else
             format = 0;
@@ -11318,13 +11344,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
                                 " be \"installer\", \"howto_install\" or \"howto_use\"."));
-          else if (current_uuid && find_agent (current_uuid, &agent))
+          else if (get_agents_data->name
+                   && find_agent (get_agents_data->name, &agent))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
-          else if (current_uuid && agent == 0)
+          else if (get_agents_data->name && agent == 0)
             {
               if (send_find_error_to_client ("get_agents",
                                              "agent",
-                                             current_uuid))
+                                             get_agents_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -11337,10 +11364,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_agent_iterator (&targets,
                                    agent,
-                                   /* Attribute sort_order. */
-                                   current_int_2,
-                                   /* Attribute sort_field. */
-                                   current_name);
+                                   get_agents_data->sort_order,
+                                   get_agents_data->sort_field);
               while (next (&targets))
                 {
                   switch (format)
@@ -11396,7 +11421,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_agents_response>");
             }
-          openvas_free_string_var (&current_name);
+          get_agents_data_reset (get_agents_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
