@@ -4643,6 +4643,9 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
   if (result_hosts_only)
     result_hosts = make_array ();
+  else
+    /* Quiet erroneous compiler warning. */
+    result_hosts = NULL;
   while (next (&results))
     {
       GString *buffer = g_string_new ("");
@@ -6996,6 +6999,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      get_report_data->max_results);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
+            else
+              /* Quiet erroneous compiler warning. */
+              result_hosts = NULL;
             while (next (&results))
               {
                 GString *buffer = g_string_new ("");
@@ -7088,6 +7094,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->min_cvss_base);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
+            else
+              /* Quiet erroneous compiler warning. */
+              result_hosts = NULL;
             while (next (&results))
               {
                 g_string_append_printf (nbe,
