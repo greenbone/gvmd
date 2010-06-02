@@ -1025,6 +1025,17 @@ get_nvt_details_data_reset (get_nvt_details_data_t *data)
 
 typedef struct
 {
+  int sort_order;
+} get_nvt_families_data_t;
+
+static void
+get_nvt_families_data_reset (get_nvt_families_data_t *data)
+{
+  memset (data, 0, sizeof (get_nvt_families_data_t));
+}
+
+typedef struct
+{
   char *algorithm;
 } get_nvt_feed_checksum_data_t;
 
@@ -1321,6 +1332,7 @@ typedef union
   get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
   get_nvt_details_data_t get_nvt_details;
+  get_nvt_families_data_t get_nvt_families;
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1498,6 +1510,12 @@ get_notes_data_t *get_notes_data
  */
 get_nvt_details_data_t *get_nvt_details_data
  = &(command_data.get_nvt_details);
+
+/**
+ * @brief Parser callback data for GET_NVT_FAMILIES.
+ */
+get_nvt_families_data_t *get_nvt_families_data
+ = &(command_data.get_nvt_families);
 
 /**
  * @brief Parser callback data for GET_NVT_FEED_CHECKSUM.
@@ -2597,9 +2615,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_nvt_families_data->sort_order = strcmp (attribute,
+                                                          "descending");
             else
-              current_int_2 = 1;
+              get_nvt_families_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -6689,8 +6708,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           init_family_iterator (&families,
                                 1,
                                 NULL,
-                                /* Attribute sort_order. */
-                                current_int_2);
+                                get_nvt_families_data->sort_order);
           while (next (&families))
             {
               int family_max;
@@ -6716,6 +6734,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("</families>"
                                   "</get_nvt_families_response>");
         }
+        get_nvt_families_data_reset (get_nvt_families_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
