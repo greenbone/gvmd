@@ -1006,6 +1006,25 @@ get_notes_data_reset (get_notes_data_t *data)
 
 typedef struct
 {
+  char *config;
+  char *family;
+  char *oid;
+  char *sort_field;
+  int sort_order;
+} get_nvt_details_data_t;
+
+static void
+get_nvt_details_data_reset (get_nvt_details_data_t *data)
+{
+  free (data->config);
+  free (data->family);
+  free (data->oid);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_nvt_details_data_t));
+}
+
+typedef struct
+{
   char *algorithm;
 } get_nvt_feed_checksum_data_t;
 
@@ -1301,6 +1320,7 @@ typedef union
   get_escalators_data_t get_escalators;
   get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
+  get_nvt_details_data_t get_nvt_details;
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1472,6 +1492,12 @@ get_lsc_credentials_data_t *get_lsc_credentials_data
  */
 get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
+
+/**
+ * @brief Parser callback data for GET_NVT_DETAILS.
+ */
+get_nvt_details_data_t *get_nvt_details_data
+ = &(command_data.get_nvt_details);
 
 /**
  * @brief Parser callback data for GET_NVT_FEED_CHECKSUM.
@@ -1663,12 +1689,6 @@ current_format = NULL;
  */
 static /*@null@*/ /*@only@*/ char*
 modify_task_name = NULL;
-
-/**
- * @brief Parameter value during OMP MODIFY_TASK.
- */
-static /*@null@*/ /*@only@*/ char*
-modify_task_value = NULL;
 
 /**
  * @brief Client input parsing context.
@@ -2553,21 +2573,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "oid", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_nvt_details_data->oid, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "config", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_nvt_details_data->config, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "family", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_nvt_details_data->family, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&modify_task_value, attribute);
+              openvas_append_string (&get_nvt_details_data->sort_field,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_nvt_details_data->sort_order = strcmp (attribute,
+                                                         "descending");
             else
-              current_int_2 = 1;
+              get_nvt_details_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_DETAILS);
           }
         else if (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0)
@@ -6497,33 +6519,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               config_t config = (config_t) 0;
 
-              if (current_uuid)
+              if (get_nvt_details_data->oid)
                 {
                   nvt_t nvt;
 
                   free (md5sum);
-                  if (find_nvt (current_uuid, &nvt))
+                  if (find_nvt (get_nvt_details_data->oid, &nvt))
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("get_nvt_details"));
                   else if (nvt == 0)
                     {
                       if (send_find_error_to_client ("get_nvt_details",
                                                      "NVT",
-                                                     current_uuid))
+                                                     get_nvt_details_data->oid))
                         {
                           error_send_to_client (error);
                           return;
                         }
                     }
-                  else if (current_name /* Attribute config. */
-                           && find_config (current_name, &config))
+                  else if (get_nvt_details_data->config
+                           && find_config (get_nvt_details_data->config,
+                                           &config))
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("get_nvt_details"));
-                  else if (current_name && (config == 0))
+                  else if (get_nvt_details_data->config && (config == 0))
                     {
-                      if (send_find_error_to_client ("get_nvt_details",
-                                                     "config",
-                                                     current_name))
+                      if (send_find_error_to_client
+                           ("get_nvt_details",
+                            "config",
+                            get_nvt_details_data->config))
                         {
                           error_send_to_client (error);
                           return;
@@ -6585,14 +6609,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                     }
                 }
-              else if (current_name && find_config (current_name, &config))
+              else if (get_nvt_details_data->config
+                       && find_config (get_nvt_details_data->config, &config))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_nvt_details"));
-              else if (current_name && (config == 0))
+              else if (get_nvt_details_data->config && (config == 0))
                 {
                   if (send_find_error_to_client ("get_nvt_details",
                                                  "config",
-                                                 current_name))
+                                                 get_nvt_details_data->config))
                     {
                       error_send_to_client (error);
                       return;
@@ -6617,11 +6642,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_nvt_iterator (&nvts,
                                      (nvt_t) 0,
                                      config,
-                                     current_format,  /* Attribute family. */
-                                     /* Attribute sort_order. */
-                                     current_int_2,
-                                     /* Attribute sort_field. */
-                                     modify_task_value);
+                                     get_nvt_details_data->family,
+                                     get_nvt_details_data->sort_order,
+                                     get_nvt_details_data->sort_field);
                   while (next (&nvts))
                     {
                       int pref_count = -1;
@@ -6631,7 +6654,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         timeout = config_nvt_timeout (config,
                                                       nvt_iterator_oid (&nvts));
 
-                      if (config || current_format) /* Attribute family. */
+                      if (config || get_nvt_details_data->family)
                         {
                           const char *nvt_name = nvt_iterator_name (&nvts);
                           pref_count = nvt_preference_count (nvt_name);
@@ -6650,10 +6673,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
         }
-        openvas_free_string_var (&current_uuid);
-        openvas_free_string_var (&current_name);
-        openvas_free_string_var (&current_format);
-        openvas_free_string_var (&modify_task_value);
+        get_nvt_details_data_reset (get_nvt_details_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
