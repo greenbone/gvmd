@@ -1006,6 +1006,18 @@ get_notes_data_reset (get_notes_data_t *data)
 
 typedef struct
 {
+  char *algorithm;
+} get_nvt_feed_checksum_data_t;
+
+static void
+get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
+{
+  free (data->algorithm);
+  memset (data, 0, sizeof (get_nvt_feed_checksum_data_t));
+}
+
+typedef struct
+{
   char *config;
   char *oid;
   char *preference;
@@ -1289,6 +1301,7 @@ typedef union
   get_escalators_data_t get_escalators;
   get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
+  get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
   get_results_data_t get_results;
@@ -1459,6 +1472,12 @@ get_lsc_credentials_data_t *get_lsc_credentials_data
  */
 get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
+
+/**
+ * @brief Parser callback data for GET_NVT_FEED_CHECKSUM.
+ */
+get_nvt_feed_checksum_data_t *get_nvt_feed_checksum_data
+ = &(command_data.get_nvt_feed_checksum);
 
 /**
  * @brief Parser callback data for GET_PREFERENCES.
@@ -2525,7 +2544,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "algorithm", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_nvt_feed_checksum_data->algorithm,
+                                     attribute);
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
         else if (strcasecmp ("GET_NVT_DETAILS", element_name) == 0)
@@ -6447,11 +6467,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         {
           char *md5sum;
-          if (current_uuid && strcasecmp (current_uuid, "md5"))
+          if (get_nvt_feed_checksum_data->algorithm
+              && strcasecmp (get_nvt_feed_checksum_data->algorithm, "md5"))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_nvt_feed_checksum",
                                 "GET_NVT_FEED_CHECKSUM algorithm must be md5"));
-
           else if ((md5sum = nvts_md5sum ()))
             {
               SEND_TO_CLIENT_OR_FAIL ("<get_nvt_feed_checksum_response"
@@ -6465,7 +6485,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_checksum"));
-          openvas_free_string_var (&current_uuid);
+          get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
