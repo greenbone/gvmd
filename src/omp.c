@@ -954,6 +954,21 @@ get_configs_data_reset (get_configs_data_t *data)
 
 typedef struct
 {
+  char *name;
+  char *sort_field;
+  int sort_order;
+} get_escalators_data_t;
+
+static void
+get_escalators_data_reset (get_escalators_data_t *data)
+{
+  free (data->name);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_escalators_data_t));
+}
+
+typedef struct
+{
   char *note_id;
   char *nvt_oid;
   char *task_id;
@@ -1254,6 +1269,7 @@ typedef union
   delete_task_data_t delete_task;
   get_agents_data_t get_agents;
   get_configs_data_t get_configs;
+  get_escalators_data_t get_escalators;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1407,6 +1423,12 @@ get_agents_data_t *get_agents_data
  */
 get_configs_data_t *get_configs_data
  = &(command_data.get_configs);
+
+/**
+ * @brief Parser callback data for GET_ESCALATORS.
+ */
+get_escalators_data_t *get_escalators_data
+ = &(command_data.get_escalators);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -2404,15 +2426,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_escalators_data->name, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_escalators_data->sort_field,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_escalators_data->sort_order = strcmp (attribute,
+                                                        "descending");
             else
-              current_int_2 = 1;
+              get_escalators_data->sort_order = 1;
             set_client_state (CLIENT_GET_ESCALATORS);
           }
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
@@ -11680,13 +11704,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_ESCALATORS", element_name) == 0);
 
-          if (current_name && find_escalator (current_name, &escalator))
+          if (get_escalators_data->name
+              && find_escalator (get_escalators_data->name, &escalator))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_escalators"));
-          else if (current_name && escalator == 0)
+          else if (get_escalators_data->name && escalator == 0)
             {
               if (send_find_error_to_client ("get_escalators",
                                              "escalator",
-                                             current_name))
+                                             get_escalators_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -11703,8 +11728,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        escalator,
                                        (task_t) 0,
                                        (event_t) 0,
-                                       current_int_2,   /* Attribute sort_order. */
-                                       current_format); /* Attribute sort_field. */
+                                       get_escalators_data->sort_order,
+                                       get_escalators_data->sort_field);
               while (next (&escalators))
                 {
                   iterator_t data;
@@ -11809,8 +11834,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&escalators);
               SEND_TO_CLIENT_OR_FAIL ("</get_escalators_response>");
             }
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_name);
+          get_escalators_data_reset (get_escalators_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
