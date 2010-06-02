@@ -1725,12 +1725,6 @@ static /*@null@*/ /*@only@*/ char*
 current_format = NULL;
 
 /**
- * @brief Name during OMP MODIFY_TASK.
- */
-static /*@null@*/ /*@only@*/ char*
-modify_task_name = NULL;
-
-/**
  * @brief Client input parsing context.
  */
 static /*@null@*/ /*@only@*/ GMarkupParseContext*
@@ -1915,7 +1909,6 @@ typedef enum
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
   CLIENT_TEST_ESCALATOR,
-  CLIENT_TEST_ESCALATOR_NAME,
   CLIENT_VERSION
 } client_state_t;
 
@@ -4329,9 +4322,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_TEST_ESCALATOR:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_TEST_ESCALATOR_NAME);
-        else
           {
             if (send_element_error_to_client ("test_escalator",
                                               element_name))
@@ -10348,10 +10338,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         test_escalator_data_reset (test_escalator_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_TEST_ESCALATOR_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_TEST_ESCALATOR);
-        break;
 
       case CLIENT_PAUSE_TASK:
         if (pause_task_data->task_id)
@@ -12662,10 +12648,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_TARGET_NAME:
         openvas_append_text (&delete_target_data->name, text, text_len);
-        break;
-
-      case CLIENT_TEST_ESCALATOR_NAME:
-        openvas_append_text (&modify_task_name, text, text_len);
         break;
 
       case CLIENT_MODIFY_NOTE_HOSTS:

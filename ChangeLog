@@ -1,5 +1,15 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove TEST_ESCALATOR element NAME, which has been replaced by a
+	"name" attribute.
+
+	* src/omp.c (modify_task_name): Remove.  Out of use.
+	(client_state_t): Remove name state.
+	(omp_xml_handle_start_element): Remove name test.
+	(omp_xml_handle_end_element, omp_xml_handle_text): Remove name cases.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove stray free from
 	CLIENT_DELETE_SCHEDULE.
 
