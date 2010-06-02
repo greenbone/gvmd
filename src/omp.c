@@ -1123,6 +1123,22 @@ get_schedules_data_reset (get_schedules_data_t *data)
 
 typedef struct
 {
+  char *task_id;
+  int rcfile;
+  char *sort_field;
+  int sort_order;
+} get_status_data_t;
+
+static void
+get_status_data_reset (get_status_data_t *data)
+{
+  free (data->task_id);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_status_data_t));
+}
+
+typedef struct
+{
   char *name;
   char *duration;
 } get_system_reports_data_t;
@@ -1353,6 +1369,7 @@ typedef union
   get_report_data_t get_report;
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
+  get_status_data_t get_status;
   get_system_reports_data_t get_system_reports;
   get_targets_data_t get_targets;
   modify_config_data_t modify_config;
@@ -1564,6 +1581,12 @@ get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
 
 /**
+ * @brief Parser callback data for GET_STATUS.
+ */
+get_status_data_t *get_status_data
+ = &(command_data.get_status);
+
+/**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
  */
 get_system_reports_data_t *get_system_reports_data
@@ -1705,18 +1728,6 @@ buffer_size_t to_client_end = 0;
  */
 /*@null@*/ /*@dependent@*/
 static task_t current_client_task = (task_t) 0;
-
-/**
- * @brief Current report or task UUID, during a few operations.
- */
-static /*@null@*/ /*@only@*/ char*
-current_uuid = NULL;
-
-/**
- * @brief Current format of report, during GET_REPORT.
- */
-static /*@null@*/ /*@only@*/ char*
-current_format = NULL;
 
 /**
  * @brief Client input parsing context.
@@ -2781,20 +2792,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "task_id", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_status_data->task_id, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
-              current_int_1 = atoi (attribute);
+              get_status_data->rcfile = atoi (attribute);
             else
-              current_int_1 = 0;
+              get_status_data->rcfile = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_status_data->sort_field, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_status_data->sort_order = strcmp (attribute, "descending");
             else
-              current_int_2 = 1;
+              get_status_data->sort_order = 1;
             set_client_state (CLIENT_GET_STATUS);
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
@@ -10739,16 +10750,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_STATUS:
         assert (strcasecmp ("GET_STATUS", element_name) == 0);
-        if (current_uuid && strlen (current_uuid))
+        if (get_status_data->task_id && strlen (get_status_data->task_id))
           {
             task_t task;
-            if (find_task (current_uuid, &task))
+            if (find_task (get_status_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
             else if (task == 0)
               {
                 if (send_find_error_to_client ("get_status",
                                                "task",
-                                               current_uuid))
+                                               get_status_data->task_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -10967,7 +10978,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       progress_xml = g_strdup ("-1");
 
-                    if (current_int_1)
+                    if (get_status_data->rcfile)
                       {
                         description = task_description (task);
                         if (description && strlen (description))
@@ -11084,9 +11095,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "</get_status_response>");
                   }
               }
-            openvas_free_string_var (&current_uuid);
           }
-        else if (current_uuid)
+        else if (get_status_data->task_id)
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("get_status",
                               "GET_STATUS task_id attribute must be at least"
@@ -11098,8 +11108,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             task_t index;
 
             // TODO: A lot of this block is the same as the one above.
-
-            openvas_free_string_var (&current_uuid);
 
             SEND_TO_CLIENT_OR_FAIL ("<get_status_response"
                                     " status=\"" STATUS_OK "\""
@@ -11118,12 +11126,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              ("<sort>"
               "<field>%s<order>%s</order></field>"
               "</sort>",
-              current_format ? current_format : "ROWID",
-              current_int_2 ? "ascending" : "descending");
+              get_status_data->sort_field
+               ? get_status_data->sort_field
+               : "ROWID",
+              get_status_data->sort_order ? "ascending" : "descending");
 
             init_task_iterator (&iterator,
-                                current_int_2,      /* Attribute sort_order. */
-                                current_format);    /* Attribute sort_field. */
+                                get_status_data->sort_order,
+                                get_status_data->sort_field);
             while (next_task (&iterator, &index))
               {
                 gchar *line, *progress_xml;
@@ -11228,7 +11238,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 else
                   last_report = g_strdup ("");
 
-                if (current_int_1)
+                if (get_status_data->rcfile)
                   {
                     description = task_description (index);
                     if (description && strlen (description))
@@ -11442,7 +11452,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             cleanup_task_iterator (&iterator);
             SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
           }
-        openvas_free_string_var (&current_format);
+        get_status_data_reset (get_status_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
