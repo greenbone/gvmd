@@ -1,5 +1,11 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS and
+	CLIENT_GET_ESCALATORS pass the sort order from the data instead of
+	current_int_2 to the task iterator.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch GET_TARGETS to the new callback data mechanism.
 
 	* src/omp.c (get_targets_data_t): New type.

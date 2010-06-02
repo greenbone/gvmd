@@ -11923,10 +11923,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       iterator_t tasks;
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                      init_escalator_task_iterator (&tasks,
-                                                    escalator,
-                                                    /* Attribute sort_order. */
-                                                    current_int_2);
+                      init_escalator_task_iterator
+                       (&tasks,
+                        escalator,
+                        get_escalators_data->sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<task id=\"%s\">"
@@ -12265,8 +12265,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       init_target_task_iterator (&tasks,
                                                  target,
-                                                 /* Attribute sort_order. */
-                                                 current_int_2);
+                                                 get_targets_data->sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                                  "<name>%s</name>"
