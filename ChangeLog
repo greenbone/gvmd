@@ -1,5 +1,17 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Switch GET_TARGETS to the new callback data mechanism.
+
+	* src/omp.c (get_targets_data_t): New type.
+	(get_targets_data_reset): New function.
+	(command_data_t): Add get_targets.
+	(get_targets_data): New variable.
+	(modify_task_value): Remove.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Make
+	GET_TARGETS cases use command_data.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch GET_NVT_FAMILIES to the new callback data mechanism.
 
 	* src/omp.c (get_nvt_families_data_t): New type.

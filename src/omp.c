@@ -1137,6 +1137,21 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
+  char *name;
+  char *sort_field;
+  int sort_order;
+} get_targets_data_t;
+
+static void
+get_targets_data_reset (get_targets_data_t *data)
+{
+  free (data->name);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_targets_data_t));
+}
+
+typedef struct
+{
   array_t *families_growing_empty;
   array_t *families_growing_all;
   array_t *families_static_all;
@@ -1339,6 +1354,7 @@ typedef union
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
+  get_targets_data_t get_targets;
   modify_config_data_t modify_config;
   modify_report_data_t modify_report;
   modify_task_data_t modify_task;
@@ -1552,6 +1568,12 @@ get_schedules_data_t *get_schedules_data
  */
 get_system_reports_data_t *get_system_reports_data
  = &(command_data.get_system_reports);
+
+/**
+ * @brief Parser callback data for GET_TARGETS.
+ */
+get_targets_data_t *get_targets_data
+ = &(command_data.get_targets);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG (import).
@@ -2806,15 +2828,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_targets_data->name, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_targets_data->sort_field, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_targets_data->sort_order = strcmp (attribute, "descending");
             else
-              current_int_2 = 1;
+              get_targets_data->sort_order = 1;
             set_client_state (CLIENT_GET_TARGETS);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
@@ -12189,13 +12211,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          if (current_name && find_target (current_name, &target))
+          if (get_targets_data->name
+              && find_target (get_targets_data->name, &target))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
-          else if (current_name && target == 0)
+          else if (get_targets_data->name && target == 0)
             {
               if (send_find_error_to_client ("get_targets",
                                              "target",
-                                             current_name))
+                                             get_targets_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -12210,8 +12233,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_target_iterator (&targets,
                                     target,
-                                    current_int_2,   /* Attribute sort_order. */
-                                    current_format); /* Attribute sort_field. */
+                                    get_targets_data->sort_order,
+                                    get_targets_data->sort_field);
               while (next (&targets))
                 {
                   char *lsc_name;
@@ -12260,8 +12283,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&targets);
               SEND_TO_CLIENT_OR_FAIL ("</get_targets_response>");
             }
-          openvas_free_string_var (&current_format);
-          openvas_free_string_var (&current_name);
+          get_targets_data_reset (get_targets_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
