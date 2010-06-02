@@ -936,6 +936,24 @@ get_agents_data_reset (get_agents_data_t *data)
 
 typedef struct
 {
+  int export;
+  int families;
+  char *name;
+  int preferences;
+  char *sort_field;
+  int sort_order;
+} get_configs_data_t;
+
+static void
+get_configs_data_reset (get_configs_data_t *data)
+{
+  free (data->name);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_configs_data_t));
+}
+
+typedef struct
+{
   char *note_id;
   char *nvt_oid;
   char *task_id;
@@ -1235,6 +1253,7 @@ typedef union
   delete_target_data_t delete_target;
   delete_task_data_t delete_task;
   get_agents_data_t get_agents;
+  get_configs_data_t get_configs;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1382,6 +1401,12 @@ delete_task_data_t *delete_task_data
  */
 get_agents_data_t *get_agents_data
  = &(command_data.get_agents);
+
+/**
+ * @brief Parser callback data for GET_CONFIGS.
+ */
+get_configs_data_t *get_configs_data
+ = &(command_data.get_configs);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -2344,33 +2369,32 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
-            assert (current_name == NULL);
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_configs_data->name, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "families", &attribute))
-              current_int_1 = atoi (attribute);
+              get_configs_data->families = atoi (attribute);
             else
-              current_int_1 = 0;
+              get_configs_data->families = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_configs_data->sort_field, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_configs_data->sort_order = strcmp (attribute, "descending");
             else
-              current_int_2 = 1;
+              get_configs_data->sort_order = 1;
             if (find_attribute (attribute_names, attribute_values,
                                 "preferences", &attribute))
-              current_int_3 = atoi (attribute);
+              get_configs_data->preferences = atoi (attribute);
             else
-              current_int_3 = 0;
+              get_configs_data->preferences = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "export", &attribute))
-              current_int_4 = atoi (attribute);
+              get_configs_data->export = atoi (attribute);
             else
-              current_int_4 = 0;
+              get_configs_data->export = 0;
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
@@ -11433,13 +11457,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
-          if (current_name && find_config (current_name, &request_config))
+          if (get_configs_data->name
+              && find_config (get_configs_data->name, &request_config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_configs"));
-          else if (current_name && (request_config == 0))
+          else if (get_configs_data->name && (request_config == 0))
             {
               if (send_find_error_to_client ("get_configs",
                                              "config",
-                                             current_name))
+                                             get_configs_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -11452,8 +11477,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_config_iterator (&configs,
                                     request_config,
-                                    current_int_2,      /* Attribute sort_order. */
-                                    current_format);    /* Attribute sort_field. */
+                                    get_configs_data->sort_order,
+                                    get_configs_data->sort_field);
               while (next (&configs))
                 {
                   int config_nvts_growing, config_families_growing;
@@ -11468,8 +11493,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   config_families_growing
                     = config_iterator_families_growing (&configs);
 
-                  if (current_int_4)
-                    /* The "export" attribute was true. */
+                  if (get_configs_data->export)
                     SENDF_TO_CLIENT_OR_FAIL ("<config>"
                                              "<name>%s</name>"
                                              "<comment>%s</comment>",
@@ -11502,8 +11526,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       init_config_task_iterator (&tasks,
                                                  config,
-                                                 /* Attribute sort_order. */
-                                                 current_int_2);
+                                                 get_configs_data->sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL
                          ("<task id=\"%s\">"
@@ -11514,19 +11537,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
 
-                      if (current_int_1)
+                      if (get_configs_data->families)
                         {
                           iterator_t families;
                           int max_nvt_count = 0, known_nvt_count = 0;
-
-                          /* The "families" attribute was true. */
 
                           SENDF_TO_CLIENT_OR_FAIL ("<families>");
                           init_family_iterator (&families,
                                                 config_families_growing,
                                                 selector,
-                                                /* Attribute sort_order. */
-                                                current_int_2);
+                                                get_configs_data->sort_order);
                           while (next (&families))
                             {
                               int family_growing, family_max;
@@ -11590,15 +11610,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         }
                       }
 
-                  if (current_int_3 || current_int_4)
+                  if (get_configs_data->preferences || get_configs_data->export)
                     {
                       iterator_t prefs;
                       config_t config = config_iterator_config (&configs);
 
                       assert (config);
-
-                      /* The "preferences" and/or "export" attribute was
-                       * true. */
 
                       SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
@@ -11615,11 +11632,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("</preferences>");
                     }
 
-                  if (current_int_4)
+                  if (get_configs_data->export)
                     {
                       iterator_t selectors;
-
-                      /* The "export" attribute was true. */
 
                       SEND_TO_CLIENT_OR_FAIL ("<nvt_selectors>");
 
@@ -11652,9 +11667,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("</config>");
                 }
             }
-          openvas_free_string_var (&current_name);
-          openvas_free_string_var (&current_format);
           cleanup_iterator (&configs);
+          get_configs_data_reset (get_configs_data);
           SEND_TO_CLIENT_OR_FAIL ("</get_configs_response>");
           set_client_state (CLIENT_AUTHENTIC);
           break;
