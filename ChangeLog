@@ -1,5 +1,10 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove stray free from
+	CLIENT_DELETE_SCHEDULE.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS and
 	CLIENT_GET_ESCALATORS pass the sort order from the data instead of
 	current_int_2 to the task iterator.

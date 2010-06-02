@@ -6870,7 +6870,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_schedule"));
                   break;
                 case 1:
-                  openvas_free_string_var (&modify_task_name);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_schedule",
                                       "Schedule is in use"));
