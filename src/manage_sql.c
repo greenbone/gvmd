@@ -633,7 +633,7 @@ user_owns_result (const char *uuid)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -12122,30 +12122,24 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 0);
 /**
  * @brief Find an agent given a name.
  *
- * @param[in]   name   Name of agent.
+ * @param[in]   uuid   UUID of agent.
  * @param[out]  agent  Agent return, 0 if succesfully failed to find agent.
  *
  * @return FALSE on success (including if failed to find agent), TRUE on error.
  */
 gboolean
-find_agent (const char* name, agent_t* agent)
+find_agent (const char* uuid, agent_t* agent)
 {
-  gchar *quoted_name;
-  assert (current_credentials.uuid);
-  quoted_name = sql_quote (name);
-  if (user_owns ("agent", quoted_name) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("agent", quoted_uuid) == 0)
     {
-      g_free (quoted_name);
+      g_free (quoted_uuid);
       *agent = 0;
       return FALSE;
     }
   switch (sql_int64 (agent, 0, 0,
-                     "SELECT ROWID FROM agents"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     quoted_name,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM agents WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -12155,12 +12149,12 @@ find_agent (const char* name, agent_t* agent)
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_name);
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
 
-  g_free (quoted_name);
+  g_free (quoted_uuid);
   return FALSE;
 }
 
@@ -12211,10 +12205,10 @@ create_agent (const char* name, const char* comment, const char* installer,
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (name, owner, comment, installer,"
+                                     " (uuid, name, owner, comment, installer,"
                                      "  howto_install, howto_use)"
                                      " VALUES"
-                                     " ('%s',"
+                                     " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '%s',"
@@ -12228,10 +12222,10 @@ create_agent (const char* name, const char* comment, const char* installer,
     else
       {
         formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (name, owner, comment, installer,"
+                                     " (uuid, name, owner, comment, installer,"
                                      "  howto_install, howto_use)"
                                      " VALUES"
-                                     " ('%s',"
+                                     " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '',"
@@ -12377,7 +12371,7 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
 
   if (agent)
     init_iterator (iterator,
-                   "SELECT name, comment, installer,"
+                   "SELECT uuid, name, comment, installer,"
                    " howto_install, howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
@@ -12390,7 +12384,7 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT name, comment, installer,"
+                   "SELECT uuid, name, comment, installer,"
                    " howto_install, howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
@@ -12401,20 +12395,21 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
 }
 
-DEF_ACCESS (agent_iterator_name, 0);
+DEF_ACCESS (agent_iterator_uuid, 0);
+DEF_ACCESS (agent_iterator_name, 1);
 
 const char*
 agent_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret ? ret : "";
 }
 
-DEF_ACCESS (agent_iterator_installer, 2);
-DEF_ACCESS (agent_iterator_howto_install, 3);
-DEF_ACCESS (agent_iterator_howto_use, 4);
+DEF_ACCESS (agent_iterator_installer, 3);
+DEF_ACCESS (agent_iterator_howto_install, 4);
+DEF_ACCESS (agent_iterator_howto_use, 5);
 
 char*
 agent_name (agent_t agent)

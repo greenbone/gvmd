@@ -1,5 +1,28 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add agent UUIDs.  Hence increase database version to 19.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 19.
+
+	* src/manage_sql.c (create_tables): Add column uuid to agents.
+	(find_agent): Convert name arg to UUID.
+	(create_agent): Init UUID column.
+	(init_agent_iterator): Add UUID.
+	(agent_iterator_uuid): New function.  Adjust other accessors accordingly.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (delete_agent_data_t, delete_agent_data_reset)
+	(get_agents_data_t, get_agents_data_reset): Rename name to agent_id.
+	(client_state_t): Remove agent name state.
+	(omp_xml_handle_start_element): Get agent ids from attrib for DELETE_AGENT
+	and GET_AGENTS.  Remove DELETE_AGENT NAME element.
+	(omp_xml_handle_end_element): In CLIENT_DELETE_AGENT and CLIENT_GET_AGENTS
+	expect UUID instead of name.  In CLIENT_GET_AGENTS add UUID to AGENT.
+	(omp_xml_handle_text): Remove agent name processing.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS rename var.
 
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>

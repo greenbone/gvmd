@@ -1085,6 +1085,9 @@ void
 init_agent_iterator (iterator_t*, agent_t, int, const char*);
 
 const char*
+agent_iterator_uuid (iterator_t*);
+
+const char*
 agent_iterator_name (iterator_t*);
 
 const char*

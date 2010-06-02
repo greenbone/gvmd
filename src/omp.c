@@ -802,13 +802,13 @@ create_task_data_reset (create_task_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *agent_id;
 } delete_agent_data_t;
 
 static void
 delete_agent_data_reset (delete_agent_data_t *data)
 {
-  free (data->name);
+  free (data->agent_id);
 
   memset (data, 0, sizeof (delete_agent_data_t));
 }
@@ -919,8 +919,8 @@ delete_task_data_reset (delete_task_data_t *data)
 
 typedef struct
 {
+  char *agent_id;
   char *format;
-  char *name;
   char *sort_field;
   int sort_order;
 } get_agents_data_t;
@@ -928,8 +928,8 @@ typedef struct
 static void
 get_agents_data_reset (get_agents_data_t *data)
 {
+  free (data->agent_id);
   free (data->format);
-  free (data->name);
   free (data->sort_field);
   memset (data, 0, sizeof (get_agents_data_t));
 }
@@ -1800,7 +1800,6 @@ typedef enum
   CLIENT_CREDENTIALS_PASSWORD,
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_AGENT,
-  CLIENT_DELETE_AGENT_NAME,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_CONFIG_NAME,
   CLIENT_DELETE_ESCALATOR,
@@ -2371,7 +2370,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
-            openvas_append_string (&delete_agent_data->name, "");
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "agent_id", &attribute))
+              openvas_append_string (&delete_agent_data->agent_id,
+                                     attribute);
             set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
@@ -2431,8 +2434,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&get_agents_data->name, attribute);
+                                "agent_id", &attribute))
+              openvas_append_string (&get_agents_data->agent_id, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
               openvas_append_string (&get_agents_data->format, attribute);
@@ -3045,9 +3048,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_AGENT:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_DELETE_AGENT_NAME);
-        else
           {
             if (send_element_error_to_client ("delete_agent",
                                               element_name))
@@ -8086,50 +8086,45 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       case CLIENT_DELETE_AGENT:
-        {
-          agent_t agent;
+        assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
+        if (delete_agent_data->agent_id)
+          {
+            agent_t agent;
 
-          assert (strcasecmp ("DELETE_AGENT", element_name) == 0);
-          assert (delete_agent_data->name != NULL);
-
-          if (strlen (delete_agent_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("delete_agent",
-                                "DELETE_AGENT name must be at least"
-                                " one character long"));
-          else if (find_agent (delete_agent_data->name, &agent))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
-          else if (agent == 0)
-            {
-              if (send_find_error_to_client ("delete_agent",
-                                             "agent",
-                                             delete_agent_data->name))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (delete_agent (agent))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_agent",
-                                    "Agent is in use"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("delete_agent"));
-            }
-          delete_agent_data_reset (delete_agent_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_DELETE_AGENT_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_DELETE_AGENT);
+            if (find_agent (delete_agent_data->agent_id, &agent))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
+            else if (agent == 0)
+              {
+                if (send_find_error_to_client ("delete_agent",
+                                               "agent",
+                                               delete_agent_data->agent_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_agent (agent))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_agent",
+                                      "Agent is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_agent"));
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_agent",
+                              "DELETE_AGENT requires an agent_id"
+                              " attribute"));
+        delete_agent_data_reset (delete_agent_data);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_CONFIG:
@@ -11440,14 +11435,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_agents",
                                 "GET_AGENTS format attribute should"
                                 " be \"installer\", \"howto_install\" or \"howto_use\"."));
-          else if (get_agents_data->name
-                   && find_agent (get_agents_data->name, &agent))
+          else if (get_agents_data->agent_id
+                   && find_agent (get_agents_data->agent_id, &agent))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agents"));
-          else if (get_agents_data->name && agent == 0)
+          else if (get_agents_data->agent_id && agent == 0)
             {
               if (send_find_error_to_client ("get_agents",
                                              "agent",
-                                             get_agents_data->name))
+                                             get_agents_data->agent_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -11468,47 +11463,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       case 1: /* installer */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent>"
+                         ("<agent agent_id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"installer\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
+                          agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents),
                           agent_iterator_installer (&agents));
                         break;
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent>"
+                         ("<agent agent_id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"howto_install\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
+                          agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents),
                           agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent>"
+                         ("<agent agent_id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"howto_use\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
+                          agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents),
                           agent_iterator_howto_use (&agents));
                         break;
                       default:
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent>"
+                         ("<agent agent_id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<in_use>0</in_use>"
                           "</agent>",
+                          agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents));
                         break;
@@ -12582,10 +12581,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_TARGET:
         openvas_append_text (&create_task_data->target, text, text_len);
-        break;
-
-      case CLIENT_DELETE_AGENT_NAME:
-        openvas_append_text (&delete_agent_data->name, text, text_len);
         break;
 
       case CLIENT_DELETE_CONFIG_NAME:
