@@ -11408,7 +11408,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_AGENTS:
         {
-          iterator_t targets;
+          iterator_t agents;
           int format;
           agent_t agent = 0;
 
@@ -11458,11 +11458,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL ("<get_agents_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
-              init_agent_iterator (&targets,
+              init_agent_iterator (&agents,
                                    agent,
                                    get_agents_data->sort_order,
                                    get_agents_data->sort_field);
-              while (next (&targets))
+              while (next (&agents))
                 {
                   switch (format)
                     {
@@ -11474,9 +11474,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<package format=\"installer\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_name (&targets),
-                          agent_iterator_comment (&targets),
-                          agent_iterator_installer (&targets));
+                          agent_iterator_name (&agents),
+                          agent_iterator_comment (&agents),
+                          agent_iterator_installer (&agents));
                         break;
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -11486,9 +11486,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<package format=\"howto_install\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_name (&targets),
-                          agent_iterator_comment (&targets),
-                          agent_iterator_howto_install (&targets));
+                          agent_iterator_name (&agents),
+                          agent_iterator_comment (&agents),
+                          agent_iterator_howto_install (&agents));
                         break;
                       case 3: /* howto_use */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -11498,9 +11498,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<package format=\"howto_use\">%s</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_name (&targets),
-                          agent_iterator_comment (&targets),
-                          agent_iterator_howto_use (&targets));
+                          agent_iterator_name (&agents),
+                          agent_iterator_comment (&agents),
+                          agent_iterator_howto_use (&agents));
                         break;
                       default:
                         SENDF_TO_CLIENT_OR_FAIL
@@ -11509,12 +11509,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<comment>%s</comment>"
                           "<in_use>0</in_use>"
                           "</agent>",
-                          agent_iterator_name (&targets),
-                          agent_iterator_comment (&targets));
+                          agent_iterator_name (&agents),
+                          agent_iterator_comment (&agents));
                         break;
                     }
                 }
-              cleanup_iterator (&targets);
+              cleanup_iterator (&agents);
               SEND_TO_CLIENT_OR_FAIL ("</get_agents_response>");
             }
           get_agents_data_reset (get_agents_data);

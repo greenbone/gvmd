@@ -1,5 +1,9 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS rename var.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (current_array_1, current_array_2, current_array_3)
 	(current_int_1, current_int_2, current_int_3, current_int_4)
 	(current_client_task): Remove.  Globals from old callback data mechanism.
