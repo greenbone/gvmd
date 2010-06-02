@@ -1,5 +1,12 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (current_name): Remove.  Out of use.
+	(omp_xml_handle_start_element): In CLIENT_AUTHENTIC in the GET_REPORT
+	case, expect the sort field in the command data instead of in
+	current_name.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove TEST_ESCALATOR element NAME, which has been replaced by a
 	"name" attribute.
 

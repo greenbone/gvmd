@@ -1713,12 +1713,6 @@ static /*@null@*/ /*@only@*/ char*
 current_uuid = NULL;
 
 /**
- * @brief Current name of file, during MODIFY_TASK.
- */
-static /*@null@*/ /*@only@*/ char*
-current_name = NULL;
-
-/**
  * @brief Current format of report, during GET_REPORT.
  */
 static /*@null@*/ /*@only@*/ char*
@@ -2686,8 +2680,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->sort_order = strcmp (attribute, "descending");
             else
               {
-                if (current_name == NULL
-                    || (strcmp (current_name, "type") == 0))
+                if (get_report_data->sort_field == NULL
+                    || (strcmp (get_report_data->sort_field, "type") == 0))
                   /* Normally it makes more sense to order type descending. */
                   get_report_data->sort_order = 0;
                 else
