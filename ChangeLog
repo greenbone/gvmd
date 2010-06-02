@@ -1,5 +1,13 @@
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (current_array_1, current_array_2, current_array_3)
+	(current_int_1, current_int_2, current_int_3, current_int_4)
+	(current_client_task): Remove.  Globals from old callback data mechanism.
+	(omp_xml_handle_end_element): Remove assertion about current_client_task.
+	(omp_xml_handle_text): Remove doc reference to current_client_task.
+
+2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch GET_STATUS to the new callback data mechanism.
 
 	* src/omp.c (get_status_data_t): New type.

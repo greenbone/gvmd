@@ -1675,41 +1675,6 @@ int current_error;
 int forked;
 
 /**
- * @brief Generic array variable for communicating between the callbacks.
- */
-GPtrArray *current_array_1;
-
-/**
- * @brief Generic array variable for communicating between the callbacks.
- */
-GPtrArray *current_array_2;
-
-/**
- * @brief Generic array variable for communicating between the callbacks.
- */
-GPtrArray *current_array_3;
-
-/**
- * @brief Generic integer variable for communicating between the callbacks.
- */
-int current_int_1;
-
-/**
- * @brief Generic integer variable for communicating between the callbacks.
- */
-int current_int_2;
-
-/**
- * @brief Generic integer variable for communicating between the callbacks.
- */
-int current_int_3;
-
-/**
- * @brief Generic integer variable for communicating between the callbacks.
- */
-int current_int_4;
-
-/**
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
@@ -1722,12 +1687,6 @@ buffer_size_t to_client_start = 0;
  * @brief The end of the data in the \ref to_client buffer.
  */
 buffer_size_t to_client_end = 0;
-
-/**
- * @brief Current client task during commands like CREATE_TASK and MODIFY_TASK.
- */
-/*@null@*/ /*@dependent@*/
-static task_t current_client_task = (task_t) 0;
 
 /**
  * @brief Client input parsing context.
@@ -6164,8 +6123,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             task_t task;
 
-            assert (current_client_task == (task_t) 0);
-
             if (find_task (abort_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
             else if (task == 0)
@@ -8364,7 +8321,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (delete_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (delete_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_task"));
             else if (task == 0)
@@ -8734,7 +8690,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (modify_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (modify_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
             else if (task == 0)
@@ -10348,7 +10303,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (pause_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (pause_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
             else if (task == 0)
@@ -10388,7 +10342,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (resume_or_start_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (resume_or_start_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL
                (XML_INTERNAL_ERROR ("resume_or_start_task"));
@@ -10498,7 +10451,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (resume_paused_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (resume_paused_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL
                (XML_INTERNAL_ERROR ("resume_paused_task"));
@@ -10541,7 +10493,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (resume_stopped_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (resume_stopped_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL
                (XML_INTERNAL_ERROR ("resume_stopped_task"));
@@ -10650,7 +10601,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (start_task_data->task_id)
           {
             task_t task;
-            assert (current_client_task == (task_t) 0);
             if (find_task (start_task_data->task_id, &task))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
             else if (task == 0)
@@ -12288,7 +12238,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * (\ref current_client_task) with functions like \ref openvas_append_text,
+ * with functions like \ref openvas_append_text,
  * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
