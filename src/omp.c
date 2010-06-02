@@ -969,6 +969,23 @@ get_escalators_data_reset (get_escalators_data_t *data)
 
 typedef struct
 {
+  char *format;
+  char *name;
+  char *sort_field;
+  int sort_order;
+} get_lsc_credentials_data_t;
+
+static void
+get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
+{
+  free (data->format);
+  free (data->name);
+  free (data->sort_field);
+  memset (data, 0, sizeof (get_lsc_credentials_data_t));
+}
+
+typedef struct
+{
   char *note_id;
   char *nvt_oid;
   char *task_id;
@@ -1270,6 +1287,7 @@ typedef union
   get_agents_data_t get_agents;
   get_configs_data_t get_configs;
   get_escalators_data_t get_escalators;
+  get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
@@ -1429,6 +1447,12 @@ get_configs_data_t *get_configs_data
  */
 get_escalators_data_t *get_escalators_data
  = &(command_data.get_escalators);
+
+/**
+ * @brief Parser callback data for GET_LSC_CREDENTIALS.
+ */
+get_lsc_credentials_data_t *get_lsc_credentials_data
+ = &(command_data.get_lsc_credentials);
 
 /**
  * @brief Parser callback data for GET_NOTES.
@@ -2444,18 +2468,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
                                 "name", &attribute))
-              openvas_append_string (&current_uuid, attribute);
+              openvas_append_string (&get_lsc_credentials_data->name,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
-              openvas_append_string (&current_format, attribute);
+              openvas_append_string (&get_lsc_credentials_data->format,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
-              openvas_append_string (&current_name, attribute);
+              openvas_append_string (&get_lsc_credentials_data->sort_field,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              current_int_2 = strcmp (attribute, "descending");
+              get_lsc_credentials_data->sort_order = strcmp (attribute,
+                                                             "descending");
             else
-              current_int_2 = 1;
+              get_lsc_credentials_data->sort_order = 1;
             set_client_state (CLIENT_GET_LSC_CREDENTIALS);
           }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
@@ -11844,27 +11872,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t credentials;
           int format;
           lsc_credential_t lsc_credential = 0;
+          char *data_format;
 
           assert (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0);
 
-          if (current_format)
+          data_format = get_lsc_credentials_data->format;
+          if (data_format)
             {
-              if (strlen (current_format))
+              if (strlen (data_format))
                 {
-                  if (strcasecmp (current_format, "key") == 0)
+                  if (strcasecmp (data_format, "key") == 0)
                     format = 1;
-                  else if (strcasecmp (current_format, "rpm") == 0)
+                  else if (strcasecmp (data_format, "rpm") == 0)
                     format = 2;
-                  else if (strcasecmp (current_format, "deb") == 0)
+                  else if (strcasecmp (data_format, "deb") == 0)
                     format = 3;
-                  else if (strcasecmp (current_format, "exe") == 0)
+                  else if (strcasecmp (data_format, "exe") == 0)
                     format = 4;
                   else
                     format = -1;
                 }
               else
                 format = 0;
-              openvas_free_string_var (&current_format);
             }
           else
             format = 0;
@@ -11874,14 +11903,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_lsc_credentials",
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
-          else if (current_uuid
-                   && find_lsc_credential (current_uuid, &lsc_credential))
+          else if (get_lsc_credentials_data->name
+                   && find_lsc_credential (get_lsc_credentials_data->name,
+                                           &lsc_credential))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_lsc_credentials"));
-          else if (current_uuid && (lsc_credential == 0))
+          else if (get_lsc_credentials_data->name && (lsc_credential == 0))
             {
               if (send_find_error_to_client ("get_lsc_credentials",
                                              "lsc_credential",
-                                             current_uuid))
+                                             get_lsc_credentials_data->name))
                 {
                   error_send_to_client (error);
                   return;
@@ -11894,10 +11924,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               init_lsc_credential_iterator (&credentials,
                                             lsc_credential,
-                                            /* Attribute sort_order. */
-                                            current_int_2,
-                                            /* Attribute sort_field. */
-                                            current_name);
+                                            get_lsc_credentials_data->sort_order,
+                                            get_lsc_credentials_data->sort_field);
               while (next (&credentials))
                 {
                   switch (format)
@@ -11997,8 +12025,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            (&targets,
                             lsc_credential_iterator_lsc_credential
                              (&credentials),
-                            /* sort_order. */
-                            current_int_2);
+                            get_lsc_credentials_data->sort_order);
                           while (next (&targets))
                             SENDF_TO_CLIENT_OR_FAIL
                              ("<target>"
@@ -12016,8 +12043,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               cleanup_iterator (&credentials);
               SEND_TO_CLIENT_OR_FAIL ("</get_lsc_credentials_response>");
             }
-          openvas_free_string_var (&current_name);
-          openvas_free_string_var (&current_uuid);
+          get_lsc_credentials_data_reset (get_lsc_credentials_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
