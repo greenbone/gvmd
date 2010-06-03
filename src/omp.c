@@ -35,6 +35,53 @@
  * tasks in reaction to the OMP commands in the string.
  */
 
+/**
+ * @internal
+ * The OMP-"Processor" is always in a state (\ref client_state_t
+ * \ref client_state ) and currently looking at the opening of an OMP element
+ * (\ref omp_xml_handle_start_element ), at the text of an OMP element
+ * (\ref omp_xml_handle_text ) or at the closing of an OMP element
+ * (\ref omp_xml_handle_end_element ).
+ *
+ * The state usually represents the current location of the parser within the
+ * xml (omp) tree. There has to be one state for every omp element.
+ *
+ * State transitions occur in the start and end element handler callbacks.
+ *
+ * Generally, the strategy is to wait until the closing of an element before
+ * doing any action or sending a response. Also, error cases are to be detected
+ * in the end element handler.
+ *
+ * If data has to be stored, it goes to \ref command_data (_t) , which is a
+ * union.
+ * More specific incarnations of this union are e.g. \ref create_user_data (_t)
+ * , where the data to create a new user is stored (until the end element of
+ * that command is reached).
+ *
+ * For implementing new commands that have to store data (e.g. not
+ * "<help_extended/>"), \ref command_data has to be freed and NULL'ed in case
+ * of errors and the \ref current_state has to be reset.
+ * It can then be assumed that it is NULL'ed at the start of every new
+ * command element. To implement a new start element handler, be sure to just
+ * copy an existing case and keep its structure.
+ *
+ * Implementationwise it is easier to represent values in in attributes than
+ * in text or further elements.
+ * E.g.
+ * <key_value_pair key="k" value="v"/>
+ * is obviously easier to handle than
+ * <key><attribute name="k"/><value>v</value></key>
+ * .
+ *
+ * However, it is preferred to avoid attributes and use the text of elements
+ * instead, like in
+ * <key_value_pair><key>k</key><value>v</value></key_value_pair>
+ * .
+ *
+ * If new elements are built of multiple words, separate the words with an
+ * underscore.
+ */
+
 #include "omp.h"
 #include "manage.h"
 #include "otp.h"      // FIX for access to scanner_t scanner

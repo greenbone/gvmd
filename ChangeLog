@@ -1,3 +1,8 @@
+2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/omp.c: Add documentation (modified copy of documentation in
+	openvas-administrator/src/oap.c).
+
 2010-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add agent UUIDs.  Hence increase database version to 19.
@@ -770,8 +775,8 @@
 	* src/manage.h: Removed typedef and protos, include array module from
 	openvas-libraries/base .
 
-	* src/omp.c (array_add, array_terminate, array_reset): Moved to array module in
-	openvas-libraries/base .
+	* src/omp.c (array_add, array_terminate, array_reset): Moved to array
+	module in openvas-libraries/base .
 
 2010-04-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
