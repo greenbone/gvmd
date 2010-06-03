@@ -1,5 +1,10 @@
 2010-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS rename
+	AGENT agent_id attrib to id, to match other resources.
+
+2010-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (print_report_xml, omp_xml_handle_end_element): Print empty
 	string instead of NULL, when report host end time is NULL.
 

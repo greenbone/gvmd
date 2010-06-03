@@ -11628,7 +11628,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       case 1: /* installer */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent agent_id=\"%s\">"
+                         ("<agent id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"installer\">%s</package>"
@@ -11641,7 +11641,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent agent_id=\"%s\">"
+                         ("<agent id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"howto_install\">%s</package>"
@@ -11654,7 +11654,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 3: /* howto_use */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent agent_id=\"%s\">"
+                         ("<agent id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<package format=\"howto_use\">%s</package>"
@@ -11667,7 +11667,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       default:
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent agent_id=\"%s\">"
+                         ("<agent id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<in_use>0</in_use>"
