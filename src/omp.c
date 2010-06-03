@@ -106,6 +106,7 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/nvt_categories.h>
 #include <openvas/openvas_logging.h>
+#include <openvas/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -428,6 +429,7 @@ static char* help_text = "\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
+"    GET_SOURCES            Get external sources for resources.\n"
 "    GET_STATUS             Get task status information.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGETS            Get all targets.\n"
@@ -1877,6 +1879,7 @@ typedef enum
   CLIENT_GET_RESULTS,
   CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
+  CLIENT_GET_SOURCES,
   CLIENT_GET_STATUS,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
@@ -2796,6 +2799,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_SCHEDULES);
           }
+        else if (strcasecmp ("GET_SOURCES", element_name) == 0)
+          {
+            set_client_state (CLIENT_GET_SOURCES);
+          }
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
           {
             const gchar* attribute;
@@ -3540,6 +3547,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          "Error");
           }
         break;
+      case CLIENT_GET_SOURCES:
+        {
+          if (send_element_error_to_client ("get_sources", element_name))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          set_client_state (CLIENT_AUTHENTIC);
+          g_set_error (error,
+                      G_MARKUP_ERROR,
+                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                      "Error");
+          break;
+        }
 
       case CLIENT_HELP:
         {
@@ -7974,6 +7995,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         get_report_data_reset (get_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_GET_SOURCES:
+        {
+          assert (strcasecmp ("GET_SOURCES", element_name) == 0);
+          GSList* sources = resource_request_sources (RESOURCE_TYPE_TARGET);
+          GSList* source = sources;
+
+          SEND_TO_CLIENT_OR_FAIL ("<get_sources_response status=\"" STATUS_OK "\""
+                                  " status_text=\"" STATUS_OK_TEXT "\">");
+
+          while (source)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<source resource=\"target\" "
+                                       "type=\"ldap-ucs\" name=\"%s\"/>",
+                                       (char*) source->data);
+              source = g_slist_next (source);
+            }
+          SEND_TO_CLIENT_OR_FAIL ("</get_sources_response>");
+
+          /* Clean up. */
+          source = sources;
+          while (source)
+            {
+              g_free (source->data);
+              source = g_slist_next (source);
+            }
+          g_slist_free (source);
+
+          set_client_state (CLIENT_AUTHENTIC);
+
+          break;
+        }
 
       case CLIENT_GET_RESULTS:
         {

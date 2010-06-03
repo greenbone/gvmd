@@ -1,3 +1,18 @@
+
+2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Added new GET_SOURCES command that returns a list of external sources
+	from which targets can be imported, if any are configured.
+
+	* src/omp.c: Include new resource_request module.
+	(help_text): Added new command.
+	(client_state_t): Added new state.
+	(omp_xml_handle_start_element): Added state transition, handle
+	contained elements as error.
+	(omp_xml_handle_end_element): Respond with list of (target-) sources.
+
+	* CMakeLists.txt: Increased minimum required openvas-libraries version.
+
 2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/omp.c: Add documentation (modified copy of documentation in
