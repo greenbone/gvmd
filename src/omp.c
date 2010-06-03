@@ -8032,13 +8032,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL ("</get_sources_response>");
 
           /* Clean up. */
-          source = sources;
-          while (source)
-            {
-              g_free (source->data);
-              source = g_slist_next (source);
-            }
-          g_slist_free (source);
+          openvas_string_list_free (sources);
 
           set_client_state (CLIENT_AUTHENTIC);
 

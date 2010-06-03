@@ -960,6 +960,8 @@ send_task_file (task_t task, const char* file)
  *
  * @param[in]  list  The list.
  */
+/** @todo Duplicate in openvas_string module (openvas_string_list_free) .
+  *       Find proper module to place this function. */
 void
 slist_free (GSList* list)
 {

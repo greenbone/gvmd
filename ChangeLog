@@ -1,5 +1,13 @@
 2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.c (slist_free): Added todo, as we have a duplicate in
+	openvas-libraries.
+
+	* src/omp.c (omp_xml_handle_end_element): Use utility function to free
+	list of pointers.
+
+2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Added optional SOURCE, PASSWORD and USERNAME elements to CREATE_TARGET
 	command. This allows to fetch targets from an external source via the
 	CREATE_TARGET command.
