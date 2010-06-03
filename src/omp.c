@@ -4905,7 +4905,9 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                        "<host>%s</host>%s"
                        "</host_end>",
                        host,
-                       host_iterator_end_time (&hosts));
+                       host_iterator_end_time (&hosts)
+                        ? host_iterator_end_time (&hosts)
+                        : "");
             }
           cleanup_iterator (&hosts);
         }
@@ -4926,7 +4928,9 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
         fprintf (out,
                  "<host_end><host>%s</host>%s</host_end>",
                  host_iterator_host (&hosts),
-                 host_iterator_end_time (&hosts));
+                 host_iterator_end_time (&hosts)
+                  ? host_iterator_end_time (&hosts)
+                  : "");
       cleanup_iterator (&hosts);
     }
 
@@ -7255,7 +7259,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  "<host>%s</host>%s"
                                                  "</host_end>",
                                                  host,
-                                                 host_iterator_end_time (&hosts));
+                                                 host_iterator_end_time (&hosts)
+                                                  ? host_iterator_end_time (&hosts)
+                                                  : "");
                       }
                     cleanup_iterator (&hosts);
                   }
@@ -7274,7 +7280,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 while (next (&hosts))
                   SENDF_TO_CLIENT_OR_FAIL ("<host_end><host>%s</host>%s</host_end>",
                                            host_iterator_host (&hosts),
-                                           host_iterator_end_time (&hosts));
+                                           host_iterator_end_time (&hosts)
+                                            ? host_iterator_end_time (&hosts)
+                                            : "");
                 cleanup_iterator (&hosts);
               }
             end_time = scan_end_time (report);
@@ -7347,7 +7355,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_string_append_printf (nbe,
                                                 "timestamps||%s|host_end|%s|\n",
                                                 host,
-                                                host_iterator_end_time (&hosts));
+                                                host_iterator_end_time (&hosts)
+                                                 ? host_iterator_end_time (&hosts)
+                                                 : "");
                       }
                     cleanup_iterator (&hosts);
                   }
@@ -7368,7 +7378,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   g_string_append_printf (nbe,
                                           "timestamps||%s|host_end|%s|\n",
                                           host_iterator_host (&hosts),
-                                          host_iterator_end_time (&hosts));
+                                          host_iterator_end_time (&hosts)
+                                           ? host_iterator_end_time (&hosts)
+                                           : "");
                 cleanup_iterator (&hosts);
               }
 

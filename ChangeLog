@@ -1,3 +1,8 @@
+2010-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (print_report_xml, omp_xml_handle_end_element): Print empty
+	string instead of NULL, when report host end time is NULL.
+
 2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/tests/omp_help_0.c (help_text): Adjusted to current help text.
@@ -24,7 +29,7 @@
 	malconditions in create_target command handling, updated calls to
 	create_target.
 	(omp_xml_handle_text): Fill new elements.
-	
+
 	* src/manage_sql.c (create_target): Added parameters needed to query
 	external source to import targets from.
 
