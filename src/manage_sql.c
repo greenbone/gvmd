@@ -36,9 +36,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <openvas/base/openvas_string.h>
 #include <openvas/openvas_auth.h>
 #include <openvas/openvas_logging.h>
 #include <openvas/openvas_uuid.h>
+#include <openvas/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -7733,17 +7735,25 @@ find_target (const char* name, target_t* target)
 /**
  * @brief Create a target.
  *
+ * The \ref hosts and \ref source paramater are mutually exclusive, if source
+ * is not NULL, always try to import from source.
+ *
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
  * @param[in]   lsc_credential  LSC credential.
+ * @param[in]   source          Name of source to import target from.
+ * @param[in]   username        Username to authenticate with against source.
+ * @param[in]   password        Password for user \ref username.
  * @param[out]  target          Created target.
  *
- * @return 0 success, 1 target exists already.
+ * @return 0 success, 1 target exists already, -1 if import from source failed
+ *         or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               lsc_credential_t lsc_credential, target_t* target)
+               lsc_credential_t lsc_credential, const char* source,
+               const char* username, const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_hosts, *quoted_comment;
@@ -7752,6 +7762,7 @@ create_target (const char* name, const char* hosts, const char* comment,
 
   assert (current_credentials.uuid);
 
+  /* Check whether a target with the same name does already exist. */
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM targets"
                " WHERE name = '%s'"
@@ -7765,7 +7776,33 @@ create_target (const char* name, const char* hosts, const char* comment,
       return 1;
     }
 
-  quoted_hosts = sql_nquote (hosts, strlen (hosts));
+  /* Import targets from source. */
+  if (source != NULL)
+    {
+      GSList* hosts_list = resource_request_resource (source,
+                                                      RESOURCE_TYPE_TARGET,
+                                                      username ? username : "",
+                                                      password ? password : "");
+
+      if (hosts_list == NULL)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      gchar* import_hosts = openvas_string_flatten_string_list (hosts_list,
+                                                                ",");
+
+      openvas_string_list_free (hosts_list);
+      quoted_hosts = sql_nquote (import_hosts, strlen (import_hosts));
+      g_free (import_hosts);
+    }
+  else
+    {
+      /* User provided hosts. */
+      quoted_hosts = sql_nquote (hosts, strlen (hosts));
+    }
 
   if (comment)
     {

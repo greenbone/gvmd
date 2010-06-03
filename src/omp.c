@@ -816,6 +816,10 @@ typedef struct
   char *hosts;
   char *lsc_credential;
   char *name;
+  /* For targets to import: source name and credentials to source. */
+  char *source;
+  char *username;
+  char *password;
 } create_target_data_t;
 
 static void
@@ -825,6 +829,10 @@ create_target_data_reset (create_target_data_t *data)
   free (data->hosts);
   free (data->lsc_credential);
   free (data->name);
+
+  free (data->source);
+  free (data->username);
+  free (data->password);
 
   memset (data, 0, sizeof (create_target_data_t));
 }
@@ -1837,6 +1845,9 @@ typedef enum
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
+  CLIENT_CREATE_TARGET_PASSWORD,
+  CLIENT_CREATE_TARGET_SOURCE,
+  CLIENT_CREATE_TARGET_USERNAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
@@ -4274,6 +4285,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_PASSWORD);
+        else if (strcasecmp ("SOURCE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_SOURCE);
+        else if (strcasecmp ("USERNAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_USERNAME);
         else
           {
             if (send_element_error_to_client ("create_target", element_name))
@@ -8008,7 +8025,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (source)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<source resource=\"target\" "
-                                       "type=\"ldap-ucs\" name=\"%s\"/>",
+                                       "name=\"%s\"/>",
                                        (char*) source->data);
               source = g_slist_next (source);
             }
@@ -9863,15 +9880,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (&create_target_data->name != NULL);
-          assert (&create_target_data->hosts != NULL);
+          assert ( (&create_target_data->source
+                    || &create_target_data->hosts != NULL));
 
-          if (strlen (create_target_data->name) == 0
-              || strlen (create_target_data->hosts) == 0)
+          if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
                                 // FIX could pass an empty hosts element?
-                                "CREATE_TARGET name and hosts must both be at"
+                                "CREATE_TARGET name must be at"
                                 " least one character long"));
+          else if (strlen (create_target_data->hosts) == 0
+                   && create_target_data->source == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                // FIX could pass an empty hosts element?
+                                "CREATE_TARGET hosts must both be at least one"
+                                " character long, or SOURCE must be set"));
+          else if (strlen (create_target_data->hosts) != 0
+                   && create_target_data->source != NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "CREATE_TARGET source and host have to be"
+                                " used mutually exclusive"));
           else if (create_target_data->lsc_credential
                    && find_lsc_credential (create_target_data->lsc_credential,
                                            &lsc_credential))
@@ -9887,15 +9917,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (create_target (create_target_data->name,
-                                  create_target_data->hosts,
-                                  create_target_data->comment,
-                                  lsc_credential,
-                                  NULL))
-            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
-                                                      "Target exists already"));
+          /* Create target from host string. */
           else
-            SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
+            {
+              int result = create_target (create_target_data->name,
+                                          create_target_data->hosts,
+                                          create_target_data->comment,
+                                          lsc_credential,
+                                          create_target_data->source,
+                                          create_target_data->username,
+                                          create_target_data->password,
+                                          NULL);
+              switch (result)
+                {
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
+                                                      "Target exists already"));
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
+                                                 "Import from source failed"));
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
+                    break;
+                }
+            }
+
           create_target_data_reset (create_target_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
@@ -9914,6 +9960,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
         assert (strcasecmp ("LSC_CREDENTIAL", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_SOURCE:
+        assert (strcasecmp ("SOURCE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TARGET);
+        break;
+      case CLIENT_CREATE_TARGET_USERNAME:
+        assert (strcasecmp ("USERNAME", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
 
@@ -10084,7 +10142,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, 0, &target))
+              if (create_target (target_name, hosts, NULL, 0, NULL, NULL,
+                                 NULL, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -12655,6 +12714,15 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&create_target_data->name, text, text_len);
+        break;
+     case CLIENT_CREATE_TARGET_PASSWORD:
+        openvas_append_text (&create_target_data->password, text, text_len);
+        break;
+     case CLIENT_CREATE_TARGET_SOURCE:
+        openvas_append_text (&create_target_data->source, text, text_len);
+        break;
+      case CLIENT_CREATE_TARGET_USERNAME:
+        openvas_append_text (&create_target_data->username, text, text_len);
         break;
 
       case CLIENT_CREATE_TASK_COMMENT:

@@ -718,8 +718,9 @@ gboolean
 find_target (const char*, target_t*);
 
 int
-create_target (const char*, const char*, const char*, lsc_credential_t,
-               target_t*);
+create_target (const char* name, const char* hosts, const char* comment,
+               lsc_credential_t lsc_credential, const char* source,
+               const char* username, const char* password, target_t* target);
 
 int
 delete_target (target_t);

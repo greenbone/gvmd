@@ -1,3 +1,22 @@
+2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Added optional SOURCE, PASSWORD and USERNAME elements to CREATE_TARGET
+	command. This allows to fetch targets from an external source via the
+	CREATE_TARGET command.
+
+	* src/omp.c (client_state_t): Added new states.
+	(create_target_data_t): Added new fields.
+	(create_target_data_reset): Free new fields.
+	(omp_xml_handle_start_element): Added state transitions.
+	(omp_xml_handle_end_element): Added state transitions, check for
+	malconditions in create_target command handling, updated calls to
+	create_target.
+	(omp_xml_handle_text): Fill new elements.
+	
+	* src/manage_sql.c (create_target): Added parameters needed to query
+	external source to import targets from.
+
+	* src/manage.h (create_target): Updated proto.
 
 2010-06-03  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
