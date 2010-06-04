@@ -429,9 +429,9 @@ static char* help_text = "\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
-"    GET_SOURCES            Get external sources for resources.\n"
 "    GET_STATUS             Get task status information.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
+"    GET_TARGET_LOCATORS    Get configured target locators.\n"
 "    GET_TARGETS            Get all targets.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
@@ -818,7 +818,7 @@ typedef struct
   char *name;
   /* For targets to import: source name and credentials to source. */
   char *password;
-  char *source;
+  char *target_locator;
   char *username;
 } create_target_data_t;
 
@@ -829,8 +829,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->hosts);
   free (data->lsc_credential);
   free (data->name);
-
-  free (data->source);
+  free (data->target_locator);
   free (data->username);
   free (data->password);
 
@@ -1846,7 +1845,7 @@ typedef enum
   CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PASSWORD,
-  CLIENT_CREATE_TARGET_SOURCE,
+  CLIENT_CREATE_TARGET_TARGET_LOCATOR,
   CLIENT_CREATE_TARGET_USERNAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
@@ -1890,7 +1889,7 @@ typedef enum
   CLIENT_GET_RESULTS,
   CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
-  CLIENT_GET_SOURCES,
+  CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_STATUS,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
@@ -2810,9 +2809,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_SCHEDULES);
           }
-        else if (strcasecmp ("GET_SOURCES", element_name) == 0)
+        else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
           {
-            set_client_state (CLIENT_GET_SOURCES);
+            set_client_state (CLIENT_GET_TARGET_LOCATORS);
           }
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
           {
@@ -3558,9 +3557,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          "Error");
           }
         break;
-      case CLIENT_GET_SOURCES:
+      case CLIENT_GET_TARGET_LOCATORS:
         {
-          if (send_element_error_to_client ("get_sources", element_name))
+          if (send_element_error_to_client ("get_target_locators", element_name))
             {
               error_send_to_client (error);
               return;
@@ -4287,8 +4286,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_PASSWORD);
-        else if (strcasecmp ("SOURCE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_SOURCE);
+        else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         else if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_USERNAME);
         else
@@ -8025,23 +8024,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_SOURCES:
+      case CLIENT_GET_TARGET_LOCATORS:
         {
-          assert (strcasecmp ("GET_SOURCES", element_name) == 0);
+          assert (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0);
           GSList* sources = resource_request_sources (RESOURCE_TYPE_TARGET);
           GSList* source = sources;
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_sources_response status=\"" STATUS_OK "\""
+          SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
 
           while (source)
             {
-              SENDF_TO_CLIENT_OR_FAIL ("<source resource=\"target\" "
-                                       "name=\"%s\"/>",
+              SENDF_TO_CLIENT_OR_FAIL ("<target_locator"
+                                       " name=\"%s\"/>",
                                        (char*) source->data);
               source = g_slist_next (source);
             }
-          SEND_TO_CLIENT_OR_FAIL ("</get_sources_response>");
+          SEND_TO_CLIENT_OR_FAIL ("</get_target_locators_response>");
 
           /* Clean up. */
           openvas_string_list_free (sources);
@@ -9886,7 +9885,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (&create_target_data->name != NULL);
-          assert ((&create_target_data->source
+          assert ((&create_target_data->target_locator
                    || &create_target_data->hosts != NULL));
 
           if (strlen (create_target_data->name) == 0)
@@ -9896,18 +9895,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_TARGET name must be at"
                                 " least one character long"));
           else if (strlen (create_target_data->hosts) == 0
-                   && create_target_data->source == NULL)
+                   && create_target_data->target_locator == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
                                 // FIX could pass an empty hosts element?
                                 "CREATE_TARGET hosts must both be at least one"
-                                " character long, or SOURCE must be set"));
+                                " character long, or TARGET_LOCATOR must"
+                                " be set"));
           else if (strlen (create_target_data->hosts) != 0
-                   && create_target_data->source != NULL)
+                   && create_target_data->target_locator != NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET requires either a source or a "
-                                "host"));
+                                " CREATE_TARGET requires either a"
+                                " TARGET_LOCATOR or a host"));
           else if (create_target_data->lsc_credential
                    && find_lsc_credential (create_target_data->lsc_credential,
                                            &lsc_credential))
@@ -9928,7 +9928,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       create_target_data->hosts,
                                       create_target_data->comment,
                                       lsc_credential,
-                                      create_target_data->source,
+                                      create_target_data->target_locator,
                                       create_target_data->username,
                                       create_target_data->password,
                                       NULL))
@@ -9939,7 +9939,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   "Target exists already"));
               case -1:
                 SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
-                                              "Import from source failed"));
+                                         "Import from target_locator failed"));
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
                 break;
@@ -9969,8 +9969,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("PASSWORD", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
-      case CLIENT_CREATE_TARGET_SOURCE:
-        assert (strcasecmp ("SOURCE", element_name) == 0);
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
+        assert (strcasecmp ("TARGET_LOCATOR", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
       case CLIENT_CREATE_TARGET_USERNAME:
@@ -12721,8 +12721,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
      case CLIENT_CREATE_TARGET_PASSWORD:
         openvas_append_text (&create_target_data->password, text, text_len);
         break;
-     case CLIENT_CREATE_TARGET_SOURCE:
-        openvas_append_text (&create_target_data->source, text, text_len);
+     case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
+        openvas_append_text (&create_target_data->target_locator, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_USERNAME:
         openvas_append_text (&create_target_data->username, text, text_len);

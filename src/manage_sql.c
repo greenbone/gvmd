@@ -7735,24 +7735,25 @@ find_target (const char* name, target_t* target)
 /**
  * @brief Create a target.
  *
- * The \ref hosts and \ref source paramaters are mutually exclusive, if source
- * is not NULL, always try to import from source.
+ * The \ref hosts and \ref target_locator paramaters are mutually exclusive,
+ * if target_locator is not NULL, always try to import from source.
  *
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
  * @param[in]   lsc_credential  LSC credential.
- * @param[in]   source          Name of source to import target from.
+ * @param[in]   target_locator  Name of target_locator to import target(s)
+ *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \ref username.
  * @param[out]  target          Created target.
  *
- * @return 0 success, 1 target exists already, -1 if import from source failed
- *         or response was empty.
+ * @return 0 success, 1 target exists already, -1 if import from target locator
+ *         failed or response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
-               lsc_credential_t lsc_credential, const char* source,
+               lsc_credential_t lsc_credential, const char* target_locator,
                const char* username, const char* password, target_t* target)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
@@ -7776,10 +7777,10 @@ create_target (const char* name, const char* hosts, const char* comment,
       return 1;
     }
 
-  /* Import targets from source. */
-  if (source != NULL)
+  /* Import targets from target locator. */
+  if (target_locator != NULL)
     {
-      GSList* hosts_list = resource_request_resource (source,
+      GSList* hosts_list = resource_request_resource (target_locator,
                                                       RESOURCE_TYPE_TARGET,
                                                       username ? username : "",
                                                       password ? password : "");

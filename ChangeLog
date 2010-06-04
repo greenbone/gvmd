@@ -1,5 +1,18 @@
 2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Renamed GET_SOURCE to GET_TARGET_LOCATORS.
+
+	* src/manage_sql.c (create_target): Renamed source to target_locator.
+
+	* src/omp.c (help_text, create_target_data_t)
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Renamed source to
+	target_locator.
+
+	* src/tests/omp_help_0.c: Adjusted to help text.
+
+2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage_sql.c (create_target): When fetching targets from external
 	source, separate them with a comma and a space, to easy breaking long
 	string in display.
