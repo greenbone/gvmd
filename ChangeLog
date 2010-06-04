@@ -1,5 +1,9 @@
 2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage.h (create_target): Removed names from arguments.
+
+2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Renamed GET_SOURCE to GET_TARGET_LOCATORS.
 
 	* src/manage_sql.c (create_target): Renamed source to target_locator.
