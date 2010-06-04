@@ -5730,6 +5730,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
       while (next (&results))
         {
           const char *severity, *cvss_base;
+          gchar *nvt_name;
 
           if (last_port == NULL
               || strcmp (last_port, result_iterator_port (&results)))
@@ -5761,6 +5762,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
             last_port = g_strdup (result_iterator_port (&results));
           severity = result_iterator_type (&results);
           cvss_base = result_iterator_nvt_cvss_base (&results);
+          nvt_name = latex_escape_text (result_iterator_nvt_name (&results));
           fprintf (out,
                    "\\hline\n"
                    "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n"
@@ -5781,7 +5783,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                    cvss_base ? cvss_base : "",
                    cvss_base ? ") " : "",
                    latex_severity_colour (severity),
-                   result_iterator_nvt_name (&results));
+                   nvt_name);
+          g_free (nvt_name);
           latex_print_verbatim_text (out,
                                      result_iterator_descr (&results),
                                      NULL);
