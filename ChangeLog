@@ -1,5 +1,11 @@
 2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage_sql.c (create_target): When fetching targets from external
+	source, separate them with a comma and a space, to easy breaking long
+	string in display.
+
+2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Mainly formatting changes, pointed out by Matthew Mundell.
 
 	* src/omp.c (create_target_data_t): Remove newline, sort fields

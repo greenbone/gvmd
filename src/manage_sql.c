@@ -7792,7 +7792,7 @@ create_target (const char* name, const char* hosts, const char* comment,
         }
 
       gchar* import_hosts = openvas_string_flatten_string_list (hosts_list,
-                                                                ",");
+                                                                ", ");
 
       openvas_string_list_free (hosts_list);
       quoted_hosts = sql_nquote (import_hosts, strlen (import_hosts));
