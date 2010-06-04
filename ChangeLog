@@ -1,3 +1,14 @@
+2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Mainly formatting changes, pointed out by Matthew Mundell.
+
+	* src/omp.c (create_target_data_t): Remove newline, sort fields
+	alphabetically.
+	(omp_xml_handle_end_element): Corrected formatting according to style
+	guide, improved wording. Collapsed else- switch code block.
+
+	* src/manage_sql.c: Corrected wording in comments.
+
 2010-06-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS rename

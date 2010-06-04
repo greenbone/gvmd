@@ -817,9 +817,9 @@ typedef struct
   char *lsc_credential;
   char *name;
   /* For targets to import: source name and credentials to source. */
+  char *password;
   char *source;
   char *username;
-  char *password;
 } create_target_data_t;
 
 static void
@@ -9886,8 +9886,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (&create_target_data->name != NULL);
-          assert ( (&create_target_data->source
-                    || &create_target_data->hosts != NULL));
+          assert ((&create_target_data->source
+                   || &create_target_data->hosts != NULL));
 
           if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
@@ -9906,8 +9906,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    && create_target_data->source != NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET source and host have to be"
-                                " used mutually exclusive"));
+                                "CREATE_TARGET requires either a source or a "
+                                "host"));
           else if (create_target_data->lsc_credential
                    && find_lsc_credential (create_target_data->lsc_credential,
                                            &lsc_credential))
@@ -9924,28 +9924,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           /* Create target from host string. */
-          else
+          else switch (create_target (create_target_data->name,
+                                      create_target_data->hosts,
+                                      create_target_data->comment,
+                                      lsc_credential,
+                                      create_target_data->source,
+                                      create_target_data->username,
+                                      create_target_data->password,
+                                      NULL))
+
             {
-              int result = create_target (create_target_data->name,
-                                          create_target_data->hosts,
-                                          create_target_data->comment,
-                                          lsc_credential,
-                                          create_target_data->source,
-                                          create_target_data->username,
-                                          create_target_data->password,
-                                          NULL);
-              switch (result)
-                {
-                  case 1:
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
-                                                      "Target exists already"));
-                  case -1:
-                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
-                                                 "Import from source failed"));
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
-                    break;
-                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
+                                                  "Target exists already"));
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_target",
+                                              "Import from source failed"));
+              default:
+                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
+                break;
             }
 
           create_target_data_reset (create_target_data);

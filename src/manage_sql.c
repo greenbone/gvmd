@@ -7735,7 +7735,7 @@ find_target (const char* name, target_t* target)
 /**
  * @brief Create a target.
  *
- * The \ref hosts and \ref source paramater are mutually exclusive, if source
+ * The \ref hosts and \ref source paramaters are mutually exclusive, if source
  * is not NULL, always try to import from source.
  *
  * @param[in]   name            Name of target.
@@ -7762,7 +7762,7 @@ create_target (const char* name, const char* hosts, const char* comment,
 
   assert (current_credentials.uuid);
 
-  /* Check whether a target with the same name does already exist. */
+  /* Check whether a target with the same name exists already. */
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM targets"
                " WHERE name = '%s'"
