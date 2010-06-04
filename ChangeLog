@@ -1,5 +1,10 @@
 2010-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (print_report_latex): Only print NVT name row if there is an
+	NVT name.
+
+2010-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (print_report_latex): Escape NVT name.
 
 2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
