@@ -8923,7 +8923,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     escalator_t escalator = 0;
 
-                    if (strcmp (modify_task_data->escalator_id, "") == 0)
+                    if (strcmp (modify_task_data->escalator_id, "0") == 0)
                       {
                         set_task_escalator (task, 0);
                         first = 0;

@@ -1,5 +1,10 @@
 2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK accept "0"
+	instead of "" to remove the escalator.
+
+2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK remove the
 	`fail' declarations so that the existing variable is set.
 
