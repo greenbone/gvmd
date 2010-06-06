@@ -1,5 +1,11 @@
 2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (condition_met): In the THREAT_LEVEL_CHANGED case also
+	return 1 if there is a threat level and the previous threat level in one.
+	(task_threat_level, task_previous_threat_level): Add NULL checks.
+
+2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK accept "0"
 	instead of "" to remove the escalator.
 

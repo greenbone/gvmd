@@ -3628,6 +3628,19 @@ condition_met (task_t task, escalator_t escalator,
                   return 1;
                 }
             }
+          else if (direction
+                   && last_level)
+            {
+              tracef ("direction: %s\n", direction);
+              tracef ("last_level: %s\n", last_level);
+              tracef ("second_last_level NULL\n");
+              if ((strcasecmp (direction, "changed") == 0)
+                  || (strcasecmp (direction, "increased") == 0))
+                {
+                  free (direction);
+                  return 1;
+                }
+            }
           free (direction);
           break;
         }
@@ -5331,6 +5344,9 @@ task_threat_level (task_t task)
                      task,
                      TASK_STATUS_DONE);
 
+  if (type == NULL)
+    return NULL;
+
   if (strcmp (type, "Security Hole") == 0)
     {
       free (type);
@@ -5389,6 +5405,9 @@ task_previous_threat_level (task_t task)
                      " LIMIT 1",
                      task,
                      TASK_STATUS_DONE);
+
+  if (type == NULL)
+    return NULL;
 
   if (strcmp (type, "Security Hole") == 0)
     {
