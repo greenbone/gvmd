@@ -8921,7 +8921,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 if (fail == 0 && modify_task_data->escalator_id)
                   {
-                    int fail;
                     escalator_t escalator = 0;
 
                     if (strcmp (modify_task_data->escalator_id, "") == 0)
@@ -8955,7 +8954,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 if (fail == 0 && modify_task_data->schedule_id)
                   {
-                    int fail;
                     schedule_t schedule = 0;
 
                     if (strcmp (modify_task_data->schedule_id, "0") == 0)

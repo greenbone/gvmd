@@ -1,5 +1,10 @@
 2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK remove the
+	`fail' declarations so that the existing variable is set.
+
+2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add escalator UUIDs.
 
 	* src/manage_sql.c (create_tables): Add column uuid to escalators.
