@@ -232,6 +232,9 @@ escalator_t
 escalator_iterator_escalator (iterator_t*);
 
 const char*
+escalator_iterator_uuid (iterator_t*);
+
+const char*
 escalator_iterator_name (iterator_t*);
 
 int
@@ -380,6 +383,9 @@ set_task_end_time (task_t task, char* time);
 
 char*
 task_escalator_name (task_t);
+
+char*
+task_escalator_uuid (task_t);
 
 escalator_t
 task_escalator (task_t);

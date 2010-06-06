@@ -641,7 +641,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
-  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER);");
@@ -2897,33 +2897,27 @@ collate_ip (void* data,
 /* Events and Escalators. */
 
 /**
- * @brief Find an escalator given a name.
+ * @brief Find an escalator given a UUID.
  *
- * @param[in]   name       Escalator name.
+ * @param[in]   uuid       UUID of escalator.
  * @param[out]  escalator  Return.  0 if succesfully failed to find escalator.
  *
  * @return FALSE on success (including if failed to find escalator), TRUE on
  *         error.
  */
 gboolean
-find_escalator (const char* name, escalator_t* escalator)
+find_escalator (const char* uuid, escalator_t* escalator)
 {
-  gchar *quoted_name;
-  assert (current_credentials.uuid);
-  quoted_name = sql_quote (name);
-  if (user_owns ("escalator", quoted_name) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("escalator", quoted_uuid) == 0)
     {
-      g_free (quoted_name);
+      g_free (quoted_uuid);
       *escalator = 0;
       return FALSE;
     }
   switch (sql_int64 (escalator, 0, 0,
-                     "SELECT ROWID FROM escalators"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
-                     quoted_name,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM escalators WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -2933,11 +2927,11 @@ find_escalator (const char* name, escalator_t* escalator)
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_name);
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
-  g_free (quoted_name);
+  g_free (quoted_uuid);
   return FALSE;
 }
 
@@ -2984,8 +2978,10 @@ create_escalator (const char* name, const char* comment,
 
   quoted_comment = comment ? sql_quote (comment) : NULL;
 
-  sql ("INSERT INTO escalators (owner, name, comment, event, condition, method)"
-       " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+  sql ("INSERT INTO escalators (uuid, owner, name, comment, event, condition,"
+       " method)"
+       " VALUES (make_uuid (),"
+       " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        " '%s', '%s', %i, %i, %i);",
        current_credentials.uuid,
        quoted_name,
@@ -3126,7 +3122,7 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
 
   if (escalator)
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, name, comment,"
+                   "SELECT escalators.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_escalators"
                    "  WHERE task_escalators.escalator = escalators.ROWID)"
@@ -3141,7 +3137,7 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
                    ascending ? "ASC" : "DESC");
   else if (task)
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, name, comment,"
+                   "SELECT escalators.ROWID, uuid, name, comment,"
                    " task_escalators.task, event, condition, method, 1"
                    " FROM escalators, task_escalators"
                    " WHERE task_escalators.escalator = escalators.ROWID"
@@ -3156,7 +3152,7 @@ init_escalator_iterator (iterator_t *iterator, escalator_t escalator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT escalators.ROWID, name, comment,"
+                   "SELECT escalators.ROWID, uuid, name, comment,"
                    " 0, event, condition, method,"
                    " (SELECT count(*) > 0 FROM task_escalators"
                    "  WHERE task_escalators.escalator = escalators.ROWID)"
@@ -3182,6 +3178,20 @@ escalator_iterator_escalator (iterator_t* iterator)
 }
 
 /**
+ * @brief Return the UUID from an escalator iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+const char*
+escalator_iterator_uuid (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret;
+}
+
+/**
  * @brief Return the name from an escalator iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -3191,7 +3201,7 @@ escalator_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
   return ret;
 }
 
@@ -3205,7 +3215,7 @@ escalator_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
   return ret;
 }
 
@@ -3219,7 +3229,7 @@ escalator_iterator_event (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
 
@@ -3233,7 +3243,7 @@ escalator_iterator_condition (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
   return ret;
 }
 
@@ -3247,7 +3257,7 @@ escalator_iterator_method (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 6);
+  ret = (int) sqlite3_column_int (iterator->stmt, 7);
   return ret;
 }
 
@@ -3261,7 +3271,7 @@ escalator_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 7);
+  ret = (int) sqlite3_column_int (iterator->stmt, 8);
   return ret;
 }
 
@@ -5186,17 +5196,35 @@ task_second_last_report_id (task_t task)
 }
 
 /**
- * @brief Return the escalator of a task.
+ * @brief Return the name of the escalator of a task.
  *
  * @param[in]  task  Task.
  *
- * @return Escalator of task if any, else NULL.
+ * @return Name of escalator of task if any, else NULL.
  */
 char*
 task_escalator_name (task_t task)
 {
   return sql_string (0, 0,
                      "SELECT name FROM escalators"
+                     " WHERE ROWID ="
+                     " (SELECT escalator FROM task_escalators"
+                     "  WHERE task = %llu LIMIT 1);",
+                     task);
+}
+
+/**
+ * @brief Return the UUID of the escalator of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return UUID of escalator of task if any, else NULL.
+ */
+char*
+task_escalator_uuid (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM escalators"
                      " WHERE ROWID ="
                      " (SELECT escalator FROM task_escalators"
                      "  WHERE task = %llu LIMIT 1);",

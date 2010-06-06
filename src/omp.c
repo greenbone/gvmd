@@ -839,7 +839,7 @@ create_target_data_reset (create_target_data_t *data)
 typedef struct
 {
   char *config;
-  char *escalator;
+  char *escalator_id;
   char *schedule;
   char *target;
   task_t task;
@@ -849,7 +849,7 @@ static void
 create_task_data_reset (create_task_data_t *data)
 {
   free (data->config);
-  free (data->escalator);
+  free (data->escalator_id);
   free (data->schedule);
   free (data->target);
 
@@ -884,13 +884,13 @@ delete_config_data_reset (delete_config_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *escalator_id;
 } delete_escalator_data_t;
 
 static void
 delete_escalator_data_reset (delete_escalator_data_t *data)
 {
-  free (data->name);
+  free (data->escalator_id);
 
   memset (data, 0, sizeof (delete_escalator_data_t));
 }
@@ -1010,7 +1010,7 @@ get_configs_data_reset (get_configs_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *escalator_id;
   char *sort_field;
   int sort_order;
 } get_escalators_data_t;
@@ -1018,7 +1018,7 @@ typedef struct
 static void
 get_escalators_data_reset (get_escalators_data_t *data)
 {
-  free (data->name);
+  free (data->escalator_id);
   free (data->sort_field);
   memset (data, 0, sizeof (get_escalators_data_t));
 }
@@ -1382,13 +1382,13 @@ start_task_data_reset (start_task_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *escalator_id;
 } test_escalator_data_t;
 
 static void
 test_escalator_data_reset (test_escalator_data_t *data)
 {
-  free (data->name);
+  free (data->escalator_id);
 
   memset (data, 0, sizeof (test_escalator_data_t));
 }
@@ -2424,7 +2424,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             create_task_data->task = make_task (NULL, 0, NULL);
             if (create_task_data->task == (task_t) 0) abort (); // FIX
-            openvas_append_string (&create_task_data->escalator, "");
             openvas_append_string (&create_task_data->schedule, "");
             set_client_state (CLIENT_CREATE_TASK);
           }
@@ -2444,7 +2443,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
           {
-            openvas_append_string (&delete_escalator_data->name, "");
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "escalator_id", &attribute))
+              openvas_append_string (&delete_escalator_data->escalator_id,
+                                     attribute);
             set_client_state (CLIENT_DELETE_ESCALATOR);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
@@ -2548,8 +2551,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&get_escalators_data->name, attribute);
+                                "escalator_id", &attribute))
+              openvas_append_string (&get_escalators_data->escalator_id,
+                                     attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
               openvas_append_string (&get_escalators_data->sort_field,
@@ -2940,8 +2944,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&test_escalator_data->name, attribute);
+                                "escalator_id", &attribute))
+              openvas_append_string (&test_escalator_data->escalator_id,
+                                     attribute);
             set_client_state (CLIENT_TEST_ESCALATOR);
           }
         else
@@ -4321,7 +4326,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CONFIG", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_CONFIG);
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&create_task_data->escalator_id,
+                                     attribute);
+            set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
+          }
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
         else if (strcasecmp ("TARGET", element_name) == 0)
@@ -8301,49 +8313,47 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_ESCALATOR:
-        {
-          escalator_t escalator;
+        assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
+        if (delete_escalator_data->escalator_id)
+          {
+            escalator_t escalator;
 
-          assert (strcasecmp ("DELETE_ESCALATOR", element_name) == 0);
-          assert (delete_escalator_data->name != NULL);
-
-          if (strlen (delete_escalator_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("delete_escalator",
-                                "DELETE_ESCALATOR name must be at least one"
-                                " character long"));
-          else if (find_escalator (delete_escalator_data->name, &escalator))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("delete_escalator"));
-          else if (escalator == 0)
-            {
-              if (send_find_error_to_client ("delete_escalator",
-                                             "escalator",
-                                             delete_escalator_data->name))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (delete_escalator (escalator))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_escalator",
-                                                          "Escalator is in use"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_escalator"));
-            }
-          delete_escalator_data_reset (delete_escalator_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_DELETE_ESCALATOR_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_DELETE_ESCALATOR);
+            if (find_escalator (delete_escalator_data->escalator_id,
+                                &escalator))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_escalator"));
+            else if (escalator == 0)
+              {
+                if (send_find_error_to_client
+                     ("delete_escalator",
+                      "escalator",
+                      delete_escalator_data->escalator_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_escalator (escalator))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_escalator",
+                                      "Escalator is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_escalator"));
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_escalator",
+                              "DELETE_ESCALATOR requires an escalator_id"
+                              " attribute"));
+        delete_escalator_data_reset (delete_escalator_data);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
@@ -10042,10 +10052,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Set any escalator. */
 
-          if (strlen (create_task_data->escalator))
+          if (create_task_data->escalator_id)
             {
               escalator_t escalator;
-              if (find_escalator (create_task_data->escalator, &escalator))
+              if (find_escalator (create_task_data->escalator_id, &escalator))
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
@@ -10414,18 +10424,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_TEST_ESCALATOR:
-        if (test_escalator_data->name)
+        if (test_escalator_data->escalator_id)
           {
             escalator_t escalator;
             task_t task;
 
-            if (find_escalator (test_escalator_data->name, &escalator))
+            if (find_escalator (test_escalator_data->escalator_id, &escalator))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("test_escalator"));
             else if (escalator == 0)
               {
-                if (send_find_error_to_client ("test_escalator",
-                                               "escalator",
-                                               test_escalator_data->name))
+                if (send_find_error_to_client
+                     ("test_escalator",
+                      "escalator",
+                      test_escalator_data->escalator_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -10457,7 +10468,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         else
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("test_escalator",
-                              "TEST_ESCALATOR requires a name element"));
+                              "TEST_ESCALATOR requires an escalator_id"
+                              " attribute"));
         test_escalator_data_reset (test_escalator_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
@@ -10889,7 +10901,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
                     target_t target;
-                    char *name, *config, *escalator, *task_target_name, *hosts;
+                    char *name, *config, *escalator, *escalator_uuid;
+                    char *task_target_name, *hosts;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
                     char* description;
@@ -11115,6 +11128,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     name = task_name (task);
                     comment = task_comment (task);
                     escalator = task_escalator_name (task);
+                    escalator_uuid = task_escalator_uuid (task);
                     config = task_config_name (task);
                     task_target_name = target_name (target);
                     schedule = task_schedule (task);
@@ -11137,7 +11151,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<name>%s</name>"
                                  "<comment>%s</comment>"
                                  "<config><name>%s</name></config>"
-                                 "<escalator><name>%s</name></escalator>"
+                                 "<escalator id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</escalator>"
                                  "<target><name>%s</name></target>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
@@ -11162,6 +11178,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  name,
                                  comment,
                                  config ? config : "",
+                                 escalator_uuid ? escalator_uuid : "",
                                  escalator ? escalator : "",
                                  task_target_name ? task_target_name : "",
                                  task_run_status_name (task),
@@ -11253,7 +11270,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char *name = task_name (index);
                 char *comment = task_comment (index);
                 target_t target;
-                char *tsk_uuid, *config, *escalator, *task_target_name, *hosts;
+                char *tsk_uuid, *config, *escalator, *escalator_uuid;
+                char *task_target_name, *hosts;
                 char *task_schedule_uuid, *task_schedule_name;
                 gchar *first_report_id, *first_report;
                 char *description;
@@ -11476,6 +11494,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 config = task_config_name (index);
                 escalator = task_escalator_name (index);
+                escalator_uuid = task_escalator_uuid (index);
                 task_target_name = target_name (target);
                 schedule = task_schedule (index);
                 if (schedule)
@@ -11494,7 +11513,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<name>%s</name>"
                                         "<comment>%s</comment>"
                                         "<config><name>%s</name></config>"
-                                        "<escalator><name>%s</name></escalator>"
+                                        "<escalator id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "</escalator>"
                                         "<target><name>%s</name></target>"
                                         "<status>%s</status>"
                                         "<progress>%s</progress>"
@@ -11520,6 +11541,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         name,
                                         comment,
                                         config ? config : "",
+                                        escalator_uuid ? escalator_uuid : "",
                                         escalator ? escalator : "",
                                         task_target_name ? task_target_name : "",
                                         task_run_status_name (index),
@@ -11543,6 +11565,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         second_last_report);
                 free (config);
                 free (escalator);
+                free (escalator_uuid);
                 free (task_target_name);
                 g_free (progress_xml);
                 g_free (last_report);
@@ -11919,14 +11942,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_ESCALATORS", element_name) == 0);
 
-          if (get_escalators_data->name
-              && find_escalator (get_escalators_data->name, &escalator))
+          if (get_escalators_data->escalator_id
+              && find_escalator (get_escalators_data->escalator_id, &escalator))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_escalators"));
-          else if (get_escalators_data->name && escalator == 0)
+          else if (get_escalators_data->escalator_id && escalator == 0)
             {
               if (send_find_error_to_client ("get_escalators",
                                              "escalator",
-                                             get_escalators_data->name))
+                                             get_escalators_data->escalator_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -11949,10 +11972,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   iterator_t data;
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<escalator>"
+                  SENDF_TO_CLIENT_OR_FAIL ("<escalator id=\"%s\">"
                                            "<name>%s</name>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>",
+                                           escalator_iterator_uuid (&escalators),
                                            escalator_iterator_name (&escalators),
                                            escalator_iterator_comment (&escalators),
                                            escalator_iterator_in_use (&escalators));
@@ -12740,9 +12764,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_CONFIG:
         openvas_append_text (&create_task_data->config, text, text_len);
         break;
-      case CLIENT_CREATE_TASK_ESCALATOR:
-        openvas_append_text (&create_task_data->escalator, text, text_len);
-        break;
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (create_task_data->task, text, text_len);
         break;
@@ -12762,10 +12783,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_CONFIG_NAME:
         openvas_append_text (&delete_config_data->name, text, text_len);
-        break;
-
-      case CLIENT_DELETE_ESCALATOR_NAME:
-        openvas_append_text (&delete_escalator_data->name, text, text_len);
         break;
 
       case CLIENT_DELETE_LSC_CREDENTIAL_NAME:

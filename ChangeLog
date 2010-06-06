@@ -1,3 +1,30 @@
+2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add escalator UUIDs.
+
+	* src/manage_sql.c (create_tables): Add column uuid to escalators.
+	(find_escalator): Convert name arg to UUID.
+	(create_escalator): Init UUID column.
+	(init_escalator_iterator): Add UUID.
+	(escalator_iterator_uuid): New function.  Adjust other accessors accordingly.
+	(task_escalator_uuid): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset): Replace
+	escalator with escalator_id.
+	(delete_escalator_data_t, delete_escalator_data_reset)
+	(get_escalators_data_t, get_escalators_data_reset)
+	(test_escalator_data_t, test_escalator_data_reset): Replace name
+	with escalator_id.
+	(omp_xml_handle_start_element): Read ecalator ID attributes for
+	DELETE_ESCALATOR, GET_ESCALATORS, TEST_ESCALATOR and and CREATE_TASK.
+	(omp_xml_handle_end_element): In CLIENT_DELETE_ESCALATOR,
+	CLIENT_CREATE_TASK, CLIENT_TEST_ESCALATOR, CLIENT_GET_STATUS and
+	CLIENT_GET_ESCALATORS expect UUID instead of name.  In
+	CLIENT_GET_ESCALATORS add UUID to ESCALATOR.
+	(omp_xml_handle_text): Remove escalator name processing.
+
 2010-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (print_report_latex): Only print NVT name row if there is an
