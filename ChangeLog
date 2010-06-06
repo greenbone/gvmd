@@ -1,5 +1,14 @@
 2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_second_last_report): Get the second row of the
+	query.
+	(task_trend): Remove accessors for total message counts which were
+	overwriting the report counts.
+	(task_debugs_size, task_holes_size, task_infos_size, task_logs_size)
+	(task_warnings_size): Correct doc.
+
+2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (condition_met): In the THREAT_LEVEL_CHANGED case also
 	return 1 if there is a threat level and the previous threat level in one.
 	(task_threat_level, task_previous_threat_level): Add NULL checks.

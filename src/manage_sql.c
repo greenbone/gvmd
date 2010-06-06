@@ -5099,7 +5099,7 @@ task_last_report (task_t task, report_t *report)
 static int
 task_second_last_report (task_t task, report_t *report)
 {
-  switch (sql_int64 (report, 0, 0,
+  switch (sql_int64 (report, 0, 1,
                      "SELECT ROWID FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 2;",
@@ -6954,10 +6954,6 @@ task_trend (task_t task)
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a))
     abort (); // FIX fail better
 
-  holes_a = task_holes_size (task);
-  warns_a = task_warnings_size (task);
-  infos_a = task_infos_size (task);
-
   if (holes_a > 0)
     threat_a = 4;
   else if (warns_a > 0)
@@ -6976,10 +6972,6 @@ task_trend (task_t task)
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
                         &warns_b))
     abort (); // FIX fail better
-
-  holes_b = task_holes_size (task);
-  warns_b = task_warnings_size (task);
-  infos_b = task_infos_size (task);
 
   if (holes_b > 0)
     threat_b = 4;
@@ -7048,7 +7040,7 @@ set_scan_attack_state (report_t report, const char* host, const char* state)
 }
 
 /**
- * @brief Return the number of debug messages in the current report of a task.
+ * @brief Return the total number of debug messages of a task.
  *
  * @param[in]  task  Task.
  *
@@ -7064,7 +7056,7 @@ task_debugs_size (task_t task)
 }
 
 /**
- * @brief Return the number of hole messages in the current report of a task.
+ * @brief Return the total number of hole messages of a task.
  *
  * @param[in]  task  Task.
  *
@@ -7080,7 +7072,7 @@ task_holes_size (task_t task)
 }
 
 /**
- * @brief Return the number of info messages in the current report of a task.
+ * @brief Return the total number of info messages of a task.
  *
  * @param[in]  task  Task.
  *
@@ -7096,7 +7088,7 @@ task_infos_size (task_t task)
 }
 
 /**
- * @brief Return the number of log messages in the current report of a task.
+ * @brief Return the total number of log messages of a task.
  *
  * @param[in]  task  Task.
  *
@@ -7112,7 +7104,7 @@ task_logs_size (task_t task)
 }
 
 /**
- * @brief Return the number of note messages in the current report of a task.
+ * @brief Return the total number of note messages of a task.
  *
  * @param[in]  task  Task.
  *
