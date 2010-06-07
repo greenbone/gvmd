@@ -8402,7 +8402,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client
                      ("delete_lsc_credential",
-                      "lsc_credential",
+                      "LSC credential",
                       delete_lsc_credential_data->lsc_credential_id))
                   {
                     error_send_to_client (error);
@@ -9959,7 +9959,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client
                    ("create_target",
-                    "lsc_credential",
+                    "LSC credential",
                     create_target_data->lsc_credential_id))
                 {
                   error_send_to_client (error);
@@ -12155,7 +12155,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client
                    ("get_lsc_credentials",
-                    "lsc_credential",
+                    "LSC credential",
                     get_lsc_credentials_data->lsc_credential_id))
                 {
                   error_send_to_client (error);
