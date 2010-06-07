@@ -1,5 +1,10 @@
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET
+	cleanup switch formatting.
+
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_target): Correct spelling of "parameters".
 
 	* src/omp.c: Space out all the reset functions in the same way.
