@@ -1,5 +1,11 @@
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (collate_ip): Limit the last scanned number of each IP
+	to the digits in the string, as there may be more digits directly after it
+	in memory.
+
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Neaten name of credentials in
 	messages.
 

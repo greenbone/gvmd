@@ -2861,17 +2861,17 @@ collate_ip (void* data,
             int one_len, const void* arg_one,
             int two_len, const void* arg_two)
 {
-  int ret;
+  int ret, one_dot, two_dot;
   char one_a[4], one_b[4], one_c[4], one_d[4];
   char two_a[4], two_b[4], two_c[4], two_d[4];
   const char* one = (const char*) arg_one;
   const char* two = (const char*) arg_two;
 
-  if ((sscanf (one, "%3[0-9].%3[0-9].%3[0-9].%3[0-9]",
-               one_a, one_b, one_c, one_d)
+  if ((sscanf (one, "%3[0-9].%3[0-9].%3[0-9].%n%3[0-9]",
+               one_a, one_b, one_c, &one_dot, one_d)
        == 4)
-      && (sscanf (two, "%3[0-9].%3[0-9].%3[0-9].%3[0-9]",
-                  two_a, two_b, two_c, two_d)
+      && (sscanf (two, "%3[0-9].%3[0-9].%3[0-9].%n%3[0-9]",
+                  two_a, two_b, two_c, &two_dot, two_d)
           == 4))
     {
       int ret = collate_ip_compare (one_a, two_a);
@@ -2882,6 +2882,10 @@ collate_ip (void* data,
 
       ret = collate_ip_compare (one_c, two_c);
       if (ret) return ret < 0 ? -1 : 1;
+
+      /* Ensure that the last number is limited to digits in the arg. */
+      one_d[one_len - one_dot] = '\0';
+      two_d[two_len - two_dot] = '\0';
 
       ret = collate_ip_compare (one_d, two_d);
       if (ret) return ret < 0 ? -1 : 1;
