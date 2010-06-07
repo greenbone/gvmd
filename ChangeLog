@@ -1,5 +1,9 @@
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_text): Indent case labels properly.
+
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET
 	cleanup switch formatting.
 

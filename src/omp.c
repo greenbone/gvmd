@@ -12766,10 +12766,10 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&create_target_data->name, text, text_len);
         break;
-     case CLIENT_CREATE_TARGET_PASSWORD:
+      case CLIENT_CREATE_TARGET_PASSWORD:
         openvas_append_text (&create_target_data->password, text, text_len);
         break;
-     case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
         openvas_append_text (&create_target_data->target_locator, text, text_len);
         break;
       case CLIENT_CREATE_TARGET_USERNAME:
