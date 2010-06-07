@@ -1,5 +1,10 @@
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET add
+	missing breaks.
+
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add LSC credential UUIDs.
 
 	* src/manage_sql.c (create_tables): Add column uuid to lsc_credentials.

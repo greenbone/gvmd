@@ -9981,10 +9981,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Target exists already"));
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Import from target_locator failed"));
+                break;
               default:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
                 break;
