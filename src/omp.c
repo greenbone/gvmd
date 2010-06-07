@@ -814,7 +814,7 @@ typedef struct
 {
   char *comment;
   char *hosts;
-  char *lsc_credential;
+  char *lsc_credential_id;
   char *name;
   /* For targets to import: source name and credentials to source. */
   char *password;
@@ -827,7 +827,7 @@ create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
   free (data->hosts);
-  free (data->lsc_credential);
+  free (data->lsc_credential_id);
   free (data->name);
   free (data->target_locator);
   free (data->username);
@@ -897,13 +897,13 @@ delete_escalator_data_reset (delete_escalator_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *lsc_credential_id;
 } delete_lsc_credential_data_t;
 
 static void
 delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
 {
-  free (data->name);
+  free (data->lsc_credential_id);
 
   memset (data, 0, sizeof (delete_lsc_credential_data_t));
 }
@@ -1029,7 +1029,7 @@ get_escalators_data_reset (get_escalators_data_t *data)
 typedef struct
 {
   char *format;
-  char *name;
+  char *lsc_credential_id;
   char *sort_field;
   int sort_order;
 } get_lsc_credentials_data_t;
@@ -1038,7 +1038,7 @@ static void
 get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
 {
   free (data->format);
-  free (data->name);
+  free (data->lsc_credential_id);
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_lsc_credentials_data_t));
@@ -2469,7 +2469,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
-            openvas_append_string (&delete_lsc_credential_data->name, "");
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "lsc_credential_id", &attribute))
+              openvas_append_string
+               (&delete_lsc_credential_data->lsc_credential_id,
+                attribute);
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
@@ -2587,9 +2592,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&get_lsc_credentials_data->name,
-                                     attribute);
+                                "lsc_credential_id", &attribute))
+              openvas_append_string
+               (&get_lsc_credentials_data->lsc_credential_id,
+                attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "format", &attribute))
               openvas_append_string (&get_lsc_credentials_data->format,
@@ -4303,7 +4309,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strcasecmp ("LSC_CREDENTIAL", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&create_target_data->lsc_credential_id,
+                                     attribute);
+            set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
@@ -8375,52 +8388,49 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
-        {
-          lsc_credential_t lsc_credential = 0;
+        assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
+        if (delete_escalator_data->escalator_id)
+          {
+            lsc_credential_t lsc_credential = 0;
 
-          assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
-          assert (delete_lsc_credential_data->name != NULL);
-
-          if (strlen (delete_lsc_credential_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                                "DELETE_LSC_CREDENTIAL name must be at least"
-                                " one character long"));
-          else if (find_lsc_credential (delete_lsc_credential_data->name,
-                                        &lsc_credential))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("delete_lsc_credential"));
-          else if (lsc_credential == 0)
-            {
-              if (send_find_error_to_client ("delete_lsc_credential",
-                                             "lsc_credential",
-                                             delete_lsc_credential_data->name))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (delete_lsc_credential (lsc_credential))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_lsc_credential",
-                                    "LSC credential is in use"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("delete_lsc_credential"));
-            }
-          delete_lsc_credential_data_reset (delete_lsc_credential_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
+            if (find_lsc_credential
+                 (delete_lsc_credential_data->lsc_credential_id,
+                  &lsc_credential))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_INTERNAL_ERROR ("delete_lsc_credential"));
+            else if (lsc_credential == 0)
+              {
+                if (send_find_error_to_client
+                     ("delete_lsc_credential",
+                      "lsc_credential",
+                      delete_lsc_credential_data->lsc_credential_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_lsc_credential (lsc_credential))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_lsc_credential"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                                      "LSC credential is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_lsc_credential"));
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_escalator",
+                              "DELETE_ESCALATOR requires an escalator_id"
+                              " attribute"));
+        delete_lsc_credential_data_reset (delete_lsc_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_TARGET:
@@ -9940,16 +9950,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 " CREATE_TARGET requires either a"
                                 " TARGET_LOCATOR or a host"));
-          else if (create_target_data->lsc_credential
-                   && find_lsc_credential (create_target_data->lsc_credential,
-                                           &lsc_credential))
+          else if (create_target_data->lsc_credential_id
+                   && find_lsc_credential
+                       (create_target_data->lsc_credential_id,
+                        &lsc_credential))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
-          else if (create_target_data->lsc_credential && lsc_credential == 0)
+          else if (create_target_data->lsc_credential_id && lsc_credential == 0)
             {
               if (send_find_error_to_client
                    ("create_target",
                     "lsc_credential",
-                    create_target_data->lsc_credential))
+                    create_target_data->lsc_credential_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -12132,15 +12143,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_lsc_credentials",
                                 "GET_LSC_CREDENTIALS format attribute should"
                                 " be \"key\", \"rpm\", \"deb\" or \"exe\"."));
-          else if (get_lsc_credentials_data->name
-                   && find_lsc_credential (get_lsc_credentials_data->name,
-                                           &lsc_credential))
+          else if (get_lsc_credentials_data->lsc_credential_id
+                   && find_lsc_credential
+                       (get_lsc_credentials_data->lsc_credential_id,
+                        &lsc_credential))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_lsc_credentials"));
-          else if (get_lsc_credentials_data->name && (lsc_credential == 0))
+          else if (get_lsc_credentials_data->lsc_credential_id
+                   && (lsc_credential == 0))
             {
-              if (send_find_error_to_client ("get_lsc_credentials",
-                                             "lsc_credential",
-                                             get_lsc_credentials_data->name))
+              if (send_find_error_to_client
+                   ("get_lsc_credentials",
+                    "lsc_credential",
+                    get_lsc_credentials_data->lsc_credential_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -12161,7 +12175,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       case 1: /* key */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential>"
+                         ("<lsc_credential id=\"%s\">"
                           "<name>%s</name>"
                           "<login>%s</login>"
                           "<comment>%s</comment>"
@@ -12169,6 +12183,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<public_key>%s</public_key>"
                           "</lsc_credential>",
+                          lsc_credential_iterator_uuid (&credentials),
                           lsc_credential_iterator_name (&credentials),
                           lsc_credential_iterator_login (&credentials),
                           lsc_credential_iterator_comment (&credentials),
@@ -12179,7 +12194,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 2: /* rpm */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential>"
+                         ("<lsc_credential id=\"%s\">"
                           "<name>%s</name>"
                           "<login>%s</login>"
                           "<comment>%s</comment>"
@@ -12187,6 +12202,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"rpm\">%s</package>"
                           "</lsc_credential>",
+                          lsc_credential_iterator_uuid (&credentials),
                           lsc_credential_iterator_name (&credentials),
                           lsc_credential_iterator_login (&credentials),
                           lsc_credential_iterator_comment (&credentials),
@@ -12197,7 +12213,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 3: /* deb */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential>"
+                         ("<lsc_credential id=\"%s\">"
                           "<name>%s</name>"
                           "<login>%s</login>"
                           "<comment>%s</comment>"
@@ -12205,6 +12221,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"deb\">%s</package>"
                           "</lsc_credential>",
+                          lsc_credential_iterator_uuid (&credentials),
                           lsc_credential_iterator_name (&credentials),
                           lsc_credential_iterator_login (&credentials),
                           lsc_credential_iterator_comment (&credentials),
@@ -12215,7 +12232,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         break;
                       case 4: /* exe */
                         SENDF_TO_CLIENT_OR_FAIL
-                         ("<lsc_credential>"
+                         ("<lsc_credential id=\"%s\">"
                           "<name>%s</name>"
                           "<login>%s</login>"
                           "<comment>%s</comment>"
@@ -12223,6 +12240,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<type>%s</type>"
                           "<package format=\"exe\">%s</package>"
                           "</lsc_credential>",
+                          lsc_credential_iterator_uuid (&credentials),
                           lsc_credential_iterator_name (&credentials),
                           lsc_credential_iterator_login (&credentials),
                           lsc_credential_iterator_comment (&credentials),
@@ -12236,13 +12254,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           iterator_t targets;
 
                           SENDF_TO_CLIENT_OR_FAIL
-                           ("<lsc_credential>"
+                           ("<lsc_credential id=\"%s\">"
                             "<name>%s</name>"
                             "<login>%s</login>"
                             "<comment>%s</comment>"
                             "<in_use>%i</in_use>"
                             "<type>%s</type>"
                             "<targets>",
+                            lsc_credential_iterator_uuid (&credentials),
                             lsc_credential_iterator_name (&credentials),
                             lsc_credential_iterator_login (&credentials),
                             lsc_credential_iterator_comment (&credentials),
@@ -12385,18 +12404,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     get_targets_data->sort_field);
               while (next (&targets))
                 {
-                  char *lsc_name;
+                  char *lsc_name, *lsc_uuid;
                   lsc_credential_t lsc_credential;
 
                   lsc_credential = target_iterator_lsc_credential (&targets);
                   lsc_name = lsc_credential_name (lsc_credential);
+                  lsc_uuid = lsc_credential_uuid (lsc_credential);
                   SENDF_TO_CLIENT_OR_FAIL ("<target>"
                                            "<name>%s</name>"
                                            "<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
                                            "<comment>%s</comment>"
                                            "<in_use>%i</in_use>"
-                                           "<lsc_credential>"
+                                           "<lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
                                            "</lsc_credential>"
                                            "<tasks>",
@@ -12407,6 +12427,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            target_iterator_comment (&targets),
                                            target_in_use
                                             (target_iterator_target (&targets)),
+                                           lsc_uuid ? lsc_uuid : "",
                                            lsc_name ? lsc_name : "");
 
                   if (target)
@@ -12758,11 +12779,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_HOSTS:
         openvas_append_text (&create_target_data->hosts, text, text_len);
         break;
-      case CLIENT_CREATE_TARGET_LSC_CREDENTIAL:
-        openvas_append_text (&create_target_data->lsc_credential,
-                             text,
-                             text_len);
-        break;
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&create_target_data->name, text, text_len);
         break;
@@ -12801,10 +12817,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_CONFIG_NAME:
         openvas_append_text (&delete_config_data->name, text, text_len);
-        break;
-
-      case CLIENT_DELETE_LSC_CREDENTIAL_NAME:
-        openvas_append_text (&delete_lsc_credential_data->name, text, text_len);
         break;
 
       case CLIENT_DELETE_TARGET_NAME:

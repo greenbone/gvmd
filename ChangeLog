@@ -1,5 +1,32 @@
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add LSC credential UUIDs.
+
+	* src/manage_sql.c (create_tables): Add column uuid to lsc_credentials.
+	(find_lsc_credential): Convert name arg to UUID.
+	(create_lsc_credential): Init UUID column.
+	(init_lsc_credential_iterator): Add UUID.
+	(lsc_credential_iterator_uuid): New function.  Adjust other accessors
+	accordingly.
+	(lsc_credential_uuid): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset): Replace
+	lsc_credential with lsc_credential_id.
+	(delete_lsc_credential_data_t, delete_lsc_credential_data_reset)
+	(get_lsc_credentials_data_t, get_lsc_credentials_data_reset): Replace name
+	with lsc_credential_id.
+	(omp_xml_handle_start_element): Read ecalator ID attributes for
+	DELETE_LSC_CREDENTIAL and GET_LSC_CREDENTIALS.
+	(omp_xml_handle_end_element): In CLIENT_DELETE_LSC_CREDENTIAL,
+	CLIENT_CREATE_TARGET and CLIENT_GET_LSC_CREDENTIALS expect UUID instead of
+	name.  In CLIENT_GET_LSC_CREDENTIALS and CLIENT_GET_TARGETS add UUID to
+	LSC_CREDENTIAL.
+	(omp_xml_handle_text): Remove lsc_credential name processing.
+
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_text): Indent case labels properly.
 
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -60,7 +87,7 @@
 	(test_escalator_data_t, test_escalator_data_reset): Replace name
 	with escalator_id.
 	(omp_xml_handle_start_element): Read ecalator ID attributes for
-	DELETE_ESCALATOR, GET_ESCALATORS, TEST_ESCALATOR and and CREATE_TASK.
+	DELETE_ESCALATOR, GET_ESCALATORS, TEST_ESCALATOR and CREATE_TASK.
 	(omp_xml_handle_end_element): In CLIENT_DELETE_ESCALATOR,
 	CLIENT_CREATE_TASK, CLIENT_TEST_ESCALATOR, CLIENT_GET_STATUS and
 	CLIENT_GET_ESCALATORS expect UUID instead of name.  In

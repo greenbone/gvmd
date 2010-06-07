@@ -642,7 +642,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalators (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, event INTEGER, condition INTEGER, method INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login, password, comment, public_key TEXT, private_key TEXT, rpm TEXT, deb TEXT, exe TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences (id INTEGER PRIMARY KEY, name, value);");
@@ -11675,9 +11675,9 @@ nvt_preference_count (const char *name)
 /* LSC Credentials. */
 
 /**
- * @brief Find an LSC credential given a name.
+ * @brief Find an LSC credential given a UUID.
  *
- * @param[in]   name            Name of LSC credential.
+ * @param[in]   uuid            UUID of LSC credential.
  * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
  *                              to find credential.
  *
@@ -11685,24 +11685,18 @@ nvt_preference_count (const char *name)
  *         TRUE on error.
  */
 gboolean
-find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
+find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 {
-  gchar *quoted_name;
-  assert (current_credentials.uuid);
-  quoted_name = sql_quote (name);
-  if (user_owns ("lsc_credential", quoted_name) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("lsc_credential", quoted_uuid) == 0)
     {
-      g_free (quoted_name);
+      g_free (quoted_uuid);
       *lsc_credential = 0;
       return FALSE;
     }
   switch (sql_int64 (lsc_credential, 0, 0,
-                     "SELECT ROWID FROM lsc_credentials"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')))",
-                     quoted_name,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM lsc_credentials WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -11712,12 +11706,12 @@ find_lsc_credential (const char* name, lsc_credential_t* lsc_credential)
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_name);
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
 
-  g_free (quoted_name);
+  g_free (quoted_uuid);
   return FALSE;
 }
 
@@ -11784,11 +11778,12 @@ create_lsc_credential (const char* name, const char* comment,
       /* Password-only credential. */
 
       sql ("INSERT INTO lsc_credentials"
-           " (name, owner, login, password, comment, public_key, private_key,"
-           "  rpm, deb, exe)"
+           " (uuid, name, owner, login, password, comment, public_key,"
+           "  private_key, rpm, deb, exe)"
            " VALUES"
-           " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
+           " (make_uuid (), '%s',"
+           "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -11839,10 +11834,11 @@ create_lsc_credential (const char* name, const char* comment,
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, owner, login, password, comment,"
-                                     "  public_key, private_key, rpm, deb, exe)"
+                                     " (uuid, name, owner, login, password,"
+                                     "  comment, public_key, private_key,"
+                                     "  rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s',"
+                                     " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '%s', '%s', '%s',"
@@ -11858,8 +11854,9 @@ create_lsc_credential (const char* name, const char* comment,
     else
       {
         formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (name, owner, login, password, comment,"
-                                     "  public_key, private_key, rpm, deb, exe)"
+                                     " (uuid, name, owner, login, password,"
+                                     "  comment, public_key, private_key,"
+                                     "  rpm, deb, exe)"
                                      " VALUES"
                                      " ('%s',"
                                      "  (SELECT ROWID FROM users"
@@ -12099,8 +12096,8 @@ init_lsc_credential_iterator (iterator_t* iterator,
 
   if (lsc_credential)
     init_iterator (iterator,
-                   "SELECT ROWID, name, login, password, comment, public_key,"
-                   " private_key, rpm, deb, exe,"
+                   "SELECT ROWID, uuid, name, login, password, comment,"
+                   " public_key, private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
@@ -12114,8 +12111,8 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, name, login, password, comment, public_key,"
-                   " private_key, rpm, deb, exe,"
+                   "SELECT ROWID, uuid, name, login, password, comment,"
+                   " public_key, private_key, rpm, deb, exe,"
                    " (SELECT count(*) > 0 FROM targets"
                    "  WHERE lsc_credential = lsc_credentials.ROWID)"
                    " FROM lsc_credentials"
@@ -12134,32 +12131,41 @@ lsc_credential_iterator_lsc_credential (iterator_t* iterator)
   return (lsc_credential_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
-DEF_ACCESS (lsc_credential_iterator_name, 1);
-DEF_ACCESS (lsc_credential_iterator_login, 2);
-DEF_ACCESS (lsc_credential_iterator_password, 3);
+DEF_ACCESS (lsc_credential_iterator_uuid, 1);
+DEF_ACCESS (lsc_credential_iterator_name, 2);
+DEF_ACCESS (lsc_credential_iterator_login, 3);
+DEF_ACCESS (lsc_credential_iterator_password, 4);
 
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 5);
   return ret ? ret : "";
 }
 
-DEF_ACCESS (lsc_credential_iterator_public_key, 5);
-DEF_ACCESS (lsc_credential_iterator_private_key, 6);
-DEF_ACCESS (lsc_credential_iterator_rpm, 7);
-DEF_ACCESS (lsc_credential_iterator_deb, 8);
-DEF_ACCESS (lsc_credential_iterator_exe, 9);
+DEF_ACCESS (lsc_credential_iterator_public_key, 6);
+DEF_ACCESS (lsc_credential_iterator_private_key, 7);
+DEF_ACCESS (lsc_credential_iterator_rpm, 8);
+DEF_ACCESS (lsc_credential_iterator_deb, 9);
+DEF_ACCESS (lsc_credential_iterator_exe, 10);
 
 int
 lsc_credential_iterator_in_use (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 10);
+  ret = (int) sqlite3_column_int (iterator->stmt, 11);
   return ret;
+}
+
+char*
+lsc_credential_uuid (lsc_credential_t lsc_credential)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM lsc_credentials WHERE ROWID = %llu;",
+                     lsc_credential);
 }
 
 char*
