@@ -987,6 +987,7 @@ get_agents_data_reset (get_agents_data_t *data)
   free (data->agent_id);
   free (data->format);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_agents_data_t));
 }
 
@@ -1005,6 +1006,7 @@ get_configs_data_reset (get_configs_data_t *data)
 {
   free (data->name);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_configs_data_t));
 }
 
@@ -1020,6 +1022,7 @@ get_escalators_data_reset (get_escalators_data_t *data)
 {
   free (data->escalator_id);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_escalators_data_t));
 }
 
@@ -1037,6 +1040,7 @@ get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
   free (data->format);
   free (data->name);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_lsc_credentials_data_t));
 }
 
@@ -1057,6 +1061,7 @@ get_notes_data_reset (get_notes_data_t *data)
   free (data->note_id);
   free (data->nvt_oid);
   free (data->task_id);
+
   memset (data, 0, sizeof (get_notes_data_t));
 }
 
@@ -1076,6 +1081,7 @@ get_nvt_details_data_reset (get_nvt_details_data_t *data)
   free (data->family);
   free (data->oid);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_nvt_details_data_t));
 }
 
@@ -1099,6 +1105,7 @@ static void
 get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
 {
   free (data->algorithm);
+
   memset (data, 0, sizeof (get_nvt_feed_checksum_data_t));
 }
 
@@ -1115,6 +1122,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
   free (data->config);
   free (data->oid);
   free (data->preference);
+
   memset (data, 0, sizeof (get_preferences_data_t));
 }
 
@@ -1143,6 +1151,7 @@ get_report_data_reset (get_report_data_t *data)
   free (data->levels);
   free (data->search_phrase);
   free (data->min_cvss_base);
+
   memset (data, 0, sizeof (get_report_data_t));
 }
 
@@ -1159,6 +1168,7 @@ get_results_data_reset (get_results_data_t *data)
 {
   free (data->result_id);
   free (data->task_id);
+
   memset (data, 0, sizeof (get_results_data_t));
 }
 
@@ -1174,6 +1184,7 @@ static void
 get_schedules_data_reset (get_schedules_data_t *data)
 {
   free (data->schedule_id);
+
   memset (data, 0, sizeof (get_schedules_data_t));
 }
 
@@ -1190,6 +1201,7 @@ get_status_data_reset (get_status_data_t *data)
 {
   free (data->task_id);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_status_data_t));
 }
 
@@ -1204,6 +1216,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 {
   free (data->name);
   free (data->duration);
+
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
 
@@ -1219,6 +1232,7 @@ get_targets_data_reset (get_targets_data_t *data)
 {
   free (data->name);
   free (data->sort_field);
+
   memset (data, 0, sizeof (get_targets_data_t));
 }
 
@@ -1260,6 +1274,7 @@ modify_config_data_reset (modify_config_data_t *data)
   free (data->preference_name);
   free (data->preference_nvt_oid);
   free (data->preference_value);
+
   memset (data, 0, sizeof (modify_config_data_t));
 }
 
@@ -1276,6 +1291,7 @@ modify_report_data_reset (modify_report_data_t *data)
   free (data->report_id);
   free (data->parameter_id);
   free (data->parameter_value);
+
   memset (data, 0, sizeof (modify_report_data_t));
 }
 
@@ -1308,6 +1324,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_id);
   free (data->task_id);
   free (data->value);
+
   memset (data, 0, sizeof (modify_task_data_t));
 }
 
@@ -8048,7 +8065,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           GSList* sources = resource_request_sources (RESOURCE_TYPE_TARGET);
           GSList* source = sources;
 
-          SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response status=\"" STATUS_OK "\""
+          SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response"
+                                  " status=\"" STATUS_OK "\""
                                   " status_text=\"" STATUS_OK_TEXT "\">");
 
           while (source)
@@ -9899,8 +9917,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (&create_target_data->name != NULL);
-          assert ((&create_target_data->target_locator
-                   || &create_target_data->hosts != NULL));
+          assert (&create_target_data->target_locator
+                  || &create_target_data->hosts != NULL);
 
           if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL

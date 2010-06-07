@@ -7774,7 +7774,7 @@ find_target (const char* name, target_t* target)
 /**
  * @brief Create a target.
  *
- * The \ref hosts and \ref target_locator paramaters are mutually exclusive,
+ * The \ref hosts and \ref target_locator parameters are mutually exclusive,
  * if target_locator is not NULL, always try to import from source.
  *
  * @param[in]   name            Name of target.

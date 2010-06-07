@@ -1,3 +1,11 @@
+2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_target): Correct spelling of "parameters".
+
+	* src/omp.c: Space out all the reset functions in the same way.
+	(omp_xml_handle_end_element): In CLIENT_GET_TARGET_LOCATORS bring line
+	width within range.  In CLIENT_CREATE_TARGET remove extra parens.
+
 2010-06-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_second_last_report): Get the second row of the
