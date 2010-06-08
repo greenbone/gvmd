@@ -1,3 +1,8 @@
+2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (send_config_preferences): Send empty value if file pref
+	is empty.
+
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (collate_ip): Limit the last scanned number of each IP

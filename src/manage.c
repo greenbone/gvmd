@@ -651,9 +651,23 @@ send_config_preferences (config_t config, const char* section_name,
 
               /* A "file" preference.
                *
+               * If the value of the preference is empty, then send an empty
+               * value.
+               *
                * If the value of the preference is the name of a task file,
                * then just send the preference value, otherwise send a UUID and
                * add the value to the list of preference files (pref_files). */
+
+              if (strcmp (value, "") == 0)
+                {
+                  g_free (value);
+                  if (sendn_to_server ("\n", 1))
+                    {
+                      cleanup_iterator (&prefs);
+                      return -1;
+                    }
+                  continue;
+                }
 
               head = task_files;
               while (head)
