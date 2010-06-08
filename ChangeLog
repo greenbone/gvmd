@@ -1,5 +1,9 @@
 2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (send_config_preferences): Free uuid and value on fail.
+
+2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (send_config_preferences): Send empty value if file pref
 	is empty.
 

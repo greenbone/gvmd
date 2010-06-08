@@ -692,6 +692,7 @@ send_config_preferences (config_t config, const char* section_name,
 
                   if (send_to_server (uuid))
                     {
+                      free (uuid);
                       g_free (value);
                       cleanup_iterator (&prefs);
                       return -1;
@@ -699,6 +700,8 @@ send_config_preferences (config_t config, const char* section_name,
 
                   if (sendn_to_server ("\n", 1))
                     {
+                      free (uuid);
+                      g_free (value);
                       cleanup_iterator (&prefs);
                       return -1;
                     }
