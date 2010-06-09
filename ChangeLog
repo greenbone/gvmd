@@ -1,5 +1,33 @@
 2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add target UUIDs.
+
+	* src/manage_sql.c (create_tables): Add column uuid to targets.
+	(find_target): Convert name arg to UUID.
+	(create_target): Init UUID column.
+	(init_target_iterator, init_lsc_credential_target_iterator): Add UUID.
+	(target_iterator_uuid, lsc_credential_target_iterator_uuid): New function.
+	Adjust other accessors accordingly.
+	(target_uuid): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset): Replace
+	target with target_id.
+	(delete_target_data_t, delete_target_data_reset)
+	(get_targets_data_t, get_targets_data_reset): Replace name with target_id.
+	(client_state_t): Remove CLIENT_DELETE_TARGET_NAME.
+	(omp_xml_handle_start_element): Read target ID attributes for
+	DELETE_TARGET, GET_TARGETS and CREATE_TASK/TARGET.  Remove
+	CLIENT_DELETE_TARGET NAME processing.
+	(omp_xml_handle_end_element): In CLIENT_DELETE_TARGET, CLIENT_CREATE_TASK
+	and CLIENT_GET_TARGETS expect UUID instead of name.  In
+	CLIENT_GET_TARGETS, CLIENT_GET_LSC_CREDENTIALS and CLIENT_GET_STATUS add
+	UUID attribute to TARGET.
+	(omp_xml_handle_text): Remove target name processing.
+
+2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (send_config_preferences): Free uuid and value on fail.
 
 2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -42,13 +70,13 @@
 	(delete_lsc_credential_data_t, delete_lsc_credential_data_reset)
 	(get_lsc_credentials_data_t, get_lsc_credentials_data_reset): Replace name
 	with lsc_credential_id.
-	(omp_xml_handle_start_element): Read ecalator ID attributes for
+	(omp_xml_handle_start_element): Read LSC credential ID attributes for
 	DELETE_LSC_CREDENTIAL and GET_LSC_CREDENTIALS.
 	(omp_xml_handle_end_element): In CLIENT_DELETE_LSC_CREDENTIAL,
 	CLIENT_CREATE_TARGET and CLIENT_GET_LSC_CREDENTIALS expect UUID instead of
 	name.  In CLIENT_GET_LSC_CREDENTIALS and CLIENT_GET_TARGETS add UUID to
 	LSC_CREDENTIAL.
-	(omp_xml_handle_text): Remove lsc_credential name processing.
+	(omp_xml_handle_text): Remove LSC credential name processing.
 
 2010-06-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -111,7 +139,7 @@
 	(get_escalators_data_t, get_escalators_data_reset)
 	(test_escalator_data_t, test_escalator_data_reset): Replace name
 	with escalator_id.
-	(omp_xml_handle_start_element): Read ecalator ID attributes for
+	(omp_xml_handle_start_element): Read escalator ID attributes for
 	DELETE_ESCALATOR, GET_ESCALATORS, TEST_ESCALATOR and CREATE_TASK.
 	(omp_xml_handle_end_element): In CLIENT_DELETE_ESCALATOR,
 	CLIENT_CREATE_TASK, CLIENT_TEST_ESCALATOR, CLIENT_GET_STATUS and

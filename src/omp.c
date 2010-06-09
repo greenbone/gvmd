@@ -841,7 +841,7 @@ typedef struct
   char *config;
   char *escalator_id;
   char *schedule;
-  char *target;
+  char *target_id;
   task_t task;
 } create_task_data_t;
 
@@ -851,7 +851,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->config);
   free (data->escalator_id);
   free (data->schedule);
-  free (data->target);
+  free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -949,13 +949,13 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *target_id;
 } delete_target_data_t;
 
 static void
 delete_target_data_reset (delete_target_data_t *data)
 {
-  free (data->name);
+  free (data->target_id);
 
   memset (data, 0, sizeof (delete_target_data_t));
 }
@@ -1222,7 +1222,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *target_id;
   char *sort_field;
   int sort_order;
 } get_targets_data_t;
@@ -1230,7 +1230,7 @@ typedef struct
 static void
 get_targets_data_reset (get_targets_data_t *data)
 {
-  free (data->name);
+  free (data->target_id);
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_targets_data_t));
@@ -1887,7 +1887,6 @@ typedef enum
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
-  CLIENT_DELETE_TARGET_NAME,
   CLIENT_GET_AGENTS,
   CLIENT_GET_CERTIFICATES,
   CLIENT_GET_CONFIGS,
@@ -2504,7 +2503,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
-            openvas_append_string (&delete_target_data->name, "");
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "target_id", &attribute))
+              openvas_append_string (&delete_target_data->target_id,
+                                     attribute);
             set_client_state (CLIENT_DELETE_TARGET);
           }
         else if (strcasecmp ("DELETE_TASK", element_name) == 0)
@@ -2878,8 +2881,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&get_targets_data->name, attribute);
+                                "target_id", &attribute))
+              openvas_append_string (&get_targets_data->target_id, attribute);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_field", &attribute))
               openvas_append_string (&get_targets_data->sort_field, attribute);
@@ -3250,21 +3253,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TARGET:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_DELETE_TARGET_NAME);
-        else
+        if (send_element_error_to_client ("delete_target", element_name))
           {
-            if (send_element_error_to_client ("delete_target", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_TASK:
@@ -4367,7 +4365,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
         else if (strcasecmp ("TARGET", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TASK_TARGET);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&create_task_data->target_id,
+                                     attribute);
+            set_client_state (CLIENT_CREATE_TASK_TARGET);
+          }
         else
           {
             if (send_element_error_to_client ("create_task", element_name))
@@ -8434,48 +8439,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TARGET:
-        {
-          target_t target = 0;
+        assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
+        if (delete_escalator_data->escalator_id)
+          {
+            target_t target = 0;
 
-          assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
-          assert (delete_target_data->name != NULL);
-
-          if (strlen (delete_target_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("delete_target",
-                                "DELETE_TARGET name must be at least one"
-                                " character long"));
-          else if (find_target (delete_target_data->name, &target))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-          else if (target == 0)
-            {
-              if (send_find_error_to_client ("delete_target",
-                                             "target",
-                                             delete_target_data->name))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (delete_target (target))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
-                                                          "Target is in use"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
-            }
-          delete_target_data_reset (delete_target_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_DELETE_TARGET_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_DELETE_TARGET);
+            if (find_target (delete_target_data->target_id, &target))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+            else if (target == 0)
+              {
+                if (send_find_error_to_client ("delete_target",
+                                               "target",
+                                               delete_target_data->target_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_target (target))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
+                                                            "Target is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_escalator",
+                              "DELETE_TARGET requires a target_id attribute"));
+        delete_target_data_reset (delete_target_data);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_TASK:
@@ -10062,10 +10061,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           description = task_description (create_task_data->task);
           if ((description
-               && (create_task_data->config || create_task_data->target))
+               && (create_task_data->config || create_task_data->target_id))
               || (description == NULL
                   && (create_task_data->config == NULL
-                      || create_task_data->target == NULL)))
+                      || create_task_data->target_id == NULL)))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -10079,7 +10078,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           assert (description
-                  || (create_task_data->config && create_task_data->target));
+                  || (create_task_data->config && create_task_data->target_id));
 
           /* Set any escalator. */
 
@@ -10231,7 +10230,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          else if (find_target (create_task_data->target, &target))
+          else if (find_target (create_task_data->target_id, &target))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -10246,7 +10245,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "target",
-                                             create_task_data->target))
+                                             create_task_data->target_id))
                 {
                   // Out of space
                   error_send_to_client (error);
@@ -10933,7 +10932,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     gchar *response, *progress_xml;
                     target_t target;
                     char *name, *config, *escalator, *escalator_uuid;
-                    char *task_target_name, *hosts;
+                    char *task_target_uuid, *task_target_name, *hosts;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
                     char* description;
@@ -11161,6 +11160,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator = task_escalator_name (task);
                     escalator_uuid = task_escalator_uuid (task);
                     config = task_config_name (task);
+                    task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
                     schedule = task_schedule (task);
                     if (schedule)
@@ -11185,7 +11185,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<escalator id=\"%s\">"
                                  "<name>%s</name>"
                                  "</escalator>"
-                                 "<target><name>%s</name></target>"
+                                 "<target id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</target>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
@@ -11211,6 +11213,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  config ? config : "",
                                  escalator_uuid ? escalator_uuid : "",
                                  escalator ? escalator : "",
+                                 task_target_uuid ? task_target_uuid : "",
                                  task_target_name ? task_target_name : "",
                                  task_run_status_name (task),
                                  progress_xml,
@@ -11302,7 +11305,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char *comment = task_comment (index);
                 target_t target;
                 char *tsk_uuid, *config, *escalator, *escalator_uuid;
-                char *task_target_name, *hosts;
+                char *task_target_uuid, *task_target_name, *hosts;
                 char *task_schedule_uuid, *task_schedule_name;
                 gchar *first_report_id, *first_report;
                 char *description;
@@ -11526,6 +11529,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 config = task_config_name (index);
                 escalator = task_escalator_name (index);
                 escalator_uuid = task_escalator_uuid (index);
+                task_target_uuid = target_uuid (target);
                 task_target_name = target_name (target);
                 schedule = task_schedule (index);
                 if (schedule)
@@ -11547,7 +11551,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<escalator id=\"%s\">"
                                         "<name>%s</name>"
                                         "</escalator>"
-                                        "<target><name>%s</name></target>"
+                                        "<target id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "</target>"
                                         "<status>%s</status>"
                                         "<progress>%s</progress>"
                                         "%s"
@@ -11574,6 +11580,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         config ? config : "",
                                         escalator_uuid ? escalator_uuid : "",
                                         escalator ? escalator : "",
+                                        task_target_uuid ? task_target_uuid : "",
                                         task_target_name ? task_target_name : "",
                                         task_run_status_name (index),
                                         progress_xml,
@@ -12278,9 +12285,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             get_lsc_credentials_data->sort_order);
                           while (next (&targets))
                             SENDF_TO_CLIENT_OR_FAIL
-                             ("<target>"
+                             ("<target id=\"%s\">"
                               "<name>%s</name>"
                               "</target>",
+                              lsc_credential_target_iterator_uuid (&targets),
                               lsc_credential_target_iterator_name (&targets));
                           cleanup_iterator (&targets);
 
@@ -12380,14 +12388,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
 
-          if (get_targets_data->name
-              && find_target (get_targets_data->name, &target))
+          if (get_targets_data->target_id
+              && find_target (get_targets_data->target_id, &target))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_targets"));
-          else if (get_targets_data->name && target == 0)
+          else if (get_targets_data->target_id && target == 0)
             {
               if (send_find_error_to_client ("get_targets",
                                              "target",
-                                             get_targets_data->name))
+                                             get_targets_data->target_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -12412,7 +12420,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   lsc_credential = target_iterator_lsc_credential (&targets);
                   lsc_name = lsc_credential_name (lsc_credential);
                   lsc_uuid = lsc_credential_uuid (lsc_credential);
-                  SENDF_TO_CLIENT_OR_FAIL ("<target>"
+                  SENDF_TO_CLIENT_OR_FAIL ("<target id=\"%s\">"
                                            "<name>%s</name>"
                                            "<hosts>%s</hosts>"
                                            "<max_hosts>%i</max_hosts>"
@@ -12422,6 +12430,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "</lsc_credential>"
                                            "<tasks>",
+                                           target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
                                            max_hosts
@@ -12813,16 +12822,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_SCHEDULE:
         openvas_append_text (&create_task_data->schedule, text, text_len);
         break;
-      case CLIENT_CREATE_TASK_TARGET:
-        openvas_append_text (&create_task_data->target, text, text_len);
-        break;
 
       case CLIENT_DELETE_CONFIG_NAME:
         openvas_append_text (&delete_config_data->name, text, text_len);
-        break;
-
-      case CLIENT_DELETE_TARGET_NAME:
-        openvas_append_text (&delete_target_data->name, text, text_len);
         break;
 
       case CLIENT_MODIFY_NOTE_HOSTS:

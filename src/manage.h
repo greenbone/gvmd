@@ -737,6 +737,9 @@ target_t
 target_iterator_target (iterator_t*);
 
 const char*
+target_iterator_uuid (iterator_t*);
+
+const char*
 target_iterator_name (iterator_t*);
 
 const char*
@@ -747,6 +750,9 @@ target_iterator_comment (iterator_t*);
 
 int
 target_iterator_lsc_credential (iterator_t*);
+
+char*
+target_uuid (target_t);
 
 char*
 target_name (target_t);
@@ -1077,6 +1083,9 @@ lsc_credential_name (lsc_credential_t);
 
 void
 init_lsc_credential_target_iterator (iterator_t*, lsc_credential_t, int);
+
+const char*
+lsc_credential_target_iterator_uuid (iterator_t*);
 
 const char*
 lsc_credential_target_iterator_name (iterator_t*);

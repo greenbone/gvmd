@@ -659,7 +659,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
-  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time);");
@@ -7731,32 +7731,26 @@ task_file_iterator_length (iterator_t* iterator)
 /* Targets. */
 
 /**
- * @brief Find a target given a name.
+ * @brief Find a target given a UUID.
  *
- * @param[in]   name    Name of target.
+ * @param[in]   uuid    UUID of target.
  * @param[out]  target  Target return, 0 if succesfully failed to find target.
  *
  * @return FALSE on success (including if failed to find target), TRUE on error.
  */
 gboolean
-find_target (const char* name, target_t* target)
+find_target (const char* uuid, target_t* target)
 {
-  gchar *quoted_name;
-  assert (current_credentials.uuid);
-  quoted_name = sql_quote (name);
-  if (user_owns ("target", quoted_name) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("target", quoted_uuid) == 0)
     {
-      g_free (quoted_name);
+      g_free (quoted_uuid);
       *target = 0;
       return FALSE;
     }
   switch (sql_int64 (target, 0, 0,
-                     "SELECT ROWID FROM targets"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     quoted_name,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM targets WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -7766,12 +7760,12 @@ find_target (const char* name, target_t* target)
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_name);
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
 
-  g_free (quoted_name);
+  g_free (quoted_uuid);
   return FALSE;
 }
 
@@ -7851,8 +7845,9 @@ create_target (const char* name, const char* hosts, const char* comment,
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
-           " VALUES ('%s',"
+      sql ("INSERT INTO targets"
+           " (uuid, name, owner, hosts, comment, lsc_credential)"
+           " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', %llu);",
            quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
@@ -7860,8 +7855,9 @@ create_target (const char* name, const char* hosts, const char* comment,
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO targets (name, owner, hosts, comment, lsc_credential)"
-         " VALUES ('%s',"
+    sql ("INSERT INTO targets"
+         " (uuid, name, owner, hosts, comment, lsc_credential)"
+         " VALUES (make_uuid, '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '', %llu);",
          quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
@@ -7916,7 +7912,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
 
   if (target)
     init_iterator (iterator,
-                   "SELECT ROWID, name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -7928,7 +7924,7 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, name, hosts, comment, lsc_credential"
+                   "SELECT ROWID, uuid, name, hosts, comment, lsc_credential"
                    " FROM targets"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -7945,15 +7941,16 @@ target_iterator_target (iterator_t* iterator)
   return (target_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
-DEF_ACCESS (target_iterator_name, 1);
-DEF_ACCESS (target_iterator_hosts, 2);
+DEF_ACCESS (target_iterator_uuid, 1);
+DEF_ACCESS (target_iterator_name, 2);
+DEF_ACCESS (target_iterator_hosts, 3);
 
 const char*
 target_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
   return ret ? ret : "";
 }
 
@@ -7962,8 +7959,23 @@ target_iterator_lsc_credential (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
+}
+
+/**
+ * @brief Return the UUID of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+target_uuid (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM targets WHERE ROWID = %llu;",
+                     target);
 }
 
 /**
@@ -12195,13 +12207,14 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                                      int ascending)
 {
   init_iterator (iterator,
-                 "SELECT name FROM targets WHERE lsc_credential = %llu"
+                 "SELECT uuid, name FROM targets WHERE lsc_credential = %llu"
                  " ORDER BY name %s;",
                  lsc_credential,
                  ascending ? "ASC" : "DESC");
 }
 
-DEF_ACCESS (lsc_credential_target_iterator_name, 0);
+DEF_ACCESS (lsc_credential_target_iterator_uuid, 0);
+DEF_ACCESS (lsc_credential_target_iterator_name, 1);
 
 
 /* Agents. */
