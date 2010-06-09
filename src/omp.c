@@ -2249,6 +2249,34 @@ find_attribute (const gchar **attribute_names,
   return 0;
 }
 
+/**
+ * @brief Find an attribute in a parser callback list of attributes and append
+ * @brief it to a string using openvas_append_string.
+ *
+ * @param[in]   attribute_names   List of names.
+ * @param[in]   attribute_values  List of values.
+ * @param[in]   attribute_name    Name of sought attribute.
+ * @param[out]  string            String to append attribute value to, if
+ *                                found.
+ *
+ * @return 1 if found and appended, else 0.
+ */
+int
+append_attribute (const gchar **attribute_names,
+                  const gchar **attribute_values,
+                  const char *attribute_name,
+                  gchar **string)
+{
+  const gchar* attribute;
+  if (find_attribute (attribute_names, attribute_values, attribute_name,
+                      &attribute))
+    {
+      openvas_append_string (string, attribute);
+      return 1;
+    }
+  return 0;
+}
+
 /** @cond STATIC */
 
 /**
@@ -2372,10 +2400,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("ABORT_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&abort_task_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &abort_task_data->task_id);
             set_client_state (CLIENT_ABORT_TASK);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
@@ -2442,11 +2468,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "agent_id", &attribute))
-              openvas_append_string (&delete_agent_data->agent_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                                "agent_id", &delete_agent_data->agent_id);
             set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
@@ -2456,77 +2479,57 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "escalator_id", &attribute))
-              openvas_append_string (&delete_escalator_data->escalator_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "escalator_id",
+                              &delete_escalator_data->escalator_id);
             set_client_state (CLIENT_DELETE_ESCALATOR);
           }
         else if (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "lsc_credential_id", &attribute))
-              openvas_append_string
-               (&delete_lsc_credential_data->lsc_credential_id,
-                attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "lsc_credential_id",
+                              &delete_lsc_credential_data->lsc_credential_id);
             set_client_state (CLIENT_DELETE_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("DELETE_NOTE", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "note_id", &attribute))
-              openvas_append_string (&delete_note_data->note_id, attribute);
+            append_attribute (attribute_names, attribute_values, "note_id",
+                              &delete_note_data->note_id);
             set_client_state (CLIENT_DELETE_NOTE);
           }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "report_id", &attribute))
-              openvas_append_string (&delete_report_data->report_id, attribute);
+            append_attribute (attribute_names, attribute_values, "report_id",
+                              &delete_report_data->report_id);
             set_client_state (CLIENT_DELETE_REPORT);
           }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "schedule_id", &attribute))
-              openvas_append_string (&delete_schedule_data->schedule_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "schedule_id",
+                               &delete_schedule_data->schedule_id);
             set_client_state (CLIENT_DELETE_SCHEDULE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "target_id", &attribute))
-              openvas_append_string (&delete_target_data->target_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "target_id",
+                              &delete_target_data->target_id);
             set_client_state (CLIENT_DELETE_TARGET);
           }
         else if (strcasecmp ("DELETE_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&delete_task_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &delete_task_data->task_id);
             set_client_state (CLIENT_DELETE_TASK);
           }
         else if (strcasecmp ("GET_AGENTS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "agent_id", &attribute))
-              openvas_append_string (&get_agents_data->agent_id, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "format", &attribute))
-              openvas_append_string (&get_agents_data->format, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_agents_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "agent_id",
+                              &get_agents_data->agent_id);
+            append_attribute (attribute_names, attribute_values, "format",
+                              &get_agents_data->format);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_agents_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_agents_data->sort_order = strcmp (attribute, "descending");
@@ -2539,17 +2542,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&get_configs_data->name, attribute);
+            append_attribute (attribute_names, attribute_values, "name",
+                              &get_configs_data->name);
             if (find_attribute (attribute_names, attribute_values,
                                 "families", &attribute))
               get_configs_data->families = atoi (attribute);
             else
               get_configs_data->families = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_configs_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_configs_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_configs_data->sort_order = strcmp (attribute, "descending");
@@ -2572,14 +2573,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_ESCALATORS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "escalator_id", &attribute))
-              openvas_append_string (&get_escalators_data->escalator_id,
-                                     attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_escalators_data->sort_field,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "escalator_id",
+                              &get_escalators_data->escalator_id);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_escalators_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_escalators_data->sort_order = strcmp (attribute,
@@ -2591,19 +2589,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_LSC_CREDENTIALS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "lsc_credential_id", &attribute))
-              openvas_append_string
-               (&get_lsc_credentials_data->lsc_credential_id,
-                attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "format", &attribute))
-              openvas_append_string (&get_lsc_credentials_data->format,
-                                     attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_lsc_credentials_data->sort_field,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                                "lsc_credential_id",
+                                &get_lsc_credentials_data->lsc_credential_id);
+            append_attribute (attribute_names, attribute_values, "format",
+                              &get_lsc_credentials_data->format);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_lsc_credentials_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_lsc_credentials_data->sort_order = strcmp (attribute,
@@ -2616,9 +2608,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "note_id", &attribute))
-              openvas_append_string (&get_notes_data->note_id, attribute);
+            append_attribute (attribute_names, attribute_values, "note_id",
+                              &get_notes_data->note_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
@@ -2632,9 +2623,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_notes_data->result = 0;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_notes_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_notes_data->sort_field);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
@@ -2648,29 +2638,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_GET_NVT_ALL);
         else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "algorithm", &attribute))
-              openvas_append_string (&get_nvt_feed_checksum_data->algorithm,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "algorithm",
+                              &get_nvt_feed_checksum_data->algorithm);
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
         else if (strcasecmp ("GET_NVT_DETAILS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "oid", &attribute))
-              openvas_append_string (&get_nvt_details_data->oid, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "config", &attribute))
-              openvas_append_string (&get_nvt_details_data->config, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "family", &attribute))
-              openvas_append_string (&get_nvt_details_data->family, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_nvt_details_data->sort_field,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &get_nvt_details_data->oid);
+            append_attribute (attribute_names, attribute_values, "config",
+                              &get_nvt_details_data->config);
+            append_attribute (attribute_names, attribute_values, "family",
+                              &get_nvt_details_data->family);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_nvt_details_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_nvt_details_data->sort_order = strcmp (attribute,
@@ -2692,31 +2674,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "oid", &attribute))
-              openvas_append_string (&get_preferences_data->oid,
-                                     attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "config", &attribute))
-              openvas_append_string (&get_preferences_data->config,
-                                     attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "preference", &attribute))
-              openvas_append_string (&get_preferences_data->preference,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &get_preferences_data->oid);
+            append_attribute (attribute_names, attribute_values, "config",
+                              &get_preferences_data->config);
+            append_attribute (attribute_names, attribute_values, "preference",
+                              &get_preferences_data->preference);
             set_client_state (CLIENT_GET_PREFERENCES);
           }
         else if (strcasecmp ("GET_REPORT", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "report_id", &attribute))
-              openvas_append_string (&get_report_data->report_id, attribute);
+            append_attribute (attribute_names, attribute_values, "report_id",
+                              &get_report_data->report_id);
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "format", &attribute))
-              openvas_append_string (&get_report_data->format, attribute);
+            append_attribute (attribute_names, attribute_values, "format",
+                              &get_report_data->format);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
@@ -2731,9 +2704,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_report_data->max_results = -1;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_report_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_report_data->sort_field);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
@@ -2748,13 +2720,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                   get_report_data->sort_order = 1;
               }
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "levels", &attribute))
-              openvas_append_string (&get_report_data->levels, attribute);
+            append_attribute (attribute_names, attribute_values, "levels",
+                              &get_report_data->levels);
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "search_phrase", &attribute))
-              openvas_append_string (&get_report_data->search_phrase, attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "search_phrase",
+                               &get_report_data->search_phrase);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
@@ -2774,10 +2745,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_report_data->result_hosts_only = 1;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "min_cvss_base", &attribute))
-              openvas_append_string (&get_report_data->min_cvss_base,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "min_cvss_base",
+                              &get_report_data->min_cvss_base);
 
             set_client_state (CLIENT_GET_REPORT);
           }
@@ -2785,13 +2755,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "result_id", &attribute))
-              openvas_append_string (&get_results_data->result_id, attribute);
+            append_attribute (attribute_names, attribute_values, "result_id",
+                              &get_results_data->result_id);
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&get_results_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &get_results_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
@@ -2813,10 +2781,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "schedule_id", &attribute))
-              openvas_append_string (&get_schedules_data->schedule_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "schedule_id",
+                              &get_schedules_data->schedule_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
@@ -2824,9 +2791,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               get_schedules_data->details = 0;
 
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_schedules_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_schedules_data->sort_field);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
@@ -2843,17 +2809,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&get_status_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &get_status_data->task_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
               get_status_data->rcfile = atoi (attribute);
             else
               get_status_data->rcfile = 0;
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_status_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_status_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_status_data->sort_order = strcmp (attribute, "descending");
@@ -2863,26 +2827,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&(get_system_reports_data->name),
-                                     attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "duration", &attribute))
-              openvas_append_string (&(get_system_reports_data->duration),
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "name",
+                              &get_system_reports_data->name);
+            append_attribute (attribute_names, attribute_values, "duration",
+                              &get_system_reports_data->duration);
             set_client_state (CLIENT_GET_SYSTEM_REPORTS);
           }
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "target_id", &attribute))
-              openvas_append_string (&get_targets_data->target_id, attribute);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_field", &attribute))
-              openvas_append_string (&get_targets_data->sort_field, attribute);
+            append_attribute (attribute_names, attribute_values, "target_id",
+                              &get_targets_data->target_id);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_targets_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_targets_data->sort_order = strcmp (attribute, "descending");
@@ -2898,78 +2855,57 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG);
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "note_id", &attribute))
-              openvas_append_string (&modify_note_data->note_id, attribute);
+            append_attribute (attribute_names, attribute_values, "note_id",
+                              &modify_note_data->note_id);
             set_client_state (CLIENT_MODIFY_NOTE);
           }
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "report_id", &attribute))
-              openvas_append_string (&modify_report_data->report_id, attribute);
+            append_attribute (attribute_names, attribute_values, "report_id",
+                              &modify_report_data->report_id);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&modify_task_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &modify_task_data->task_id);
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&pause_task_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &pause_task_data->task_id);
             set_client_state (CLIENT_PAUSE_TASK);
           }
         else if (strcasecmp ("RESUME_OR_START_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&resume_or_start_task_data->task_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &resume_or_start_task_data->task_id);
             set_client_state (CLIENT_RESUME_OR_START_TASK);
           }
         else if (strcasecmp ("RESUME_PAUSED_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&resume_paused_task_data->task_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &resume_paused_task_data->task_id);
             set_client_state (CLIENT_RESUME_PAUSED_TASK);
           }
         else if (strcasecmp ("RESUME_STOPPED_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&resume_paused_task_data->task_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &resume_paused_task_data->task_id);
             set_client_state (CLIENT_RESUME_STOPPED_TASK);
           }
         else if (strcasecmp ("START_TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "task_id", &attribute))
-              openvas_append_string (&start_task_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &start_task_data->task_id);
             set_client_state (CLIENT_START_TASK);
           }
         else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "escalator_id", &attribute))
-              openvas_append_string (&test_escalator_data->escalator_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values,
+                              "escalator_id",
+                              &test_escalator_data->escalator_id);
             set_client_state (CLIENT_TEST_ESCALATOR);
           }
         else
@@ -3360,18 +3296,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NOTES:
         if (strcasecmp ("NVT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&get_notes_data->nvt_oid, attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &get_notes_data->nvt_oid);
             set_client_state (CLIENT_GET_NOTES_NVT);
           }
         else if (strcasecmp ("TASK", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&get_notes_data->task_id, attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &get_notes_data->task_id);
             set_client_state (CLIENT_GET_NOTES_TASK);
           }
         else
@@ -3639,11 +3571,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
         else if (strcasecmp ("NVT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "oid", &attribute))
-              openvas_append_string (&modify_config_data->nvt_selection_nvt_oid,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &modify_config_data->nvt_selection_nvt_oid);
             set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
           }
         else
@@ -3716,11 +3645,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME);
         else if (strcasecmp ("NVT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "oid", &attribute))
-              openvas_append_string (&modify_config_data->preference_nvt_oid,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &modify_config_data->preference_nvt_oid);
             set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NVT);
           }
         else if (strcasecmp ("VALUE", element_name) == 0)
@@ -3743,11 +3669,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT:
         if (strcasecmp ("PARAMETER", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&modify_report_data->parameter_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_report_data->parameter_id);
             set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
           }
         else
@@ -3773,40 +3696,31 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&modify_task_data->escalator_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->escalator_id);
             set_client_state (CLIENT_MODIFY_TASK_ESCALATOR);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
         else if (strcasecmp ("PARAMETER", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&modify_task_data->parameter, attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->parameter);
             set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
           }
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&modify_task_data->schedule_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->schedule_id);
             set_client_state (CLIENT_MODIFY_TASK_SCHEDULE);
           }
         else if (strcasecmp ("FILE", element_name) == 0)
           {
             const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "name", &attribute))
-              openvas_append_string (&modify_task_data->file_name, attribute);
+            append_attribute (attribute_names, attribute_values, "name",
+                              &modify_task_data->file_name);
             if (find_attribute (attribute_names, attribute_values,
                                 "action", &attribute))
               openvas_append_string (&modify_task_data->action, attribute);
@@ -4025,11 +3939,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("NVT", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "oid", &attribute))
-              openvas_append_string (&(import_config_data->preference_nvt_oid),
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &import_config_data->preference_nvt_oid);
             set_client_state
              (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT);
           }
@@ -4295,11 +4206,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strcasecmp ("LSC_CREDENTIAL", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&create_target_data->lsc_credential_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->lsc_credential_id);
             set_client_state (CLIENT_CREATE_TARGET_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
@@ -4342,29 +4250,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_CONFIG);
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&create_task_data->escalator_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->escalator_id);
             set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
           }
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&create_task_data->schedule_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->schedule_id);
             set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
           }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
-            const gchar* attribute;
-            if (find_attribute (attribute_names, attribute_values,
-                                "id", &attribute))
-              openvas_append_string (&create_task_data->target_id,
-                                     attribute);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
           }
         else
