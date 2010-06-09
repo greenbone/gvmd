@@ -1,3 +1,7 @@
+2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Collate hosts with collate_ip.
+
 2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add target UUIDs.

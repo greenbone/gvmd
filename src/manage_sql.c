@@ -6268,17 +6268,17 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                cvss_sql ? cvss_sql->str : "",
                                ascending
                                 ? ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host,"
+                                    ? " ORDER BY host COLLATE collate_ip,"
                                       " port,"
                                       " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY host,"
+                                    : " ORDER BY host COLLATE collate_ip,"
                                       " type COLLATE collate_message_type,"
                                       " port")
                                 : ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host,"
+                                    ? " ORDER BY host COLLATE collate_ip,"
                                       " port DESC,"
                                       " type COLLATE collate_message_type DESC"
-                                    : " ORDER BY host,"
+                                    : " ORDER BY host COLLATE collate_ip,"
                                       " type COLLATE collate_message_type DESC,"
                                       " port"),
                                max_results,
