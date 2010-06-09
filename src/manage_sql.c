@@ -548,33 +548,6 @@ member (GPtrArray *array, const char *string)
 /**
  * @brief Test whether a user owns a resource.
  *
- * @param[in]  resource              Type of resource, for example "target".
- * @param[in]  quoted_resource_name  Name of resource, SQL quoted.
- *
- * @return 1 if user owns resource, else 0.
- */
-static int
-user_owns (const char *resource, const char *quoted_resource_name)
-{
-  int ret;
-
-  assert (current_credentials.uuid);
-
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss"
-                 " WHERE name = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                 resource,
-                 quoted_resource_name,
-                 current_credentials.uuid);
-
-  return ret;
-}
-
-/**
- * @brief Test whether a user owns a resource.
- *
  * @param[in]  resource  Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
  *
@@ -637,7 +610,7 @@ create_tables ()
 {
   sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_event_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_method_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -4776,6 +4749,22 @@ task_config (task_t task)
 }
 
 /**
+ * @brief Return the UUID of the config of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return UUID of config of task.
+ */
+char*
+task_config_uuid (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM configs WHERE ROWID ="
+                     " (SELECT config FROM tasks WHERE ROWID = %llu);",
+                     task);
+}
+
+/**
  * @brief Return the name of the config of a task.
  *
  * @param[in]  task  Task.
@@ -8109,32 +8098,26 @@ DEF_ACCESS (target_task_iterator_uuid, 1);
 /* Configs. */
 
 /**
- * @brief Find a config given a name.
+ * @brief Find a config given a UUID.
  *
- * @param[in]   name    Config name.
+ * @param[in]   uuid    Config UUID.
  * @param[out]  config  Config return, 0 if succesfully failed to find config.
  *
  * @return FALSE on success (including if failed to find config), TRUE on error.
  */
 gboolean
-find_config (const char* name, config_t* config)
+find_config (const char* uuid, config_t* config)
 {
-  gchar *quoted_name;
-  assert (current_credentials.uuid);
-  quoted_name = sql_quote (name);
-  if (user_owns ("config", quoted_name) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("config", quoted_uuid) == 0)
     {
-      g_free (quoted_name);
+      g_free (quoted_uuid);
       *config = 0;
       return FALSE;
     }
   switch (sql_int64 (config, 0, 0,
-                     "SELECT ROWID FROM configs"
-                     " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                     quoted_name,
-                     current_credentials.uuid))
+                     "SELECT ROWID FROM configs WHERE uuid = '%s';",
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -8144,11 +8127,11 @@ find_config (const char* name, config_t* config)
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_name);
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
-  g_free (quoted_name);
+  g_free (quoted_uuid);
   return FALSE;
 }
 
@@ -8238,6 +8221,7 @@ config_insert_preferences (config_t config,
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
+ * @param[out]  uuid           On success the UUID of the config.
  * @param[out]  name           On success the name of the config.
  *
  * @return 0 success, 1 config exists already, -1 error, -2 name empty,
@@ -8247,11 +8231,10 @@ int
 create_config (const char* proposed_name, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
-               char **name)
+               char **uuid, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  char *uuid;
   config_t config;
   unsigned int num = 1;
 
@@ -8259,8 +8242,8 @@ create_config (const char* proposed_name, const char* comment,
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
+  *uuid = openvas_uuid_make ();
+  if (*uuid == NULL)
     return -1;
 
   candidate_name = g_strdup (proposed_name);
@@ -8287,42 +8270,42 @@ create_config (const char* proposed_name, const char* comment,
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
-           " VALUES ('%s',"
+      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+           " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s');",
            quoted_candidate_name,
            current_credentials.uuid,
-           uuid,
+           *uuid,
            quoted_comment);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
-         " VALUES ('%s',"
+    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+         " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '');",
          quoted_candidate_name,
          current_credentials.uuid,
-         uuid);
+         *uuid);
   g_free (quoted_candidate_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
   config = sqlite3_last_insert_rowid (task_db);
-  if ((ret = insert_nvt_selectors (uuid, selectors)))
+  if ((ret = insert_nvt_selectors (*uuid, selectors)))
     {
       sql ("ROLLBACK;");
-      free (uuid);
+      free (*uuid);
       return ret;
     }
-  free (uuid);
 
   /* Insert the preferences into the config_preferences table. */
 
   if ((ret = config_insert_preferences (config, preferences)))
     {
       sql ("ROLLBACK;");
+      free (*uuid);
       return ret;
     }
 
@@ -8946,9 +8929,10 @@ copy_config (const char* name, const char* comment, config_t config)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs"
-           " (name, owner, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing)"
-           " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
+           " (uuid, name, owner, nvt_selector, comment, family_count,"
+           "  nvt_count, families_growing, nvts_growing)"
+           " SELECT make_uuid (), '%s',"
+           " (SELECT ROWID FROM users where users.uuid = '%s'),"
            " '%s', '%s', family_count, nvt_count,"
            " families_growing, nvts_growing"
            " FROM configs WHERE ROWID = %llu;",
@@ -8961,9 +8945,10 @@ copy_config (const char* name, const char* comment, config_t config)
     }
   else
     sql ("INSERT INTO configs"
-         " (name, owner, nvt_selector, comment, family_count, nvt_count,"
+         " (uuid, name, owner, nvt_selector, comment, family_count, nvt_count,"
          "  families_growing, nvts_growing)"
-         " SELECT '%s', (SELECT ROWID FROM users where users.uuid = '%s'),"
+         " SELECT make_uuid (), '%s',"
+         " (SELECT ROWID FROM users where users.uuid = '%s'),"
          " '%s', '', family_count, nvt_count,"
          " families_growing, nvts_growing"
          " FROM configs WHERE ROWID = %llu",
@@ -9030,7 +9015,7 @@ delete_config (config_t config)
   return 0;
 }
 
-#define CONFIG_ITERATOR_FIELDS "ROWID, name, nvt_selector, comment, families_growing, nvts_growing"
+#define CONFIG_ITERATOR_FIELDS "ROWID, uuid, name, nvt_selector, comment, families_growing, nvts_growing"
 
 /**
  * @brief Initialise a config iterator.
@@ -9082,15 +9067,16 @@ config_iterator_config (iterator_t* iterator)
   return (config_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
-DEF_ACCESS (config_iterator_name, 1);
-DEF_ACCESS (config_iterator_nvt_selector, 2);
+DEF_ACCESS (config_iterator_uuid, 1);
+DEF_ACCESS (config_iterator_name, 2);
+DEF_ACCESS (config_iterator_nvt_selector, 3);
 
 const char*
 config_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 4);
   return ret ? ret : "";
 }
 
@@ -9099,7 +9085,7 @@ config_iterator_families_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 4);
+  ret = (int) sqlite3_column_int (iterator->stmt, 5);
   return ret;
 }
 
@@ -9108,7 +9094,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
+  ret = (int) sqlite3_column_int (iterator->stmt, 6);
   return ret;
 }
 

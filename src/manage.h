@@ -340,6 +340,9 @@ config_t
 task_config (task_t);
 
 char*
+task_config_uuid (task_t);
+
+char*
 task_config_name (task_t);
 
 void
@@ -798,7 +801,7 @@ typedef struct
 
 int
 create_config (const char*, const char*, const array_t*, const array_t*,
-               char**);
+               char**, char**);
 
 int
 create_config_rc (const char*, const char*, char*, config_t*);
@@ -820,6 +823,9 @@ init_config_iterator (iterator_t*, config_t, int, const char*);
 
 config_t
 config_iterator_config (iterator_t*);
+
+const char*
+config_iterator_uuid (iterator_t*);
 
 const char*
 config_iterator_name (iterator_t*);

@@ -1,3 +1,38 @@
+2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add config UUIDs.
+
+	* src/manage_sql.c (user_owns): Remove.  Everything uses user_owns_uuid.
+	(create_tables): Add column uuid to configs.
+	(task_config_uuid): New function.
+	(find_config): Convert name arg to UUID.
+	(create_config): Add uuid return arg.  Init UUID column.
+	(copy_config): Init UUID column.
+	(CONFIG_ITERATOR_FIELDS): Add UUID.
+	(config_iterator_uuid): New function.  Adjust other accessors accordingly.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset): Replace config
+	with config_id.
+	(delete_config_data_t, delete_config_data_reset)
+	(get_configs_data_t, get_configs_data_reset)
+	(modify_config_data_t, modify_config_data_reset): Replace name with
+	config_id.
+	(get_nvt_details_data_t, get_nvt_details_data_reset)
+	(get_preferences_data_t, get_preferences_data_reset): Rename config to
+	config_id.
+	(client_state_t): Remove config name states.
+	(omp_xml_handle_start_element): Replace config and name attributes with
+	config_id for commands that take a config.  Remove CLIENT_DELETE_CONFIG
+	and CLIENT_MODIFY_CONFIG NAME processing.
+	(omp_xml_handle_end_element): In CLIENT_GET_PREFERENCES,
+	CLIENT_GET_NVT_DETAILS, CLIENT_DELETE_CONFIG, CLIENT_MODIFY_CONFIG,
+	CLIENT_CREATE_TASK and CLIENT_GET_CONFIGS expect UUID instead of name.  In
+	CLIENT_CREATE_CONFIG, CLIENT_GET_STATUS and CLIENT_GET_CONFIGS add
+	UUID attribute to CONFIG.  Remove CLIENT_MODIFY_CONFIG NAME processing.
+	(omp_xml_handle_text): Remove config name and text processing.
+
 2010-06-09  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/omp.c: Updated documentation.

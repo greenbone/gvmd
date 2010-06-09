@@ -857,7 +857,7 @@ create_target_data_reset (create_target_data_t *data)
 
 typedef struct
 {
-  char *config;
+  char *config_id;
   char *escalator_id;
   char *schedule_id;
   char *target_id;
@@ -867,7 +867,7 @@ typedef struct
 static void
 create_task_data_reset (create_task_data_t *data)
 {
-  free (data->config);
+  free (data->config_id);
   free (data->escalator_id);
   free (data->schedule_id);
   free (data->target_id);
@@ -890,13 +890,13 @@ delete_agent_data_reset (delete_agent_data_t *data)
 
 typedef struct
 {
-  char *name;
+  char *config_id;
 } delete_config_data_t;
 
 static void
 delete_config_data_reset (delete_config_data_t *data)
 {
-  free (data->name);
+  free (data->config_id);
 
   memset (data, 0, sizeof (delete_config_data_t));
 }
@@ -1014,7 +1014,7 @@ typedef struct
 {
   int export;
   int families;
-  char *name;
+  char *config_id;
   int preferences;
   char *sort_field;
   int sort_order;
@@ -1023,7 +1023,7 @@ typedef struct
 static void
 get_configs_data_reset (get_configs_data_t *data)
 {
-  free (data->name);
+  free (data->config_id);
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_configs_data_t));
@@ -1086,7 +1086,7 @@ get_notes_data_reset (get_notes_data_t *data)
 
 typedef struct
 {
-  char *config;
+  char *config_id;
   char *family;
   char *oid;
   char *sort_field;
@@ -1096,7 +1096,7 @@ typedef struct
 static void
 get_nvt_details_data_reset (get_nvt_details_data_t *data)
 {
-  free (data->config);
+  free (data->config_id);
   free (data->family);
   free (data->oid);
   free (data->sort_field);
@@ -1130,7 +1130,7 @@ get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
 
 typedef struct
 {
-  char *config;
+  char *config_id;
   char *oid;
   char *preference;
 } get_preferences_data_t;
@@ -1138,7 +1138,7 @@ typedef struct
 static void
 get_preferences_data_reset (get_preferences_data_t *data)
 {
-  free (data->config);
+  free (data->config_id);
   free (data->oid);
   free (data->preference);
 
@@ -1257,6 +1257,7 @@ get_targets_data_reset (get_targets_data_t *data)
 
 typedef struct
 {
+  char *config_id;
   array_t *families_growing_empty;
   array_t *families_growing_all;
   array_t *families_static_all;
@@ -1267,7 +1268,6 @@ typedef struct
   char *family_selection_family_name;
   int family_selection_growing;
   char *family_selection_growing_text;
-  char *name;
   array_t *nvt_selection;
   char *nvt_selection_family;
   char *nvt_selection_nvt_oid;
@@ -1279,6 +1279,7 @@ typedef struct
 static void
 modify_config_data_reset (modify_config_data_t *data)
 {
+  free (data->config_id);
   array_free (data->families_growing_empty);
   array_free (data->families_growing_all);
   array_free (data->families_static_all);
@@ -1286,7 +1287,6 @@ modify_config_data_reset (modify_config_data_t *data)
   free (data->family_selection_family_growing_text);
   free (data->family_selection_family_name);
   free (data->family_selection_growing_text);
-  free (data->name);
   array_free (data->nvt_selection);
   free (data->nvt_selection_family);
   free (data->nvt_selection_nvt_oid);
@@ -1896,7 +1896,6 @@ typedef enum
   CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
-  CLIENT_DELETE_CONFIG_NAME,
   CLIENT_DELETE_ESCALATOR,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
@@ -1930,7 +1929,6 @@ typedef enum
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
   CLIENT_MODIFY_CONFIG,
-  CLIENT_MODIFY_CONFIG_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
@@ -2493,7 +2491,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
           {
-            openvas_append_string (&delete_config_data->name, "");
+            append_attribute (attribute_names, attribute_values,
+                              "config_id", &delete_config_data->config_id);
             set_client_state (CLIENT_DELETE_CONFIG);
           }
         else if (strcasecmp ("DELETE_ESCALATOR", element_name) == 0)
@@ -2561,8 +2560,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "name",
-                              &get_configs_data->name);
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &get_configs_data->config_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "families", &attribute))
               get_configs_data->families = atoi (attribute);
@@ -2666,8 +2665,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "oid",
                               &get_nvt_details_data->oid);
-            append_attribute (attribute_names, attribute_values, "config",
-                              &get_nvt_details_data->config);
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &get_nvt_details_data->config_id);
             append_attribute (attribute_names, attribute_values, "family",
                               &get_nvt_details_data->family);
             append_attribute (attribute_names, attribute_values, "sort_field",
@@ -2695,8 +2694,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "oid",
                               &get_preferences_data->oid);
-            append_attribute (attribute_names, attribute_values, "config",
-                              &get_preferences_data->config);
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &get_preferences_data->config_id);
             append_attribute (attribute_names, attribute_values, "preference",
                               &get_preferences_data->preference);
             set_client_state (CLIENT_GET_PREFERENCES);
@@ -2871,7 +2870,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG);
+          {
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &modify_config_data->config_id);
+            set_client_state (CLIENT_MODIFY_CONFIG);
+          }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "note_id",
@@ -3111,21 +3114,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_CONFIG:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_DELETE_CONFIG_NAME);
-        else
+        if (send_element_error_to_client ("delete_config", element_name))
           {
-            if (send_element_error_to_client ("delete_config", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_ESCALATOR:
@@ -3552,9 +3550,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CONFIG:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_NAME);
-        else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
+        if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
           {
             modify_config_data->families_growing_all = make_array ();
             modify_config_data->families_static_all = make_array ();
@@ -4266,7 +4262,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
         else if (strcasecmp ("CONFIG", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TASK_CONFIG);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->config_id);
+            set_client_state (CLIENT_CREATE_TASK_CONFIG);
+          }
         else if (strcasecmp ("ESCALATOR", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -6289,14 +6289,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (get_preferences_data->config
-                   && find_config (get_preferences_data->config, &config))
+          else if (get_preferences_data->config_id
+                   && find_config (get_preferences_data->config_id, &config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
-          else if (get_preferences_data->config && config == 0)
+          else if (get_preferences_data->config_id && config == 0)
             {
               if (send_find_error_to_client ("get_preferences",
                                              "config",
-                                             get_preferences_data->config))
+                                             get_preferences_data->config_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -6583,17 +6583,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           return;
                         }
                     }
-                  else if (get_nvt_details_data->config
-                           && find_config (get_nvt_details_data->config,
+                  else if (get_nvt_details_data->config_id
+                           && find_config (get_nvt_details_data->config_id,
                                            &config))
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("get_nvt_details"));
-                  else if (get_nvt_details_data->config && (config == 0))
+                  else if (get_nvt_details_data->config_id && (config == 0))
                     {
                       if (send_find_error_to_client
                            ("get_nvt_details",
                             "config",
-                            get_nvt_details_data->config))
+                            get_nvt_details_data->config_id))
                         {
                           error_send_to_client (error);
                           return;
@@ -6655,15 +6655,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                     }
                 }
-              else if (get_nvt_details_data->config
-                       && find_config (get_nvt_details_data->config, &config))
+              else if (get_nvt_details_data->config_id
+                       && find_config (get_nvt_details_data->config_id,
+                                       &config))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_nvt_details"));
-              else if (get_nvt_details_data->config && (config == 0))
+              else if (get_nvt_details_data->config_id && (config == 0))
                 {
-                  if (send_find_error_to_client ("get_nvt_details",
-                                                 "config",
-                                                 get_nvt_details_data->config))
+                  if (send_find_error_to_client
+                       ("get_nvt_details",
+                        "config",
+                        get_nvt_details_data->config_id))
                     {
                       error_send_to_client (error);
                       return;
@@ -8216,48 +8218,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_CONFIG:
-        {
-          config_t config = 0;
+        assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
+        if (delete_config_data->config_id)
+          {
+            config_t config = 0;
 
-          assert (strcasecmp ("DELETE_CONFIG", element_name) == 0);
-          assert (delete_config_data->name != NULL);
-
-          if (strlen (delete_config_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("delete_config",
-                                "DELETE_CONFIG name must be at least one"
-                                " character long"));
-          else if (find_config (delete_config_data->name, &config))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
-          else if (config == 0)
-            {
-              if (send_find_error_to_client ("delete_config",
-                                             "config",
-                                             delete_config_data->name))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else switch (delete_config (config))
-            {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
-                                                          "Config is in use"));
-                break;
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
-            }
-          delete_config_data_reset (delete_config_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      case CLIENT_DELETE_CONFIG_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_DELETE_CONFIG);
+            if (find_config (delete_config_data->config_id, &config))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
+            else if (config == 0)
+              {
+                if (send_find_error_to_client ("delete_config",
+                                               "config",
+                                               delete_config_data->config_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_config (config))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
+                                                            "Config is in use"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_config",
+                              "DELETE_CONFIG requires a config_id attribute"));
+        delete_config_data_reset (delete_config_data);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_ESCALATOR:
@@ -8450,11 +8446,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_CONFIG:
         {
           config_t config;
-          if (modify_config_data->name == NULL
-              || strlen (modify_config_data->name) == 0)
+          if (modify_config_data->config_id == NULL
+              || strlen (modify_config_data->config_id) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",
-                                "MODIFY_CONFIG requires a NAME element"));
+                                "MODIFY_CONFIG requires a config_id"
+                                " attribute"));
           else if ((modify_config_data->nvt_selection_family
                     /* This array implies FAMILY_SELECTION. */
                     && modify_config_data->families_static_all)
@@ -8467,13 +8464,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_config",
                                 "MODIFY_CONFIG requires either a PREFERENCE or"
                                 " an NVT_SELECTION or a FAMILY_SELECTION"));
-          else if (find_config (modify_config_data->name, &config))
+          else if (find_config (modify_config_data->config_id, &config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
           else if (config == 0)
             {
               if (send_find_error_to_client ("modify_config",
                                              "config",
-                                             modify_config_data->name))
+                                             modify_config_data->config_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -8583,10 +8580,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
         modify_config_data_reset (modify_config_data);
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-      case CLIENT_MODIFY_CONFIG_NAME:
-        assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_CONFIG);
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
@@ -9083,13 +9076,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            * any other elements. */
           if (import_config_data->import)
             {
-              char *name;
+              char *uuid, *name;
               array_terminate (import_config_data->nvt_selectors);
               array_terminate (import_config_data->preferences);
               switch (create_config (import_config_data->name,
                                      import_config_data->comment,
                                      import_config_data->nvt_selectors,
                                      import_config_data->preferences,
+                                     &uuid,
                                      &name))
                 {
                   case 0:
@@ -9097,9 +9091,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      ("<create_config_response"
                       " status=\"" STATUS_OK_CREATED "\""
                       " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
-                      "<config><name>%s</name></config>"
+                      "<config id=\"%s\"><name>%s</name></config>"
                       "</create_config_response>",
+                      uuid,
                       name);
+                    free (uuid);
                     free (name);
                     break;
                   case 1:
@@ -9957,13 +9953,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (task_uuid (create_task_data->task, &tsk_uuid))
             {
               request_delete_task (&create_task_data->task);
-              if (send_find_error_to_client ("create_task",
-                                             "task",
-                                             create_task_data->config))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
@@ -9973,9 +9963,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           description = task_description (create_task_data->task);
           if ((description
-               && (create_task_data->config || create_task_data->target_id))
+               && (create_task_data->config_id || create_task_data->target_id))
               || (description == NULL
-                  && (create_task_data->config == NULL
+                  && (create_task_data->config_id == NULL
                       || create_task_data->target_id == NULL)))
             {
               request_delete_task (&create_task_data->task);
@@ -9990,7 +9980,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           assert (description
-                  || (create_task_data->config && create_task_data->target_id));
+                  || (create_task_data->config_id
+                      && create_task_data->target_id));
 
           /* Set any escalator. */
 
@@ -10118,7 +10109,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_target (create_task_data->task, target);
               g_free (target_name);
             }
-          else if (find_config (create_task_data->config, &config))
+          else if (find_config (create_task_data->config_id, &config))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -10133,7 +10124,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "config",
-                                             create_task_data->config))
+                                             create_task_data->config_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -10843,7 +10834,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
                     target_t target;
-                    char *name, *config, *escalator, *escalator_uuid;
+                    char *name, *config, *config_uuid;
+                    char *escalator, *escalator_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
@@ -11072,6 +11064,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator = task_escalator_name (task);
                     escalator_uuid = task_escalator_uuid (task);
                     config = task_config_name (task);
+                    config_uuid = task_config_uuid (task);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
                     schedule = task_schedule (task);
@@ -11093,7 +11086,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<task id=\"%s\">"
                                  "<name>%s</name>"
                                  "<comment>%s</comment>"
-                                 "<config><name>%s</name></config>"
+                                 "<config id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</config>"
                                  "<escalator id=\"%s\">"
                                  "<name>%s</name>"
                                  "</escalator>"
@@ -11122,6 +11117,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  tsk_uuid,
                                  name,
                                  comment,
+                                 config_uuid ? config_uuid : "",
                                  config ? config : "",
                                  escalator_uuid ? escalator_uuid : "",
                                  escalator ? escalator : "",
@@ -11216,7 +11212,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 char *name = task_name (index);
                 char *comment = task_comment (index);
                 target_t target;
-                char *tsk_uuid, *config, *escalator, *escalator_uuid;
+                char *tsk_uuid, *config, *config_uuid;
+                char *escalator, *escalator_uuid;
                 char *task_target_uuid, *task_target_name, *hosts;
                 char *task_schedule_uuid, *task_schedule_name;
                 gchar *first_report_id, *first_report;
@@ -11439,6 +11436,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   progress_xml = g_strdup ("-1");
 
                 config = task_config_name (index);
+                config_uuid = task_config_uuid (index);
                 escalator = task_escalator_name (index);
                 escalator_uuid = task_escalator_uuid (index);
                 task_target_uuid = target_uuid (target);
@@ -11459,7 +11457,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " id=\"%s\">"
                                         "<name>%s</name>"
                                         "<comment>%s</comment>"
-                                        "<config><name>%s</name></config>"
+                                        "<config id=\"%s\">"
+                                        "<name>%s</name>"
+                                        "</config>"
                                         "<escalator id=\"%s\">"
                                         "<name>%s</name>"
                                         "</escalator>"
@@ -11490,6 +11490,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         name,
                                         comment,
                                         config ? config : "",
+                                        config_uuid ? config_uuid : "",
                                         escalator_uuid ? escalator_uuid : "",
                                         escalator ? escalator : "",
                                         task_target_uuid ? task_target_uuid : "",
@@ -11669,14 +11670,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
-          if (get_configs_data->name
-              && find_config (get_configs_data->name, &request_config))
+          if (get_configs_data->config_id
+              && find_config (get_configs_data->config_id, &request_config))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_configs"));
-          else if (get_configs_data->name && (request_config == 0))
+          else if (get_configs_data->config_id && (request_config == 0))
             {
               if (send_find_error_to_client ("get_configs",
                                              "config",
-                                             get_configs_data->name))
+                                             get_configs_data->config_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -11706,15 +11707,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     = config_iterator_families_growing (&configs);
 
                   if (get_configs_data->export)
-                    SENDF_TO_CLIENT_OR_FAIL ("<config>"
+                    SENDF_TO_CLIENT_OR_FAIL ("<config id=\"%s\">"
                                              "<name>%s</name>"
                                              "<comment>%s</comment>",
+                                             config_iterator_uuid (&configs),
                                              config_iterator_name (&configs),
                                              config_iterator_comment
                                               (&configs));
                   else
                     {
-                      SENDF_TO_CLIENT_OR_FAIL ("<config>"
+                      SENDF_TO_CLIENT_OR_FAIL ("<config id=\"%s\">"
                                                "<name>%s</name>"
                                                "<comment>%s</comment>"
                                                "<family_count>"
@@ -11727,6 +11729,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "</nvt_count>"
                                                "<in_use>%i</in_use>"
                                                "<tasks>",
+                                               config_iterator_uuid (&configs),
                                                config_iterator_name (&configs),
                                                config_iterator_comment
                                                 (&configs),
@@ -12411,10 +12414,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
-      case CLIENT_MODIFY_CONFIG_NAME:
-        openvas_append_text (&modify_config_data->name, text, text_len);
-        break;
-
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
         openvas_append_text (&modify_config_data->nvt_selection_family,
                              text,
@@ -12718,9 +12717,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);
         break;
-      case CLIENT_CREATE_TASK_CONFIG:
-        openvas_append_text (&create_task_data->config, text, text_len);
-        break;
       case CLIENT_CREATE_TASK_NAME:
         append_to_task_name (create_task_data->task, text, text_len);
         break;
@@ -12730,10 +12726,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
-        break;
-
-      case CLIENT_DELETE_CONFIG_NAME:
-        openvas_append_text (&delete_config_data->name, text, text_len);
         break;
 
       case CLIENT_MODIFY_NOTE_HOSTS:
