@@ -1879,9 +1879,7 @@ typedef enum
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_CONFIG_NAME,
   CLIENT_DELETE_ESCALATOR,
-  CLIENT_DELETE_ESCALATOR_NAME,
   CLIENT_DELETE_LSC_CREDENTIAL,
-  CLIENT_DELETE_LSC_CREDENTIAL_NAME,
   CLIENT_DELETE_NOTE,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_SCHEDULE,
@@ -3176,40 +3174,30 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_ESCALATOR:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_DELETE_ESCALATOR_NAME);
-        else
+        if (send_element_error_to_client ("delete_escalator", element_name))
           {
-            if (send_element_error_to_client ("delete_escalator", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_DELETE_LSC_CREDENTIAL_NAME);
-        else
+        if (send_element_error_to_client ("delete_lsc_credential",
+                                          element_name))
           {
-            if (send_element_error_to_client ("delete_lsc_credential",
-                                              element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
+            error_send_to_client (error);
+            return;
           }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_DELETE_NOTE:

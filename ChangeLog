@@ -1,5 +1,10 @@
 2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t): Remove old name states.
+	(omp_xml_handle_start_element): Remove old name element processing.
+
+2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_task_data_t, create_task_data_reset): Replace schedule
 	with schedule_id.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
@@ -10,7 +15,7 @@
 
 	* src/manage_sql.c (init_result_iterator): Collate hosts with collate_ip.
 
-2010-06-08  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add target UUIDs.
 
