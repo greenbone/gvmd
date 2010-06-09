@@ -162,6 +162,16 @@ result_type_threat (const char* type)
   return "Log";
 }
 
+/**
+ * @brief Compares two textual threat level representations, sorting
+ * @brief descending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return 1, 0 or -1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
 static gint
 compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
@@ -172,6 +182,15 @@ compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
                                strlen (one), one);
 }
 
+/**
+ * @brief Compares two textual threat level representations, sorting ascending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return -1, 0 or 1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
 static gint
 compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
 {
@@ -2469,7 +2488,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
-                                "agent_id", &delete_agent_data->agent_id);
+                              "agent_id", &delete_agent_data->agent_id);
             set_client_state (CLIENT_DELETE_AGENT);
           }
         else if (strcasecmp ("DELETE_CONFIG", element_name) == 0)
@@ -2506,7 +2525,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "schedule_id",
-                               &delete_schedule_data->schedule_id);
+                              &delete_schedule_data->schedule_id);
             set_client_state (CLIENT_DELETE_SCHEDULE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
@@ -2725,7 +2744,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values,
                               "search_phrase",
-                               &get_report_data->search_phrase);
+                              &get_report_data->search_phrase);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
@@ -4533,7 +4552,7 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 /**
  * @brief Send XML for an NVT.
  *
- * @param[in]  key         The plugin OID.
+ * @param[in]  nvts        The NVT.
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
  * @param[in]  timeout     Timeout.  Used if details is true.
@@ -4901,7 +4920,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
  *
  * @return The maximum number of chars of \param text which the caller must
  *         write out in order to write out at most line_width characters of the
- *         next line in \param text.  As a special case if a newline occurs
+ *         next line in \param text .  As a special case if a newline occurs
  *         before line width then just return one more than number of chars
  *         needed to write up to the newline.
  */
@@ -4984,7 +5003,7 @@ next_break (const char* text, int line_width)
 /**
  * @brief Write verbatim LaTeX text to a stream, with wrapping.
  *
- * Write \ref text to \ref file, doing line wraps at 80 chars, adding a
+ * Write \param text to \param file , doing line wraps at 80 chars, adding a
  * symbol to indicate each line wrap, and putting each line in a separate
  * verbatim environment so that the text breaks across pages.
  *
@@ -5982,8 +6001,8 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  * @brief Buffer XML for some results.
  *
  * @param[in]  results                Result iterator.
- * @param[in]  task                   Task associated with results.  Only needed
- *                                    with include_notes.
+ * @param[in]  task                   Task associated with results.  Only
+ *                                    needed with include_notes.
  * @param[in]  include_notes          Whether to include notes.
  * @param[in]  include_notes_details  Whether to include details of notes.
  */

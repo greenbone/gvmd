@@ -1,4 +1,9 @@
-2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+2010-06-09  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/omp.c: Updated documentation.
+	(omp_xml_handle_start_element): Fixed some alignment issues.
+
+2010-06-09  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/omp.c (append_attribute): New function, extracted from
 	omp_xml_handle_start_element.
@@ -178,11 +183,6 @@
 2010-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (print_report_latex): Escape NVT name.
-
-2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
-
-	* src/omp.c (omp_xml_handle_end_element) [CLIENT_CREATE_TARGET]:
-	Added missing breaks in switch statement.
 
 2010-06-04  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
