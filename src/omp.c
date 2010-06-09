@@ -840,7 +840,7 @@ typedef struct
 {
   char *config;
   char *escalator_id;
-  char *schedule;
+  char *schedule_id;
   char *target_id;
   task_t task;
 } create_task_data_t;
@@ -850,7 +850,7 @@ create_task_data_reset (create_task_data_t *data)
 {
   free (data->config);
   free (data->escalator_id);
-  free (data->schedule);
+  free (data->schedule_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
@@ -2440,7 +2440,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             create_task_data->task = make_task (NULL, 0, NULL);
             if (create_task_data->task == (task_t) 0) abort (); // FIX
-            openvas_append_string (&create_task_data->schedule, "");
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
@@ -4363,7 +4362,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TASK_ESCALATOR);
           }
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "id", &attribute))
+              openvas_append_string (&create_task_data->schedule_id,
+                                     attribute);
+            set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
+          }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
             const gchar* attribute;
@@ -10106,10 +10112,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Set any schedule. */
 
-          if (strlen (create_task_data->schedule))
+          if (create_task_data->schedule_id)
             {
               schedule_t schedule;
-              if (find_schedule (create_task_data->schedule, &schedule))
+              if (find_schedule (create_task_data->schedule_id, &schedule))
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
@@ -12818,9 +12824,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                                        text,
                                        text_len))
           abort (); // FIX out of mem
-        break;
-      case CLIENT_CREATE_TASK_SCHEDULE:
-        openvas_append_text (&create_task_data->schedule, text, text_len);
         break;
 
       case CLIENT_DELETE_CONFIG_NAME:
