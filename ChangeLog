@@ -1,5 +1,10 @@
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element) [CLIENT_START_TASK]: Improved
+	response when attribute is missing.
+
+2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/lsc_user.c: Lowercased todos.
 
 	* src/manage_sql.c, src/omp.c: Improved documentation.

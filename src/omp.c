@@ -10840,7 +10840,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
         else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+          SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("start_task",
+                                                    "START_TASK task_id"
+                                                    " attribute must be set"));
         start_task_data_reset (start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
