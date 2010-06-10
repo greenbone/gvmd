@@ -1,5 +1,11 @@
 2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK free
+	description if the initial check fails and cleanup properly in the
+	escalator and schedule fail cases.
+
+2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add config UUIDs.
 
 	* src/manage_sql.c (user_owns): Remove.  Everything uses user_owns_uuid.

@@ -9970,6 +9970,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
+              free (description);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires either an rcfile"
@@ -9990,6 +9991,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               escalator_t escalator;
               if (find_escalator (create_task_data->escalator_id, &escalator))
                 {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -9997,6 +10001,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               if (escalator == 0)
                 {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK escalator must exist"));
@@ -10014,6 +10021,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               schedule_t schedule;
               if (find_schedule (create_task_data->schedule_id, &schedule))
                 {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -10021,6 +10031,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               if (schedule == 0)
                 {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK schedule must exist"));
