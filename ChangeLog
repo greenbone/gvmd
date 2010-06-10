@@ -1,5 +1,9 @@
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/CMakeLists.txt: Lowercased commands.
+
+2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/manage_sql.c (sql_insert): Fixed after parameter renaming.
 
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>

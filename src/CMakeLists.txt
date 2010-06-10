@@ -142,10 +142,10 @@ set_target_properties (openvasmd PROPERTIES LINK_FLAGS
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
                        "${HEADER_TEMP} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
-MARK_AS_ADVANCED (LIB_TEMP)
-MARK_AS_ADVANCED (HEADER_TEMP)
+mark_as_advanced (LIB_TEMP)
+mark_as_advanced (HEADER_TEMP)
 
-CONFIGURE_FILE (openvasmd_log_conf.cmake_in
+configure_file (openvasmd_log_conf.cmake_in
                 "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd_log.conf")
 
 ## Install
