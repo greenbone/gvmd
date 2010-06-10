@@ -199,7 +199,8 @@ read_from_client (gnutls_session_t* client_session,
 
 // FIX combine with read_from_client
 /**
- * @brief Read as much from the server as the \ref from_server buffer will hold.
+ * @brief Read as much from the server as the \ref from_scanner buffer will
+ * @brief hold.
  *
  * @param[in]  server_session  The TLS session with the server.
  * @param[in]  server_socket   The socket connected to the server.
@@ -306,8 +307,8 @@ write_to_client (gnutls_session_t* client_session)
 /**
  * @brief Write as much as possible from \ref to_scanner to the scanner.
  *
- * @param[in]  server_socket   The server socket.
- * @param[in]  server_session  The server session.
+ * @param[in]  scanner_socket   The server socket.
+ * @param[in]  scanner_session  The server session.
  *
  * @return 0 wrote everything, -1 error, -2 wrote as much as scanner accepted,
  *         -3 did an initialisation step.

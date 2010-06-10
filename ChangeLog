@@ -1,10 +1,21 @@
-2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	Updated documentation.
+
+	* doc/Doxyfile.in: Updated file list.
+
+	* src/manage.c (resume_paused_task, send_file, send_config_rules):
+	Added missing parameter documentation.
+
+	* src/manage_sql.c, src/ompd.c, src/openvasmd.c: Updated documentation.
+
+2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK free
 	description if the initial check fails and cleanup properly in the
 	escalator and schedule fail cases.
 
-2010-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add config UUIDs.
 

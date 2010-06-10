@@ -472,6 +472,8 @@ accept_and_maybe_fork ()
 /**
  * @brief Fork a child connected to the Manager.
  *
+ * @param[in]  uuid  UUID of schedule user.
+ *
  * @return 0 parent on success, 1 child on success, -1 error.
  */
 static int
@@ -712,7 +714,7 @@ handle_sigsegv (/*@unused@*/ int signal)
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
  *                                     (1) or rebuilt (0).
  * @param[in]  scanner_address_string  Adress of the scanner as string.
- * @param[in]  port                    Port of the scanner.
+ * @param[in]  scanner_port            Port of the scanner.
  *
  * @return If this function did not exit itself, returns exit code.
  */

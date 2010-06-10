@@ -462,9 +462,9 @@ WARN_LOGFILE           =
 INPUT                  = src/tests/common.c \
                          src/logf.h \
                          src/tracef.h \
+                         src/manage.h \
                          src/manage.c \
                          src/manage_sql.c \
-                         src/tasks_sql.h \
                          src/ovas-mngr-comm.c \
                          src/otp.c \
                          src/omp.c \

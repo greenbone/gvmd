@@ -146,7 +146,7 @@ gchar* task_db_name = NULL;
  * @brief Quotes a string of a known length to be passed to sql statements.
  *
  * @param[in]  string  String to quote.
- * @param[in]  length  Size of \ref length.
+ * @param[in]  length  Size of \param length.
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
@@ -189,7 +189,7 @@ sql_nquote (const char* string, size_t length)
 /**
  * @brief Quotes a string to be passed to sql statements.
  *
- * @param[in]  string  String to quote, has to be \0 terminated.
+ * @param[in]  string  String to quote, has to be \\0 terminated.
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
@@ -208,7 +208,7 @@ sql_quote (const char* string)
  *         including SQL quotation marks.
  */
 static gchar *
-sql_insert (const char *value)
+sql_insert (const char *string)
 {
   if (value)
     {
@@ -2801,8 +2801,8 @@ collate_threat (void* data,
 /**
  * @brief Compare two number strings for collate_ip.
  *
- * @param[in]  one  First string.
- * @param[in]  two  Second string.
+ * @param[in]  one_arg  First string.
+ * @param[in]  two_arg  Second string.
  *
  * @return -1, 0 or 1 if first is less than, equal to or greater than second.
  */
@@ -2919,9 +2919,9 @@ find_escalator (const char* uuid, escalator_t* escalator)
  * @param[in]  comment         Comment on escalator.
  * @param[in]  event           Type of event.
  * @param[in]  event_data      Type-specific event data.
- * @param[in]  condition_data  Event condition.
+ * @param[in]  condition       Event condition.
  * @param[in]  condition_data  Condition-specific data.
- * @param[in]  method_data     Escalation method.
+ * @param[in]  method          Escalation method.
  * @param[in]  method_data     Data for escalation method.
  *
  * @return 0 success, 1 escalation exists already.
@@ -3257,7 +3257,9 @@ escalator_iterator_in_use (iterator_t* iterator)
  *
  * @param[in]  iterator   Iterator.
  * @param[in]  escalator  Escalator.
- * @param[in]  type       Type of data: "condition", "event" or "method".
+ * @param[in]  table      Type of data: "condition", "event" or "method",
+ *                        corresponds to substring of the table to select
+ *                        from.
  */
 void
 init_escalator_data_iterator (iterator_t *iterator, escalator_t escalator,
@@ -7761,8 +7763,8 @@ find_target (const char* uuid, target_t* target)
 /**
  * @brief Create a target.
  *
- * The \ref hosts and \ref target_locator parameters are mutually exclusive,
- * if target_locator is not NULL, always try to import from source.
+ * The \param hosts and \param target_locator parameters are mutually
+ * exclusive, if target_locator is not NULL, always try to import from source.
  *
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
@@ -7771,7 +7773,7 @@ find_target (const char* uuid, target_t* target)
  * @param[in]   target_locator  Name of target_locator to import target(s)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
- * @param[in]   password        Password for user \ref username.
+ * @param[in]   password        Password for user \param username.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, -1 if import from target locator
@@ -8001,7 +8003,7 @@ target_hosts (target_t target)
 /**
  * @brief Return the credential associated with a target, if any.
  *
- * @param[in]  name  Target name.
+ * @param[in]  target  Target (corresponds to rowid).
  *
  * @return Credential if any, else 0.
  */
@@ -8321,9 +8323,9 @@ create_config (const char* proposed_name, const char* comment,
 /**
  * @brief Get the value of a config preference.
  *
- * @param[in]  config   Config.
- * @param[in]  type     Preference category, NULL for general preferences.
- * @param[in]  name     Name of the preference.
+ * @param[in]  config      Config.
+ * @param[in]  type        Preference category, NULL for general preferences.
+ * @param[in]  preference  Name of the preference.
  *
  * @return If there is such a preference, the value of the preference as a
  *         newly allocated string, else NULL.
@@ -8369,7 +8371,7 @@ config_nvt_timeout (config_t config, const char *oid)
  *
  * @param[in]  nvt_selector  NVT selector name.
  * @param[in]  array         Array of OIDs of NVTs.
- * @param[in]  array_size    Size of \ref array.
+ * @param[in]  array_size    Size of \param array.
  * @param[in]  exclude       If true exclude, else include.
  */
 static void
@@ -10003,7 +10005,7 @@ family_count ()
  *
  * It's up to the caller to organise a transaction.
  *
- * @param[in]  iterator  Config to update.
+ * @param[in]  configs  Config to update.
  */
 static void
 update_config_cache (iterator_t *configs)
@@ -10894,7 +10896,7 @@ nvt_selector_remove (const char* quoted_selector,
  * @brief Remove all selectors of a certain type from a NVT selector.
  *
  * @param[in]  quoted_selector  SQL-quoted selector name.
- * @param[in]  quoted_family    SQL-quoted family name or NVT UUID.
+ * @param[in]  family_or_nvt    SQL-quoted family name or NVT UUID.
  * @param[in]  type             Selector type to remove.
  *
  * @return 0 success, -1 error.
@@ -11720,13 +11722,13 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 /**
  * @brief Create an LSC credential.
  *
- * @param[in]  name      Name of LSC credential.  Must be at least one
- *                       character long.
- * @param[in]  comment   Comment on LSC credential.
- * @param[in]  login     Name of LSC credential user.  Must be at least one
- *                       character long.
- * @param[in]  password  Password for password-only credential, NULL to
- *                       generate credentials.
+ * @param[in]  name            Name of LSC credential.  Must be at least one
+ *                             character long.
+ * @param[in]  comment         Comment on LSC credential.
+ * @param[in]  login           Name of LSC credential user.  Must be at least
+ *                             one character long.
+ * @param[in]  given_password  Password for password-only credential, NULL to
+ *                             generate credentials.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         -1 error.
@@ -12084,10 +12086,10 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
 /**
  * @brief Initialise an LSC Credential iterator.
  *
- * @param[in]  iterator    Iterator.
- * @param[in]  credential  Single LSC credential to iterate, 0 for all.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ * @param[in]  iterator        Iterator.
+ * @param[in]  lsc_credential  Single LSC credential to iterate, 0 for all.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ * @param[in]  sort_field      Field to sort on, or NULL for "ROWID".
  */
 void
 init_lsc_credential_iterator (iterator_t* iterator,

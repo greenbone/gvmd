@@ -764,7 +764,6 @@ send_config_rules (const char* config)
 /**
  * @brief Send the rules listed in the users directory.
  *
- * @param[in]  config          Config.
  * @param[in]  stopped_report  Report whose finished hosts to deny.
  *
  * @return 0 on success, -1 on failure.
@@ -925,10 +924,10 @@ send_file (const char* name, const char* content)
 }
 
 /**
- * @brief Send a file from a config to the scanner.
+ * @brief Send a file from a task to the scanner.
  *
- * @param[in]  config  Config.
- * @param[in]  file    File name.
+ * @param[in]  task  The task.
+ * @param[in]  file  File name.
  *
  * @return 0 on success, -1 on failure.
  */
@@ -1568,7 +1567,8 @@ resume_paused_task (task_t task)
 /**
  * @brief Resume a stopped task.
  *
- * @param[in]  task  A pointer to the task.
+ * @param[in]   task       A pointer to the task.
+ * @param[out]  report_id  If successful, ID of the resultant report.
  *
  * @return 22 caller error (task must be in "stopped" state), -1 error or any
  *         start_task error.
