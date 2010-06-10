@@ -210,9 +210,9 @@ sql_quote (const char* string)
 static gchar *
 sql_insert (const char *string)
 {
-  if (value)
+  if (string)
     {
-      gchar *quoted_value = sql_quote (value);
+      gchar *quoted_value = sql_quote (string);
       gchar *insert = g_strdup_printf ("'%s'", quoted_value);
       g_free (quoted_value);
       return insert;

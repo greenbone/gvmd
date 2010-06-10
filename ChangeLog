@@ -1,5 +1,9 @@
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/manage_sql.c (sql_insert): Fixed after parameter renaming.
+
+2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Updated documentation.
 
 	* doc/Doxyfile.in: Updated file list.
