@@ -230,6 +230,12 @@ sql_insert (const char *string)
   return g_strdup ("NULL");
 }
 
+/**
+ * @brief Perform an SQL statement.
+ *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ */
 static void
 sql (char* sql, ...)
 {
@@ -369,6 +375,18 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
   return 0;
 }
 
+/**
+ * @brief Get a particular cell from a SQL query, as an int.
+ *
+ * @param[in]  ret    Return value.
+ * @param[in]  col    Column.
+ * @param[in]  row    Row.
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return Result of the query as an integer.
+ * @warning Aborts on invalid queries.
+ */
 static int
 sql_int (unsigned int col, unsigned int row, char* sql, ...)
 {
@@ -390,6 +408,17 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
   return ret;
 }
 
+/**
+ * @brief Get a particular cell from a SQL query, as an string.
+ *
+ * @param[in]  ret    Return value.
+ * @param[in]  col    Column.
+ * @param[in]  row    Row.
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return Freshly allocated string containing the result, NULL otherwise.
+ */
 static char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)
 {

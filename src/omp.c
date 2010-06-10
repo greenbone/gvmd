@@ -59,7 +59,7 @@
  * that command is reached).
  *
  * For implementing new commands that have to store data (e.g. not
- * "<help_extended/>"), \ref command_data has to be freed and NULL'ed in case
+ * "\<help_extended/\>"), \ref command_data has to be freed and NULL'ed in case
  * of errors and the \ref current_state has to be reset.
  * It can then be assumed that it is NULL'ed at the start of every new
  * command element. To implement a new start element handler, be sure to just
@@ -68,14 +68,20 @@
  * Implementationwise it is easier to represent values in in attributes than
  * in text or further elements.
  * E.g.
+ * @code
  * <key_value_pair key="k" value="v"/>
+ * @endcode
  * is obviously easier to handle than
+ * @code
  * <key><attribute name="k"/><value>v</value></key>
+ * @endcode
  * .
  *
  * However, it is preferred to avoid attributes and use the text of elements
  * instead, like in
+ * @code
  * <key_value_pair><key>k</key><value>v</value></key_value_pair>
+ * @endcode
  * .
  *
  * If new elements are built of multiple words, separate the words with an
@@ -144,9 +150,10 @@ category_name (int category)
   return categories[ACT_UNKNOWN];
 }
 
-/** @brief Return the threat associated with a result type.
+/**
+ * @brief Return the threat associated with a result type.
  *
- * @param  type  Result type.
+ * @param[in]  type  Result type.
  *
  * @return Threat name.
  */
@@ -411,6 +418,9 @@ array_add_new_string (array_t *array, const gchar *string)
 
 /* Help message. */
 
+/**
+ * @brief Response to the help command.
+ */
 static char* help_text = "\n"
 "    ABORT_TASK             Abort a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
@@ -617,11 +627,17 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
   return selector;
 }
 
+/**
+ * @brief Command data for the abort task command.
+ */
 typedef struct
 {
   char *task_id;
 } abort_task_data_t;
 
+/**
+ * @brief Free members of an abort_task_data_t and set them to NULL.
+ */
 static void
 abort_task_data_reset (abort_task_data_t *data)
 {
@@ -630,6 +646,9 @@ abort_task_data_reset (abort_task_data_t *data)
   memset (data, 0, sizeof (abort_task_data_t));
 }
 
+/**
+ * @brief Command data for the create_agent command.
+ */
 typedef struct
 {
   char *comment;
@@ -639,6 +658,9 @@ typedef struct
   char *name;
 } create_agent_data_t;
 
+/**
+ * @brief Free members of an abort_task_data_t and set them to NULL.
+ */
 static void
 create_agent_data_reset (create_agent_data_t *data)
 {
@@ -5115,6 +5137,8 @@ latex_print_verbatim_text (FILE* file, const char* text, const char *row_colour)
  *
  * Replace LaTeX special characters with LaTeX equivalents.
  *
+ * @param[in]  text  The text in which to escape or replace special characters.
+ *
  * @return A newly allocated version of text.
  */
 static gchar*
@@ -5194,6 +5218,8 @@ latex_escape_text (const char *text)
 
 /**
  * @brief Convert \n's to real newline's.
+ *
+ * @param[in]  text  The text in which to insert newlines.
  *
  * @return A newly allocated version of text.
  */
@@ -5798,7 +5824,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
  *
  * @param[in]  buffer  Buffer.
  * @param[in]  format  Format string for XML.
- * @param[in]  args    Arguments for format string.
+ * @param[in]  ...     Arguments for format string.
  */
 static void
 buffer_xml_append_printf (GString *buffer, const char *format, ...)
@@ -6149,7 +6175,7 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
  * the change (with \ref set_client_state).  Call \ref send_to_client to queue
  * any responses for the client.  Call the task utilities to adjust the
  * tasks (for example \ref start_task, \ref stop_task, \ref set_task_parameter,
- * \ref delete_task and \ref find_task).
+ * \ref delete_task and \ref find_task ).
  *
  * Set error parameter on encountering an error.
  *

@@ -834,7 +834,7 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   fprintf (fd, "ExecWait \"cmd /C Echo Next >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
   fprintf (fd, "ExecWait \"cmd /C cscript //nologo $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
 
-  /** @TODO provide /comment:"OpenVAS User" /fullname:"OpenVAS Testuser" */
+  /** @todo provide /comment:"OpenVAS User" /fullname:"OpenVAS Testuser" */
   fprintf (fd, "# Create batch script that installs the user\n");
   fprintf (fd, "ExecWait \"cmd /C Echo Set /P AdminGroupName= ^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > $\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
   fprintf (fd, "ExecWait \"cmd /C Echo net user %s %s /add /active:yes >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n",
@@ -852,7 +852,7 @@ create_nsis_script (const gchar *script_name, const gchar *package_name,
   fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n\n");
   fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
 
-  /** @TODO Display note about NTLM and SMB signing and encryption, 'Easy Filesharing' in WIN XP */
+  /** @todo Display note about NTLM and SMB signing and encryption, 'Easy Filesharing' in WIN XP */
   fprintf (fd, "# Display message that everything seems to be fine\n");
   fprintf (fd, "messageBox MB_OK \"A user has been added. An uninstaller is placed on your Desktop.\"\n\n");
 

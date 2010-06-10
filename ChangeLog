@@ -1,3 +1,9 @@
+2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/lsc_user.c: Lowercased todos.
+
+	* src/manage_sql.c, src/omp.c: Improved documentation.
+
 2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (CONFIG_UUID_FULL_AND_FAST)
