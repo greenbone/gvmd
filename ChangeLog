@@ -1,3 +1,11 @@
+2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add database migration from version 18 to 19.  This covers UUID
+	modifications made since 2010-06-02.
+
+	* src/manage_sql.c (migrate_18_to_19): New function.
+	(database_migrators): Add migrate_18_to_19.
+
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element) [CLIENT_START_TASK]: Improved

@@ -2572,6 +2572,145 @@ migrate_17_to_18 ()
 }
 
 /**
+ * @brief Migrate the database from version 18 to version 19.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_18_to_19 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 18. */
+
+  if (manage_db_version () != 18)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Many tables got a unique UUID column.  As a result the predefined
+   * configs and target got fixed UUIDs.
+   *
+   * Recreate the tables, in order to add the unique contraint. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE agents RENAME TO agents_18;");
+
+  sql ("CREATE TABLE agents"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  installer TEXT, howto_install TEXT, howto_use TEXT);");
+
+  sql ("INSERT into agents"
+       " (id, uuid, owner, name, comment, installer, howto_install, howto_use)"
+       " SELECT"
+       "  id, make_uuid (), owner, name, comment, installer, howto_install, howto_use"
+       " FROM agents_18;");
+
+  sql ("DROP TABLE agents_18;");
+
+  sql ("ALTER TABLE configs RENAME TO configs_18;");
+
+  sql ("CREATE TABLE configs"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
+       "  families_growing INTEGER, nvts_growing INTEGER);");
+
+  sql ("INSERT into configs"
+       " (id, uuid, owner, name, nvt_selector, comment, family_count,"
+       "  nvt_count, families_growing, nvts_growing)"
+       " SELECT"
+       "  id, make_uuid (), owner, name, nvt_selector, comment, family_count,"
+       "  nvt_count, families_growing, nvts_growing"
+       " FROM configs_18;");
+
+  sql ("DROP TABLE configs_18;");
+
+  sql ("ALTER TABLE escalators RENAME TO escalators_18;");
+
+  sql ("CREATE TABLE escalators"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  event INTEGER, condition INTEGER, method INTEGER);");
+
+  sql ("INSERT into escalators"
+       " (id, uuid, owner, name, comment, event, condition, method)"
+       " SELECT"
+       "  id, make_uuid (), owner, name, comment, event, condition, method"
+       " FROM escalators_18;");
+
+  sql ("DROP TABLE escalators_18;");
+
+  sql ("ALTER TABLE lsc_credentials RENAME TO lsc_credentials_18;");
+
+  sql ("CREATE TABLE lsc_credentials"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  deb TEXT, exe TEXT);");
+
+  sql ("INSERT into lsc_credentials"
+       " (id, uuid, owner, name, login, password, comment, public_key,"
+       "  private_key, rpm, deb, exe)"
+       " SELECT"
+       "  id, make_uuid (), owner, name, login, password, comment, public_key,"
+       "  private_key, rpm, deb, exe"
+       " FROM lsc_credentials_18;");
+
+  sql ("DROP TABLE lsc_credentials_18;");
+
+  sql ("ALTER TABLE targets RENAME TO targets_18;");
+
+  sql ("CREATE TABLE targets"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
+       "  comment, lsc_credential INTEGER);");
+
+  sql ("INSERT into targets"
+       " (id, uuid, owner, name, hosts, comment, lsc_credential)"
+       " SELECT"
+       "  id, make_uuid (), owner, name, hosts, comment, lsc_credential"
+       " FROM targets_18;");
+
+  sql ("DROP TABLE targets_18;");
+
+  /* Set the new predefined UUIDs. */
+
+  sql ("UPDATE configs"
+       " SET uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
+
+  sql ("UPDATE configs"
+       " SET uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
+
+  sql ("UPDATE configs"
+       " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
+
+  sql ("UPDATE configs"
+       " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+       " WHERE ROWID = "
+       G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ";");
+
+  sql ("UPDATE configs"
+       " SET uuid = '" CONFIG_UUID_EMPTY "'"
+       " WHERE name = 'empty';");
+
+  sql ("UPDATE targets"
+       " SET uuid = '" TARGET_UUID_LOCALHOST "'"
+       " WHERE name = 'Localhost';");
+
+  /* Set the database version to 19. */
+
+  set_db_version (19);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2594,6 +2733,7 @@ static migrator_t database_migrators[]
     {16, migrate_15_to_16},
     {17, migrate_16_to_17},
     {18, migrate_17_to_18},
+    {19, migrate_18_to_19},
     /* End marker. */
     {-1, NULL}};
 
