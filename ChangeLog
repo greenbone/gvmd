@@ -1,3 +1,11 @@
+2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (CONFIG_UUID_FULL_AND_FAST)
+	(CONFIG_UUID_FULL_AND_FAST_ULTIMATE, CONFIG_UUID_FULL_AND_VERY_DEEP)
+	(CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE, CONFIG_UUID_EMPTY)
+	(TARGET_UUID_LOCALHOST): New defines.
+	(init_manage): Add UUIDs to predefined configs and target.
+
 2010-06-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/CMakeLists.txt: Lowercased commands.

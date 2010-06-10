@@ -54,7 +54,17 @@
 #define CONFIG_ID_FULL_AND_VERY_DEEP 3
 #define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
 
+#define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
+#define CONFIG_UUID_FULL_AND_FAST_ULTIMATE \
+ "698f691e-7489-11df-9d8c-002264764cea"
+#define CONFIG_UUID_FULL_AND_VERY_DEEP "708f25c4-7489-11df-8094-002264764cea"
+#define CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE \
+"74db13d6-7489-11df-91b9-002264764cea"
+#define CONFIG_UUID_EMPTY "085569ce-73ed-11df-83c3-002264764cea"
+
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
+
+#define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
 
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
@@ -4262,10 +4272,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ", NULL,"
-           " 'Full and fast', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
+           " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
+           " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s; optimized by using previously collected information.',"
            " %i, %i, 1, 1);",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
@@ -4283,9 +4294,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ", NULL,"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
+           " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
@@ -4305,9 +4317,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ", NULL,"
+           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
+           " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s; don''t trust previously collected information; slow.',"
            " %i, %i, 1, 1);",
@@ -4326,9 +4339,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (id, owner, name, nvt_selector, comment,"
+      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
+           " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
            " NULL, 'Full and very deep ultimate',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'All NVT''s including those that can stop services/hosts;"
@@ -4349,9 +4363,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       config_t config;
 
-      sql ("INSERT into configs (name, owner, nvt_selector, comment,"
+      sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing)"
-           " VALUES ('empty', NULL, 'empty',"
+           " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
            " 'Empty and static configuration template.',"
            " 0, 0, 0, 0);");
 
@@ -4364,8 +4378,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
       == 0)
-    sql ("INSERT into targets (owner, name, hosts)"
-         " VALUES (NULL, 'Localhost', 'localhost');");
+    sql ("INSERT into targets (uuid, owner, name, hosts)"
+         " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
+         " 'localhost');");
 
   /* Ensure the predefined example task and report exists. */
 
