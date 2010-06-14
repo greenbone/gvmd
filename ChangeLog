@@ -1,4 +1,14 @@
-2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_agent): Add agent return.
+	(agent_uuid): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (XML_OK_CREATED_ID): New define.
+	(omp_xml_handle_end_element): Add id attribute to CREATE_AGENT response.
+
+2010-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_infos_size): Correct severity name in SQL.
 

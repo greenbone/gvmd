@@ -12438,12 +12438,13 @@ find_agent (const char* uuid, agent_t* agent)
  * @param[in]  installer      Installer, in base64.
  * @param[in]  howto_install  Install HOWTO, in base64.
  * @param[in]  howto_use      Usage HOWTO, in base64.
+ * @param[out] agent          Created agent.
  *
  * @return 0 success, 1 agent exists already, -1 error.
  */
 int
 create_agent (const char* name, const char* comment, const char* installer,
-              const char* howto_install, const char* howto_use)
+              const char* howto_install, const char* howto_use, agent_t *agent)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment;
@@ -12608,6 +12609,9 @@ create_agent (const char* name, const char* comment, const char* installer,
     sqlite3_finalize (stmt);
   }
 
+  if (agent)
+    *agent = sqlite3_last_insert_rowid (task_db);
+
   sql ("COMMIT;");
 
   return 0;
@@ -12624,6 +12628,23 @@ int
 delete_agent (agent_t agent)
 {
   sql ("DELETE FROM agents WHERE ROWID = '%llu';", agent);
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a agent.
+ *
+ * @param[in]   agent  Agent.
+ * @param[out]  id     Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+agent_uuid (agent_t agent, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM agents WHERE ROWID = %llu;",
+                    agent);
   return 0;
 }
 

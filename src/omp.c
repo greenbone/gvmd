@@ -2162,6 +2162,17 @@ error_send_to_client (GError** error)
  " status_text=\"" STATUS_OK_CREATED_TEXT "\"/>"
 
 /**
+ * @brief Expand to XML for a STATUS_OK_CREATED response with %s for ID.
+ *
+ * @param  tag  Name of the command generating the response.
+ */
+#define XML_OK_CREATED_ID(tag)                           \
+ "<create_" tag "_response"                              \
+ " status=\"" STATUS_OK_CREATED "\""                     \
+ " status_text=\"" STATUS_OK_CREATED_TEXT "\""           \
+ " id=\"%s\"/>"
+
+/**
  * @brief Expand to XML for a STATUS_OK_REQUESTED response.
  *
  * @param  tag  Name of the command generating the response.
@@ -9021,6 +9032,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_AGENT:
         {
+          agent_t agent;
+
           assert (strcasecmp ("CREATE_AGENT", element_name) == 0);
           assert (create_agent_data->name != NULL);
 
@@ -9042,11 +9055,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      create_agent_data->comment,
                                      create_agent_data->installer,
                                      create_agent_data->howto_install,
-                                     create_agent_data->howto_use))
+                                     create_agent_data->howto_use,
+                                     &agent))
             {
               case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_agent"));
-                break;
+                {
+                  gchar *uuid;
+                  agent_uuid (agent, &uuid);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("agent"),
+                                           uuid);
+                  g_free (uuid);
+                  break;
+                }
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_agent",

@@ -1103,10 +1103,14 @@ gboolean
 find_agent (const char*, agent_t*);
 
 int
-create_agent (const char*, const char*, const char*, const char*, const char*);
+create_agent (const char*, const char*, const char*, const char*, const char*,
+              agent_t*);
 
 int
 delete_agent (agent_t);
+
+int
+agent_uuid (agent_t, char **);
 
 void
 init_agent_iterator (iterator_t*, agent_t, int, const char*);
