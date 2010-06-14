@@ -1,5 +1,9 @@
 2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_infos_size): Correct severity name in SQL.
+
+2010-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migration from version 18 to 19.  This covers UUID
 	modifications made since 2010-06-02.
 

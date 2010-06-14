@@ -7262,7 +7262,7 @@ task_infos_size (task_t task)
 {
   return sql_int (0, 0,
                   "SELECT count(*) FROM results"
-                  " WHERE task = %llu AND results.type = 'Security Notes';",
+                  " WHERE task = %llu AND results.type = 'Security Note';",
                   task);
 }
 
