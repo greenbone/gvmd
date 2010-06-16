@@ -1,5 +1,9 @@
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd_report_html.xsl (result [issue]): Skip CVSS if overridden.
+
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (latex_severity_header): Drop prefix.  Add Log check.
 	(print_report_latex): Add override to result heading.
 
