@@ -5934,6 +5934,15 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            total_warnings,
            total_notes);
 
+  if (get_report_data->overrides)
+    fputs ("Overrides are on.  When a result has an override, this report"
+           " uses the threat of the override.\\\\\n",
+           out);
+  else
+    fputs ("Overrides are off.  Even when a result has an override, this report"
+           " uses the actual threat of the result.\\\\\n",
+           out);
+
   const char *levels = get_report_data->levels ? get_report_data->levels
                                                : "hmlgd";
   if (get_report_data->search_phrase || strcmp (levels, "hmlgd"))
