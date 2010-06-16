@@ -5681,6 +5681,8 @@ const char* latex_header
     "\\definecolor{openvas_report}{rgb}{0.68,0.74,0.88}\n"
     /* Note: #FFFF90 */
     "\\definecolor{openvas_user_note}{rgb}{1.0,1.0,0.5625}\n"
+    /* Override: #FFFF90 */
+    "\\definecolor{openvas_user_override}{rgb}{1.0,1.0,0.5625}\n"
     /* Medium: #F99F31 */
     "\\definecolor{openvas_warning}{rgb}{0.9764,0.6235,0.1922}\n"
     "\\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=blue,bookmarks=true,bookmarksopen=true}\n"
@@ -5774,7 +5776,8 @@ print_report_overrides_latex (FILE *out, iterator_t *results, task_t task)
       time_t mod_time = override_iterator_modification_time (&overrides);
       fprintf (out,
                "\\hline\n"
-               "\\rowcolor{openvas_user_override}{\\textbf{Override}}\\\\\n");
+               "\\rowcolor{openvas_user_override}{\\textbf{Override to %s}}\\\\\n",
+               override_iterator_new_threat (&overrides));
       latex_print_verbatim_text (out, override_iterator_text (&overrides),
                                  "openvas_user_override");
       fprintf (out,

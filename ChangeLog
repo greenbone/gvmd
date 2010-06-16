@@ -1,5 +1,10 @@
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (latex_header): Add override colour.
+	(print_report_overrides_latex): Add threat to override heading.
+
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add threat overrides.
 
 	* src/manage_sql.c (create_tables): Add table overrides.
