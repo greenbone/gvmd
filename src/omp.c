@@ -5609,17 +5609,19 @@ convert_to_newlines (const char *text)
  * @param[in]  severity  The severity type.
  *
  * @return The heading associated with the given severity (for example,
- *         "Informational").
+ *         "Low").
  */
 const char*
 latex_severity_heading (const char *severity)
 {
   if (strcmp (severity, "Security Hole") == 0)
-    return "Severity: High";
+    return "High";
   if (strcmp (severity, "Security Note") == 0)
-    return "Severity: Low";
+    return "Low";
   if (strcmp (severity, "Security Warning") == 0)
-    return "Severity: Medium";
+    return "Medium";
+  if (strcmp (severity, "Log Message") == 0)
+    return "Log";
   return severity;
 }
 
@@ -6093,7 +6095,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
       // FIX severity ordering is alphabetical on severity name
       while (next (&results))
         {
-          const char *severity, *cvss_base;
+          const char *severity, *original_severity, *cvss_base;
 
           if (last_port == NULL
               || strcmp (last_port, result_iterator_port (&results)))
@@ -6124,15 +6126,25 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
           if (last_port == NULL)
             last_port = g_strdup (result_iterator_port (&results));
           severity = result_iterator_type (&results);
+          original_severity = result_iterator_original_type (&results);
           cvss_base = result_iterator_nvt_cvss_base (&results);
-          fprintf (out,
-                   "\\hline\n"
-                   "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n",
-                   latex_severity_colour (severity),
-                   latex_severity_heading (severity),
-                   cvss_base ? " (CVSS: " : "",
-                   cvss_base ? cvss_base : "",
-                   cvss_base ? ") " : "");
+          if (original_severity && strcmp (original_severity, severity))
+            fprintf (out,
+                     "\\hline\n"
+                     "\\rowcolor%s{\\color{white}"
+                     "{%s (Overridden from %s)}}\\\\\n",
+                     latex_severity_colour (severity),
+                     latex_severity_heading (severity),
+                     latex_severity_heading (original_severity));
+          else
+            fprintf (out,
+                     "\\hline\n"
+                     "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n",
+                     latex_severity_colour (severity),
+                     latex_severity_heading (severity),
+                     cvss_base ? " (CVSS: " : "",
+                     cvss_base ? cvss_base : "",
+                     cvss_base ? ") " : "");
 
           if (result_iterator_nvt_name (&results))
             fprintf (out,
