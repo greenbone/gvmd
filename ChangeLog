@@ -1,5 +1,10 @@
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator, report_count): Sort override
+	selection, giving the override constraints a precedence ordering.
+
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator, report_count): Also check task
 	constraint when selecting override.
 

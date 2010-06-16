@@ -6511,7 +6511,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)",
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC",
                  current_credentials.uuid);
 
           new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
@@ -7084,7 +7087,10 @@ report_count (report_t report, const char *type, int override)
              "      OR overrides.port = results.port)"
              " AND (overrides.threat is NULL"
              "      OR overrides.threat = \"\""
-             "      OR overrides.threat = results.type)",
+             "      OR overrides.threat = results.type)"
+             " ORDER BY overrides.result DESC, overrides.task DESC,"
+             " overrides.port DESC, overrides.threat"
+             " COLLATE collate_message_type ASC",
              current_credentials.uuid);
 
       new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
