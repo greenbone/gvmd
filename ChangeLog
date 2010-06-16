@@ -1,5 +1,10 @@
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd_report_html.xsl (override): New template.
+	(result [issue]): Add override to result heading.  Add override boxes.
+
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (print_report_latex): Note override state in report.
 
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -102,6 +102,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </div>
   </xsl:template>
 
+  <xsl:template match="override">
+    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+      <b>Override to <xsl:value-of select="new_threat"/></b><br/>
+      <pre>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+        </xsl:call-template>
+      </pre>
+      Last modified: <xsl:value-of select="modification_time"/>.
+    </div>
+  </xsl:template>
+
   <xsl:template match="result" mode="issue">
 
     <xsl:variable name="style">
@@ -118,6 +130,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:value-of select="port"/>
       </div>
       <b><xsl:value-of select="threat"/></b>
+      <xsl:if test="original_threat">
+        <xsl:choose>
+          <xsl:when test="threat = original_threat">
+          </xsl:when>
+          <xsl:otherwise>
+            (Overridden from <b><xsl:value-of select="original_threat"/></b>)
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:if>
       <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
          (CVSS: <xsl:value-of select="nvt/cvss_base"/>)
       </xsl:if>
@@ -148,6 +169,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pre>
     </div>
     <xsl:apply-templates select="notes/note"/>
+    <xsl:apply-templates select="overrides/override"/>
 
   </xsl:template>
 
