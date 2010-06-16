@@ -1,5 +1,10 @@
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator, report_count): Also check task
+	constraint when selecting override.
+
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd_report_html.xsl (result [issue]): Skip CVSS if overridden.
 
 2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
