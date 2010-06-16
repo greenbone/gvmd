@@ -160,6 +160,7 @@ typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
+typedef long long int override_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
 
@@ -612,10 +613,10 @@ report_scan_result_count (report_t, const char*, const char*, const char*,
                           int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*);
+report_counts (const char*, int*, int*, int*, int*, int*, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*);
+report_counts_id (report_t, int*, int*, int*, int*, int*, int);
 
 char*
 scan_start_time (report_t);
@@ -649,7 +650,8 @@ init_report_iterator (iterator_t*, task_t);
 
 void
 init_result_iterator (iterator_t*, task_t, result_t, const char*, int, int,
-                      int, const char *, const char *, const char *, const char *);
+                      int, const char *, const char *, const char *,
+                      const char *, int);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -680,6 +682,9 @@ result_iterator_nvt_risk_factor (iterator_t *);
 
 const char*
 result_iterator_type (iterator_t*);
+
+const char*
+result_iterator_original_type (iterator_t*);
 
 const char*
 result_iterator_descr (iterator_t*);
@@ -1189,6 +1194,63 @@ note_iterator_result (iterator_t*);
 
 const char*
 note_iterator_nvt_name (iterator_t *);
+
+
+/* Overrides. */
+
+gboolean
+find_override (const char*, override_t*);
+
+int
+create_override (const char*, const char*, const char*, const char*, const char*,
+                 const char*, task_t, result_t);
+
+int
+delete_override (override_t);
+
+int
+modify_override (override_t, const char*, const char*, const char*, const char*,
+                 const char*, task_t, result_t);
+
+void
+init_override_iterator (iterator_t*, override_t, nvt_t, result_t, task_t, int,
+                        const char*);
+
+const char*
+override_iterator_uuid (iterator_t*);
+
+const char*
+override_iterator_nvt_oid (iterator_t*);
+
+time_t
+override_iterator_creation_time (iterator_t*);
+
+time_t
+override_iterator_modification_time (iterator_t*);
+
+const char*
+override_iterator_text (iterator_t*);
+
+const char*
+override_iterator_hosts (iterator_t*);
+
+const char*
+override_iterator_port (iterator_t*);
+
+const char*
+override_iterator_threat (iterator_t*);
+
+const char*
+override_iterator_new_threat (iterator_t*);
+
+task_t
+override_iterator_task (iterator_t*);
+
+result_t
+override_iterator_result (iterator_t*);
+
+const char*
+override_iterator_nvt_name (iterator_t *);
 
 
 /* Scanner messaging. */

@@ -128,7 +128,7 @@
 /* Static headers. */
 
 static void
-buffer_results_xml (GString *, iterator_t *, task_t, int, int);
+buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 
 /* Helper functions. */
@@ -430,6 +430,7 @@ static char* help_text = "\n"
 "    CREATE_ESCALATOR       Create an escalator.\n"
 "    CREATE_LSC_CREDENTIAL  Create a local security check credential.\n"
 "    CREATE_NOTE            Create a note.\n"
+"    CREATE_OVERRIDE        Create an override.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
@@ -438,6 +439,7 @@ static char* help_text = "\n"
 "    DELETE_ESCALATOR       Delete an escalator.\n"
 "    DELETE_LSC_CREDENTIAL  Delete a local security check credential.\n"
 "    DELETE_NOTE            Delete a note.\n"
+"    DELETE_OVERRIDE        Delete an override.\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_SCHEDULE        Delete a schedule.\n"
 "    DELETE_TARGET          Delete a target.\n"
@@ -453,6 +455,7 @@ static char* help_text = "\n"
 "    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
+"    GET_OVERRIDES          Get all overrides.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORT             Get a report identified by its unique ID.\n"
 "    GET_RESULTS            Get results.\n"
@@ -466,6 +469,7 @@ static char* help_text = "\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
+"    MODIFY_OVERRIDE        Modify an existing override.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
@@ -820,6 +824,35 @@ create_note_data_reset (create_note_data_t *data)
 
 typedef struct
 {
+  char *hosts;
+  char *new_threat;
+  char *nvt;
+  char *override_id;
+  char *port;
+  char *result;
+  char *task;
+  char *text;
+  char *threat;
+} create_override_data_t;
+
+static void
+create_override_data_reset (create_override_data_t *data)
+{
+  free (data->hosts);
+  free (data->new_threat);
+  free (data->nvt);
+  free (data->override_id);
+  free (data->port);
+  free (data->result);
+  free (data->task);
+  free (data->text);
+  free (data->threat);
+
+  memset (data, 0, sizeof (create_override_data_t));
+}
+
+typedef struct
+{
   char *name;
   char *comment;
   char *first_time_day_of_month;
@@ -960,6 +993,19 @@ delete_note_data_reset (delete_note_data_t *data)
   free (data->note_id);
 
   memset (data, 0, sizeof (delete_note_data_t));
+}
+
+typedef struct
+{
+  char *override_id;
+} delete_override_data_t;
+
+static void
+delete_override_data_reset (delete_override_data_t *data)
+{
+  free (data->override_id);
+
+  memset (data, 0, sizeof (delete_override_data_t));
 }
 
 typedef struct
@@ -1152,6 +1198,27 @@ get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
 
 typedef struct
 {
+  char *override_id;
+  char *nvt_oid;
+  char *task_id;
+  char *sort_field;
+  int sort_order;
+  int details;
+  int result;
+} get_overrides_data_t;
+
+static void
+get_overrides_data_reset (get_overrides_data_t *data)
+{
+  free (data->override_id);
+  free (data->nvt_oid);
+  free (data->task_id);
+
+  memset (data, 0, sizeof (get_overrides_data_t));
+}
+
+typedef struct
+{
   char *config_id;
   char *oid;
   char *preference;
@@ -1180,6 +1247,8 @@ typedef struct
   char *min_cvss_base;
   int notes;
   int notes_details;
+  int overrides;
+  int overrides_details;
   int result_hosts_only;
 } get_report_data_t;
 
@@ -1202,6 +1271,8 @@ typedef struct
   char *task_id;
   int notes;
   int notes_details;
+  int overrides;
+  int overrides_details;
 } get_results_data_t;
 
 static void
@@ -1373,6 +1444,10 @@ typedef create_note_data_t modify_note_data_t;
 
 #define modify_note_data_reset create_note_data_reset
 
+typedef create_override_data_t modify_override_data_t;
+
+#define modify_override_data_reset create_override_data_reset
+
 typedef struct
 {
   char *task_id;
@@ -1459,6 +1534,7 @@ typedef union
   create_escalator_data_t create_escalator;
   create_lsc_credential_data_t create_lsc_credential;
   create_note_data_t create_note;
+  create_override_data_t create_override;
   create_schedule_data_t create_schedule;
   create_target_data_t create_target;
   create_task_data_t create_task;
@@ -1467,6 +1543,7 @@ typedef union
   delete_escalator_data_t delete_escalator;
   delete_lsc_credential_data_t delete_lsc_credential;
   delete_note_data_t delete_note;
+  delete_override_data_t delete_override;
   delete_report_data_t delete_report;
   delete_schedule_data_t delete_schedule;
   delete_target_data_t delete_target;
@@ -1479,6 +1556,7 @@ typedef union
   get_nvt_details_data_t get_nvt_details;
   get_nvt_families_data_t get_nvt_families;
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
+  get_overrides_data_t get_overrides;
   get_preferences_data_t get_preferences;
   get_report_data_t get_report;
   get_results_data_t get_results;
@@ -1551,6 +1629,12 @@ create_note_data_t *create_note_data
  = (create_note_data_t*) &(command_data.create_note);
 
 /**
+ * @brief Parser callback data for CREATE_OVERRIDE.
+ */
+create_override_data_t *create_override_data
+ = (create_override_data_t*) &(command_data.create_override);
+
+/**
  * @brief Parser callback data for CREATE_SCHEDULE.
  */
 create_schedule_data_t *create_schedule_data
@@ -1597,6 +1681,12 @@ delete_lsc_credential_data_t *delete_lsc_credential_data
  */
 delete_note_data_t *delete_note_data
  = (delete_note_data_t*) &(command_data.delete_note);
+
+/**
+ * @brief Parser callback data for DELETE_OVERRIDE.
+ */
+delete_override_data_t *delete_override_data
+ = (delete_override_data_t*) &(command_data.delete_override);
 
 /**
  * @brief Parser callback data for DELETE_REPORT.
@@ -1671,6 +1761,12 @@ get_nvt_feed_checksum_data_t *get_nvt_feed_checksum_data
  = &(command_data.get_nvt_feed_checksum);
 
 /**
+ * @brief Parser callback data for GET_OVERRIDES.
+ */
+get_overrides_data_t *get_overrides_data
+ = &(command_data.get_overrides);
+
+/**
  * @brief Parser callback data for GET_PREFERENCES.
  */
 get_preferences_data_t *get_preferences_data
@@ -1729,6 +1825,12 @@ modify_config_data_t *modify_config_data
  */
 modify_note_data_t *modify_note_data
  = (modify_note_data_t*) &(command_data.create_note);
+
+/**
+ * @brief Parser callback data for MODIFY_OVERRIDE.
+ */
+modify_override_data_t *modify_override_data
+ = (modify_override_data_t*) &(command_data.create_override);
 
 /**
  * @brief Parser callback data for MODIFY_REPORT.
@@ -1884,6 +1986,15 @@ typedef enum
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
+  CLIENT_CREATE_OVERRIDE,
+  CLIENT_CREATE_OVERRIDE_HOSTS,
+  CLIENT_CREATE_OVERRIDE_NEW_THREAT,
+  CLIENT_CREATE_OVERRIDE_NVT,
+  CLIENT_CREATE_OVERRIDE_PORT,
+  CLIENT_CREATE_OVERRIDE_RESULT,
+  CLIENT_CREATE_OVERRIDE_TASK,
+  CLIENT_CREATE_OVERRIDE_TEXT,
+  CLIENT_CREATE_OVERRIDE_THREAT,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_NAME,
   CLIENT_CREATE_SCHEDULE_COMMENT,
@@ -1921,6 +2032,7 @@ typedef enum
   CLIENT_DELETE_ESCALATOR,
   CLIENT_DELETE_LSC_CREDENTIAL,
   CLIENT_DELETE_NOTE,
+  CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_TASK,
@@ -1938,6 +2050,9 @@ typedef enum
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
+  CLIENT_GET_OVERRIDES,
+  CLIENT_GET_OVERRIDES_NVT,
+  CLIENT_GET_OVERRIDES_TASK,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORT,
   CLIENT_GET_RESULTS,
@@ -1971,6 +2086,14 @@ typedef enum
   CLIENT_MODIFY_NOTE_TASK,
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
+  CLIENT_MODIFY_OVERRIDE,
+  CLIENT_MODIFY_OVERRIDE_HOSTS,
+  CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
+  CLIENT_MODIFY_OVERRIDE_PORT,
+  CLIENT_MODIFY_OVERRIDE_RESULT,
+  CLIENT_MODIFY_OVERRIDE_TASK,
+  CLIENT_MODIFY_OVERRIDE_TEXT,
+  CLIENT_MODIFY_OVERRIDE_THREAT,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_ESCALATOR,
@@ -2501,6 +2624,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE);
+        else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -2547,6 +2672,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "note_id",
                               &delete_note_data->note_id);
             set_client_state (CLIENT_DELETE_NOTE);
+          }
+        else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "override_id",
+                              &delete_override_data->override_id);
+            set_client_state (CLIENT_DELETE_OVERRIDE);
           }
         else if (strcasecmp ("DELETE_REPORT", element_name) == 0)
           {
@@ -2723,6 +2854,36 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_nvt_families_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
+        else if (strcasecmp ("GET_OVERRIDES", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            append_attribute (attribute_names, attribute_values, "override_id",
+                              &get_overrides_data->override_id);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_overrides_data->details = strcmp (attribute, "0");
+            else
+              get_overrides_data->details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "result", &attribute))
+              get_overrides_data->result = strcmp (attribute, "0");
+            else
+              get_overrides_data->result = 0;
+
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_overrides_data->sort_field);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_overrides_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_overrides_data->sort_order = 1;
+
+            set_client_state (CLIENT_GET_OVERRIDES);
+          }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "oid",
@@ -2791,6 +2952,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->notes_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
+                                "overrides", &attribute))
+              get_report_data->overrides = strcmp (attribute, "0");
+            else
+              get_report_data->overrides = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "overrides_details", &attribute))
+              get_report_data->overrides_details = strcmp (attribute, "0");
+            else
+              get_report_data->overrides_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "result_hosts_only", &attribute))
               get_report_data->result_hosts_only = strcmp (attribute, "0");
             else
@@ -2823,6 +2996,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_results_data->notes_details = strcmp (attribute, "0");
             else
               get_results_data->notes_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "overrides", &attribute))
+              get_results_data->overrides = strcmp (attribute, "0");
+            else
+              get_results_data->overrides = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "overrides_details", &attribute))
+              get_results_data->overrides_details = strcmp (attribute, "0");
+            else
+              get_results_data->overrides_details = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -2913,6 +3098,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "note_id",
                               &modify_note_data->note_id);
             set_client_state (CLIENT_MODIFY_NOTE);
+          }
+        else if (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "override_id",
+                              &modify_override_data->override_id);
+            set_client_state (CLIENT_MODIFY_OVERRIDE);
           }
         else if (strcasecmp ("MODIFY_REPORT", element_name) == 0)
           {
@@ -3199,6 +3390,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
+      case CLIENT_DELETE_OVERRIDE:
+        if (send_element_error_to_client ("delete_override", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_DELETE_REPORT:
         if (send_element_error_to_client ("delete_report", element_name))
           {
@@ -3441,6 +3645,58 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NVT_FAMILIES:
         if (send_element_error_to_client ("get_nvt_families", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_GET_OVERRIDES:
+        if (strcasecmp ("NVT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &get_overrides_data->nvt_oid);
+            set_client_state (CLIENT_GET_OVERRIDES_NVT);
+          }
+        else if (strcasecmp ("TASK", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &get_overrides_data->task_id);
+            set_client_state (CLIENT_GET_OVERRIDES_TASK);
+          }
+        else
+          {
+            if (send_element_error_to_client ("get_overrides", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+      case CLIENT_GET_OVERRIDES_NVT:
+        if (send_element_error_to_client ("get_overrides", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+      case CLIENT_GET_OVERRIDES_TASK:
+        if (send_element_error_to_client ("get_overrides", element_name))
           {
             error_send_to_client (error);
             return;
@@ -4247,6 +4503,38 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_CREATE_OVERRIDE:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_HOSTS);
+        else if (strcasecmp ("NEW_THREAT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_NEW_THREAT);
+        else if (strcasecmp ("NVT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_NVT);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_PORT);
+        else if (strcasecmp ("RESULT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_RESULT);
+        else if (strcasecmp ("TASK", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_TASK);
+        else if (strcasecmp ("TEXT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_TEXT);
+        else if (strcasecmp ("THREAT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_THREAT);
+        else
+          {
+            if (send_element_error_to_client ("create_override", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
@@ -4349,6 +4637,36 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("MODIFY_note", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_OVERRIDE:
+        if (strcasecmp ("HOSTS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_HOSTS);
+        else if (strcasecmp ("NEW_THREAT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_NEW_THREAT);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_PORT);
+        else if (strcasecmp ("RESULT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_RESULT);
+        else if (strcasecmp ("TASK", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_TASK);
+        else if (strcasecmp ("TEXT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_TEXT);
+        else if (strcasecmp ("THREAT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_THREAT);
+        else
+          {
+            if (send_element_error_to_client ("modify_override", element_name))
               {
                 error_send_to_client (error);
                 return;
@@ -4738,9 +5056,7 @@ send_reports (task_t task)
 
       uuid = report_uuid (index);
 
-      if (report_counts (uuid,
-                         &debugs, &holes, &infos, &logs,
-                         &warnings))
+      if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings, 1))
         {
           free (uuid);
           return -5;
@@ -4852,7 +5168,8 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         sort_field,
                         get_report_data->levels,
                         get_report_data->search_phrase,
-                        min_cvss_base);
+                        min_cvss_base,
+                        get_report_data->overrides);
 
   if (result_hosts_only)
     result_hosts = make_array ();
@@ -4866,7 +5183,9 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                           &results,
                           task,
                           get_report_data->notes,
-                          get_report_data->notes_details);
+                          get_report_data->notes_details,
+                          get_report_data->overrides,
+                          get_report_data->overrides_details);
       fputs (buffer->str, out);
       g_string_free (buffer, TRUE);
       if (result_hosts_only)
@@ -5432,6 +5751,41 @@ print_report_notes_latex (FILE *out, iterator_t *results, task_t task)
 }
 
 /**
+ * @brief Print LaTeX for overrides on a report to a file.
+ *
+ * @param[in]  out      Destination.
+ * @param[in]  results  Result iterator.
+ * @param[in]  task     Task associated with report containing results.
+ */
+static void
+print_report_overrides_latex (FILE *out, iterator_t *results, task_t task)
+{
+  iterator_t overrides;
+
+  init_override_iterator (&overrides,
+                          0,
+                          0,
+                          result_iterator_result (results),
+                          task,
+                          0, /* Most recent first. */
+                          "creation_time");
+  while (next (&overrides))
+    {
+      time_t mod_time = override_iterator_modification_time (&overrides);
+      fprintf (out,
+               "\\hline\n"
+               "\\rowcolor{openvas_user_override}{\\textbf{Override}}\\\\\n");
+      latex_print_verbatim_text (out, override_iterator_text (&overrides),
+                                 "openvas_user_override");
+      fprintf (out,
+               "\\rowcolor{openvas_user_override}{}\\\\\n"
+               "\\rowcolor{openvas_user_override}{Last modified: %s}\\\\\n",
+               ctime_strip_newline (&mod_time));
+    }
+  cleanup_iterator (&overrides);
+}
+
+/**
  * @brief Print LaTeX for a report to a file.
  *
  * @param[in]  report      The report.
@@ -5683,7 +6037,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             sort_field,
                             get_report_data->levels,
                             get_report_data->search_phrase,
-                            min_cvss_base);
+                            min_cvss_base,
+                            get_report_data->overrides);
       last_port = NULL;
       while (next (&results))
         {
@@ -5718,7 +6073,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             sort_field,
                             get_report_data->levels,
                             get_report_data->search_phrase,
-                            min_cvss_base);
+                            min_cvss_base,
+                            get_report_data->overrides);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -5794,6 +6150,9 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
 
           if (get_report_data->notes)
             print_report_notes_latex (out, &results, task);
+
+          if (get_report_data->overrides)
+            print_report_overrides_latex (out, &results, task);
 
           fprintf (out,
                    "\\end{longtable}\n"
@@ -5949,13 +6308,15 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               init_result_iterator (&results, 0,
                                     note_iterator_result (notes),
-                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL);
+                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
                                     0,
                                     0,  /* Notes. */
-                                    0); /* Note details. */
+                                    0,  /* Note details. */
+                                    0,  /* Overrides. */
+                                    0); /* Override details. */
               cleanup_iterator (&results);
 
               buffer_xml_append_printf (buffer, "</note>");
@@ -5964,6 +6325,134 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             buffer_xml_append_printf (buffer,
                                       "<result id=\"%s\"/>"
                                       "</note>",
+                                      uuid_result ? uuid_result : "");
+        }
+      free (uuid_task);
+      free (uuid_result);
+    }
+}
+
+/**
+ * @brief Buffer XML for some overrides.
+ *
+ * @param[in]  overrides                  Overrides iterator.
+ * @param[in]  include_overrides_details  Whether to include details of overrides.
+ * @param[in]  include_result             Whether to include associated result.
+ */
+static void
+buffer_overrides_xml (GString *buffer, iterator_t *overrides,
+                      int include_overrides_details, int include_result)
+{
+  while (next (overrides))
+    {
+      char *uuid_task, *uuid_result;
+
+      if (override_iterator_task (overrides))
+        task_uuid (override_iterator_task (overrides),
+                   &uuid_task);
+      else
+        uuid_task = NULL;
+
+      if (override_iterator_result (overrides))
+        result_uuid (override_iterator_result (overrides),
+                     &uuid_result);
+      else
+        uuid_result = NULL;
+
+      if (include_overrides_details == 0)
+        {
+          const char *text = override_iterator_text (overrides);
+          gchar *excerpt = g_strndup (text, 40);
+          buffer_xml_append_printf (buffer,
+                                    "<override id=\"%s\">"
+                                    "<nvt oid=\"%s\">"
+                                    "<name>%s</name>"
+                                    "</nvt>"
+                                    "<text excerpt=\"%i\">%s</text>"
+                                    "<new_threat>%s</new_threat>"
+                                    "<orphan>%i</orphan>"
+                                    "</override>",
+                                    override_iterator_uuid (overrides),
+                                    override_iterator_nvt_oid (overrides),
+                                    override_iterator_nvt_name (overrides),
+                                    strlen (excerpt) < strlen (text),
+                                    excerpt,
+                                    override_iterator_new_threat (overrides),
+                                    ((override_iterator_task (overrides)
+                                      && (uuid_task == NULL))
+                                     || (override_iterator_result (overrides)
+                                         && (uuid_result == NULL))));
+          g_free (excerpt);
+        }
+      else
+        {
+          char *name_task;
+          time_t creation_time, mod_time;
+
+          if (uuid_task)
+            name_task = task_name (override_iterator_task (overrides));
+          else
+            name_task = NULL;
+
+          creation_time = override_iterator_creation_time (overrides);
+          mod_time = override_iterator_modification_time (overrides);
+
+          buffer_xml_append_printf
+           (buffer,
+            "<override id=\"%s\">"
+            "<nvt oid=\"%s\"><name>%s</name></nvt>"
+            "<creation_time>%s</creation_time>"
+            "<modification_time>%s</modification_time>"
+            "<text>%s</text>"
+            "<hosts>%s</hosts>"
+            "<port>%s</port>"
+            "<threat>%s</threat>"
+            "<new_threat>%s</new_threat>"
+            "<task id=\"%s\"><name>%s</name></task>"
+            "<orphan>%i</orphan>",
+            override_iterator_uuid (overrides),
+            override_iterator_nvt_oid (overrides),
+            override_iterator_nvt_name (overrides),
+            ctime_strip_newline (&creation_time),
+            ctime_strip_newline (&mod_time),
+            override_iterator_text (overrides),
+            override_iterator_hosts (overrides)
+             ? override_iterator_hosts (overrides) : "",
+            override_iterator_port (overrides)
+             ? override_iterator_port (overrides) : "",
+            override_iterator_threat (overrides)
+             ? override_iterator_threat (overrides) : "",
+            override_iterator_new_threat (overrides),
+            uuid_task ? uuid_task : "",
+            name_task ? name_task : "",
+            ((override_iterator_task (overrides) && (uuid_task == NULL))
+             || (override_iterator_result (overrides) && (uuid_result == NULL))));
+
+          free (name_task);
+
+          if (include_result && override_iterator_result (overrides))
+            {
+              iterator_t results;
+
+              init_result_iterator (&results, 0,
+                                    override_iterator_result (overrides),
+                                    NULL, 0, 1, 1, NULL, NULL, NULL, NULL, 0);
+              while (next (&results))
+                buffer_results_xml (buffer,
+                                    &results,
+                                    0,
+                                    0,  /* Notes. */
+                                    0,  /* Note details. */
+                                    0,  /* Overrides. */
+                                    0); /* Override details. */
+              cleanup_iterator (&results);
+
+              buffer_xml_append_printf (buffer, "</override>");
+            }
+          else
+            buffer_xml_append_printf (buffer,
+                                      "<result id=\"%s\"/>"
+                                      "</override>",
                                       uuid_result ? uuid_result : "");
         }
       free (uuid_task);
@@ -6039,13 +6528,17 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  *
  * @param[in]  results                Result iterator.
  * @param[in]  task                   Task associated with results.  Only
- *                                    needed with include_notes.
+ *                                    needed with include_notes or
+ *                                    include_overrides.
  * @param[in]  include_notes          Whether to include notes.
  * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  include_overrides          Whether to include overrides.
+ * @param[in]  include_overrides_details  Whether to include details of overrides.
  */
 static void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
-                    int include_notes, int include_notes_details)
+                    int include_notes, int include_notes_details,
+                    int include_overrides, int include_overrides_details)
 {
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
@@ -6080,6 +6573,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");
 
+  if (include_overrides)
+    buffer_xml_append_printf (buffer,
+                              "<original_threat>%s</original_threat>",
+                              result_type_threat
+                               (result_iterator_original_type (results)));
+
   free (uuid);
 
   if (descr) g_free (nl_descr);
@@ -6103,6 +6602,30 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       cleanup_iterator (&notes);
 
       g_string_append (buffer, "</notes>");
+    }
+
+  if (include_overrides)
+    {
+      iterator_t overrides;
+
+      assert (task);
+
+      g_string_append (buffer, "<overrides>");
+
+      init_override_iterator (&overrides,
+                              0,
+                              0,
+                              result_iterator_result (results),
+                              task,
+                              0, /* Most recent first. */
+                              "creation_time");
+      buffer_overrides_xml (buffer,
+                            &overrides,
+                            include_overrides_details,
+                            0);
+      cleanup_iterator (&overrides);
+
+      g_string_append (buffer, "</overrides>");
     }
 
   g_string_append (buffer, "</result>");
@@ -6804,6 +7327,104 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_GET_OVERRIDES:
+        {
+          override_t override = 0;
+          nvt_t nvt = 0;
+          task_t task = 0;
+
+          assert (strcasecmp ("GET_OVERRIDES", element_name) == 0);
+
+          if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_overrides",
+                                "Only one of NVT and the override_id attribute"
+                                " may be given"));
+          else if (get_overrides_data->override_id && get_overrides_data->task_id)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_overrides",
+                                "Only one of the override_id and task_id"
+                                " attributes may be given"));
+          else if (get_overrides_data->override_id
+              && find_override (get_overrides_data->override_id, &override))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
+          else if (get_overrides_data->override_id && override == 0)
+            {
+              if (send_find_error_to_client ("get_overrides",
+                                             "override",
+                                             get_overrides_data->override_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (get_overrides_data->task_id
+                   && find_task (get_overrides_data->task_id, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
+          else if (get_overrides_data->task_id && task == 0)
+            {
+              if (send_find_error_to_client ("get_overrides",
+                                             "task",
+                                             get_overrides_data->task_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (get_overrides_data->nvt_oid
+                   && find_nvt (get_overrides_data->nvt_oid, &nvt))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_overrides"));
+          else if (get_overrides_data->nvt_oid && nvt == 0)
+            {
+              if (send_find_error_to_client ("get_overrides",
+                                             "NVT",
+                                             get_overrides_data->nvt_oid))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              iterator_t overrides;
+              GString *buffer;
+
+              SENDF_TO_CLIENT_OR_FAIL ("<get_overrides_response"
+                                       " status=\"" STATUS_OK "\""
+                                       " status_text=\"" STATUS_OK_TEXT "\">");
+
+              buffer = g_string_new ("");
+
+              init_override_iterator (&overrides,
+                                      override,
+                                      nvt,
+                                      0,
+                                      task,
+                                      get_overrides_data->sort_order,
+                                      get_overrides_data->sort_field);
+              buffer_overrides_xml (buffer, &overrides, get_overrides_data->details,
+                                    get_overrides_data->result);
+              cleanup_iterator (&overrides);
+
+              SEND_TO_CLIENT_OR_FAIL (buffer->str);
+              g_string_free (buffer, TRUE);
+
+              SEND_TO_CLIENT_OR_FAIL ("</get_overrides_response>");
+            }
+
+          get_overrides_data_reset (get_overrides_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_GET_OVERRIDES_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_GET_OVERRIDES);
+        break;
+      case CLIENT_GET_OVERRIDES_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_GET_OVERRIDES);
+        break;
+
       case CLIENT_DELETE_NOTE:
         assert (strcasecmp ("DELETE_NOTE", element_name) == 0);
         if (delete_note_data->note_id)
@@ -6838,6 +7459,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            (XML_ERROR_SYNTAX ("delete_note",
                               "DELETE_NOTE requires a note_id attribute"));
         delete_note_data_reset (delete_note_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_OVERRIDE:
+        assert (strcasecmp ("DELETE_OVERRIDE", element_name) == 0);
+        if (delete_override_data->override_id)
+          {
+            override_t override;
+
+            if (find_override (delete_override_data->override_id, &override))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_override"));
+            else if (override == 0)
+              {
+                if (send_find_error_to_client
+                     ("delete_override",
+                      "override",
+                      delete_override_data->override_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_override (override))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_override"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("delete_override"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_override",
+                              "DELETE_OVERRIDE requires a override_id attribute"));
+        delete_override_data_reset (delete_override_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -7025,6 +7684,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "%s"
               "<phrase>%s</phrase>"
               "<notes>%i</notes>"
+              "<overrides>%i</overrides>"
               "<result_hosts_only>%i</result_hosts_only>"
               "<min_cvss_base>%s</min_cvss_base>",
               get_report_data->report_id,
@@ -7036,6 +7696,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 ? get_report_data->search_phrase
                 : "",
               get_report_data->notes ? 1 : 0,
+              get_report_data->overrides ? 1 : 0,
               get_report_data->result_hosts_only ? 1 : 0,
               get_report_data->min_cvss_base
                 ? get_report_data->min_cvss_base
@@ -7101,7 +7762,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "port",
                 levels,
                 get_report_data->search_phrase,
-                get_report_data->min_cvss_base);
+                get_report_data->min_cvss_base,
+                get_report_data->overrides);
 
               /* Buffer the results. */
 
@@ -7188,7 +7850,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes, infos, logs, warnings;
 
               report_counts_id (report, &debugs, &holes, &infos, &logs,
-                                &warnings);
+                                &warnings, get_report_data->overrides);
 
               SENDF_TO_CLIENT_OR_FAIL ("<messages>"
                                        "<debug>%i</debug>"
@@ -7213,7 +7875,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_field,
                                   levels,
                                   get_report_data->search_phrase,
-                                  get_report_data->min_cvss_base);
+                                  get_report_data->min_cvss_base,
+                                  get_report_data->overrides);
 
             SENDF_TO_CLIENT_OR_FAIL ("<results"
                                      " start=\"%i\""
@@ -7233,7 +7896,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     &results,
                                     task,
                                     get_report_data->notes,
-                                    get_report_data->notes_details);
+                                    get_report_data->notes_details,
+                                    get_report_data->overrides,
+                                    get_report_data->overrides_details);
                 SEND_TO_CLIENT_OR_FAIL (buffer->str);
                 g_string_free (buffer, TRUE);
                 if (get_report_data->result_hosts_only)
@@ -7319,7 +7984,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->sort_field,
                                   get_report_data->levels,
                                   get_report_data->search_phrase,
-                                  get_report_data->min_cvss_base);
+                                  get_report_data->min_cvss_base,
+                                  get_report_data->overrides);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
             else
@@ -8080,6 +8746,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute"
                                 " if the notes attribute is true"));
+          else if (get_results_data->overrides
+                   && (get_results_data->task_id == NULL))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_results",
+                                "GET_RESULTS must have a task_id attribute"
+                                " if the overrides attribute is true"));
           else if (find_result (get_results_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (result == 0)
@@ -8112,7 +8784,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
               init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
-                                    NULL, NULL, NULL);
+                                    NULL, NULL, NULL,
+                                    get_results_data->overrides);
               while (next (&results))
                 {
                   GString *buffer = g_string_new ("");
@@ -8120,7 +8793,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       &results,
                                       task,
                                       get_results_data->notes,
-                                      get_results_data->notes_details);
+                                      get_results_data->notes_details,
+                                      get_results_data->overrides,
+                                      get_results_data->overrides_details);
                   SEND_TO_CLIENT_OR_FAIL (buffer->str);
                   g_string_free (buffer, TRUE);
                 }
@@ -9744,6 +10419,106 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_NOTE);
         break;
 
+      case CLIENT_CREATE_OVERRIDE:
+        {
+          task_t task = 0;
+          result_t result = 0;
+
+          assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
+
+          if (create_override_data->nvt == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_override",
+                                "CREATE_OVERRIDE requires an NVT entity"));
+          else if (create_override_data->text == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_override",
+                                "CREATE_OVERRIDE requires a TEXT entity"));
+          else if (create_override_data->task
+              && find_task (create_override_data->task, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
+          else if (create_override_data->task && task == 0)
+            {
+              if (send_find_error_to_client ("create_override",
+                                             "task",
+                                             create_override_data->task))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (create_override_data->result
+                   && find_result (create_override_data->result, &result))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
+          else if (create_override_data->result && result == 0)
+            {
+              if (send_find_error_to_client ("create_override",
+                                             "result",
+                                             create_override_data->result))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (create_override (create_override_data->nvt,
+                                        create_override_data->text,
+                                        create_override_data->hosts,
+                                        create_override_data->port,
+                                        create_override_data->threat,
+                                        create_override_data->new_threat,
+                                        task,
+                                        result))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_override"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_override"));
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_override"));
+                break;
+            }
+          create_override_data_reset (create_override_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_OVERRIDE_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_NEW_THREAT:
+        assert (strcasecmp ("NEW_THREAT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_NVT:
+        assert (strcasecmp ("NVT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_RESULT:
+        assert (strcasecmp ("RESULT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_TEXT:
+        assert (strcasecmp ("TEXT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+      case CLIENT_CREATE_OVERRIDE_THREAT:
+        assert (strcasecmp ("THREAT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_OVERRIDE);
+        break;
+
       case CLIENT_CREATE_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -10415,6 +11190,115 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_NOTE);
         break;
 
+      case CLIENT_MODIFY_OVERRIDE:
+        {
+          task_t task = 0;
+          result_t result = 0;
+          override_t override = 0;
+
+          assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
+
+          if (modify_override_data->override_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_override",
+                                "MODIFY_OVERRIDE requires a override_id attribute"));
+          else if (modify_override_data->text == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_override",
+                                "MODIFY_OVERRIDE requires a TEXT entity"));
+          else if (find_override (modify_override_data->override_id, &override))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
+          else if (override == 0)
+            {
+              if (send_find_error_to_client ("modify_override",
+                                             "override",
+                                             modify_override_data->override_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (modify_override_data->task
+                   && find_task (modify_override_data->task, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
+          else if (modify_override_data->task && task == 0)
+            {
+              if (send_find_error_to_client ("modify_override",
+                                             "task",
+                                             modify_override_data->task))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if (modify_override_data->result
+                   && find_result (modify_override_data->result, &result))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
+          else if (modify_override_data->result && result == 0)
+            {
+              if (send_find_error_to_client ("modify_override",
+                                             "result",
+                                             modify_override_data->result))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else switch (modify_override (override,
+                                        modify_override_data->text,
+                                        modify_override_data->hosts,
+                                        modify_override_data->port,
+                                        modify_override_data->threat,
+                                        modify_override_data->new_threat,
+                                        task,
+                                        result))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_override"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_override"));
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("modify_override"));
+                break;
+            }
+          modify_override_data_reset (modify_override_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_MODIFY_OVERRIDE_HOSTS:
+        assert (strcasecmp ("HOSTS", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_NEW_THREAT:
+        assert (strcasecmp ("NEW_THREAT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_RESULT:
+        assert (strcasecmp ("RESULT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_TASK:
+        assert (strcasecmp ("TASK", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_TEXT:
+        assert (strcasecmp ("TEXT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_THREAT:
+        assert (strcasecmp ("THREAT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_OVERRIDE);
+        break;
+
       case CLIENT_TEST_ESCALATOR:
         if (test_escalator_data->escalator_id)
           {
@@ -10919,7 +11803,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings))
+                                           &warnings, 1))
                           abort (); // FIX fail better
 
                         if (report_timestamp (first_report_id, &timestamp))
@@ -10960,7 +11844,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings))
+                                           &warnings, 1))
                           abort (); // FIX fail better
 
                         if (report_timestamp (last_report_id, &timestamp))
@@ -11001,7 +11885,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings))
+                                           &warnings, 1))
                           abort (); // FIX fail better
 
                         if (report_timestamp (second_last_report_id,
@@ -11301,7 +12185,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (report_counts (first_report_id,
                                        &debugs, &holes, &infos, &logs,
-                                       &warnings))
+                                       &warnings, 1))
                       abort (); // FIX fail better
 
                     if (report_timestamp (first_report_id, &timestamp))
@@ -11342,7 +12226,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (report_counts (last_report_id,
                                        &debugs, &holes, &infos, &logs,
-                                       &warnings))
+                                       &warnings, 1))
                       abort (); // FIX fail better
 
                     if (report_timestamp (last_report_id, &timestamp))
@@ -11402,7 +12286,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (report_counts (second_last_report_id,
                                        &debugs, &holes, &infos, &logs,
-                                       &warnings))
+                                       &warnings, 1))
                       abort (); // FIX fail better
 
                     if (report_timestamp (second_last_report_id, &timestamp))
@@ -12708,6 +13592,31 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_note_data->threat, text, text_len);
         break;
 
+      case CLIENT_CREATE_OVERRIDE_HOSTS:
+        openvas_append_text (&create_override_data->hosts, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_NEW_THREAT:
+        openvas_append_text (&create_override_data->new_threat, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_NVT:
+        openvas_append_text (&create_override_data->nvt, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_PORT:
+        openvas_append_text (&create_override_data->port, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_RESULT:
+        openvas_append_text (&create_override_data->result, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_TASK:
+        openvas_append_text (&create_override_data->task, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_TEXT:
+        openvas_append_text (&create_override_data->text, text, text_len);
+        break;
+      case CLIENT_CREATE_OVERRIDE_THREAT:
+        openvas_append_text (&create_override_data->threat, text, text_len);
+        break;
+
       case CLIENT_CREATE_SCHEDULE_COMMENT:
         openvas_append_text (&create_schedule_data->comment, text, text_len);
         break;
@@ -12806,6 +13715,28 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_NOTE_THREAT:
         openvas_append_text (&modify_note_data->threat, text, text_len);
+        break;
+
+      case CLIENT_MODIFY_OVERRIDE_HOSTS:
+        openvas_append_text (&modify_override_data->hosts, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_NEW_THREAT:
+        openvas_append_text (&modify_override_data->new_threat, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_PORT:
+        openvas_append_text (&modify_override_data->port, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_RESULT:
+        openvas_append_text (&modify_override_data->result, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_TASK:
+        openvas_append_text (&modify_override_data->task, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_TEXT:
+        openvas_append_text (&modify_override_data->text, text, text_len);
+        break;
+      case CLIENT_MODIFY_OVERRIDE_THREAT:
+        openvas_append_text (&modify_override_data->threat, text, text_len);
         break;
 
       default:

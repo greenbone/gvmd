@@ -1,3 +1,45 @@
+2010-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add threat overrides.
+
+	* src/manage_sql.c (create_tables): Add table overrides.
+	(where_levels_type): New function.
+	(init_result_iterator): Add override flag.
+	(result_iterator_original_type): New function.  Adjust other accessors
+	accordingly.
+	(report_scan_result_count): Use where_levels_type.
+	(REPORT_COUNT): Remove.  Replace with report_count.
+	(report_count): New function.  Counts reports with override.
+	(report_counts, report_counts_id): Add override flag.  Adjust callers.
+	(find_override, create_override, delete_override, modify_override)
+	(init_override_iterator, override_iterator_uuid, override_iterator_nvt_oid)
+	(override_iterator_creation_time, override_iterator_modification_time)
+	(override_iterator_text, override_iterator_hosts, override_iterator_port)
+	(override_iterator_threat, override_iterator_new_threat)
+	(override_iterator_task, override_iterator_result)
+	(override_iterator_nvt_name): New functions.
+	(OVERRIDE_COLUMNS): New define.
+
+	* src/manage.h: Update headers accordingly.
+	(override_t): New type.
+
+	* src/omp.c (buffer_results_xml): Add override args.
+	(help_text): Add overrides commands.
+	(create_override_data_t, delete_override_data_t, get_overrides_data_t)
+	(modify_override_data_t): New type.
+	(create_override_data_reset, delete_override_data_reset)
+	(get_overrides_data_reset, modify_override_data_reset): New functions.
+	(get_report_data_t, get_results_data_t): Add overrides fields.
+	(command_data_t): Add create_override, delete_override and get_overrides.
+	(create_override_data, delete_override_data, get_overrides_data)
+	(modify_override_data): New variable.
+	(client_state_t): Add override command states.
+	(omp_xml_handle_end_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Add override command handling.  Add override flags
+	to GET_REPORT and GET_RESULTS.
+	(buffer_overrides_xml): New function.
+	(buffer_results_xml): Add overrides flags.
+
 2010-06-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_agent): Add agent return.

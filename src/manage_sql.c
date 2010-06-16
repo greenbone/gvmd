@@ -666,6 +666,7 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
+  sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
@@ -6219,6 +6220,93 @@ where_levels (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
+      levels_sql = g_string_new (" AND (new_type = 'Security Hole'");
+    }
+
+  /* Medium. */
+  if (strchr (levels, 'm'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (new_type = 'Security Warning'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Security Warning'");
+      count++;
+    }
+
+  /* Low. */
+  if (strchr (levels, 'l'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (new_type = 'Security Note'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Security Note'");
+      count++;
+    }
+
+  /* loG. */
+  if (strchr (levels, 'g'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (new_type = 'Log Message'");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Log Message'");
+      count++;
+    }
+
+  /* Debug. */
+  if (strchr (levels, 'd'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (new_type = 'Debug Message')");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'Debug Message')");
+      count++;
+    }
+  else if (count)
+    levels_sql = g_string_append (levels_sql, ")");
+
+  if (count == 5)
+    {
+      /* All levels. */
+      g_string_free (levels_sql, TRUE);
+      levels_sql = NULL;
+    }
+
+  return levels_sql;
+}
+
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to levels by type column.
+ *
+ * @param[in]  levels  String describing threat levels (message types)
+ *                     to include in report (for example, "hmlgd" for
+ *                     High, Medium, Low, loG and Debug).  All levels if
+ *                     NULL.
+ *
+ * @return WHERE clause for levels if one is required, else NULL.
+ */
+static GString *
+where_levels_type (const char* levels)
+{
+  int count;
+  GString *levels_sql;
+
+  /* Generate SQL for constraints on message type, according to levels. */
+
+  if (levels == NULL || strlen (levels) == 0)
+    return NULL;
+
+  levels_sql = NULL;
+  count = 0;
+
+  /* High. */
+  if (strchr (levels, 'h'))
+    {
+      count = 1;
       levels_sql = g_string_new (" AND (type = 'Security Hole'");
     }
 
@@ -6369,12 +6457,14 @@ where_search_phrase (const char* search_phrase)
  * @param[in]  search_phrase  Phrase that results must include.  All results if
  *                            NULL or "".
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
+ * @param[in]  override       Whether to override the threat.
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       const char* host, int first_result, int max_results,
                       int ascending, const char* sort_field, const char* levels,
-                      const char* search_phrase, const char* min_cvss_base)
+                      const char* search_phrase, const char* min_cvss_base,
+                      int override)
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
@@ -6385,16 +6475,53 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
   if (report)
     {
+      gchar *new_type_sql;
+
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgd";
 
       levels_sql = where_levels (levels);
       phrase_sql = where_search_phrase (search_phrase);
       cvss_sql = where_cvss_base (min_cvss_base);
+      if (override)
+        {
+          gchar *ov;
+
+          assert (current_credentials.uuid);
+
+          ov = g_strdup_printf
+                ("SELECT overrides.new_threat"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)",
+                 current_credentials.uuid);
+
+          new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                          " THEN type ELSE (%s) END)",
+                                          ov, ov);
+
+          g_free (ov);
+        }
+      else
+        new_type_sql = g_strdup ("type");
 
       if (host)
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, results.description"
+                               " nvt, type, %s AS new_type, results.description"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
@@ -6404,6 +6531,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                "%s"
                                "%s"
                                " LIMIT %i OFFSET %i;",
+                               new_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
                                host,
@@ -6413,22 +6541,25 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
                                       " port,"
-                                      " type COLLATE collate_message_type DESC"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
                                     : " ORDER BY"
-                                      " type COLLATE collate_message_type,"
+                                      " new_type COLLATE collate_message_type,"
                                       " port")
                                 : ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY"
                                       " port DESC,"
-                                      " type COLLATE collate_message_type DESC"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
                                     : " ORDER BY"
-                                      " type COLLATE collate_message_type DESC,"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC,"
                                       " port"),
                                max_results,
                                first_result);
       else
         sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                               " nvt, type, results.description"
+                               " nvt, type, %s AS new_type, results.description"
                                " FROM results, report_results"
                                " WHERE report_results.report = %llu"
                                "%s"
@@ -6437,6 +6568,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                " AND report_results.result = results.ROWID"
                                "%s"
                                " LIMIT %i OFFSET %i;",
+                               new_type_sql,
                                report,
                                levels_sql ? levels_sql->str : "",
                                phrase_sql ? phrase_sql->str : "",
@@ -6445,16 +6577,19 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                 ? ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY host COLLATE collate_ip,"
                                       " port,"
-                                      " type COLLATE collate_message_type DESC"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
                                     : " ORDER BY host COLLATE collate_ip,"
-                                      " type COLLATE collate_message_type,"
+                                      " new_type COLLATE collate_message_type,"
                                       " port")
                                 : ((strcmp (sort_field, "port") == 0)
                                     ? " ORDER BY host COLLATE collate_ip,"
                                       " port DESC,"
-                                      " type COLLATE collate_message_type DESC"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC"
                                     : " ORDER BY host COLLATE collate_ip,"
-                                      " type COLLATE collate_message_type DESC,"
+                                      " new_type"
+                                      " COLLATE collate_message_type DESC,"
                                       " port"),
                                max_results,
                                first_result);
@@ -6462,10 +6597,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (new_type_sql);
     }
   else
     sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                           " type, description"
+                           " type, type, description"
                            " FROM results"
                            " WHERE ROWID = %llu;",
                            result);
@@ -6580,8 +6716,11 @@ result_iterator_nvt_risk_factor (iterator_t *iterator)
   return NULL;
 }
 
-DEF_ACCESS (type, 5);
-DEF_ACCESS (descr, 6);
+/* This is the column 'type'. */
+DEF_ACCESS (original_type, 5);
+/* This is the column 'new_type', the overridden type. */
+DEF_ACCESS (type, 6);
+DEF_ACCESS (descr, 7);
 
 #undef DEF_ACCESS
 
@@ -6879,9 +7018,10 @@ report_scan_result_count (report_t report, const char* levels,
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
 
-  levels_sql = where_levels (levels);
+  levels_sql = where_levels_type (levels);
   phrase_sql = where_search_phrase (search_phrase);
   cvss_sql = where_cvss_base (min_cvss_base);
+
   *count = sql_int (0, 0,
                     "SELECT count(results.ROWID)"
                     " FROM results, report_results"
@@ -6892,20 +7032,83 @@ report_scan_result_count (report_t report, const char* levels,
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "",
                     report);
+
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
   return 0;
 }
 
-#define REPORT_COUNT(report, var, name)                             \
-  if (var)                                                          \
-    *var = sql_int (0, 0,                                           \
-                    "SELECT count(*) FROM results, report_results"  \
-                    " WHERE results.type = '" name "'"              \
-                    " AND results.ROWID = report_results.result"    \
-                    " AND report_results.report = '%llu';",         \
-                    report)
+/**
+ * @brief Get the message count for a report for a specific message type.
+ *
+ * @param[in]  report_id  ID of report.
+ * @param[in]  type       Message type.
+ * @param[in]  override   Whether to override the threat.
+ *
+ * @return Message count.
+ */
+int
+report_count (report_t report, const char *type, int override)
+{
+  if (override)
+    {
+      int count;
+      gchar *ov, *new_type_sql;
+
+      assert (current_credentials.uuid);
+
+      ov = g_strdup_printf
+            ("SELECT overrides.new_threat"
+             " FROM overrides"
+             " WHERE overrides.nvt = results.nvt"
+             " AND ((overrides.owner IS NULL)"
+             " OR (overrides.owner ="
+             " (SELECT ROWID FROM users"
+             "  WHERE users.uuid = '%s')))"
+             " AND (overrides.result = results.ROWID"
+             // FIX check if pinned to task
+             "      OR overrides.result = 0)"
+             " AND (overrides.hosts is NULL"
+             "      OR overrides.hosts = \"\""
+             "      OR hosts_contains (overrides.hosts, results.host))"
+             " AND (overrides.port is NULL"
+             "      OR overrides.port = \"\""
+             "      OR overrides.port = results.port)"
+             " AND (overrides.threat is NULL"
+             "      OR overrides.threat = \"\""
+             "      OR overrides.threat = results.type)",
+             current_credentials.uuid);
+
+      new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                      " THEN type ELSE (%s) END)",
+                                      ov, ov);
+
+      g_free (ov);
+
+      count = sql_int (0, 0,
+                       "SELECT count(*), %s AS new_type"
+                       " FROM results, report_results"
+                       " WHERE new_type = '%s'"
+                       " AND results.ROWID = report_results.result"
+                       " AND report_results.report = '%llu';",
+                       new_type_sql,
+                       type,
+                       report);
+
+      g_free (new_type_sql);
+
+      return count;
+    }
+  else
+    return sql_int (0, 0,
+                    "SELECT count(*) FROM results, report_results"
+                    " WHERE results.type = '%s'"
+                    " AND results.ROWID = report_results.result"
+                    " AND report_results.report = '%llu';",
+                    type,
+                    report);
+}
 
 /**
  * @brief Get the message counts for a report given the UUID.
@@ -6920,16 +7123,18 @@ report_scan_result_count (report_t report, const char* levels,
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
  * @param[out]  warnings     Number of warning messages.
+ * @param[in]   override     Whether to override the threat.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
-               int* logs, int* warnings)
+               int* logs, int* warnings, int override)
 {
   report_t report;
   if (find_report (report_id, &report)) return -1;
-  return report_counts_id (report, debugs, holes, infos, logs, warnings);
+  return report_counts_id (report, debugs, holes, infos, logs, warnings,
+                           override);
 }
 
 /**
@@ -6941,22 +7146,21 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
  * @param[out]  warnings  Number of warning messages.
+ * @param[in]   override  Whether to override the threat.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
-                  int* logs, int* warnings)
+                  int* logs, int* warnings, int override)
 {
-  REPORT_COUNT (report, debugs,   "Debug Message");
-  REPORT_COUNT (report, holes,    "Security Hole");
-  REPORT_COUNT (report, infos,    "Security Note");
-  REPORT_COUNT (report, logs,     "Log Message");
-  REPORT_COUNT (report, warnings, "Security Warning");
+  if (debugs) *debugs = report_count (report, "Debug Message", override);
+  if (holes) *holes = report_count (report, "Security Hole", override);
+  if (infos) *infos = report_count (report, "Security Note", override);
+  if (logs) *logs = report_count (report, "Log Message", override);
+  if (warnings) *warnings = report_count (report, "Security Warning", override);
   return 0;
 }
-
-#undef REPORT_COUNT
 
 /**
  * @brief Delete a report.
@@ -7130,7 +7334,8 @@ task_trend (task_t task)
   if (last_report == 0)
     return "";
 
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a))
+  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
+                        1))
     abort (); // FIX fail better
 
   if (holes_a > 0)
@@ -7149,7 +7354,7 @@ task_trend (task_t task)
     return "";
 
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
-                        &warns_b))
+                        &warns_b, 1))
     abort (); // FIX fail better
 
   if (holes_b > 0)
@@ -13120,6 +13325,456 @@ note_iterator_nvt_name (iterator_t *iterator)
   nvti_t *nvti;
   if (iterator->done) return NULL;
   nvti = nvtis_lookup (nvti_cache, note_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_name (nvti);
+  return NULL;
+}
+
+
+/* Overrides. */
+
+/**
+ * @brief Find an override given a UUID.
+ *
+ * @param[in]   uuid  UUID of override.
+ * @param[out]  override  Override return, 0 if succesfully failed to find override.
+ *
+ * @return FALSE on success (including if failed to find override), TRUE on error.
+ */
+gboolean
+find_override (const char* uuid, override_t* override)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("override", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *override = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (override, 0, 0,
+                     "SELECT ROWID FROM overrides WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *override = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Create an override.
+ *
+ * @param[in]  nvt         OID of overrided NVT.
+ * @param[in]  text        Override text.
+ * @param[in]  hosts       Hosts to apply override to, NULL for any host.
+ * @param[in]  port        Port to apply override to, NULL for any port.
+ * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
+ * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  task        Task to apply override to, 0 for any task.
+ * @param[in]  result      Result to apply override to, 0 for any result.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+create_override (const char* nvt, const char* text, const char* hosts,
+                 const char* port, const char* threat, const char* new_threat,
+                 task_t task, result_t result)
+{
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  gchar *quoted_new_threat;
+  char *uuid;
+
+  if (nvt == NULL)
+    return -1;
+
+  if (text == NULL)
+    return -1;
+
+  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
+      && strcmp (threat, "Low") && strcmp (threat, "Log")
+      && strcmp (threat, "Debug") && strcmp (threat, ""))
+    return -1;
+
+  uuid = openvas_uuid_make ();
+  if (uuid == NULL)
+    return -1;
+
+  quoted_text = sql_insert (text);
+  quoted_hosts = sql_insert (hosts);
+  quoted_port = sql_insert (port);
+  quoted_threat = sql_insert ((threat && strlen (threat))
+                                ? threat_message_type (threat) : NULL);
+  quoted_new_threat = sql_insert ((new_threat && strlen (new_threat))
+                                    ? threat_message_type (new_threat) : NULL);
+
+  sql ("INSERT INTO overrides"
+       " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+       "  port, threat, new_threat, task, result)"
+       " VALUES"
+       " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %llu, %llu);",
+       uuid,
+       current_credentials.uuid,
+       nvt,
+       time (NULL),
+       time (NULL),
+       quoted_text,
+       quoted_hosts,
+       quoted_port,
+       quoted_threat,
+       quoted_new_threat,
+       task,
+       result);
+
+  free (uuid);
+  g_free (quoted_text);
+  g_free (quoted_hosts);
+  g_free (quoted_port);
+  g_free (quoted_threat);
+  g_free (quoted_new_threat);
+
+  return 0;
+}
+
+/**
+ * @brief Delete an override.
+ *
+ * @param[in]  override  Override.
+ *
+ * @return 0 success.
+ */
+int
+delete_override (override_t override)
+{
+  sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
+  return 0;
+}
+
+/**
+ * @brief Modify an override.
+ *
+ * @param[in]  override    Override.
+ * @param[in]  text        Override text.
+ * @param[in]  hosts       Hosts to apply override to, NULL for any host.
+ * @param[in]  port        Port to apply override to, NULL for any port.
+ * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
+ * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  task        Task to apply override to, 0 for any task.
+ * @param[in]  result      Result to apply override to, 0 for any result.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+modify_override (override_t override, const char* text, const char* hosts,
+                 const char* port, const char* threat, const char* new_threat,
+                 task_t task, result_t result)
+{
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  gchar *quoted_new_threat;
+
+  if (override == 0)
+    return -1;
+
+  if (text == NULL)
+    return -1;
+
+  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
+      && strcmp (threat, "Low") && strcmp (threat, "Log")
+      && strcmp (threat, "Debug") && strcmp (threat, ""))
+    return -1;
+
+  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
+      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
+      && strcmp (new_threat, "Debug") && strcmp (new_threat, ""))
+    return -1;
+
+  quoted_text = sql_insert (text);
+  quoted_hosts = sql_insert (hosts);
+  quoted_port = sql_insert (port);
+  quoted_threat = sql_insert ((threat && strlen (threat))
+                                ? threat_message_type (threat) : NULL);
+  quoted_new_threat = sql_insert ((new_threat && strlen (new_threat))
+                                    ? threat_message_type (new_threat) : NULL);
+
+  sql ("UPDATE overrides SET"
+       " modification_time = %i,"
+       " text = %s,"
+       " hosts = %s,"
+       " port = %s,"
+       " threat = %s,"
+       " new_threat = %s,"
+       " task = %llu,"
+       " result = %llu"
+       " WHERE ROWID = %llu;",
+       time (NULL),
+       quoted_text,
+       quoted_hosts,
+       quoted_port,
+       quoted_threat,
+       quoted_new_threat,
+       task,
+       result,
+       override);
+
+  g_free (quoted_text);
+  g_free (quoted_hosts);
+  g_free (quoted_port);
+  g_free (quoted_threat);
+  g_free (quoted_new_threat);
+
+  return 0;
+}
+
+#define OVERRIDE_COLUMNS "overrides.ROWID, overrides.uuid, overrides.nvt,"     \
+                         " overrides.creation_time,"                           \
+                         " overrides.modification_time, overrides.text,"       \
+                         " overrides.hosts, overrides.port, overrides.threat," \
+                         " overrides.new_threat, overrides.task,"              \
+                         " overrides.result"
+
+/**
+ * @brief Initialise an override iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  override    Single override to iterate, 0 for all.
+ * @param[in]  result      Result to limit overrides to, 0 for all.
+ * @param[in]  task        If result is > 0, task whose overrides on result to
+ *                         include, otherwise task to limit overrides to.  0 for
+ *                         all tasks.
+ * @param[in]  nvt         NVT to limit overrides to, 0 for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
+                        result_t result, task_t task, int ascending,
+                        const char* sort_field)
+{
+  gchar *result_clause, *join_clause = NULL;
+
+  assert (current_credentials.uuid);
+  assert ((nvt && override) == 0);
+  assert ((task && override) == 0);
+
+  if (result)
+    result_clause = g_strdup_printf (" AND"
+                                     " (result = %llu"
+                                     "  OR (result = 0 AND nvt ="
+                                     "      (SELECT results.nvt FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (hosts is NULL"
+                                     "      OR hosts = \"\""
+                                     "      OR hosts_contains (hosts,"
+                                     "      (SELECT results.host FROM results"
+                                     "       WHERE results.ROWID = %llu)))"
+                                     " AND (port is NULL"
+                                     "      OR port = \"\""
+                                     "      OR port ="
+                                     "      (SELECT results.port FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (threat is NULL"
+                                     "      OR threat = \"\""
+                                     "      OR threat ="
+                                     "      (SELECT results.type FROM results"
+                                     "       WHERE results.ROWID = %llu))"
+                                     " AND (task = 0 OR task = %llu)",
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     result,
+                                     task);
+  else if (task)
+    {
+      result_clause = g_strdup_printf
+                       (" AND (overrides.task = %llu OR overrides.task = 0)"
+                        " AND reports.task = %llu"
+                        " AND reports.ROWID = report_results.report"
+                        " AND report_results.result = results.ROWID"
+                        " AND results.nvt = overrides.nvt"
+                        " AND"
+                        " (overrides.result = 0"
+                        "  OR report_results.result = overrides.result)",
+                        task,
+                        task);
+      join_clause = g_strdup (", reports, report_results, results");
+    }
+  else
+    result_clause = NULL;
+
+  if (override)
+    init_iterator (iterator,
+                   "SELECT " OVERRIDE_COLUMNS
+                   " FROM overrides"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   override,
+                   current_credentials.uuid,
+                   result_clause ? result_clause : "",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else if (nvt)
+    init_iterator (iterator,
+                   "SELECT DISTINCT " OVERRIDE_COLUMNS
+                   " FROM overrides%s"
+                   " WHERE (overrides.nvt ="
+                   " (SELECT oid FROM nvts WHERE nvts.ROWID = %llu))"
+                   " AND ((overrides.owner IS NULL) OR (overrides.owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   join_clause ? join_clause : "",
+                   nvt,
+                   current_credentials.uuid,
+                   result_clause ? result_clause : "",
+                   sort_field ? sort_field : "overrides.ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT DISTINCT " OVERRIDE_COLUMNS
+                   " FROM overrides%s"
+                   " WHERE ((overrides.owner IS NULL) OR (overrides.owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "%s"
+                   " ORDER BY %s %s;",
+                   join_clause ? join_clause : "",
+                   current_credentials.uuid,
+                   result_clause ? result_clause : "",
+                   sort_field ? sort_field : "overrides.ROWID",
+                   ascending ? "ASC" : "DESC");
+
+  g_free (result_clause);
+  g_free (join_clause);
+}
+
+DEF_ACCESS (override_iterator_uuid, 1);
+DEF_ACCESS (override_iterator_nvt_oid, 2);
+
+/**
+ * @brief Get the creation time from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time override was created.
+ */
+time_t
+override_iterator_creation_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 3);
+  return ret;
+}
+
+/**
+ * @brief Get the modification time from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time override was last modified.
+ */
+time_t
+override_iterator_modification_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 4);
+  return ret;
+}
+
+DEF_ACCESS (override_iterator_text, 5);
+DEF_ACCESS (override_iterator_hosts, 6);
+DEF_ACCESS (override_iterator_port, 7);
+
+/**
+ * @brief Get the threat from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Threat.
+ */
+const char *
+override_iterator_threat (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 8);
+  if (ret == NULL) return NULL;
+  return message_type_threat (ret);
+}
+
+/**
+ * @brief Get the threat from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Threat.
+ */
+const char *
+override_iterator_new_threat (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 9);
+  if (ret == NULL) return NULL;
+  return message_type_threat (ret);
+}
+
+/**
+ * @brief Get the task from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The task associated with the override, or 0 on error.
+ */
+task_t
+override_iterator_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 10);
+}
+
+/**
+ * @brief Get the result from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The result associated with the override, or 0 on error.
+ */
+result_t
+override_iterator_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (result_t) sqlite3_column_int64 (iterator->stmt, 11);
+}
+
+/**
+ * @brief Get the NVT name from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the NVT associated with the override, or NULL on error.
+ */
+const char*
+override_iterator_nvt_name (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, override_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_name (nvti);
   return NULL;
