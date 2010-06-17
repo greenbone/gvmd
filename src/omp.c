@@ -12192,8 +12192,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               gchar* response;
-              task_iterator_t iterator;
-              task_t index;
+              iterator_t tasks;
 
               // TODO: A lot of this block is the same as the one above.
 
@@ -12219,11 +12218,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  : "ROWID",
                 get_status_data->sort_order ? "ascending" : "descending");
 
-              init_task_iterator (&iterator,
+              init_task_iterator (&tasks,
                                   get_status_data->sort_order,
                                   get_status_data->sort_field);
-              while (next_task (&iterator, &index))
+              while (next (&tasks))
                 {
+                  task_t index = task_iterator_task (&tasks);
                   gchar *line, *progress_xml;
                   char *name = task_name (index);
                   char *comment = task_comment (index);
@@ -12547,12 +12547,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       g_free (line);
                       error_send_to_client (error);
-                      cleanup_task_iterator (&iterator);
+                      cleanup_iterator (&tasks);
                       return;
                     }
                   g_free (line);
                 }
-              cleanup_task_iterator (&iterator);
+              cleanup_iterator (&tasks);
               SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
             }
           }

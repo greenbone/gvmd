@@ -1939,9 +1939,6 @@ migrate_7_to_8 ()
 static int
 migrate_8_to_9 ()
 {
-  task_iterator_t tasks;
-  task_t index;
-
   sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 8. */
@@ -1991,28 +1988,7 @@ migrate_8_to_9 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  // FIX task iter now for current user
-  // FIX init_iterator (&rows, "SELECT...")
-  init_task_iterator (&tasks, 1, NULL);
-  while (next_task (&tasks, &index))
-    {
-      int owner;
-      char *owner_string;
-
-      owner_string = sql_string (0, 0,
-                                 "SELECT owner FROM tasks"
-                                 " WHERE ROWID = '%llu';",
-                                 index);
-      if (owner_string)
-        {
-          owner = atoi (owner_string);
-          sql ("UPDATE tasks SET owner = %i WHERE owner = '%s';",
-               owner,
-               owner_string);
-          free (owner_string);
-        }
-    }
-  cleanup_task_iterator (&tasks);
+  sql ("UPDATE tasks SET owner = CAST (owner AS INTEGER);"),
 
   /* Set the database version to 9. */
 
@@ -3956,98 +3932,55 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
-init_task_iterator (task_iterator_t* iterator,
+init_task_iterator (iterator_t* iterator,
                     int ascending,
                     const char *sort_field)
 {
-  int ret;
-  const char* tail;
-  gchar* formatted;
-  sqlite3_stmt* stmt;
-
-  /** @todo Use init_iterator. */
-
-  iterator->done = FALSE;
   if (current_credentials.uuid)
-    formatted = g_strdup_printf ("SELECT ROWID FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users"
-                                 "  WHERE users.uuid = '%s')"
-                                 " ORDER BY %s %s;",
-                                 current_credentials.uuid,
-                                 sort_field ? sort_field : "ROWID",
-                                 ascending ? "ASC" : "DESC");
+    init_iterator (iterator,
+                   "SELECT ROWID, run_status FROM tasks WHERE owner ="
+                   " (SELECT ROWID FROM users"
+                   "  WHERE users.uuid = '%s')"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
   else
-    formatted = g_strdup_printf ("SELECT ROWID FROM tasks"
-                                 " ORDER BY %s %s;",
-                                 sort_field ? sort_field : "ROWID",
-                                 ascending ? "ASC" : "DESC");
-  tracef ("   sql (iterator): %s\n", formatted);
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+    init_iterator (iterator,
+                   "SELECT ROWID, run_status FROM tasks"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
 }
 
 /**
- * @brief Cleanup a task iterator.
+ * @brief Get the task from a task iterator.
  *
- * @param[in]  iterator  Task iterator.
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The task.
  */
-void
-cleanup_task_iterator (task_iterator_t* iterator)
+task_t
+task_iterator_task (iterator_t* iterator)
 {
-  sqlite3_finalize (iterator->stmt);
+  if (iterator->done) return 0;
+  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
 /**
- * @brief Read the next task from an iterator.
+ * @brief Get the run status from a task iterator.
  *
- * @param[in]   iterator  Task iterator.
- * @param[out]  task      Task.
+ * @param[in]  iterator  Iterator.
  *
- * @return TRUE if there was a next task, else FALSE.
+ * @return Task run status.
  */
-gboolean
-next_task (task_iterator_t* iterator, task_t* task)
+task_status_t
+task_iterator_run_status (iterator_t* iterator)
 {
-  int ret;
-
-  if (iterator->done) return FALSE;
-
-  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
-  if (ret == SQLITE_DONE)
-    {
-      iterator->done = TRUE;
-      return FALSE;
-    }
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-    {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
-      g_warning ("%s: sqlite3_step failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-  *task = sqlite3_column_int64 (iterator->stmt, 0);
-  return TRUE;
+  task_status_t ret;
+  if (iterator->done) return TASK_STATUS_INTERNAL_ERROR;
+  ret = (unsigned int) sqlite3_column_int (iterator->stmt, 1);
+  return ret;
 }
 
 /**
@@ -4334,8 +4267,6 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 {
   char *database_version;
-  task_t index;
-  task_iterator_t iterator;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -4635,13 +4566,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (nvt_cache_mode == 0)
     {
+      iterator_t tasks;
+
       /* Set requested, paused and running tasks to stopped. */
 
       assert (current_credentials.uuid == NULL);
-      init_task_iterator (&iterator, 1, NULL);
-      while (next_task (&iterator, &index))
+      init_task_iterator (&tasks, 1, NULL);
+      while (next (&tasks))
         {
-          switch (task_run_status (index))
+          switch (task_iterator_run_status (&tasks))
             {
               case TASK_STATUS_DELETE_REQUESTED:
               case TASK_STATUS_PAUSE_REQUESTED:
@@ -4653,16 +4586,19 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
               case TASK_STATUS_RUNNING:
               case TASK_STATUS_STOP_REQUESTED:
               case TASK_STATUS_STOP_WAITING:
-                /* Set the current user, for event checks. */
-                current_credentials.uuid = task_owner_uuid (index);
-                set_task_run_status (index, TASK_STATUS_STOPPED);
-                free (current_credentials.uuid);
-                break;
+                {
+                  task_t index = task_iterator_task (&tasks);
+                  /* Set the current user, for event checks. */
+                  current_credentials.uuid = task_owner_uuid (index);
+                  set_task_run_status (index, TASK_STATUS_STOPPED);
+                  free (current_credentials.uuid);
+                  break;
+                }
               default:
                 break;
             }
         }
-      cleanup_task_iterator (&iterator);
+      cleanup_iterator (&tasks);
       current_credentials.uuid = NULL;
 
       /* Set requested and running reports to stopped. */

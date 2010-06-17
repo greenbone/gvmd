@@ -1,5 +1,22 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Replace task_iterator_t with the generic iterator_t.
+
+	* src/manage_sql.c (migrate_8_to_9): Replace task iteration with single
+	statement.
+	(init_task_iterator): Expect an iterator_t.
+	(cleanup_task_iterator, next_task): Remove.
+	(task_iterator_task, task_iterator_run_status): New functions.
+	(init_manage): Use new task iterator and accessors.
+
+	* src/manage.h: Update headers accordingly.
+	(task_iterator_t): Remove.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS use new
+	task iterator.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (print_tasks): Remove.  Out of use.
 
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>

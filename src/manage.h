@@ -166,13 +166,6 @@ typedef long long int schedule_t;
 
 #include <sqlite3.h>
 
-// FIX use iterator_t
-typedef struct
-{
-  sqlite3_stmt* stmt;
-  gboolean done;
-} task_iterator_t;
-
 typedef struct
 {
   sqlite3_stmt* stmt;
@@ -317,13 +310,13 @@ unsigned int
 task_count ();
 
 void
-init_task_iterator (task_iterator_t*, int, const char*);
+init_task_iterator (iterator_t*, int, const char*);
 
-void
-cleanup_task_iterator (task_iterator_t*);
+task_t
+task_iterator_task (iterator_t*);
 
-gboolean
-next_task (task_iterator_t*, task_t*);
+task_status_t
+task_iterator_run_status (iterator_t*);
 
 unsigned int
 task_id (task_t);
