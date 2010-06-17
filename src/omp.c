@@ -10843,7 +10843,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TASK:
         {
-          gchar* msg;
           config_t config = 0;
           target_t target = 0;
           char *tsk_uuid, *name, *description;
@@ -11102,21 +11101,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Send success response. */
 
-          msg = g_strdup_printf
-                 ("<create_task_response"
-                  " status=\"" STATUS_OK_CREATED "\""
-                  " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
-                  "<task_id>%s</task_id>"
-                  "</create_task_response>",
-                  tsk_uuid);
+          SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
+                                   tsk_uuid);
           free (tsk_uuid);
-          if (send_to_client (msg))
-            {
-              g_free (msg);
-              error_send_to_client (error);
-              return;
-            }
-          g_free (msg);
           create_task_data_reset (create_task_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
