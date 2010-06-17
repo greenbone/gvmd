@@ -399,42 +399,6 @@ task_run_status_name (task_t task)
   return run_status_name (task_run_status (task));
 }
 
-#if 0
-#if TRACE
-/**
- * @brief Print the scanner tasks.
- */
-static void
-print_tasks ()
-{
-  task_iterator_t iterator;
-  task_t index;
-
-  init_task_iterator (&iterator, 1, NULL);
-  if (next_task (&iterator, &index))
-    {
-      do
-        {
-          char* comment = task_comment (index);
-          char* description = task_description (index);
-          char* name = task_name (index);
-          tracef ("   Task %u: \"%s\" %s\n%s\n\n",
-                  task_id (index),
-                  name,
-                  comment ? comment : "",
-                  description ? description : "");
-          free (name);
-          free (description);
-          free (comment);
-        }
-      while (next_task (&iterator, &index));
-    }
-  else
-    tracef ("   Task array empty or still to be created\n\n");
-}
-#endif
-#endif
-
 /** @todo Test these RC parsing functions. */
 
 /**

@@ -1,5 +1,9 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (print_tasks): Remove.  Out of use.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS leave the
 	empty string case for find_task to find, as in the other GET commands.
 
