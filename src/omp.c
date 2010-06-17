@@ -1302,6 +1302,7 @@ get_schedules_data_reset (get_schedules_data_t *data)
 
 typedef struct
 {
+  int details;
   char *task_id;
   int rcfile;
   char *sort_field;
@@ -3045,20 +3046,31 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_STATUS", element_name) == 0)
           {
             const gchar* attribute;
+
             append_attribute (attribute_names, attribute_values, "task_id",
                               &get_status_data->task_id);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
               get_status_data->rcfile = atoi (attribute);
             else
               get_status_data->rcfile = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_status_data->details = strcmp (attribute, "0");
+            else
+              get_status_data->details = 0;
+
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_status_data->sort_field);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
               get_status_data->sort_order = strcmp (attribute, "descending");
             else
               get_status_data->sort_order = 1;
+
             set_client_state (CLIENT_GET_STATUS);
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
@@ -11845,7 +11857,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (get_status_data->task_id)
+          else if (get_status_data->task_id
+                   && (get_status_data->details == 1))
             {
               char* tsk_uuid;
 
@@ -12219,7 +12232,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 get_status_data->sort_order ? "ascending" : "descending");
 
               init_task_iterator (&tasks,
-                                  0,
+                                  task,
                                   get_status_data->sort_order,
                                   get_status_data->sort_field);
               while (next (&tasks))

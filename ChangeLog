@@ -1,5 +1,15 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a details attribute to GET_STATUS.
+
+	* src/omp.c (get_status_data_t): Add details field.
+	(omp_xml_handle_start_element): Parse details attribute for GET_STATUS.
+	(omp_xml_handle_end_element): In CLIENT_GET_STATUS for the single task
+	case, only send the detailed format if the details attrib was present,
+	otherwise send the summary format as with the all tasks case.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_iterator): Add task arg.  Update caller.
 
 	* src/manage.h: Update header accordingly.
