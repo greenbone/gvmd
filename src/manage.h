@@ -1156,10 +1156,13 @@ find_note (const char*, note_t*);
 
 int
 create_note (const char*, const char*, const char*, const char*, const char*,
-             task_t, result_t);
+             task_t, result_t, note_t*);
 
 int
 delete_note (note_t);
+
+int
+note_uuid (note_t, char **);
 
 int
 modify_note (note_t, const char*, const char*, const char*, const char*,

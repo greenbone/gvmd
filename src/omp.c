@@ -10389,6 +10389,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           task_t task = 0;
           result_t result = 0;
+          note_t new_note;
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
@@ -10432,11 +10433,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     create_note_data->port,
                                     create_note_data->threat,
                                     task,
-                                    result))
+                                    result,
+                                    &new_note))
             {
               case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_note"));
-                break;
+                {
+                  char *uuid;
+                  note_uuid (new_note, &uuid);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_note"),
+                                           uuid);
+                  free (uuid);
+                  break;
+                }
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_note"));

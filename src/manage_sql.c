@@ -13031,16 +13031,16 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
+ * @param[out] note        Created note.
  *
  * @return 0 success, -1 error.
  */
 int
 create_note (const char* nvt, const char* text, const char* hosts,
              const char* port, const char* threat, task_t task,
-             result_t result)
+             result_t result, note_t *note)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
-  char *uuid;
 
   if (nvt == NULL)
     return -1;
@@ -13053,10 +13053,6 @@ create_note (const char* nvt, const char* text, const char* hosts,
       && strcmp (threat, "Debug") && strcmp (threat, ""))
     return -1;
 
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
-    return -1;
-
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
@@ -13067,9 +13063,8 @@ create_note (const char* nvt, const char* text, const char* hosts,
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
        "  port, threat, task, result)"
        " VALUES"
-       " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu);",
-       uuid,
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -13081,11 +13076,13 @@ create_note (const char* nvt, const char* text, const char* hosts,
        task,
        result);
 
-  free (uuid);
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_threat);
+
+  if (note)
+    *note = sqlite3_last_insert_rowid (task_db);
 
   return 0;
 }
@@ -13101,6 +13098,23 @@ int
 delete_note (note_t note)
 {
   sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a note.
+ *
+ * @param[in]   note  Note.
+ * @param[out]  id    Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+note_uuid (note_t note, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM notes WHERE ROWID = %llu;",
+                    note);
   return 0;
 }
 
