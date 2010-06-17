@@ -1,5 +1,14 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_task_iterator): Add task arg.  Update caller.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS update
+	init_task_iterator call.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Replace task_iterator_t with the generic iterator_t.
 
 	* src/manage_sql.c (migrate_8_to_9): Replace task iteration with single

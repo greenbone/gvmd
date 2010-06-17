@@ -12219,6 +12219,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 get_status_data->sort_order ? "ascending" : "descending");
 
               init_task_iterator (&tasks,
+                                  0,
                                   get_status_data->sort_order,
                                   get_status_data->sort_field);
               while (next (&tasks))

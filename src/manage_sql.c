@@ -3928,29 +3928,56 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * all tasks.
  *
  * @param[in]  iterator    Task iterator.
+ * @param[in]  task        Task to limit iteration to.  0 for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
 void
 init_task_iterator (iterator_t* iterator,
+                    task_t task,
                     int ascending,
                     const char *sort_field)
 {
   if (current_credentials.uuid)
-    init_iterator (iterator,
-                   "SELECT ROWID, run_status FROM tasks WHERE owner ="
-                   " (SELECT ROWID FROM users"
-                   "  WHERE users.uuid = '%s')"
-                   " ORDER BY %s %s;",
-                   current_credentials.uuid,
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+    {
+      if (task)
+        init_iterator (iterator,
+                       "SELECT ROWID, run_status FROM tasks WHERE owner ="
+                       " (SELECT ROWID FROM users"
+                       "  WHERE users.uuid = '%s')"
+                       " AND ROWID = %llu"
+                       " ORDER BY %s %s;",
+                       current_credentials.uuid,
+                       task,
+                       sort_field ? sort_field : "ROWID",
+                       ascending ? "ASC" : "DESC");
+      else
+        init_iterator (iterator,
+                       "SELECT ROWID, run_status FROM tasks WHERE owner ="
+                       " (SELECT ROWID FROM users"
+                       "  WHERE users.uuid = '%s')"
+                       " ORDER BY %s %s;",
+                       current_credentials.uuid,
+                       sort_field ? sort_field : "ROWID",
+                       ascending ? "ASC" : "DESC");
+    }
   else
-    init_iterator (iterator,
-                   "SELECT ROWID, run_status FROM tasks"
-                   " ORDER BY %s %s;",
-                   sort_field ? sort_field : "ROWID",
-                   ascending ? "ASC" : "DESC");
+    {
+      if (task)
+        init_iterator (iterator,
+                       "SELECT ROWID, run_status FROM tasks"
+                       " WHERE ROWID = %llu"
+                       " ORDER BY %s %s;",
+                       task,
+                       sort_field ? sort_field : "ROWID",
+                       ascending ? "ASC" : "DESC");
+      else
+        init_iterator (iterator,
+                       "SELECT ROWID, run_status FROM tasks"
+                       " ORDER BY %s %s;",
+                       sort_field ? sort_field : "ROWID",
+                       ascending ? "ASC" : "DESC");
+    }
 }
 
 /**
@@ -4571,7 +4598,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       /* Set requested, paused and running tasks to stopped. */
 
       assert (current_credentials.uuid == NULL);
-      init_task_iterator (&tasks, 1, NULL);
+      init_task_iterator (&tasks, 0, 1, NULL);
       while (next (&tasks))
         {
           switch (task_iterator_run_status (&tasks))

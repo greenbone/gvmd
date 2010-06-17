@@ -310,7 +310,7 @@ unsigned int
 task_count ();
 
 void
-init_task_iterator (iterator_t*, int, const char*);
+init_task_iterator (iterator_t*, task_t, int, const char*);
 
 task_t
 task_iterator_task (iterator_t*);
