@@ -10492,6 +10492,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           task_t task = 0;
           result_t result = 0;
+          override_t new_override;
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
@@ -10536,11 +10537,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         create_override_data->threat,
                                         create_override_data->new_threat,
                                         task,
-                                        result))
+                                        result,
+                                        &new_override))
             {
               case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_override"));
-                break;
+                {
+                  char *uuid;
+                  override_uuid (new_override, &uuid);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_override"), uuid);
+                  free (uuid);
+                  break;
+                }
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_override"));
@@ -10591,6 +10599,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
+          schedule_t new_schedule;
 
           period_months = 0;
 
@@ -10642,11 +10651,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         period,
                                         period_months,
                                         duration,
-                                        NULL))
+                                        &new_schedule))
             {
               case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_schedule"));
-                break;
+                {
+                  char *uuid = schedule_uuid (new_schedule);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_schedule"), uuid);
+                  free (uuid);
+                  break;
+                }
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_schedule",

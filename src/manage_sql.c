@@ -13459,17 +13459,17 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  new_threat  Threat to override result to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
+ * @param[out] override    Created override.
  *
  * @return 0 success, -1 error.
  */
 int
 create_override (const char* nvt, const char* text, const char* hosts,
                  const char* port, const char* threat, const char* new_threat,
-                 task_t task, result_t result)
+                 task_t task, result_t result, override_t* override)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
   gchar *quoted_new_threat;
-  char *uuid;
 
   if (nvt == NULL)
     return -1;
@@ -13480,10 +13480,6 @@ create_override (const char* nvt, const char* text, const char* hosts,
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Debug") && strcmp (threat, ""))
-    return -1;
-
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
     return -1;
 
   quoted_text = sql_insert (text);
@@ -13498,9 +13494,8 @@ create_override (const char* nvt, const char* text, const char* hosts,
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
        "  port, threat, new_threat, task, result)"
        " VALUES"
-       " ('%s', (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %s, %s, %s,  %s, %s, %llu, %llu);",
-       uuid,
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -13513,13 +13508,32 @@ create_override (const char* nvt, const char* text, const char* hosts,
        task,
        result);
 
-  free (uuid);
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_threat);
   g_free (quoted_new_threat);
 
+  if (override)
+    *override = sqlite3_last_insert_rowid (task_db);
+
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of an override.
+ *
+ * @param[in]   override  Override.
+ * @param[out]  id        Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+override_uuid (override_t override, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM overrides WHERE ROWID = %llu;",
+                    override);
   return 0;
 }
 

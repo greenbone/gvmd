@@ -1,6 +1,17 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_override): Add override return arg.
+	(override_uuid): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_OVERRIDE and
+	CLIENT_CREATE_SCHEDULE include ID in response.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_note): Add note return arg.
+	(note_uuid): New function.
 
 	* src/manage.h: Update header accordingly.
 
