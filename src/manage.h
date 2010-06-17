@@ -315,6 +315,9 @@ init_task_iterator (iterator_t*, task_t, int, const char*);
 task_t
 task_iterator_task (iterator_t*);
 
+const char *
+task_iterator_uuid (iterator_t*);
+
 task_status_t
 task_iterator_run_status (iterator_t*);
 

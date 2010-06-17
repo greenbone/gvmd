@@ -3942,7 +3942,7 @@ init_task_iterator (iterator_t* iterator,
     {
       if (task)
         init_iterator (iterator,
-                       "SELECT ROWID, run_status FROM tasks WHERE owner ="
+                       "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
                        " (SELECT ROWID FROM users"
                        "  WHERE users.uuid = '%s')"
                        " AND ROWID = %llu"
@@ -3953,7 +3953,7 @@ init_task_iterator (iterator_t* iterator,
                        ascending ? "ASC" : "DESC");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, run_status FROM tasks WHERE owner ="
+                       "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
                        " (SELECT ROWID FROM users"
                        "  WHERE users.uuid = '%s')"
                        " ORDER BY %s %s;",
@@ -3965,7 +3965,7 @@ init_task_iterator (iterator_t* iterator,
     {
       if (task)
         init_iterator (iterator,
-                       "SELECT ROWID, run_status FROM tasks"
+                       "SELECT ROWID, uuid, run_status FROM tasks"
                        " WHERE ROWID = %llu"
                        " ORDER BY %s %s;",
                        task,
@@ -3973,7 +3973,7 @@ init_task_iterator (iterator_t* iterator,
                        ascending ? "ASC" : "DESC");
       else
         init_iterator (iterator,
-                       "SELECT ROWID, run_status FROM tasks"
+                       "SELECT ROWID, uuid, run_status FROM tasks"
                        " ORDER BY %s %s;",
                        sort_field ? sort_field : "ROWID",
                        ascending ? "ASC" : "DESC");
@@ -3995,6 +3995,22 @@ task_iterator_task (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the UUID from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task UUID.
+ */
+const char *
+task_iterator_uuid (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  return ret;
+}
+
+/**
  * @brief Get the run status from a task iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -4006,7 +4022,7 @@ task_iterator_run_status (iterator_t* iterator)
 {
   task_status_t ret;
   if (iterator->done) return TASK_STATUS_INTERNAL_ERROR;
-  ret = (unsigned int) sqlite3_column_int (iterator->stmt, 1);
+  ret = (unsigned int) sqlite3_column_int (iterator->stmt, 2);
   return ret;
 }
 

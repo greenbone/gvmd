@@ -1,5 +1,16 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_task_iterator): Add UUID to SQL.
+	(task_iterator_uuid): New function.  Adjust other accessors accordingly.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_STATUS add the
+	single task case to the all tasks loop, allowing the all tasks case to
+	respect the details attribute.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add a details attribute to GET_STATUS.
 
 	* src/omp.c (get_status_data_t): Add details field.
