@@ -8625,7 +8625,7 @@ config_insert_preferences (config_t config,
  * @param[in]   comment        Comment on config.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
- * @param[out]  uuid           On success the UUID of the config.
+ * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
  *
  * @return 0 success, 1 config exists already, -1 error, -2 name empty,
@@ -8635,19 +8635,19 @@ int
 create_config (const char* proposed_name, const char* comment,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */,
-               char **uuid, char **name)
+               config_t *config, char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  config_t config;
+  char *selector_uuid;
   unsigned int num = 1;
 
   assert (current_credentials.uuid);
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
-  *uuid = openvas_uuid_make ();
-  if (*uuid == NULL)
+  selector_uuid = openvas_uuid_make ();
+  if (selector_uuid == NULL)
     return -1;
 
   candidate_name = g_strdup (proposed_name);
@@ -8680,7 +8680,7 @@ create_config (const char* proposed_name, const char* comment,
            " '%s', '%s');",
            quoted_candidate_name,
            current_credentials.uuid,
-           *uuid,
+           selector_uuid,
            quoted_comment);
       g_free (quoted_comment);
     }
@@ -8691,34 +8691,51 @@ create_config (const char* proposed_name, const char* comment,
          " '%s', '');",
          quoted_candidate_name,
          current_credentials.uuid,
-         *uuid);
+         selector_uuid);
   g_free (quoted_candidate_name);
 
   /* Insert the selectors into the nvt_selectors table. */
 
-  config = sqlite3_last_insert_rowid (task_db);
-  if ((ret = insert_nvt_selectors (*uuid, selectors)))
+  *config = sqlite3_last_insert_rowid (task_db);
+  if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
     {
       sql ("ROLLBACK;");
-      free (*uuid);
+      free (selector_uuid);
       return ret;
     }
+  free (selector_uuid);
 
   /* Insert the preferences into the config_preferences table. */
 
-  if ((ret = config_insert_preferences (config, preferences)))
+  if ((ret = config_insert_preferences (*config, preferences)))
     {
       sql ("ROLLBACK;");
-      free (*uuid);
       return ret;
     }
 
   /* Update family and NVT count caches. */
 
-  update_config_caches (config);
+  update_config_caches (*config);
 
   sql ("COMMIT;");
   *name = candidate_name;
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a config.
+ *
+ * @param[in]   config  Config.
+ * @param[out]  id      Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+config_uuid (config_t config, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM configs WHERE ROWID = %llu;",
+                    config);
   return 0;
 }
 
@@ -9172,7 +9189,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment;
-  char *uuid;
+  char *selector_uuid;
   config_t new_config;
 
   assert (current_credentials.uuid);
@@ -9192,8 +9209,8 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 1;
     }
 
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
+  selector_uuid = openvas_uuid_make ();
+  if (selector_uuid == NULL)
     {
       tracef ("   failed to create UUID \n");
       sql ("ROLLBACK;");
@@ -9203,11 +9220,11 @@ create_config_rc (const char* name, const char* comment, char* rc,
 
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-               uuid))
+               selector_uuid))
     {
-      tracef ("   NVT selector \"%s\" already exists\n", uuid);
+      tracef ("   NVT selector \"%s\" already exists\n", selector_uuid);
       sql ("ROLLBACK;");
-      free (uuid);
+      free (selector_uuid);
       g_free (quoted_name);
       return -1;
     }
@@ -9215,33 +9232,36 @@ create_config_rc (const char* name, const char* comment, char* rc,
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
-           " VALUES ('%s',"
+      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+           " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s');",
-           quoted_name, current_credentials.uuid, uuid, quoted_comment);
+           quoted_name,
+           current_credentials.uuid,
+           selector_uuid,
+           quoted_comment);
       g_free (quoted_comment);
     }
   else
-    sql ("INSERT INTO configs (name, owner, nvt_selector, comment)"
-         " VALUES ('%s',"
+    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment)"
+         " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '');",
-         quoted_name, current_credentials.uuid, uuid);
+         quoted_name, current_credentials.uuid, selector_uuid);
 
   /* Insert the RC into the config_preferences table. */
 
   new_config = sqlite3_last_insert_rowid (task_db);
-  if (insert_rc_into_config (new_config, quoted_name, uuid, rc))
+  if (insert_rc_into_config (new_config, quoted_name, selector_uuid, rc))
     {
       sql ("ROLLBACK;");
-      free (uuid);
+      free (selector_uuid);
       g_free (quoted_name);
       return -1;
     }
 
   sql ("COMMIT;");
-  free (uuid);
+  free (selector_uuid);
   g_free (quoted_name);
   if (config)
     *config = new_config;
@@ -9251,15 +9271,17 @@ create_config_rc (const char* name, const char* comment, char* rc,
 /**
  * @brief Create a config from an existing config.
  *
- * @param[in]  name     Name of new config and NVT selector.
- * @param[in]  comment  Comment on new config.
- * @param[in]  config   Existing config.
+ * @param[in]  name        Name of new config and NVT selector.
+ * @param[in]  comment     Comment on new config.
+ * @param[in]  config      Existing config.
+ * @param[out] new_config  New config.
  *
  * @return 0 success, 1 config exists already, 2 failed to find existing
  *         config, -1 error.
  */
 int
-copy_config (const char* name, const char* comment, config_t config)
+copy_config (const char* name, const char* comment, config_t config,
+             config_t* new_config)
 {
   char *config_selector, *uuid;
   config_t id;
@@ -9379,6 +9401,7 @@ copy_config (const char* name, const char* comment, config_t config)
   free (uuid);
   g_free (quoted_name);
   g_free (quoted_config_selector);
+  if (new_config) *new_config = id;
   return 0;
 }
 

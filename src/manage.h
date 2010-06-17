@@ -806,19 +806,22 @@ typedef struct
 
 int
 create_config (const char*, const char*, const array_t*, const array_t*,
-               char**, char**);
+               config_t*, char**);
 
 int
 create_config_rc (const char*, const char*, char*, config_t*);
 
 int
-copy_config (const char*, const char*, config_t);
+copy_config (const char*, const char*, config_t, config_t*);
 
 int
 delete_config (config_t);
 
 gboolean
 find_config (const char*, config_t*);
+
+int
+config_uuid (config_t, char **);
 
 char *
 config_nvt_timeout (config_t, const char *);

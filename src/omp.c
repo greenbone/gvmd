@@ -9811,7 +9811,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_CONFIG:
         {
-          config_t config = 0;
+          config_t config = 0, new_config;
 
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (import_config_data->import
@@ -9821,28 +9821,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            * any other elements. */
           if (import_config_data->import)
             {
-              char *uuid, *name;
+              char *name;
               array_terminate (import_config_data->nvt_selectors);
               array_terminate (import_config_data->preferences);
               switch (create_config (import_config_data->name,
                                      import_config_data->comment,
                                      import_config_data->nvt_selectors,
                                      import_config_data->preferences,
-                                     &uuid,
+                                     &new_config,
                                      &name))
                 {
                   case 0:
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<create_config_response"
-                      " status=\"" STATUS_OK_CREATED "\""
-                      " status_text=\"" STATUS_OK_CREATED_TEXT "\">"
-                      "<config id=\"%s\"><name>%s</name></config>"
-                      "</create_config_response>",
-                      uuid,
-                      name);
-                    free (uuid);
-                    free (name);
-                    break;
+                    {
+                      gchar *uuid;
+                      config_uuid (new_config, &uuid);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<create_config_response"
+                        " status=\"" STATUS_OK_CREATED "\""
+                        " status_text=\"" STATUS_OK_CREATED_TEXT "\""
+                        " id=\"%s\">"
+                        /* This is a hack for the GSA, which should really
+                         * do a GET_CONFIG with the ID to get the name. */
+                        "<config id=\"%s\"><name>%s</name></config>"
+                        "</create_config_response>",
+                        uuid,
+                        uuid,
+                        name);
+                      g_free (uuid);
+                      free (name);
+                      break;
+                    }
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
@@ -9907,13 +9915,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               ret = create_config_rc (create_config_data->name,
                                       create_config_data->comment,
                                       (char*) base64,
-                                      NULL);
+                                      &new_config);
               g_free (base64);
               switch (ret)
                 {
                   case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
-                    break;
+                    {
+                      char *uuid;
+                      config_uuid (new_config, &uuid);
+                      SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                                ("create_config"),
+                                               uuid);
+                      free (uuid);
+                      break;
+                    }
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
@@ -9939,11 +9954,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else switch (copy_config (create_config_data->name,
                                     create_config_data->comment,
-                                    config))
+                                    config,
+                                    &new_config))
             {
               case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_config"));
-                break;
+                {
+                  char *uuid;
+                  config_uuid (new_config, &uuid);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_config"),
+                                           uuid);
+                  free (uuid);
+                  break;
+                }
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_config",
