@@ -2290,7 +2290,7 @@ error_send_to_client (GError** error)
  * @param  tag  Name of the command generating the response.
  */
 #define XML_OK_CREATED_ID(tag)                           \
- "<create_" tag "_response"                              \
+ "<" tag "_response"                                     \
  " status=\"" STATUS_OK_CREATED "\""                     \
  " status_text=\"" STATUS_OK_CREATED_TEXT "\""           \
  " id=\"%s\"/>"
@@ -9761,7 +9761,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   gchar *uuid;
                   agent_uuid (agent, &uuid);
-                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("agent"),
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_agent"),
                                            uuid);
                   g_free (uuid);
                   break;
