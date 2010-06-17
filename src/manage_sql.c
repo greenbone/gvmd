@@ -3103,6 +3103,7 @@ find_escalator (const char* uuid, escalator_t* escalator)
  * @param[in]  condition_data  Condition-specific data.
  * @param[in]  method          Escalation method.
  * @param[in]  method_data     Data for escalation method.
+ * @param[out] escalator       Created escalator on success.
  *
  * @return 0 success, 1 escalation exists already.
  */
@@ -3110,9 +3111,9 @@ int
 create_escalator (const char* name, const char* comment,
                   event_t event, GPtrArray* event_data,
                   escalator_condition_t condition, GPtrArray* condition_data,
-                  escalator_method_t method, GPtrArray* method_data)
+                  escalator_method_t method, GPtrArray* method_data,
+                  escalator_t *escalator)
 {
-  escalator_t escalator;
   int index;
   gchar *item, *quoted_comment;
   gchar *quoted_name = sql_quote (name);
@@ -3147,7 +3148,7 @@ create_escalator (const char* name, const char* comment,
        condition,
        method);
 
-  escalator = sqlite3_last_insert_rowid (task_db);
+  *escalator = sqlite3_last_insert_rowid (task_db);
 
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
@@ -3156,7 +3157,7 @@ create_escalator (const char* name, const char* comment,
       gchar *data = sql_quote (item + strlen (item) + 1);
       sql ("INSERT INTO escalator_condition_data (escalator, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           escalator,
+           *escalator,
            name,
            data);
       g_free (name);
@@ -3170,7 +3171,7 @@ create_escalator (const char* name, const char* comment,
       gchar *data = sql_quote (item + strlen (item) + 1);
       sql ("INSERT INTO escalator_event_data (escalator, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           escalator,
+           *escalator,
            name,
            data);
       g_free (name);
@@ -3184,7 +3185,7 @@ create_escalator (const char* name, const char* comment,
       gchar *data = sql_quote (item + strlen (item) + 1);
       sql ("INSERT INTO escalator_method_data (escalator, name, data)"
            " VALUES (%llu, '%s', '%s');",
-           escalator,
+           *escalator,
            name,
            data);
       g_free (name);
@@ -3223,6 +3224,23 @@ delete_escalator (escalator_t escalator)
   sql ("DELETE FROM escalator_method_data WHERE escalator = %llu;", escalator);
   sql ("DELETE FROM escalators WHERE ROWID = %llu;", escalator);
   sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a escalator.
+ *
+ * @param[in]   escalator  Escalator.
+ * @param[out]  id         Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+escalator_uuid (escalator_t escalator, char ** id)
+{
+  *id = sql_string (0, 0,
+                    "SELECT uuid FROM escalators WHERE ROWID = %llu;",
+                    escalator);
   return 0;
 }
 

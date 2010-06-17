@@ -1,5 +1,15 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_escalator): Add escalator return param.
+	(escalator_uuid): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_ESCALATOR
+	include ID in response.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_config): Create uuid param with config param.
 	(config_uuid): New function.
 	(create_config_rc): Rename uuid to selector_uuid.  Add UUID to INSERT.

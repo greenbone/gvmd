@@ -214,10 +214,13 @@ typedef enum
 int
 create_escalator (const char*, const char*, event_t, GPtrArray*,
                   escalator_condition_t, GPtrArray*, escalator_method_t,
-                  GPtrArray*);
+                  GPtrArray*, escalator_t*);
 
 int
 delete_escalator (escalator_t);
+
+int
+escalator_uuid (escalator_t, char **);
 
 gboolean
 find_escalator (const char*, escalator_t*);

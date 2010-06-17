@@ -10117,6 +10117,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           event_t event;
           escalator_condition_t condition;
           escalator_method_t method;
+          escalator_t new_escalator;
 
           assert (strcasecmp ("CREATE_ESCALATOR", element_name) == 0);
           assert (create_escalator_data->name != NULL);
@@ -10174,12 +10175,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         condition,
                                         create_escalator_data->condition_data,
                                         method,
-                                        create_escalator_data->method_data))
+                                        create_escalator_data->method_data,
+                                        &new_escalator))
                 {
                   case 0:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_OK_CREATED ("create_escalator"));
-                    break;
+                    {
+                      char *uuid;
+                      escalator_uuid (new_escalator, &uuid);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       (XML_OK_CREATED_ID ("create_escalator"), uuid);
+                      free (uuid);
+                      break;
+                    }
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_escalator",
