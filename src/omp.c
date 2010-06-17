@@ -10735,6 +10735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t lsc_credential = 0;
+          target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (&create_target_data->name != NULL);
@@ -10785,8 +10786,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       create_target_data->target_locator,
                                       create_target_data->username,
                                       create_target_data->password,
-                                      NULL))
-
+                                      &new_target))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -10799,8 +10799,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Import from target_locator failed"));
                 break;
               default:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_target"));
-                break;
+                {
+                  char *uuid = target_uuid (new_target);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_target"),
+                                           uuid);
+                  free (uuid);
+                  break;
+                }
             }
 
           create_target_data_reset (create_target_data);
