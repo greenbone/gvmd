@@ -1,5 +1,14 @@
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Add credential return arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_LSC_CREDENTIAL
+	include ID in response.
+
+2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_escalator): Add escalator return param.
 	(escalator_uuid): New function.
 

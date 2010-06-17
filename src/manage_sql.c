@@ -12172,13 +12172,15 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
  *                             one character long.
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
+ * @param[out] lsc_credential  Created LSC credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         -1 error.
  */
 int
 create_lsc_credential (const char* name, const char* comment,
-                       const char* login, const char* given_password)
+                       const char* login, const char* given_password,
+                       lsc_credential_t *lsc_credential)
 {
   gchar *quoted_name;
   gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
@@ -12241,6 +12243,9 @@ create_lsc_credential (const char* name, const char* comment,
       g_free (quoted_login);
       g_free (quoted_password);
       g_free (quoted_comment);
+
+      if (lsc_credential)
+        *lsc_credential = sqlite3_last_insert_rowid (task_db);
 
       sql ("COMMIT;");
       return 0;
@@ -12305,7 +12310,7 @@ create_lsc_credential (const char* name, const char* comment,
                                      "  comment, public_key, private_key,"
                                      "  rpm, deb, exe)"
                                      " VALUES"
-                                     " ('%s',"
+                                     " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '%s', '%s', '',"
@@ -12495,6 +12500,9 @@ create_lsc_credential (const char* name, const char* comment,
 
     sqlite3_finalize (stmt);
   }
+
+  if (lsc_credential)
+    *lsc_credential = sqlite3_last_insert_rowid (task_db);
 
   sql ("COMMIT;");
 

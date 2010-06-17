@@ -10311,6 +10311,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_LSC_CREDENTIAL:
         {
+          lsc_credential_t new_lsc_credential;
+
           assert (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0);
           assert (create_lsc_credential_data->name != NULL);
           assert (create_lsc_credential_data->login != NULL);
@@ -10333,11 +10335,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (create_lsc_credential_data->name,
                          create_lsc_credential_data->comment,
                          create_lsc_credential_data->login,
-                         create_lsc_credential_data->password))
+                         create_lsc_credential_data->password,
+                         &new_lsc_credential))
             {
               case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_lsc_credential"));
-                break;
+                {
+                  char *uuid = lsc_credential_uuid (new_lsc_credential);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_lsc_credential"), uuid);
+                  free (uuid);
+                  break;
+                }
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
