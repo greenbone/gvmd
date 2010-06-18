@@ -1236,6 +1236,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
 
 typedef struct
 {
+  int apply_overrides;
   char *format;
   char *report_id;
   int first_result;
@@ -1267,6 +1268,7 @@ get_report_data_reset (get_report_data_t *data)
 
 typedef struct
 {
+  int apply_overrides;
   char *result_id;
   char *task_id;
   int notes;
@@ -2965,6 +2967,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_report_data->overrides_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
+                                "apply_overrides", &attribute))
+              get_results_data->apply_overrides = strcmp (attribute, "0");
+            else
+              get_results_data->apply_overrides = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
                                 "result_hosts_only", &attribute))
               get_report_data->result_hosts_only = strcmp (attribute, "0");
             else
@@ -3009,6 +3017,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_results_data->overrides_details = strcmp (attribute, "0");
             else
               get_results_data->overrides_details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "apply_overrides", &attribute))
+              get_results_data->apply_overrides = strcmp (attribute, "0");
+            else
+              get_results_data->apply_overrides = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -5181,7 +5195,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
                         get_report_data->levels,
                         get_report_data->search_phrase,
                         min_cvss_base,
-                        get_report_data->overrides);
+                        get_report_data->apply_overrides);
 
   if (result_hosts_only)
     result_hosts = make_array ();
@@ -5948,7 +5962,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            total_warnings,
            total_notes);
 
-  if (get_report_data->overrides)
+  if (get_report_data->apply_overrides)
     fputs ("Overrides are on.  When a result has an override, this report"
            " uses the threat of the override.\\\\\n",
            out);
@@ -6064,7 +6078,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             get_report_data->levels,
                             get_report_data->search_phrase,
                             min_cvss_base,
-                            get_report_data->overrides);
+                            get_report_data->apply_overrides);
       last_port = NULL;
       while (next (&results))
         {
@@ -6100,7 +6114,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             get_report_data->levels,
                             get_report_data->search_phrase,
                             min_cvss_base,
-                            get_report_data->overrides);
+                            get_report_data->apply_overrides);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -7721,6 +7735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "<phrase>%s</phrase>"
               "<notes>%i</notes>"
               "<overrides>%i</overrides>"
+              "<apply_overrides>%i</apply_overrides>"
               "<result_hosts_only>%i</result_hosts_only>"
               "<min_cvss_base>%s</min_cvss_base>",
               get_report_data->report_id,
@@ -7733,6 +7748,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 : "",
               get_report_data->notes ? 1 : 0,
               get_report_data->overrides ? 1 : 0,
+              get_report_data->apply_overrides ? 1 : 0,
               get_report_data->result_hosts_only ? 1 : 0,
               get_report_data->min_cvss_base
                 ? get_report_data->min_cvss_base
@@ -7799,7 +7815,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 levels,
                 get_report_data->search_phrase,
                 get_report_data->min_cvss_base,
-                get_report_data->overrides);
+                get_report_data->apply_overrides);
 
               /* Buffer the results. */
 
@@ -7886,7 +7902,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes, infos, logs, warnings;
 
               report_counts_id (report, &debugs, &holes, &infos, &logs,
-                                &warnings, get_report_data->overrides);
+                                &warnings, get_report_data->apply_overrides);
 
               SENDF_TO_CLIENT_OR_FAIL ("<messages>"
                                        "<debug>%i</debug>"
@@ -7912,7 +7928,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   levels,
                                   get_report_data->search_phrase,
                                   get_report_data->min_cvss_base,
-                                  get_report_data->overrides);
+                                  get_report_data->apply_overrides);
 
             SENDF_TO_CLIENT_OR_FAIL ("<results"
                                      " start=\"%i\""
@@ -8021,7 +8037,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   get_report_data->levels,
                                   get_report_data->search_phrase,
                                   get_report_data->min_cvss_base,
-                                  get_report_data->overrides);
+                                  get_report_data->apply_overrides);
             if (get_report_data->result_hosts_only)
               result_hosts = make_array ();
             else
@@ -8782,12 +8798,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute"
                                 " if the notes attribute is true"));
-          else if (get_results_data->overrides
+          else if ((get_results_data->overrides
+                    || get_results_data->apply_overrides)
                    && (get_results_data->task_id == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute"
-                                " if the overrides attribute is true"));
+                                " if either of the overrides attributes is"
+                                " true"));
           else if (find_result (get_results_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (result == 0)
@@ -8821,7 +8839,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "<results>");
               init_result_iterator (&results, 0, result, NULL, 0, 1, 1, NULL,
                                     NULL, NULL, NULL,
-                                    get_results_data->overrides);
+                                    get_results_data->apply_overrides);
               while (next (&results))
                 {
                   GString *buffer = g_string_new ("");

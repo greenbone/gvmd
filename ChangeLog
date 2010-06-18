@@ -1,5 +1,13 @@
 2010-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (get_report_data_t, get_results_data_t): Add apply_overrides.
+	(omp_xml_handle_start_element): Parse apply_overrides for GET_REPORT and
+	GET_RESULTS.
+	(print_report_xml, print_report_latex, omp_xml_handle_end_element): Apply
+	overrides according to "apply_overrides" instead of "overrides".
+
+2010-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (help_text, get_tasks_data_t, get_tasks_data_reset)
 	(get_tasks_data): Move into alphabetical order.
 	(command_data_t): Move get_tasks into alphabetical order.
