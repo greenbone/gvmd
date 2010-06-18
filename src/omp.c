@@ -461,10 +461,10 @@ static char* help_text = "\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
-"    GET_TASKS              Get all tasks.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
 "    GET_TARGETS            Get all targets.\n"
+"    GET_TASKS              Get all tasks.\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
@@ -1302,24 +1302,6 @@ get_schedules_data_reset (get_schedules_data_t *data)
 
 typedef struct
 {
-  int details;
-  char *task_id;
-  int rcfile;
-  char *sort_field;
-  int sort_order;
-} get_tasks_data_t;
-
-static void
-get_tasks_data_reset (get_tasks_data_t *data)
-{
-  free (data->task_id);
-  free (data->sort_field);
-
-  memset (data, 0, sizeof (get_tasks_data_t));
-}
-
-typedef struct
-{
   char *name;
   char *duration;
 } get_system_reports_data_t;
@@ -1369,6 +1351,24 @@ typedef struct
   char *preference_nvt_oid;
   char *preference_value;
 } modify_config_data_t;
+
+typedef struct
+{
+  int details;
+  char *task_id;
+  int rcfile;
+  char *sort_field;
+  int sort_order;
+} get_tasks_data_t;
+
+static void
+get_tasks_data_reset (get_tasks_data_t *data)
+{
+  free (data->task_id);
+  free (data->sort_field);
+
+  memset (data, 0, sizeof (get_tasks_data_t));
+}
 
 static void
 modify_config_data_reset (modify_config_data_t *data)
@@ -1562,9 +1562,9 @@ typedef union
   get_report_data_t get_report;
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
-  get_tasks_data_t get_tasks;
   get_system_reports_data_t get_system_reports;
   get_targets_data_t get_targets;
+  get_tasks_data_t get_tasks;
   modify_config_data_t modify_config;
   modify_report_data_t modify_report;
   modify_task_data_t modify_task;
@@ -1792,12 +1792,6 @@ get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
 
 /**
- * @brief Parser callback data for GET_TASKS.
- */
-get_tasks_data_t *get_tasks_data
- = &(command_data.get_tasks);
-
-/**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
  */
 get_system_reports_data_t *get_system_reports_data
@@ -1808,6 +1802,12 @@ get_system_reports_data_t *get_system_reports_data
  */
 get_targets_data_t *get_targets_data
  = &(command_data.get_targets);
+
+/**
+ * @brief Parser callback data for GET_TASKS.
+ */
+get_tasks_data_t *get_tasks_data
+ = &(command_data.get_tasks);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG (import).
@@ -2060,9 +2060,9 @@ typedef enum
   CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_TARGET_LOCATORS,
-  CLIENT_GET_TASKS,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
+  CLIENT_GET_TASKS,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_PARAMETER,
@@ -3043,6 +3043,28 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_GET_TARGET_LOCATORS);
           }
+        else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "name",
+                              &get_system_reports_data->name);
+            append_attribute (attribute_names, attribute_values, "duration",
+                              &get_system_reports_data->duration);
+            set_client_state (CLIENT_GET_SYSTEM_REPORTS);
+          }
+        else if (strcasecmp ("GET_TARGETS", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "target_id",
+                              &get_targets_data->target_id);
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_targets_data->sort_field);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_targets_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_targets_data->sort_order = 1;
+            set_client_state (CLIENT_GET_TARGETS);
+          }
         else if (strcasecmp ("GET_TASKS", element_name) == 0)
           {
             const gchar* attribute;
@@ -3072,28 +3094,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_tasks_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_TASKS);
-          }
-        else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "name",
-                              &get_system_reports_data->name);
-            append_attribute (attribute_names, attribute_values, "duration",
-                              &get_system_reports_data->duration);
-            set_client_state (CLIENT_GET_SYSTEM_REPORTS);
-          }
-        else if (strcasecmp ("GET_TARGETS", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "target_id",
-                              &get_targets_data->target_id);
-            append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_targets_data->sort_field);
-            if (find_attribute (attribute_names, attribute_values,
-                                "sort_order", &attribute))
-              get_targets_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_targets_data->sort_order = 1;
-            set_client_state (CLIENT_GET_TARGETS);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_VERSION);
@@ -3834,6 +3834,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                       "Error");
           break;
         }
+
+      case CLIENT_GET_TASKS:
+        if (send_element_error_to_client ("get_tasks", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
 
       case CLIENT_HELP:
         {
@@ -4761,19 +4774,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_START_TASK:
         if (send_element_error_to_client ("start_task", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
-      case CLIENT_GET_TASKS:
-        if (send_element_error_to_client ("get_tasks", element_name))
           {
             error_send_to_client (error);
             return;
@@ -11838,736 +11838,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_TASKS:
-        {
-          task_t task = 0;
-
-          assert (strcasecmp ("GET_TASKS", element_name) == 0);
-
-          if (get_tasks_data->task_id
-              && find_task (get_tasks_data->task_id, &task))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
-          else if (get_tasks_data->task_id && task == 0)
-            {
-              if (send_find_error_to_client ("get_tasks",
-                                             "task",
-                                             get_tasks_data->task_id))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              gchar* response;
-              iterator_t tasks;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              response = g_strdup_printf ("<task_count>%u</task_count>",
-                                          task ? 1 : task_count ());
-              if (send_to_client (response))
-                {
-                  g_free (response);
-                  error_send_to_client (error);
-                  return;
-                }
-              g_free (response);
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<sort>"
-                "<field>%s<order>%s</order></field>"
-                "</sort>",
-                get_tasks_data->sort_field
-                 ? get_tasks_data->sort_field
-                 : "ROWID",
-                get_tasks_data->sort_order ? "ascending" : "descending");
-
-              init_task_iterator (&tasks,
-                                  task,
-                                  get_tasks_data->sort_order,
-                                  get_tasks_data->sort_field);
-              while (next (&tasks))
-                if (get_tasks_data->details)
-                  {
-                    /* The detailed version. */
-
-                    int ret, maximum_hosts;
-                    gchar *response, *progress_xml;
-                    target_t target;
-                    char *name, *config, *config_uuid;
-                    char *escalator, *escalator_uuid;
-                    char *task_target_uuid, *task_target_name, *hosts;
-                    char *task_schedule_uuid, *task_schedule_name, *comment;
-                    gchar *first_report_id, *first_report;
-                    char* description;
-                    gchar *description64, *last_report_id, *last_report;
-                    gchar *second_last_report_id, *second_last_report;
-                    report_t running_report;
-                    schedule_t schedule;
-                    time_t next_time;
-                    task_t task = task_iterator_task (&tasks);
-
-                    target = task_target (task);
-                    hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
-
-                    first_report_id = task_first_report_id (task);
-                    if (first_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (first_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (first_report_id, &timestamp))
-                          abort (); // FIX fail better
-
-                        first_report = g_strdup_printf ("<first_report>"
-                                                        "<report id=\"%s\">"
-                                                        "<timestamp>"
-                                                        "%s"
-                                                        "</timestamp>"
-                                                        "<messages>"
-                                                        "<debug>%i</debug>"
-                                                        "<hole>%i</hole>"
-                                                        "<info>%i</info>"
-                                                        "<log>%i</log>"
-                                                        "<warning>%i</warning>"
-                                                        "</messages>"
-                                                        "</report>"
-                                                        "</first_report>",
-                                                        first_report_id,
-                                                        timestamp,
-                                                        debugs,
-                                                        holes,
-                                                        infos,
-                                                        logs,
-                                                        warnings);
-                        g_free (timestamp);
-                        g_free (first_report_id);
-                      }
-                    else
-                      first_report = g_strdup ("");
-
-                    last_report_id = task_last_report_id (task);
-                    if (last_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (last_report_id, &timestamp))
-                          abort (); // FIX fail better
-
-                        last_report = g_strdup_printf ("<last_report>"
-                                                       "<report id=\"%s\">"
-                                                       "<timestamp>"
-                                                       "%s"
-                                                       "</timestamp>"
-                                                       "<messages>"
-                                                       "<debug>%i</debug>"
-                                                       "<hole>%i</hole>"
-                                                       "<info>%i</info>"
-                                                       "<log>%i</log>"
-                                                       "<warning>%i</warning>"
-                                                       "</messages>"
-                                                       "</report>"
-                                                       "</last_report>",
-                                                       last_report_id,
-                                                       timestamp,
-                                                       debugs,
-                                                       holes,
-                                                       infos,
-                                                       logs,
-                                                       warnings);
-                        g_free (timestamp);
-                        g_free (last_report_id);
-                      }
-                    else
-                      last_report = g_strdup ("");
-
-                    second_last_report_id = task_second_last_report_id (task);
-                    if (second_last_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (second_last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (second_last_report_id,
-                                              &timestamp))
-                          abort (); // FIX fail better
-
-                        second_last_report = g_strdup_printf
-                                              ("<second_last_report>"
-                                               "<report id=\"%s\">"
-                                               "<timestamp>"
-                                               "%s"
-                                               "</timestamp>"
-                                               "<messages>"
-                                               "<debug>%i</debug>"
-                                               "<hole>%i</hole>"
-                                               "<info>%i</info>"
-                                               "<log>%i</log>"
-                                               "<warning>%i</warning>"
-                                               "</messages>"
-                                               "</report>"
-                                               "</second_last_report>",
-                                               second_last_report_id,
-                                               timestamp,
-                                               debugs,
-                                               holes,
-                                               infos,
-                                               logs,
-                                               warnings);
-                        g_free (timestamp);
-                        g_free (second_last_report_id);
-                      }
-                    else
-                      second_last_report = g_strdup ("");
-
-                    running_report = task_current_report (task);
-                    if (running_report)
-                      {
-                        long total = 0;
-                        int num_hosts = 0, total_progress;
-                        iterator_t hosts;
-                        GString *string = g_string_new ("");
-
-                        init_host_iterator (&hosts, running_report, NULL);
-                        while (next (&hosts))
-                          {
-                            unsigned int max_port, current_port;
-                            long progress;
-
-                            max_port = host_iterator_max_port (&hosts);
-                            current_port = host_iterator_current_port (&hosts);
-                            if (max_port)
-                              {
-                                progress = (current_port * 100) / max_port;
-                                if (progress < 0) progress = 0;
-                                else if (progress > 100) progress = 100;
-                              }
-                            else
-                              progress = current_port ? 100 : 0;
-
-#if 1
-                            tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
-                            tracef ("   current_port: %u\n", current_port);
-                            tracef ("   max_port: %u\n", max_port);
-                            tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
-                            tracef ("   total now: %li\n", total);
-#endif
-                            total += progress;
-                            num_hosts++;
-
-                            g_string_append_printf (string,
-                                                    "<host_progress>"
-                                                    "<host>%s</host>"
-                                                    "%li"
-                                                    "</host_progress>",
-                                                    host_iterator_host (&hosts),
-                                                    progress);
-                          }
-                        cleanup_iterator (&hosts);
-
-                        total_progress = maximum_hosts
-                                         ? (total / maximum_hosts) : 0;
-
-#if 1
-                        tracef ("   total: %li\n", total);
-                        tracef ("   num_hosts: %i\n", num_hosts);
-                        tracef ("   maximum_hosts: %i\n", maximum_hosts);
-                        tracef ("   total_progress: %i\n", total_progress);
-#endif
-
-                        g_string_append_printf (string,
-                                                "%i",
-                                                total_progress);
-                        progress_xml = g_string_free (string, FALSE);
-                      }
-                    else
-                      progress_xml = g_strdup ("-1");
-
-                    if (get_tasks_data->rcfile)
-                      {
-                        description = task_description (task);
-                        if (description && strlen (description))
-                          {
-                            gchar *d64;
-                            d64 = g_base64_encode ((guchar*) description,
-                                                   strlen (description));
-                            description64 = g_strdup_printf ("<rcfile>"
-                                                             "%s"
-                                                             "</rcfile>",
-                                                             d64);
-                            g_free (d64);
-                          }
-                        else
-                          description64 = g_strdup ("<rcfile></rcfile>");
-                        free (description);
-                      }
-                    else
-                      description64 = g_strdup ("");
-
-                    name = task_name (task);
-                    comment = task_comment (task);
-                    escalator = task_escalator_name (task);
-                    escalator_uuid = task_escalator_uuid (task);
-                    config = task_config_name (task);
-                    config_uuid = task_config_uuid (task);
-                    task_target_uuid = target_uuid (target);
-                    task_target_name = target_name (target);
-                    schedule = task_schedule (task);
-                    if (schedule)
-                      {
-                        task_schedule_uuid = schedule_uuid (schedule);
-                        task_schedule_name = schedule_name (schedule);
-                      }
-                    else
-                      {
-                        task_schedule_uuid = (char*) g_strdup ("");
-                        task_schedule_name = (char*) g_strdup ("");
-                      }
-                    next_time = task_schedule_next_time (task);
-                    response = g_strdup_printf
-                                ("<task id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "<comment>%s</comment>"
-                                 "<config id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "</config>"
-                                 "<escalator id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "</escalator>"
-                                 "<target id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "</target>"
-                                 "<status>%s</status>"
-                                 "<progress>%s</progress>"
-                                 "%s"
-                                 "<messages>"
-                                 "<debug>%i</debug>"
-                                 "<hole>%i</hole>"
-                                 "<info>%i</info>"
-                                 "<log>%i</log>"
-                                 "<warning>%i</warning>"
-                                 "</messages>"
-                                 "<report_count>"
-                                 "%u<finished>%u</finished>"
-                                 "</report_count>"
-                                 "<trend>%s</trend>"
-                                 "<schedule id=\"%s\">"
-                                 "<name>%s</name>"
-                                 "<next_time>%s</next_time>"
-                                 "</schedule>"
-                                 "%s%s%s",
-                                 task_iterator_uuid (&tasks),
-                                 name,
-                                 comment,
-                                 config_uuid ? config_uuid : "",
-                                 config ? config : "",
-                                 escalator_uuid ? escalator_uuid : "",
-                                 escalator ? escalator : "",
-                                 task_target_uuid ? task_target_uuid : "",
-                                 task_target_name ? task_target_name : "",
-                                 task_run_status_name (task),
-                                 progress_xml,
-                                 description64,
-                                 task_debugs_size (task),
-                                 task_holes_size (task),
-                                 task_infos_size (task),
-                                 task_logs_size (task),
-                                 task_warnings_size (task),
-                                 task_report_count (task),
-                                 task_finished_report_count (task),
-                                 task_trend (task),
-                                 task_schedule_uuid,
-                                 task_schedule_name,
-                                 (next_time == 0
-                                   ? "over"
-                                   : ctime_strip_newline (&next_time)),
-                                 first_report,
-                                 last_report,
-                                 second_last_report);
-                    free (config);
-                    free (escalator);
-                    free (task_target_name);
-                    g_free (progress_xml);
-                    g_free (last_report);
-                    g_free (second_last_report);
-                    ret = send_to_client (response);
-                    g_free (response);
-                    g_free (name);
-                    g_free (comment);
-                    g_free (description64);
-                    free (task_schedule_uuid);
-                    free (task_schedule_name);
-                    if (ret)
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
-                    // FIX need to handle err cases before send status
-                    (void) send_reports (task);
-                    SEND_TO_CLIENT_OR_FAIL ("</task>");
-                  }
-                else
-                  {
-                    /* The brief version. */
-
-                    // TODO: A lot of this block is the same as the one above.
-
-                    task_t index = task_iterator_task (&tasks);
-                    gchar *line, *progress_xml;
-                    char *name = task_name (index);
-                    char *comment = task_comment (index);
-                    target_t target;
-                    char *tsk_uuid, *config, *config_uuid;
-                    char *escalator, *escalator_uuid;
-                    char *task_target_uuid, *task_target_name, *hosts;
-                    char *task_schedule_uuid, *task_schedule_name;
-                    gchar *first_report_id, *first_report;
-                    char *description;
-                    gchar *description64, *last_report_id, *last_report;
-                    gchar *second_last_report_id, *second_last_report;
-                    report_t running_report;
-                    int maximum_hosts;
-                    schedule_t schedule;
-                    time_t next_time;
-
-                    // FIX buffer entire response so this can respond on err
-                    if (task_uuid (index, &tsk_uuid)) abort ();
-
-                    target = task_target (index);
-                    hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
-
-                    first_report_id = task_first_report_id (index);
-                    if (first_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (first_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (first_report_id, &timestamp))
-                          abort (); // FIX fail better
-
-                        first_report = g_strdup_printf ("<first_report>"
-                                                        "<report id=\"%s\">"
-                                                        "<timestamp>"
-                                                        "%s"
-                                                        "</timestamp>"
-                                                        "<messages>"
-                                                        "<debug>%i</debug>"
-                                                        "<hole>%i</hole>"
-                                                        "<info>%i</info>"
-                                                        "<log>%i</log>"
-                                                        "<warning>%i</warning>"
-                                                        "</messages>"
-                                                        "</report>"
-                                                        "</first_report>",
-                                                        first_report_id,
-                                                        timestamp,
-                                                        debugs,
-                                                        holes,
-                                                        infos,
-                                                        logs,
-                                                        warnings);
-                        g_free (timestamp);
-                        g_free (first_report_id);
-                      }
-                    else
-                      first_report = g_strdup ("");
-
-                    last_report_id = task_last_report_id (index);
-                    if (last_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (last_report_id, &timestamp))
-                          abort ();
-
-                        last_report = g_strdup_printf ("<last_report>"
-                                                       "<report id=\"%s\">"
-                                                       "<timestamp>%s</timestamp>"
-                                                       "<messages>"
-                                                       "<debug>%i</debug>"
-                                                       "<hole>%i</hole>"
-                                                       "<info>%i</info>"
-                                                       "<log>%i</log>"
-                                                       "<warning>%i</warning>"
-                                                       "</messages>"
-                                                       "</report>"
-                                                       "</last_report>",
-                                                       last_report_id,
-                                                       timestamp,
-                                                       debugs,
-                                                       holes,
-                                                       infos,
-                                                       logs,
-                                                       warnings);
-                        g_free (timestamp);
-                        g_free (last_report_id);
-                      }
-                    else
-                      last_report = g_strdup ("");
-
-                    if (get_tasks_data->rcfile)
-                      {
-                        description = task_description (index);
-                        if (description && strlen (description))
-                          {
-                            gchar *d64;
-                            d64 = g_base64_encode ((guchar*) description,
-                                                   strlen (description));
-                            description64 = g_strdup_printf ("<rcfile>"
-                                                             "%s"
-                                                             "</rcfile>",
-                                                             d64);
-                            g_free (d64);
-                          }
-                        else
-                          description64 = g_strdup ("<rcfile></rcfile>");
-                        free (description);
-                      }
-                    else
-                      description64 = g_strdup ("");
-
-                    second_last_report_id = task_second_last_report_id (index);
-                    if (second_last_report_id)
-                      {
-                        int debugs, holes, infos, logs, warnings;
-                        gchar *timestamp;
-
-                        if (report_counts (second_last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
-                          abort (); // FIX fail better
-
-                        if (report_timestamp (second_last_report_id, &timestamp))
-                          abort ();
-
-                        second_last_report = g_strdup_printf
-                                              ("<second_last_report>"
-                                               "<report id=\"%s\">"
-                                               "<timestamp>%s</timestamp>"
-                                               "<messages>"
-                                               "<debug>%i</debug>"
-                                               "<hole>%i</hole>"
-                                               "<info>%i</info>"
-                                               "<log>%i</log>"
-                                               "<warning>%i</warning>"
-                                               "</messages>"
-                                               "</report>"
-                                               "</second_last_report>",
-                                               second_last_report_id,
-                                               timestamp,
-                                               debugs,
-                                               holes,
-                                               infos,
-                                               logs,
-                                               warnings);
-                        g_free (timestamp);
-                        g_free (second_last_report_id);
-                      }
-                    else
-                      second_last_report = g_strdup ("");
-
-                    running_report = task_current_report (index);
-                    if (running_report)
-                      {
-                        long total = 0;
-                        int num_hosts = 0, total_progress;
-                        iterator_t hosts;
-                        GString *string = g_string_new ("");
-
-                        init_host_iterator (&hosts, running_report, NULL);
-                        while (next (&hosts))
-                          {
-                            unsigned int max_port, current_port;
-                            long progress;
-
-                            max_port = host_iterator_max_port (&hosts);
-                            current_port = host_iterator_current_port (&hosts);
-                            if (max_port)
-                              {
-                                progress = (current_port * 100) / max_port;
-                                if (progress < 0) progress = 0;
-                                else if (progress > 100) progress = 100;
-                              }
-                            else
-                              progress = current_port ? 100 : 0;
-                            total += progress;
-                            num_hosts++;
-
-#if 1
-                            tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
-                            tracef ("   current_port: %u\n", current_port);
-                            tracef ("   max_port: %u\n", max_port);
-                            tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
-                            tracef ("   total now: %li\n", total);
-#endif
-
-                            g_string_append_printf (string,
-                                                    "<host_progress>"
-                                                    "<host>%s</host>"
-                                                    "%li"
-                                                    "</host_progress>",
-                                                    host_iterator_host (&hosts),
-                                                    progress);
-                          }
-                        cleanup_iterator (&hosts);
-
-                        total_progress = maximum_hosts ? (total / maximum_hosts) : 0;
-
-#if 1
-                        tracef ("   total: %li\n", total);
-                        tracef ("   num_hosts: %i\n", num_hosts);
-                        tracef ("   maximum_hosts: %i\n", maximum_hosts);
-                        tracef ("   total_progress: %i\n", total_progress);
-#endif
-
-                        g_string_append_printf (string,
-                                                "%i",
-                                                total_progress);
-                        progress_xml = g_string_free (string, FALSE);
-                      }
-                    else
-                      progress_xml = g_strdup ("-1");
-
-                    config = task_config_name (index);
-                    config_uuid = task_config_uuid (index);
-                    escalator = task_escalator_name (index);
-                    escalator_uuid = task_escalator_uuid (index);
-                    task_target_uuid = target_uuid (target);
-                    task_target_name = target_name (target);
-                    schedule = task_schedule (index);
-                    if (schedule)
-                      {
-                        task_schedule_uuid = schedule_uuid (schedule);
-                        task_schedule_name = schedule_name (schedule);
-                      }
-                    else
-                      {
-                        task_schedule_uuid = (char*) g_strdup ("");
-                        task_schedule_name = (char*) g_strdup ("");
-                      }
-                    next_time = task_schedule_next_time (index);
-                    line = g_strdup_printf ("<task"
-                                            " id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<comment>%s</comment>"
-                                            "<config id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</config>"
-                                            "<escalator id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</escalator>"
-                                            "<target id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "</target>"
-                                            "<status>%s</status>"
-                                            "<progress>%s</progress>"
-                                            "%s"
-                                            "<messages>"
-                                            "<debug>%i</debug>"
-                                            "<hole>%i</hole>"
-                                            "<info>%i</info>"
-                                            "<log>%i</log>"
-                                            "<warning>%i</warning>"
-                                            "</messages>"
-                                            "<report_count>"
-                                            "%u<finished>%u</finished>"
-                                            "</report_count>"
-                                            "<trend>%s</trend>"
-                                            "<schedule id=\"%s\">"
-                                            "<name>%s</name>"
-                                            "<next_time>%s</next_time>"
-                                            "</schedule>"
-                                            "%s%s%s"
-                                            "</task>",
-                                            tsk_uuid,
-                                            name,
-                                            comment,
-                                            config ? config : "",
-                                            config_uuid ? config_uuid : "",
-                                            escalator_uuid ? escalator_uuid : "",
-                                            escalator ? escalator : "",
-                                            task_target_uuid ? task_target_uuid : "",
-                                            task_target_name ? task_target_name : "",
-                                            task_run_status_name (index),
-                                            progress_xml,
-                                            description64,
-                                            task_debugs_size (index),
-                                            task_holes_size (index),
-                                            task_infos_size (index),
-                                            task_logs_size (index),
-                                            task_warnings_size (index),
-                                            task_report_count (index),
-                                            task_finished_report_count (index),
-                                            task_trend (index),
-                                            task_schedule_uuid,
-                                            task_schedule_name,
-                                            (next_time == 0
-                                              ? "over"
-                                              : ctime_strip_newline (&next_time)),
-                                            first_report,
-                                            last_report,
-                                            second_last_report);
-                    free (config);
-                    free (escalator);
-                    free (escalator_uuid);
-                    free (task_target_name);
-                    g_free (progress_xml);
-                    g_free (last_report);
-                    g_free (second_last_report);
-                    free (name);
-                    free (comment);
-                    g_free (description64);
-                    free (tsk_uuid);
-                    free (task_schedule_uuid);
-                    free (task_schedule_name);
-                    if (send_to_client (line))
-                      {
-                        g_free (line);
-                        error_send_to_client (error);
-                        cleanup_iterator (&tasks);
-                        return;
-                      }
-                    g_free (line);
-                  }
-              cleanup_iterator (&tasks);
-              SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
-            }
-          }
-
-        get_tasks_data_reset (get_tasks_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_GET_AGENTS:
         {
           iterator_t agents;
@@ -13406,6 +12676,736 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+      case CLIENT_GET_TASKS:
+        {
+          task_t task = 0;
+
+          assert (strcasecmp ("GET_TASKS", element_name) == 0);
+
+          if (get_tasks_data->task_id
+              && find_task (get_tasks_data->task_id, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
+          else if (get_tasks_data->task_id && task == 0)
+            {
+              if (send_find_error_to_client ("get_tasks",
+                                             "task",
+                                             get_tasks_data->task_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              gchar* response;
+              iterator_t tasks;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              response = g_strdup_printf ("<task_count>%u</task_count>",
+                                          task ? 1 : task_count ());
+              if (send_to_client (response))
+                {
+                  g_free (response);
+                  error_send_to_client (error);
+                  return;
+                }
+              g_free (response);
+
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<sort>"
+                "<field>%s<order>%s</order></field>"
+                "</sort>",
+                get_tasks_data->sort_field
+                 ? get_tasks_data->sort_field
+                 : "ROWID",
+                get_tasks_data->sort_order ? "ascending" : "descending");
+
+              init_task_iterator (&tasks,
+                                  task,
+                                  get_tasks_data->sort_order,
+                                  get_tasks_data->sort_field);
+              while (next (&tasks))
+                if (get_tasks_data->details)
+                  {
+                    /* The detailed version. */
+
+                    int ret, maximum_hosts;
+                    gchar *response, *progress_xml;
+                    target_t target;
+                    char *name, *config, *config_uuid;
+                    char *escalator, *escalator_uuid;
+                    char *task_target_uuid, *task_target_name, *hosts;
+                    char *task_schedule_uuid, *task_schedule_name, *comment;
+                    gchar *first_report_id, *first_report;
+                    char* description;
+                    gchar *description64, *last_report_id, *last_report;
+                    gchar *second_last_report_id, *second_last_report;
+                    report_t running_report;
+                    schedule_t schedule;
+                    time_t next_time;
+                    task_t task = task_iterator_task (&tasks);
+
+                    target = task_target (task);
+                    hosts = target ? target_hosts (target) : NULL;
+                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
+
+                    first_report_id = task_first_report_id (task);
+                    if (first_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (first_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (first_report_id, &timestamp))
+                          abort (); // FIX fail better
+
+                        first_report = g_strdup_printf ("<first_report>"
+                                                        "<report id=\"%s\">"
+                                                        "<timestamp>"
+                                                        "%s"
+                                                        "</timestamp>"
+                                                        "<messages>"
+                                                        "<debug>%i</debug>"
+                                                        "<hole>%i</hole>"
+                                                        "<info>%i</info>"
+                                                        "<log>%i</log>"
+                                                        "<warning>%i</warning>"
+                                                        "</messages>"
+                                                        "</report>"
+                                                        "</first_report>",
+                                                        first_report_id,
+                                                        timestamp,
+                                                        debugs,
+                                                        holes,
+                                                        infos,
+                                                        logs,
+                                                        warnings);
+                        g_free (timestamp);
+                        g_free (first_report_id);
+                      }
+                    else
+                      first_report = g_strdup ("");
+
+                    last_report_id = task_last_report_id (task);
+                    if (last_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (last_report_id, &timestamp))
+                          abort (); // FIX fail better
+
+                        last_report = g_strdup_printf ("<last_report>"
+                                                       "<report id=\"%s\">"
+                                                       "<timestamp>"
+                                                       "%s"
+                                                       "</timestamp>"
+                                                       "<messages>"
+                                                       "<debug>%i</debug>"
+                                                       "<hole>%i</hole>"
+                                                       "<info>%i</info>"
+                                                       "<log>%i</log>"
+                                                       "<warning>%i</warning>"
+                                                       "</messages>"
+                                                       "</report>"
+                                                       "</last_report>",
+                                                       last_report_id,
+                                                       timestamp,
+                                                       debugs,
+                                                       holes,
+                                                       infos,
+                                                       logs,
+                                                       warnings);
+                        g_free (timestamp);
+                        g_free (last_report_id);
+                      }
+                    else
+                      last_report = g_strdup ("");
+
+                    second_last_report_id = task_second_last_report_id (task);
+                    if (second_last_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (second_last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (second_last_report_id,
+                                              &timestamp))
+                          abort (); // FIX fail better
+
+                        second_last_report = g_strdup_printf
+                                              ("<second_last_report>"
+                                               "<report id=\"%s\">"
+                                               "<timestamp>"
+                                               "%s"
+                                               "</timestamp>"
+                                               "<messages>"
+                                               "<debug>%i</debug>"
+                                               "<hole>%i</hole>"
+                                               "<info>%i</info>"
+                                               "<log>%i</log>"
+                                               "<warning>%i</warning>"
+                                               "</messages>"
+                                               "</report>"
+                                               "</second_last_report>",
+                                               second_last_report_id,
+                                               timestamp,
+                                               debugs,
+                                               holes,
+                                               infos,
+                                               logs,
+                                               warnings);
+                        g_free (timestamp);
+                        g_free (second_last_report_id);
+                      }
+                    else
+                      second_last_report = g_strdup ("");
+
+                    running_report = task_current_report (task);
+                    if (running_report)
+                      {
+                        long total = 0;
+                        int num_hosts = 0, total_progress;
+                        iterator_t hosts;
+                        GString *string = g_string_new ("");
+
+                        init_host_iterator (&hosts, running_report, NULL);
+                        while (next (&hosts))
+                          {
+                            unsigned int max_port, current_port;
+                            long progress;
+
+                            max_port = host_iterator_max_port (&hosts);
+                            current_port = host_iterator_current_port (&hosts);
+                            if (max_port)
+                              {
+                                progress = (current_port * 100) / max_port;
+                                if (progress < 0) progress = 0;
+                                else if (progress > 100) progress = 100;
+                              }
+                            else
+                              progress = current_port ? 100 : 0;
+
+#if 1
+                            tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
+                            tracef ("   current_port: %u\n", current_port);
+                            tracef ("   max_port: %u\n", max_port);
+                            tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
+                            tracef ("   total now: %li\n", total);
+#endif
+                            total += progress;
+                            num_hosts++;
+
+                            g_string_append_printf (string,
+                                                    "<host_progress>"
+                                                    "<host>%s</host>"
+                                                    "%li"
+                                                    "</host_progress>",
+                                                    host_iterator_host (&hosts),
+                                                    progress);
+                          }
+                        cleanup_iterator (&hosts);
+
+                        total_progress = maximum_hosts
+                                         ? (total / maximum_hosts) : 0;
+
+#if 1
+                        tracef ("   total: %li\n", total);
+                        tracef ("   num_hosts: %i\n", num_hosts);
+                        tracef ("   maximum_hosts: %i\n", maximum_hosts);
+                        tracef ("   total_progress: %i\n", total_progress);
+#endif
+
+                        g_string_append_printf (string,
+                                                "%i",
+                                                total_progress);
+                        progress_xml = g_string_free (string, FALSE);
+                      }
+                    else
+                      progress_xml = g_strdup ("-1");
+
+                    if (get_tasks_data->rcfile)
+                      {
+                        description = task_description (task);
+                        if (description && strlen (description))
+                          {
+                            gchar *d64;
+                            d64 = g_base64_encode ((guchar*) description,
+                                                   strlen (description));
+                            description64 = g_strdup_printf ("<rcfile>"
+                                                             "%s"
+                                                             "</rcfile>",
+                                                             d64);
+                            g_free (d64);
+                          }
+                        else
+                          description64 = g_strdup ("<rcfile></rcfile>");
+                        free (description);
+                      }
+                    else
+                      description64 = g_strdup ("");
+
+                    name = task_name (task);
+                    comment = task_comment (task);
+                    escalator = task_escalator_name (task);
+                    escalator_uuid = task_escalator_uuid (task);
+                    config = task_config_name (task);
+                    config_uuid = task_config_uuid (task);
+                    task_target_uuid = target_uuid (target);
+                    task_target_name = target_name (target);
+                    schedule = task_schedule (task);
+                    if (schedule)
+                      {
+                        task_schedule_uuid = schedule_uuid (schedule);
+                        task_schedule_name = schedule_name (schedule);
+                      }
+                    else
+                      {
+                        task_schedule_uuid = (char*) g_strdup ("");
+                        task_schedule_name = (char*) g_strdup ("");
+                      }
+                    next_time = task_schedule_next_time (task);
+                    response = g_strdup_printf
+                                ("<task id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "<comment>%s</comment>"
+                                 "<config id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</config>"
+                                 "<escalator id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</escalator>"
+                                 "<target id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</target>"
+                                 "<status>%s</status>"
+                                 "<progress>%s</progress>"
+                                 "%s"
+                                 "<messages>"
+                                 "<debug>%i</debug>"
+                                 "<hole>%i</hole>"
+                                 "<info>%i</info>"
+                                 "<log>%i</log>"
+                                 "<warning>%i</warning>"
+                                 "</messages>"
+                                 "<report_count>"
+                                 "%u<finished>%u</finished>"
+                                 "</report_count>"
+                                 "<trend>%s</trend>"
+                                 "<schedule id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "<next_time>%s</next_time>"
+                                 "</schedule>"
+                                 "%s%s%s",
+                                 task_iterator_uuid (&tasks),
+                                 name,
+                                 comment,
+                                 config_uuid ? config_uuid : "",
+                                 config ? config : "",
+                                 escalator_uuid ? escalator_uuid : "",
+                                 escalator ? escalator : "",
+                                 task_target_uuid ? task_target_uuid : "",
+                                 task_target_name ? task_target_name : "",
+                                 task_run_status_name (task),
+                                 progress_xml,
+                                 description64,
+                                 task_debugs_size (task),
+                                 task_holes_size (task),
+                                 task_infos_size (task),
+                                 task_logs_size (task),
+                                 task_warnings_size (task),
+                                 task_report_count (task),
+                                 task_finished_report_count (task),
+                                 task_trend (task),
+                                 task_schedule_uuid,
+                                 task_schedule_name,
+                                 (next_time == 0
+                                   ? "over"
+                                   : ctime_strip_newline (&next_time)),
+                                 first_report,
+                                 last_report,
+                                 second_last_report);
+                    free (config);
+                    free (escalator);
+                    free (task_target_name);
+                    g_free (progress_xml);
+                    g_free (last_report);
+                    g_free (second_last_report);
+                    ret = send_to_client (response);
+                    g_free (response);
+                    g_free (name);
+                    g_free (comment);
+                    g_free (description64);
+                    free (task_schedule_uuid);
+                    free (task_schedule_name);
+                    if (ret)
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    // FIX need to handle err cases before send status
+                    (void) send_reports (task);
+                    SEND_TO_CLIENT_OR_FAIL ("</task>");
+                  }
+                else
+                  {
+                    /* The brief version. */
+
+                    // TODO: A lot of this block is the same as the one above.
+
+                    task_t index = task_iterator_task (&tasks);
+                    gchar *line, *progress_xml;
+                    char *name = task_name (index);
+                    char *comment = task_comment (index);
+                    target_t target;
+                    char *tsk_uuid, *config, *config_uuid;
+                    char *escalator, *escalator_uuid;
+                    char *task_target_uuid, *task_target_name, *hosts;
+                    char *task_schedule_uuid, *task_schedule_name;
+                    gchar *first_report_id, *first_report;
+                    char *description;
+                    gchar *description64, *last_report_id, *last_report;
+                    gchar *second_last_report_id, *second_last_report;
+                    report_t running_report;
+                    int maximum_hosts;
+                    schedule_t schedule;
+                    time_t next_time;
+
+                    // FIX buffer entire response so this can respond on err
+                    if (task_uuid (index, &tsk_uuid)) abort ();
+
+                    target = task_target (index);
+                    hosts = target ? target_hosts (target) : NULL;
+                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
+
+                    first_report_id = task_first_report_id (index);
+                    if (first_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (first_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (first_report_id, &timestamp))
+                          abort (); // FIX fail better
+
+                        first_report = g_strdup_printf ("<first_report>"
+                                                        "<report id=\"%s\">"
+                                                        "<timestamp>"
+                                                        "%s"
+                                                        "</timestamp>"
+                                                        "<messages>"
+                                                        "<debug>%i</debug>"
+                                                        "<hole>%i</hole>"
+                                                        "<info>%i</info>"
+                                                        "<log>%i</log>"
+                                                        "<warning>%i</warning>"
+                                                        "</messages>"
+                                                        "</report>"
+                                                        "</first_report>",
+                                                        first_report_id,
+                                                        timestamp,
+                                                        debugs,
+                                                        holes,
+                                                        infos,
+                                                        logs,
+                                                        warnings);
+                        g_free (timestamp);
+                        g_free (first_report_id);
+                      }
+                    else
+                      first_report = g_strdup ("");
+
+                    last_report_id = task_last_report_id (index);
+                    if (last_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (last_report_id, &timestamp))
+                          abort ();
+
+                        last_report = g_strdup_printf ("<last_report>"
+                                                       "<report id=\"%s\">"
+                                                       "<timestamp>%s</timestamp>"
+                                                       "<messages>"
+                                                       "<debug>%i</debug>"
+                                                       "<hole>%i</hole>"
+                                                       "<info>%i</info>"
+                                                       "<log>%i</log>"
+                                                       "<warning>%i</warning>"
+                                                       "</messages>"
+                                                       "</report>"
+                                                       "</last_report>",
+                                                       last_report_id,
+                                                       timestamp,
+                                                       debugs,
+                                                       holes,
+                                                       infos,
+                                                       logs,
+                                                       warnings);
+                        g_free (timestamp);
+                        g_free (last_report_id);
+                      }
+                    else
+                      last_report = g_strdup ("");
+
+                    if (get_tasks_data->rcfile)
+                      {
+                        description = task_description (index);
+                        if (description && strlen (description))
+                          {
+                            gchar *d64;
+                            d64 = g_base64_encode ((guchar*) description,
+                                                   strlen (description));
+                            description64 = g_strdup_printf ("<rcfile>"
+                                                             "%s"
+                                                             "</rcfile>",
+                                                             d64);
+                            g_free (d64);
+                          }
+                        else
+                          description64 = g_strdup ("<rcfile></rcfile>");
+                        free (description);
+                      }
+                    else
+                      description64 = g_strdup ("");
+
+                    second_last_report_id = task_second_last_report_id (index);
+                    if (second_last_report_id)
+                      {
+                        int debugs, holes, infos, logs, warnings;
+                        gchar *timestamp;
+
+                        if (report_counts (second_last_report_id,
+                                           &debugs, &holes, &infos, &logs,
+                                           &warnings, 1))
+                          abort (); // FIX fail better
+
+                        if (report_timestamp (second_last_report_id, &timestamp))
+                          abort ();
+
+                        second_last_report = g_strdup_printf
+                                              ("<second_last_report>"
+                                               "<report id=\"%s\">"
+                                               "<timestamp>%s</timestamp>"
+                                               "<messages>"
+                                               "<debug>%i</debug>"
+                                               "<hole>%i</hole>"
+                                               "<info>%i</info>"
+                                               "<log>%i</log>"
+                                               "<warning>%i</warning>"
+                                               "</messages>"
+                                               "</report>"
+                                               "</second_last_report>",
+                                               second_last_report_id,
+                                               timestamp,
+                                               debugs,
+                                               holes,
+                                               infos,
+                                               logs,
+                                               warnings);
+                        g_free (timestamp);
+                        g_free (second_last_report_id);
+                      }
+                    else
+                      second_last_report = g_strdup ("");
+
+                    running_report = task_current_report (index);
+                    if (running_report)
+                      {
+                        long total = 0;
+                        int num_hosts = 0, total_progress;
+                        iterator_t hosts;
+                        GString *string = g_string_new ("");
+
+                        init_host_iterator (&hosts, running_report, NULL);
+                        while (next (&hosts))
+                          {
+                            unsigned int max_port, current_port;
+                            long progress;
+
+                            max_port = host_iterator_max_port (&hosts);
+                            current_port = host_iterator_current_port (&hosts);
+                            if (max_port)
+                              {
+                                progress = (current_port * 100) / max_port;
+                                if (progress < 0) progress = 0;
+                                else if (progress > 100) progress = 100;
+                              }
+                            else
+                              progress = current_port ? 100 : 0;
+                            total += progress;
+                            num_hosts++;
+
+#if 1
+                            tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
+                            tracef ("   current_port: %u\n", current_port);
+                            tracef ("   max_port: %u\n", max_port);
+                            tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
+                            tracef ("   total now: %li\n", total);
+#endif
+
+                            g_string_append_printf (string,
+                                                    "<host_progress>"
+                                                    "<host>%s</host>"
+                                                    "%li"
+                                                    "</host_progress>",
+                                                    host_iterator_host (&hosts),
+                                                    progress);
+                          }
+                        cleanup_iterator (&hosts);
+
+                        total_progress = maximum_hosts ? (total / maximum_hosts) : 0;
+
+#if 1
+                        tracef ("   total: %li\n", total);
+                        tracef ("   num_hosts: %i\n", num_hosts);
+                        tracef ("   maximum_hosts: %i\n", maximum_hosts);
+                        tracef ("   total_progress: %i\n", total_progress);
+#endif
+
+                        g_string_append_printf (string,
+                                                "%i",
+                                                total_progress);
+                        progress_xml = g_string_free (string, FALSE);
+                      }
+                    else
+                      progress_xml = g_strdup ("-1");
+
+                    config = task_config_name (index);
+                    config_uuid = task_config_uuid (index);
+                    escalator = task_escalator_name (index);
+                    escalator_uuid = task_escalator_uuid (index);
+                    task_target_uuid = target_uuid (target);
+                    task_target_name = target_name (target);
+                    schedule = task_schedule (index);
+                    if (schedule)
+                      {
+                        task_schedule_uuid = schedule_uuid (schedule);
+                        task_schedule_name = schedule_name (schedule);
+                      }
+                    else
+                      {
+                        task_schedule_uuid = (char*) g_strdup ("");
+                        task_schedule_name = (char*) g_strdup ("");
+                      }
+                    next_time = task_schedule_next_time (index);
+                    line = g_strdup_printf ("<task"
+                                            " id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "<comment>%s</comment>"
+                                            "<config id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</config>"
+                                            "<escalator id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</escalator>"
+                                            "<target id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</target>"
+                                            "<status>%s</status>"
+                                            "<progress>%s</progress>"
+                                            "%s"
+                                            "<messages>"
+                                            "<debug>%i</debug>"
+                                            "<hole>%i</hole>"
+                                            "<info>%i</info>"
+                                            "<log>%i</log>"
+                                            "<warning>%i</warning>"
+                                            "</messages>"
+                                            "<report_count>"
+                                            "%u<finished>%u</finished>"
+                                            "</report_count>"
+                                            "<trend>%s</trend>"
+                                            "<schedule id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "<next_time>%s</next_time>"
+                                            "</schedule>"
+                                            "%s%s%s"
+                                            "</task>",
+                                            tsk_uuid,
+                                            name,
+                                            comment,
+                                            config ? config : "",
+                                            config_uuid ? config_uuid : "",
+                                            escalator_uuid ? escalator_uuid : "",
+                                            escalator ? escalator : "",
+                                            task_target_uuid ? task_target_uuid : "",
+                                            task_target_name ? task_target_name : "",
+                                            task_run_status_name (index),
+                                            progress_xml,
+                                            description64,
+                                            task_debugs_size (index),
+                                            task_holes_size (index),
+                                            task_infos_size (index),
+                                            task_logs_size (index),
+                                            task_warnings_size (index),
+                                            task_report_count (index),
+                                            task_finished_report_count (index),
+                                            task_trend (index),
+                                            task_schedule_uuid,
+                                            task_schedule_name,
+                                            (next_time == 0
+                                              ? "over"
+                                              : ctime_strip_newline (&next_time)),
+                                            first_report,
+                                            last_report,
+                                            second_last_report);
+                    free (config);
+                    free (escalator);
+                    free (escalator_uuid);
+                    free (task_target_name);
+                    g_free (progress_xml);
+                    g_free (last_report);
+                    g_free (second_last_report);
+                    free (name);
+                    free (comment);
+                    g_free (description64);
+                    free (tsk_uuid);
+                    free (task_schedule_uuid);
+                    free (task_schedule_name);
+                    if (send_to_client (line))
+                      {
+                        g_free (line);
+                        error_send_to_client (error);
+                        cleanup_iterator (&tasks);
+                        return;
+                      }
+                    g_free (line);
+                  }
+              cleanup_iterator (&tasks);
+              SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
+            }
+          }
+
+        get_tasks_data_reset (get_tasks_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       default:
         assert (0);
