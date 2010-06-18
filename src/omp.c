@@ -461,7 +461,7 @@ static char* help_text = "\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
-"    GET_STATUS             Get task status information.\n"
+"    GET_TASKS              Get all tasks.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
 "    GET_TARGETS            Get all targets.\n"
@@ -1307,15 +1307,15 @@ typedef struct
   int rcfile;
   char *sort_field;
   int sort_order;
-} get_status_data_t;
+} get_tasks_data_t;
 
 static void
-get_status_data_reset (get_status_data_t *data)
+get_tasks_data_reset (get_tasks_data_t *data)
 {
   free (data->task_id);
   free (data->sort_field);
 
-  memset (data, 0, sizeof (get_status_data_t));
+  memset (data, 0, sizeof (get_tasks_data_t));
 }
 
 typedef struct
@@ -1562,7 +1562,7 @@ typedef union
   get_report_data_t get_report;
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
-  get_status_data_t get_status;
+  get_tasks_data_t get_tasks;
   get_system_reports_data_t get_system_reports;
   get_targets_data_t get_targets;
   modify_config_data_t modify_config;
@@ -1792,10 +1792,10 @@ get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
 
 /**
- * @brief Parser callback data for GET_STATUS.
+ * @brief Parser callback data for GET_TASKS.
  */
-get_status_data_t *get_status_data
- = &(command_data.get_status);
+get_tasks_data_t *get_tasks_data
+ = &(command_data.get_tasks);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
@@ -2060,7 +2060,7 @@ typedef enum
   CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_TARGET_LOCATORS,
-  CLIENT_GET_STATUS,
+  CLIENT_GET_TASKS,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
   CLIENT_HELP,
@@ -3043,35 +3043,35 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_GET_TARGET_LOCATORS);
           }
-        else if (strcasecmp ("GET_STATUS", element_name) == 0)
+        else if (strcasecmp ("GET_TASKS", element_name) == 0)
           {
             const gchar* attribute;
 
             append_attribute (attribute_names, attribute_values, "task_id",
-                              &get_status_data->task_id);
+                              &get_tasks_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "rcfile", &attribute))
-              get_status_data->rcfile = atoi (attribute);
+              get_tasks_data->rcfile = atoi (attribute);
             else
-              get_status_data->rcfile = 0;
+              get_tasks_data->rcfile = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
-              get_status_data->details = strcmp (attribute, "0");
+              get_tasks_data->details = strcmp (attribute, "0");
             else
-              get_status_data->details = 0;
+              get_tasks_data->details = 0;
 
             append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_status_data->sort_field);
+                              &get_tasks_data->sort_field);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              get_status_data->sort_order = strcmp (attribute, "descending");
+              get_tasks_data->sort_order = strcmp (attribute, "descending");
             else
-              get_status_data->sort_order = 1;
+              get_tasks_data->sort_order = 1;
 
-            set_client_state (CLIENT_GET_STATUS);
+            set_client_state (CLIENT_GET_TASKS);
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
@@ -4772,8 +4772,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
-      case CLIENT_GET_STATUS:
-        if (send_element_error_to_client ("get_status", element_name))
+      case CLIENT_GET_TASKS:
+        if (send_element_error_to_client ("get_tasks", element_name))
           {
             error_send_to_client (error);
             return;
@@ -11838,20 +11838,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_STATUS:
+      case CLIENT_GET_TASKS:
         {
           task_t task = 0;
 
-          assert (strcasecmp ("GET_STATUS", element_name) == 0);
+          assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
-          if (get_status_data->task_id
-              && find_task (get_status_data->task_id, &task))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_status"));
-          else if (get_status_data->task_id && task == 0)
+          if (get_tasks_data->task_id
+              && find_task (get_tasks_data->task_id, &task))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_tasks"));
+          else if (get_tasks_data->task_id && task == 0)
             {
-              if (send_find_error_to_client ("get_status",
+              if (send_find_error_to_client ("get_tasks",
                                              "task",
-                                             get_status_data->task_id))
+                                             get_tasks_data->task_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -11862,7 +11862,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar* response;
               iterator_t tasks;
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_status_response"
+              SEND_TO_CLIENT_OR_FAIL ("<get_tasks_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               response = g_strdup_printf ("<task_count>%u</task_count>",
@@ -11879,17 +11879,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                ("<sort>"
                 "<field>%s<order>%s</order></field>"
                 "</sort>",
-                get_status_data->sort_field
-                 ? get_status_data->sort_field
+                get_tasks_data->sort_field
+                 ? get_tasks_data->sort_field
                  : "ROWID",
-                get_status_data->sort_order ? "ascending" : "descending");
+                get_tasks_data->sort_order ? "ascending" : "descending");
 
               init_task_iterator (&tasks,
                                   task,
-                                  get_status_data->sort_order,
-                                  get_status_data->sort_field);
+                                  get_tasks_data->sort_order,
+                                  get_tasks_data->sort_field);
               while (next (&tasks))
-                if (get_status_data->details)
+                if (get_tasks_data->details)
                   {
                     /* The detailed version. */
 
@@ -12101,7 +12101,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       progress_xml = g_strdup ("-1");
 
-                    if (get_status_data->rcfile)
+                    if (get_tasks_data->rcfile)
                       {
                         description = task_description (task);
                         if (description && strlen (description))
@@ -12335,7 +12335,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     else
                       last_report = g_strdup ("");
 
-                    if (get_status_data->rcfile)
+                    if (get_tasks_data->rcfile)
                       {
                         description = task_description (index);
                         if (description && strlen (description))
@@ -12560,11 +12560,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (line);
                   }
               cleanup_iterator (&tasks);
-              SEND_TO_CLIENT_OR_FAIL ("</get_status_response>");
+              SEND_TO_CLIENT_OR_FAIL ("</get_tasks_response>");
             }
           }
 
-        get_status_data_reset (get_status_data);
+        get_tasks_data_reset (get_tasks_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

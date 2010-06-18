@@ -1,3 +1,16 @@
+2010-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename GET_STATUS to GET_TASKS.
+
+	* src/omp.c (help_text): Rename GET_STATUS.
+	(get_status_data_t, get_status_data_reset, get_status_data): Remove.
+	(get_tasks_data_t, get_tasks_data_reset, get_tasks_data): New.  Renamed
+	with "tasks" instead of "status".
+	(command_data_t): Replace get_status with get_tasks.
+	(command_state_t): Replace CLIENT_GET_STATUS with CLIENT_GET_TASKS.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Rename for
+	GET_TASKS.
+
 2010-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_task_iterator): Add UUID to SQL.
