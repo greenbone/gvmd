@@ -1356,6 +1356,7 @@ typedef struct
 
 typedef struct
 {
+  int apply_overrides;
   int details;
   char *task_id;
   int rcfile;
@@ -3097,6 +3098,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_tasks_data->details = strcmp (attribute, "0");
             else
               get_tasks_data->details = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "apply_overrides", &attribute))
+              get_tasks_data->apply_overrides = strcmp (attribute, "0");
+            else
+              get_tasks_data->apply_overrides = 0;
 
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_tasks_data->sort_field);
@@ -5060,13 +5067,14 @@ send_rule (gpointer rule)
 /**
  * @brief Send XML for the reports of a task.
  *
- * @param[in]  task  The task.
+ * @param[in]  task             The task.
+ * @param[in]  apply_overrides  Whether to apply overrides.
  *
  * @return 0 success, -4 out of space in to_client,
  *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
-send_reports (task_t task)
+send_reports (task_t task, int apply_overrides)
 {
   iterator_t iterator;
   report_t index;
@@ -5082,7 +5090,8 @@ send_reports (task_t task)
 
       uuid = report_uuid (index);
 
-      if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings, 1))
+      if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
+                         apply_overrides))
         {
           free (uuid);
           return -5;
@@ -12778,7 +12787,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (first_report_id, &timestamp))
@@ -12819,7 +12829,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (last_report_id, &timestamp))
@@ -12860,7 +12871,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (second_last_report_id,
@@ -13078,7 +13090,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     // FIX need to handle err cases before send status
-                    (void) send_reports (task);
+                    (void) send_reports (task,
+                                         get_tasks_data->apply_overrides);
                     SEND_TO_CLIENT_OR_FAIL ("</task>");
                   }
                 else
@@ -13120,7 +13133,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (first_report_id, &timestamp))
@@ -13161,7 +13175,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (last_report_id, &timestamp))
@@ -13221,7 +13236,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings, 1))
+                                           &warnings,
+                                           get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
                         if (report_timestamp (second_last_report_id, &timestamp))

@@ -1,3 +1,13 @@
+2010-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add an apply_override attribute to GET_TASKS.
+
+	* src/omp.c (get_tasks_data_t): Add apply_overrides.
+	(omp_xml_handle_start_element): Parse apply_overrides for GET_TASKS.
+	(send_reports): Add apply_overrides arg.
+	(omp_xml_handle_end_element): In CLIENT_GET_TASKS apply overrides
+	according to apply_overrrides.
+
 2010-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (get_report_data_t, get_results_data_t): Add apply_overrides.
