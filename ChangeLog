@@ -1,5 +1,13 @@
 2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Add '_' to chars allowed in
+	login name.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_LSC_CREDENTIAL
+	correct login char error message.
+
+2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_trend): Add override flag.
 
 	* src/manage.h: Update header accordingly.
