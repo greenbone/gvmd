@@ -409,7 +409,7 @@ unsigned int
 task_finished_report_count (task_t);
 
 const char *
-task_trend (task_t);
+task_trend (task_t, int);
 
 schedule_t
 task_schedule (task_t);

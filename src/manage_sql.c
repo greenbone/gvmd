@@ -7367,12 +7367,13 @@ task_finished_report_count (task_t task)
 /**
  * @brief Return the trend of a task.
  *
- * @param[in]  task  Task.
+ * @param[in]  task      Task.
+ * @param[in]  override  Whether to override the threat.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 const char *
-task_trend (task_t task)
+task_trend (task_t task, int override)
 {
   report_t last_report, second_last_report;
   int holes_a, warns_a, infos_a, threat_a;
@@ -7395,7 +7396,7 @@ task_trend (task_t task)
     return "";
 
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
-                        1))
+                        override))
     abort (); // FIX fail better
 
   if (holes_a > 0)
@@ -7414,7 +7415,7 @@ task_trend (task_t task)
     return "";
 
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
-                        &warns_b, 1))
+                        &warns_b, override))
     abort (); // FIX fail better
 
   if (holes_b > 0)

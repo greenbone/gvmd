@@ -1,5 +1,14 @@
 2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_trend): Add override flag.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS pass
+	apply_overrides to task_trend.
+
+2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_scan_result_count): Add override flag.
 
 	* src/manage.h: Update header accordingly.
