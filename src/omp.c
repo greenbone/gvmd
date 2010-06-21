@@ -7726,11 +7726,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               }
 
-            report_scan_result_count (report, NULL, NULL, NULL, &result_count);
+            report_scan_result_count (report, NULL, NULL, NULL,
+                                      get_report_data->apply_overrides,
+                                      &result_count);
             report_scan_result_count (report,
                                       levels,
                                       get_report_data->search_phrase,
                                       get_report_data->min_cvss_base,
+                                      get_report_data->apply_overrides,
                                       &filtered_result_count);
             report_scan_run_status (report, &run_status);
             SENDF_TO_CLIENT_OR_FAIL

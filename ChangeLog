@@ -1,5 +1,14 @@
 2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_scan_result_count): Add override flag.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORT pass
+	apply_override to report_scan_result_count.
+
+2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS send
 	APPLY_OVERRIDE alongside SORT in response.
 

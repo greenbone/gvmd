@@ -7011,6 +7011,7 @@ report_scan_run_status (report_t report, int* status)
  *                             NULL or "".
  * @param[in]   min_cvss_base  Minimum CVSS base of included results.  All
  *                             results if NULL.
+ * @param[in]   override       Whether to override threats.
  * @param[out]  count          Total number of results in the scan.
  *
  * @return 0 on success, -1 on error.
@@ -7018,20 +7019,67 @@ report_scan_run_status (report_t report, int* status)
 int
 report_scan_result_count (report_t report, const char* levels,
                           const char* search_phrase, const char* min_cvss_base,
-                          int* count)
+                          int override, int* count)
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
+  gchar *new_type_sql = NULL;
 
-  levels_sql = where_levels_type (levels);
   phrase_sql = where_search_phrase (search_phrase);
   cvss_sql = where_cvss_base (min_cvss_base);
 
+  if (override)
+    {
+      gchar *ov;
+
+      assert (current_credentials.uuid);
+
+      levels_sql = where_levels (levels);
+
+      ov = g_strdup_printf
+            ("SELECT overrides.new_threat"
+             " FROM overrides"
+             " WHERE overrides.nvt = results.nvt"
+             " AND ((overrides.owner IS NULL)"
+             " OR (overrides.owner ="
+             " (SELECT ROWID FROM users"
+             "  WHERE users.uuid = '%s')))"
+             " AND (overrides.task ="
+             "      (SELECT reports.task FROM reports"
+             "       WHERE report_results.report = reports.ROWID)"
+             "      OR overrides.task = 0)"
+             " AND (overrides.result = results.ROWID"
+             "      OR overrides.result = 0)"
+             " AND (overrides.hosts is NULL"
+             "      OR overrides.hosts = \"\""
+             "      OR hosts_contains (overrides.hosts, results.host))"
+             " AND (overrides.port is NULL"
+             "      OR overrides.port = \"\""
+             "      OR overrides.port = results.port)"
+             " AND (overrides.threat is NULL"
+             "      OR overrides.threat = \"\""
+             "      OR overrides.threat = results.type)"
+             " ORDER BY overrides.result DESC, overrides.task DESC,"
+             " overrides.port DESC, overrides.threat"
+             " COLLATE collate_message_type ASC",
+             current_credentials.uuid);
+
+      new_type_sql = g_strdup_printf (", (CASE WHEN (%s) IS NULL"
+                                      " THEN type ELSE (%s) END)"
+                                      " AS new_type",
+                                      ov, ov);
+
+      g_free (ov);
+    }
+  else
+    levels_sql = where_levels_type (levels);
+
   *count = sql_int (0, 0,
-                    "SELECT count(results.ROWID)"
+                    "SELECT count(results.ROWID)%s"
                     " FROM results, report_results"
                     " WHERE results.ROWID = report_results.result"
                     "%s%s%s"
                     " AND report_results.report = %llu;",
+                    new_type_sql ? new_type_sql : "",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "",
@@ -7040,6 +7088,8 @@ report_scan_result_count (report_t report, const char* levels,
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
+  g_free (new_type_sql);
+
   return 0;
 }
 
