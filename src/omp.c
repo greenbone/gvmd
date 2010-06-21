@@ -12744,11 +12744,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL
                ("<sort>"
                 "<field>%s<order>%s</order></field>"
-                "</sort>",
+                "</sort>"
+                "<apply_overrides>%i</apply_overrides>",
                 get_tasks_data->sort_field
                  ? get_tasks_data->sort_field
                  : "ROWID",
-                get_tasks_data->sort_order ? "ascending" : "descending");
+                get_tasks_data->sort_order ? "ascending" : "descending",
+                get_tasks_data->apply_overrides);
 
               init_task_iterator (&tasks,
                                   task,

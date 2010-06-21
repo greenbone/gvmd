@@ -1,3 +1,8 @@
+2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS send
+	APPLY_OVERRIDE alongside SORT in response.
+
 2010-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add an apply_override attribute to GET_TASKS.
