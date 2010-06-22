@@ -1,5 +1,10 @@
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_schedule): Call omp_stop_task instead of
+	omp_abort_task.
+
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_agent_data_reset): Correct name in doc.
 
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>

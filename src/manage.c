@@ -2203,7 +2203,7 @@ manage_schedule (int (*fork_connection) (int *,
           exit (EXIT_FAILURE);
         }
 
-      if (omp_abort_task (&session, task_uuid))
+      if (omp_stop_task (&session, task_uuid))
         {
           g_free (task_uuid);
           g_free (owner);
