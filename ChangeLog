@@ -1,5 +1,15 @@
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (help_text, command_data_t): Move STOP_TASK entry into
+	alphabetical order.
+	(stop_task_data_t, stop_task_data_reset, stop_task_data): Move into
+	alphabetical order.
+	(client_state_t): Move CLIENT_STOP_TASK into alphabetical order.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Move STOP_TASK
+	cases into alphabetical order.
+
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Call omp_stop_task instead of
 	omp_abort_task.
 

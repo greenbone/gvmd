@@ -422,7 +422,6 @@ array_add_new_string (array_t *array, const gchar *string)
  * @brief Response to the help command.
  */
 static char* help_text = "\n"
-"    STOP_TASK              Stop a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
 "    COMMANDS               Run a list of commands.\n"
 "    CREATE_AGENT           Create an agent.\n"
@@ -477,6 +476,7 @@ static char* help_text = "\n"
 "    RESUME_PAUSED_TASK     Resume a paused task.\n"
 "    RESUME_STOPPED_TASK    Resume a stopped task.\n"
 "    START_TASK             Manually start an existing task.\n"
+"    STOP_TASK              Stop a running task.\n"
 "    TEST_ESCALATOR         Run an escalator.\n";
 
 
@@ -629,25 +629,6 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
   selector->family_or_nvt = family_or_nvt;
 
   return selector;
-}
-
-/**
- * @brief Command data for the abort task command.
- */
-typedef struct
-{
-  char *task_id;
-} stop_task_data_t;
-
-/**
- * @brief Free members of a stop_task_data_t and set them to NULL.
- */
-static void
-stop_task_data_reset (stop_task_data_t *data)
-{
-  free (data->task_id);
-
-  memset (data, 0, sizeof (stop_task_data_t));
 }
 
 /**
@@ -1517,6 +1498,25 @@ start_task_data_reset (start_task_data_t *data)
   memset (data, 0, sizeof (start_task_data_t));
 }
 
+/**
+ * @brief Command data for the abort task command.
+ */
+typedef struct
+{
+  char *task_id;
+} stop_task_data_t;
+
+/**
+ * @brief Free members of a stop_task_data_t and set them to NULL.
+ */
+static void
+stop_task_data_reset (stop_task_data_t *data)
+{
+  free (data->task_id);
+
+  memset (data, 0, sizeof (stop_task_data_t));
+}
+
 typedef struct
 {
   char *escalator_id;
@@ -1532,7 +1532,6 @@ test_escalator_data_reset (test_escalator_data_t *data)
 
 typedef union
 {
-  stop_task_data_t stop_task;
   create_agent_data_t create_agent;
   create_config_data_t create_config;
   create_escalator_data_t create_escalator;
@@ -1576,6 +1575,7 @@ typedef union
   resume_paused_task_data_t resume_paused_task;
   resume_stopped_task_data_t resume_stopped_task;
   start_task_data_t start_task;
+  stop_task_data_t stop_task;
   test_escalator_data_t test_escalator;
 } command_data_t;
 
@@ -1595,12 +1595,6 @@ command_data_init (command_data_t *data)
  * @brief Parser callback data.
  */
 command_data_t command_data;
-
-/**
- * @brief Parser callback data for STOP_TASK.
- */
-stop_task_data_t *stop_task_data
- = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
  * @brief Parser callback data for CREATE_AGENT.
@@ -1879,6 +1873,12 @@ start_task_data_t *start_task_data
  = (start_task_data_t*) &(command_data.start_task);
 
 /**
+ * @brief Parser callback data for STOP_TASK.
+ */
+stop_task_data_t *stop_task_data
+ = (stop_task_data_t*) &(command_data.stop_task);
+
+/**
  * @brief Parser callback data for TEST_ESCALATOR.
  */
 test_escalator_data_t *test_escalator_data
@@ -1930,7 +1930,6 @@ typedef enum
   CLIENT_TOP,
   CLIENT_AUTHENTIC,
 
-  CLIENT_STOP_TASK,
   CLIENT_AUTHENTICATE,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
@@ -2111,6 +2110,7 @@ typedef enum
   CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_START_TASK,
+  CLIENT_STOP_TASK,
   CLIENT_TEST_ESCALATOR,
   CLIENT_VERSION
 } client_state_t;
@@ -2574,12 +2574,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             free_tasks ();
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
-          }
-        else if (strcasecmp ("STOP_TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "task_id",
-                              &stop_task_data->task_id);
-            set_client_state (CLIENT_STOP_TASK);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
           {
@@ -3179,6 +3173,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &start_task_data->task_id);
             set_client_state (CLIENT_START_TASK);
+          }
+        else if (strcasecmp ("STOP_TASK", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &stop_task_data->task_id);
+            set_client_state (CLIENT_STOP_TASK);
           }
         else if (strcasecmp ("TEST_ESCALATOR", element_name) == 0)
           {
@@ -4093,19 +4093,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_STOP_TASK:
-        if (send_element_error_to_client ("stop_task", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-
       case CLIENT_CREATE_AGENT:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_COMMENT);
@@ -4795,6 +4782,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_START_TASK:
         if (send_element_error_to_client ("start_task", element_name))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_STOP_TASK:
+        if (send_element_error_to_client ("stop_task", element_name))
           {
             error_send_to_client (error);
             return;
@@ -6788,48 +6788,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
     {
       case CLIENT_TOP:
         assert (0);
-        break;
-
-      case CLIENT_STOP_TASK:
-        if (stop_task_data->task_id)
-          {
-            task_t task;
-
-            if (find_task (stop_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("stop_task"));
-            else if (task == 0)
-              {
-                if (send_find_error_to_client ("stop_task",
-                                               "task",
-                                               stop_task_data->task_id))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else switch (stop_task (task))
-              {
-                case 0:   /* Stopped. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
-                  break;
-                case 1:   /* Stop requested. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
-                  break;
-                default:  /* Programming error. */
-                  assert (0);
-                case -1:
-                  /* to_scanner is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
-                  abort ();
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("stop_task",
-                              "STOP_TASK requires a task_id attribute"));
-        stop_task_data_reset (stop_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_AUTHENTICATE:
@@ -11865,6 +11823,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                     "START_TASK task_id"
                                                     " attribute must be set"));
         start_task_data_reset (start_task_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_STOP_TASK:
+        if (stop_task_data->task_id)
+          {
+            task_t task;
+
+            if (find_task (stop_task_data->task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("stop_task"));
+            else if (task == 0)
+              {
+                if (send_find_error_to_client ("stop_task",
+                                               "task",
+                                               stop_task_data->task_id))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (stop_task (task))
+              {
+                case 0:   /* Stopped. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
+                  break;
+                case 1:   /* Stop requested. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
+                  break;
+                default:  /* Programming error. */
+                  assert (0);
+                case -1:
+                  /* to_scanner is full. */
+                  // FIX revert parsing for retry
+                  // process_omp_client_input must return -2
+                  abort ();
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("stop_task",
+                              "STOP_TASK requires a task_id attribute"));
+        stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
