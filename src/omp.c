@@ -1400,11 +1400,9 @@ typedef struct
   char *file;
   char *file_name;
   char *name;
-  char *parameter;
   char *rcfile;
   char *schedule_id;
   char *task_id;
-  char *value;
 } modify_task_data_t;
 
 static void
@@ -1416,11 +1414,9 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->file);
   free (data->file_name);
   free (data->name);
-  free (data->parameter);
   free (data->rcfile);
   free (data->schedule_id);
   free (data->task_id);
-  free (data->value);
 
   memset (data, 0, sizeof (modify_task_data_t));
 }
@@ -2102,7 +2098,6 @@ typedef enum
   CLIENT_MODIFY_TASK_ESCALATOR,
   CLIENT_MODIFY_TASK_FILE,
   CLIENT_MODIFY_TASK_NAME,
-  CLIENT_MODIFY_TASK_PARAMETER,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_PAUSE_TASK,
@@ -4051,12 +4046,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_NAME);
-        else if (strcasecmp ("PARAMETER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->parameter);
-            set_client_state (CLIENT_MODIFY_TASK_PARAMETER);
-          }
         else if (strcasecmp ("RCFILE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
@@ -9502,10 +9491,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
+            else if ((modify_task_data->action
+                      || modify_task_data->escalator_id
+                      || modify_task_data->name
+                      || modify_task_data->rcfile)
+                     == 0)
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "Too few parameters"));
             else if (modify_task_data->action
                      && (modify_task_data->comment
+                         || modify_task_data->escalator_id
                          || modify_task_data->name
-                         || modify_task_data->parameter
                          || modify_task_data->rcfile))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
@@ -9654,41 +9651,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 if (fail == 0)
                   {
-                    if (modify_task_data->parameter && modify_task_data->value)
-                      {
-                        fail = set_task_parameter (task,
-                                                   modify_task_data->parameter,
-                                                   modify_task_data->value);
-                        modify_task_data->value = NULL;
-                        if (fail)
-                          {
-                            if (fail == -3)
-                              SEND_TO_CLIENT_OR_FAIL
-                               (XML_INTERNAL_ERROR ("modify_task"));
-                            else
-                              SEND_TO_CLIENT_OR_FAIL
-                               (XML_ERROR_SYNTAX ("modify_task",
-                                                  "Bogus MODIFY_TASK parameter"));
-                          }
-                        else
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_OK ("modify_task"));
-                      }
-                    else if (first)
-                      {
-                        if (modify_task_data->value)
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_ERROR_SYNTAX ("modify_task",
-                                              "MODIFY_TASK parameter requires"
-                                              " an id attribute"));
-                        else if (modify_task_data->parameter)
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_INTERNAL_ERROR ("modify_task"));
-                        else
-                          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
-                      }
-                    else
-                      SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
+                    assert (first == 0);
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                   }
               }
           }
@@ -9709,10 +9673,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
-        set_client_state (CLIENT_MODIFY_TASK);
-        break;
-      case CLIENT_MODIFY_TASK_PARAMETER:
-        assert (strcasecmp ("PARAMETER", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
@@ -13543,9 +13503,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_NAME:
         openvas_append_text (&modify_task_data->name, text, text_len);
-        break;
-      case CLIENT_MODIFY_TASK_PARAMETER:
-        openvas_append_text (&modify_task_data->value, text, text_len);
         break;
       case CLIENT_MODIFY_TASK_RCFILE:
         openvas_append_text (&modify_task_data->rcfile, text, text_len);

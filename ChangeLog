@@ -1,7 +1,12 @@
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_NOTE align
-	overhang properly.  In CLIENT_CREATE_OVERRIDE add NEW_THREAT requirement.
+	Remove redundant MODIFY_TASK PARAMETER element.
+
+	* src/omp.c (modify_task_data_t, modify_task_data_reset): Remove parameter
+	and value.
+	(client_state_t): Remove PARAMETER state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Remove PARAMETER handling.
 
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
