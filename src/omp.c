@@ -10401,7 +10401,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
           else if (create_note_data->task
-              && find_task (create_note_data->task, &task))
+                   && find_task (create_note_data->task, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->task && task == 0)
             {
@@ -10503,6 +10503,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
+          else if (create_override_data->new_threat == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_override",
+                                "CREATE_OVERRIDE requires a NEW_THREAT"
+                                " entity"));
           else if (create_override_data->task
               && find_task (create_override_data->task, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));

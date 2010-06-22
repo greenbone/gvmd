@@ -1,5 +1,10 @@
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_NOTE align
+	overhang properly.  In CLIENT_CREATE_OVERRIDE add NEW_THREAT requirement.
+
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (client_state_t, omp_xml_handle_start_element)
 	(omp_xml_handle_end_element, omp_xml_handle_text): Include AUTHENTICATE
 	in CREDENTIALS state name.
