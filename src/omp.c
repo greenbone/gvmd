@@ -422,7 +422,7 @@ array_add_new_string (array_t *array, const gchar *string)
  * @brief Response to the help command.
  */
 static char* help_text = "\n"
-"    ABORT_TASK             Abort a running task.\n"
+"    STOP_TASK              Stop a running task.\n"
 "    AUTHENTICATE           Authenticate with the manager.\n"
 "    COMMANDS               Run a list of commands.\n"
 "    CREATE_AGENT           Create an agent.\n"
@@ -637,17 +637,17 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
 typedef struct
 {
   char *task_id;
-} abort_task_data_t;
+} stop_task_data_t;
 
 /**
- * @brief Free members of an abort_task_data_t and set them to NULL.
+ * @brief Free members of a stop_task_data_t and set them to NULL.
  */
 static void
-abort_task_data_reset (abort_task_data_t *data)
+stop_task_data_reset (stop_task_data_t *data)
 {
   free (data->task_id);
 
-  memset (data, 0, sizeof (abort_task_data_t));
+  memset (data, 0, sizeof (stop_task_data_t));
 }
 
 /**
@@ -1532,7 +1532,7 @@ test_escalator_data_reset (test_escalator_data_t *data)
 
 typedef union
 {
-  abort_task_data_t abort_task;
+  stop_task_data_t stop_task;
   create_agent_data_t create_agent;
   create_config_data_t create_config;
   create_escalator_data_t create_escalator;
@@ -1597,10 +1597,10 @@ command_data_init (command_data_t *data)
 command_data_t command_data;
 
 /**
- * @brief Parser callback data for ABORT_TASK.
+ * @brief Parser callback data for STOP_TASK.
  */
-abort_task_data_t *abort_task_data
- = (abort_task_data_t*) &(command_data.abort_task);
+stop_task_data_t *stop_task_data
+ = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
  * @brief Parser callback data for CREATE_AGENT.
@@ -1930,7 +1930,7 @@ typedef enum
   CLIENT_TOP,
   CLIENT_AUTHENTIC,
 
-  CLIENT_ABORT_TASK,
+  CLIENT_STOP_TASK,
   CLIENT_AUTHENTICATE,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
@@ -2575,11 +2575,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }
-        else if (strcasecmp ("ABORT_TASK", element_name) == 0)
+        else if (strcasecmp ("STOP_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
-                              &abort_task_data->task_id);
-            set_client_state (CLIENT_ABORT_TASK);
+                              &stop_task_data->task_id);
+            set_client_state (CLIENT_STOP_TASK);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
           {
@@ -4093,8 +4093,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_ABORT_TASK:
-        if (send_element_error_to_client ("abort_task", element_name))
+      case CLIENT_STOP_TASK:
+        if (send_element_error_to_client ("stop_task", element_name))
           {
             error_send_to_client (error);
             return;
@@ -6790,18 +6790,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (0);
         break;
 
-      case CLIENT_ABORT_TASK:
-        if (abort_task_data->task_id)
+      case CLIENT_STOP_TASK:
+        if (stop_task_data->task_id)
           {
             task_t task;
 
-            if (find_task (abort_task_data->task_id, &task))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("abort_task"));
+            if (find_task (stop_task_data->task_id, &task))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("stop_task"));
             else if (task == 0)
               {
-                if (send_find_error_to_client ("abort_task",
+                if (send_find_error_to_client ("stop_task",
                                                "task",
-                                               abort_task_data->task_id))
+                                               stop_task_data->task_id))
                   {
                     error_send_to_client (error);
                     return;
@@ -6810,10 +6810,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else switch (stop_task (task))
               {
                 case 0:   /* Stopped. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("abort_task"));
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
                   break;
                 case 1:   /* Stop requested. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("abort_task"));
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   break;
                 default:  /* Programming error. */
                   assert (0);
@@ -6826,9 +6826,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("abort_task",
-                              "ABORT_TASK requires a task_id attribute"));
-        abort_task_data_reset (abort_task_data);
+           (XML_ERROR_SYNTAX ("stop_task",
+                              "STOP_TASK requires a task_id attribute"));
+        stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

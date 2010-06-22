@@ -1,5 +1,18 @@
 2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Rename OMP ABORT_TASK to STOP_TASK.
+
+	* src/omp.c (help_text): Rename STOP_TASK.
+	(abort_task_data_t, abort_task_data_reset, abort_task_data): Remove.
+	(stop_task_data_t, stop_task_data_reset, stop_task_data): New.  Renamed
+	with "stop" instead of "abort".
+	(command_data_t): Replace abort_task with stop_task.
+	(client_state_t): Replace CLIENT_ABORT_TASK with CLIENT_STOP_TASK.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Rename for
+	STOP_TASK.
+
+2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Add '_' to chars allowed in
 	login name.
 
