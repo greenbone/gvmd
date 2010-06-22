@@ -663,7 +663,7 @@ typedef struct
 } create_agent_data_t;
 
 /**
- * @brief Free members of an abort_task_data_t and set them to NULL.
+ * @brief Free members of a create_agent_data_t and set them to NULL.
  */
 static void
 create_agent_data_reset (create_agent_data_t *data)

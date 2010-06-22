@@ -1,4 +1,8 @@
-2010-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (create_agent_data_reset): Correct name in doc.
+
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Rename OMP ABORT_TASK to STOP_TASK.
 
