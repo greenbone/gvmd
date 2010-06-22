@@ -1,5 +1,11 @@
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Include AUTHENTICATE
+	in CREDENTIALS state name.
+
+2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (help_text, command_data_t): Move STOP_TASK entry into
 	alphabetical order.
 	(stop_task_data_t, stop_task_data_reset, stop_task_data): Move into

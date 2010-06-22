@@ -1931,6 +1931,9 @@ typedef enum
   CLIENT_AUTHENTIC,
 
   CLIENT_AUTHENTICATE,
+  CLIENT_AUTHENTICATE_CREDENTIALS,
+  CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
+  CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
   CLIENT_AUTHENTIC_COMMANDS,
   CLIENT_COMMANDS,
   CLIENT_CREATE_AGENT,
@@ -2027,9 +2030,6 @@ typedef enum
   CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_TARGET,
-  CLIENT_CREDENTIALS,
-  CLIENT_CREDENTIALS_PASSWORD,
-  CLIENT_CREDENTIALS_USERNAME,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
   CLIENT_DELETE_ESCALATOR,
@@ -3206,8 +3206,28 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             /* Init, so it's the empty string when the entity is empty. */
             append_to_credentials_password (&current_credentials, "", 0);
-            set_client_state (CLIENT_CREDENTIALS);
+            set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
           }
+        else
+          {
+            if (send_element_error_to_client ("authenticate", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            free_credentials (&current_credentials);
+            set_client_state (CLIENT_TOP);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+      case CLIENT_AUTHENTICATE_CREDENTIALS:
+        if (strcasecmp ("USERNAME", element_name) == 0)
+          set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
         else
           {
             if (send_element_error_to_client ("authenticate", element_name))
@@ -3331,27 +3351,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
-        break;
-
-      case CLIENT_CREDENTIALS:
-        if (strcasecmp ("USERNAME", element_name) == 0)
-          set_client_state (CLIENT_CREDENTIALS_USERNAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREDENTIALS_PASSWORD);
-        else
-          {
-            if (send_element_error_to_client ("authenticate", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            free_credentials (&current_credentials);
-            set_client_state (CLIENT_TOP);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
         break;
 
       case CLIENT_DELETE_AGENT:
@@ -6826,26 +6825,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_AUTHENTICATE_CREDENTIALS:
+        assert (strcasecmp ("CREDENTIALS", element_name) == 0);
+        set_client_state (CLIENT_AUTHENTICATE);
+        break;
+
+      case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
+        assert (strcasecmp ("USERNAME", element_name) == 0);
+        set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
+        break;
+
+      case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
+        break;
+
       case CLIENT_AUTHENTIC:
       case CLIENT_COMMANDS:
       case CLIENT_AUTHENTIC_COMMANDS:
         assert (strcasecmp ("COMMANDS", element_name) == 0);
         SENDF_TO_CLIENT_OR_FAIL ("</commands_response>");
-        break;
-
-      case CLIENT_CREDENTIALS:
-        assert (strcasecmp ("CREDENTIALS", element_name) == 0);
-        set_client_state (CLIENT_AUTHENTICATE);
-        break;
-
-      case CLIENT_CREDENTIALS_USERNAME:
-        assert (strcasecmp ("USERNAME", element_name) == 0);
-        set_client_state (CLIENT_CREDENTIALS);
-        break;
-
-      case CLIENT_CREDENTIALS_PASSWORD:
-        assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREDENTIALS);
         break;
 
       case CLIENT_GET_PREFERENCES:
@@ -13481,6 +13480,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
   tracef ("   XML   text: %s\n", text);
   switch (client_state)
     {
+      case CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME:
+        append_to_credentials_username (&current_credentials, text, text_len);
+        break;
+      case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
+        append_to_credentials_password (&current_credentials, text, text_len);
+        break;
+
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY:
         openvas_append_text (&modify_config_data->nvt_selection_family,
                              text,
@@ -13541,13 +13547,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_FILE:
         openvas_append_text (&modify_task_data->file, text, text_len);
-        break;
-
-      case CLIENT_CREDENTIALS_USERNAME:
-        append_to_credentials_username (&current_credentials, text, text_len);
-        break;
-      case CLIENT_CREDENTIALS_PASSWORD:
-        append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
       case CLIENT_CREATE_AGENT_COMMENT:
