@@ -1,5 +1,18 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Rename GET_NVT_DETAILS to GET_NVTS.
+
+	* src/omp.c (help_text, client_state_t, command_data_t): Rename
+	GET_NVT_DETAILS element.
+	(get_nvt_details_data_t, get_nvt_details_data_reset)
+	(get_nvt_details_data): Remove.
+	(get_nvts_data_t, get_nvts_data_reset, get_nvts_data): New.  Renamed from
+	"nvt_details" counterparts.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Rename
+	GET_NVT_DETAILS.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Merge GET_NVT_ALL into GET_NVT_DETAILS.
 
 	* src/omp.c (help_text): Remove GET_NVT_ALL.  Improve GET_NVT_DETAILS.

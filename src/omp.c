@@ -450,7 +450,7 @@ static char* help_text = "\n"
 "    GET_ESCALATORS         Get all escalators.\n"
 "    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
 "    GET_NOTES              Get all notes.\n"
-"    GET_NVT_DETAILS        Get info about one or all available NVTs.\n"
+"    GET_NVTS               Get one or all available NVTs.\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_OVERRIDES          Get all overrides.\n"
@@ -1140,17 +1140,17 @@ typedef struct
   char *oid;
   char *sort_field;
   int sort_order;
-} get_nvt_details_data_t;
+} get_nvts_data_t;
 
 static void
-get_nvt_details_data_reset (get_nvt_details_data_t *data)
+get_nvts_data_reset (get_nvts_data_t *data)
 {
   free (data->config_id);
   free (data->family);
   free (data->oid);
   free (data->sort_field);
 
-  memset (data, 0, sizeof (get_nvt_details_data_t));
+  memset (data, 0, sizeof (get_nvts_data_t));
 }
 
 typedef struct
@@ -1550,7 +1550,7 @@ typedef union
   get_escalators_data_t get_escalators;
   get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
-  get_nvt_details_data_t get_nvt_details;
+  get_nvts_data_t get_nvts;
   get_nvt_families_data_t get_nvt_families;
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
   get_overrides_data_t get_overrides;
@@ -1735,10 +1735,10 @@ get_notes_data_t *get_notes_data
  = &(command_data.get_notes);
 
 /**
- * @brief Parser callback data for GET_NVT_DETAILS.
+ * @brief Parser callback data for GET_NVTS.
  */
-get_nvt_details_data_t *get_nvt_details_data
- = &(command_data.get_nvt_details);
+get_nvts_data_t *get_nvts_data
+ = &(command_data.get_nvts);
 
 /**
  * @brief Parser callback data for GET_NVT_FAMILIES.
@@ -2043,7 +2043,7 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NOTES_NVT,
   CLIENT_GET_NOTES_TASK,
-  CLIENT_GET_NVT_DETAILS,
+  CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_OVERRIDES,
@@ -2812,29 +2812,29 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_nvt_feed_checksum_data->algorithm);
             set_client_state (CLIENT_GET_NVT_FEED_CHECKSUM);
           }
-        else if (strcasecmp ("GET_NVT_DETAILS", element_name) == 0)
+        else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "oid",
-                              &get_nvt_details_data->oid);
+                              &get_nvts_data->oid);
             append_attribute (attribute_names, attribute_values, "config_id",
-                              &get_nvt_details_data->config_id);
+                              &get_nvts_data->config_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
-              get_nvt_details_data->details = strcmp (attribute, "0");
+              get_nvts_data->details = strcmp (attribute, "0");
             else
-              get_nvt_details_data->details = 0;
+              get_nvts_data->details = 0;
             append_attribute (attribute_names, attribute_values, "family",
-                              &get_nvt_details_data->family);
+                              &get_nvts_data->family);
             append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_nvt_details_data->sort_field);
+                              &get_nvts_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              get_nvt_details_data->sort_order = strcmp (attribute,
+              get_nvts_data->sort_order = strcmp (attribute,
                                                          "descending");
             else
-              get_nvt_details_data->sort_order = 1;
-            set_client_state (CLIENT_GET_NVT_DETAILS);
+              get_nvts_data->sort_order = 1;
+            set_client_state (CLIENT_GET_NVTS);
           }
         else if (strcasecmp ("GET_NVT_FAMILIES", element_name) == 0)
           {
@@ -3642,8 +3642,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_GET_NVT_DETAILS:
-        if (send_element_error_to_client ("get_nvt_details", element_name))
+      case CLIENT_GET_NVTS:
+        if (send_element_error_to_client ("get_nvts", element_name))
           {
             error_send_to_client (error);
             return;
@@ -7070,42 +7070,42 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_NVT_DETAILS:
+      case CLIENT_GET_NVTS:
         {
           char *md5sum = nvts_md5sum ();
-          if (md5sum && get_nvt_details_data->details)
+          if (md5sum && get_nvts_data->details)
             {
               config_t config = (config_t) 0;
 
-              if (get_nvt_details_data->oid)
+              if (get_nvts_data->oid)
                 {
                   nvt_t nvt;
 
                   free (md5sum);
-                  if (find_nvt (get_nvt_details_data->oid, &nvt))
+                  if (find_nvt (get_nvts_data->oid, &nvt))
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_nvt_details"));
+                     (XML_INTERNAL_ERROR ("get_nvts"));
                   else if (nvt == 0)
                     {
-                      if (send_find_error_to_client ("get_nvt_details",
+                      if (send_find_error_to_client ("get_nvts",
                                                      "NVT",
-                                                     get_nvt_details_data->oid))
+                                                     get_nvts_data->oid))
                         {
                           error_send_to_client (error);
                           return;
                         }
                     }
-                  else if (get_nvt_details_data->config_id
-                           && find_config (get_nvt_details_data->config_id,
+                  else if (get_nvts_data->config_id
+                           && find_config (get_nvts_data->config_id,
                                            &config))
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_nvt_details"));
-                  else if (get_nvt_details_data->config_id && (config == 0))
+                     (XML_INTERNAL_ERROR ("get_nvts"));
+                  else if (get_nvts_data->config_id && (config == 0))
                     {
                       if (send_find_error_to_client
-                           ("get_nvt_details",
+                           ("get_nvts",
                             "config",
-                            get_nvt_details_data->config_id))
+                            get_nvts_data->config_id))
                         {
                           error_send_to_client (error);
                           return;
@@ -7116,7 +7116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       iterator_t nvts;
 
                       SEND_TO_CLIENT_OR_FAIL
-                       ("<get_nvt_details_response"
+                       ("<get_nvts_response"
                         " status=\"" STATUS_OK "\""
                         " status_text=\"" STATUS_OK_TEXT "\">");
 
@@ -7164,20 +7164,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         }
                       cleanup_iterator (&nvts);
 
-                      SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
+                      SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
                     }
                 }
-              else if (get_nvt_details_data->config_id
-                       && find_config (get_nvt_details_data->config_id,
+              else if (get_nvts_data->config_id
+                       && find_config (get_nvts_data->config_id,
                                        &config))
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_nvt_details"));
-              else if (get_nvt_details_data->config_id && (config == 0))
+                 (XML_INTERNAL_ERROR ("get_nvts"));
+              else if (get_nvts_data->config_id && (config == 0))
                 {
                   if (send_find_error_to_client
-                       ("get_nvt_details",
+                       ("get_nvts",
                         "config",
-                        get_nvt_details_data->config_id))
+                        get_nvts_data->config_id))
                     {
                       error_send_to_client (error);
                       return;
@@ -7188,7 +7188,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   iterator_t nvts;
 
                   SENDF_TO_CLIENT_OR_FAIL
-                   ("<get_nvt_details_response"
+                   ("<get_nvts_response"
                     " status=\"" STATUS_OK "\""
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<nvt_count>%u</nvt_count>",
@@ -7202,9 +7202,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_nvt_iterator (&nvts,
                                      (nvt_t) 0,
                                      config,
-                                     get_nvt_details_data->family,
-                                     get_nvt_details_data->sort_order,
-                                     get_nvt_details_data->sort_field);
+                                     get_nvts_data->family,
+                                     get_nvts_data->sort_order,
+                                     get_nvts_data->sort_field);
                   while (next (&nvts))
                     {
                       int pref_count = -1;
@@ -7214,7 +7214,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         timeout = config_nvt_timeout (config,
                                                       nvt_iterator_oid (&nvts));
 
-                      if (config || get_nvt_details_data->family)
+                      if (config || get_nvts_data->family)
                         {
                           const char *nvt_name = nvt_iterator_name (&nvts);
                           pref_count = nvt_preference_count (nvt_name);
@@ -7227,14 +7227,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   cleanup_iterator (&nvts);
 
-                  SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
+                  SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
                 }
             }
           else if (md5sum)
             {
               iterator_t nvts;
 
-              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response"
+              SEND_TO_CLIENT_OR_FAIL ("<get_nvts_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
@@ -7253,12 +7253,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
               cleanup_iterator (&nvts);
 
-              SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
+              SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
             }
           else
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));
+            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvts"));
         }
-        get_nvt_details_data_reset (get_nvt_details_data);
+        get_nvts_data_reset (get_nvts_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
