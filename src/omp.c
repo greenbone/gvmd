@@ -450,8 +450,7 @@ static char* help_text = "\n"
 "    GET_ESCALATORS         Get all escalators.\n"
 "    GET_LSC_CREDENTIALS    Get all local security check credentials.\n"
 "    GET_NOTES              Get all notes.\n"
-"    GET_NVT_ALL            Get IDs and names of all available NVTs.\n"
-"    GET_NVT_DETAILS        Get all details for all available NVTs.\n"
+"    GET_NVT_DETAILS        Get info about one or all available NVTs.\n"
 "    GET_NVT_FAMILIES       Get a list of all NVT families.\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_OVERRIDES          Get all overrides.\n"
@@ -1136,6 +1135,7 @@ get_notes_data_reset (get_notes_data_t *data)
 typedef struct
 {
   char *config_id;
+  int details;
   char *family;
   char *oid;
   char *sort_field;
@@ -2043,7 +2043,6 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NOTES_NVT,
   CLIENT_GET_NOTES_TASK,
-  CLIENT_GET_NVT_ALL,
   CLIENT_GET_NVT_DETAILS,
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
@@ -2807,8 +2806,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_NOTES);
           }
-        else if (strcasecmp ("GET_NVT_ALL", element_name) == 0)
-          set_client_state (CLIENT_GET_NVT_ALL);
         else if (strcasecmp ("GET_NVT_FEED_CHECKSUM", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "algorithm",
@@ -2822,6 +2819,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_nvt_details_data->oid);
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_nvt_details_data->config_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_nvt_details_data->details = strcmp (attribute, "0");
+            else
+              get_nvt_details_data->details = 0;
             append_attribute (attribute_names, attribute_values, "family",
                               &get_nvt_details_data->family);
             append_attribute (attribute_names, attribute_values, "sort_field",
@@ -3622,21 +3624,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
-        break;
-
-      case CLIENT_GET_NVT_ALL:
-          {
-            if (send_element_error_to_client ("get_nvt_all", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
@@ -6959,40 +6946,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_NVT_ALL:
-        {
-          char *md5sum = nvts_md5sum ();
-          if (md5sum)
-            {
-              iterator_t nvts;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_all_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                       nvts_size ());
-              SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
-              SEND_TO_CLIENT_OR_FAIL (md5sum);
-              free (md5sum);
-              SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
-
-              init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
-              while (next (&nvts))
-                if (send_nvt (&nvts, 0, -1, NULL))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              cleanup_iterator (&nvts);
-
-              SEND_TO_CLIENT_OR_FAIL ("</get_nvt_all_response>");
-            }
-          else
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_all"));
-        }
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_GET_NOTES:
         {
           note_t note = 0;
@@ -7120,7 +7073,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_DETAILS:
         {
           char *md5sum = nvts_md5sum ();
-          if (md5sum)
+          if (md5sum && get_nvt_details_data->details)
             {
               config_t config = (config_t) 0;
 
@@ -7276,6 +7229,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
                 }
+            }
+          else if (md5sum)
+            {
+              iterator_t nvts;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_nvt_details_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
+                                       nvts_size ());
+              SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
+              SEND_TO_CLIENT_OR_FAIL (md5sum);
+              free (md5sum);
+              SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+
+              init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+              while (next (&nvts))
+                if (send_nvt (&nvts, 0, -1, NULL))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              cleanup_iterator (&nvts);
+
+              SEND_TO_CLIENT_OR_FAIL ("</get_nvt_details_response>");
             }
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_details"));

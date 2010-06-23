@@ -1,5 +1,15 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Merge GET_NVT_ALL into GET_NVT_DETAILS.
+
+	* src/omp.c (help_text): Remove GET_NVT_ALL.  Improve GET_NVT_DETAILS.
+	(get_nvt_details_data_t): Add details.
+	(client_state_t): Remove GET_NVT_ALL state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Move
+	GET_NVT_ALL handling into GET_NVT_DETAILS.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK improve
 	FILE name error message.
 
