@@ -1,5 +1,10 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_TASK improve
+	FILE name error message.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Replace MODIFY_REPORT PARAMETER element with COMMENT, to better match
 	other modifier commands.
 

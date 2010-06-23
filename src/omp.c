@@ -9506,7 +9506,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (modify_task_data->file_name == NULL)
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
-                                      "MODIFY_TASK requires a name attribute"));
+                                      "MODIFY_TASK FILE requires a name"
+                                      " attribute"));
                 else if (strcmp (modify_task_data->action, "update") == 0)
                   {
                     manage_task_update_file (task,
