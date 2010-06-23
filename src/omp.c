@@ -1138,8 +1138,11 @@ typedef struct
   int details;
   char *family;
   char *oid;
+  int preference_count;
+  int preferences;
   char *sort_field;
   int sort_order;
+  int timeout;
 } get_nvts_data_t;
 
 static void
@@ -2826,6 +2829,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_nvts_data->details = 0;
             append_attribute (attribute_names, attribute_values, "family",
                               &get_nvts_data->family);
+            if (find_attribute (attribute_names, attribute_values,
+                                "preferences", &attribute))
+              get_nvts_data->preferences = strcmp (attribute, "0");
+            else
+              get_nvts_data->preferences = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "preference_count", &attribute))
+              get_nvts_data->preference_count = strcmp (attribute, "0");
+            else
+              get_nvts_data->preference_count = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "timeout", &attribute))
+              get_nvts_data->timeout = strcmp (attribute, "0");
+            else
+              get_nvts_data->timeout = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_nvts_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -7076,95 +7094,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (md5sum)
             {
               config_t config = (config_t) 0;
+              nvt_t nvt = 0;
 
-              if (get_nvts_data->oid)
+              free (md5sum);
+
+              if (get_nvts_data->oid && get_nvts_data->family)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_nvts",
+                                    "Too many parameters at once"));
+              else if ((get_nvts_data->details == 0)
+                       && get_nvts_data->preference_count)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_nvts",
+                                    "GET_NVTS preference_count attribute"
+                                    " requires the details attribute"));
+              else if (((get_nvts_data->details == 0)
+                        || (get_nvts_data->config_id == NULL))
+                       && get_nvts_data->preferences)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_nvts",
+                                    "GET_NVTS preferences attribute"
+                                    " requires the details and config_id"
+                                    " attributes"));
+              else if (((get_nvts_data->details == 0)
+                        || (get_nvts_data->config_id == NULL))
+                       && get_nvts_data->timeout)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_nvts",
+                                    "GET_NVTS timeout attribute"
+                                    " requires the details and config_id"
+                                    " attributes"));
+              else if (get_nvts_data->oid
+                       && find_nvt (get_nvts_data->oid, &nvt))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_nvts"));
+              else if (get_nvts_data->oid && nvt == 0)
                 {
-                  nvt_t nvt;
-
-                  free (md5sum);
-                  if (find_nvt (get_nvts_data->oid, &nvt))
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_nvts"));
-                  else if (nvt == 0)
+                  if (send_find_error_to_client ("get_nvts",
+                                                 "NVT",
+                                                 get_nvts_data->oid))
                     {
-                      if (send_find_error_to_client ("get_nvts",
-                                                     "NVT",
-                                                     get_nvts_data->oid))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                    }
-                  else if (get_nvts_data->config_id
-                           && find_config (get_nvts_data->config_id,
-                                           &config))
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_nvts"));
-                  else if (get_nvts_data->config_id && (config == 0))
-                    {
-                      if (send_find_error_to_client
-                           ("get_nvts",
-                            "config",
-                            get_nvts_data->config_id))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                    }
-                  else
-                    {
-                      iterator_t nvts;
-
-                      SEND_TO_CLIENT_OR_FAIL
-                       ("<get_nvts_response"
-                        " status=\"" STATUS_OK "\""
-                        " status_text=\"" STATUS_OK_TEXT "\">");
-
-                      init_nvt_iterator (&nvts, nvt, (config_t) 0, NULL, 1,
-                                         NULL);
-                      while (next (&nvts))
-                        {
-                          char *timeout = NULL;
-
-                          if (config)
-                            timeout = config_nvt_timeout (config,
-                                                          nvt_iterator_oid
-                                                           (&nvts));
-
-                          if (send_nvt (&nvts, 1, -1, timeout))
-                            {
-                              error_send_to_client (error);
-                              return;
-                            }
-                          if (config)
-                            {
-                              iterator_t prefs;
-                              const char *nvt_name = nvt_iterator_name (&nvts);
-
-                              /* Send the preferences for the NVT. */
-
-                              SENDF_TO_CLIENT_OR_FAIL ("<preferences>"
-                                                       "<timeout>%s</timeout>",
-                                                       timeout ? timeout : "");
-                              free (timeout);
-
-                              init_nvt_preference_iterator (&prefs, nvt_name);
-                              while (next (&prefs))
-                                {
-                                  GString *buffer = g_string_new ("");
-                                  buffer_config_preference_xml (buffer, &prefs, config);
-                                  SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                                  g_string_free (buffer, TRUE);
-                                }
-                              cleanup_iterator (&prefs);
-
-                              SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-
-                            }
-                        }
-                      cleanup_iterator (&nvts);
-
-                      SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
+                      error_send_to_client (error);
+                      return;
                     }
                 }
               else if (get_nvts_data->config_id
@@ -7190,18 +7161,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<get_nvts_response"
                     " status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">"
-                    "<nvt_count>%u</nvt_count>",
-                    nvts_size ());
-                  SEND_TO_CLIENT_OR_FAIL ("<feed_checksum>"
-                                          "<algorithm>md5</algorithm>");
-                  SEND_TO_CLIENT_OR_FAIL (md5sum);
-                  free (md5sum);
-                  SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
+                    " status_text=\"" STATUS_OK_TEXT "\">");
 
                   init_nvt_iterator (&nvts,
-                                     (nvt_t) 0,
-                                     config,
+                                     nvt,
+                                     get_nvts_data->oid
+                                      /* Presume the NVT is in the config (if
+                                       * a config was given). */
+                                      ? 0
+                                      : config,
                                      get_nvts_data->family,
                                      get_nvts_data->sort_order,
                                      get_nvts_data->sort_field);
@@ -7211,11 +7179,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         int pref_count = -1;
                         char *timeout = NULL;
 
-                        if (config)
+                        if (get_nvts_data->timeout)
                           timeout = config_nvt_timeout (config,
                                                         nvt_iterator_oid (&nvts));
 
-                        if (config || get_nvts_data->family)
+                        if (get_nvts_data->preference_count)
                           {
                             const char *nvt_name = nvt_iterator_name (&nvts);
                             pref_count = nvt_preference_count (nvt_name);
@@ -7224,6 +7192,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           {
                             error_send_to_client (error);
                             return;
+                          }
+
+                        if (get_nvts_data->preferences)
+                          {
+                            iterator_t prefs;
+                            const char *nvt_name = nvt_iterator_name (&nvts);
+
+                            if (timeout == NULL)
+                              timeout = config_nvt_timeout
+                                         (config,
+                                          nvt_iterator_oid (&nvts));
+
+                            /* Send the preferences for the NVT. */
+
+                            SENDF_TO_CLIENT_OR_FAIL ("<preferences>"
+                                                     "<timeout>%s</timeout>",
+                                                     timeout ? timeout : "");
+                            free (timeout);
+
+                            init_nvt_preference_iterator (&prefs, nvt_name);
+                            while (next (&prefs))
+                              {
+                                GString *buffer = g_string_new ("");
+                                buffer_config_preference_xml (buffer, &prefs, config);
+                                SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                                g_string_free (buffer, TRUE);
+                              }
+                            cleanup_iterator (&prefs);
+
+                            SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+
                           }
                       }
                   else

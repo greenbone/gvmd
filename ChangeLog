@@ -1,5 +1,15 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_nvt_iterator): Improve family arg doc.
+	Add assertion.
+
+	* src/omp.c (get_nvts_data_t): Add new flag attribs.
+	(omp_xml_handle_start_element): Parse new flags attribs.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVTS integrate the single NVT
+	case into the multiple NVTs case, using new details flags.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVTS integrate the
 	brief case into the details case.
 

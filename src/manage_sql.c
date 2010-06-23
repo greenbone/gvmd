@@ -10346,7 +10346,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @param[in]  nvt         NVT to iterate over, all if 0.
  * @param[in]  config      Config to limit selection to.  NULL for all NVTs.
  *                         Overridden by \arg nvt.
- * @param[in]  family      Family to limit selection to.
+ * @param[in]  family      Family to limit selection to.  NULL for all NVTs.
+ *                         Overridden by \arg config.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
@@ -10354,6 +10355,8 @@ void
 init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                    const char* family, int ascending, const char* sort_field)
 {
+  assert ((nvt && family) == 0);
+
   if (nvt)
     {
       gchar* sql;
