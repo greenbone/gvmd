@@ -7073,7 +7073,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVTS:
         {
           char *md5sum = nvts_md5sum ();
-          if (md5sum && get_nvts_data->details)
+          if (md5sum)
             {
               config_t config = (config_t) 0;
 
@@ -7205,55 +7205,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      get_nvts_data->family,
                                      get_nvts_data->sort_order,
                                      get_nvts_data->sort_field);
-                  while (next (&nvts))
-                    {
-                      int pref_count = -1;
-                      char *timeout = NULL;
+                  if (get_nvts_data->details)
+                    while (next (&nvts))
+                      {
+                        int pref_count = -1;
+                        char *timeout = NULL;
 
-                      if (config)
-                        timeout = config_nvt_timeout (config,
-                                                      nvt_iterator_oid (&nvts));
+                        if (config)
+                          timeout = config_nvt_timeout (config,
+                                                        nvt_iterator_oid (&nvts));
 
-                      if (config || get_nvts_data->family)
-                        {
-                          const char *nvt_name = nvt_iterator_name (&nvts);
-                          pref_count = nvt_preference_count (nvt_name);
-                        }
-                      if (send_nvt (&nvts, 1, pref_count, timeout))
+                        if (config || get_nvts_data->family)
+                          {
+                            const char *nvt_name = nvt_iterator_name (&nvts);
+                            pref_count = nvt_preference_count (nvt_name);
+                          }
+                        if (send_nvt (&nvts, 1, pref_count, timeout))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                      }
+                  else
+                    while (next (&nvts))
+                      if (send_nvt (&nvts, 0, -1, NULL))
                         {
                           error_send_to_client (error);
                           return;
                         }
-                    }
                   cleanup_iterator (&nvts);
 
                   SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
                 }
-            }
-          else if (md5sum)
-            {
-              iterator_t nvts;
-
-              SEND_TO_CLIENT_OR_FAIL ("<get_nvts_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              SENDF_TO_CLIENT_OR_FAIL ("<nvt_count>%u</nvt_count>",
-                                       nvts_size ());
-              SEND_TO_CLIENT_OR_FAIL ("<feed_checksum algorithm=\"md5\">");
-              SEND_TO_CLIENT_OR_FAIL (md5sum);
-              free (md5sum);
-              SEND_TO_CLIENT_OR_FAIL ("</feed_checksum>");
-
-              init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
-              while (next (&nvts))
-                if (send_nvt (&nvts, 0, -1, NULL))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              cleanup_iterator (&nvts);
-
-              SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
             }
           else
             SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvts"));

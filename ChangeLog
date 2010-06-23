@@ -1,5 +1,10 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVTS integrate the
+	brief case into the details case.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename GET_NVT_DETAILS to GET_NVTS.
 
 	* src/omp.c (help_text, client_state_t, command_data_t): Rename
