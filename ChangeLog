@@ -1,3 +1,7 @@
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_task_update_file): Remove extra doc param.
+
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove redundant MODIFY_TASK PARAMETER element.

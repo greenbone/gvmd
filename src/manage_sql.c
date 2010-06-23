@@ -8051,7 +8051,6 @@ reset_task (task_t task)
  * @param[in]  task     Task.
  * @param[in]  name     Name of file.
  * @param[in]  content  Content for file in base64 encoding.
- * @param[in]  content  Length of content.
  */
 void
 manage_task_update_file (task_t task, const char *name,
