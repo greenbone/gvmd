@@ -7273,7 +7273,7 @@ delete_report (report_t report)
  *         -4 username missing from current_credentials.
  */
 int
-set_report_parameter (report_t report, const char* parameter, char* value)
+set_report_parameter (report_t report, const char* parameter, const char* value)
 {
   tracef ("   set_report_parameter %llu %s\n", report, parameter);
   if (strcasecmp ("COMMENT", parameter) == 0)

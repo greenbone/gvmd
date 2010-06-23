@@ -642,7 +642,7 @@ int
 delete_report (report_t);
 
 int
-set_report_parameter (report_t, const char*, char*);
+set_report_parameter (report_t, const char*, const char*);
 
 void
 init_report_iterator (iterator_t*, task_t);

@@ -1378,16 +1378,14 @@ modify_config_data_reset (modify_config_data_t *data)
 typedef struct
 {
   char *report_id;
-  char *parameter_id;
-  char *parameter_value;
+  char *comment;
 } modify_report_data_t;
 
 static void
 modify_report_data_reset (modify_report_data_t *data)
 {
   free (data->report_id);
-  free (data->parameter_id);
-  free (data->parameter_value);
+  free (data->comment);
 
   memset (data, 0, sizeof (modify_report_data_t));
 }
@@ -2063,7 +2061,7 @@ typedef enum
   CLIENT_GET_TASKS,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
-  CLIENT_MODIFY_REPORT_PARAMETER,
+  CLIENT_MODIFY_REPORT_COMMENT,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
@@ -4011,12 +4009,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (strcasecmp ("PARAMETER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_report_data->parameter_id);
-            set_client_state (CLIENT_MODIFY_REPORT_PARAMETER);
-          }
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
         else
           {
             if (send_element_error_to_client ("modify_report", element_name))
@@ -9419,58 +9413,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT:
-        if (modify_report_data->parameter_id != NULL
-            && modify_report_data->parameter_value != NULL)
-          {
-            report_t report;
+        {
+          report_t report;
 
-            if (modify_report_data->report_id == NULL)
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_report",
-                                  "MODIFY_REPORT requires a report_id attribute"));
-            else if (find_report (modify_report_data->report_id, &report))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-            else if (report == 0)
-              {
-                if (send_find_error_to_client ("modify_report",
-                                               "report",
-                                               modify_report_data->report_id))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else
-              {
-                int ret = set_report_parameter
-                           (report,
-                            modify_report_data->parameter_id,
-                            modify_report_data->parameter_value);
-                switch (ret)
-                  {
-                    case 0:
-                      SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-                      break;
-                    case -2: /* Parameter name error. */
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("modify_report",
-                                          "Bogus MODIFY_REPORT parameter"));
-                      break;
-                    case -3: /* Failed to write to disk. */
-                    default:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_report"));
-                      break;
-                  }
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+          if (modify_report_data->report_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report",
+                                "MODIFY_REPORT requires a report_id attribute"));
+          else if (modify_report_data->comment == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report",
+                                "MODIFY_REPORT requires a COMMENT element"));
+          else if (find_report (modify_report_data->report_id, &report))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+          else if (report == 0)
+            {
+              if (send_find_error_to_client ("modify_report",
+                                             "report",
+                                             modify_report_data->report_id))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              int ret = set_report_parameter
+                         (report,
+                          "COMMENT",
+                          modify_report_data->comment);
+              switch (ret)
+                {
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+                    break;
+                  case -2: /* Parameter name error. */
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_report",
+                                        "Bogus MODIFY_REPORT parameter"));
+                    break;
+                  case -3: /* Failed to write to disk. */
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("modify_report"));
+                    break;
+                }
+            }
+        }
         modify_report_data_reset (modify_report_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_REPORT_PARAMETER:
-        assert (strcasecmp ("PARAMETER", element_name) == 0);
+      case CLIENT_MODIFY_REPORT_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
         break;
 
@@ -13492,8 +13486,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
-      case CLIENT_MODIFY_REPORT_PARAMETER:
-        openvas_append_text (&modify_report_data->parameter_value,
+      case CLIENT_MODIFY_REPORT_COMMENT:
+        openvas_append_text (&modify_report_data->comment,
                              text,
                              text_len);
         break;

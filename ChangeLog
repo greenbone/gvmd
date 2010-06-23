@@ -1,5 +1,20 @@
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Replace MODIFY_REPORT PARAMETER element with COMMENT, to better match
+	other modifier commands.
+
+	* src/omp.c (modify_task_data_t, modify_task_data_reset): Remove parameter_id
+	and parameter_value.  Add comment.
+	(client_state_t): Remove PARAMETER state.  Add COMMENT state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Remove PARAMETER handling.  Add COMMENT handling.
+
+	* src/manage_sql.c (set_report_parameter): Make value param const.
+
+	* src/manage.h: Update header accordingly.
+
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_task_update_file): Remove extra doc param.
 
 2010-06-22  Matthew Mundell <matthew.mundell@greenbone.net>
