@@ -1,5 +1,17 @@
 2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add oid attribute to GET_DEPENDENCIES.
+
+	* src/omp.c (get_dependencies_data_t): New type.
+	(get_dependencies_data_reset): New function.
+	(command_data_t): Add get_dependencies.
+	(get_dependencies_data): New variable.
+	(omp_xml_handle_start_element): Parse GET_DEPENDENCIES oid attrib.
+	(omp_xml_handle_end_element): In CLIENT_GET_DEPENDENCIES add single NVT
+	case.
+
+2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (send_requirement): Replace NEED with NVT.
 	(send_dependency): Replace DEPENDENCY/NEEDER with NVT/REQUIRES and move
 	the requirement into the REQUIRES.

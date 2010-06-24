@@ -1079,6 +1079,19 @@ get_configs_data_reset (get_configs_data_t *data)
 
 typedef struct
 {
+  char *oid;
+} get_dependencies_data_t;
+
+static void
+get_dependencies_data_reset (get_dependencies_data_t *data)
+{
+  free (data->oid);
+
+  memset (data, 0, sizeof (get_dependencies_data_t));
+}
+
+typedef struct
+{
   char *escalator_id;
   char *sort_field;
   int sort_order;
@@ -1550,6 +1563,7 @@ typedef union
   delete_task_data_t delete_task;
   get_agents_data_t get_agents;
   get_configs_data_t get_configs;
+  get_dependencies_data_t get_dependencies;
   get_escalators_data_t get_escalators;
   get_lsc_credentials_data_t get_lsc_credentials;
   get_notes_data_t get_notes;
@@ -1718,6 +1732,12 @@ get_agents_data_t *get_agents_data
  */
 get_configs_data_t *get_configs_data
  = &(command_data.get_configs);
+
+/**
+ * @brief Parser callback data for GET_DEPENDENCIES.
+ */
+get_dependencies_data_t *get_dependencies_data
+ = &(command_data.get_dependencies);
 
 /**
  * @brief Parser callback data for GET_ESCALATORS.
@@ -2744,7 +2764,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_CONFIGS);
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
-          set_client_state (CLIENT_GET_DEPENDENCIES);
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &get_dependencies_data->oid);
+            set_client_state (CLIENT_GET_DEPENDENCIES);
+          }
         else if (strcasecmp ("GET_ESCALATORS", element_name) == 0)
           {
             const gchar* attribute;
@@ -6957,20 +6981,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_DEPENDENCIES:
         if (scanner.plugins_dependencies)
           {
-            SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            if (g_hash_table_find (scanner.plugins_dependencies,
-                                   send_dependency,
-                                   NULL))
+            nvt_t nvt = 0;
+
+            if (get_dependencies_data->oid
+                && find_nvt (get_dependencies_data->oid, &nvt))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_dependencies"));
+            else if (get_dependencies_data->oid && nvt == 0)
               {
-                error_send_to_client (error);
-                return;
+                if (send_find_error_to_client ("get_dependencies",
+                                               "NVT",
+                                               get_dependencies_data->oid))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
               }
-            SEND_TO_CLIENT_OR_FAIL ("</get_dependencies_response>");
+            else
+              {
+                SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
+                                        " status=\"" STATUS_OK "\""
+                                        " status_text=\"" STATUS_OK_TEXT "\">");
+                if (nvt)
+                  {
+                    char *name = manage_nvt_name (nvt);
+
+                    if (name)
+                      {
+                        gpointer value;
+                        value = g_hash_table_lookup
+                                 (scanner.plugins_dependencies,
+                                  name);
+                        if (value && send_dependency (name, value, NULL))
+                          {
+                            g_free (name);
+                            error_send_to_client (error);
+                            return;
+                          }
+                        g_free (name);
+                      }
+                  }
+                else if (g_hash_table_find (scanner.plugins_dependencies,
+                                            send_dependency,
+                                            NULL))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                SEND_TO_CLIENT_OR_FAIL ("</get_dependencies_response>");
+              }
           }
         else
           SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_dependencies"));
+        get_dependencies_data_reset (get_dependencies_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
