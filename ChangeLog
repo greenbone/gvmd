@@ -1,3 +1,15 @@
+2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename GET_REPORT to GET_REPORTS.
+
+	* src/omp.c (help_text, client_state_t, command_data_t): Rename
+	GET_REPORT element.
+	(get_report_data_t, get_report_data_reset, get_report_data): Remove.
+	(get_reports_data_t, get_reports_data_reset, get_reports_data): New.  Renamed
+	from "get_report" counterparts.
+	(omp_xml_handle_start_element, send_reports, print_report_xml)
+	(print_report_latex, omp_xml_handle_end_element): Rename GET_REPORT.
+
 2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add oid attribute to GET_DEPENDENCIES.

@@ -455,7 +455,7 @@ static char* help_text = "\n"
 "    GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.\n"
 "    GET_OVERRIDES          Get all overrides.\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
-"    GET_REPORT             Get a report identified by its unique ID.\n"
+"    GET_REPORTS            Get all reports.\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
@@ -1248,10 +1248,10 @@ typedef struct
   int overrides;
   int overrides_details;
   int result_hosts_only;
-} get_report_data_t;
+} get_reports_data_t;
 
 static void
-get_report_data_reset (get_report_data_t *data)
+get_reports_data_reset (get_reports_data_t *data)
 {
   free (data->format);
   free (data->report_id);
@@ -1260,7 +1260,7 @@ get_report_data_reset (get_report_data_t *data)
   free (data->search_phrase);
   free (data->min_cvss_base);
 
-  memset (data, 0, sizeof (get_report_data_t));
+  memset (data, 0, sizeof (get_reports_data_t));
 }
 
 typedef struct
@@ -1572,7 +1572,7 @@ typedef union
   get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
   get_overrides_data_t get_overrides;
   get_preferences_data_t get_preferences;
-  get_report_data_t get_report;
+  get_reports_data_t get_reports;
   get_results_data_t get_results;
   get_schedules_data_t get_schedules;
   get_system_reports_data_t get_system_reports;
@@ -1788,10 +1788,10 @@ get_preferences_data_t *get_preferences_data
  = &(command_data.get_preferences);
 
 /**
- * @brief Parser callback data for GET_REPORT.
+ * @brief Parser callback data for GET_REPORTS.
  */
-get_report_data_t *get_report_data
- = &(command_data.get_report);
+get_reports_data_t *get_reports_data
+ = &(command_data.get_reports);
 
 /**
  * @brief Parser callback data for GET_RESULTS.
@@ -2073,7 +2073,7 @@ typedef enum
   CLIENT_GET_OVERRIDES_NVT,
   CLIENT_GET_OVERRIDES_TASK,
   CLIENT_GET_PREFERENCES,
-  CLIENT_GET_REPORT,
+  CLIENT_GET_REPORTS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
@@ -2929,74 +2929,74 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_preferences_data->preference);
             set_client_state (CLIENT_GET_PREFERENCES);
           }
-        else if (strcasecmp ("GET_REPORT", element_name) == 0)
+        else if (strcasecmp ("GET_REPORTS", element_name) == 0)
           {
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "report_id",
-                              &get_report_data->report_id);
+                              &get_reports_data->report_id);
 
             append_attribute (attribute_names, attribute_values, "format",
-                              &get_report_data->format);
+                              &get_reports_data->format);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
               /* Subtract 1 to switch from 1 to 0 indexing. */
-              get_report_data->first_result = atoi (attribute) - 1;
+              get_reports_data->first_result = atoi (attribute) - 1;
             else
-              get_report_data->first_result = 0;
+              get_reports_data->first_result = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "max_results", &attribute))
-              get_report_data->max_results = atoi (attribute);
+              get_reports_data->max_results = atoi (attribute);
             else
-              get_report_data->max_results = -1;
+              get_reports_data->max_results = -1;
 
             append_attribute (attribute_names, attribute_values, "sort_field",
-                              &get_report_data->sort_field);
+                              &get_reports_data->sort_field);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "sort_order", &attribute))
-              get_report_data->sort_order = strcmp (attribute, "descending");
+              get_reports_data->sort_order = strcmp (attribute, "descending");
             else
               {
-                if (get_report_data->sort_field == NULL
-                    || (strcmp (get_report_data->sort_field, "type") == 0))
+                if (get_reports_data->sort_field == NULL
+                    || (strcmp (get_reports_data->sort_field, "type") == 0))
                   /* Normally it makes more sense to order type descending. */
-                  get_report_data->sort_order = 0;
+                  get_reports_data->sort_order = 0;
                 else
-                  get_report_data->sort_order = 1;
+                  get_reports_data->sort_order = 1;
               }
 
             append_attribute (attribute_names, attribute_values, "levels",
-                              &get_report_data->levels);
+                              &get_reports_data->levels);
 
             append_attribute (attribute_names, attribute_values,
                               "search_phrase",
-                              &get_report_data->search_phrase);
+                              &get_reports_data->search_phrase);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes", &attribute))
-              get_report_data->notes = strcmp (attribute, "0");
+              get_reports_data->notes = strcmp (attribute, "0");
             else
-              get_report_data->notes = 0;
+              get_reports_data->notes = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "notes_details", &attribute))
-              get_report_data->notes_details = strcmp (attribute, "0");
+              get_reports_data->notes_details = strcmp (attribute, "0");
             else
-              get_report_data->notes_details = 0;
+              get_reports_data->notes_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "overrides", &attribute))
-              get_report_data->overrides = strcmp (attribute, "0");
+              get_reports_data->overrides = strcmp (attribute, "0");
             else
-              get_report_data->overrides = 0;
+              get_reports_data->overrides = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "overrides_details", &attribute))
-              get_report_data->overrides_details = strcmp (attribute, "0");
+              get_reports_data->overrides_details = strcmp (attribute, "0");
             else
-              get_report_data->overrides_details = 0;
+              get_reports_data->overrides_details = 0;
 
             if (find_attribute (attribute_names, attribute_values,
                                 "apply_overrides", &attribute))
@@ -3006,15 +3006,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (find_attribute (attribute_names, attribute_values,
                                 "result_hosts_only", &attribute))
-              get_report_data->result_hosts_only = strcmp (attribute, "0");
+              get_reports_data->result_hosts_only = strcmp (attribute, "0");
             else
-              get_report_data->result_hosts_only = 1;
+              get_reports_data->result_hosts_only = 1;
 
             append_attribute (attribute_names, attribute_values,
                               "min_cvss_base",
-                              &get_report_data->min_cvss_base);
+                              &get_reports_data->min_cvss_base);
 
-            set_client_state (CLIENT_GET_REPORT);
+            set_client_state (CLIENT_GET_REPORTS);
           }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
@@ -3777,8 +3777,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_GET_REPORT:
-        if (send_element_error_to_client ("get_report", element_name))
+      case CLIENT_GET_REPORTS:
+        if (send_element_error_to_client ("get_reports", element_name))
           {
             error_send_to_client (error);
             return;
@@ -5129,7 +5129,7 @@ send_reports (task_t task, int apply_overrides)
       report_scan_run_status (index, &run_status);
       msg = g_strdup_printf ("<report"
                              " id=\"%s\">"
-                             // FIX s/b scan_start like get_report
+                             // FIX s/b scan_start like get_reports
                              "<timestamp>%s</timestamp>"
                              "<scan_run_status>%s</scan_run_status>"
                              "<messages>"
@@ -5206,7 +5206,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
       return -1;
     }
 
-  fputs ("<get_report_response"
+  fputs ("<get_reports_response"
          " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
          "<report>",
          out);
@@ -5218,14 +5218,14 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   free (start_time);
 
   init_result_iterator (&results, report, 0, NULL,
-                        get_report_data->first_result,
-                        get_report_data->max_results,
+                        get_reports_data->first_result,
+                        get_reports_data->max_results,
                         ascending,
                         sort_field,
-                        get_report_data->levels,
-                        get_report_data->search_phrase,
+                        get_reports_data->levels,
+                        get_reports_data->search_phrase,
                         min_cvss_base,
-                        get_report_data->apply_overrides);
+                        get_reports_data->apply_overrides);
 
   if (result_hosts_only)
     result_hosts = make_array ();
@@ -5238,10 +5238,10 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
       buffer_results_xml (buffer,
                           &results,
                           task,
-                          get_report_data->notes,
-                          get_report_data->notes_details,
-                          get_report_data->overrides,
-                          get_report_data->overrides_details);
+                          get_reports_data->notes,
+                          get_reports_data->notes_details,
+                          get_reports_data->overrides,
+                          get_reports_data->overrides_details);
       fputs (buffer->str, out);
       g_string_free (buffer, TRUE);
       if (result_hosts_only)
@@ -5304,7 +5304,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   fprintf (out, "<scan_end>%s</scan_end>", end_time);
   free (end_time);
 
-  fprintf (out, "</report></get_report_response>");
+  fprintf (out, "</report></get_reports_response>");
 
   if (fclose (out))
     {
@@ -5992,7 +5992,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            total_warnings,
            total_notes);
 
-  if (get_report_data->apply_overrides)
+  if (get_reports_data->apply_overrides)
     fputs ("Overrides are on.  When a result has an override, this report"
            " uses the threat of the override.\\\\\n",
            out);
@@ -6001,20 +6001,20 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            " uses the actual threat of the result.\\\\\n",
            out);
 
-  const char *levels = get_report_data->levels ? get_report_data->levels
+  const char *levels = get_reports_data->levels ? get_reports_data->levels
                                                : "hmlgd";
-  if (get_report_data->search_phrase || strcmp (levels, "hmlgd"))
+  if (get_reports_data->search_phrase || strcmp (levels, "hmlgd"))
     {
       fputs ("This report might not show details of all issues that were"
              " found.\\\\\n",
              out);
       if (result_hosts_only)
         fputs ("It only lists hosts that produced issues.\\\\\n", out);
-      if (get_report_data->search_phrase
-          && strcmp (get_report_data->search_phrase, ""))
+      if (get_reports_data->search_phrase
+          && strcmp (get_reports_data->search_phrase, ""))
         fprintf (out,
                  "It shows issues that contain the search phrase \"%s\".\\\\\n",
-                 get_report_data->search_phrase);
+                 get_reports_data->search_phrase);
       if (!strchr (levels, 'h'))
         {
           fputs ("Issues with the threat level ", out);
@@ -6101,14 +6101,14 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                "\\endlastfoot\n");
 
       init_result_iterator (&results, report, 0, host,
-                            get_report_data->first_result,
-                            get_report_data->max_results,
+                            get_reports_data->first_result,
+                            get_reports_data->max_results,
                             ascending,
                             sort_field,
-                            get_report_data->levels,
-                            get_report_data->search_phrase,
+                            get_reports_data->levels,
+                            get_reports_data->search_phrase,
                             min_cvss_base,
-                            get_report_data->apply_overrides);
+                            get_reports_data->apply_overrides);
       last_port = NULL;
       while (next (&results))
         {
@@ -6137,14 +6137,14 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
       /* Print the result details. */
 
       init_result_iterator (&results, report, 0, host,
-                            get_report_data->first_result,
-                            get_report_data->max_results,
+                            get_reports_data->first_result,
+                            get_reports_data->max_results,
                             ascending,
                             sort_field,
-                            get_report_data->levels,
-                            get_report_data->search_phrase,
+                            get_reports_data->levels,
+                            get_reports_data->search_phrase,
                             min_cvss_base,
-                            get_report_data->apply_overrides);
+                            get_reports_data->apply_overrides);
       last_port = NULL;
       /* Results are ordered by port, and then by severity (more severity
        * before less severe). */
@@ -6228,10 +6228,10 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                    "OID of test routine: %s\\\\\n",
                    result_iterator_nvt_oid (&results));
 
-          if (get_report_data->notes)
+          if (get_reports_data->notes)
             print_report_notes_latex (out, &results, task);
 
-          if (get_report_data->overrides)
+          if (get_reports_data->overrides)
             print_report_overrides_latex (out, &results, task);
 
           fprintf (out,
@@ -7627,22 +7627,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_GET_REPORT:
-        assert (strcasecmp ("GET_REPORT", element_name) == 0);
+      case CLIENT_GET_REPORTS:
+        assert (strcasecmp ("GET_REPORTS", element_name) == 0);
         if (current_credentials.username == NULL)
           {
-            get_report_data_reset (get_report_data);
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+            get_reports_data_reset (get_reports_data);
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
-        if (get_report_data->report_id == NULL)
+        if (get_reports_data->report_id == NULL)
           {
             SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_report",
-                                "GET_REPORT must have a report_id attribute"));
-            get_report_data_reset (get_report_data);
+             (XML_ERROR_SYNTAX ("get_reports",
+                                "GET_REPORTS must have a report_id attribute"));
+            get_reports_data_reset (get_reports_data);
             set_client_state (CLIENT_AUTHENTIC);
             break;
           }
@@ -7653,30 +7653,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         gchar *content;
         float min_cvss_base;
 
-        if (find_report (get_report_data->report_id, &report))
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+        if (find_report (get_reports_data->report_id, &report))
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
         else if (report == 0)
           {
-            if (send_find_error_to_client ("get_report",
+            if (send_find_error_to_client ("get_reports",
                                            "report",
-                                           get_report_data->report_id))
+                                           get_reports_data->report_id))
               {
                 error_send_to_client (error);
                 return;
               }
           }
-        else if (get_report_data->min_cvss_base
-                 && strlen (get_report_data->min_cvss_base)
-                 && (sscanf (get_report_data->min_cvss_base,
+        else if (get_reports_data->min_cvss_base
+                 && strlen (get_reports_data->min_cvss_base)
+                 && (sscanf (get_reports_data->min_cvss_base,
                              "%f",
                              &min_cvss_base)
                      != 1))
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("get_report",
-                              "GET_REPORT min_cvss_base must be a float"
+           (XML_ERROR_SYNTAX ("get_reports",
+                              "GET_REPORTS min_cvss_base must be a float"
                               " or the empty string"));
-        else if (get_report_data->format == NULL
-                  || strcasecmp (get_report_data->format, "xml") == 0)
+        else if (get_reports_data->format == NULL
+                  || strcasecmp (get_reports_data->format, "xml") == 0)
           {
             task_t task;
             char *tsk_uuid = NULL, *start_time, *end_time;
@@ -7684,36 +7684,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             const char *levels;
             array_t *result_hosts;
 
-            levels = get_report_data->levels
-                      ? get_report_data->levels : "hmlgd";
+            levels = get_reports_data->levels
+                      ? get_reports_data->levels : "hmlgd";
 
             if (report_task (report, &task))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
             else if (task && task_uuid (task, &tsk_uuid))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
 
             report_scan_result_count (report, NULL, NULL, NULL,
-                                      get_report_data->apply_overrides,
+                                      get_reports_data->apply_overrides,
                                       &result_count);
             report_scan_result_count (report,
                                       levels,
-                                      get_report_data->search_phrase,
-                                      get_report_data->min_cvss_base,
-                                      get_report_data->apply_overrides,
+                                      get_reports_data->search_phrase,
+                                      get_reports_data->min_cvss_base,
+                                      get_reports_data->apply_overrides,
                                       &filtered_result_count);
             report_scan_run_status (report, &run_status);
             SENDF_TO_CLIENT_OR_FAIL
-             ("<get_report_response"
+             ("<get_reports_response"
               " status=\"" STATUS_OK "\""
               " status_text=\"" STATUS_OK_TEXT "\">"
               "<report id=\"%s\">"
@@ -7726,20 +7726,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               "<apply_overrides>%i</apply_overrides>"
               "<result_hosts_only>%i</result_hosts_only>"
               "<min_cvss_base>%s</min_cvss_base>",
-              get_report_data->report_id,
-              get_report_data->sort_field ? get_report_data->sort_field
+              get_reports_data->report_id,
+              get_reports_data->sort_field ? get_reports_data->sort_field
                                           : "type",
-              get_report_data->sort_order ? "ascending" : "descending",
+              get_reports_data->sort_order ? "ascending" : "descending",
               levels,
-              get_report_data->search_phrase
-                ? get_report_data->search_phrase
+              get_reports_data->search_phrase
+                ? get_reports_data->search_phrase
                 : "",
-              get_report_data->notes ? 1 : 0,
-              get_report_data->overrides ? 1 : 0,
-              get_report_data->apply_overrides ? 1 : 0,
-              get_report_data->result_hosts_only ? 1 : 0,
-              get_report_data->min_cvss_base
-                ? get_report_data->min_cvss_base
+              get_reports_data->notes ? 1 : 0,
+              get_reports_data->overrides ? 1 : 0,
+              get_reports_data->apply_overrides ? 1 : 0,
+              get_reports_data->result_hosts_only ? 1 : 0,
+              get_reports_data->min_cvss_base
+                ? get_reports_data->min_cvss_base
                 : "");
 
             if (strchr (levels, 'h'))
@@ -7791,19 +7791,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_result_iterator
                (&results, report, 0, NULL,
-                get_report_data->first_result,
-                get_report_data->max_results,
+                get_reports_data->first_result,
+                get_reports_data->max_results,
                 /* Sort by port in order requested. */
-                ((get_report_data->sort_field
-                  && (strcmp (get_report_data->sort_field, "port")
+                ((get_reports_data->sort_field
+                  && (strcmp (get_reports_data->sort_field, "port")
                               == 0))
-                  ? get_report_data->sort_order
+                  ? get_reports_data->sort_order
                   : 1),
                 "port",
                 levels,
-                get_report_data->search_phrase,
-                get_report_data->min_cvss_base,
-                get_report_data->apply_overrides);
+                get_reports_data->search_phrase,
+                get_reports_data->min_cvss_base,
+                get_reports_data->apply_overrides);
 
               /* Buffer the results. */
 
@@ -7840,11 +7840,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Ensure the buffered results are sorted. */
 
-              if (get_report_data->sort_field
-                  && strcmp (get_report_data->sort_field, "port"))
+              if (get_reports_data->sort_field
+                  && strcmp (get_reports_data->sort_field, "port"))
                 {
                   /* Sort by threat. */
-                  if (get_report_data->sort_order)
+                  if (get_reports_data->sort_order)
                     g_array_sort (ports, compare_ports_asc);
                   else
                     g_array_sort (ports, compare_ports_desc);
@@ -7856,8 +7856,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        " start=\"%i\""
                                        " max=\"%i\">",
                                        /* Add 1 for 1 indexing. */
-                                       get_report_data->first_result + 1,
-                                       get_report_data->max_results);
+                                       get_reports_data->first_result + 1,
+                                       get_reports_data->max_results);
               {
                 gchar *item;
                 int index = 0;
@@ -7890,7 +7890,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes, infos, logs, warnings;
 
               report_counts_id (report, &debugs, &holes, &infos, &logs,
-                                &warnings, get_report_data->apply_overrides);
+                                &warnings, get_reports_data->apply_overrides);
 
               SENDF_TO_CLIENT_OR_FAIL ("<messages>"
                                        "<debug>%i</debug>"
@@ -7909,22 +7909,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             /* Results. */
 
             init_result_iterator (&results, report, 0, NULL,
-                                  get_report_data->first_result,
-                                  get_report_data->max_results,
-                                  get_report_data->sort_order,
-                                  get_report_data->sort_field,
+                                  get_reports_data->first_result,
+                                  get_reports_data->max_results,
+                                  get_reports_data->sort_order,
+                                  get_reports_data->sort_field,
                                   levels,
-                                  get_report_data->search_phrase,
-                                  get_report_data->min_cvss_base,
-                                  get_report_data->apply_overrides);
+                                  get_reports_data->search_phrase,
+                                  get_reports_data->min_cvss_base,
+                                  get_reports_data->apply_overrides);
 
             SENDF_TO_CLIENT_OR_FAIL ("<results"
                                      " start=\"%i\""
                                      " max=\"%i\">",
                                      /* Add 1 for 1 indexing. */
-                                     get_report_data->first_result + 1,
-                                     get_report_data->max_results);
-            if (get_report_data->result_hosts_only)
+                                     get_reports_data->first_result + 1,
+                                     get_reports_data->max_results);
+            if (get_reports_data->result_hosts_only)
               result_hosts = make_array ();
             else
               /* Quiet erroneous compiler warning. */
@@ -7935,20 +7935,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 buffer_results_xml (buffer,
                                     &results,
                                     task,
-                                    get_report_data->notes,
-                                    get_report_data->notes_details,
-                                    get_report_data->overrides,
-                                    get_report_data->overrides_details);
+                                    get_reports_data->notes,
+                                    get_reports_data->notes_details,
+                                    get_reports_data->overrides,
+                                    get_reports_data->overrides_details);
                 SEND_TO_CLIENT_OR_FAIL (buffer->str);
                 g_string_free (buffer, TRUE);
-                if (get_report_data->result_hosts_only)
+                if (get_reports_data->result_hosts_only)
                   array_add_new_string (result_hosts,
                                         result_iterator_host (&results));
               }
             SEND_TO_CLIENT_OR_FAIL ("</results>");
             cleanup_iterator (&results);
 
-            if (get_report_data->result_hosts_only)
+            if (get_reports_data->result_hosts_only)
               {
                 gchar *host;
                 int index = 0;
@@ -7999,9 +7999,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free (end_time);
 
             SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                    "</get_report_response>");
+                                    "</get_reports_response>");
           }
-        else if (strcasecmp (get_report_data->format, "nbe") == 0)
+        else if (strcasecmp (get_reports_data->format, "nbe") == 0)
           {
             char *start_time, *end_time;
             array_t *result_hosts;
@@ -8018,15 +8018,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             free (start_time);
 
             init_result_iterator (&results, report, 0, NULL,
-                                  get_report_data->first_result,
-                                  get_report_data->max_results,
-                                  get_report_data->sort_order,
-                                  get_report_data->sort_field,
-                                  get_report_data->levels,
-                                  get_report_data->search_phrase,
-                                  get_report_data->min_cvss_base,
-                                  get_report_data->apply_overrides);
-            if (get_report_data->result_hosts_only)
+                                  get_reports_data->first_result,
+                                  get_reports_data->max_results,
+                                  get_reports_data->sort_order,
+                                  get_reports_data->sort_field,
+                                  get_reports_data->levels,
+                                  get_reports_data->search_phrase,
+                                  get_reports_data->min_cvss_base,
+                                  get_reports_data->apply_overrides);
+            if (get_reports_data->result_hosts_only)
               result_hosts = make_array ();
             else
               /* Quiet erroneous compiler warning. */
@@ -8041,13 +8041,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         result_iterator_nvt_oid (&results),
                                         result_iterator_type (&results),
                                         result_iterator_descr (&results));
-                if (get_report_data->result_hosts_only)
+                if (get_reports_data->result_hosts_only)
                   array_add_new_string (result_hosts,
                                         result_iterator_host (&results));
               }
             cleanup_iterator (&results);
 
-            if (get_report_data->result_hosts_only)
+            if (get_reports_data->result_hosts_only)
               {
                 gchar *host;
                 int index = 0;
@@ -8101,7 +8101,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             /* Encode and send the NBE. */
 
-            SEND_TO_CLIENT_OR_FAIL ("<get_report_response"
+            SEND_TO_CLIENT_OR_FAIL ("<get_reports_response"
                                     " status=\"" STATUS_OK "\""
                                     " status_text=\"" STATUS_OK_TEXT "\">"
                                     "<report format=\"nbe\">");
@@ -8122,9 +8122,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             g_free (content);
             SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                    "</get_report_response>");
+                                    "</get_reports_response>");
           }
-        else if (strcasecmp (get_report_data->format, "html") == 0)
+        else if (strcasecmp (get_reports_data->format, "html") == 0)
           {
             task_t task;
             gchar *xml_file;
@@ -8132,8 +8132,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (report_task (report, &task))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
@@ -8141,19 +8141,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (mkdtemp (xml_dir) == NULL)
               {
                 g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                      print_report_xml (report,
                                        task,
                                        xml_file,
-                                       get_report_data->sort_order,
-                                       get_report_data->sort_field,
-                                       get_report_data->result_hosts_only,
-                                       get_report_data->min_cvss_base))
+                                       get_reports_data->sort_order,
+                                       get_reports_data->sort_field,
+                                       get_reports_data->result_hosts_only,
+                                       get_reports_data->min_cvss_base))
               {
                 g_free (xml_file);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else
               {
@@ -8172,7 +8172,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /* This is a missing resource, however the resource is
                       * the responsibility of the manager admin. */
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_reports"));
                   }
                 else
                   {
@@ -8205,7 +8205,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (command);
                         g_free (html_file);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_reports"));
                       }
                     else
                       {
@@ -8230,7 +8230,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
+                             (XML_INTERNAL_ERROR ("get_reports"));
                           }
                         else
                           {
@@ -8241,7 +8241,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             /* Encode and send the HTML. */
 
                             SEND_TO_CLIENT_OR_FAIL
-                             ("<get_report_response"
+                             ("<get_reports_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"html\">");
@@ -8262,13 +8262,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             g_free (html);
                             SEND_TO_CLIENT_OR_FAIL
                              ("</report>"
-                              "</get_report_response>");
+                              "</get_reports_response>");
                           }
                       }
                   }
               }
           }
-        else if (strcasecmp (get_report_data->format, "html-pdf") == 0)
+        else if (strcasecmp (get_reports_data->format, "html-pdf") == 0)
           {
             task_t task;
             gchar *xml_file;
@@ -8276,8 +8276,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (report_task (report, &task))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
@@ -8287,19 +8287,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (mkdtemp (xml_dir) == NULL)
               {
                 g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                      print_report_xml (report,
                                        task,
                                        xml_file,
-                                       get_report_data->sort_order,
-                                       get_report_data->sort_field,
-                                       get_report_data->result_hosts_only,
-                                       get_report_data->min_cvss_base))
+                                       get_reports_data->sort_order,
+                                       get_reports_data->sort_field,
+                                       get_reports_data->result_hosts_only,
+                                       get_reports_data->min_cvss_base))
               {
                 g_free (xml_file);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else
               {
@@ -8318,7 +8318,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     /* This is a missing resource, however the resource is
                       * the responsibility of the manager admin. */
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_reports"));
                   }
                 else
                   {
@@ -8354,7 +8354,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (command);
                         g_free (pdf_file);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_reports"));
                       }
                     else
                       {
@@ -8379,7 +8379,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
+                             (XML_INTERNAL_ERROR ("get_reports"));
                           }
                         else
                           {
@@ -8390,7 +8390,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             /* Encode and send the HTML. */
 
                             SEND_TO_CLIENT_OR_FAIL
-                             ("<get_report_response"
+                             ("<get_reports_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"pdf\">");
@@ -8410,26 +8410,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               }
                             g_free (pdf);
                             SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                                    "</get_report_response>");
+                                                    "</get_reports_response>");
                           }
                       }
                   }
               }
           }
-        else if ((strcasecmp (get_report_data->format, "pdf") == 0)
-                 || (strcasecmp (get_report_data->format, "dvi") == 0))
+        else if ((strcasecmp (get_reports_data->format, "pdf") == 0)
+                 || (strcasecmp (get_reports_data->format, "dvi") == 0))
           {
             task_t task;
             gchar *latex_file;
             char latex_dir[] = "/tmp/openvasmd_XXXXXX";
             int dvi;
 
-            dvi = (strcasecmp (get_report_data->format, "dvi") == 0);
+            dvi = (strcasecmp (get_reports_data->format, "dvi") == 0);
 
             if (report_task (report, &task))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
@@ -8437,20 +8437,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (mkdtemp (latex_dir) == NULL)
               {
                 g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else if (latex_file = g_strdup_printf ("%s/report.tex",
                                                    latex_dir),
                      print_report_latex (report,
                                          task,
                                          latex_file,
-                                         get_report_data->sort_order,
-                                         get_report_data->sort_field,
-                                         get_report_data->result_hosts_only,
-                                         get_report_data->min_cvss_base))
+                                         get_reports_data->sort_order,
+                                         get_reports_data->sort_field,
+                                         get_reports_data->result_hosts_only,
+                                         get_reports_data->min_cvss_base))
               {
                 g_free (latex_file);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else
               {
@@ -8499,7 +8499,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                pdf_file);
                     g_free (pdf_file);
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_reports"));
                   }
                 /* RATS: ignore, command is defined above. */
                 else if (ret = system (command),
@@ -8516,7 +8516,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (pdf_file);
                     g_free (command);
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("get_report"));
+                     (XML_INTERNAL_ERROR ("get_reports"));
                   }
                 else
                   {
@@ -8542,7 +8542,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    get_error->message);
                         g_error_free (get_error);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_reports"));
                       }
                     else
                       {
@@ -8553,7 +8553,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         /* Encode and send the PDF data. */
 
                         SEND_TO_CLIENT_OR_FAIL
-                         ("<get_report_response"
+                         ("<get_reports_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">"
                           "<report format=\"pdf\">");
@@ -8573,7 +8573,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         g_free (pdf);
                         SEND_TO_CLIENT_OR_FAIL ("</report>"
-                                                "</get_report_response>");
+                                                "</get_reports_response>");
                       }
                   }
               }
@@ -8588,8 +8588,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (report_task (report, &task))
               {
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
-                get_report_data_reset (get_report_data);
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                get_reports_data_reset (get_reports_data);
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
@@ -8597,25 +8597,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (mkdtemp (xml_dir) == NULL)
               {
                 g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                      print_report_xml (report,
                                        task,
                                        xml_file,
-                                       get_report_data->sort_order,
-                                       get_report_data->sort_field,
-                                       get_report_data->result_hosts_only,
-                                       get_report_data->min_cvss_base))
+                                       get_reports_data->sort_order,
+                                       get_reports_data->sort_field,
+                                       get_reports_data->result_hosts_only,
+                                       get_reports_data->min_cvss_base))
               {
                 g_free (xml_file);
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_report"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
               }
             else
               {
                 gchar *xsl_name, *xsl_file;
 
-                xsl_name = g_strdup_printf ("%s.xsl", get_report_data->format);
+                xsl_name = g_strdup_printf ("%s.xsl", get_reports_data->format);
 
                 xsl_file = g_build_filename (OPENVAS_SYSCONF_DIR,
                                              "openvasmd",
@@ -8630,7 +8630,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (xsl_file);
                     g_free (xml_file);
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("get_report",
+                     (XML_ERROR_SYNTAX ("get_reports",
                                         "Bogus report format in format"
                                         " attribute"));
                   }
@@ -8665,7 +8665,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (command);
                         g_free (output_file);
                         SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("get_report"));
+                         (XML_INTERNAL_ERROR ("get_reports"));
                       }
                     else
                       {
@@ -8690,7 +8690,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        get_error->message);
                             g_error_free (get_error);
                             SEND_TO_CLIENT_OR_FAIL
-                             (XML_INTERNAL_ERROR ("get_report"));
+                             (XML_INTERNAL_ERROR ("get_reports"));
                           }
                         else
                           {
@@ -8701,11 +8701,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             /* Encode and send the output. */
 
                             SENDF_TO_CLIENT_OR_FAIL
-                             ("<get_report_response"
+                             ("<get_reports_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">"
                               "<report format=\"%s\">",
-                              get_report_data->format);
+                              get_reports_data->format);
                             if (output && strlen (output))
                               {
                                 gchar *base64;
@@ -8723,14 +8723,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             g_free (output);
                             SEND_TO_CLIENT_OR_FAIL
                              ("</report>"
-                              "</get_report_response>");
+                              "</get_reports_response>");
                           }
                       }
                   }
               }
           }
 
-        get_report_data_reset (get_report_data);
+        get_reports_data_reset (get_reports_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
