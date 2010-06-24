@@ -1,3 +1,8 @@
+2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (send_nvt): Leave closing tag to caller.
+	(omp_xml_handle_end_element): In CLIENT_GET_NVTS send prefs inside NVT.
+
 2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_nvt_iterator): Improve family arg doc.

@@ -4923,6 +4923,8 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 /**
  * @brief Send XML for an NVT.
  *
+ * The caller must send the closing NVT tag.
+ *
  * @param[in]  nvts        The NVT.
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
@@ -4975,8 +4977,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                              "<algorithm>md5</algorithm>"
                              // FIX implement
                              "2397586ea5cd3a69f953836f7be9ef7b"
-                             "</checksum>"
-                             "</nvt>",
+                             "</checksum>",
                              oid,
                              name_text,
                              category_name (nvt_iterator_category (nvts)),
@@ -5013,8 +5014,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                            "<algorithm>md5</algorithm>"
                            // FIX implement
                            "2397586ea5cd3a69f953836f7be9ef7b"
-                           "</checksum>"
-                           "</nvt>",
+                           "</checksum>",
                            oid,
                            name_text);
   g_free (name_text);
@@ -7222,16 +7222,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             cleanup_iterator (&prefs);
 
                             SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-
                           }
+
+                        SEND_TO_CLIENT_OR_FAIL ("</nvt>");
                       }
                   else
                     while (next (&nvts))
-                      if (send_nvt (&nvts, 0, -1, NULL))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
+                      {
+                        if (send_nvt (&nvts, 0, -1, NULL))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        SEND_TO_CLIENT_OR_FAIL ("</nvt>");
+                      }
                   cleanup_iterator (&nvts);
 
                   SEND_TO_CLIENT_OR_FAIL ("</get_nvts_response>");
