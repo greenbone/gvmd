@@ -1,5 +1,11 @@
 2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (send_requirement): Replace NEED with NVT.
+	(send_dependency): Replace DEPENDENCY/NEEDER with NVT/REQUIRES and move
+	the requirement into the REQUIRES.
+
+2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (send_nvt): Leave closing tag to caller.
 	(omp_xml_handle_end_element): In CLIENT_GET_NVTS send prefs inside NVT.
 

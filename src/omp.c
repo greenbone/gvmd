@@ -4862,7 +4862,12 @@ send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
   gboolean fail;
   gchar* text = g_markup_escape_text ((char*) element,
                                       strlen ((char*) element));
-  gchar* msg = g_strdup_printf ("<need>%s</need>", text);
+  char* oid = nvt_oid (text);
+  gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name></nvt>",
+                                oid ? oid : "",
+                                text);
+
+  free (oid);
   g_free (text);
 
   fail = send_to_client (msg);
@@ -4884,9 +4889,14 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
 {
   /* \todo Do these reallocations affect performance? */
   gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
-  gchar* msg = g_strdup_printf ("<dependency><needer>%s</needer>",
+  char *oid = nvt_oid (key_text);
+  gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name><requires>",
+                                oid ? oid : "",
                                 key_text);
+
+  g_free (oid);
   g_free (key_text);
+
   if (send_to_client (msg))
     {
       g_free (msg);
@@ -4899,7 +4909,7 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
       return TRUE;
     }
 
-  if (send_to_client ("</dependency>"))
+  if (send_to_client ("</requires></nvt>"))
     {
       g_free (msg);
       return TRUE;
