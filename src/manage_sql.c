@@ -3575,6 +3575,13 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
             const void* event_data, escalator_method_t method,
             escalator_condition_t condition)
 {
+  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+         "The escalator for task %s was triggered "
+         "(Event: %s, Condition: %s)",
+         task_name (task),
+         event_description (event, event_data),
+         escalator_condition_description (condition, escalator));
+
   switch (method)
     {
       case ESCALATOR_METHOD_EMAIL:
