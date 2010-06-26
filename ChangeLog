@@ -1,9 +1,23 @@
+2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_report_iterator): Add report arg.
+	(report_iterator_uuid): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/manage.c (delete_reports): Update init_report_iterator call.
+
+	* src/omp.c (internal_error_send_to_client): New function.
+	(send_reports): Update init_report_iterator call.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS add the case that
+	responds with all reports.
+
 2010-06-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (escalate_1): Added event logging to escalator
 	execution.
 
-2010-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Rename GET_REPORT to GET_REPORTS.
 

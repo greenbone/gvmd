@@ -6149,19 +6149,50 @@ report_add_result (report_t report, result_t result)
  * @brief Initialise a report iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  task      Task whose reports the iterator loops over.
+ * @param[in]  task      Task whose reports the iterator loops over.  0 for all.
+ *                       Overridden by \arg report.
+ * @param[in]  report    Single report to iterate over over.  0 for all.
  */
 void
-init_report_iterator (iterator_t* iterator, task_t task)
+init_report_iterator (iterator_t* iterator, task_t task, report_t report)
 {
-  gchar* sql;
-
-  assert (task);
-  sql = g_strdup_printf ("SELECT ROWID FROM reports WHERE task = %llu;",
-                         task);
-  init_iterator (iterator, sql);
-  g_free (sql);
+  if (report)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid FROM reports WHERE ROWID = %llu;",
+                   report);
+  else if (task)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid FROM reports WHERE task = %llu;",
+                   task);
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid FROM reports;");
 }
+
+#if 0
+/**
+ * @brief Get the NAME from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NAME of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
+#endif
+
+#define DEF_ACCESS(name, col) \
+const char* \
+name (iterator_t* iterator) \
+{ \
+  const char *ret; \
+  if (iterator->done) return NULL; \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
+  return ret; \
+}
+
+DEF_ACCESS (report_iterator_uuid, 1);
+
+#undef DEF_ACCESS
 
 /**
  * @brief Read the next report from an iterator.

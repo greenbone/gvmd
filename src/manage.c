@@ -145,7 +145,7 @@ delete_reports (task_t task)
   report_t report;
   iterator_t iterator;
   // FIX wrap in transaction?
-  init_report_iterator (&iterator, task);
+  init_report_iterator (&iterator, task, 0);
   while (next_report (&iterator, &report)) delete_report (report);
   cleanup_iterator (&iterator);
   return 0;
