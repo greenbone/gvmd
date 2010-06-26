@@ -8218,8 +8218,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
-                              SEND_TO_CLIENT_OR_FAIL
-                               (XML_INTERNAL_ERROR ("get_reports"));
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
                             }
                           else
                             {
@@ -8272,7 +8274,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (xml_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                        print_report_xml (report,
@@ -8284,7 +8289,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_reports_data->min_cvss_base))
                 {
                   g_free (xml_file);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else
                 {
@@ -8300,10 +8308,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  xsl_file);
                       g_free (xsl_file);
                       g_free (xml_file);
+#if 0
                       /* This is a missing resource, however the resource is
                         * the responsibility of the manager admin. */
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("get_reports"));
+#endif
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
                     }
                   else
                     {
@@ -8338,8 +8352,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      command);
                           g_free (command);
                           g_free (pdf_file);
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_INTERNAL_ERROR ("get_reports"));
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
                         }
                       else
                         {
@@ -8363,8 +8379,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
-                              SEND_TO_CLIENT_OR_FAIL
-                               (XML_INTERNAL_ERROR ("get_reports"));
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
                             }
                           else
                             {
@@ -8418,7 +8436,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (latex_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else if (latex_file = g_strdup_printf ("%s/report.tex",
                                                      latex_dir),
@@ -8431,7 +8452,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            get_reports_data->min_cvss_base))
                 {
                   g_free (latex_file);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else
                 {
@@ -8479,8 +8503,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  __FUNCTION__,
                                  pdf_file);
                       g_free (pdf_file);
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("get_reports"));
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
                     }
                   /* RATS: ignore, command is defined above. */
                   else if (ret = system (command),
@@ -8496,8 +8522,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       close (pdf_fd);
                       g_free (pdf_file);
                       g_free (command);
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("get_reports"));
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
                     }
                   else
                     {
@@ -8522,8 +8550,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      __FUNCTION__,
                                      get_error->message);
                           g_error_free (get_error);
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_INTERNAL_ERROR ("get_reports"));
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
                         }
                       else
                         {
@@ -8574,7 +8604,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (xml_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
                        print_report_xml (report,
@@ -8586,7 +8619,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_reports_data->min_cvss_base))
                 {
                   g_free (xml_file);
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+                  internal_error_send_to_client (error);
+                  get_reports_data_reset (get_reports_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
                 }
               else
                 {
@@ -8606,10 +8642,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       g_free (xsl_file);
                       g_free (xml_file);
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("get_reports",
-                                          "Bogus report format in format"
-                                          " attribute"));
+                      internal_error_send_to_client (error);
+                      get_reports_data_reset (get_reports_data);
+                      set_client_state (CLIENT_AUTHENTIC);
+                      return;
                     }
                   else
                     {
@@ -8641,8 +8677,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      command);
                           g_free (command);
                           g_free (output_file);
-                          SEND_TO_CLIENT_OR_FAIL
-                           (XML_INTERNAL_ERROR ("get_reports"));
+                          internal_error_send_to_client (error);
+                          get_reports_data_reset (get_reports_data);
+                          set_client_state (CLIENT_AUTHENTIC);
+                          return;
                         }
                       else
                         {
@@ -8666,8 +8704,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
-                              SEND_TO_CLIENT_OR_FAIL
-                               (XML_INTERNAL_ERROR ("get_reports"));
+                              internal_error_send_to_client (error);
+                              get_reports_data_reset (get_reports_data);
+                              set_client_state (CLIENT_AUTHENTIC);
+                              return;
                             }
                           else
                             {
