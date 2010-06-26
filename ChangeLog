@@ -1,5 +1,10 @@
 2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (send_reports): Leave TIMESTAMP alone.  It's the report
+	creation time, whereas SCAN_START is the start time sent by the Scanner.
+
+2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (client_state_t, omp_xml_handle_start_element)
 	(omp_xml_handle_end_element): Rename CLIENT_VERSION to CLIENT_GET_VERSION.
 

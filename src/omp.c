@@ -5098,7 +5098,6 @@ send_reports (task_t task, int apply_overrides)
       report_scan_run_status (index, &run_status);
       msg = g_strdup_printf ("<report"
                              " id=\"%s\">"
-                             // FIX s/b scan_start like get_reports
                              "<timestamp>%s</timestamp>"
                              "<scan_run_status>%s</scan_run_status>"
                              "<result_count>"
