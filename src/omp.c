@@ -5158,7 +5158,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 {
   FILE *out;
   iterator_t results, hosts;
-  char *end_time, *start_time;
+  char *end_time, *start_time, *uuid;
   array_t *result_hosts;
 
   /* TODO: This is now out of sync with the XML report.  It is only used to
@@ -5175,10 +5175,13 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
       return -1;
     }
 
-  fputs ("<get_reports_response"
-         " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
-         "<report>",
-         out);
+  uuid = report_uuid (report);
+  fprintf (out,
+           "<get_reports_response"
+           " status=\"" STATUS_OK "\" status_text=\"" STATUS_OK_TEXT "\">"
+           "<report id=\"%s\">",
+           uuid);
+  free (uuid);
 
   start_time = scan_start_time (report);
   fprintf (out,
@@ -7982,6 +7985,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else if (strcasecmp (get_reports_data->format, "nbe") == 0)
             {
+              char *uuid;
               char *start_time, *end_time;
               array_t *result_hosts;
 
@@ -8080,7 +8084,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Encode and send the NBE. */
 
-              SEND_TO_CLIENT_OR_FAIL ("<report format=\"nbe\">");
+              uuid = report_uuid (report);
+              SENDF_TO_CLIENT_OR_FAIL ("<report id=\"%s\" format=\"nbe\">",
+                                       uuid);
+              free (uuid);
               content = g_string_free (nbe, FALSE);
               if (content && strlen (content))
                 {
@@ -8225,14 +8232,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             }
                           else
                             {
+                              char *uuid;
+
                               /* Remove the directory. */
 
                               file_utils_rmdir_rf (xml_dir);
 
                               /* Encode and send the HTML. */
 
-                              SEND_TO_CLIENT_OR_FAIL
-                               ("<report format=\"html\">");
+                              uuid = report_uuid (report);
+                              SENDF_TO_CLIENT_OR_FAIL
+                               ("<report id=\"%s\" format=\"html\">",
+                                uuid);
+                              free (uuid);
                               if (html && strlen (html))
                                 {
                                   gchar *base64;
@@ -8386,14 +8398,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             }
                           else
                             {
+                              char *uuid;
+
                               /* Remove the directory. */
 
                               file_utils_rmdir_rf (xml_dir);
 
                               /* Encode and send the HTML. */
 
-                              SEND_TO_CLIENT_OR_FAIL
-                               ("<report format=\"pdf\">");
+                              uuid = report_uuid (report);
+                              SENDF_TO_CLIENT_OR_FAIL
+                               ("<report id=\"%s\" format=\"pdf\">",
+                                uuid);
+                              free (uuid);
                               if (pdf && strlen (pdf))
                                 {
                                   gchar *base64;
@@ -8557,14 +8574,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         }
                       else
                         {
+                          char *uuid;
+
                           /* Remove the directory. */
 
                           file_utils_rmdir_rf (latex_dir);
 
                           /* Encode and send the PDF data. */
 
-                          SEND_TO_CLIENT_OR_FAIL
-                           ("<report format=\"pdf\">");
+                          uuid = report_uuid (report);
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<report id=\"%s\" format=\"pdf\">",
+                            uuid);
+                          free (uuid);
+
                           if (pdf && strlen (pdf))
                             {
                               gchar *base64;
@@ -8711,15 +8734,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             }
                           else
                             {
+                              char *uuid;
+
                               /* Remove the directory. */
 
                               file_utils_rmdir_rf (xml_dir);
 
                               /* Encode and send the output. */
 
+                              uuid = report_uuid (report);
                               SENDF_TO_CLIENT_OR_FAIL
-                               ("<report format=\"%s\">",
+                               ("<report id=\"%s\" format=\"%s\">",
+                                uuid,
                                 get_reports_data->format);
+                              free (uuid);
+
                               if (output && strlen (output))
                                 {
                                   gchar *base64;
