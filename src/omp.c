@@ -5101,13 +5101,13 @@ send_reports (task_t task, int apply_overrides)
                              // FIX s/b scan_start like get_reports
                              "<timestamp>%s</timestamp>"
                              "<scan_run_status>%s</scan_run_status>"
-                             "<messages>"
+                             "<result_count>"
                              "<debug>%i</debug>"
                              "<hole>%i</hole>"
                              "<info>%i</info>"
                              "<log>%i</log>"
                              "<warning>%i</warning>"
-                             "</messages>"
+                             "</result_count>"
                              "</report>",
                              uuid,
                              timestamp,
@@ -7738,16 +7738,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SENDF_TO_CLIENT_OR_FAIL
                ("</filters>"
-                "<scan_run_status>%s</scan_run_status>"
-                "<scan_result_count>"
-                "%i"
-                "<filtered>%i</filtered>"
-                "</scan_result_count>",
+                "<scan_run_status>%s</scan_run_status>",
                 run_status_name (run_status
                                   ? run_status
-                                  : TASK_STATUS_INTERNAL_ERROR),
-                result_count,
-                filtered_result_count);
+                                  : TASK_STATUS_INTERNAL_ERROR));
 
               if (task && tsk_uuid)
                 {
@@ -7867,7 +7861,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 cleanup_iterator (&results);
               }
 
-              /* Threat counts. */
+              /* Result counts. */
 
               {
                 int debugs, holes, infos, logs, warnings;
@@ -7875,13 +7869,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 report_counts_id (report, &debugs, &holes, &infos, &logs,
                                   &warnings, get_reports_data->apply_overrides);
 
-                SENDF_TO_CLIENT_OR_FAIL ("<messages>"
+                SENDF_TO_CLIENT_OR_FAIL ("<result_count>"
+                                         "%i"
+                                         "<filtered>%i</filtered>"
                                          "<debug>%i</debug>"
                                          "<hole>%i</hole>"
                                          "<info>%i</info>"
                                          "<log>%i</log>"
                                          "<warning>%i</warning>"
-                                         "</messages>",
+                                         "</result_count>",
+                                         result_count,
+                                         filtered_result_count,
                                          debugs,
                                          holes,
                                          infos,
@@ -12823,13 +12821,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         "<timestamp>"
                                                         "%s"
                                                         "</timestamp>"
-                                                        "<messages>"
+                                                        "<result_count>"
                                                         "<debug>%i</debug>"
                                                         "<hole>%i</hole>"
                                                         "<info>%i</info>"
                                                         "<log>%i</log>"
                                                         "<warning>%i</warning>"
-                                                        "</messages>"
+                                                        "</result_count>"
                                                         "</report>"
                                                         "</first_report>",
                                                         first_report_id,
@@ -12865,13 +12863,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        "<timestamp>"
                                                        "%s"
                                                        "</timestamp>"
-                                                       "<messages>"
+                                                       "<result_count>"
                                                        "<debug>%i</debug>"
                                                        "<hole>%i</hole>"
                                                        "<info>%i</info>"
                                                        "<log>%i</log>"
                                                        "<warning>%i</warning>"
-                                                       "</messages>"
+                                                       "</result_count>"
                                                        "</report>"
                                                        "</last_report>",
                                                        last_report_id,
@@ -12909,13 +12907,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "<timestamp>"
                                                "%s"
                                                "</timestamp>"
-                                               "<messages>"
+                                               "<result_count>"
                                                "<debug>%i</debug>"
                                                "<hole>%i</hole>"
                                                "<info>%i</info>"
                                                "<log>%i</log>"
                                                "<warning>%i</warning>"
-                                               "</messages>"
+                                               "</result_count>"
                                                "</report>"
                                                "</second_last_report>",
                                                second_last_report_id,
@@ -13051,13 +13049,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
-                                 "<messages>"
+                                 "<result_count>"
                                  "<debug>%i</debug>"
                                  "<hole>%i</hole>"
                                  "<info>%i</info>"
                                  "<log>%i</log>"
                                  "<warning>%i</warning>"
-                                 "</messages>"
+                                 "</result_count>"
                                  "<report_count>"
                                  "%u<finished>%u</finished>"
                                  "</report_count>"
@@ -13170,13 +13168,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         "<timestamp>"
                                                         "%s"
                                                         "</timestamp>"
-                                                        "<messages>"
+                                                        "<result_count>"
                                                         "<debug>%i</debug>"
                                                         "<hole>%i</hole>"
                                                         "<info>%i</info>"
                                                         "<log>%i</log>"
                                                         "<warning>%i</warning>"
-                                                        "</messages>"
+                                                        "</result_count>"
                                                         "</report>"
                                                         "</first_report>",
                                                         first_report_id,
@@ -13210,13 +13208,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         last_report = g_strdup_printf ("<last_report>"
                                                        "<report id=\"%s\">"
                                                        "<timestamp>%s</timestamp>"
-                                                       "<messages>"
+                                                       "<result_count>"
                                                        "<debug>%i</debug>"
                                                        "<hole>%i</hole>"
                                                        "<info>%i</info>"
                                                        "<log>%i</log>"
                                                        "<warning>%i</warning>"
-                                                       "</messages>"
+                                                       "</result_count>"
                                                        "</report>"
                                                        "</last_report>",
                                                        last_report_id,
@@ -13272,13 +13270,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                               ("<second_last_report>"
                                                "<report id=\"%s\">"
                                                "<timestamp>%s</timestamp>"
-                                               "<messages>"
+                                               "<result_count>"
                                                "<debug>%i</debug>"
                                                "<hole>%i</hole>"
                                                "<info>%i</info>"
                                                "<log>%i</log>"
                                                "<warning>%i</warning>"
-                                               "</messages>"
+                                               "</result_count>"
                                                "</report>"
                                                "</second_last_report>",
                                                second_last_report_id,
@@ -13390,13 +13388,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<status>%s</status>"
                                             "<progress>%s</progress>"
                                             "%s"
-                                            "<messages>"
+                                            "<result_count>"
                                             "<debug>%i</debug>"
                                             "<hole>%i</hole>"
                                             "<info>%i</info>"
                                             "<log>%i</log>"
                                             "<warning>%i</warning>"
-                                            "</messages>"
+                                            "</result_count>"
                                             "<report_count>"
                                             "%u<finished>%u</finished>"
                                             "</report_count>"
