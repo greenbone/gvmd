@@ -2079,6 +2079,7 @@ typedef enum
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
+  CLIENT_GET_VERSION,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
@@ -2125,7 +2126,6 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ESCALATOR,
-  CLIENT_VERSION
 } client_state_t;
 
 /**
@@ -3156,7 +3156,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_TASKS);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
-          set_client_state (CLIENT_VERSION);
+          set_client_state (CLIENT_GET_VERSION);
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
@@ -8893,7 +8893,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_VERSION:
+      case CLIENT_GET_VERSION:
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\""
                                 " status_text=\"" STATUS_OK_TEXT "\">"

@@ -1,5 +1,10 @@
 2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Rename CLIENT_VERSION to CLIENT_GET_VERSION.
+
+2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (send_reports): Rename MESSAGES to RESULT_COUNT.
 	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS rename
 	SCAN_RESULT_COUNT to RESULT_COUNT, move threat counts into that
