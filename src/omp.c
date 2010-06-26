@@ -457,7 +457,6 @@ static char* help_text = "\n"
 "    GET_PREFERENCES        Get preferences for all available NVTs.\n"
 "    GET_REPORTS            Get all reports.\n"
 "    GET_RESULTS            Get results.\n"
-"    GET_RULES              Get the rules for the authenticated user.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
@@ -2075,7 +2074,6 @@ typedef enum
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_RESULTS,
-  CLIENT_GET_RULES,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_SYSTEM_REPORTS,
@@ -3070,8 +3068,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_RESULTS);
           }
-        else if (strcasecmp ("GET_RULES", element_name) == 0)
-          set_client_state (CLIENT_GET_RULES);
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar* attribute;
@@ -3813,21 +3809,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                      "Error");
-        break;
-
-      case CLIENT_GET_RULES:
-          {
-            if (send_element_error_to_client ("get_rules", element_name))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            set_client_state (CLIENT_AUTHENTIC);
-            g_set_error (error,
-                         G_MARKUP_ERROR,
-                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                         "Error");
-          }
         break;
 
       case CLIENT_GET_SCHEDULES:
@@ -5064,30 +5045,6 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                            oid,
                            name_text);
   g_free (name_text);
-  if (send_to_client (msg))
-    {
-      g_free (msg);
-      return TRUE;
-    }
-  g_free (msg);
-  return FALSE;
-}
-
-/**
- * @brief Send XML for a rule.
- *
- * @param[in]  rule  The rule.
- *
- * @return TRUE if out of space in to_client buffer, else FALSE.
- */
-static gboolean
-send_rule (gpointer rule)
-{
-  /* \todo Do these reallocations affect performance? */
-  gchar* rule_text = g_markup_escape_text ((char*) rule,
-                                           strlen ((char*) rule));
-  gchar* msg = g_strdup_printf ("<rule>%s</rule>", rule_text);
-  g_free (rule_text);
   if (send_to_client (msg))
     {
       g_free (msg);
@@ -8868,26 +8825,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
-      case CLIENT_GET_RULES:
-        if (scanner.rules)
-          {
-            int index;
-            SEND_TO_CLIENT_OR_FAIL ("<get_rules_response"
-                                    " status=\"" STATUS_OK "\""
-                                    " status_text=\"" STATUS_OK_TEXT "\">");
-            for (index = 0; index < scanner.rules_size; index++)
-              if (send_rule (g_ptr_array_index (scanner.rules, index)))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            SEND_TO_CLIENT_OR_FAIL ("</get_rules_response>");
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_rules"));
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
 
       case CLIENT_VERSION:
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"

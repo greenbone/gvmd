@@ -1,5 +1,13 @@
 2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove GET_RULES.
+
+	* src/omp.c (help_text, client_state_t): Remove GET_RULES element.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Remove
+	GET_RULES handling.
+
+2010-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_iterator): Add report arg.
 	(report_iterator_uuid): New function.
 
