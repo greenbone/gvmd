@@ -6476,8 +6476,8 @@ where_search_phrase (const char* search_phrase)
  * @param[in]  iterator       Iterator.
  * @param[in]  report         Report whose results the iterator loops over,
  *                            or 0 to use result.
- * @param[in]  result         Single result to iterate over.  Overridden by
- *                            report.
+ * @param[in]  result         Single result to iterate over.  0 for all.
+ *                            Overridden by report.
  * @param[in]  host           Host whose results the iterator loops over.  All
  *                            results if NULL.  Only considered if report given.
  * @param[in]  first_result   The result to start from.  The results are 0
@@ -6504,7 +6504,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
   GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
 
-  assert (report || result);
+  assert ((report && result) == 0);
 
   /* Allocate the query. */
 
@@ -6641,12 +6641,21 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       g_free (new_type_sql);
     }
-  else
+  else if (result)
     sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
                            " type, type, description"
                            " FROM results"
                            " WHERE ROWID = %llu;",
                            result);
+  else
+    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+                           " type, type, description"
+                           " FROM results, report_results, reports"
+                           " WHERE results.ROWID = report_results.result"
+                           " AND report_results.report = reports.ROWID"
+                           " AND reports.owner ="
+                           " (SELECT ROWID FROM users WHERE uuid = '%s');",
+                           current_credentials.uuid);
 
   init_iterator (iterator, sql);
   g_free (sql);

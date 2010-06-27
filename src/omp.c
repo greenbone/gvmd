@@ -8804,7 +8804,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_RESULTS:
         {
-          result_t result;
+          result_t result = 0;
           task_t task = 0;
 
           assert (strcasecmp ("GET_RESULTS", element_name) == 0);
@@ -8817,12 +8817,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          if (get_results_data->result_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_results",
-                                "GET_RESULTS must have a result_id attribute"));
-          else if (get_results_data->notes
-                   && (get_results_data->task_id == NULL))
+          if (get_results_data->notes
+              && (get_results_data->task_id == NULL))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute"
@@ -8835,9 +8831,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "GET_RESULTS must have a task_id attribute"
                                 " if either of the overrides attributes is"
                                 " true"));
-          else if (find_result (get_results_data->result_id, &result))
+          else if (get_results_data->result_id
+                   && find_result (get_results_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-          else if (result == 0)
+          else if (get_results_data->result_id && result == 0)
             {
               if (send_find_error_to_client ("get_results",
                                              "result",
@@ -12455,7 +12452,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           lsc_credential_iterator_in_use (&credentials),
                           lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_public_key (&credentials));
+                          lsc_credential_iterator_public_key (&credentials)
+                            ? lsc_credential_iterator_public_key (&credentials)
+                            : "");
                         break;
                       case 2: /* rpm */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -12474,7 +12473,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           lsc_credential_iterator_in_use (&credentials),
                           lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_rpm (&credentials));
+                          lsc_credential_iterator_rpm (&credentials)
+                            ? lsc_credential_iterator_rpm (&credentials)
+                            : "");
                         break;
                       case 3: /* deb */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -12493,7 +12494,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           lsc_credential_iterator_in_use (&credentials),
                           lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_deb (&credentials));
+                          lsc_credential_iterator_deb (&credentials)
+                            ? lsc_credential_iterator_deb (&credentials)
+                            : "");
                         break;
                       case 4: /* exe */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -12512,7 +12515,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           lsc_credential_iterator_in_use (&credentials),
                           lsc_credential_iterator_public_key (&credentials)
                             ? "gen" : "pass",
-                          lsc_credential_iterator_exe (&credentials));
+                          lsc_credential_iterator_exe (&credentials)
+                            ? lsc_credential_iterator_exe (&credentials)
+                            : "");
                         break;
                       default:
                         {
