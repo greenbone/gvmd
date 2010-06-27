@@ -1,5 +1,13 @@
 2010-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (get_targets_data_t): Add tasks.
+	(client_state_t): Move TARGET_LOCATORS into order.
+	(omp_xml_handle_start_element): Parse GET_TARGETS/@tasks.
+	(omp_xml_handle_end_element): Make GET_TARGETS TASKS depend on "tasks"
+	attrib, and only include the enclosing element if the attrib is present.
+
+2010-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_system_report): Use 86400 if duration is NULL.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS

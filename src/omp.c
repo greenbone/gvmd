@@ -1315,9 +1315,10 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 
 typedef struct
 {
-  char *target_id;
   char *sort_field;
   int sort_order;
+  char *target_id;
+  int tasks;
 } get_targets_data_t;
 
 static void
@@ -2075,8 +2076,8 @@ typedef enum
   CLIENT_GET_REPORTS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_SCHEDULES,
-  CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_SYSTEM_REPORTS,
+  CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
   CLIENT_GET_VERSION,
@@ -3110,6 +3111,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "target_id",
                               &get_targets_data->target_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_targets_data->tasks = strcmp (attribute, "0");
+            else
+              get_targets_data->tasks = 0;
             append_attribute (attribute_names, attribute_values, "sort_field",
                               &get_targets_data->sort_field);
             if (find_attribute (attribute_names, attribute_values,
@@ -12671,7 +12677,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
-              iterator_t targets, tasks;
+              iterator_t targets;
 
               SEND_TO_CLIENT_OR_FAIL ("<get_targets_response"
                                       " status=\"" STATUS_OK "\""
@@ -12696,8 +12702,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<in_use>%i</in_use>"
                                            "<lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
-                                           "</lsc_credential>"
-                                           "<tasks>",
+                                           "</lsc_credential>",
                                            target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
@@ -12709,10 +12714,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            lsc_uuid ? lsc_uuid : "",
                                            lsc_name ? lsc_name : "");
 
-                  if (target)
+                  if (get_targets_data->tasks)
                     {
+                      iterator_t tasks;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_target_task_iterator (&tasks,
-                                                 target,
+                                                 target_iterator_target
+                                                  (&targets),
                                                  get_targets_data->sort_order);
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -12721,10 +12730,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  target_task_iterator_uuid (&tasks),
                                                  target_task_iterator_name (&tasks));
                       cleanup_iterator (&tasks);
+                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
 
-                  SEND_TO_CLIENT_OR_FAIL ("</tasks>"
-                                          "</target>");
+                  SEND_TO_CLIENT_OR_FAIL ("</target>");
                   free (lsc_name);
                 }
               cleanup_iterator (&targets);
