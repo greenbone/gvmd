@@ -12571,7 +12571,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
 
-          if (get_system_reports_data->name
+          if (get_system_reports_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_system_reports",
+                                "GET_SYSTEM_REPORTS requires a name"
+                                " attribute"));
+          else if (get_system_reports_data->name
               && (strcasecmp (get_system_reports_data->name,
                               "types")
                   == 0))
@@ -12628,7 +12633,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     "</report>"
                     "</system_report>",
                     get_system_reports_data->name,
-                    get_system_reports_data->duration,
+                    get_system_reports_data->duration
+                     ? get_system_reports_data->duration
+                     : "86400",
                     report);
                   free (report);
                 }

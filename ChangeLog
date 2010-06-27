@@ -1,5 +1,12 @@
 2010-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_system_report): Use 86400 if duration is NULL.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS
+	add a name check and use 86400 if duration is missing.
+
+2010-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Add all results case.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_RESULTS remove the

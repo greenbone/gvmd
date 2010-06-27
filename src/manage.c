@@ -1846,7 +1846,9 @@ manage_system_report (const char *name, const char *duration, char **report)
   gchar *command;
 
   assert (name);
-  assert (duration);
+
+  if (duration == NULL)
+    duration = "86400";
 
   /* For simplicity, it's up to the command to do the base64 encoding. */
   command = g_strdup_printf ("openvasmr %s %s", duration, name);
