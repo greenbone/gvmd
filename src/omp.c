@@ -444,7 +444,9 @@ static char* help_text = "\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
 "    GET_AGENTS             Get all agents.\n"
+#if 0
 "    GET_CERTIFICATES       Get all available certificates.\n"
+#endif
 "    GET_CONFIGS            Get all configs.\n"
 "    GET_DEPENDENCIES       Get dependencies for all available NVTs.\n"
 "    GET_ESCALATORS         Get all escalators.\n"
@@ -2058,7 +2060,9 @@ typedef enum
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_GET_AGENTS,
+#if 0
   CLIENT_GET_CERTIFICATES,
+#endif
   CLIENT_GET_CONFIGS,
   CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_ESCALATORS,
@@ -2743,8 +2747,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_agents_data->sort_order = 1;
             set_client_state (CLIENT_GET_AGENTS);
           }
+#if 0
         else if (strcasecmp ("GET_CERTIFICATES", element_name) == 0)
           set_client_state (CLIENT_GET_CERTIFICATES);
+#endif
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -3554,6 +3560,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+#if 0
       case CLIENT_GET_CERTIFICATES:
           {
             if (send_element_error_to_client ("get_certificates", element_name))
@@ -3568,6 +3575,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          "Error");
           }
         break;
+#endif
 
       case CLIENT_GET_CONFIGS:
           {
@@ -4829,6 +4837,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
   return;
 }
 
+#if 0
 /**
  * @brief Send XML for a certificate.
  *
@@ -4870,6 +4879,7 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
   g_free (msg);
   return 1;
 }
+#endif
 
 /**
  * @brief Send XML for a requirement of a plugin.
@@ -6935,6 +6945,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+#if 0
       case CLIENT_GET_CERTIFICATES:
         if (scanner.certificates)
           {
@@ -6954,6 +6965,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_certificates"));
         set_client_state (CLIENT_AUTHENTIC);
         break;
+#endif
 
       case CLIENT_GET_DEPENDENCIES:
         if (scanner.plugins_dependencies)
