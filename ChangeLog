@@ -1,5 +1,9 @@
 2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c: Neaten internal doc slightly.
+
+2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move NVT and TASK in GET_NOTES and GET_OVERRIDES to attributes nvt_oid
 	and task_id, to match other GET commands.
 

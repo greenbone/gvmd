@@ -44,12 +44,12 @@
  * (\ref omp_xml_handle_end_element ).
  *
  * The state usually represents the current location of the parser within the
- * xml (omp) tree. There has to be one state for every omp element.
+ * XML (OMP) tree.  There has to be one state for every OMP element.
  *
  * State transitions occur in the start and end element handler callbacks.
  *
  * Generally, the strategy is to wait until the closing of an element before
- * doing any action or sending a response. Also, error cases are to be detected
+ * doing any action or sending a response.  Also, error cases are to be detected
  * in the end element handler.
  *
  * If data has to be stored, it goes to \ref command_data (_t) , which is a
@@ -62,11 +62,10 @@
  * "\<help_extended/\>"), \ref command_data has to be freed and NULL'ed in case
  * of errors and the \ref current_state has to be reset.
  * It can then be assumed that it is NULL'ed at the start of every new
- * command element. To implement a new start element handler, be sure to just
+ * command element.  To implement a new start element handler, be sure to just
  * copy an existing case and keep its structure.
  *
- * Implementationwise it is easier to represent values in in attributes than
- * in text or further elements.
+ * Attributes are easier to implement than elements.
  * E.g.
  * @code
  * <key_value_pair key="k" value="v"/>
@@ -76,8 +75,10 @@
  * <key><attribute name="k"/><value>v</value></key>
  * @endcode
  * .
+ * For this reason the GET commands like GET_TASKS all use attributes only.
  *
- * However, it is preferred to avoid attributes and use the text of elements
+ * However, for the other commands it is preferred to avoid attributes and use
+ * the text of elements
  * instead, like in
  * @code
  * <key_value_pair><key>k</key><value>v</value></key_value_pair>
