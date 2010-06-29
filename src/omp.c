@@ -2068,14 +2068,10 @@ typedef enum
   CLIENT_GET_ESCALATORS,
   CLIENT_GET_LSC_CREDENTIALS,
   CLIENT_GET_NOTES,
-  CLIENT_GET_NOTES_NVT,
-  CLIENT_GET_NOTES_TASK,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
   CLIENT_GET_NVT_FEED_CHECKSUM,
   CLIENT_GET_OVERRIDES,
-  CLIENT_GET_OVERRIDES_NVT,
-  CLIENT_GET_OVERRIDES_TASK,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_RESULTS,
@@ -2827,6 +2823,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "note_id",
                               &get_notes_data->note_id);
 
+            append_attribute (attribute_names, attribute_values, "nvt_oid",
+                              &get_notes_data->nvt_oid);
+
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &get_notes_data->task_id);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
               get_notes_data->details = strcmp (attribute, "0");
@@ -2912,6 +2914,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "override_id",
                               &get_overrides_data->override_id);
+
+            append_attribute (attribute_names, attribute_values, "nvt_oid",
+                              &get_overrides_data->nvt_oid);
+
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &get_overrides_data->task_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "details", &attribute))
@@ -3639,19 +3647,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NOTES:
-        if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &get_notes_data->nvt_oid);
-            set_client_state (CLIENT_GET_NOTES_NVT);
-          }
-        else if (strcasecmp ("TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &get_notes_data->task_id);
-            set_client_state (CLIENT_GET_NOTES_TASK);
-          }
-        else
           {
             if (send_element_error_to_client ("get_notes", element_name))
               {
@@ -3664,30 +3659,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
-        break;
-      case CLIENT_GET_NOTES_NVT:
-        if (send_element_error_to_client ("get_notes", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-      case CLIENT_GET_NOTES_TASK:
-        if (send_element_error_to_client ("get_notes", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
         break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
@@ -3733,19 +3704,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_OVERRIDES:
-        if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &get_overrides_data->nvt_oid);
-            set_client_state (CLIENT_GET_OVERRIDES_NVT);
-          }
-        else if (strcasecmp ("TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &get_overrides_data->task_id);
-            set_client_state (CLIENT_GET_OVERRIDES_TASK);
-          }
-        else
           {
             if (send_element_error_to_client ("get_overrides", element_name))
               {
@@ -3758,30 +3716,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
-        break;
-      case CLIENT_GET_OVERRIDES_NVT:
-        if (send_element_error_to_client ("get_overrides", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
-        break;
-      case CLIENT_GET_OVERRIDES_TASK:
-        if (send_element_error_to_client ("get_overrides", element_name))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        set_client_state (CLIENT_AUTHENTIC);
-        g_set_error (error,
-                     G_MARKUP_ERROR,
-                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
-                     "Error");
         break;
 
       case CLIENT_GET_PREFERENCES:
@@ -7114,14 +7048,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_GET_NOTES_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_GET_NOTES);
-        break;
-      case CLIENT_GET_NOTES_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_GET_NOTES);
-        break;
 
       case CLIENT_GET_NVT_FEED_CHECKSUM:
         {
@@ -7440,14 +7366,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-      case CLIENT_GET_OVERRIDES_NVT:
-        assert (strcasecmp ("NVT", element_name) == 0);
-        set_client_state (CLIENT_GET_OVERRIDES);
-        break;
-      case CLIENT_GET_OVERRIDES_TASK:
-        assert (strcasecmp ("TASK", element_name) == 0);
-        set_client_state (CLIENT_GET_OVERRIDES);
-        break;
 
       case CLIENT_DELETE_NOTE:
         assert (strcasecmp ("DELETE_NOTE", element_name) == 0);

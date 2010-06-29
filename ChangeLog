@@ -1,5 +1,15 @@
 2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move NVT and TASK in GET_NOTES and GET_OVERRIDES to attributes nvt_oid
+	and task_id, to match other GET commands.
+
+	* src/omp.c (client_state_t): Remove NVT and TASK elements.
+	(omp_xml_handle_start_element): Add nvt_oid and task_id parsing.  Remove
+	NVT and TASK handling.
+	(omp_xml_handle_end_element): Remove NVT and TASK handling.
+
+2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename "oid" attributes to "nvt_oid".
 
 	* src/omp.c (get_dependencies_data_t, get_dependencies_data_reset)
