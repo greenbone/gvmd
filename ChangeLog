@@ -1,3 +1,8 @@
+2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_LSC_CREDENTIAL
+	and CLIENT_DELETE_TARGET correct command name in structure and message.
+
 2010-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (help_text, client_state_t, omp_xml_handle_start_element)

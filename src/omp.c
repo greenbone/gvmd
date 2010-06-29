@@ -9092,7 +9092,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
         assert (strcasecmp ("DELETE_LSC_CREDENTIAL", element_name) == 0);
-        if (delete_escalator_data->escalator_id)
+        if (delete_lsc_credential_data->lsc_credential_id)
           {
             lsc_credential_t lsc_credential = 0;
 
@@ -9129,16 +9129,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_escalator",
-                              "DELETE_ESCALATOR requires an escalator_id"
-                              " attribute"));
+           (XML_ERROR_SYNTAX ("delete_lsc_credential",
+                              "DELETE_LSC_CREDENTIAL requires an"
+                              " lsc_credential_id attribute"));
         delete_lsc_credential_data_reset (delete_lsc_credential_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_DELETE_TARGET:
         assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
-        if (delete_escalator_data->escalator_id)
+        if (delete_target_data->target_id)
           {
             target_t target = 0;
 
@@ -9169,7 +9169,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("delete_escalator",
+           (XML_ERROR_SYNTAX ("delete_target",
                               "DELETE_TARGET requires a target_id attribute"));
         delete_target_data_reset (delete_target_data);
         set_client_state (CLIENT_AUTHENTIC);
