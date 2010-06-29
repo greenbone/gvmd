@@ -1080,13 +1080,13 @@ get_configs_data_reset (get_configs_data_t *data)
 
 typedef struct
 {
-  char *oid;
+  char *nvt_oid;
 } get_dependencies_data_t;
 
 static void
 get_dependencies_data_reset (get_dependencies_data_t *data)
 {
-  free (data->oid);
+  free (data->nvt_oid);
 
   memset (data, 0, sizeof (get_dependencies_data_t));
 }
@@ -1151,7 +1151,7 @@ typedef struct
   char *config_id;
   int details;
   char *family;
-  char *oid;
+  char *nvt_oid;
   int preference_count;
   int preferences;
   char *sort_field;
@@ -1164,7 +1164,7 @@ get_nvts_data_reset (get_nvts_data_t *data)
 {
   free (data->config_id);
   free (data->family);
-  free (data->oid);
+  free (data->nvt_oid);
   free (data->sort_field);
 
   memset (data, 0, sizeof (get_nvts_data_t));
@@ -1218,7 +1218,7 @@ get_overrides_data_reset (get_overrides_data_t *data)
 typedef struct
 {
   char *config_id;
-  char *oid;
+  char *nvt_oid;
   char *preference;
 } get_preferences_data_t;
 
@@ -1226,7 +1226,7 @@ static void
 get_preferences_data_reset (get_preferences_data_t *data)
 {
   free (data->config_id);
-  free (data->oid);
+  free (data->nvt_oid);
   free (data->preference);
 
   memset (data, 0, sizeof (get_preferences_data_t));
@@ -2782,8 +2782,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &get_dependencies_data->oid);
+            append_attribute (attribute_names, attribute_values, "nvt_oid",
+                              &get_dependencies_data->nvt_oid);
             set_client_state (CLIENT_GET_DEPENDENCIES);
           }
         else if (strcasecmp ("GET_ESCALATORS", element_name) == 0)
@@ -2859,8 +2859,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &get_nvts_data->oid);
+            append_attribute (attribute_names, attribute_values, "nvt_oid",
+                              &get_nvts_data->nvt_oid);
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_nvts_data->config_id);
             if (find_attribute (attribute_names, attribute_values,
@@ -2938,8 +2938,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &get_preferences_data->oid);
+            append_attribute (attribute_names, attribute_values, "nvt_oid",
+                              &get_preferences_data->nvt_oid);
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_preferences_data->config_id);
             append_attribute (attribute_names, attribute_values, "preference",
@@ -6861,14 +6861,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t prefs;
           nvt_t nvt = 0;
           config_t config = 0;
-          if (get_preferences_data->oid
-              && find_nvt (get_preferences_data->oid, &nvt))
+          if (get_preferences_data->nvt_oid
+              && find_nvt (get_preferences_data->nvt_oid, &nvt))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_preferences"));
-          else if (get_preferences_data->oid && nvt == 0)
+          else if (get_preferences_data->nvt_oid && nvt == 0)
             {
               if (send_find_error_to_client ("get_preferences",
                                              "NVT",
-                                             get_preferences_data->oid))
+                                             get_preferences_data->nvt_oid))
                 {
                   error_send_to_client (error);
                   return;
@@ -6972,14 +6972,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             nvt_t nvt = 0;
 
-            if (get_dependencies_data->oid
-                && find_nvt (get_dependencies_data->oid, &nvt))
+            if (get_dependencies_data->nvt_oid
+                && find_nvt (get_dependencies_data->nvt_oid, &nvt))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_dependencies"));
-            else if (get_dependencies_data->oid && nvt == 0)
+            else if (get_dependencies_data->nvt_oid && nvt == 0)
               {
                 if (send_find_error_to_client ("get_dependencies",
                                                "NVT",
-                                               get_dependencies_data->oid))
+                                               get_dependencies_data->nvt_oid))
                   {
                     error_send_to_client (error);
                     return;
@@ -7159,7 +7159,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               free (md5sum);
 
-              if (get_nvts_data->oid && get_nvts_data->family)
+              if (get_nvts_data->nvt_oid && get_nvts_data->family)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("get_nvts",
                                     "Too many parameters at once"));
@@ -7185,15 +7185,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "GET_NVTS timeout attribute"
                                     " requires the details and config_id"
                                     " attributes"));
-              else if (get_nvts_data->oid
-                       && find_nvt (get_nvts_data->oid, &nvt))
+              else if (get_nvts_data->nvt_oid
+                       && find_nvt (get_nvts_data->nvt_oid, &nvt))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_nvts"));
-              else if (get_nvts_data->oid && nvt == 0)
+              else if (get_nvts_data->nvt_oid && nvt == 0)
                 {
                   if (send_find_error_to_client ("get_nvts",
                                                  "NVT",
-                                                 get_nvts_data->oid))
+                                                 get_nvts_data->nvt_oid))
                     {
                       error_send_to_client (error);
                       return;
@@ -7226,7 +7226,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   init_nvt_iterator (&nvts,
                                      nvt,
-                                     get_nvts_data->oid
+                                     get_nvts_data->nvt_oid
                                       /* Presume the NVT is in the config (if
                                        * a config was given). */
                                       ? 0

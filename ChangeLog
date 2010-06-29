@@ -1,3 +1,13 @@
+2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename "oid" attributes to "nvt_oid".
+
+	* src/omp.c (get_dependencies_data_t, get_dependencies_data_reset)
+	(get_nvts_data_t, get_nvts_data_reset, get_preferences_data_t)
+	(get_preferences_data_reset): Rename oid to nvt_oid.  Update caller.
+	(omp_xml_handle_start_element): Rename oid to nvt_oid in GET_DEPENDENCIES,
+	GET_NVTS an GET_PREFERENCES.
+
 2010-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (set_task_run_status): Add event logging to run
