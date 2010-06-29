@@ -5078,6 +5078,9 @@ task_run_status (task_t task)
 void
 set_task_run_status (task_t task, task_status_t status)
 {
+  char *uuid;
+  char *name;
+
   if ((task == current_scanner_task) && current_report)
     sql ("UPDATE reports SET scan_run_status = %u WHERE ROWID = %llu;",
          status,
@@ -5085,6 +5088,15 @@ set_task_run_status (task_t task, task_status_t status)
   sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
        status,
        task);
+
+  task_uuid (task, &uuid);
+  name = task_name (task);
+  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+         "Status of task %s (%s) has changed to %s",
+         name, uuid, run_status_name (status));
+  free (uuid);
+  free (name);
+
   event (task, EVENT_TASK_RUN_STATUS_CHANGED, (void*) status);
 }
 

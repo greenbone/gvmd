@@ -1,3 +1,8 @@
+2010-06-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (set_task_run_status): Add event logging to run
+	status changes.
+
 2010-06-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_LSC_CREDENTIAL
