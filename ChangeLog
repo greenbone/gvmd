@@ -1,3 +1,13 @@
+2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (create_note_data_t, create_note_data_reset)
+	(create_override_data_t, create_override_data_reset): Rename nvt to
+	nvt_oid, result to result_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Expect CREATE_NOTE, CREATE_OVERRIDE, MODIFY_NOTE,
+	MODIFY_OVERRIDE NVT and RESULT ids in attribute instead of text, to match
+	other CREATE and MODIFY commands.
+
 2010-06-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add event logging to

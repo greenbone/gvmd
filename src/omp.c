@@ -781,9 +781,9 @@ typedef struct
 {
   char *hosts;
   char *note_id;
-  char *nvt;
+  char *nvt_oid;
   char *port;
-  char *result;
+  char *result_id;
   char *task;
   char *text;
   char *threat;
@@ -794,9 +794,9 @@ create_note_data_reset (create_note_data_t *data)
 {
   free (data->hosts);
   free (data->note_id);
-  free (data->nvt);
+  free (data->nvt_oid);
   free (data->port);
-  free (data->result);
+  free (data->result_id);
   free (data->task);
   free (data->text);
   free (data->threat);
@@ -808,10 +808,10 @@ typedef struct
 {
   char *hosts;
   char *new_threat;
-  char *nvt;
+  char *nvt_oid;
   char *override_id;
   char *port;
-  char *result;
+  char *result_id;
   char *task;
   char *text;
   char *threat;
@@ -822,10 +822,10 @@ create_override_data_reset (create_override_data_t *data)
 {
   free (data->hosts);
   free (data->new_threat);
-  free (data->nvt);
+  free (data->nvt_oid);
   free (data->override_id);
   free (data->port);
-  free (data->result);
+  free (data->result_id);
   free (data->task);
   free (data->text);
   free (data->threat);
@@ -4463,11 +4463,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_HOSTS);
         else if (strcasecmp ("NVT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_NOTE_NVT);
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &create_note_data->nvt_oid);
+            set_client_state (CLIENT_CREATE_NOTE_NVT);
+          }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_PORT);
         else if (strcasecmp ("RESULT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_NOTE_RESULT);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_note_data->result_id);
+            if (create_note_data->result_id
+                && create_note_data->result_id[0] == '\0')
+              {
+                g_free (create_note_data->result_id);
+                create_note_data->result_id = NULL;
+              }
+            set_client_state (CLIENT_CREATE_NOTE_RESULT);
+          }
         else if (strcasecmp ("TASK", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_TASK);
         else if (strcasecmp ("TEXT", element_name) == 0)
@@ -4495,11 +4509,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_NEW_THREAT);
         else if (strcasecmp ("NVT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_OVERRIDE_NVT);
+          {
+            append_attribute (attribute_names, attribute_values, "oid",
+                              &create_override_data->nvt_oid);
+            set_client_state (CLIENT_CREATE_OVERRIDE_NVT);
+          }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_PORT);
         else if (strcasecmp ("RESULT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_OVERRIDE_RESULT);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_override_data->result_id);
+            if (create_override_data->result_id
+                && create_override_data->result_id[0] == '\0')
+              {
+                g_free (create_override_data->result_id);
+                create_override_data->result_id = NULL;
+              }
+            set_client_state (CLIENT_CREATE_OVERRIDE_RESULT);
+          }
         else if (strcasecmp ("TASK", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_TASK);
         else if (strcasecmp ("TEXT", element_name) == 0)
@@ -4613,7 +4641,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_PORT);
         else if (strcasecmp ("RESULT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_NOTE_RESULT);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_note_data->result_id);
+            if (modify_note_data->result_id
+                && modify_note_data->result_id[0] == '\0')
+              {
+                g_free (modify_note_data->result_id);
+                modify_note_data->result_id = NULL;
+              }
+            set_client_state (CLIENT_MODIFY_NOTE_RESULT);
+          }
         else if (strcasecmp ("TASK", element_name) == 0)
           set_client_state (CLIENT_MODIFY_NOTE_TASK);
         else if (strcasecmp ("TEXT", element_name) == 0)
@@ -4643,7 +4681,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_PORT);
         else if (strcasecmp ("RESULT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_OVERRIDE_RESULT);
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_override_data->result_id);
+            if (modify_override_data->result_id
+                && modify_override_data->result_id[0] == '\0')
+              {
+                g_free (modify_override_data->result_id);
+                modify_override_data->result_id = NULL;
+              }
+            set_client_state (CLIENT_MODIFY_OVERRIDE_RESULT);
+          }
         else if (strcasecmp ("TASK", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_TASK);
         else if (strcasecmp ("TEXT", element_name) == 0)
@@ -10464,7 +10512,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
-          if (create_note_data->nvt == NULL)
+          if (create_note_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires an NVT entity"));
@@ -10485,20 +10533,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (create_note_data->result
-                   && find_result (create_note_data->result, &result))
+          else if (create_note_data->result_id
+                   && find_result (create_note_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
-          else if (create_note_data->result && result == 0)
+          else if (create_note_data->result_id && result == 0)
             {
               if (send_find_error_to_client ("create_note",
                                              "result",
-                                             create_note_data->result))
+                                             create_note_data->result_id))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else switch (create_note (create_note_data->nvt,
+          else switch (create_note (create_note_data->nvt_oid,
                                     create_note_data->text,
                                     create_note_data->hosts,
                                     create_note_data->port,
@@ -10567,7 +10615,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
-          if (create_override_data->nvt == NULL)
+          if (create_override_data->nvt_oid == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires an NVT entity"));
@@ -10593,20 +10641,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (create_override_data->result
-                   && find_result (create_override_data->result, &result))
+          else if (create_override_data->result_id
+                   && find_result (create_override_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
-          else if (create_override_data->result && result == 0)
+          else if (create_override_data->result_id && result == 0)
             {
               if (send_find_error_to_client ("create_override",
                                              "result",
-                                             create_override_data->result))
+                                             create_override_data->result_id))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else switch (create_override (create_override_data->nvt,
+          else switch (create_override (create_override_data->nvt_oid,
                                         create_override_data->text,
                                         create_override_data->hosts,
                                         create_override_data->port,
@@ -11294,14 +11342,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (modify_note_data->result
-                   && find_result (modify_note_data->result, &result))
+          else if (modify_note_data->result_id
+                   && find_result (modify_note_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
-          else if (modify_note_data->result && result == 0)
+          else if (modify_note_data->result_id && result == 0)
             {
               if (send_find_error_to_client ("modify_note",
                                              "result",
-                                             modify_note_data->result))
+                                             modify_note_data->result_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -11398,14 +11446,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
-          else if (modify_override_data->result
-                   && find_result (modify_override_data->result, &result))
+          else if (modify_override_data->result_id
+                   && find_result (modify_override_data->result_id, &result))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
-          else if (modify_override_data->result && result == 0)
+          else if (modify_override_data->result_id && result == 0)
             {
               if (send_find_error_to_client ("modify_override",
                                              "result",
-                                             modify_override_data->result))
+                                             modify_override_data->result_id))
                 {
                   error_send_to_client (error);
                   return;
@@ -13871,14 +13919,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_NOTE_HOSTS:
         openvas_append_text (&create_note_data->hosts, text, text_len);
         break;
-      case CLIENT_CREATE_NOTE_NVT:
-        openvas_append_text (&create_note_data->nvt, text, text_len);
-        break;
       case CLIENT_CREATE_NOTE_PORT:
         openvas_append_text (&create_note_data->port, text, text_len);
-        break;
-      case CLIENT_CREATE_NOTE_RESULT:
-        openvas_append_text (&create_note_data->result, text, text_len);
         break;
       case CLIENT_CREATE_NOTE_TASK:
         openvas_append_text (&create_note_data->task, text, text_len);
@@ -13896,14 +13938,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_OVERRIDE_NEW_THREAT:
         openvas_append_text (&create_override_data->new_threat, text, text_len);
         break;
-      case CLIENT_CREATE_OVERRIDE_NVT:
-        openvas_append_text (&create_override_data->nvt, text, text_len);
-        break;
       case CLIENT_CREATE_OVERRIDE_PORT:
         openvas_append_text (&create_override_data->port, text, text_len);
-        break;
-      case CLIENT_CREATE_OVERRIDE_RESULT:
-        openvas_append_text (&create_override_data->result, text, text_len);
         break;
       case CLIENT_CREATE_OVERRIDE_TASK:
         openvas_append_text (&create_override_data->task, text, text_len);
@@ -14002,9 +14038,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_NOTE_PORT:
         openvas_append_text (&modify_note_data->port, text, text_len);
         break;
-      case CLIENT_MODIFY_NOTE_RESULT:
-        openvas_append_text (&modify_note_data->result, text, text_len);
-        break;
       case CLIENT_MODIFY_NOTE_TASK:
         openvas_append_text (&modify_note_data->task, text, text_len);
         break;
@@ -14023,9 +14056,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_OVERRIDE_PORT:
         openvas_append_text (&modify_override_data->port, text, text_len);
-        break;
-      case CLIENT_MODIFY_OVERRIDE_RESULT:
-        openvas_append_text (&modify_override_data->result, text, text_len);
         break;
       case CLIENT_MODIFY_OVERRIDE_TASK:
         openvas_append_text (&modify_override_data->task, text, text_len);
