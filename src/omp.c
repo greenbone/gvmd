@@ -7282,6 +7282,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         if (send_nvt (&nvts, 1, pref_count, timeout))
                           {
+                            cleanup_iterator (&nvts);
                             error_send_to_client (error);
                             return;
                           }
@@ -7323,6 +7324,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         if (send_nvt (&nvts, 0, -1, NULL))
                           {
+                            cleanup_iterator (&nvts);
                             error_send_to_client (error);
                             return;
                           }
@@ -7724,6 +7726,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (report_task (report, &task))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -7731,6 +7734,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (task && task_uuid (task, &tsk_uuid))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8145,6 +8149,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       g_free (content);
                       g_free (base64_content);
+                      cleanup_iterator (&reports);
                       error_send_to_client (error);
                       return;
                     }
@@ -8161,6 +8166,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (report_task (report, &task))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8170,6 +8176,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (xml_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8185,6 +8192,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_reports_data->min_cvss_base))
                 {
                   g_free (xml_file);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8210,6 +8218,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("get_reports"));
 #endif
+                      cleanup_iterator (&reports);
                       internal_error_send_to_client (error);
                       get_reports_data_reset (get_reports_data);
                       set_client_state (CLIENT_AUTHENTIC);
@@ -8245,6 +8254,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      command);
                           g_free (command);
                           g_free (html_file);
+                          cleanup_iterator (&reports);
                           internal_error_send_to_client (error);
                           get_reports_data_reset (get_reports_data);
                           set_client_state (CLIENT_AUTHENTIC);
@@ -8272,6 +8282,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
+                              cleanup_iterator (&reports);
                               internal_error_send_to_client (error);
                               get_reports_data_reset (get_reports_data);
                               set_client_state (CLIENT_AUTHENTIC);
@@ -8301,6 +8312,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     {
                                       g_free (html);
                                       g_free (base64);
+                                      cleanup_iterator (&reports);
                                       error_send_to_client (error);
                                       return;
                                     }
@@ -8322,6 +8334,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (report_task (report, &task))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8333,6 +8346,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (xml_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8348,6 +8362,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_reports_data->min_cvss_base))
                 {
                   g_free (xml_file);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8373,6 +8388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("get_reports"));
 #endif
+                      cleanup_iterator (&reports);
                       internal_error_send_to_client (error);
                       get_reports_data_reset (get_reports_data);
                       set_client_state (CLIENT_AUTHENTIC);
@@ -8411,6 +8427,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      command);
                           g_free (command);
                           g_free (pdf_file);
+                          cleanup_iterator (&reports);
                           internal_error_send_to_client (error);
                           get_reports_data_reset (get_reports_data);
                           set_client_state (CLIENT_AUTHENTIC);
@@ -8438,6 +8455,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
+                              cleanup_iterator (&reports);
                               internal_error_send_to_client (error);
                               get_reports_data_reset (get_reports_data);
                               set_client_state (CLIENT_AUTHENTIC);
@@ -8467,6 +8485,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     {
                                       g_free (pdf);
                                       g_free (base64);
+                                      cleanup_iterator (&reports);
                                       error_send_to_client (error);
                                       return;
                                     }
@@ -8491,6 +8510,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (report_task (report, &task))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8500,6 +8520,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (latex_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8516,6 +8537,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            get_reports_data->min_cvss_base))
                 {
                   g_free (latex_file);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8567,6 +8589,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  __FUNCTION__,
                                  pdf_file);
                       g_free (pdf_file);
+                      cleanup_iterator (&reports);
                       internal_error_send_to_client (error);
                       get_reports_data_reset (get_reports_data);
                       set_client_state (CLIENT_AUTHENTIC);
@@ -8586,6 +8609,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       close (pdf_fd);
                       g_free (pdf_file);
                       g_free (command);
+                      cleanup_iterator (&reports);
                       internal_error_send_to_client (error);
                       get_reports_data_reset (get_reports_data);
                       set_client_state (CLIENT_AUTHENTIC);
@@ -8614,6 +8638,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      __FUNCTION__,
                                      get_error->message);
                           g_error_free (get_error);
+                          cleanup_iterator (&reports);
                           internal_error_send_to_client (error);
                           get_reports_data_reset (get_reports_data);
                           set_client_state (CLIENT_AUTHENTIC);
@@ -8644,6 +8669,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 {
                                   g_free (pdf);
                                   g_free (base64);
+                                  cleanup_iterator (&reports);
                                   error_send_to_client (error);
                                   return;
                                 }
@@ -8665,6 +8691,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (report_task (report, &task))
                 {
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8674,6 +8701,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (mkdtemp (xml_dir) == NULL)
                 {
                   g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8689,6 +8717,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          get_reports_data->min_cvss_base))
                 {
                   g_free (xml_file);
+                  cleanup_iterator (&reports);
                   internal_error_send_to_client (error);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -8712,6 +8741,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       g_free (xsl_file);
                       g_free (xml_file);
+                      cleanup_iterator (&reports);
                       internal_error_send_to_client (error);
                       get_reports_data_reset (get_reports_data);
                       set_client_state (CLIENT_AUTHENTIC);
@@ -8747,6 +8777,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      command);
                           g_free (command);
                           g_free (output_file);
+                          cleanup_iterator (&reports);
                           internal_error_send_to_client (error);
                           get_reports_data_reset (get_reports_data);
                           set_client_state (CLIENT_AUTHENTIC);
@@ -8774,6 +8805,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          __FUNCTION__,
                                          get_error->message);
                               g_error_free (get_error);
+                              cleanup_iterator (&reports);
                               internal_error_send_to_client (error);
                               get_reports_data_reset (get_reports_data);
                               set_client_state (CLIENT_AUTHENTIC);
@@ -8805,6 +8837,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     {
                                       g_free (output);
                                       g_free (base64);
+                                      cleanup_iterator (&reports);
                                       error_send_to_client (error);
                                       return;
                                     }
@@ -13378,6 +13411,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (task_schedule_name);
                     if (ret)
                       {
+                        cleanup_iterator (&tasks);
                         error_send_to_client (error);
                         return;
                       }
@@ -13720,6 +13754,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (send_to_client (line))
                       {
                         g_free (line);
+                        cleanup_iterator (&tasks);
                         error_send_to_client (error);
                         cleanup_iterator (&tasks);
                         return;

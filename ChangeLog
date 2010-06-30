@@ -1,5 +1,10 @@
 2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVTS,
+	CLIENT_GET_REPORTS and CLIENT_GET_TASKS cleanup iterator in fail cases.
+
+2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_target_data_t, create_target_data_reset)
 	(client_state_t): Rename target locator elements with target locator
 	prefix.
