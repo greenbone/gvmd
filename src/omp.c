@@ -7514,15 +7514,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_schedule"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule %s has been deleted",
+                         delete_schedule_data->schedule_id);
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_schedule",
                                       "Schedule is in use"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule %s could not be deleted",
+                         delete_schedule_data->schedule_id);
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("delete_schedule"));
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule %s could not be deleted",
+                         delete_schedule_data->schedule_id);
                   break;
               }
           }
@@ -8948,13 +8957,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_config"));
+                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                         "Scan config %s has been deleted",
+                         delete_config_data->config_id);
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_config",
                                                             "Config is in use"));
+                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                         "Scan config %s could not be deleted",
+                         delete_config_data->config_id);
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_config"));
+                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                         "Scan config %s could not be deleted",
+                         delete_config_data->config_id);
               }
           }
         else
@@ -8989,15 +9007,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_escalator"));
+                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                         "Escalator %s has been deleted",
+                         delete_escalator_data->escalator_id);
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_escalator",
                                       "Escalator is in use"));
+                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                         "Escalator %s could not be deleted",
+                         delete_escalator_data->escalator_id);
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("delete_escalator"));
+                  g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                         "Escalator %s could not be deleted",
+                         delete_escalator_data->escalator_id);
               }
           }
         else
@@ -9077,13 +9104,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_target"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target %s has been deleted",
+                         delete_target_data->target_id);
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_target",
                                                             "Target is in use"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target %s could not be deleted",
+                         delete_target_data->target_id);
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_target"));
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target %s could not be deleted",
+                         delete_target_data->target_id);
               }
           }
         else
@@ -9114,14 +9150,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:    /* Deleted. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been deleted",
+                         delete_task_data->task_id);
                   break;
                 case 1:    /* Delete requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Deletion of task %s has been requested",
+                         delete_task_data->task_id);
                   break;
                 case 2:    /* Hidden task. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("delete_task",
                                       "Attempt to delete a hidden task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s could not be deleted",
+                         delete_task_data->task_id);
                   break;
                 default:   /* Programming error. */
                   assert (0);
@@ -9197,10 +9242,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s has been modified",
+                           modify_config_data->config_id);
                     break;
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
                     break;
 #if 0
                   case -1:
@@ -9214,6 +9265,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   default:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
                     break;
                 }
             }
@@ -9236,10 +9290,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   case 0:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s has been modified",
+                           modify_config_data->config_id);
                     break;
                   case 1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
                     break;
 #if 0
                   case -1:
@@ -9253,6 +9313,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   default:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("modify_report"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config %s could not be modified",
+                           modify_config_data->config_id);
                     break;
                 }
             }
@@ -9506,18 +9569,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              modify_task_data->file
                                               ? modify_task_data->file
                                               : "");
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                   }
                 else if (strcmp (modify_task_data->action, "remove") == 0)
                   {
                     manage_task_remove_file (task, modify_task_data->file_name);
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                   }
                 else
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_task",
-                                      "MODIFY_TASK action must be"
-                                      " \"update\" or \"remove\""));
+                  {
+                    SEND_TO_CLIENT_OR_FAIL
+                      (XML_ERROR_SYNTAX ("modify_task",
+                                         "MODIFY_TASK action must be"
+                                         " \"update\" or \"remove\""));
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s could not be modified",
+                           modify_task_data->task_id);
+                  }
               }
             else
               {
@@ -9537,8 +9611,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                modify_task_data->rcfile);
                     modify_task_data->rcfile = NULL;
                     if (fail)
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
                     else
                       first = 0;
                   }
@@ -9550,8 +9629,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                modify_task_data->name);
                     modify_task_data->name = NULL;
                     if (fail)
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
                     else
                       first = 0;
                   }
@@ -9563,8 +9647,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                modify_task_data->comment);
                     modify_task_data->comment = NULL;
                     if (fail)
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s could not be modified",
+                               modify_task_data->task_id);
+                      }
                     else
                       first = 0;
                   }
@@ -9638,6 +9727,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (fail == 0)
                   {
                     assert (first == 0);
+                    g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                           "Task %s has been modified",
+                           modify_task_data->task_id);
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                   }
               }
@@ -9792,6 +9884,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         uuid,
                         uuid,
                         name);
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config %s has been created", uuid);
                       g_free (uuid);
                       free (name);
                       break;
@@ -9800,31 +9894,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Config exists already"));
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_config"));
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config could not be created");
                     break;
                   case -2:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "CREATE_CONFIG import name must be at"
                                         " least one character long"));
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config could not be created");
                     break;
                   case -3:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Error in NVT_SELECTORS element."));
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config could not be created");
                     break;
                   case -4:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Error in PREFERENCES element."));
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config could not be created");
                     break;
                 }
             }
           else if (strlen (create_config_data->name) == 0)
             {
+              g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                     "Scan config could not be created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
                                   // FIX could pass an empty rcfile?
@@ -9836,6 +9942,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    || (create_config_data->rcfile == NULL
                        && create_config_data->copy == NULL))
             {
+              g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                     "Scan config could not be created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
                                   "CREATE_CONFIG requires either a COPY or an"
@@ -9871,6 +9979,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
                                                 ("create_config"),
                                                uuid);
+                      g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                             "Scan config %s has been created", uuid);
                       free (uuid);
                       break;
                     }
@@ -9878,10 +9988,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_config",
                                         "Config exists already"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_config"));
+                    g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                           "Scan config could not be created");
                     break;
                 }
             }
@@ -9908,6 +10022,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   config_uuid (new_config, &uuid);
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_config"),
                                            uuid);
+                  g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                         "Scan config %s has been created", uuid);
                   free (uuid);
                   break;
                 }
@@ -9915,10 +10031,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_config",
                                     "Config exists already"));
+                g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                       "Scan config could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_config"));
+                g_log ("event config", G_LOG_LEVEL_MESSAGE,
+                       "Scan config could not be created");
                 break;
             }
           create_config_data_reset (create_config_data);
@@ -10129,6 +10249,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       escalator_uuid (new_escalator, &uuid);
                       SENDF_TO_CLIENT_OR_FAIL
                        (XML_OK_CREATED_ID ("create_escalator"), uuid);
+                      g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                             "Escalator %s has been created", uuid);
                       free (uuid);
                       break;
                     }
@@ -10136,12 +10258,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_escalator",
                                         "Escalator exists already"));
+                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                           "Escalator could not be created");
                     break;
                   default:
                     assert (0);
                   case -1:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_INTERNAL_ERROR ("create_escalator"));
+                    g_log ("event escalator", G_LOG_LEVEL_MESSAGE,
+                           "Escalator could not be created");
                     break;
                 }
             }
@@ -10608,6 +10734,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   char *uuid = schedule_uuid (new_schedule);
                   SENDF_TO_CLIENT_OR_FAIL
                    (XML_OK_CREATED_ID ("create_schedule"), uuid);
+                  g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                         "Schedule %s has been created", uuid);
                   free (uuid);
                   break;
                 }
@@ -10615,15 +10743,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_schedule",
                                     "Schedule exists already"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_schedule"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be created");
                 break;
               default:
                 assert (0);
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_schedule"));
+                g_log ("event schedule", G_LOG_LEVEL_MESSAGE,
+                       "Schedule could not be created");
                 break;
             }
           create_schedule_data_reset (create_schedule_data);
@@ -10742,17 +10876,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Target exists already"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Import from target_locator failed"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
                 break;
               default:
                 {
                   char *uuid = target_uuid (new_target);
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_target"),
                                            uuid);
+                  g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                         "Target %s has been created", uuid);
                   free (uuid);
                   break;
                 }
@@ -11053,6 +11193,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                    tsk_uuid);
+          g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                 "Task %s has been created", tsk_uuid);
           free (tsk_uuid);
           create_task_data_reset (create_task_data);
           set_client_state (CLIENT_AUTHENTIC);
@@ -11395,9 +11537,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Paused. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("pause_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been paused",
+                         pause_task_data->task_id);
                   break;
                 case 1:   /* Pause requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("pause_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been requested to pause",
+                         pause_task_data->task_id);
                   break;
                 default:  /* Programming error. */
                   assert (0);
@@ -11461,6 +11609,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         g_free (msg);
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s has been requested to start",
+                               resume_or_start_task_data->task_id);
                       }
                       forked = 1;
                       break;
@@ -11468,11 +11619,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
                                           "Task is active already"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
                       break;
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
                                           "Task must be in \"Stopped\" state"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
                       break;
                     case 2:
                       /* Forked task process: success. */
@@ -11495,6 +11652,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
                                           "There is already a task running in"
                                           " this process"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
                       break;
                     case -2:
                       /* Task target lacks hosts.  This is checked when the
@@ -11509,10 +11669,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case -1:
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
                       break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             resume_or_start_task_data->task_id);
                       break;
                   }
               }
@@ -11545,10 +11711,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Resumed. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("resume_paused_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been resumed",
+                         resume_paused_task_data->task_id);
                   break;
                 case 1:   /* Resume requested. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_OK_REQUESTED ("resume_paused_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been requested to resume",
+                         resume_paused_task_data->task_id);
                   break;
                 default:  /* Programming error. */
                   assert (0);
@@ -11613,16 +11785,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (msg);
                       }
                       forked = 1;
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has been resumed",
+                             resume_stopped_task_data->task_id);
                       break;
                     case 1:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_stopped_task",
                                           "Task is active already"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
                       break;
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_stopped_task",
                                           "Task must be in \"Stopped\" state"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
                       break;
                     case 2:
                       /* Forked task process: success. */
@@ -11645,6 +11826,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        (XML_ERROR_SYNTAX ("resume_stopped_task",
                                           "There is already a task running in"
                                           " this process"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
                       break;
                     case -2:
                       /* Task target lacks hosts.  This is checked when the
@@ -11659,10 +11843,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case -1:
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
                       break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to resume",
+                             resume_stopped_task_data->task_id);
                       break;
                   }
               }
@@ -11718,6 +11908,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         g_free (msg);
+                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                               "Task %s has been requested to start",
+                               start_task_data->task_id);
                       }
                       forked = 1;
                       break;
@@ -11725,6 +11918,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("start_task",
                                           "Task is active already"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
                       break;
                     case 2:
                       /* Forked task process: success. */
@@ -11747,6 +11943,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        (XML_ERROR_SYNTAX ("start_task",
                                           "There is already a task running in"
                                           " this process"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
                       break;
                     case -2:
                       /* Task target lacks hosts.  This is checked when the
@@ -11760,10 +11959,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       /*@fallthrough@*/
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
                       break;
                     default: /* Programming error. */
                       assert (0);
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
+                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                             "Task %s has failed to start",
+                             start_task_data->task_id);
                       break;
                   }
               }
@@ -11797,9 +12002,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Stopped. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been stopped",
+                         stop_task_data->task_id);
                   break;
                 case 1:   /* Stop requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
+                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
+                         "Task %s has been requested to stop",
+                         stop_task_data->task_id);
                   break;
                 default:  /* Programming error. */
                   assert (0);
