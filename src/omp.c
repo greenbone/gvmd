@@ -873,9 +873,9 @@ typedef struct
   char *lsc_credential_id;
   char *name;
   /* For targets to import: source name and credentials to source. */
-  char *password;
   char *target_locator;
-  char *username;
+  char *target_locator_password;
+  char *target_locator_username;
 } create_target_data_t;
 
 static void
@@ -886,8 +886,8 @@ create_target_data_reset (create_target_data_t *data)
   free (data->lsc_credential_id);
   free (data->name);
   free (data->target_locator);
-  free (data->username);
-  free (data->password);
+  free (data->target_locator_password);
+  free (data->target_locator_username);
 
   memset (data, 0, sizeof (create_target_data_t));
 }
@@ -2039,9 +2039,9 @@ typedef enum
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_NAME,
-  CLIENT_CREATE_TARGET_PASSWORD,
   CLIENT_CREATE_TARGET_TARGET_LOCATOR,
-  CLIENT_CREATE_TARGET_USERNAME,
+  CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
+  CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
@@ -4582,12 +4582,28 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_PASSWORD);
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
+        else
+          {
+            if (send_element_error_to_client ("create_target", element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
+        if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD);
         else if (strcasecmp ("USERNAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_USERNAME);
+          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME);
         else
           {
             if (send_element_error_to_client ("create_target", element_name))
@@ -8821,11 +8837,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           while (source)
             {
-              SENDF_TO_CLIENT_OR_FAIL ("<target_locator"
-                                       " name=\"%s\"/>",
+              SENDF_TO_CLIENT_OR_FAIL ("<target_locator>"
+                                       "<name>%s</name>"
+                                       "</target_locator>",
                                        (char*) source->data);
               source = g_slist_next (source);
             }
+
           SEND_TO_CLIENT_OR_FAIL ("</get_target_locators_response>");
 
           /* Clean up. */
@@ -10951,14 +10969,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           /* Create target from host string. */
-          else switch (create_target (create_target_data->name,
-                                      create_target_data->hosts,
-                                      create_target_data->comment,
-                                      lsc_credential,
-                                      create_target_data->target_locator,
-                                      create_target_data->username,
-                                      create_target_data->password,
-                                      &new_target))
+          else switch (create_target
+                        (create_target_data->name,
+                         create_target_data->hosts,
+                         create_target_data->comment,
+                         lsc_credential,
+                         create_target_data->target_locator,
+                         create_target_data->target_locator_username,
+                         create_target_data->target_locator_password,
+                         &new_target))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -11006,17 +11025,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("LSC_CREDENTIAL", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
-      case CLIENT_CREATE_TARGET_PASSWORD:
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
         assert (strcasecmp ("PASSWORD", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
+        set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         break;
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
         assert (strcasecmp ("TARGET_LOCATOR", element_name) == 0);
         set_client_state (CLIENT_CREATE_TARGET);
         break;
-      case CLIENT_CREATE_TARGET_USERNAME:
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME:
         assert (strcasecmp ("USERNAME", element_name) == 0);
-        set_client_state (CLIENT_CREATE_TARGET);
+        set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         break;
 
       case CLIENT_CREATE_TASK:
@@ -14042,14 +14061,18 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_NAME:
         openvas_append_text (&create_target_data->name, text, text_len);
         break;
-      case CLIENT_CREATE_TARGET_PASSWORD:
-        openvas_append_text (&create_target_data->password, text, text_len);
-        break;
       case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
         openvas_append_text (&create_target_data->target_locator, text, text_len);
         break;
-      case CLIENT_CREATE_TARGET_USERNAME:
-        openvas_append_text (&create_target_data->username, text, text_len);
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD:
+        openvas_append_text (&create_target_data->target_locator_password,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME:
+        openvas_append_text (&create_target_data->target_locator_username,
+                             text,
+                             text_len);
         break;
 
       case CLIENT_CREATE_TASK_COMMENT:

@@ -1,5 +1,14 @@
 2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(client_state_t): Rename target locator elements with target locator
+	prefix.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Adjust handlers for renaming.  Change
+	GET_TARGET_LOCATORS/TARGET_LOCATOR/@name to an entity.
+
+2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_note_data_t, create_note_data_reset)
 	(create_override_data_t, create_override_data_reset): Rename task to
 	task_id.
