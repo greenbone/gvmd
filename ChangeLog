@@ -1,16 +1,6 @@
 2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (report_holes, report_notes, report_warnings):  Remove.
-	(task_false_positive_size): New functions.
-
-	* src/manage.h: Update headers accordingly.
-
-	* src/omp.c (latex_severity_heading): Add False Positive.
-	(latex_header): Add colour openvas_false_positive.
-	(print_report_latex): Get report counts including overrides.  Add false
-	positive count and note when false positives are hidden.
-	(omp_xml_handle_end_element): Add missing FALSE_POSITIVEs to
-	RESULT_COUNTS.
+	* src/openvasmd_report_html.xsl (report): Add False Positive column.
 
 2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
 

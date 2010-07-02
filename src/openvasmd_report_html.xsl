@@ -204,6 +204,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <td>Medium</td>
         <td>Low</td>
         <td>Log</td>
+        <td>False Positive</td>
       </tr>
       <xsl:for-each select="host_start" >
         <xsl:variable name="current_host" select="host/text()" />
@@ -215,6 +216,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Medium'])"/></td>
           <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Low'])"/></td>
           <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'Log'])"/></td>
+          <td><xsl:value-of select="count(../result[host/text() = $current_host][threat/text() = 'False Positive'])"/></td>
         </tr>
       </xsl:for-each>
       <tr>
@@ -223,6 +225,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <td><xsl:value-of select="count(result[threat/text() = 'Medium'])"/></td>
         <td><xsl:value-of select="count(result[threat/text() = 'Low'])"/></td>
         <td><xsl:value-of select="count(result[threat/text() = 'Log'])"/></td>
+        <td><xsl:value-of select="count(result[threat/text() = 'False Positive'])"/></td>
       </tr>
     </table>
 
