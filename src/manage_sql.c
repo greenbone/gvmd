@@ -6071,99 +6071,6 @@ report_task (report_t report, task_t *task)
 }
 
 /**
- * @brief Get the number of holes in a report.
- *
- * @param[in]   report  Report.
- * @param[in]   host    The host whose holes to count.  NULL for all hosts.
- * @param[out]  holes   On success, number of holes.
- *
- * @return 0.
- */
-int
-report_holes (report_t report, const char* host, int* holes)
-{
-  if (host)
-    *holes = sql_int (0, 0,
-                      "SELECT count(*) FROM results, report_results"
-                      " WHERE results.type = 'Security Hole'"
-                      " AND results.ROWID = report_results.result"
-                      " AND report_results.report = %llu"
-                      " AND results.host = '%s';",
-                      report,
-                      host);
-  else
-    *holes = sql_int (0, 0,
-                      "SELECT count(*) FROM results, report_results"
-                      " WHERE results.type = 'Security Hole'"
-                      " AND results.ROWID = report_results.result"
-                      " AND report_results.report = %llu;",
-                      report);
-  return 0;
-}
-
-/**
- * @brief Get the number of notes in a report.
- *
- * @param[in]   report  Report.
- * @param[in]   host    The host whose notes to count.  NULL for all hosts.
- * @param[out]  notes   On success, number of notes.
- *
- * @return 0.
- */
-int
-report_notes (report_t report, const char* host, int* notes)
-{
-  if (host)
-    *notes = sql_int (0, 0,
-                      "SELECT count(*) FROM results, report_results"
-                      " WHERE results.type = 'Security Note'"
-                      " AND results.ROWID = report_results.result"
-                      " AND report_results.report = %llu"
-                      " AND results.host = '%s';",
-                      report,
-                      host);
-  else
-    *notes = sql_int (0, 0,
-                      "SELECT count(*) FROM results, report_results"
-                      " WHERE results.type = 'Security Note'"
-                      " AND results.ROWID = report_results.result"
-                      " AND report_results.report = %llu;",
-                      report);
-  return 0;
-}
-
-/**
- * @brief Get the number of warnings in a report.
- *
- * @param[in]   report    Report.
- * @param[in]   host      The host whose warnings to count.  NULL for all hosts.
- * @param[out]  warnings  On success, number of warnings.
- *
- * @return 0.
- */
-int
-report_warnings (report_t report, const char* host, int* warnings)
-{
-  if (host)
-    *warnings = sql_int (0, 0,
-                         "SELECT count(*) FROM results, report_results"
-                         " WHERE results.type = 'Security Warning'"
-                         " AND results.ROWID = report_results.result"
-                         " AND report_results.report = %llu"
-                         " AND results.host = '%s';",
-                         report,
-                         host);
-  else
-    *warnings = sql_int (0, 0,
-                         "SELECT count(*) FROM results, report_results"
-                         " WHERE results.type = 'Security Warning'"
-                         " AND results.ROWID = report_results.result"
-                         " AND report_results.report = %llu;",
-                         report);
-  return 0;
-}
-
-/**
  * @brief Add a result to a report.
  *
  * @param[in]  report  The report.
@@ -7590,6 +7497,22 @@ task_debugs_size (task_t task)
   return sql_int (0, 0,
                   "SELECT count(*) FROM results"
                   " WHERE task = %llu AND results.type = 'Debug Message';",
+                  task);
+}
+
+/**
+ * @brief Return the total number of false positive results in a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of false positive results.
+ */
+int
+task_false_positive_size (task_t task)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM results"
+                  " WHERE task = %llu AND results.type = 'False Positive';",
                   task);
 }
 

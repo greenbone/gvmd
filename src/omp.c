@@ -5708,6 +5708,8 @@ latex_severity_heading (const char *severity)
     return "Medium";
   if (strcmp (severity, "Log Message") == 0)
     return "Log";
+  if (strcmp (severity, "False Positive") == 0)
+    return "False Positive";
   return severity;
 }
 
@@ -5724,6 +5726,8 @@ latex_severity_colour (const char *severity)
 {
   if (strcmp (severity, "Debug Message") == 0)
     return "{openvas_debug}";
+  if (strcmp (severity, "False Positive") == 0)
+    return "{openvas_false_positive}";
   if (strcmp (severity, "Log Message") == 0)
     return "{openvas_log}";
   if (strcmp (severity, "Security Hole") == 0)
@@ -5760,6 +5764,8 @@ const char* latex_header
     "\\definecolor{linkblue}{rgb}{0.11,0.56,1}\n"
     "\\definecolor{inactive}{rgb}{0.56,0.56,0.56}\n"
     "\\definecolor{openvas_debug}{rgb}{0.78,0.78,0.78}\n"
+    /* False Positive */
+    "\\definecolor{openvas_false_positive}{rgb}{0.2275,0.2275,0.2275}\n"
     /* Log */
     "\\definecolor{openvas_log}{rgb}{0.2275,0.2275,0.2275}\n"
     /* High: #CB1D17 */
@@ -5898,6 +5904,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
   FILE *out;
   iterator_t results, hosts;
   int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
+  int total_false_positives = 0;
   char *start_time, *end_time;
 
   /**
@@ -5973,27 +5980,26 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
    *        in the table, e.g. with \\cellcolor{inactive}. */
   while (next (&hosts))
     {
-      int holes, warnings, notes;
+      int holes, warnings, notes, false_positives;
       const char *host = host_iterator_host (&hosts);
 
       if (result_hosts_only
           && manage_report_host_has_results (report, host) == 0)
         continue;
 
-      report_holes (report, host, &holes);
-      report_warnings (report, host, &warnings);
-      report_notes (report, host, &notes);
+      report_counts_id (report, NULL, &holes, &notes, NULL, &warnings,
+                        &false_positives, get_reports_data->apply_overrides);
 
       total_holes += holes;
       total_warnings += warnings;
       total_notes += notes;
+      total_false_positives += false_positives;
 
       num_hosts++;
       /* RATS: ignore, argument 2 is a constant string. */
       fprintf (out,
                "\\hline\n"
-               // FIX 0 (false positives)
-               "\\hyperref[host:%s]{%s}&%s&%i&%i&%i&0\\\\\n",
+               "\\hyperref[host:%s]{%s}&%s&%i&%i&%i&%i\\\\\n",
                host,
                host,
                ((holes > 1) ? "Severity: High"
@@ -6002,25 +6008,28 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                       : ((warnings == 1) ? "Severity: Medium"
                          : ((notes > 1) ? "Severity: Low"
                             : ((notes == 1) ? "Severity: Low"
-                               : "")))))),
+                               : ((false_positives > 1)
+                                  ? "Severity: False Positive"
+                                  : ""))))))),
                holes,
                warnings,
-               notes);
+               notes,
+               false_positives);
     }
   cleanup_iterator (&hosts);
 
   /* RATS: ignore, argument 2 is a constant string. */
   fprintf (out,
            "\\hline\n"
-           // FIX 0 (false positives)
-           "Total: %i&&%i&%i&%i&0\\\\\n"
+           "Total: %i&&%i&%i&%i&%i\\\\\n"
            "\\hline\n"
            "\\end{longtable}\n"
            "\n",
            num_hosts,
            total_holes,
            total_warnings,
-           total_notes);
+           total_notes,
+           total_false_positives);
 
   if (get_reports_data->apply_overrides)
     fputs ("Overrides are on.  When a result has an override, this report"
@@ -6073,6 +6082,12 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
         {
           fputs ("Issues with the threat level ", out);
           fputs ("\"Debug\"", out);
+          fputs (" are not shown.\\\\\n", out);
+        }
+      if (!strchr (levels, 'f'))
+        {
+          fputs ("Issues with the threat level ", out);
+          fputs ("\"False Positive\"", out);
           fputs (" are not shown.\\\\\n", out);
         }
     }
@@ -13138,6 +13153,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         "<info>%i</info>"
                                                         "<log>%i</log>"
                                                         "<warning>%i</warning>"
+                                                        "<false_positive>"
+                                                        "%i"
+                                                        "</false_positive>"
                                                         "</result_count>"
                                                         "</report>"
                                                         "</first_report>",
@@ -13147,7 +13165,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         holes,
                                                         infos,
                                                         logs,
-                                                        warnings);
+                                                        warnings,
+                                                        false_positives);
                         g_free (timestamp);
                         g_free (first_report_id);
                       }
@@ -13376,6 +13395,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<info>%i</info>"
                                  "<log>%i</log>"
                                  "<warning>%i</warning>"
+                                 "<false_positive>%i</false_positive>"
                                  "</result_count>"
                                  "<report_count>"
                                  "%u<finished>%u</finished>"
@@ -13403,6 +13423,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_infos_size (task),
                                  task_logs_size (task),
                                  task_warnings_size (task),
+                                 task_false_positive_size (task),
                                  task_report_count (task),
                                  task_finished_report_count (task),
                                  task_trend (task,
@@ -13731,6 +13752,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<info>%i</info>"
                                             "<log>%i</log>"
                                             "<warning>%i</warning>"
+                                            "<false_positive>"
+                                            "%i"
+                                            "</false_positive>"
                                             "</result_count>"
                                             "<report_count>"
                                             "%u<finished>%u</finished>"
@@ -13759,6 +13783,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             task_infos_size (index),
                                             task_logs_size (index),
                                             task_warnings_size (index),
+                                            task_false_positive_size (index),
                                             task_report_count (index),
                                             task_finished_report_count (index),
                                             task_trend

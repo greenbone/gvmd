@@ -435,6 +435,9 @@ task_logs_size (task_t);
 int
 task_warnings_size (task_t);
 
+int
+task_false_positive_size (task_t);
+
 void
 free_tasks ();
 
@@ -573,15 +576,6 @@ report_add_result (report_t, result_t);
 
 char*
 report_uuid (report_t);
-
-int
-report_holes (report_t, const char*, int*);
-
-int
-report_notes (report_t, const char*, int*);
-
-int
-report_warnings (report_t, const char*, int*);
 
 /*@-exportlocal@*/
 /*@only@*/ /*@null@*/
