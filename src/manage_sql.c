@@ -918,13 +918,61 @@ next (iterator_t* iterator)
 /**
  * @brief Backup the database to a file.
  *
- * @return Name of backup file.
+ * @param[out]  backup_file  Freshly allocated name of backup file.
+ *
+ * @return 0 success, -1 error.
  */
-gchar *
-backup_db ()
+static int
+backup_db (gchar *database, gchar **backup_file)
 {
-  // FIX ensure lock on db and db synced first
-  return NULL;
+  gchar *command;
+  int ret;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  command = g_strdup_printf ("cp %s %s.bak > /dev/null 2>&1"
+                             "&& cp %s-journal %s.bak-journal > /dev/null 2>&1",
+                             database,
+                             database,
+                             database,
+                             database);
+  tracef ("   command: %s\n", command);
+  ret = system (command);
+  g_free (command);
+
+  if (ret == -1 || WEXITSTATUS (ret))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  sql ("COMMIT;");
+
+  if (backup_file)
+    *backup_file = g_strdup_printf ("%s.bak", database);
+
+  return 0;
+}
+
+/**
+ * @brief Backup the database to a file.
+ *
+ * @param[in]  database  Location of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_backup_db (gchar *database)
+{
+  int ret;
+
+  init_manage_process (0, database);
+
+  ret = backup_db (database, NULL);
+
+  cleanup_manage_process (TRUE);
+
+  return ret;
 }
 
 /**
@@ -2786,7 +2834,8 @@ manage_migrate (GSList *log_config, const gchar *database)
         return  2;
     }
 
-  backup_file = backup_db ();
+  // FIX
+  //backup_db (database, &backup_file);
   // FIX check return
 
   /* Call the migrators to take the DB from the old version to the new. */

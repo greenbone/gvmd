@@ -1,5 +1,17 @@
 2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a --backup option.
+
+	* src/manage_sql.c (backup_db): Add args and implementation.  Make static.
+	(manage_backup_db): New function.
+	(manage_migrate): Turn off backup temporarily.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add --backup option with calls manage_backup_db.
+
+2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd_report_html.xsl (report): Add False Positive column.
 
 2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>

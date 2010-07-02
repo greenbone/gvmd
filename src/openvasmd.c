@@ -927,6 +927,7 @@ main (int argc, char** argv)
 
   /* Process options. */
 
+  static gboolean backup_database = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
@@ -941,6 +942,7 @@ main (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
         { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
@@ -997,6 +999,28 @@ main (int argc, char** argv)
   setup_log_handlers (log_config);
 
   tracef ("   OpenVAS Manager\n");
+
+  if (backup_database)
+    {
+      tracef ("   Backing up database.\n");
+
+      /* Backup the database and then exit. */
+      switch (manage_backup_db (database))
+        {
+          case 0:
+            tracef ("   Backup succeeded.\n");
+            return EXIT_SUCCESS;
+          case -1:
+            g_critical ("%s: database backup failed\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+          default:
+            assert (0);
+            g_critical ("%s: strange return from manage_backup_db\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+    }
 
   if (migrate_database)
     {

@@ -75,7 +75,10 @@ int
 authenticate (credentials_t*);
 
 
-/* Database migration. */
+/* Database. */
+
+int
+manage_backup_db (gchar *);
 
 int
 manage_db_supported_version ();
