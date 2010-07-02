@@ -167,6 +167,8 @@ result_type_threat (const char* type)
     return "Medium";
   if (strcasecmp (type, "Security Note") == 0)
     return "Low";
+  if (strcasecmp (type, "False Positive") == 0)
+    return "False Positive";
   return "Log";
 }
 
@@ -5131,12 +5133,12 @@ send_reports (task_t task, int apply_overrides)
   while (next_report (&iterator, &index))
     {
       gchar *uuid, *timestamp, *msg;
-      int debugs, holes, infos, logs, warnings, run_status;
+      int debugs, false_positives, holes, infos, logs, warnings, run_status;
 
       uuid = report_uuid (index);
 
       if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
-                         apply_overrides))
+                         &false_positives, apply_overrides))
         {
           free (uuid);
           return -5;
@@ -5161,6 +5163,7 @@ send_reports (task_t task, int apply_overrides)
                              "<info>%i</info>"
                              "<log>%i</log>"
                              "<warning>%i</warning>"
+                             "<false_positive>%i</false_positive>"
                              "</result_count>"
                              "</report>",
                              uuid,
@@ -5172,7 +5175,8 @@ send_reports (task_t task, int apply_overrides)
                              holes,
                              infos,
                              logs,
-                             warnings);
+                             warnings,
+                             false_positives);
       g_free (timestamp);
       if (send_to_client (msg))
         {
@@ -7788,6 +7792,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL ("<filter>Log</filter>");
               if (strchr (levels, 'd'))
                 SEND_TO_CLIENT_OR_FAIL ("<filter>Debug</filter>");
+              if (strchr (levels, 'f'))
+                SEND_TO_CLIENT_OR_FAIL ("<filter>False Positive</filter>");
 
               SENDF_TO_CLIENT_OR_FAIL
                ("</filters>"
@@ -7917,10 +7923,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               /* Result counts. */
 
               {
-                int debugs, holes, infos, logs, warnings;
+                int debugs, holes, infos, logs, warnings, false_positives;
 
                 report_counts_id (report, &debugs, &holes, &infos, &logs,
-                                  &warnings, get_reports_data->apply_overrides);
+                                  &warnings, &false_positives,
+                                  get_reports_data->apply_overrides);
 
                 SENDF_TO_CLIENT_OR_FAIL ("<result_count>"
                                          "%i"
@@ -7930,6 +7937,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          "<info>%i</info>"
                                          "<log>%i</log>"
                                          "<warning>%i</warning>"
+                                         "<false_positive>%i</false_positive>"
                                          "</result_count>",
                                          result_count,
                                          filtered_result_count,
@@ -7937,7 +7945,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          holes,
                                          infos,
                                          logs,
-                                         warnings);
+                                         warnings,
+                                         false_positives);
               }
 
               /* Results. */
@@ -13106,12 +13115,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
                       {
-                        int debugs, holes, infos, logs, warnings;
+                        int debugs, holes, infos, logs, warnings, false_positives;
                         gchar *timestamp;
 
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13149,11 +13158,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13171,6 +13181,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        "<info>%i</info>"
                                                        "<log>%i</log>"
                                                        "<warning>%i</warning>"
+                                                       "<false_positive>"
+                                                       "%i"
+                                                       "</false_positive>"
                                                        "</result_count>"
                                                        "</report>"
                                                        "</last_report>",
@@ -13180,7 +13193,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        holes,
                                                        infos,
                                                        logs,
-                                                       warnings);
+                                                       warnings,
+                                                       false_positives);
                         g_free (timestamp);
                         g_free (last_report_id);
                       }
@@ -13191,11 +13205,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (second_last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13215,6 +13230,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "<info>%i</info>"
                                                "<log>%i</log>"
                                                "<warning>%i</warning>"
+                                               "<false_positive>"
+                                               "%i"
+                                               "</false_positive>"
                                                "</result_count>"
                                                "</report>"
                                                "</second_last_report>",
@@ -13224,7 +13242,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                holes,
                                                infos,
                                                logs,
-                                               warnings);
+                                               warnings,
+                                               false_positives);
                         g_free (timestamp);
                         g_free (second_last_report_id);
                       }
@@ -13455,11 +13474,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (first_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (first_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13477,6 +13497,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         "<info>%i</info>"
                                                         "<log>%i</log>"
                                                         "<warning>%i</warning>"
+                                                        "<false_positive>"
+                                                        "%i"
+                                                        "</false_positive>"
                                                         "</result_count>"
                                                         "</report>"
                                                         "</first_report>",
@@ -13486,7 +13509,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                         holes,
                                                         infos,
                                                         logs,
-                                                        warnings);
+                                                        warnings,
+                                                        false_positives);
                         g_free (timestamp);
                         g_free (first_report_id);
                       }
@@ -13497,11 +13521,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13517,6 +13542,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        "<info>%i</info>"
                                                        "<log>%i</log>"
                                                        "<warning>%i</warning>"
+                                                       "<false_positive>"
+                                                       "%i"
+                                                       "</false_positive>"
                                                        "</result_count>"
                                                        "</report>"
                                                        "</last_report>",
@@ -13526,7 +13554,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                        holes,
                                                        infos,
                                                        logs,
-                                                       warnings);
+                                                       warnings,
+                                                       false_positives);
                         g_free (timestamp);
                         g_free (last_report_id);
                       }
@@ -13558,11 +13587,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     if (second_last_report_id)
                       {
                         int debugs, holes, infos, logs, warnings;
+                        int false_positives;
                         gchar *timestamp;
 
                         if (report_counts (second_last_report_id,
                                            &debugs, &holes, &infos, &logs,
-                                           &warnings,
+                                           &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
                           abort (); // FIX fail better
 
@@ -13579,6 +13609,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                "<info>%i</info>"
                                                "<log>%i</log>"
                                                "<warning>%i</warning>"
+                                               "<false_positive>"
+                                               "%i"
+                                               "</false_positive>"
                                                "</result_count>"
                                                "</report>"
                                                "</second_last_report>",
@@ -13588,7 +13621,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                holes,
                                                infos,
                                                logs,
-                                               warnings);
+                                               warnings,
+                                               false_positives);
                         g_free (timestamp);
                         g_free (second_last_report_id);
                       }

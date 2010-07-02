@@ -95,6 +95,8 @@ threat_message_type (const char *threat)
     return "Log Message";
   if (strcasecmp (threat, "Debug") == 0)
     return "Debug Message";
+  if (strcasecmp (threat, "False Positive") == 0)
+    return "False Positive";
   return NULL;
 }
 
@@ -118,6 +120,8 @@ message_type_threat (const char *type)
     return "Log";
   if (strcasecmp (type, "Debug Message") == 0)
     return "Debug";
+  if (strcasecmp (type, "False Positive") == 0)
+    return "False Positive";
   return NULL;
 }
 

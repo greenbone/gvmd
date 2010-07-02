@@ -2951,6 +2951,14 @@ collate_threat (void* data,
     }
   if (strncmp (two, "Debug", two_len) == 0) return -1;
 
+  if (strncmp (one, "False Positive", one_len) == 0)
+    {
+      if (strncmp (two, "False Positive", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "False Positive", two_len) == 0) return -1;
+
   return strncmp (one, two, MIN (one_len, two_len));
 }
 
@@ -5573,6 +5581,12 @@ task_threat_level (task_t task)
       return "Debug";
     }
 
+  if (strcmp (type, "False Positive") == 0)
+    {
+      free (type);
+      return "False Positive";
+    }
+
   free (type);
   return NULL;
 }
@@ -5633,6 +5647,12 @@ task_previous_threat_level (task_t task)
     {
       free (type);
       return "Debug";
+    }
+
+  if (strcmp (type, "False Positive") == 0)
+    {
+      free (type);
+      return "False Positive";
     }
 
   free (type);
@@ -6313,10 +6333,21 @@ where_levels (const char* levels)
                                       " OR new_type = 'Debug Message')");
       count++;
     }
+
+  /* False Positive. */
+  if (strchr (levels, 'f'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND (new_type = 'False Positive')");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR new_type = 'False Positive')");
+      count++;
+    }
   else if (count)
     levels_sql = g_string_append (levels_sql, ")");
 
-  if (count == 5)
+  if (count == 6)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -6498,9 +6529,9 @@ where_search_phrase (const char* search_phrase)
  * @param[in]  ascending      Whether to sort ascending or descending.
  * @param[in]  sort_field     Field to sort on, or NULL for "type".
  * @param[in]  levels         String describing threat levels (message types)
- *                            to include in report (for example, "hmlgd" for
- *                            High, Medium, Low, loG and Debug).  All levels if
- *                            NULL.
+ *                            to include in report (for example, "hmlgdf" for
+ *                            High, Medium, Low, loG, Debug and False positive).
+ *                            All levels if NULL.
  * @param[in]  search_phrase  Phrase that results must include.  All results if
  *                            NULL or "".
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
@@ -6525,7 +6556,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       gchar *new_type_sql;
 
       if (sort_field == NULL) sort_field = "type";
-      if (levels == NULL) levels = "hmlgd";
+      if (levels == NULL) levels = "hmlgdf";
 
       levels_sql = where_levels (levels);
       phrase_sql = where_search_phrase (search_phrase);
@@ -7242,18 +7273,19 @@ report_count (report_t report, const char *type, int override)
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
  * @param[out]  warnings     Number of warning messages.
+ * @param[out]  false_positives  Number of false positives.
  * @param[in]   override     Whether to override the threat.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
-               int* logs, int* warnings, int override)
+               int* logs, int* warnings, int* false_positives, int override)
 {
   report_t report;
   if (find_report (report_id, &report)) return -1;
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
-                           override);
+                           false_positives, override);
 }
 
 /**
@@ -7271,13 +7303,15 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  */
 int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
-                  int* logs, int* warnings, int override)
+                  int* logs, int* warnings, int* false_positives, int override)
 {
   if (debugs) *debugs = report_count (report, "Debug Message", override);
   if (holes) *holes = report_count (report, "Security Hole", override);
   if (infos) *infos = report_count (report, "Security Note", override);
   if (logs) *logs = report_count (report, "Log Message", override);
   if (warnings) *warnings = report_count (report, "Security Warning", override);
+  if (false_positives)
+    *false_positives = report_count (report, "False Positive", override);
   return 0;
 }
 
@@ -7455,7 +7489,7 @@ task_trend (task_t task, int override)
     return "";
 
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
-                        override))
+                        NULL, override))
     abort (); // FIX fail better
 
   if (holes_a > 0)
@@ -7474,7 +7508,7 @@ task_trend (task_t task, int override)
     return "";
 
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
-                        &warns_b, override))
+                        &warns_b, NULL, override))
     abort (); // FIX fail better
 
   if (holes_b > 0)
@@ -13572,6 +13606,12 @@ create_override (const char* nvt, const char* text, const char* hosts,
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Debug") && strcmp (threat, ""))
+    return -1;
+
+  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
+      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
+      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);

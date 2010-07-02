@@ -612,10 +612,10 @@ report_scan_result_count (report_t, const char*, const char*, const char*,
                           int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, int);
+report_counts (const char*, int*, int*, int*, int*, int*, int*, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int);
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, int);
 
 char*
 scan_start_time (report_t);

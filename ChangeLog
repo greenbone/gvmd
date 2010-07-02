@@ -1,3 +1,22 @@
+2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add false positive "threat" for overrides.
+
+	* src/manage.c (threat_message_type, message_type_threat): Add False
+	Positive.
+
+	* src/manage_sql.c (collate_threat, task_threat_level)
+	(where_levels, task_previous_threat_level): Add False Positive.
+	(init_result_iterator, report_counts, report_counts_id): Add false
+	positive arg.  Update callers.
+	(create_override): Check new_threat too.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (result_type_threat): Add False Positive.
+	(send_reports, omp_xml_handle_end_element): Send FALSE_POSITIVE in
+	REPORT/RESULT_COUNT.
+
 2010-06-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_NVTS,
