@@ -1,3 +1,14 @@
+2010-07-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (escalator_method_name, escalator_method_from_name): Add
+	syslog method.
+
+	* src/manage.h (escalator_method_t): Add syslog method.
+
+	* src/manage_sql.c (escalate_1): Add syslog method case.
+
+	* src/openvasmd_log_conf.cmake_in (event syslog, event snmp): New groups.
+
 2010-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a --backup option.

@@ -193,7 +193,8 @@ typedef enum
 typedef enum
 {
   ESCALATOR_METHOD_ERROR,
-  ESCALATOR_METHOD_EMAIL
+  ESCALATOR_METHOD_EMAIL,
+  ESCALATOR_METHOD_SYSLOG
 } escalator_method_t;
 
 /**

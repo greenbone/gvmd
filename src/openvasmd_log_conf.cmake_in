@@ -34,6 +34,20 @@ prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${OPENVAS_LOG_DIR}/openvasmd.log
 level=128
 
+[event syslog]
+prepend=%t %p
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=syslog
+syslog_facility=daemon
+level=128
+
+[event snmp]
+prepend=%t %p
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=syslog
+syslog_facility=local0
+level=128
+
 [*]
 prepend=%t %p
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z

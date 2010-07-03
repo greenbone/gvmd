@@ -294,8 +294,9 @@ escalator_method_name (escalator_method_t method)
 {
   switch (method)
     {
-      case ESCALATOR_METHOD_EMAIL: return "Email";
-      default:                     return "Internal Error";
+      case ESCALATOR_METHOD_EMAIL:  return "Email";
+      case ESCALATOR_METHOD_SYSLOG: return "Syslog";
+      default:                      return "Internal Error";
     }
 }
 
@@ -345,6 +346,8 @@ escalator_method_from_name (const char* name)
 {
   if (strcasecmp (name, "Email") == 0)
     return ESCALATOR_METHOD_EMAIL;
+  if (strcasecmp (name, "Syslog") == 0)
+    return ESCALATOR_METHOD_SYSLOG;
   return ESCALATOR_METHOD_ERROR;
 }
 

@@ -3705,6 +3705,30 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
           return -1;
           break;
         }
+      case ESCALATOR_METHOD_SYSLOG:
+        {
+          char *submethod;
+          gchar *message, *event_desc, *level;
+
+          event_desc = event_description (event, event_data);
+          message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
+          g_free (event_desc);
+
+          submethod = escalator_data (escalator, "method", "submethod");
+          level = g_strdup_printf ("event %s", submethod);
+          g_free (submethod);
+
+          tracef ("  syslog level: %s", level);
+          tracef ("syslog message: %s", message);
+
+          g_log (level, G_LOG_LEVEL_MESSAGE, message);
+
+          g_free (level);
+          g_free (message);
+
+          return 0;
+          break;
+        }
       case ESCALATOR_METHOD_ERROR:
       default:
         break;
