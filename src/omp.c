@@ -6494,6 +6494,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<name>%s</name>"
                                     "</nvt>"
                                     "<text excerpt=\"%i\">%s</text>"
+                                    "<threat>%s</threat>"
                                     "<new_threat>%s</new_threat>"
                                     "<orphan>%i</orphan>"
                                     "</override>",
@@ -6502,6 +6503,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     override_iterator_nvt_name (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
+                                    override_iterator_threat (overrides)
+                                     ? override_iterator_threat (overrides)
+                                     : "",
                                     override_iterator_new_threat (overrides),
                                     ((override_iterator_task (overrides)
                                       && (uuid_task == NULL))

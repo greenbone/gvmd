@@ -1,5 +1,9 @@
 2010-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_overrides_xml): Add THREAT to terse case.
+
+2010-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (backup_db): Make arg const.
 	(manage_backup_db): Make arg const.  Add fallback database name.
 	(manage_migrate): Temporarily turn off backup and restore.
