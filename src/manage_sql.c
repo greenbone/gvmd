@@ -923,7 +923,7 @@ next (iterator_t* iterator)
  * @return 0 success, -1 error.
  */
 static int
-backup_db (gchar *database, gchar **backup_file)
+backup_db (const gchar *database, gchar **backup_file)
 {
   gchar *command;
   int ret;
@@ -962,13 +962,14 @@ backup_db (gchar *database, gchar **backup_file)
  * @return 0 success, -1 error.
  */
 int
-manage_backup_db (gchar *database)
+manage_backup_db (const gchar *database)
 {
   int ret;
+  const gchar *db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
-  init_manage_process (0, database);
+  init_manage_process (0, db);
 
-  ret = backup_db (database, NULL);
+  ret = backup_db (db, NULL);
 
   cleanup_manage_process (TRUE);
 
@@ -2795,7 +2796,7 @@ migrate_is_available (int old_version, int new_version)
 int
 manage_migrate (GSList *log_config, const gchar *database)
 {
-  gchar *backup_file;
+  //gchar *backup_file;
   migrator_t *migrators;
   /* The version on the disk. */
   int old_version;
@@ -2846,16 +2847,18 @@ manage_migrate (GSList *log_config, const gchar *database)
     {
       if (migrators->function == NULL)
         {
-          restore_db (backup_file);
-          g_free (backup_file);
+          // FIX
+          //restore_db (backup_file);
+          //g_free (backup_file);
           cleanup_manage_process (TRUE);
           return -1;
         }
 
       if (migrators->function ())
         {
-          restore_db (backup_file);
-          g_free (backup_file);
+          // FIX
+          //restore_db (backup_file);
+          //g_free (backup_file);
           cleanup_manage_process (TRUE);
           return -1;
         }
@@ -2863,7 +2866,7 @@ manage_migrate (GSList *log_config, const gchar *database)
     }
 
   // FIX remove backup_file
-  g_free (backup_file);
+  //g_free (backup_file);
   cleanup_manage_process (TRUE);
   return 0;
 }

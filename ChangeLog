@@ -1,3 +1,11 @@
+2010-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (backup_db): Make arg const.
+	(manage_backup_db): Make arg const.  Add fallback database name.
+	(manage_migrate): Temporarily turn off backup and restore.
+
+	* src/manage.h: Update header accordingly.
+
 2010-07-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (escalator_method_name, escalator_method_from_name): Add
