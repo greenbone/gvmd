@@ -13105,7 +13105,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment, *installer, *installer_signature;
   int installer_trust = TRUST_UNKNOWN;
-  gsize installer_size, installer_signature_size;
+  gsize installer_size = 0, installer_signature_size = 0;
 
   assert (strlen (name) > 0);
   assert (installer_64);
@@ -13245,7 +13245,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         ret = sqlite3_bind_text (stmt,
                                  1,
                                  installer,
-                                 strlen (installer),
+                                 installer_size,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;

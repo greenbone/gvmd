@@ -1,5 +1,9 @@
 2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_agent): Init sizes.  Use know installer size.
+
+2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migration from version 19 to 20.
 
 	* src/manage_sql.c (migrate_19_to_20): New function.
