@@ -1113,7 +1113,7 @@ find_agent (const char*, agent_t*);
 
 int
 create_agent (const char*, const char*, const char*, const char*, const char*,
-              agent_t*);
+              const char*, agent_t*);
 
 int
 delete_agent (agent_t);
@@ -1134,7 +1134,10 @@ const char*
 agent_iterator_comment (iterator_t*);
 
 const char*
-agent_iterator_installer (iterator_t*);
+agent_iterator_installer_64 (iterator_t*);
+
+const char*
+agent_iterator_trust (iterator_t*);
 
 const char*
 agent_iterator_howto_install (iterator_t*);

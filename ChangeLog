@@ -1,3 +1,30 @@
+2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Extend agents with signatures.  Hence increase database version to 20.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 20.
+
+	* src/manage_sql.c (TRUST_ERROR, TRUST_YES, TRUST_NO, TRUST_UNKNOWN): New
+	defines.
+	(create_tables): Add installer_64, installer_signature_64 and
+	installer_trust to table agents.
+	(verify_signature): New function.
+	(create_agent): Add installer_signature_64 arg.  Rename installer arg to
+	installer_64.  Verify the signature if given.  Store the result of the
+	verification and store the plain version of the installer alongside the
+	base64 version.
+	(init_agent_iterator): Use new base64 installer column, add installer
+	trust column.  Adjust accessors accordingly.
+	(agent_iterator_trust): New function.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_agent_data_t, create_agent_data_reset)
+	(client_state_t): Add CREATE_AGENT INSTALLER/SIGNATURE element.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	CREATE_AGENT INSTALLER/SIGNATURE handling and add INSTALLER/TRUST to the
+	GET_AGENTS brief response.
+
 2010-07-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_overrides_xml): Add THREAT to terse case.

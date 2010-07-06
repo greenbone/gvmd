@@ -643,6 +643,7 @@ typedef struct
   char *howto_install;
   char *howto_use;
   char *installer;
+  char *installer_signature;
   char *name;
 } create_agent_data_t;
 
@@ -656,6 +657,7 @@ create_agent_data_reset (create_agent_data_t *data)
   free (data->howto_install);
   free (data->howto_use);
   free (data->installer);
+  free (data->installer_signature);
   free (data->name);
 
   memset (data, 0, sizeof (create_agent_data_t));
@@ -1962,6 +1964,7 @@ typedef enum
   CLIENT_CREATE_AGENT_NAME,
   CLIENT_CREATE_AGENT_COMMENT,
   CLIENT_CREATE_AGENT_INSTALLER,
+  CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE,
   CLIENT_CREATE_AGENT_HOWTO_INSTALL,
   CLIENT_CREATE_AGENT_HOWTO_USE,
   CLIENT_CREATE_CONFIG,
@@ -2616,6 +2619,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_agent_data->comment, "");
             openvas_append_string (&create_agent_data->name, "");
             openvas_append_string (&create_agent_data->installer, "");
+            openvas_append_string (&create_agent_data->installer_signature, "");
             openvas_append_string (&create_agent_data->howto_install, "");
             openvas_append_string (&create_agent_data->howto_use, "");
             set_client_state (CLIENT_CREATE_AGENT);
@@ -4059,6 +4063,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_AGENT_NAME);
+        else
+          {
+            if (send_element_error_to_client ("create_agent",
+                                              element_name))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+      case CLIENT_CREATE_AGENT_INSTALLER:
+        if (strcasecmp ("SIGNATURE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE);
         else
           {
             if (send_element_error_to_client ("create_agent",
@@ -9957,6 +9979,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (create_agent (create_agent_data->name,
                                      create_agent_data->comment,
                                      create_agent_data->installer,
+                                     create_agent_data->installer_signature,
                                      create_agent_data->howto_install,
                                      create_agent_data->howto_use,
                                      &agent))
@@ -10007,6 +10030,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_AGENT_INSTALLER:
         assert (strcasecmp ("INSTALLER", element_name) == 0);
         set_client_state (CLIENT_CREATE_AGENT);
+        break;
+      case CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE:
+        assert (strcasecmp ("SIGNATURE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_AGENT_INSTALLER);
         break;
       case CLIENT_CREATE_AGENT_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
@@ -12268,7 +12295,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents),
-                          agent_iterator_installer (&agents));
+                          agent_iterator_installer_64 (&agents));
                         break;
                       case 2: /* howto_install */
                         SENDF_TO_CLIENT_OR_FAIL
@@ -12302,10 +12329,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           "<name>%s</name>"
                           "<comment>%s</comment>"
                           "<in_use>0</in_use>"
+                          "<installer><trust>%s</trust></installer>"
                           "</agent>",
                           agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
-                          agent_iterator_comment (&agents));
+                          agent_iterator_comment (&agents),
+                          agent_iterator_trust (&agents));
                         break;
                     }
                 }
@@ -13942,6 +13971,11 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_AGENT_INSTALLER:
         openvas_append_text (&create_agent_data->installer, text, text_len);
+        break;
+      case CLIENT_CREATE_AGENT_INSTALLER_SIGNATURE:
+        openvas_append_text (&create_agent_data->installer_signature,
+                             text,
+                             text_len);
         break;
       case CLIENT_CREATE_AGENT_NAME:
         openvas_append_text (&create_agent_data->name, text, text_len);

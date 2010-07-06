@@ -66,6 +66,11 @@
 
 #define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
 
+#define TRUST_ERROR 0
+#define TRUST_YES 1
+#define TRUST_NO 2
+#define TRUST_UNKNOWN 3
+
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -647,7 +652,7 @@ user_owns_result (const char *uuid)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_signature_64 TEXT, installer_trust INTEGER, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -12823,11 +12828,129 @@ find_agent (const char* uuid, agent_t* agent)
 }
 
 /**
+ * @brief Execute gpg to verify an installer signature.
+ *
+ * @param[in]  installer  Installer.
+ * @param[in]  signature  Installer signature.
+ * @param[out] trust       Trust value.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+verify_signature (const gchar *installer, gsize installer_size,
+                  const gchar *signature, gsize signature_size,
+                  int *trust)
+{
+  gchar **cmd;
+  gint exit_status;
+  int ret = 0, installer_fd, signature_fd;
+  gchar *standard_out = NULL;
+  gchar *standard_err = NULL;
+  char installer_file[] = "/tmp/openvasmd-installer-XXXXXX";
+  char signature_file[] = "/tmp/openvasmd-signature-XXXXXX";
+  GError *error = NULL;
+
+  installer_fd = mkstemp (installer_file);
+  if (installer_fd == -1)
+    return -1;
+
+  g_file_set_contents (installer_file, installer, installer_size, &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      close (installer_fd);
+      return -1;
+    }
+
+  signature_fd = mkstemp (signature_file);
+  if (signature_fd == -1)
+    {
+      close (installer_fd);
+      return -1;
+    }
+
+  g_file_set_contents (signature_file, signature, signature_size, &error);
+  if (error)
+    {
+      g_warning ("%s", error->message);
+      g_error_free (error);
+      close (installer_fd);
+      close (signature_fd);
+      return -1;
+    }
+
+  cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
+
+  cmd[0] = g_strdup ("gpg");
+  cmd[1] = g_strdup ("--batch");
+  cmd[2] = g_strdup ("--quiet");
+  cmd[3] = g_strdup ("--no-tty");
+  cmd[4] = g_strdup ("--verify");
+  cmd[5] = g_strdup (signature_file);
+  cmd[6] = g_strdup (installer_file);
+  cmd[7] = NULL;
+  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s\n",
+           __FUNCTION__,
+           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6]);
+  if ((g_spawn_sync ("/tmp/",
+                     cmd,
+                     NULL,                 /* Environment. */
+                     G_SPAWN_SEARCH_PATH,
+                     NULL,                 /* Setup func. */
+                     NULL,
+                     &standard_out,
+                     &standard_err,
+                     &exit_status,
+                     NULL) == FALSE)
+      || (WIFEXITED (exit_status) == 0)
+      || WEXITSTATUS (exit_status))
+    {
+      if (WEXITSTATUS (exit_status) == 1)
+        *trust = TRUST_NO;
+      else
+        {
+#if 0
+          g_debug ("%s: failed to run gpg --verify: %d (WIF %i, WEX %i)",
+                   __FUNCTION__,
+                   exit_status,
+                   WIFEXITED (exit_status),
+                   WEXITSTATUS (exit_status));
+          g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
+          g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
+          ret = -1;
+#endif
+          /* This can be caused by the contents of the signature file, so
+           * always return success. */
+          *trust = TRUST_UNKNOWN;
+        }
+    }
+  else
+    *trust = TRUST_YES;
+
+  g_free (cmd[0]);
+  g_free (cmd[1]);
+  g_free (cmd[2]);
+  g_free (cmd[3]);
+  g_free (cmd[4]);
+  g_free (cmd[5]);
+  g_free (cmd[6]);
+  g_free (cmd);
+  g_free (standard_out);
+  g_free (standard_err);
+  close (installer_fd);
+  close (signature_fd);
+
+  return ret;
+}
+
+/**
  * @brief Create an agent entry.
  *
  * @param[in]  name           Name of agent.  Must be at least one character long.
  * @param[in]  comment        Comment on agent.
- * @param[in]  installer      Installer, in base64.
+ * @param[in]  installer_64   Installer, in base64.
+ * @param[in]  installer_signature_64   Installer signature, in base64.
  * @param[in]  howto_install  Install HOWTO, in base64.
  * @param[in]  howto_use      Usage HOWTO, in base64.
  * @param[out] agent          Created agent.
@@ -12835,14 +12958,47 @@ find_agent (const char* uuid, agent_t* agent)
  * @return 0 success, 1 agent exists already, -1 error.
  */
 int
-create_agent (const char* name, const char* comment, const char* installer,
-              const char* howto_install, const char* howto_use, agent_t *agent)
+create_agent (const char* name, const char* comment, const char* installer_64,
+              const char* installer_signature_64, const char* howto_install,
+              const char* howto_use, agent_t *agent)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
-  gchar *quoted_comment;
+  gchar *quoted_comment, *installer, *installer_signature;
+  int installer_trust = TRUST_UNKNOWN;
+  gsize installer_size, installer_signature_size;
 
   assert (strlen (name) > 0);
+  assert (installer_64);
+  assert (installer_signature_64);
   assert (current_credentials.uuid);
+
+  /* Translate the installer and signature. */
+
+  if (strlen (installer_64))
+    installer = (gchar*) g_base64_decode (installer_64, &installer_size);
+  else
+    installer = g_strdup ("");
+
+  if (strlen (installer_signature_64))
+    installer_signature = (gchar*) g_base64_decode (installer_signature_64,
+                                                    &installer_signature_size);
+  else
+    installer_signature = g_strdup ("");
+
+  /* Verify the installer signature. */
+
+  if (strlen (installer_signature))
+    {
+      if (verify_signature (installer, installer_size, installer_signature,
+                            installer_signature_size, &installer_trust))
+        {
+          g_free (installer);
+          g_free (installer_signature);
+          return -1;
+        }
+    }
+
+  /* Check that the name is unique. */
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -12854,6 +13010,8 @@ create_agent (const char* name, const char* comment, const char* installer,
                current_credentials.uuid))
     {
       g_free (quoted_name);
+      g_free (installer);
+      g_free (installer_signature);
       sql ("ROLLBACK;");
       return 1;
     }
@@ -12871,17 +13029,22 @@ create_agent (const char* name, const char* comment, const char* installer,
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO agents"
                                      " (uuid, name, owner, comment, installer,"
-                                     "  howto_install, howto_use)"
+                                     "  installer_64, installer_signature_64,"
+                                     "  installer_trust, howto_install,"
+                                     "  howto_use)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '%s',"
-                                     "  $installer, $howto_install,"
+                                     "  $installer, $installer_64,"
+                                     "  $installer_signature_64,"
+                                     "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
-                                     quoted_comment);
+                                     quoted_comment,
+                                     installer_trust);
         g_free (quoted_comment);
       }
     else
@@ -12894,10 +13057,13 @@ create_agent (const char* name, const char* comment, const char* installer,
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '',"
-                                     "  $installer, $howto_install,"
+                                     "  $installer, $installer_64,"
+                                     "  $installer_signature_64,"
+                                     "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
-                                     current_credentials.uuid);
+                                     current_credentials.uuid,
+                                     installer_trust);
       }
 
     g_free (quoted_name);
@@ -12918,6 +13084,8 @@ create_agent (const char* name, const char* comment, const char* installer,
                 g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                            __FUNCTION__,
                            sqlite3_errmsg (task_db));
+                g_free (installer);
+                g_free (installer_signature);
                 sql ("ROLLBACK;");
                 return -1;
               }
@@ -12945,13 +13113,50 @@ create_agent (const char* name, const char* comment, const char* installer,
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
+        g_free (installer);
+        g_free (installer_signature);
+        return -1;
+      }
+    g_free (installer);
+
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 2,
+                                 installer_64,
+                                 strlen (installer_64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
+        g_free (installer_signature);
+        return -1;
+      }
+    g_free (installer_signature);
+
+    while (1)
+      {
+        ret = sqlite3_bind_text (stmt,
+                                 3,
+                                 installer_signature_64,
+                                 strlen (installer_signature_64),
+                                 SQLITE_TRANSIENT);
+        if (ret == SQLITE_BUSY) continue;
+        if (ret == SQLITE_OK) break;
+        g_warning ("%s: sqlite3_prepare failed: %s\n",
+                   __FUNCTION__,
+                   sqlite3_errmsg (task_db));
+        sql ("ROLLBACK;");
         return -1;
       }
 
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
-                                 2,
+                                 4,
                                  howto_install,
                                  strlen (howto_install),
                                  SQLITE_TRANSIENT);
@@ -12967,7 +13172,7 @@ create_agent (const char* name, const char* comment, const char* installer,
     while (1)
       {
         ret = sqlite3_bind_blob (stmt,
-                                 3,
+                                 5,
                                  howto_use,
                                  strlen (howto_use),
                                  SQLITE_TRANSIENT);
@@ -13056,8 +13261,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
 
   if (agent)
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer,"
-                   " howto_install, howto_use"
+                   "SELECT uuid, name, comment, installer_64,"
+                   " installer_trust, howto_install, howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -13069,8 +13274,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer,"
-                   " howto_install, howto_use"
+                   "SELECT uuid, name, comment, installer_64,"
+                   " installer_trust, howto_install, howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -13092,9 +13297,23 @@ agent_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
-DEF_ACCESS (agent_iterator_installer, 3);
-DEF_ACCESS (agent_iterator_howto_install, 4);
-DEF_ACCESS (agent_iterator_howto_use, 5);
+DEF_ACCESS (agent_iterator_installer_64, 3);
+
+const char*
+agent_iterator_trust (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  switch (sqlite3_column_int (iterator->stmt, 4))
+    {
+      case 1:  return "yes";
+      case 2:  return "no";
+      case 3:  return "unknown";
+      default: return NULL;
+    }
+}
+
+DEF_ACCESS (agent_iterator_howto_install, 5);
+DEF_ACCESS (agent_iterator_howto_use, 6);
 
 char*
 agent_name (agent_t agent)
