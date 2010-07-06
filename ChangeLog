@@ -1,5 +1,12 @@
 2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migration from version 19 to 20.
+
+	* src/manage_sql.c (migrate_19_to_20): New function.
+	(database_migrators): Add migrate_19_to_20.
+
+2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Extend agents with signatures.  Hence increase database version to 20.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 20.

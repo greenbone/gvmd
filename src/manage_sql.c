@@ -2742,6 +2742,145 @@ migrate_18_to_19 ()
 }
 
 /**
+ * @brief Migrate the database from version 19 to version 20.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_19_to_20 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 19. */
+
+  if (manage_db_version () != 19)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The agents table got new columns.  In particular the installer column
+   * moved to installer_64 and the table got a new installer column with the
+   * plain installer. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE agents ADD COLUMN installer_64 TEXT;");
+  sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
+  sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
+
+  init_iterator (&rows, "SELECT ROWID, installer FROM agents;");
+  while (next (&rows))
+    {
+      const char *tail, *installer_64 = iterator_string (&rows, 1);
+      gchar *installer, *formatted;
+      gsize installer_size;
+      int ret;
+      sqlite3_stmt* stmt;
+
+      sql ("UPDATE agents SET"
+           " installer_trust = %i,"
+           " installer_64 = installer,"
+           " installer_signature_64 = ''"
+           " WHERE ROWID = %llu",
+           TRUST_UNKNOWN,
+           iterator_int64 (&rows, 0));
+
+      formatted = g_strdup_printf ("UPDATE agents SET installer = $installer"
+                                   " WHERE ROWID = %llu;",
+                                   iterator_int64 (&rows, 0));
+
+      /* Prepare statement. */
+
+      while (1)
+        {
+          ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+          if (ret == SQLITE_BUSY) continue;
+          g_free (formatted);
+          if (ret == SQLITE_OK)
+            {
+              if (stmt == NULL)
+                {
+                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  cleanup_iterator (&rows);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+              break;
+            }
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (strlen (installer_64) > 0)
+        installer = (gchar*) g_base64_decode (installer_64, &installer_size);
+      else
+        installer = g_strdup ("");
+
+      /* Bind the packages to the "$values" in the SQL statement. */
+
+      while (1)
+        {
+          ret = sqlite3_bind_text (stmt,
+                                   1,
+                                   installer,
+                                   installer_size,
+                                   SQLITE_TRANSIENT);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_OK) break;
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          g_free (installer);
+          return -1;
+        }
+      g_free (installer);
+
+      /* Run the statement. */
+
+      while (1)
+        {
+          ret = sqlite3_step (stmt);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_DONE) break;
+          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+            {
+              if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+              g_warning ("%s: sqlite3_step failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              cleanup_iterator (&rows);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+        }
+
+      sqlite3_finalize (stmt);
+    }
+  cleanup_iterator (&rows);
+
+  /* Set the database version to 20. */
+
+  set_db_version (20);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2765,6 +2904,7 @@ static migrator_t database_migrators[]
     {17, migrate_16_to_17},
     {18, migrate_17_to_18},
     {19, migrate_18_to_19},
+    {20, migrate_19_to_20},
     /* End marker. */
     {-1, NULL}};
 
