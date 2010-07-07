@@ -1,3 +1,10 @@
+2010-07-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Make cmake environment more flexible as discussed on
+	openvas-devel: Set CMAKE_BUILD_TYPE only to "Debug" if it is not
+	already set. Do not set CMAKE_VERBOSE_MAKEFILE, let it default to OFF.
+	Remove redundant flags from CMAKE_C_FLAGS_DEBUG.
+
 2010-07-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_agent): Init sizes.  Use know installer size.

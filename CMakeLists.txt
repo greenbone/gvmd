@@ -32,7 +32,9 @@ if (POLICY CMP0005)
   cmake_policy (SET CMP0005 OLD)
 endif (POLICY CMP0005)
 
-set (CMAKE_BUILD_TYPE debug)
+if (NOT CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Debug)
+endif (NOT CMAKE_BUILD_TYPE)
 
 ## Retrieve svn revision (at configure time)
 #  Not using Subversion_WC_INFO, as it would have to connect to the repo
@@ -99,9 +101,6 @@ include (CPack)
 ## Variables
 
 set (OPENVASMD_DATABASE_VERSION 20)
-
-set (CMAKE_BUILD                Debug)
-set (CMAKE_VERBOSE_MAKEFILE     ON)
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -261,7 +260,7 @@ configure_file (VERSION.in VERSION)
 
 ## Program
 
-set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Wall")
+set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG}")
 set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall")
 
 add_subdirectory (src)
