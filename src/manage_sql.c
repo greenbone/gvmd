@@ -652,7 +652,7 @@ user_owns_result (const char *uuid)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_signature_64 TEXT, installer_trust INTEGER, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -2770,6 +2770,7 @@ migrate_19_to_20 ()
   /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE agents ADD COLUMN installer_64 TEXT;");
+  sql ("ALTER TABLE agents ADD COLUMN installer_filename;");
   sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
 
@@ -13090,6 +13091,7 @@ verify_signature (const gchar *installer, gsize installer_size,
  * @param[in]  name           Name of agent.  Must be at least one character long.
  * @param[in]  comment        Comment on agent.
  * @param[in]  installer_64   Installer, in base64.
+ * @param[in]  installer_filename   Installer filename.
  * @param[in]  installer_signature_64   Installer signature, in base64.
  * @param[in]  howto_install  Install HOWTO, in base64.
  * @param[in]  howto_use      Usage HOWTO, in base64.
@@ -13099,8 +13101,8 @@ verify_signature (const gchar *installer, gsize installer_size,
  */
 int
 create_agent (const char* name, const char* comment, const char* installer_64,
-              const char* installer_signature_64, const char* howto_install,
-              const char* howto_use, agent_t *agent)
+              const char* installer_filename, const char* installer_signature_64,
+              const char* howto_install, const char* howto_use, agent_t *agent)
 {
   gchar *quoted_name = sql_nquote (name, strlen (name));
   gchar *quoted_comment, *installer, *installer_signature;
@@ -13109,6 +13111,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   assert (strlen (name) > 0);
   assert (installer_64);
+  assert (installer_filename);
   assert (installer_signature_64);
   assert (current_credentials.uuid);
 
@@ -13163,13 +13166,15 @@ create_agent (const char* name, const char* comment, const char* installer_64,
     int ret;
     sqlite3_stmt* stmt;
     gchar* formatted;
+    gchar* quoted_filename = sql_quote (installer_filename);
 
     if (comment)
       {
         quoted_comment = sql_nquote (comment, strlen (comment));
         formatted = g_strdup_printf ("INSERT INTO agents"
                                      " (uuid, name, owner, comment, installer,"
-                                     "  installer_64, installer_signature_64,"
+                                     "  installer_64, installer_filename,"
+                                     "  installer_signature_64,"
                                      "  installer_trust, howto_install,"
                                      "  howto_use)"
                                      " VALUES"
@@ -13178,12 +13183,14 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "   WHERE users.uuid = '%s'),"
                                      "  '%s',"
                                      "  $installer, $installer_64,"
+                                     "  '%s',"
                                      "  $installer_signature_64,"
                                      "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_comment,
+                                     quoted_filename,
                                      installer_trust);
         g_free (quoted_comment);
       }
@@ -13191,22 +13198,28 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       {
         formatted = g_strdup_printf ("INSERT INTO agents"
                                      " (uuid, name, owner, comment, installer,"
-                                     "  howto_install, howto_use)"
+                                     "  installer_64, installer_filename,"
+                                     "  installer_signature_64,"
+                                     "  installer_trust, howto_install,"
+                                     "  howto_use)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
                                      "   WHERE users.uuid = '%s'),"
                                      "  '',"
                                      "  $installer, $installer_64,"
+                                     "  '%s',"
                                      "  $installer_signature_64,"
                                      "  %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
+                                     quoted_filename,
                                      installer_trust);
       }
 
     g_free (quoted_name);
+    g_free (quoted_filename);
 
     tracef ("   sql: %s\n", formatted);
 

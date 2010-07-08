@@ -1113,7 +1113,7 @@ find_agent (const char*, agent_t*);
 
 int
 create_agent (const char*, const char*, const char*, const char*, const char*,
-              const char*, agent_t*);
+              const char*, const char*, agent_t*);
 
 int
 delete_agent (agent_t);

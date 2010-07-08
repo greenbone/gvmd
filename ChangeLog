@@ -1,5 +1,21 @@
 2010-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Extend agents with installer filenames.  Bundle this change into the 19
+	to 20 migrator.
+
+	* src/manage_sql.c (create_tables): Add installer_filename to table agents.
+	(migrate_19_to_20): Add installer_filename column.
+	(create_agent): Add installer_filename arg.  Store filename in db.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_agent_data_t, create_agent_data_reset)
+	(client_state_t): Add CREATE_AGENT INSTALLER/FILENAME element.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_AGENT INSTALLER/FILENAME handling.
+
+2010-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Set GNUPGHOME.
 
 2010-07-07  Michael Wiegand <michael.wiegand@greenbone.net>
