@@ -1,5 +1,11 @@
 2010-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_threat_level, task_previous_threat_level): Take
+	overrides into account, so that condition_met and hence escalation also
+	do.
+
+2010-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Extend agents with installer filenames.  Bundle this change into the 19
 	to 20 migrator.
 

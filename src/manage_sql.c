@@ -5746,7 +5746,7 @@ set_task_schedule (task_t task, schedule_t schedule)
 }
 
 /**
- * @brief Return the threat level of a task.
+ * @brief Return the threat level of a task, taking overrides into account.
  *
  * @param[in]  task  Task.
  *
@@ -5757,18 +5757,58 @@ const char*
 task_threat_level (task_t task)
 {
   char *type;
+  gchar *ov, *new_type_sql;
+
+  assert (current_credentials.uuid);
+
+  ov = g_strdup_printf
+        ("SELECT overrides.new_threat"
+         " FROM overrides"
+         " WHERE overrides.nvt = results.nvt"
+         " AND ((overrides.owner IS NULL)"
+         " OR (overrides.owner ="
+         " (SELECT ROWID FROM users"
+         "  WHERE users.uuid = '%s')))"
+         " AND (overrides.task ="
+         "      (SELECT reports.task FROM reports"
+         "       WHERE report_results.report = reports.ROWID)"
+         "      OR overrides.task = 0)"
+         " AND (overrides.result = results.ROWID"
+         "      OR overrides.result = 0)"
+         " AND (overrides.hosts is NULL"
+         "      OR overrides.hosts = \"\""
+         "      OR hosts_contains (overrides.hosts, results.host))"
+         " AND (overrides.port is NULL"
+         "      OR overrides.port = \"\""
+         "      OR overrides.port = results.port)"
+         " AND (overrides.threat is NULL"
+         "      OR overrides.threat = \"\""
+         "      OR overrides.threat = results.type)"
+         " ORDER BY overrides.result DESC, overrides.task DESC,"
+         " overrides.port DESC, overrides.threat"
+         " COLLATE collate_message_type ASC",
+         current_credentials.uuid);
+
+  new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                  " THEN type ELSE (%s) END)",
+                                  ov, ov);
+
+  g_free (ov);
 
   type = sql_string (0, 0,
-                     " SELECT results.type FROM results, report_results"
+                     " SELECT %s AS new_type FROM results, report_results"
                      " WHERE report_results.report ="
                      " (SELECT ROWID FROM reports WHERE reports.task = %llu"
                      "  AND reports.scan_run_status = %u"
                      "  ORDER BY reports.date DESC LIMIT 1)"
                      " AND results.ROWID = report_results.result"
-                     " ORDER BY type COLLATE collate_message_type DESC"
+                     " ORDER BY new_type COLLATE collate_message_type DESC"
                      " LIMIT 1",
+                     new_type_sql,
                      task,
                      TASK_STATUS_DONE);
+
+  g_free (new_type_sql);
 
   if (type == NULL)
     return NULL;
@@ -5825,18 +5865,58 @@ static const char*
 task_previous_threat_level (task_t task)
 {
   char *type;
+  gchar *ov, *new_type_sql;
+
+  assert (current_credentials.uuid);
+
+  ov = g_strdup_printf
+        ("SELECT overrides.new_threat"
+         " FROM overrides"
+         " WHERE overrides.nvt = results.nvt"
+         " AND ((overrides.owner IS NULL)"
+         " OR (overrides.owner ="
+         " (SELECT ROWID FROM users"
+         "  WHERE users.uuid = '%s')))"
+         " AND (overrides.task ="
+         "      (SELECT reports.task FROM reports"
+         "       WHERE report_results.report = reports.ROWID)"
+         "      OR overrides.task = 0)"
+         " AND (overrides.result = results.ROWID"
+         "      OR overrides.result = 0)"
+         " AND (overrides.hosts is NULL"
+         "      OR overrides.hosts = \"\""
+         "      OR hosts_contains (overrides.hosts, results.host))"
+         " AND (overrides.port is NULL"
+         "      OR overrides.port = \"\""
+         "      OR overrides.port = results.port)"
+         " AND (overrides.threat is NULL"
+         "      OR overrides.threat = \"\""
+         "      OR overrides.threat = results.type)"
+         " ORDER BY overrides.result DESC, overrides.task DESC,"
+         " overrides.port DESC, overrides.threat"
+         " COLLATE collate_message_type ASC",
+         current_credentials.uuid);
+
+  new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
+                                  " THEN type ELSE (%s) END)",
+                                  ov, ov);
+
+  g_free (ov);
 
   type = sql_string (0, 0,
-                     " SELECT results.type FROM results, report_results"
+                     " SELECT %s AS new_type FROM results, report_results"
                      " WHERE report_results.report ="
                      " (SELECT ROWID FROM reports WHERE reports.task = %llu"
                      "  AND reports.scan_run_status = %u"
                      "  ORDER BY reports.date DESC LIMIT 2 OFFSET 1)"
                      " AND results.ROWID = report_results.result"
-                     " ORDER BY type COLLATE collate_message_type DESC"
+                     " ORDER BY new_type COLLATE collate_message_type DESC"
                      " LIMIT 1",
+                     new_type_sql,
                      task,
                      TASK_STATUS_DONE);
+
+  g_free (new_type_sql);
 
   if (type == NULL)
     return NULL;
