@@ -924,6 +924,7 @@ int
 main (int argc, char** argv)
 {
   int scanner_port, manager_port;
+  gchar *gnupg_home;
 
   /* Process options. */
 
@@ -987,6 +988,19 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
   tzset ();
+
+  /* Set GnuPG home directory. */
+
+  gnupg_home = g_build_filename (OPENVAS_SYSCONF_DIR, "gnupg/", NULL);
+  if (setenv ("GNUPGHOME", gnupg_home, 0))
+    {
+      g_critical ("%s: failed to set GNUPGHOME to %s\n",
+                  __FUNCTION__,
+                  gnupg_home);
+      g_free (gnupg_home);
+      exit (EXIT_FAILURE);
+    }
+  g_free (gnupg_home);
 
   /* Setup logging. */
 
