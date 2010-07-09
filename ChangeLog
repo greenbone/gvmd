@@ -1,3 +1,15 @@
+2010-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move installer_filename addition from database version 20 to new version
+	21.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 21.
+
+	* src/manage_sql.c (migrate_19_to_20): Remove addition of
+	installer_filename column.
+	(migrate_20_to_21): New function.
+	(database_migrators): Add migrate_20_to_21.
+
 2010-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_threat_level, task_previous_threat_level): Take

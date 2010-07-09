@@ -2770,7 +2770,6 @@ migrate_19_to_20 ()
   /** @todo ROLLBACK on failure. */
 
   sql ("ALTER TABLE agents ADD COLUMN installer_64 TEXT;");
-  sql ("ALTER TABLE agents ADD COLUMN installer_filename;");
   sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
 
@@ -2882,6 +2881,41 @@ migrate_19_to_20 ()
 }
 
 /**
+ * @brief Migrate the database from version 20 to version 21.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_20_to_21 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 20. */
+
+  if (manage_db_version () != 20)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The agents table got an installer_filename columns. */
+
+  /** @todo ROLLBACK on failure. */
+
+  sql ("ALTER TABLE agents ADD COLUMN installer_filename TEXT;");
+
+  /* Set the database version to 21. */
+
+  set_db_version (21);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -2906,6 +2940,7 @@ static migrator_t database_migrators[]
     {18, migrate_17_to_18},
     {19, migrate_18_to_19},
     {20, migrate_19_to_20},
+    {21, migrate_20_to_21},
     /* End marker. */
     {-1, NULL}};
 
