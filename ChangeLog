@@ -1,3 +1,10 @@
+2010-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/CMakeLists.txt: Add OPENVAS_LIB_INSTALL_DIR define to definitions.
+
+	* src/manage_sql.c (find_signature): New function.
+	(create_agent): Check feed signature if the given signature is empty.
+
 2010-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move installer_filename addition from database version 20 to new version

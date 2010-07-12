@@ -13084,6 +13084,53 @@ find_agent (const char* uuid, agent_t* agent)
 }
 
 /**
+ * @brief Find a signature in a feed.
+ *
+ * @param[in]   installer_filename  Installer filename.
+ * @param[out]  signature           Installer signature.
+ * @param[out]  signature_size      Size of installer signature.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+find_signature (const gchar *installer_filename, gchar **signature,
+                gsize *signature_size)
+{
+  gchar *installer_basename = g_path_get_basename (installer_filename);
+
+  if (strlen (installer_basename))
+    {
+      gchar *signature_filename, *signature_basename;
+      GError *error = NULL;
+
+      signature_basename  = g_strdup_printf ("%s.sig", installer_basename);
+      g_free (installer_basename);
+      signature_filename = g_build_filename (OPENVAS_LIB_INSTALL_DIR,
+                                             "openvas",
+                                             "plugins",
+                                             "agents",
+                                             signature_basename,
+                                             NULL);
+      g_free (signature_basename);
+
+      tracef ("signature_filename: %s\n", signature_filename);
+
+      g_file_get_contents (signature_filename, signature, signature_size,
+                           &error);
+      g_free (signature_filename);
+      if (error)
+        {
+          g_error_free (error);
+          return -1;
+        }
+      return 0;
+    }
+
+  g_free (installer_basename);
+  return -1;
+}
+
+/**
  * @brief Execute gpg to verify an installer signature.
  *
  * @param[in]  installer  Installer.
@@ -13253,6 +13300,23 @@ create_agent (const char* name, const char* comment, const char* installer_64,
           g_free (installer);
           g_free (installer_signature);
           return -1;
+        }
+    }
+  else
+    {
+      g_free (installer_signature);
+
+      if (find_signature (installer_filename, &installer_signature,
+                          &installer_signature_size)
+          == 0)
+        {
+          if (verify_signature (installer, installer_size, installer_signature,
+                                installer_signature_size, &installer_trust))
+            {
+              g_free (installer);
+              g_free (installer_signature);
+              return -1;
+            }
         }
     }
 

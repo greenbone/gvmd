@@ -136,6 +136,10 @@ if (OPENVAS_DATA_DIR)
   add_definitions (-DOPENVAS_DATA_DIR=\\\"${OPENVAS_DATA_DIR}\\\")
 endif (OPENVAS_DATA_DIR)
 
+if (OPENVAS_LIB_INSTALL_DIR)
+  add_definitions (-DOPENVAS_LIB_INSTALL_DIR=\\\"${OPENVAS_LIB_INSTALL_DIR}\\\")
+endif (OPENVAS_LIB_INSTALL_DIR)
+
 set_target_properties (openvasmd PROPERTIES LINK_FLAGS
                        "${LIB_TEMP} -lsqlite3 -lgnutls -luuid ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
