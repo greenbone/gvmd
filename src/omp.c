@@ -1309,6 +1309,7 @@ get_schedules_data_reset (get_schedules_data_t *data)
 
 typedef struct
 {
+  int brief;
   char *name;
   char *duration;
 } get_system_reports_data_t;
@@ -3125,10 +3126,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
+            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "name",
                               &get_system_reports_data->name);
             append_attribute (attribute_names, attribute_values, "duration",
                               &get_system_reports_data->duration);
+            if (find_attribute (attribute_names, attribute_values,
+                                "brief", &attribute))
+              get_system_reports_data->brief = strcmp (attribute, "0");
+            else
+              get_system_reports_data->brief = 0;
             set_client_state (CLIENT_GET_SYSTEM_REPORTS);
           }
         else if (strcasecmp ("GET_TARGETS", element_name) == 0)
@@ -12931,80 +12938,58 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
 
-          if (get_system_reports_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("get_system_reports",
-                                "GET_SYSTEM_REPORTS requires a name"
-                                " attribute"));
-          else if (get_system_reports_data->name
-              && (strcasecmp (get_system_reports_data->name,
-                              "types")
-                  == 0))
-            {
-              report_type_iterator_t types;
+          report_type_iterator_t types;
 
-              if (init_system_report_type_iterator (&types))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_system_reports"));
-              else
-                {
-                  SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
-                                          " status=\"" STATUS_OK "\""
-                                          " status_text=\"" STATUS_OK_TEXT "\">"
-                                          "<system_report>"
-                                          "<name>types</name>"
-                                          "<report>");
-                  while (next_report_type (&types))
+          if (init_system_report_type_iterator (&types,
+                                                get_system_reports_data->name))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("get_system_reports"));
+          else
+            {
+              char *report;
+              SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              while (next_report_type (&types))
+                if (get_system_reports_data->brief)
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<system_report>"
+                    "<name>%s</name>"
+                    "<title>%s</title>"
+                    "</system_report>",
+                    report_type_iterator_name (&types),
+                    report_type_iterator_title (&types));
+                else if (manage_system_report
+                          (report_type_iterator_name (&types),
+                           get_system_reports_data->duration,
+                           &report))
+                  {
+                    cleanup_report_type_iterator (&types);
+                    internal_error_send_to_client (error);
+                    return;
+                  }
+                else if (report)
+                  {
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<system_report>"
                       "<name>%s</name>"
                       "<title>%s</title>"
+                      "<report format=\"png\" duration=\"%s\">"
+                      "%s"
+                      "</report>"
                       "</system_report>",
                       report_type_iterator_name (&types),
-                      report_type_iterator_title (&types));
-                  cleanup_report_type_iterator (&types);
-                  SEND_TO_CLIENT_OR_FAIL
-                   ("</report>"
-                    "</system_report>"
-                    "</get_system_reports_response>");
-                }
-            }
-          else
-            {
-              char *report;
-
-              SEND_TO_CLIENT_OR_FAIL
-               ("<get_system_reports_response"
-                " status=\"" STATUS_OK "\""
-                " status_text=\"" STATUS_OK_TEXT "\">");
-
-              if (manage_system_report (get_system_reports_data->name,
-                                        get_system_reports_data->duration,
-                                        &report))
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_system_reports"));
-              else if (report)
-                {
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<system_report>"
-                    "<name>%s</name>"
-                    "<report format=\"png\" duration=\"%s\">"
-                    "%s"
-                    "</report>"
-                    "</system_report>",
-                    get_system_reports_data->name,
-                    get_system_reports_data->duration
-                     ? get_system_reports_data->duration
-                     : "86400",
-                    report);
-                  free (report);
-                }
-              else
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_system_reports",
-                                    "Failed to find report with given name"));
+                      report_type_iterator_title (&types),
+                      get_system_reports_data->duration
+                       ? get_system_reports_data->duration
+                       : "86400",
+                      report);
+                    free (report);
+                  }
+              cleanup_report_type_iterator (&types);
               SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
             }
+
           get_system_reports_data_reset (get_system_reports_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

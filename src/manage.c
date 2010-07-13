@@ -1708,12 +1708,15 @@ manage_check_current_task ()
 /**
  * @brief Get system report types.
  *
- * @param[out]  types  Types on success.
+ * @param[in]   required_type  Single type to limit types to.
+ * @param[out]  types          Types on success.
+ * @param[out]  start          Actual start of types, which caller must free.
  *
  * @return 0 if successful, -1 otherwise.
  */
 static int
-get_system_report_types (gchar ***types)
+get_system_report_types (const char *required_type, gchar ***start,
+                         gchar ***types)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
@@ -1741,25 +1744,49 @@ get_system_report_types (gchar ***types)
   if (astdout)
     {
       char **type;
-      *types = type = g_strsplit (g_strchomp (astdout), "\n", 0);
+      *start = *types = type = g_strsplit (g_strchomp (astdout), "\n", 0);
       while (*type)
         {
           char *space;
           space = strchr (*type, ' ');
           if (space == NULL)
             {
-              g_strfreev (type);
+              g_strfreev (*types);
               *types = NULL;
               g_free (astdout);
               g_free (astderr);
               return -1;
             }
           *space = '\0';
+          if (required_type && (strcmp (*type, required_type) == 0))
+            {
+              char **next;
+              /* Found the single given type. */
+              next = type + 1;
+              while (*next)
+                {
+                  free (*next);
+                  next++;
+                }
+              next = type + 1;
+              *next = NULL;
+              *types = type;
+              g_free (astdout);
+              g_free (astderr);
+              return 0;
+            }
           type++;
+        }
+      if (required_type)
+        {
+          /* Failed to find the single given type. */
+          g_strfreev (*types);
+          *start = *types = NULL;
         }
     }
   else
-    *types = NULL;
+    *start = *types = NULL;
+
   g_free (astdout);
   g_free (astderr);
   return 0;
@@ -1771,14 +1798,17 @@ get_system_report_types (gchar ***types)
  * @brief Initialise a system report type iterator.
  *
  * @param[in]  iterator    Iterator.
+ * @param[in]  type        Single report type to iterate over, NULL for all.
  *
  * @return 0 on success, -1 on error.
  */
 int
-init_system_report_type_iterator (report_type_iterator_t* iterator)
+init_system_report_type_iterator (report_type_iterator_t* iterator,
+                                  const char* type)
 {
-  if (get_system_report_types (&iterator->start)) return -1;
-  iterator->current = iterator->start - 1;
+  if (get_system_report_types (type, &iterator->start, &iterator->current))
+    return -1;
+  iterator->current--;
   return 0;
 }
 

@@ -1,5 +1,20 @@
 2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make GET_SYSTEM_REPORTS more like other commands.
+
+	* src/manage.c (get_system_report_types): Add required_type and start
+	arguments, to limit to a single type.
+	(init_system_report_type_iterator): Add type argument.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (get_system_report_data_t): Add brief.
+	(omp_xml_handle_start_element): Parse GET_SYSTEM_REPORTS brief attrib.
+	(omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS return all
+	reports if name is NULL and skip the report images if brief is true.
+
+2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_agent_iterator): Add installer_filename to
 	columns.  Adjust accessors accordingly.
 	(agent_iterator_installer_filename): New function.

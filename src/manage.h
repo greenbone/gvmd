@@ -1299,7 +1299,7 @@ typedef struct
 } report_type_iterator_t;
 
 int
-init_system_report_type_iterator (report_type_iterator_t*);
+init_system_report_type_iterator (report_type_iterator_t*, const char*);
 
 void
 cleanup_report_type_iterator (report_type_iterator_t*);
