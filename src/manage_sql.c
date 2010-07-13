@@ -13594,7 +13594,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
   if (agent)
     init_iterator (iterator,
                    "SELECT uuid, name, comment, installer_64,"
-                   " installer_trust, howto_install, howto_use"
+                   " installer_filename, installer_trust, howto_install,"
+                   " howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -13607,7 +13608,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
   else
     init_iterator (iterator,
                    "SELECT uuid, name, comment, installer_64,"
-                   " installer_trust, howto_install, howto_use"
+                   " installer_filename, installer_trust, howto_install,"
+                   " howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -13630,12 +13632,13 @@ agent_iterator_comment (iterator_t* iterator)
 }
 
 DEF_ACCESS (agent_iterator_installer_64, 3);
+DEF_ACCESS (agent_iterator_installer_filename, 4);
 
 const char*
 agent_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 4))
+  switch (sqlite3_column_int (iterator->stmt, 5))
     {
       case 1:  return "yes";
       case 2:  return "no";
@@ -13644,8 +13647,8 @@ agent_iterator_trust (iterator_t* iterator)
     }
 }
 
-DEF_ACCESS (agent_iterator_howto_install, 5);
-DEF_ACCESS (agent_iterator_howto_use, 6);
+DEF_ACCESS (agent_iterator_howto_install, 6);
+DEF_ACCESS (agent_iterator_howto_use, 7);
 
 char*
 agent_name (agent_t agent)

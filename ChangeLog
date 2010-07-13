@@ -1,5 +1,16 @@
 2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_agent_iterator): Add installer_filename to
+	columns.  Adjust accessors accordingly.
+	(agent_iterator_installer_filename): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS add
+	FILENAME to PACKAGE for installer.
+
+2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_signature): Change extension to "asc".
 
 	* INSTALL: Correct xsltproc name.

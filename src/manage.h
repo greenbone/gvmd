@@ -1137,6 +1137,9 @@ const char*
 agent_iterator_installer_64 (iterator_t*);
 
 const char*
+agent_iterator_installer_filename (iterator_t*);
+
+const char*
 agent_iterator_trust (iterator_t*);
 
 const char*

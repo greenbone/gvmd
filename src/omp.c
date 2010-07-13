@@ -12300,12 +12300,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ("<agent id=\"%s\">"
                           "<name>%s</name>"
                           "<comment>%s</comment>"
-                          "<package format=\"installer\">%s</package>"
+                          "<package format=\"installer\">"
+                          "<filename>%s</filename>"
+                          "%s"
+                          "</package>"
                           "<in_use>0</in_use>"
                           "</agent>",
                           agent_iterator_uuid (&agents),
                           agent_iterator_name (&agents),
                           agent_iterator_comment (&agents),
+                          agent_iterator_installer_filename (&agents),
                           agent_iterator_installer_64 (&agents));
                         break;
                       case 2: /* howto_install */
