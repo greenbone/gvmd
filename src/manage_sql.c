@@ -13103,7 +13103,7 @@ find_signature (const gchar *installer_filename, gchar **signature,
       gchar *signature_filename, *signature_basename;
       GError *error = NULL;
 
-      signature_basename  = g_strdup_printf ("%s.sig", installer_basename);
+      signature_basename  = g_strdup_printf ("%s.asc", installer_basename);
       g_free (installer_basename);
       signature_filename = g_build_filename (OPENVAS_LIB_INSTALL_DIR,
                                              "openvas",

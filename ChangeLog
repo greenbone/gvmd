@@ -1,3 +1,9 @@
+2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (find_signature): Change extension to "asc".
+
+	* INSTALL: Correct xsltproc name.
+
 2010-07-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt: Add OPENVAS_LIB_INSTALL_DIR define to definitions.
