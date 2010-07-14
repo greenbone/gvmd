@@ -1,5 +1,18 @@
 2010-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Reduce GET_VERSION to single fixed version.  Enable GET_VERSION before
+	authentication.
+
+	* src/omp.c (client_state_t): Add CLIENT_GET_VERSION_AUTHENTIC.
+	(omp_xml_handle_start_element): Add GET_VERSION check to CLIENT_TOP.
+	Improve first command error message.  Close a single COMMANDS if in
+	one or more COMMANDS when the first command error occurs.  Use new
+	special state for GET_VERSION after authenticate.
+	(omp_xml_handle_end_element): Reduce GET_VERSION response.  Check which
+	state to use after GET_VERSION.
+
+2010-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd_report_html.xsl (report): Leave sorting to Manager.
 
 2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>

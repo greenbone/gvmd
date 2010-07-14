@@ -2091,6 +2091,7 @@ typedef enum
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
   CLIENT_GET_VERSION,
+  CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
@@ -2567,6 +2568,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
   switch (client_state)
     {
       case CLIENT_TOP:
+        if (strcasecmp ("GET_VERSION", element_name) == 0)
+          {
+            set_client_state (CLIENT_GET_VERSION);
+            break;
+          }
+        /*@fallthrough@*/
       case CLIENT_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
@@ -2590,11 +2597,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             // TODO: If one of other commands, STATUS_ERROR_MUST_AUTH
             if (send_to_client
                  (XML_ERROR_SYNTAX ("omp",
-                                    "First command must be AUTHENTICATE")))
+                                    "First command must be AUTHENTICATE,"
+                                    " COMMANDS or GET_VERSION")))
               {
                 error_send_to_client (error);
                 return;
               }
+            if (client_state == CLIENT_COMMANDS)
+              send_to_client ("</commands_response>");
             g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Must authenticate first.");
           }
@@ -3194,7 +3204,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_TASKS);
           }
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
-          set_client_state (CLIENT_GET_VERSION);
+          set_client_state (CLIENT_GET_VERSION_AUTHENTIC);
         else if (strcasecmp ("HELP", element_name) == 0)
           set_client_state (CLIENT_HELP);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
@@ -9038,12 +9048,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_VERSION:
+      case CLIENT_GET_VERSION_AUTHENTIC:
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\""
                                 " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version preferred=\"yes\">1.0</version>"
+                                "<version>1.0</version>"
                                 "</get_version_response>");
-        set_client_state (CLIENT_AUTHENTIC);
+        if (client_state)
+          set_client_state (CLIENT_AUTHENTIC);
+        else
+          set_client_state (CLIENT_TOP);
         break;
 
       case CLIENT_GET_SCHEDULES:
