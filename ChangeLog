@@ -1,3 +1,7 @@
+2010-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd_report_html.xsl (report): Leave sorting to Manager.
+
 2010-07-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make GET_SYSTEM_REPORTS more like other commands.

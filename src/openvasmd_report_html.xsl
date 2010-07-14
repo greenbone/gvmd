@@ -270,10 +270,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <h3>Security Issues for Host <xsl:value-of select="$current_host" /></h3>
 
-      <xsl:apply-templates select="../result[host/text()=$current_host]" mode="issue">
-        <xsl:sort order="descending" select="threat"/>
-        <xsl:sort select="port"/>
-      </xsl:apply-templates>
+      <xsl:apply-templates select="../result[host/text()=$current_host]" mode="issue"/>
 
     </xsl:for-each>
 
