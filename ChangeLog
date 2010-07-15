@@ -1,5 +1,13 @@
 2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_note_data_t, create_note_data_reset): Remove note_id.
+	(create_override_data_t, create_override_data_reset): Remove override_id.
+	(modify_note_data_t, modify_note_data_reset, modify_override_data_t)
+	(modify_override_data_reset): Implement directly, instead of shadowing
+	create counterparts.
+
+2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.h, src/openvasmd.c, src/omp.c: Bring docs up to date.
 
 	* src/manage_sql.c: Add @file doc.

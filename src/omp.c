@@ -848,7 +848,6 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
 typedef struct
 {
   char *hosts;        ///< Hosts to which to limit override.
-  char *note_id;      ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
@@ -861,7 +860,6 @@ static void
 create_note_data_reset (create_note_data_t *data)
 {
   free (data->hosts);
-  free (data->note_id);
   free (data->nvt_oid);
   free (data->port);
   free (data->result_id);
@@ -880,7 +878,6 @@ typedef struct
   char *hosts;        ///< Hosts to which to limit override.
   char *new_threat;   ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
-  char *override_id;
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
   char *task_id;      ///< ID of task to which to limit override.
@@ -894,7 +891,6 @@ create_override_data_reset (create_override_data_t *data)
   free (data->hosts);
   free (data->new_threat);
   free (data->nvt_oid);
-  free (data->override_id);
   free (data->port);
   free (data->result_id);
   free (data->task_id);
@@ -1611,22 +1607,64 @@ modify_task_data_reset (modify_task_data_t *data)
 /**
  * @brief Command data for the modify_note command.
  */
-typedef create_note_data_t modify_note_data_t;
+typedef struct
+{
+  char *hosts;        ///< Hosts to which to limit override.
+  char *note_id;      ///< ID of note to modify.
+  char *nvt_oid;      ///< NVT to which to limit override.
+  char *port;         ///< Port to which to limit override.
+  char *result_id;    ///< ID of result to which to limit override.
+  char *task_id;      ///< ID of task to which to limit override.
+  char *text;         ///< Text of override.
+  char *threat;       ///< Threat to which to limit override.
+} modify_note_data_t;
 
-/**
- * @brief Reset command data for modify_note command.
- */
-#define modify_note_data_reset create_note_data_reset
+static void
+modify_note_data_reset (modify_note_data_t *data)
+{
+  free (data->hosts);
+  free (data->note_id);
+  free (data->nvt_oid);
+  free (data->port);
+  free (data->result_id);
+  free (data->task_id);
+  free (data->text);
+  free (data->threat);
+
+  memset (data, 0, sizeof (modify_note_data_t));
+}
 
 /**
  * @brief Command data for the modify_override command.
  */
-typedef create_override_data_t modify_override_data_t;
+typedef struct
+{
+  char *hosts;        ///< Hosts to which to limit override.
+  char *new_threat;   ///< New threat value of overridden results.
+  char *nvt_oid;      ///< NVT to which to limit override.
+  char *override_id;  ///< ID of override to modify.
+  char *port;         ///< Port to which to limit override.
+  char *result_id;    ///< ID of result to which to limit override.
+  char *task_id;      ///< ID of task to which to limit override.
+  char *text;         ///< Text of override.
+  char *threat;       ///< Threat to which to limit override.
+} modify_override_data_t;
 
-/**
- * @brief Reset command data for modify_override command.
- */
-#define modify_override_data_reset create_override_data_reset
+static void
+modify_override_data_reset (modify_override_data_t *data)
+{
+  free (data->hosts);
+  free (data->new_threat);
+  free (data->nvt_oid);
+  free (data->override_id);
+  free (data->port);
+  free (data->result_id);
+  free (data->task_id);
+  free (data->text);
+  free (data->threat);
+
+  memset (data, 0, sizeof (modify_override_data_t));
+}
 
 /**
  * @brief Command data for the pause_task command.
