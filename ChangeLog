@@ -1,5 +1,12 @@
 2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/Doxyfile.in, doc/Doxyfile_full.in: Add expansion of DEF_ACCESS
+	macro.  Replace tasks_sql.h with manage_sql.c.
+
+	* src/manage_sql.c: Bring docs up to date.
+
+2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_note_data_t, create_note_data_reset): Remove note_id.
 	(create_override_data_t, create_override_data_reset): Remove override_id.
 	(modify_note_data_t, modify_note_data_reset, modify_override_data_t)

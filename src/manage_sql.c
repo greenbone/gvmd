@@ -57,31 +57,89 @@
 
 /* Internal types and preprocessor definitions. */
 
+/**
+ * @brief Database ROWID of 'Full and fast' config.
+ */
 #define CONFIG_ID_FULL_AND_FAST 1
+
+/**
+ * @brief Database ROWID of 'Full and fast ultimate' config.
+ */
 #define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
+
+/**
+ * @brief Database ROWID of 'Full and very deep' config.
+ */
 #define CONFIG_ID_FULL_AND_VERY_DEEP 3
+
+/**
+ * @brief Database ROWID of 'Full and very deep ultimate' config.
+ */
 #define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
 
+/**
+ * @brief UUID of 'Full and fast' config.
+ */
 #define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"
+
+/**
+ * @brief UUID of 'Full and fast ultimate' config.
+ */
 #define CONFIG_UUID_FULL_AND_FAST_ULTIMATE \
  "698f691e-7489-11df-9d8c-002264764cea"
+
+/**
+ * @brief UUID of 'Full and very deep' config.
+ */
 #define CONFIG_UUID_FULL_AND_VERY_DEEP "708f25c4-7489-11df-8094-002264764cea"
+
+/**
+ * @brief UUID of 'Full and very deep ultimate' config.
+ */
 #define CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE \
  "74db13d6-7489-11df-91b9-002264764cea"
+
+/**
+ * @brief UUID of 'Empty' config.
+ */
 #define CONFIG_UUID_EMPTY "085569ce-73ed-11df-83c3-002264764cea"
 
+/**
+ * @brief UUID of 'All' NVT selector.
+ */
 #define MANAGE_NVT_SELECTOR_UUID_ALL "54b45713-d4f4-4435-b20d-304c175ed8c5"
 
+/**
+ * @brief UUID of 'Localhost' target.
+ */
 #define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
 
+/**
+ * @brief Trust constant for error.
+ */
 #define TRUST_ERROR 0
+
+/**
+ * @brief Trust constant for yes.
+ */
 #define TRUST_YES 1
+
+/**
+ * @brief Trust constant for no.
+ */
 #define TRUST_NO 2
+
+/**
+ * @brief Trust constant for unknown.
+ */
 #define TRUST_UNKNOWN 3
 
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
+/**
+ * @brief Flag to force authentication to succeed.  For scheduled tasks.
+ */
 int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
@@ -153,8 +211,14 @@ insert_nvt_selectors (const char *, const array_t*);
 
 /* Variables. */
 
+/**
+ * @brief Handle on the database.
+ */
 sqlite3* task_db = NULL;
 
+/**
+ * @brief Memory cache of NVT information from the database.
+ */
 nvtis_t* nvti_cache = NULL;
 
 /**
@@ -6464,6 +6528,12 @@ init_report_iterator (iterator_t* iterator, task_t task, report_t report)
  */
 #endif
 
+/**
+ * @brief Generate accessor for an SQL iterator.
+ *
+ * @param[in]  name  Name of accessor.
+ * @param[in]  col   Column number to access.
+ */
 #define DEF_ACCESS(name, col) \
 const char* \
 name (iterator_t* iterator) \
@@ -6474,6 +6544,14 @@ name (iterator_t* iterator) \
   return ret; \
 }
 
+/**
+ * @brief Get the UUID from a report iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (report_iterator_uuid, 1);
 
 #undef DEF_ACCESS
@@ -6956,6 +7034,13 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
   g_free (sql);
 }
 
+/**
+ * @brief Get the result from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The result.
+ */
 result_t
 result_iterator_result (iterator_t* iterator)
 {
@@ -6982,17 +7067,6 @@ result_iterator_subnet (iterator_t* iterator)
 }
 #endif
 
-#if 0
-/**
- * @brief Get the NAME from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NAME of the result.  Caller must use only before calling
- *         cleanup_iterator.
- */
-#endif
-
 #define DEF_ACCESS(name, col) \
 const char* \
 result_iterator_ ## name (iterator_t* iterator) \
@@ -7003,9 +7077,44 @@ result_iterator_ ## name (iterator_t* iterator) \
   return ret; \
 }
 
+/**
+ * @brief Get the subnet from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The subnet of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (subnet, 1);
+
+/**
+ * @brief Get the host from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The host of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (host, 2);
+
+/**
+ * @brief Get the port from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The port of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (port, 3);
+
+/**
+ * @brief Get the NVT OID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The NVT OID of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_oid, 4);
 
 /**
@@ -7062,10 +7171,38 @@ result_iterator_nvt_risk_factor (iterator_t *iterator)
   return NULL;
 }
 
-/* This is the column 'type'. */
+/**
+ * @brief Get the original type from a result iterator.
+ *
+ * This is the column 'type'.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The origianl type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (original_type, 5);
-/* This is the column 'new_type', the overridden type. */
+
+/**
+ * @brief Get the original type from a result iterator.
+ *
+ * This is the column 'new_type', the overridden type.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The origianl type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (type, 6);
+
+/**
+ * @brief Get the descr from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The descr of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (descr, 7);
 
 #undef DEF_ACCESS
@@ -7098,17 +7235,6 @@ init_host_iterator (iterator_t* iterator, report_t report, char *host)
   g_free (sql);
 }
 
-#if 0
-/**
- * @brief Get the NAME from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NAME of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-#endif
-
 #define DEF_ACCESS(name, col) \
 const char* \
 name (iterator_t* iterator) \
@@ -7119,11 +7245,53 @@ name (iterator_t* iterator) \
   return ret; \
 }
 
+/**
+ * @brief Get the host from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The host of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (host_iterator_host, 0);
+
+/**
+ * @brief Get the start time from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The start time of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (host_iterator_start_time, 1);
+
+/**
+ * @brief Get the end time from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The end time of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (host_iterator_end_time, 2);
+
+/**
+ * @brief Get the attack state from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The attack state of the host.  Caller must use only before calling
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (host_iterator_attack_state, 3);
 
+/**
+ * @brief Get the current port from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Current port.
+ */
 int
 host_iterator_current_port (iterator_t* iterator)
 {
@@ -7133,6 +7301,13 @@ host_iterator_current_port (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the max port from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Current port.
+ */
 int
 host_iterator_max_port (iterator_t* iterator)
 {
@@ -7438,7 +7613,7 @@ report_scan_result_count (report_t report, const char* levels,
 /**
  * @brief Get the message count for a report for a specific message type.
  *
- * @param[in]  report_id  ID of report.
+ * @param[in]  report     Report.
  * @param[in]  type       Message type.
  * @param[in]  override   Whether to override the threat.
  *
@@ -7549,6 +7724,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
  * @param[out]  warnings  Number of warning messages.
+ * @param[out]  false_positives  Number of false positive messages.
  * @param[in]   override  Whether to override the threat.
  *
  * @return 0 on success, -1 on error.
@@ -7968,7 +8144,9 @@ make_task (char* name, unsigned int time, char* comment)
   return task;
 }
 
+#ifdef S_SPLINT_S
 typedef /*@only@*/ struct dirent * only_dirent_pointer;
+#endif
 
 /**
  * @brief Dummy function.
@@ -8509,7 +8687,7 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
 }
 
 /**
- * @brief Get the name of a file from an task_file_iterator.
+ * @brief Get the name of the file from a task file iterator.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -8517,8 +8695,22 @@ init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
  */
 DEF_ACCESS (task_file_iterator_name, 0);
 
+/**
+ * @brief Get the content of the file from a task file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Content of the file or NULL if iteration is complete.
+ */
 DEF_ACCESS (task_file_iterator_content, 1);
 
+/**
+ * @brief Get the length from a task file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Length.
+ */
 int
 task_file_iterator_length (iterator_t* iterator)
 {
@@ -8583,7 +8775,7 @@ find_target (const char* uuid, target_t* target)
  * @param[in]   target_locator  Name of target_locator to import target(s)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
- * @param[in]   password        Password for user \param username.
+ * @param[in]   password        Password for user \p username.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, -1 if import from target locator
@@ -8735,6 +8927,13 @@ init_target_iterator (iterator_t* iterator, target_t target,
                    ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Target.
+ */
 target_t
 target_iterator_target (iterator_t* iterator)
 {
@@ -8742,10 +8941,40 @@ target_iterator_target (iterator_t* iterator)
   return (target_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
+/**
+ * @brief Get the UUID of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the target or NULL if iteration is complete.
+ */
 DEF_ACCESS (target_iterator_uuid, 1);
+
+/**
+ * @brief Get the name of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the target or NULL if iteration is complete.
+ */
 DEF_ACCESS (target_iterator_name, 2);
+
+/**
+ * @brief Get the hosts of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts of the target or NULL if iteration is complete.
+ */
 DEF_ACCESS (target_iterator_hosts, 3);
 
+/**
+ * @brief Get the comment from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
 const char*
 target_iterator_comment (iterator_t* iterator)
 {
@@ -8755,6 +8984,13 @@ target_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
+/**
+ * @brief Get the LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return LSC credential.
+ */
 int
 target_iterator_lsc_credential (iterator_t* iterator)
 {
@@ -8903,7 +9139,24 @@ init_target_task_iterator (iterator_t* iterator, target_t target,
                  ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the name from a target_task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (target_task_iterator_name, 0);
+
+/**
+ * @brief Get the uuid from a target_task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The uuid of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (target_task_iterator_uuid, 1);
 
 
@@ -9850,6 +10103,9 @@ delete_config (config_t config)
   return 0;
 }
 
+/**
+ * @brief Database fields used in config iterators.
+ */
 #define CONFIG_ITERATOR_FIELDS "ROWID, uuid, name, nvt_selector, comment, families_growing, nvts_growing"
 
 /**
@@ -9895,6 +10151,13 @@ init_config_iterator (iterator_t* iterator, config_t config,
   g_free (sql);
 }
 
+/**
+ * @brief Get the config from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Config.
+ */
 config_t
 config_iterator_config (iterator_t* iterator)
 {
@@ -9902,10 +10165,43 @@ config_iterator_config (iterator_t* iterator)
   return (config_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
+/**
+ * @brief Get the uuid from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The uuid of the config, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (config_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the config, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (config_iterator_name, 2);
+
+/**
+ * @brief Get the nvt_selector from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt_selector of the config, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
 DEF_ACCESS (config_iterator_nvt_selector, 3);
 
+/**
+ * @brief Get the comment from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
 const char*
 config_iterator_comment (iterator_t* iterator)
 {
@@ -9915,6 +10211,13 @@ config_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
+/**
+ * @brief Get the families growing state from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Families growing flag.
+ */
 int
 config_iterator_families_growing (iterator_t* iterator)
 {
@@ -9924,6 +10227,13 @@ config_iterator_families_growing (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the NVTs growing state from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVTs growing flag.
+ */
 int
 config_iterator_nvts_growing (iterator_t* iterator)
 {
@@ -9991,7 +10301,24 @@ init_preference_iterator (iterator_t* iterator,
   g_free (sql);
 }
 
+/**
+ * @brief Get the name from a preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the preference iterator, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
 static DEF_ACCESS (preference_iterator_name, 0);
+
+/**
+ * @brief Get the value from a preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the preference iterator, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
 static DEF_ACCESS (preference_iterator_value, 1);
 
 /**
@@ -10041,7 +10368,24 @@ init_otp_pref_iterator (iterator_t* iterator,
   g_free (quoted_section);
 }
 
+/**
+ * @brief Get the NAME from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NAME, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (otp_pref_iterator_name, 0);
+
+/**
+ * @brief Get the value from a otp_pref iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (otp_pref_iterator_value, 1);
 
 /**
@@ -10494,7 +10838,24 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
                  ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the name from a config_task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (config_task_iterator_name, 0);
+
+/**
+ * @brief Get the UUID from a config_task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (config_task_iterator_uuid, 1);
 
 
@@ -10772,18 +11133,123 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                    ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the OID from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return OID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_oid, 0);
+
+/**
+ * @brief Get the version from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Version, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_version, 1);
+
+/**
+ * @brief Get the name from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_name, 2);
+
+/**
+ * @brief Get the summary from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Summary, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_summary, 3);
+
+/**
+ * @brief Get the description from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Description, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_description, 4);
+
+/**
+ * @brief Get the copyright from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Copyright, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_copyright, 5);
+
+/**
+ * @brief Get the cve from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Cve, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_cve, 6);
+
+/**
+ * @brief Get the bid from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Bid, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_bid, 7);
+
+/**
+ * @brief Get the xref from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Xref, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_xref, 8);
+
+/**
+ * @brief Get the tag from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Tag, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_tag, 9);
+
+/**
+ * @brief Get the sign_key_ids from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Sign_key_ids, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_sign_key_ids, 10);
 
+/**
+ * @brief Get the category from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Category.
+ */
 int
 nvt_iterator_category (iterator_t* iterator)
 {
@@ -10793,8 +11259,34 @@ nvt_iterator_category (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the family from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Family, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_family, 12);
+
+/**
+ * @brief Get the cvss_base from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Cvss_base, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_cvss_base, 13);
+
+/**
+ * @brief Get the risk_factor from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Risk_factor, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_iterator_risk_factor, 14);
 
 /**
@@ -11341,6 +11833,14 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
   g_free (quoted_selector);
 }
 
+/**
+ * @brief Get the name from a family iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (family_iterator_name, 0);
 
 /**
@@ -11689,7 +12189,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 }
 
 /**
- * @brief Remove all selectors of a certain family from a NVT selector.
+ * @brief Remove all selectors of a certain family from an NVT selector.
  *
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  quoted_family    SQL-quoted family name.
@@ -11729,7 +12229,7 @@ nvt_selector_remove (const char* quoted_selector,
 }
 
 /**
- * @brief Remove all selectors of a certain type from a NVT selector.
+ * @brief Remove all selectors of a certain type from an NVT selector.
  *
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  family_or_nvt    SQL-quoted family name or NVT UUID.
@@ -12400,9 +12900,33 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *name)
                    " ORDER BY name ASC");
 }
 
+/**
+ * @brief Get the name from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_preference_iterator_name, 0);
+
+/**
+ * @brief Get the value from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (nvt_preference_iterator_value, 1);
 
+/**
+ * @brief Get the real name from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Real name.
+ */
 char*
 nvt_preference_iterator_real_name (iterator_t* iterator)
 {
@@ -12424,6 +12948,13 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
   return NULL;
 }
 
+/**
+ * @brief Get the type from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type.
+ */
 char*
 nvt_preference_iterator_type (iterator_t* iterator)
 {
@@ -12444,6 +12975,13 @@ nvt_preference_iterator_type (iterator_t* iterator)
   return NULL;
 }
 
+/**
+ * @brief Get the NVT from an NVT preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT.
+ */
 char*
 nvt_preference_iterator_nvt (iterator_t* iterator)
 {
@@ -12556,6 +13094,11 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 }
 
 /**
+ * @brief Length of password generated in create_lsc_credential.
+ */
+#define PASSWORD_LENGTH 10
+
+/**
  * @brief Create an LSC credential.
  *
  * @param[in]  name            Name of LSC credential.  Must be at least one
@@ -12581,7 +13124,6 @@ create_lsc_credential (const char* name, const char* comment,
   gsize rpm_size, deb_size, exe_size;
   int i;
   GRand *rand;
-#define PASSWORD_LENGTH 10
   gchar password[PASSWORD_LENGTH];
   const char *s = login;
 
@@ -12973,6 +13515,13 @@ init_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the LSC credential from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return LSC credential.
+ */
 lsc_credential_t
 lsc_credential_iterator_lsc_credential (iterator_t* iterator)
 {
@@ -12980,11 +13529,53 @@ lsc_credential_iterator_lsc_credential (iterator_t* iterator)
   return (lsc_credential_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
+/**
+ * @brief Get the UUID from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_name, 2);
+
+/**
+ * @brief Get the login from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Login, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_login, 3);
+
+/**
+ * @brief Get the password from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Password, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_password, 4);
 
+/**
+ * @brief Get the comment from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return LSC credential.
+ */
 const char*
 lsc_credential_iterator_comment (iterator_t* iterator)
 {
@@ -12994,12 +13585,63 @@ lsc_credential_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
+/**
+ * @brief Get the public_key from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Public_key, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_public_key, 6);
+
+/**
+ * @brief Get the private_key from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Private_key, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_private_key, 7);
+
+/**
+ * @brief Get the rpm from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Rpm, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_rpm, 8);
+
+/**
+ * @brief Get the deb from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Deb, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_deb, 9);
+
+/**
+ * @brief Get the exe from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Exe, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_iterator_exe, 10);
 
+/**
+ * @brief Get the "in use" state from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return "In use" flag.
+ */
 int
 lsc_credential_iterator_in_use (iterator_t* iterator)
 {
@@ -13009,6 +13651,13 @@ lsc_credential_iterator_in_use (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the UUID of an LSC credential.
+ *
+ * @param[in]  lsc_credential  LSC credential.
+ *
+ * @return UUID.
+ */
 char*
 lsc_credential_uuid (lsc_credential_t lsc_credential)
 {
@@ -13017,6 +13666,13 @@ lsc_credential_uuid (lsc_credential_t lsc_credential)
                      lsc_credential);
 }
 
+/**
+ * @brief Get the name of an LSC credential.
+ *
+ * @param[in]  lsc_credential  LSC credential.
+ *
+ * @return Name.
+ */
 char*
 lsc_credential_name (lsc_credential_t lsc_credential)
 {
@@ -13046,7 +13702,24 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                  ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the uuid from an LSC credential_target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Uuid, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_target_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from an LSC credential_target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (lsc_credential_target_iterator_name, 1);
 
 
@@ -13627,9 +14300,33 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the UUID from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_name, 1);
 
+/**
+ * @brief Get the comment from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
 const char*
 agent_iterator_comment (iterator_t* iterator)
 {
@@ -13639,9 +14336,33 @@ agent_iterator_comment (iterator_t* iterator)
   return ret ? ret : "";
 }
 
+/**
+ * @brief Get the installer_64 from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_installer_64, 3);
+
+/**
+ * @brief Get the installer_filename from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Installer filename, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_installer_filename, 4);
 
+/**
+ * @brief Get the trust value from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Trust value.
+ */
 const char*
 agent_iterator_trust (iterator_t* iterator)
 {
@@ -13655,9 +14376,33 @@ agent_iterator_trust (iterator_t* iterator)
     }
 }
 
+/**
+ * @brief Get the install HOWTO from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Install HOWTO, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_howto_install, 6);
+
+/**
+ * @brief Get the usage HOWTO from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (agent_iterator_howto_use, 7);
 
+/**
+ * @brief Get the name of an agent.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return Name.
+ */
 char*
 agent_name (agent_t agent)
 {
@@ -13868,6 +14613,9 @@ modify_note (note_t note, const char* text, const char* hosts,
   return 0;
 }
 
+/**
+ * @brief Database columns used in note iterators.
+ */
 #define NOTE_COLUMNS "notes.ROWID, notes.uuid, notes.nvt,"                 \
                      " notes.creation_time, notes.modification_time,"      \
                      " notes.text, notes.hosts, notes.port, notes.threat," \
@@ -13991,7 +14739,24 @@ init_note_iterator (iterator_t* iterator, note_t note, nvt_t nvt,
   g_free (join_clause);
 }
 
+/**
+ * @brief Get the uuid from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (note_iterator_uuid, 1);
+
+/**
+ * @brief Get the NVT OID from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT OID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (note_iterator_nvt_oid, 2);
 
 /**
@@ -14026,8 +14791,34 @@ note_iterator_modification_time (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the text from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Text, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (note_iterator_text, 5);
+
+/**
+ * @brief Get the hosts from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (note_iterator_hosts, 6);
+
+/**
+ * @brief Get the port from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (note_iterator_port, 7);
 
 /**
@@ -14319,6 +15110,9 @@ modify_override (override_t override, const char* text, const char* hosts,
   return 0;
 }
 
+/**
+ * @brief Database columns used in override iterators.
+ */
 #define OVERRIDE_COLUMNS "overrides.ROWID, overrides.uuid, overrides.nvt,"     \
                          " overrides.creation_time,"                           \
                          " overrides.modification_time, overrides.text,"       \
@@ -14444,7 +15238,24 @@ init_override_iterator (iterator_t* iterator, override_t override, nvt_t nvt,
   g_free (join_clause);
 }
 
+/**
+ * @brief Get the UUID from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (override_iterator_uuid, 1);
+
+/**
+ * @brief Get the NVT OID from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT OID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (override_iterator_nvt_oid, 2);
 
 /**
@@ -14479,8 +15290,34 @@ override_iterator_modification_time (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the text from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Text, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (override_iterator_text, 5);
+
+/**
+ * @brief Get the hosts from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (override_iterator_hosts, 6);
+
+/**
+ * @brief Get the port from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (override_iterator_port, 7);
 
 /**
@@ -14700,6 +15537,9 @@ delete_schedule (schedule_t schedule)
   return 0;
 }
 
+/**
+ * @brief Code fragment for months_between.
+ */
 #define MONTHS_WITHIN_YEAR()                                 \
   (same_month                                                \
     ? 0                                                      \
@@ -14872,6 +15712,13 @@ init_schedule_iterator (iterator_t* iterator, schedule_t schedule,
                    ascending ? "ASC" : "DESC");
 }
 
+/**
+ * @brief Get the schedule from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Schedule.
+ */
 schedule_t
 schedule_iterator_schedule (iterator_t* iterator)
 {
@@ -14879,8 +15726,34 @@ schedule_iterator_schedule (iterator_t* iterator)
   return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
+/**
+ * @brief Get the UUID from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (schedule_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (schedule_iterator_name, 2);
+
+/**
+ * @brief Get the comment from a schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (schedule_iterator_comment, 3);
 
 /**
@@ -15022,6 +15895,13 @@ cleanup_task_schedule_iterator (iterator_t* iterator)
   sql ("COMMIT;");
 }
 
+/**
+ * @brief Get the task from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return task.
+ */
 task_t
 task_schedule_iterator_task (iterator_t* iterator)
 {
@@ -15029,8 +15909,23 @@ task_schedule_iterator_task (iterator_t* iterator)
   return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
+/**
+ * @brief Get the task UUID from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
 
+/**
+ * @brief Get the schedule from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return task.
+ */
 schedule_t
 task_schedule_iterator_schedule (iterator_t* iterator)
 {
@@ -15038,6 +15933,13 @@ task_schedule_iterator_schedule (iterator_t* iterator)
   return (schedule_t) sqlite3_column_int64 (iterator->stmt, 2);
 }
 
+/**
+ * @brief Get the next time from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Next time.
+ */
 time_t
 task_schedule_iterator_next_time (iterator_t* iterator)
 {
@@ -15045,6 +15947,13 @@ task_schedule_iterator_next_time (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 3);
 }
 
+/**
+ * @brief Get the period from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return period.
+ */
 time_t
 task_schedule_iterator_period (iterator_t* iterator)
 {
@@ -15052,6 +15961,13 @@ task_schedule_iterator_period (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 4);
 }
 
+/**
+ * @brief Get the period months from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Period months.
+ */
 time_t
 task_schedule_iterator_period_months (iterator_t* iterator)
 {
@@ -15059,6 +15975,13 @@ task_schedule_iterator_period_months (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 5);
 }
 
+/**
+ * @brief Get the first time from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return First time.
+ */
 time_t
 task_schedule_iterator_first_time (iterator_t* iterator)
 {
@@ -15066,6 +15989,13 @@ task_schedule_iterator_first_time (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 6);
 }
 
+/**
+ * @brief Get the duration from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Duration.
+ */
 time_t
 task_schedule_iterator_duration (iterator_t* iterator)
 {
@@ -15073,9 +16003,33 @@ task_schedule_iterator_duration (iterator_t* iterator)
   return (time_t) sqlite3_column_int64 (iterator->stmt, 7);
 }
 
+/**
+ * @brief Get the owner uuid from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (task_schedule_iterator_owner_uuid, 8);
+
+/**
+ * @brief Get the owner_name from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (task_schedule_iterator_owner_name, 9);
 
+/**
+ * @brief Get the start due state from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Start due flag.
+ */
 gboolean
 task_schedule_iterator_start_due (iterator_t* iterator)
 {
@@ -15098,6 +16052,13 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   return FALSE;
 }
 
+/**
+ * @brief Get the stop due state from a task schedule iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Stop due flag.
+ */
 gboolean
 task_schedule_iterator_stop_due (iterator_t* iterator)
 {
@@ -15163,7 +16124,24 @@ init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
                  schedule);
 }
 
+/**
+ * @brief Get the UUID from a schedule task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (schedule_task_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a schedule task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
 DEF_ACCESS (schedule_task_iterator_name, 2);
 
 #undef DEF_ACCESS
