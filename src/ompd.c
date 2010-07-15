@@ -137,7 +137,7 @@ init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database)
 void
 init_ompd_process (const gchar *database)
 {
-  init_omp_process (0, database);
+  init_omp_process (0, database, NULL, NULL);
 }
 
 /**
@@ -578,7 +578,10 @@ serve_omp (gnutls_session_t* client_session,
   init_otp_data ();
 
   /* Initialise the XML parser and the manage library. */
-  init_omp_process (ompd_nvt_cache_mode, database);
+  init_omp_process (ompd_nvt_cache_mode,
+                    database,
+                    (int (*) (void*)) write_to_client,
+                    (void*) client_session);
 #if 0
   // FIX consider free_omp_data (); on return
   if (tasks) free_tasks ();
@@ -722,7 +725,9 @@ serve_omp (gnutls_session_t* client_session,
    *   - the buffers from_client and from_scanner can become full during
    *     reading
    *   - a read from the client can be stalled by the to_scanner buffer
-   *     filling up, or the to_client buffer filling up,
+   *     filling up, or the to_client buffer filling up (in which case
+   *     process_omp_client_input will try to write the to_client buffer
+   *     itself),
    *   - FIX a read from the scanner can, theoretically, be stalled by the
    *     to_scanner buffer filling up (during initialisation).
    */

@@ -39,7 +39,8 @@ int
 init_omp (GSList*, int, const gchar*);
 
 void
-init_omp_process (int, const gchar*);
+init_omp_process (int, const gchar*, int (*write_to_client) (void*),
+                  void* write_to_client_data);
 
 int
 process_omp_client_input ();

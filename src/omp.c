@@ -601,6 +601,45 @@ static char* help_text = "\n"
 #define STATUS_SERVICE_DOWN_TEXT       "Service temporarily down"
 
 
+/* OMP parser. */
+
+typedef struct
+{
+  int (*client_writer) (void*);
+  void* client_writer_data;
+} omp_parser_t;
+
+/**
+ * @brief Create an OMP parser.
+ *
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ *
+ * @return An OMP parser.
+ */
+omp_parser_t *
+omp_parser_new (int (*write_to_client) (void*), void* write_to_client_data)
+{
+  omp_parser_t *omp_parser = (omp_parser_t*) g_malloc (sizeof (omp_parser_t));
+  omp_parser->client_writer = write_to_client;
+  omp_parser->client_writer_data = write_to_client_data;
+  return omp_parser;
+}
+
+/**
+ * @brief Free an OMP parser.
+ *
+ * @param[in]  omp_parser  OMP parser.
+ *
+ * @return An OMP parser.
+ */
+void
+omp_parser_free (omp_parser_t *omp_parser)
+{
+  g_free (omp_parser);
+}
+
+
 /* Command data passed between parser callbacks. */
 
 static gpointer
@@ -2163,26 +2202,62 @@ set_client_state (client_state_t state)
  *
  * Queue a message in \ref to_client.
  *
- * @param[in]  msg  The message, a string.
+ * @param[in]  msg              The message, a string.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
- * @return TRUE if out of space in to_client, else FALSE.
+ * @return TRUE if write to client failed, else FALSE.
  */
 static gboolean
-send_to_client (const char* msg)
+send_to_client (const char* msg, int (*write_to_client) (void*),
+                void* write_to_client_data)
 {
   assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
-  if (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
-      < strlen (msg))
+  assert (msg);
+  assert (write_to_client);
+
+  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
+         < strlen (msg))
     {
-      tracef ("   send_to_client out of space (%i < %zu)\n",
-              ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
-              strlen (msg));
-      return TRUE;
+      buffer_size_t length;
+
+      /* Too little space in to_client buffer for message. */
+
+      switch (write_to_client (write_to_client_data))
+        {
+          case  0:      /* Wrote everything in to_client. */
+            break;
+          case -1:      /* Error. */
+            tracef ("   send_to_client full (%i < %zu); client write failed\n",
+                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
+                    strlen (msg));
+            return TRUE;
+          case -2:      /* Wrote as much as client was willing to accept. */
+            break;
+          default:      /* Programming error. */
+            assert (0);
+        }
+
+      length = ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end;
+
+      if (length > strlen (msg))
+        break;
+
+      memmove (to_client + to_client_end, msg, length);
+      tracef ("-> client: %.*s\n", (int) length, msg);
+      to_client_end += length;
+      msg += length;
     }
 
-  memmove (to_client + to_client_end, msg, strlen (msg));
-  tracef ("-> client: %s\n", msg);
-  to_client_end += strlen (msg);
+  if (strlen (msg))
+    {
+      assert (strlen (msg)
+              <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
+      memmove (to_client + to_client_end, msg, strlen (msg));
+      tracef ("-> client: %s\n", msg);
+      to_client_end += strlen (msg);
+    }
+
   return FALSE;
 }
 
@@ -2191,11 +2266,15 @@ send_to_client (const char* msg)
  *
  * @param[in]  command  Command name.
  * @param[in]  element  Element name.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
  * @return TRUE if out of space in to_client, else FALSE.
  */
 static gboolean
-send_element_error_to_client (const char* command, const char* element)
+send_element_error_to_client (const char* command, const char* element,
+                              int (*write_to_client) (void*),
+                              void* write_to_client_data)
 {
   gchar *msg;
   gboolean ret;
@@ -2206,7 +2285,7 @@ send_element_error_to_client (const char* command, const char* element)
                          "\" status_text=\"Bogus element: %s\"/>",
                          command,
                          element);
-  ret = send_to_client (msg);
+  ret = send_to_client (msg, write_to_client, write_to_client_data);
   g_free (msg);
   return ret;
 }
@@ -2217,12 +2296,15 @@ send_element_error_to_client (const char* command, const char* element)
  * @param[in]  command  Command name.
  * @param[in]  type     Resource type.
  * @param[in]  id       Resource ID.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
  * @return TRUE if out of space in to_client, else FALSE.
  */
 static gboolean
 send_find_error_to_client (const char* command, const char* type,
-                           const char* id)
+                           const char* id, int (*write_to_client) (void*),
+                           void* write_to_client_data)
 {
   gchar *msg;
   gboolean ret;
@@ -2231,7 +2313,7 @@ send_find_error_to_client (const char* command, const char* type,
                          STATUS_ERROR_MISSING
                          "\" status_text=\"Failed to find %s '%s'\"/>",
                          command, type, id);
-  ret = send_to_client (msg);
+  ret = send_to_client (msg, write_to_client, write_to_client_data);
   g_free (msg);
   return ret;
 }
@@ -2504,7 +2586,7 @@ append_attribute (const gchar **attribute_names,
 #define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
   do                                                                         \
     {                                                                        \
-      if (send_to_client (msg))                                              \
+      if (send_to_client (msg, write_to_client, write_to_client_data))       \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -2525,7 +2607,7 @@ append_attribute (const gchar **attribute_names,
   do                                                                         \
     {                                                                        \
       gchar* msg = g_markup_printf_escaped (format , ## args);               \
-      if (send_to_client (msg))                                              \
+      if (send_to_client (msg, write_to_client, write_to_client_data))       \
         {                                                                    \
           g_free (msg);                                                      \
           error_send_to_client (error);                                      \
@@ -2552,7 +2634,7 @@ append_attribute (const gchar **attribute_names,
  * @param[in]  element_name      XML element name.
  * @param[in]  attribute_names   XML attribute name.
  * @param[in]  attribute_values  XML attribute values.
- * @param[in]  user_data         Dummy parameter.
+ * @param[in]  user_data         OMP parser.
  * @param[in]  error             Error parameter.
  */
 static void
@@ -2560,9 +2642,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               const gchar *element_name,
                               const gchar **attribute_names,
                               const gchar **attribute_values,
-                              /*@unused@*/ gpointer user_data,
+                              gpointer user_data,
                               GError **error)
 {
+  omp_parser_t *omp_parser = (omp_parser_t*) user_data;
+  int (*write_to_client) (void*) = (int (*) (void*)) omp_parser->client_writer;
+  void* write_to_client_data = (void*) omp_parser->client_writer_data;
+
   tracef ("   XML  start: %s (%i)\n", element_name, client_state);
 
   switch (client_state)
@@ -2598,13 +2684,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             if (send_to_client
                  (XML_ERROR_SYNTAX ("omp",
                                     "First command must be AUTHENTICATE,"
-                                    " COMMANDS or GET_VERSION")))
+                                    " COMMANDS or GET_VERSION"),
+                  write_to_client,
+                  write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
               }
             if (client_state == CLIENT_COMMANDS)
-              send_to_client ("</commands_response>");
+              send_to_client ("</commands_response>",
+                              write_to_client,
+                              write_to_client_data);
             g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Must authenticate first.");
           }
@@ -3282,7 +3372,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("omp", "Bogus command name")))
+            if (send_to_client (XML_ERROR_SYNTAX ("omp", "Bogus command name"),
+                                write_to_client,
+                                write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3303,7 +3395,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("authenticate", element_name))
+            if (send_element_error_to_client ("authenticate", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3323,7 +3417,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
         else
           {
-            if (send_element_error_to_client ("authenticate", element_name))
+            if (send_element_error_to_client ("authenticate", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3350,7 +3446,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         else
           {
-            if (send_element_error_to_client ("create_schedule", element_name))
+            if (send_element_error_to_client ("create_schedule", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3376,7 +3474,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR);
         else
           {
-            if (send_element_error_to_client ("create_schedule", element_name))
+            if (send_element_error_to_client ("create_schedule", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3394,7 +3494,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_DURATION_UNIT);
         else
           {
-            if (send_element_error_to_client ("create_schedule", element_name))
+            if (send_element_error_to_client ("create_schedule", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3412,7 +3514,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD_UNIT);
         else
           {
-            if (send_element_error_to_client ("create_schedule", element_name))
+            if (send_element_error_to_client ("create_schedule", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3434,7 +3538,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_SCHEDULE_FIRST_TIME_YEAR:
       case CLIENT_CREATE_SCHEDULE_DURATION_UNIT:
       case CLIENT_CREATE_SCHEDULE_PERIOD_UNIT:
-        if (send_element_error_to_client ("create_schedule", element_name))
+        if (send_element_error_to_client ("create_schedule", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3449,7 +3555,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_DELETE_AGENT:
           {
             if (send_element_error_to_client ("delete_agent",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3463,7 +3571,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_CONFIG:
-        if (send_element_error_to_client ("delete_config", element_name))
+        if (send_element_error_to_client ("delete_config", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3476,7 +3586,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_ESCALATOR:
-        if (send_element_error_to_client ("delete_escalator", element_name))
+        if (send_element_error_to_client ("delete_escalator", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3490,7 +3602,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_DELETE_LSC_CREDENTIAL:
         if (send_element_error_to_client ("delete_lsc_credential",
-                                          element_name))
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3503,7 +3617,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_NOTE:
-        if (send_element_error_to_client ("delete_note", element_name))
+        if (send_element_error_to_client ("delete_note", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3516,7 +3632,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_OVERRIDE:
-        if (send_element_error_to_client ("delete_override", element_name))
+        if (send_element_error_to_client ("delete_override", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3529,7 +3647,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_REPORT:
-        if (send_element_error_to_client ("delete_report", element_name))
+        if (send_element_error_to_client ("delete_report", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3542,7 +3662,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_SCHEDULE:
-        if (send_element_error_to_client ("delete_schedule", element_name))
+        if (send_element_error_to_client ("delete_schedule", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3555,7 +3677,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TARGET:
-        if (send_element_error_to_client ("delete_target", element_name))
+        if (send_element_error_to_client ("delete_target", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3568,7 +3692,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_DELETE_TASK:
-        if (send_element_error_to_client ("delete_task", element_name))
+        if (send_element_error_to_client ("delete_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3583,7 +3709,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_AGENTS:
           {
             if (send_element_error_to_client ("get_agents",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3599,7 +3727,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 #if 0
       case CLIENT_GET_CERTIFICATES:
           {
-            if (send_element_error_to_client ("get_certificates", element_name))
+            if (send_element_error_to_client ("get_certificates", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3615,7 +3745,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_CONFIGS:
           {
-            if (send_element_error_to_client ("get_configs", element_name))
+            if (send_element_error_to_client ("get_configs", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3630,7 +3762,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_DEPENDENCIES:
           {
-            if (send_element_error_to_client ("get_dependencies", element_name))
+            if (send_element_error_to_client ("get_dependencies", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3645,7 +3779,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_ESCALATORS:
           {
-            if (send_element_error_to_client ("get_escalators", element_name))
+            if (send_element_error_to_client ("get_escalators", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3661,7 +3797,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_LSC_CREDENTIALS:
           {
             if (send_element_error_to_client ("get_lsc_credentials",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3676,7 +3814,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_NOTES:
           {
-            if (send_element_error_to_client ("get_notes", element_name))
+            if (send_element_error_to_client ("get_notes", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3692,7 +3832,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FEED_CHECKSUM:
           {
             if (send_element_error_to_client ("get_nvt_feed_checksum",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3706,7 +3848,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVTS:
-        if (send_element_error_to_client ("get_nvts", element_name))
+        if (send_element_error_to_client ("get_nvts", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3719,7 +3863,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_NVT_FAMILIES:
-        if (send_element_error_to_client ("get_nvt_families", element_name))
+        if (send_element_error_to_client ("get_nvt_families", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3733,7 +3879,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_OVERRIDES:
           {
-            if (send_element_error_to_client ("get_overrides", element_name))
+            if (send_element_error_to_client ("get_overrides", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3748,7 +3896,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_PREFERENCES:
           {
-            if (send_element_error_to_client ("get_preferences", element_name))
+            if (send_element_error_to_client ("get_preferences", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3762,7 +3912,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_REPORTS:
-        if (send_element_error_to_client ("get_reports", element_name))
+        if (send_element_error_to_client ("get_reports", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3775,7 +3927,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_GET_RESULTS:
-        if (send_element_error_to_client ("get_results", element_name))
+        if (send_element_error_to_client ("get_results", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3789,7 +3943,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_SCHEDULES:
           {
-            if (send_element_error_to_client ("get_schedules", element_name))
+            if (send_element_error_to_client ("get_schedules", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3804,7 +3960,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_SYSTEM_REPORTS:
           {
-            if (send_element_error_to_client ("get_system_reports", element_name))
+            if (send_element_error_to_client ("get_system_reports", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3819,7 +3977,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_TARGETS:
           {
-            if (send_element_error_to_client ("get_targets", element_name))
+            if (send_element_error_to_client ("get_targets", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3833,7 +3993,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_GET_TARGET_LOCATORS:
         {
-          if (send_element_error_to_client ("get_target_locators", element_name))
+          if (send_element_error_to_client ("get_target_locators", element_name,
+                                            write_to_client,
+                                            write_to_client_data))
             {
               error_send_to_client (error);
               return;
@@ -3847,7 +4009,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_TASKS:
-        if (send_element_error_to_client ("get_tasks", element_name))
+        if (send_element_error_to_client ("get_tasks", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -3861,7 +4025,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_HELP:
         {
-          if (send_element_error_to_client ("help", element_name))
+          if (send_element_error_to_client ("help", element_name,
+                                            write_to_client,
+                                            write_to_client_data))
             {
               error_send_to_client (error);
               return;
@@ -3893,7 +4059,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
         else
           {
-            if (send_element_error_to_client ("modify_config", element_name))
+            if (send_element_error_to_client ("modify_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3917,7 +4085,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("modify_config", element_name))
+            if (send_element_error_to_client ("modify_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3943,7 +4113,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
         else
           {
-            if (send_element_error_to_client ("modify_config", element_name))
+            if (send_element_error_to_client ("modify_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3967,7 +4139,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
         else
           {
-            if (send_element_error_to_client ("modify_config", element_name))
+            if (send_element_error_to_client ("modify_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -3993,7 +4167,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
         else
           {
-            if (send_element_error_to_client ("modify_config", element_name))
+            if (send_element_error_to_client ("modify_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4011,7 +4187,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_COMMENT);
         else
           {
-            if (send_element_error_to_client ("modify_report", element_name))
+            if (send_element_error_to_client ("modify_report", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4060,7 +4238,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("modify_task", element_name))
+            if (send_element_error_to_client ("modify_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4087,7 +4267,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_agent",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4107,7 +4289,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_agent",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4133,7 +4317,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4155,7 +4341,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4187,7 +4375,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4205,7 +4395,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR);
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4233,7 +4425,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_C_C_GCR_CONFIG_NVT_SELECTORS_NVT_SELECTOR_FAMILY_OR_NVT);
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4254,7 +4448,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4289,7 +4485,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE);
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4308,7 +4506,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
            (CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME);
         else
           {
-            if (send_element_error_to_client ("create_config", element_name))
+            if (send_element_error_to_client ("create_config", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4332,7 +4532,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_NVT_NAME:
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_TYPE:
       case CLIENT_C_C_GCR_CONFIG_PREFERENCES_PREFERENCE_VALUE:
-        if (send_element_error_to_client ("create_config", element_name))
+        if (send_element_error_to_client ("create_config", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4357,7 +4559,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_NAME);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4375,7 +4579,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4393,7 +4599,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_CONDITION_DATA_NAME);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4411,7 +4619,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4429,7 +4639,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_EVENT_DATA_NAME);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4447,7 +4659,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4465,7 +4679,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_ESCALATOR_METHOD_DATA_NAME);
         else
           {
-            if (send_element_error_to_client ("create_escalator", element_name))
+            if (send_element_error_to_client ("create_escalator", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4493,7 +4709,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_lsc_credential",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4547,7 +4765,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         else
           {
-            if (send_element_error_to_client ("create_note", element_name))
+            if (send_element_error_to_client ("create_note", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4603,7 +4823,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE_THREAT);
         else
           {
-            if (send_element_error_to_client ("create_override", element_name))
+            if (send_element_error_to_client ("create_override", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4633,7 +4855,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         else
           {
-            if (send_element_error_to_client ("create_target", element_name))
+            if (send_element_error_to_client ("create_target", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4653,7 +4877,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME);
         else
           {
-            if (send_element_error_to_client ("create_target", element_name))
+            if (send_element_error_to_client ("create_target", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4705,7 +4931,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            if (send_element_error_to_client ("create_task", element_name))
+            if (send_element_error_to_client ("create_task", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4753,7 +4981,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_NOTE_THREAT);
         else
           {
-            if (send_element_error_to_client ("MODIFY_note", element_name))
+            if (send_element_error_to_client ("MODIFY_note", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4803,7 +5033,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_OVERRIDE_THREAT);
         else
           {
-            if (send_element_error_to_client ("modify_override", element_name))
+            if (send_element_error_to_client ("modify_override", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4819,7 +5051,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_TEST_ESCALATOR:
           {
             if (send_element_error_to_client ("test_escalator",
-                                              element_name))
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -4833,7 +5067,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_PAUSE_TASK:
-        if (send_element_error_to_client ("pause_task", element_name))
+        if (send_element_error_to_client ("pause_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4846,7 +5082,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_RESUME_OR_START_TASK:
-        if (send_element_error_to_client ("resume_or_start_task", element_name))
+        if (send_element_error_to_client ("resume_or_start_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4859,7 +5097,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_RESUME_PAUSED_TASK:
-        if (send_element_error_to_client ("resume_paused_task", element_name))
+        if (send_element_error_to_client ("resume_paused_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4872,7 +5112,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_RESUME_STOPPED_TASK:
-        if (send_element_error_to_client ("resume_stopped_task", element_name))
+        if (send_element_error_to_client ("resume_stopped_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4885,7 +5127,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_START_TASK:
-        if (send_element_error_to_client ("start_task", element_name))
+        if (send_element_error_to_client ("start_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4898,7 +5142,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_STOP_TASK:
-        if (send_element_error_to_client ("stop_task", element_name))
+        if (send_element_error_to_client ("stop_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
           {
             error_send_to_client (error);
             return;
@@ -4972,11 +5218,13 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
  *
  * @param[in]  element  The required plugin.
  * @param[in]  dummy    Dummy variable for g_hash_table_find.
+ * @param[in]  data     Array of two pointers: write_to_client and
+ *                      write_to_client_data.
  *
  * @return 0 if out of space in to_client buffer, else 1.
  */
 static gint
-send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
+send_requirement (gconstpointer element, gconstpointer data)
 {
   gboolean fail;
   gchar* text = g_markup_escape_text ((char*) element,
@@ -4985,11 +5233,13 @@ send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
   gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name></nvt>",
                                 oid ? oid : "",
                                 text);
+  int (*write_to_client) (void*) = (int (*) (void*)) *((void**)data);
+  void* write_to_client_data = *(((void**)data) + 1);
 
   free (oid);
   g_free (text);
 
-  fail = send_to_client (msg);
+  fail = send_to_client (msg, write_to_client, write_to_client_data);
   g_free (msg);
   return fail ? 0 : 1;
 }
@@ -4999,12 +5249,13 @@ send_requirement (gconstpointer element, /*@unused@*/ gconstpointer dummy)
  *
  * @param[in]  key    The dependency hashtable key.
  * @param[in]  value  The dependency hashtable value.
- * @param[in]  dummy  Dummy variable for g_hash_table_find.
+ * @param[in]  data   Array of two pointers: write_to_client and
+ *                    write_to_client_data.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
+send_dependency (gpointer key, gpointer value, gpointer data)
 {
   /* \todo Do these reallocations affect performance? */
   gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
@@ -5012,23 +5263,27 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
   gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name><requires>",
                                 oid ? oid : "",
                                 key_text);
+  int (*write_to_client) (void*) = (int (*) (void*)) *((void**)data);
+  void* write_to_client_data = *(((void**)data) + 1);
 
   g_free (oid);
   g_free (key_text);
 
-  if (send_to_client (msg))
+  if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
       return TRUE;
     }
 
-  if (g_slist_find_custom ((GSList*) value, NULL, send_requirement))
+  if (g_slist_find_custom ((GSList*) value, data, send_requirement))
     {
       g_free (msg);
       return TRUE;
     }
 
-  if (send_to_client ("</requires></nvt>"))
+  if (send_to_client ("</requires></nvt>",
+                      write_to_client,
+                      write_to_client_data))
     {
       g_free (msg);
       return TRUE;
@@ -5058,11 +5313,14 @@ send_dependency (gpointer key, gpointer value, /*@unused@*/ gpointer dummy)
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
  * @param[in]  timeout     Timeout.  Used if details is true.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
-send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
+send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
+          int (*write_to_client) (void*), void* write_to_client_data)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5147,7 +5405,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
                            oid,
                            name_text);
   g_free (name_text);
-  if (send_to_client (msg))
+  if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
       return TRUE;
@@ -5161,17 +5419,20 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout)
  *
  * @param[in]  task             The task.
  * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
  * @return 0 success, -4 out of space in to_client,
  *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
-send_reports (task_t task, int apply_overrides)
+send_reports (task_t task, int apply_overrides, int (*write_to_client) (void*),
+              void* write_to_client_data)
 {
   iterator_t iterator;
   report_t index;
 
-  if (send_to_client ("<reports>"))
+  if (send_to_client ("<reports>", write_to_client, write_to_client_data))
     return -4;
 
   init_report_iterator (&iterator, task, 0);
@@ -5223,7 +5484,7 @@ send_reports (task_t task, int apply_overrides)
                              warnings,
                              false_positives);
       g_free (timestamp);
-      if (send_to_client (msg))
+      if (send_to_client (msg, write_to_client, write_to_client_data))
         {
           g_free (msg);
           free (uuid);
@@ -5234,7 +5495,7 @@ send_reports (task_t task, int apply_overrides)
     }
   cleanup_iterator (&iterator);
 
-  if (send_to_client ("</reports>"))
+  if (send_to_client ("</reports>", write_to_client, write_to_client_data))
     return -4;
 
   return 0;
@@ -6889,16 +7150,21 @@ buffer_schedules_xml (GString *buffer, iterator_t *schedules,
  *
  * @param[in]  context           Parser context.
  * @param[in]  element_name      XML element name.
- * @param[in]  user_data         Dummy parameter.
+ * @param[in]  user_data         OMP parser.
  * @param[in]  error             Error parameter.
  */
 static void
 omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             const gchar *element_name,
-                            /*@unused@*/ gpointer user_data,
+                            gpointer user_data,
                             GError **error)
 {
+  omp_parser_t *omp_parser = (omp_parser_t*) user_data;
+  int (*write_to_client) (void*) = (int (*) (void*)) omp_parser->client_writer;
+  void* write_to_client_data = (void*) omp_parser->client_writer_data;
+
   tracef ("   XML    end: %s\n", element_name);
+
   switch (client_state)
     {
       case CLIENT_TOP:
@@ -6975,7 +7241,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_preferences",
                                              "NVT",
-                                             get_preferences_data->nvt_oid))
+                                             get_preferences_data->nvt_oid,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -6988,7 +7256,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_preferences",
                                              "config",
-                                             get_preferences_data->config_id))
+                                             get_preferences_data->config_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7086,7 +7356,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("get_dependencies",
                                                "NVT",
-                                               get_dependencies_data->nvt_oid))
+                                               get_dependencies_data->nvt_oid,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -7094,6 +7366,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else
               {
+                void* data[2];
+
+                data[0] = (int (*) (void*)) write_to_client;
+                data[1] = (void*) write_to_client_data;
+
                 SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
                                         " status=\"" STATUS_OK "\""
                                         " status_text=\"" STATUS_OK_TEXT "\">");
@@ -7107,7 +7384,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         value = g_hash_table_lookup
                                  (scanner.plugins_dependencies,
                                   name);
-                        if (value && send_dependency (name, value, NULL))
+                        if (value && send_dependency (name, value, data))
                           {
                             g_free (name);
                             error_send_to_client (error);
@@ -7157,7 +7434,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_notes",
                                              "note",
-                                             get_notes_data->note_id))
+                                             get_notes_data->note_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7170,7 +7449,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_notes",
                                              "task",
-                                             get_notes_data->task_id))
+                                             get_notes_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7183,7 +7464,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_notes",
                                              "NVT",
-                                             get_notes_data->nvt_oid))
+                                             get_notes_data->nvt_oid,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7292,7 +7575,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   if (send_find_error_to_client ("get_nvts",
                                                  "NVT",
-                                                 get_nvts_data->nvt_oid))
+                                                 get_nvts_data->nvt_oid,
+                                                 write_to_client,
+                                                 write_to_client_data))
                     {
                       error_send_to_client (error);
                       return;
@@ -7308,7 +7593,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (send_find_error_to_client
                        ("get_nvts",
                         "config",
-                        get_nvts_data->config_id))
+                        get_nvts_data->config_id,
+                        write_to_client,
+                        write_to_client_data))
                     {
                       error_send_to_client (error);
                       return;
@@ -7348,7 +7635,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             const char *nvt_name = nvt_iterator_name (&nvts);
                             pref_count = nvt_preference_count (nvt_name);
                           }
-                        if (send_nvt (&nvts, 1, pref_count, timeout))
+                        if (send_nvt (&nvts, 1, pref_count, timeout,
+                                      write_to_client, write_to_client_data))
                           {
                             cleanup_iterator (&nvts);
                             error_send_to_client (error);
@@ -7390,7 +7678,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   else
                     while (next (&nvts))
                       {
-                        if (send_nvt (&nvts, 0, -1, NULL))
+                        if (send_nvt (&nvts, 0, -1, NULL, write_to_client,
+                                      write_to_client_data))
                           {
                             cleanup_iterator (&nvts);
                             error_send_to_client (error);
@@ -7477,7 +7766,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_overrides",
                                              "override",
-                                             get_overrides_data->override_id))
+                                             get_overrides_data->override_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7490,7 +7781,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_overrides",
                                              "task",
-                                             get_overrides_data->task_id))
+                                             get_overrides_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7503,7 +7796,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_overrides",
                                              "NVT",
-                                             get_overrides_data->nvt_oid))
+                                             get_overrides_data->nvt_oid,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -7554,7 +7849,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_note",
                                                "note",
-                                               delete_note_data->note_id))
+                                               delete_note_data->note_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -7592,7 +7889,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("delete_override",
                       "override",
-                      delete_override_data->override_id))
+                      delete_override_data->override_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -7630,7 +7929,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_report",
                                                "report",
-                                               delete_report_data->report_id))
+                                               delete_report_data->report_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -7678,7 +7979,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("delete_schedule",
                       "schedule",
-                      delete_schedule_data->schedule_id))
+                      delete_schedule_data->schedule_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -7748,7 +8051,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             if (send_find_error_to_client ("get_reports",
                                            "report",
-                                           get_reports_data->report_id))
+                                           get_reports_data->report_id,
+                                           write_to_client,
+                                           write_to_client_data))
               {
                 error_send_to_client (error);
                 return;
@@ -8218,7 +8523,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gchar *base64_content;
                   base64_content = g_base64_encode ((guchar*) content,
                                                     strlen (content));
-                  if (send_to_client (base64_content))
+                  if (send_to_client (base64_content,
+                                      write_to_client,
+                                      write_to_client_data))
                     {
                       g_free (content);
                       g_free (base64_content);
@@ -8381,7 +8688,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   gchar *base64;
                                   base64 = g_base64_encode ((guchar*) html,
                                                             html_len);
-                                  if (send_to_client (base64))
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
                                     {
                                       g_free (html);
                                       g_free (base64);
@@ -8554,7 +8863,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   gchar *base64;
                                   base64 = g_base64_encode ((guchar*) pdf,
                                                             pdf_len);
-                                  if (send_to_client (base64))
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
                                     {
                                       g_free (pdf);
                                       g_free (base64);
@@ -8738,7 +9049,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               gchar *base64;
                               base64 = g_base64_encode ((guchar*) pdf,
                                                         pdf_len);
-                              if (send_to_client (base64))
+                              if (send_to_client (base64,
+                                                  write_to_client,
+                                                  write_to_client_data))
                                 {
                                   g_free (pdf);
                                   g_free (base64);
@@ -8906,7 +9219,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   gchar *base64;
                                   base64 = g_base64_encode ((guchar*) output,
                                                             output_len);
-                                  if (send_to_client (base64))
+                                  if (send_to_client (base64,
+                                                      write_to_client,
+                                                      write_to_client_data))
                                     {
                                       g_free (output);
                                       g_free (base64);
@@ -8996,7 +9311,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_results",
                                              "result",
-                                             get_results_data->result_id))
+                                             get_results_data->result_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -9009,7 +9326,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_results",
                                              "task",
-                                             get_results_data->task_id))
+                                             get_results_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -9073,7 +9392,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_schedules",
                                              "schedule",
-                                             get_schedules_data->schedule_id))
+                                             get_schedules_data->schedule_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -9121,7 +9442,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_agent",
                                                "agent",
-                                               delete_agent_data->agent_id))
+                                               delete_agent_data->agent_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9163,7 +9486,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_config",
                                                "config",
-                                               delete_config_data->config_id))
+                                               delete_config_data->config_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9213,7 +9538,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("delete_escalator",
                       "escalator",
-                      delete_escalator_data->escalator_id))
+                      delete_escalator_data->escalator_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9268,7 +9595,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("delete_lsc_credential",
                       "LSC credential",
-                      delete_lsc_credential_data->lsc_credential_id))
+                      delete_lsc_credential_data->lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+
                   {
                     error_send_to_client (error);
                     return;
@@ -9310,7 +9640,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_target",
                                                "target",
-                                               delete_target_data->target_id))
+                                               delete_target_data->target_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9356,7 +9688,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("delete_task",
                                                "task",
-                                               delete_task_data->task_id))
+                                               delete_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9440,7 +9774,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_config",
                                              "config",
-                                             modify_config_data->config_id))
+                                             modify_config_data->config_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -9700,7 +10036,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_report",
                                              "report",
-                                             modify_report_data->report_id))
+                                             modify_report_data->report_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -9749,7 +10087,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("modify_task",
                                                "task",
-                                               modify_task_data->task_id))
+                                               modify_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -9893,7 +10233,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (send_find_error_to_client
                              ("modify_task",
                               "escalator",
-                              modify_task_data->escalator_id))
+                              modify_task_data->escalator_id,
+                              write_to_client,
+                              write_to_client_data))
                           {
                             error_send_to_client (error);
                             return;
@@ -9926,7 +10268,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (send_find_error_to_client
                              ("modify_task",
                               "schedule",
-                              modify_task_data->schedule_id))
+                              modify_task_data->schedule_id,
+                              write_to_client,
+                              write_to_client_data))
                           {
                             error_send_to_client (error);
                             return;
@@ -10231,7 +10575,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_config",
                                              "config",
-                                             create_config_data->copy))
+                                             create_config_data->copy,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -10705,7 +11051,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note",
                                              "task",
-                                             create_note_data->task_id))
+                                             create_note_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -10718,7 +11066,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note",
                                              "result",
-                                             create_note_data->result_id))
+                                             create_note_data->result_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -10813,7 +11163,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override",
                                              "task",
-                                             create_override_data->task_id))
+                                             create_override_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -10826,7 +11178,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override",
                                              "result",
-                                             create_override_data->result_id))
+                                             create_override_data->result_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11082,7 +11436,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (send_find_error_to_client
                    ("create_target",
                     "LSC credential",
-                    create_target_data->lsc_credential_id))
+                    create_target_data->lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11362,7 +11718,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "config",
-                                             create_task_data->config_id))
+                                             create_task_data->config_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11386,7 +11744,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "target",
-                                             create_task_data->target_id))
+                                             create_task_data->target_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   // Out of space
                   error_send_to_client (error);
@@ -11502,7 +11862,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note",
                                              "note",
-                                             modify_note_data->note_id))
+                                             modify_note_data->note_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11515,7 +11877,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note",
                                              "task",
-                                             modify_note_data->task_id))
+                                             modify_note_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11528,7 +11892,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_note",
                                              "result",
-                                             modify_note_data->result_id))
+                                             modify_note_data->result_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11606,7 +11972,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override",
                                              "override",
-                                             modify_override_data->override_id))
+                                             modify_override_data->override_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11619,7 +11987,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override",
                                              "task",
-                                             modify_override_data->task_id))
+                                             modify_override_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11632,7 +12002,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("modify_override",
                                              "result",
-                                             modify_override_data->result_id))
+                                             modify_override_data->result_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -11706,7 +12078,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("test_escalator",
                       "escalator",
-                      test_escalator_data->escalator_id))
+                      test_escalator_data->escalator_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11754,7 +12128,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("pause_task",
                                                "task",
-                                               pause_task_data->task_id))
+                                               pause_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11801,7 +12177,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("resume_or_start_task",
                       "task",
-                      resume_or_start_task_data->task_id))
+                      resume_or_start_task_data->task_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11829,7 +12207,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "</resume_or_start_task_response>",
                                 report_id);
                         free (report_id);
-                        if (send_to_client (msg))
+                        if (send_to_client (msg,
+                                            write_to_client,
+                                            write_to_client_data))
                           {
                             g_free (msg);
                             error_send_to_client (error);
@@ -11928,7 +12308,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("resume_paused_task",
                       "task",
-                      resume_paused_task_data->task_id))
+                      resume_paused_task_data->task_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -11975,7 +12357,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("resume_stopped_task",
                                                "task",
-                                               resume_stopped_task_data->task_id))
+                                               resume_stopped_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -12003,7 +12387,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "</resume_stopped_task_response>",
                                 report_id);
                         free (report_id);
-                        if (send_to_client (msg))
+                        if (send_to_client (msg,
+                                            write_to_client,
+                                            write_to_client_data))
                           {
                             g_free (msg);
                             error_send_to_client (error);
@@ -12100,7 +12486,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("start_task",
                                                "task",
-                                               start_task_data->task_id))
+                                               start_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -12128,7 +12516,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "</start_task_response>",
                                 report_id);
                         free (report_id);
-                        if (send_to_client (msg))
+                        if (send_to_client (msg,
+                                            write_to_client,
+                                            write_to_client_data))
                           {
                             g_free (msg);
                             error_send_to_client (error);
@@ -12219,7 +12609,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if (send_find_error_to_client ("stop_task",
                                                "task",
-                                               stop_task_data->task_id))
+                                               stop_task_data->task_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;
@@ -12297,7 +12689,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_agents",
                                              "agent",
-                                             get_agents_data->agent_id))
+                                             get_agents_data->agent_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -12396,7 +12790,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_configs",
                                              "config",
-                                             get_configs_data->config_id))
+                                             get_configs_data->config_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -12621,7 +13017,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_escalators",
                                              "escalator",
-                                             get_escalators_data->escalator_id))
+                                             get_escalators_data->escalator_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -12797,7 +13195,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (send_find_error_to_client
                    ("get_lsc_credentials",
                     "LSC credential",
-                    get_lsc_credentials_data->lsc_credential_id))
+                    get_lsc_credentials_data->lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -13022,7 +13422,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_targets",
                                              "target",
-                                             get_targets_data->target_id))
+                                             get_targets_data->target_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -13110,7 +13512,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("get_tasks",
                                              "task",
-                                             get_tasks_data->task_id))
+                                             get_tasks_data->task_id,
+                                             write_to_client,
+                                             write_to_client_data))
                 {
                   error_send_to_client (error);
                   return;
@@ -13126,7 +13530,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       " status_text=\"" STATUS_OK_TEXT "\">");
               response = g_strdup_printf ("<task_count>%u</task_count>",
                                           task ? 1 : task_count ());
-              if (send_to_client (response))
+              if (send_to_client (response,
+                                  write_to_client,
+                                  write_to_client_data))
                 {
                   g_free (response);
                   error_send_to_client (error);
@@ -13489,7 +13895,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (progress_xml);
                     g_free (last_report);
                     g_free (second_last_report);
-                    ret = send_to_client (response);
+                    ret = send_to_client (response,
+                                          write_to_client,
+                                          write_to_client_data);
                     g_free (response);
                     g_free (name);
                     g_free (comment);
@@ -13504,7 +13912,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     // FIX need to handle err cases before send status
                     (void) send_reports (task,
-                                         get_tasks_data->apply_overrides);
+                                         get_tasks_data->apply_overrides,
+                                         write_to_client,
+                                         write_to_client_data);
                     SEND_TO_CLIENT_OR_FAIL ("</task>");
                   }
                 else
@@ -13857,7 +14267,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (tsk_uuid);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
-                    if (send_to_client (line))
+                    if (send_to_client (line,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
                         g_free (line);
                         cleanup_iterator (&tasks);
@@ -14327,12 +14739,15 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
  * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
  *                               -2 just rebuild NVT cache.
  * @param[in]  database          Location of manage database.
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
  * This should run once per process, before the first call to \ref
  * process_omp_client_input.
  */
 void
-init_omp_process (int update_nvt_cache, const gchar *database)
+init_omp_process (int update_nvt_cache, const gchar *database,
+                  int (*write_to_client) (void*), void* write_to_client_data)
 {
   forked = 0;
   init_manage_process (update_nvt_cache, database);
@@ -14343,10 +14758,11 @@ init_omp_process (int update_nvt_cache, const gchar *database)
   xml_parser.passthrough = NULL;
   xml_parser.error = omp_xml_handle_error;
   if (xml_context) g_free (xml_context);
-  xml_context = g_markup_parse_context_new (&xml_parser,
-                                            0,
-                                            NULL,
-                                            NULL);
+  xml_context = g_markup_parse_context_new
+                 (&xml_parser,
+                  0,
+                  omp_parser_new (write_to_client, write_to_client_data),
+                  (GDestroyNotify) omp_parser_free);
 }
 
 /**
@@ -14363,6 +14779,11 @@ init_omp_process (int update_nvt_cache, const gchar *database)
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
+ *
+ * @todo The -2 return has been replaced by send_to_client trying to write
+ *       the to_client buffer to the client when it is full.  This is
+ *       necessary, as the to_client buffer may fill up halfway through the
+ *       processing of an OMP element.
  *
  * @return 0 success, -1 error, -2 or -3 too little space in \ref to_client
  *         or the scanner output buffer (respectively), -4 XML syntax error.

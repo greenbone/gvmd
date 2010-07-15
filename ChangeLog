@@ -1,3 +1,29 @@
+2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Try flush the to_client buffer when it fills up during OMP processing.
+
+	* src/omp.c (omp_parser_t): New type.
+	(omp_parser_new, omp_parser_free): New functions.
+	(send_to_client): Add write_to_client callback and data args.  If the
+	buffer is too full for the message, try write the buffer to the client.
+	Update all callers.
+	(send_element_error_to_client, send_find_error_to_client): Add passthrough
+	args for send_to_client.  Update all callers.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Expect
+	write_to_client callback and data arg in user_data arg via an omp_parser.
+	(send_requirement, send_dependency): Expect write_to_client callback and
+	data arg in data arg.  Update callers.
+	(send_nvt, send_reports): Add write_to_client callback and data arg args.
+	Update callers.
+	(init_omp_process): Add write_to_client callback and data arg args.  Set
+	omp_parser as callback user data.
+	(process_omp_client_input): Add note about return.
+
+	* src/omp.h: Update header accordingly.
+
+	* src/ompd.c (init_ompd_process, serve_omp): Pass client writer and data
+	to init_omp_process.  Extend complications comment.
+
 2010-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Reduce GET_VERSION to single fixed version.  Enable GET_VERSION before
