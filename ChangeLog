@@ -1,5 +1,11 @@
 2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.h, src/openvasmd.c, src/omp.c: Bring docs up to date.
+
+	* src/manage_sql.c: Add @file doc.
+
+2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Try flush the to_client buffer when it fills up during OMP processing.
 
 	* src/omp.c (omp_parser_t): New type.

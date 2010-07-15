@@ -169,10 +169,13 @@ typedef long long int schedule_t;
 
 #include <sqlite3.h>
 
+/**
+ * @brief A generic SQL iterator.
+ */
 typedef struct
 {
-  sqlite3_stmt* stmt;
-  gboolean done;
+  sqlite3_stmt* stmt;        ///< SQL statement.
+  gboolean done;             ///< End flag.
 } iterator_t;
 
 
@@ -786,22 +789,28 @@ target_task_iterator_uuid (iterator_t*);
 
 /* Configs. */
 
+/**
+ * @brief An NVT preference.
+ */
 typedef struct
 {
-  char *name;
-  char *type;
-  char *value;
-  char *nvt_name;
-  char *nvt_oid;
-  array_t *alts;  /* gchar. */
+  char *name;      ///< Name of preference.
+  char *type;      ///< Type of preference (radio, password, ...).
+  char *value;     ///< Value of preference.
+  char *nvt_name;  ///< Name of NVT preference affects.
+  char *nvt_oid;   ///< OID of NVT preference affects.
+  array_t *alts;   ///< Array of gchar's.  Alternate values for radio type.
 } preference_t;
 
+/**
+ * @brief An NVT selector.
+ */
 typedef struct
 {
-  char *name;
-  char *type;
-  int include;
-  char *family_or_nvt;
+  char *name;           ///< Name of NVT selector.
+  char *type;           ///< Name of NVT selector.
+  int include;          ///< Whether family/NVT is included or excluded.
+  char *family_or_nvt;  ///< Family or NVT that this selector selects.
 } nvt_selector_t;
 
 int
@@ -1292,10 +1301,13 @@ manage_check_current_task ();
 
 /* System reports. */
 
+/**
+ * @brief A system report type iterator.
+ */
 typedef struct
 {
-  gchar **start;
-  gchar **current;
+  gchar **start;        ///< First type.
+  gchar **current;      ///< Current type.
 } report_type_iterator_t;
 
 int

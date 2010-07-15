@@ -61,7 +61,7 @@
  * The OTP library is defined in src/\ref otp.c.  The OMP library is defined
  * in src/\ref omp.c.  Both the OMP and OTP libraries use the Manage library
  * to manage credentials and tasks.  The manage
- * library is defined in src/\ref manage.c and src/\ref tasks_sql.h.
+ * library is defined in src/\ref manage.c and src/\ref manage_sql.c .
  *
  * The OTP and Manage libraries both use the Comm library to communication
  * with the OTP server (src/\ref ovas-mngr-comm.c).
@@ -912,8 +912,12 @@ main_loop ()
 /**
  * @brief Entry point to the manager.
  *
+ * \if STATIC
+ *
  * Setup the manager and then loop forever passing connections to
- * \ref accept_and_maybe_fork.
+ * \ref accept_and_maybe_fork .
+ *
+ * \endif
  *
  * @param[in]  argc  The number of arguments in argv.
  * @param[in]  argv  The list of arguments to the program.

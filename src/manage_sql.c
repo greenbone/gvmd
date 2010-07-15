@@ -23,6 +23,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * @file  manage_sql.c
+ * @brief The OpenVAS Manager management library (SQLite implementation).
+ *
+ * This file defines the SQLite specific portions of the OpenVAS manager
+ * management library.
+ */
+
 #include "manage_sql.h"
 #include "lsc_user.h"
 #include "tracef.h"

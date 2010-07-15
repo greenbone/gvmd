@@ -603,10 +603,13 @@ static char* help_text = "\n"
 
 /* OMP parser. */
 
+/**
+ * @brief A handle on an OMP parser.
+ */
 typedef struct
 {
-  int (*client_writer) (void*);
-  void* client_writer_data;
+  int (*client_writer) (void*);   ///< Function to write to the client.
+  void* client_writer_data;       ///< Argument to client_writer.
 } omp_parser_t;
 
 /**
@@ -678,13 +681,13 @@ nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
  */
 typedef struct
 {
-  char *comment;
-  char *howto_install;
-  char *howto_use;
-  char *installer;
-  char *installer_filename;
-  char *installer_signature;
-  char *name;
+  char *comment;                  ///< Comment.
+  char *howto_install;            ///< Install HOWTO.
+  char *howto_use;                ///< Usage HOWTO.
+  char *installer;                ///< Installer content.
+  char *installer_filename;       ///< Installer filename.
+  char *installer_signature;      ///< Installer signature.
+  char *name;                     ///< Agent name.
 } create_agent_data_t;
 
 /**
@@ -704,33 +707,39 @@ create_agent_data_reset (create_agent_data_t *data)
   memset (data, 0, sizeof (create_agent_data_t));
 }
 
+/**
+ * @brief Command data for the import part of the create_config command.
+ */
 typedef struct
 {
-  int import;                        /* The import element was present. */
-  char *comment;
-  char *name;
-  array_t *nvt_selectors;            /* nvt_selector_t. */
-  char *nvt_selector_name;
-  char *nvt_selector_type;
-  char *nvt_selector_include;
-  char *nvt_selector_family_or_nvt;
-  array_t *preferences;              /* preference_t. */
-  array_t *preference_alts;          /* gchar. */
-  char *preference_alt;
-  char *preference_name;
-  char *preference_nvt_name;
-  char *preference_nvt_oid;
-  char *preference_type;
-  char *preference_value;
+  int import;                        ///< The import element was present.
+  char *comment;                     ///< Comment.
+  char *name;                        ///< Config name.
+  array_t *nvt_selectors;            ///< Array of nvt_selector_t's.
+  char *nvt_selector_name;           ///< In NVT_SELECTORS name of selector.
+  char *nvt_selector_type;           ///< In NVT_SELECTORS type of selector.
+  char *nvt_selector_include;        ///< In NVT_SELECTORS include/exclude flag.
+  char *nvt_selector_family_or_nvt;  ///< In NVT_SELECTORS family/NVT flag.
+  array_t *preferences;              ///< Array of preference_t's.
+  array_t *preference_alts;          ///< Array of gchar's in PREFERENCES.
+  char *preference_alt;              ///< Single radio alternative in PREFERENCE.
+  char *preference_name;             ///< Name in PREFERENCE.
+  char *preference_nvt_name;         ///< NVT name in PREFERENCE.
+  char *preference_nvt_oid;          ///< NVT OID in PREFERENCE.
+  char *preference_type;             ///< Type in PREFERENCE.
+  char *preference_value;            ///< Value in PREFERENCE.
 } import_config_data_t;
 
+/**
+ * @brief Command data for the create_config command.
+ */
 typedef struct
 {
-  char *comment;
-  char *copy;
-  import_config_data_t import;
-  char *name;
-  char *rcfile;
+  char *comment;                     ///< Comment.
+  char *copy;                        ///< Config to copy.
+  import_config_data_t import;       ///< Config to import.
+  char *name;                        ///< Name.
+  char *rcfile;                      ///< RC file from which to create config.
 } create_config_data_t;
 
 // array members must be created separately
@@ -772,18 +781,26 @@ create_config_data_reset (create_config_data_t *data)
   memset (data, 0, sizeof (create_config_data_t));
 }
 
+/**
+ * @brief Command data for the create_escalator command.
+ *
+ * The pointers in the *_data arrays point to memory that contains two
+ * strings concatentated, with a single \\0 between them.  The first string
+ * is the name of the extra data (for example "To Address"), the second is
+ * the value the the data (for example "alice@example.org").
+ */
 typedef struct
 {
-  char *comment;
-  char *condition;
-  array_t *condition_data;
-  char *event;
-  array_t *event_data;
-  char *method;
-  array_t *method_data;
-  char *name;
-  char *part_data;
-  char *part_name;
+  char *comment;             ///< Comment.
+  char *condition;           ///< Condition for escalation, e.g. "Always".
+  array_t *condition_data;   ///< Array of pointers.  Extra data for condition.
+  char *event;               ///< Event that will cause escalation.
+  array_t *event_data;       ///< Array of pointers.  Extra data for event.
+  char *method;              ///< Method of escalation, e.g. "Email".
+  array_t *method_data;      ///< Array of pointer.  Extra data for method.
+  char *name;                ///< Name of escalator.
+  char *part_data;           ///< Second part of data during *_data: value.
+  char *part_name;           ///< First part of data during *_data: name.
 } create_escalator_data_t;
 
 static void
@@ -803,12 +820,15 @@ create_escalator_data_reset (create_escalator_data_t *data)
   memset (data, 0, sizeof (create_escalator_data_t));
 }
 
+/**
+ * @brief Command data for the create_lsc_credential command.
+ */
 typedef struct
 {
-  char *comment;
-  char *login;
-  char *name;
-  char *password;
+  char *comment;           ///< Comment.
+  char *login;             ///< Login name.
+  char *name;              ///< LSC credential name.
+  char *password;          ///< Password associated with login name.
 } create_lsc_credential_data_t;
 
 static void
@@ -822,16 +842,19 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
   memset (data, 0, sizeof (create_lsc_credential_data_t));
 }
 
+/**
+ * @brief Command data for the create_note command.
+ */
 typedef struct
 {
-  char *hosts;
-  char *note_id;
-  char *nvt_oid;
-  char *port;
-  char *result_id;
-  char *task_id;
-  char *text;
-  char *threat;
+  char *hosts;        ///< Hosts to which to limit override.
+  char *note_id;      ///< New threat value of overridden results.
+  char *nvt_oid;      ///< NVT to which to limit override.
+  char *port;         ///< Port to which to limit override.
+  char *result_id;    ///< ID of result to which to limit override.
+  char *task_id;      ///< ID of task to which to limit override.
+  char *text;         ///< Text of override.
+  char *threat;       ///< Threat to which to limit override.
 } create_note_data_t;
 
 static void
@@ -849,17 +872,20 @@ create_note_data_reset (create_note_data_t *data)
   memset (data, 0, sizeof (create_note_data_t));
 }
 
+/**
+ * @brief Command data for the create_override command.
+ */
 typedef struct
 {
-  char *hosts;
-  char *new_threat;
-  char *nvt_oid;
+  char *hosts;        ///< Hosts to which to limit override.
+  char *new_threat;   ///< New threat value of overridden results.
+  char *nvt_oid;      ///< NVT to which to limit override.
   char *override_id;
-  char *port;
-  char *result_id;
-  char *task_id;
-  char *text;
-  char *threat;
+  char *port;         ///< Port to which to limit override.
+  char *result_id;    ///< ID of result to which to limit override.
+  char *task_id;      ///< ID of task to which to limit override.
+  char *text;         ///< Text of override.
+  char *threat;       ///< Threat to which to limit override.
 } create_override_data_t;
 
 static void
@@ -878,19 +904,22 @@ create_override_data_reset (create_override_data_t *data)
   memset (data, 0, sizeof (create_override_data_t));
 }
 
+/**
+ * @brief Command data for the create_schedule command.
+ */
 typedef struct
 {
-  char *name;
-  char *comment;
-  char *first_time_day_of_month;
-  char *first_time_hour;
-  char *first_time_minute;
-  char *first_time_month;
-  char *first_time_year;
-  char *period;
-  char *period_unit;
-  char *duration;
-  char *duration_unit;
+  char *name;                    ///< Name for new schedule.
+  char *comment;                 ///< Comment.
+  char *first_time_day_of_month; ///< Day of month schedule must first run.
+  char *first_time_hour;         ///< Hour schedule must first run.
+  char *first_time_minute;       ///< Minute schedule must first run.
+  char *first_time_month;        ///< Month schedule must first run.
+  char *first_time_year;         ///< Year schedule must first run.
+  char *period;                  ///< Period of schedule (how often it runs).
+  char *period_unit;             ///< Unit of period: "hour", "day", "week", ....
+  char *duration;                ///< Duration of schedule (how long it runs for).
+  char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
 } create_schedule_data_t;
 
 static void
@@ -911,16 +940,18 @@ create_schedule_data_reset (create_schedule_data_t *data)
   memset (data, 0, sizeof (create_schedule_data_t));
 }
 
+/**
+ * @brief Command data for the create_target command.
+ */
 typedef struct
 {
-  char *comment;
-  char *hosts;
-  char *lsc_credential_id;
-  char *name;
-  /* For targets to import: source name and credentials to source. */
-  char *target_locator;
-  char *target_locator_password;
-  char *target_locator_username;
+  char *comment;                 ///< Comment.
+  char *hosts;                   ///< Hosts for new target.
+  char *lsc_credential_id;       ///< LSC credential for new target.
+  char *name;                    ///< Name of new target.
+  char *target_locator;          ///< Target locator (source name).
+  char *target_locator_password; ///< Target locator credentials: password.
+  char *target_locator_username; ///< Target locator credentials: username.
 } create_target_data_t;
 
 static void
@@ -937,13 +968,16 @@ create_target_data_reset (create_target_data_t *data)
   memset (data, 0, sizeof (create_target_data_t));
 }
 
+/**
+ * @brief Command data for the create_task command.
+ */
 typedef struct
 {
-  char *config_id;
-  char *escalator_id;
-  char *schedule_id;
-  char *target_id;
-  task_t task;
+  char *config_id;      ///< ID of task config.
+  char *escalator_id;   ///< ID of task escalator.
+  char *schedule_id;    ///< ID of task schedule.
+  char *target_id;      ///< ID of task target.
+  task_t task;          ///< ID of new task.
 } create_task_data_t;
 
 static void
@@ -957,9 +991,12 @@ create_task_data_reset (create_task_data_t *data)
   memset (data, 0, sizeof (create_task_data_t));
 }
 
+/**
+ * @brief Command data for the delete_agent command.
+ */
 typedef struct
 {
-  char *agent_id;
+  char *agent_id;   ///< ID of agent to delete.
 } delete_agent_data_t;
 
 static void
@@ -970,9 +1007,12 @@ delete_agent_data_reset (delete_agent_data_t *data)
   memset (data, 0, sizeof (delete_agent_data_t));
 }
 
+/**
+ * @brief Command data for the delete_config command.
+ */
 typedef struct
 {
-  char *config_id;
+  char *config_id;   ///< ID of config to delete.
 } delete_config_data_t;
 
 static void
@@ -983,9 +1023,12 @@ delete_config_data_reset (delete_config_data_t *data)
   memset (data, 0, sizeof (delete_config_data_t));
 }
 
+/**
+ * @brief Command data for the delete_escalator command.
+ */
 typedef struct
 {
-  char *escalator_id;
+  char *escalator_id;   ///< ID of escalator to delete.
 } delete_escalator_data_t;
 
 static void
@@ -996,9 +1039,12 @@ delete_escalator_data_reset (delete_escalator_data_t *data)
   memset (data, 0, sizeof (delete_escalator_data_t));
 }
 
+/**
+ * @brief Command data for the delete_lsc_credential command.
+ */
 typedef struct
 {
-  char *lsc_credential_id;
+  char *lsc_credential_id;   ///< ID of LSC credential to delete.
 } delete_lsc_credential_data_t;
 
 static void
@@ -1009,9 +1055,12 @@ delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
   memset (data, 0, sizeof (delete_lsc_credential_data_t));
 }
 
+/**
+ * @brief Command data for the delete_note command.
+ */
 typedef struct
 {
-  char *note_id;
+  char *note_id;   ///< ID of note to delete.
 } delete_note_data_t;
 
 static void
@@ -1022,9 +1071,12 @@ delete_note_data_reset (delete_note_data_t *data)
   memset (data, 0, sizeof (delete_note_data_t));
 }
 
+/**
+ * @brief Command data for the delete_override command.
+ */
 typedef struct
 {
-  char *override_id;
+  char *override_id;   ///< ID of override to delete.
 } delete_override_data_t;
 
 static void
@@ -1035,9 +1087,12 @@ delete_override_data_reset (delete_override_data_t *data)
   memset (data, 0, sizeof (delete_override_data_t));
 }
 
+/**
+ * @brief Command data for the delete_report command.
+ */
 typedef struct
 {
-  char *report_id;
+  char *report_id;   ///< ID of report to delete.
 } delete_report_data_t;
 
 static void
@@ -1048,9 +1103,12 @@ delete_report_data_reset (delete_report_data_t *data)
   memset (data, 0, sizeof (delete_report_data_t));
 }
 
+/**
+ * @brief Command data for the delete_schedule command.
+ */
 typedef struct
 {
-  char *schedule_id;
+  char *schedule_id;   ///< ID of schedule to delete.
 } delete_schedule_data_t;
 
 static void
@@ -1061,9 +1119,12 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
   memset (data, 0, sizeof (delete_schedule_data_t));
 }
 
+/**
+ * @brief Command data for the delete_target command.
+ */
 typedef struct
 {
-  char *target_id;
+  char *target_id;   ///< ID of target to delete.
 } delete_target_data_t;
 
 static void
@@ -1074,9 +1135,12 @@ delete_target_data_reset (delete_target_data_t *data)
   memset (data, 0, sizeof (delete_target_data_t));
 }
 
+/**
+ * @brief Command data for the delete_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of task to delete.
 } delete_task_data_t;
 
 static void
@@ -1087,12 +1151,15 @@ delete_task_data_reset (delete_task_data_t *data)
   memset (data, 0, sizeof (delete_task_data_t));
 }
 
+/**
+ * @brief Command data for the get_agents command.
+ */
 typedef struct
 {
-  char *agent_id;
-  char *format;
-  char *sort_field;
-  int sort_order;
+  char *agent_id;        ///< ID of single agent to get.
+  char *format;          ///< Format requested: "installer", "howto_use", ....
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_agents_data_t;
 
 static void
@@ -1105,14 +1172,17 @@ get_agents_data_reset (get_agents_data_t *data)
   memset (data, 0, sizeof (get_agents_data_t));
 }
 
+/**
+ * @brief Command data for the get_configs command.
+ */
 typedef struct
 {
-  int export;
-  int families;
-  char *config_id;
-  int preferences;
-  char *sort_field;
-  int sort_order;
+  int export;            ///< Boolean.  Whether to format for create_config.
+  int families;          ///< Boolean.  Whether to include config families.
+  char *config_id;       ///< ID of single config to iterate over.
+  int preferences;       ///< Boolean.  Whether to include config preferences.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_configs_data_t;
 
 static void
@@ -1124,9 +1194,12 @@ get_configs_data_reset (get_configs_data_t *data)
   memset (data, 0, sizeof (get_configs_data_t));
 }
 
+/**
+ * @brief Command data for the get_dependencies command.
+ */
 typedef struct
 {
-  char *nvt_oid;
+  char *nvt_oid;  ///< OID of single NVT whose  dependencies to get.
 } get_dependencies_data_t;
 
 static void
@@ -1137,11 +1210,14 @@ get_dependencies_data_reset (get_dependencies_data_t *data)
   memset (data, 0, sizeof (get_dependencies_data_t));
 }
 
+/**
+ * @brief Command data for the get_escalators command.
+ */
 typedef struct
 {
-  char *escalator_id;
-  char *sort_field;
-  int sort_order;
+  char *escalator_id;    ///< ID of single escalator to get.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_escalators_data_t;
 
 static void
@@ -1153,12 +1229,15 @@ get_escalators_data_reset (get_escalators_data_t *data)
   memset (data, 0, sizeof (get_escalators_data_t));
 }
 
+/**
+ * @brief Command data for the get_lsc_credentials command.
+ */
 typedef struct
 {
-  char *format;
-  char *lsc_credential_id;
-  char *sort_field;
-  int sort_order;
+  char *format;            ///< Format requested: "key", "deb", ....
+  char *lsc_credential_id; ///< Single LSC credential to iterate over.
+  char *sort_field;        ///< Field to sort results on.
+  int sort_order;          ///< Result sort order: 0 descending, else ascending.
 } get_lsc_credentials_data_t;
 
 static void
@@ -1171,15 +1250,18 @@ get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
   memset (data, 0, sizeof (get_lsc_credentials_data_t));
 }
 
+/**
+ * @brief Command data for the get_notes command.
+ */
 typedef struct
 {
-  char *note_id;
-  char *nvt_oid;
-  char *task_id;
-  char *sort_field;
-  int sort_order;
-  int details;
-  int result;
+  char *note_id;         ///< ID of single note to get.
+  char *nvt_oid;         ///< OID of NVT to which to limit listing.
+  char *task_id;         ///< ID of task to which to limit listing.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int details;           ///< Boolean.  Whether to include full note details.
+  int result;            ///< Boolean.  Whether to include associated results.
 } get_notes_data_t;
 
 static void
@@ -1192,17 +1274,20 @@ get_notes_data_reset (get_notes_data_t *data)
   memset (data, 0, sizeof (get_notes_data_t));
 }
 
+/**
+ * @brief Command data for the get_nvts command.
+ */
 typedef struct
 {
-  char *config_id;
-  int details;
-  char *family;
-  char *nvt_oid;
-  int preference_count;
-  int preferences;
-  char *sort_field;
-  int sort_order;
-  int timeout;
+  char *config_id;       ///< ID of config to which to limit NVT selection.
+  int details;           ///< Boolean.  Whether to include full NVT details.
+  char *family;          ///< Name of family to which to limit NVT selection.
+  char *nvt_oid;         ///< Name of single NVT to get.
+  int preference_count;  ///< Boolean.  Whether to include NVT preference count.
+  int preferences;       ///< Boolean.  Whether to include NVT preferences.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int timeout;           ///< Boolean.  Whether to include timeout preference.
 } get_nvts_data_t;
 
 static void
@@ -1216,9 +1301,12 @@ get_nvts_data_reset (get_nvts_data_t *data)
   memset (data, 0, sizeof (get_nvts_data_t));
 }
 
+/**
+ * @brief Command data for the get_nvt_families command.
+ */
 typedef struct
 {
-  int sort_order;
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_nvt_families_data_t;
 
 static void
@@ -1227,9 +1315,12 @@ get_nvt_families_data_reset (get_nvt_families_data_t *data)
   memset (data, 0, sizeof (get_nvt_families_data_t));
 }
 
+/**
+ * @brief Command data for the get_nvt_feed_checksum command.
+ */
 typedef struct
 {
-  char *algorithm;
+  char *algorithm;  ///< Algorithm requested by client.
 } get_nvt_feed_checksum_data_t;
 
 static void
@@ -1240,15 +1331,18 @@ get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
   memset (data, 0, sizeof (get_nvt_feed_checksum_data_t));
 }
 
+/**
+ * @brief Command data for the get_overrides command.
+ */
 typedef struct
 {
-  char *override_id;
-  char *nvt_oid;
-  char *task_id;
-  char *sort_field;
-  int sort_order;
-  int details;
-  int result;
+  char *override_id;   ///< ID of override to get.
+  char *nvt_oid;       ///< OID of NVT to which to limit listing.
+  char *task_id;       ///< ID of task to which to limit listing.
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  int details;         ///< Boolean.  Whether to include full override details.
+  int result;          ///< Boolean.  Whether to include associated results.
 } get_overrides_data_t;
 
 static void
@@ -1261,11 +1355,14 @@ get_overrides_data_reset (get_overrides_data_t *data)
   memset (data, 0, sizeof (get_overrides_data_t));
 }
 
+/**
+ * @brief Command data for the get_preferences command.
+ */
 typedef struct
 {
-  char *config_id;
-  char *nvt_oid;
-  char *preference;
+  char *config_id;  ///< Config whose preference values to get.
+  char *nvt_oid;    ///< Single NVT whose preferences to get.
+  char *preference; ///< Single preference to get.
 } get_preferences_data_t;
 
 static void
@@ -1278,23 +1375,26 @@ get_preferences_data_reset (get_preferences_data_t *data)
   memset (data, 0, sizeof (get_preferences_data_t));
 }
 
+/**
+ * @brief Command data for the get_reports command.
+ */
 typedef struct
 {
-  int apply_overrides;
-  char *format;
-  char *report_id;
-  int first_result;
-  int max_results;
-  char *sort_field;
-  int sort_order;
-  char *levels;
-  char *search_phrase;
-  char *min_cvss_base;
-  int notes;
-  int notes_details;
-  int overrides;
-  int overrides_details;
-  int result_hosts_only;
+  int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
+  char *format;          ///< Report format: "xml", "html", ....
+  char *report_id;       ///< ID of single report to get.
+  int first_result;      ///< Skip over results before this result number.
+  int max_results;       ///< Maximum number of results return.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  char *levels;          ///< Letter encoded threat level filter.
+  char *search_phrase;   ///< Search phrase result filter.
+  char *min_cvss_base;   ///< Minimum CVSS base filter.
+  int notes;             ///< Boolean.  Whether to include associated notes.
+  int notes_details;     ///< Boolean.  Whether to include details of above.
+  int overrides;         ///< Boolean.  Whether to include associated overrides.
+  int overrides_details; ///< Boolean.  Whether to include details of above.
+  int result_hosts_only; ///< Boolean.  Whether to include only resulted hosts.
 } get_reports_data_t;
 
 static void
@@ -1310,15 +1410,18 @@ get_reports_data_reset (get_reports_data_t *data)
   memset (data, 0, sizeof (get_reports_data_t));
 }
 
+/**
+ * @brief Command data for the get_results command.
+ */
 typedef struct
 {
-  int apply_overrides;
-  char *result_id;
-  char *task_id;
-  int notes;
-  int notes_details;
-  int overrides;
-  int overrides_details;
+  int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
+  char *result_id;       ///< ID of single result to get.
+  char *task_id;         ///< Task associated with results.
+  int notes;             ///< Boolean.  Whether to include associated notes.
+  int notes_details;     ///< Boolean.  Whether to include details of above.
+  int overrides;         ///< Boolean.  Whether to include associated overrides.
+  int overrides_details; ///< Boolean.  Whether to include details of above.
 } get_results_data_t;
 
 static void
@@ -1330,12 +1433,15 @@ get_results_data_reset (get_results_data_t *data)
   memset (data, 0, sizeof (get_results_data_t));
 }
 
+/**
+ * @brief Command data for the get_schedules command.
+ */
 typedef struct
 {
-  char *schedule_id;
-  char *sort_field;
-  int sort_order;
-  int details;
+  char *schedule_id;     ///< ID of single schedule to get.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
+  int details;           ///< Boolean.  Whether to include full details.
 } get_schedules_data_t;
 
 static void
@@ -1346,11 +1452,14 @@ get_schedules_data_reset (get_schedules_data_t *data)
   memset (data, 0, sizeof (get_schedules_data_t));
 }
 
+/**
+ * @brief Command data for the get_system_reports command.
+ */
 typedef struct
 {
-  int brief;
-  char *name;
-  char *duration;
+  int brief;        ///< Boolean.  Whether respond in brief.
+  char *name;       ///< Name of single report to get.
+  char *duration;   ///< Duration into the past to report on.
 } get_system_reports_data_t;
 
 static void
@@ -1362,12 +1471,15 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
 
+/**
+ * @brief Command data for the get_targets command.
+ */
 typedef struct
 {
-  char *sort_field;
-  int sort_order;
-  char *target_id;
-  int tasks;
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  char *target_id;     ///< ID of single target to get.
+  int tasks;           ///< Boolean.  Whether to include tasks that use target.
 } get_targets_data_t;
 
 static void
@@ -1379,35 +1491,41 @@ get_targets_data_reset (get_targets_data_t *data)
   memset (data, 0, sizeof (get_targets_data_t));
 }
 
+/**
+ * @brief Command data for the modify_config command.
+ */
 typedef struct
 {
-  char *config_id;
-  array_t *families_growing_empty;
-  array_t *families_growing_all;
-  array_t *families_static_all;
-  int family_selection_family_all;
-  char *family_selection_family_all_text;
-  int family_selection_family_growing;
-  char *family_selection_family_growing_text;
-  char *family_selection_family_name;
-  int family_selection_growing;
-  char *family_selection_growing_text;
-  array_t *nvt_selection;
-  char *nvt_selection_family;
-  char *nvt_selection_nvt_oid;
-  char *preference_name;
-  char *preference_nvt_oid;
-  char *preference_value;
+  char *config_id;                     ///< ID of config to modify.
+  array_t *families_growing_empty; ///< New family selection: growing, empty.
+  array_t *families_growing_all;   ///< New family selection: growing, all NVTs.
+  array_t *families_static_all;    ///< New family selection: static, all NVTs.
+  int family_selection_family_all;     ///< All flag in FAMILY_SELECTION/FAMILY.
+  char *family_selection_family_all_text; ///< Text version of above.
+  int family_selection_family_growing; ///< FAMILY_SELECTION/FAMILY growing flag.
+  char *family_selection_family_growing_text; ///< Text version of above.
+  char *family_selection_family_name;  ///< FAMILY_SELECTION/FAMILY family name.
+  int family_selection_growing;        ///< Whether families in selection grow.
+  char *family_selection_growing_text; ///< Text version of above.
+  array_t *nvt_selection;              ///< OID array. New NVT set for config.
+  char *nvt_selection_family;          ///< Family of NVT selection.
+  char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
+  char *preference_name;               ///< Config preference to modify.
+  char *preference_nvt_oid;            ///< OID of NVT of preference.
+  char *preference_value;              ///< New value for preference.
 } modify_config_data_t;
 
+/**
+ * @brief Command data for the get_tasks command.
+ */
 typedef struct
 {
-  int apply_overrides;
-  int details;
-  char *task_id;
-  int rcfile;
-  char *sort_field;
-  int sort_order;
+  int apply_overrides;   ///< Boolean.  Whether to apply overrides.
+  int details;           ///< Boolean.  Whether to include task details.
+  char *task_id;         ///< ID of single task to get.
+  int rcfile;            ///< Boolean.  Whether to include RC defining task.
+  char *sort_field;      ///< Field to sort results on.
+  int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_tasks_data_t;
 
 static void
@@ -1440,10 +1558,13 @@ modify_config_data_reset (modify_config_data_t *data)
   memset (data, 0, sizeof (modify_config_data_t));
 }
 
+/**
+ * @brief Command data for the modify_report command.
+ */
 typedef struct
 {
-  char *report_id;
-  char *comment;
+  char *report_id;     ///< ID of report to modify.
+  char *comment;       ///< Comment.
 } modify_report_data_t;
 
 static void
@@ -1455,17 +1576,20 @@ modify_report_data_reset (modify_report_data_t *data)
   memset (data, 0, sizeof (modify_report_data_t));
 }
 
+/**
+ * @brief Command data for the modify_task command.
+ */
 typedef struct
 {
-  char *action;
-  char *comment;
-  char *escalator_id;
-  char *file;
-  char *file_name;
-  char *name;
-  char *rcfile;
-  char *schedule_id;
-  char *task_id;
+  char *action;        ///< What to do to file: "update" or "remove".
+  char *comment;       ///< Comment.
+  char *escalator_id;  ///< ID of new escalator for task.
+  char *file;          ///< File to attach to task.
+  char *file_name;     ///< Name of file to attach to task.
+  char *name;          ///< New name for task.
+  char *rcfile;        ///< New definition for task, as an RC file.
+  char *schedule_id;   ///< ID of new schedule for task.
+  char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
 static void
@@ -1484,17 +1608,32 @@ modify_task_data_reset (modify_task_data_t *data)
   memset (data, 0, sizeof (modify_task_data_t));
 }
 
+/**
+ * @brief Command data for the modify_note command.
+ */
 typedef create_note_data_t modify_note_data_t;
 
+/**
+ * @brief Reset command data for modify_note command.
+ */
 #define modify_note_data_reset create_note_data_reset
 
+/**
+ * @brief Command data for the modify_override command.
+ */
 typedef create_override_data_t modify_override_data_t;
 
+/**
+ * @brief Reset command data for modify_override command.
+ */
 #define modify_override_data_reset create_override_data_reset
 
+/**
+ * @brief Command data for the pause_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of task to pause.
 } pause_task_data_t;
 
 static void
@@ -1505,9 +1644,12 @@ pause_task_data_reset (pause_task_data_t *data)
   memset (data, 0, sizeof (pause_task_data_t));
 }
 
+/**
+ * @brief Command data for the resume_or_start_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of task to resume or start.
 } resume_or_start_task_data_t;
 
 static void
@@ -1518,9 +1660,12 @@ resume_or_start_task_data_reset (resume_or_start_task_data_t *data)
   memset (data, 0, sizeof (resume_or_start_task_data_t));
 }
 
+/**
+ * @brief Command data for the resume_paused_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of paused task to resume.
 } resume_paused_task_data_t;
 
 static void
@@ -1531,9 +1676,12 @@ resume_paused_task_data_reset (resume_paused_task_data_t *data)
   memset (data, 0, sizeof (resume_paused_task_data_t));
 }
 
+/**
+ * @brief Command data for the resume_stopped_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of stopped task to resume.
 } resume_stopped_task_data_t;
 
 static void
@@ -1544,9 +1692,12 @@ resume_stopped_task_data_reset (resume_stopped_task_data_t *data)
   memset (data, 0, sizeof (resume_stopped_task_data_t));
 }
 
+/**
+ * @brief Command data for the start_task command.
+ */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of task to start.
 } start_task_data_t;
 
 static void
@@ -1558,11 +1709,11 @@ start_task_data_reset (start_task_data_t *data)
 }
 
 /**
- * @brief Command data for the abort task command.
+ * @brief Command data for the stop_task command.
  */
 typedef struct
 {
-  char *task_id;
+  char *task_id;   ///< ID of task to stop.
 } stop_task_data_t;
 
 /**
@@ -1576,9 +1727,12 @@ stop_task_data_reset (stop_task_data_t *data)
   memset (data, 0, sizeof (stop_task_data_t));
 }
 
+/**
+ * @brief Command data for the test_escalator command.
+ */
 typedef struct
 {
-  char *escalator_id;
+  char *escalator_id;   ///< ID of escalator to test.
 } test_escalator_data_t;
 
 static void
@@ -1589,54 +1743,57 @@ test_escalator_data_reset (test_escalator_data_t *data)
   memset (data, 0, sizeof (test_escalator_data_t));
 }
 
+/**
+ * @brief Command data, as passed between OMP parser callbacks.
+ */
 typedef union
 {
-  create_agent_data_t create_agent;
-  create_config_data_t create_config;
-  create_escalator_data_t create_escalator;
-  create_lsc_credential_data_t create_lsc_credential;
-  create_note_data_t create_note;
-  create_override_data_t create_override;
-  create_schedule_data_t create_schedule;
-  create_target_data_t create_target;
-  create_task_data_t create_task;
-  delete_agent_data_t delete_agent;
-  delete_config_data_t delete_config;
-  delete_escalator_data_t delete_escalator;
-  delete_lsc_credential_data_t delete_lsc_credential;
-  delete_note_data_t delete_note;
-  delete_override_data_t delete_override;
-  delete_report_data_t delete_report;
-  delete_schedule_data_t delete_schedule;
-  delete_target_data_t delete_target;
-  delete_task_data_t delete_task;
-  get_agents_data_t get_agents;
-  get_configs_data_t get_configs;
-  get_dependencies_data_t get_dependencies;
-  get_escalators_data_t get_escalators;
-  get_lsc_credentials_data_t get_lsc_credentials;
-  get_notes_data_t get_notes;
-  get_nvts_data_t get_nvts;
-  get_nvt_families_data_t get_nvt_families;
-  get_nvt_feed_checksum_data_t get_nvt_feed_checksum;
-  get_overrides_data_t get_overrides;
-  get_preferences_data_t get_preferences;
-  get_reports_data_t get_reports;
-  get_results_data_t get_results;
-  get_schedules_data_t get_schedules;
-  get_system_reports_data_t get_system_reports;
-  get_targets_data_t get_targets;
-  get_tasks_data_t get_tasks;
-  modify_config_data_t modify_config;
-  modify_report_data_t modify_report;
-  modify_task_data_t modify_task;
-  pause_task_data_t pause_task;
-  resume_or_start_task_data_t resume_or_start_task;
-  resume_paused_task_data_t resume_paused_task;
-  resume_stopped_task_data_t resume_stopped_task;
-  start_task_data_t start_task;
-  stop_task_data_t stop_task;
-  test_escalator_data_t test_escalator;
+  create_agent_data_t create_agent;                   ///< create_agent
+  create_config_data_t create_config;                 ///< create_config
+  create_escalator_data_t create_escalator;           ///< create_escalator
+  create_lsc_credential_data_t create_lsc_credential; ///< create_lsc_credential
+  create_note_data_t create_note;                     ///< create_note
+  create_override_data_t create_override;             ///< create_override
+  create_schedule_data_t create_schedule;             ///< create_schedule
+  create_target_data_t create_target;                 ///< create_target
+  create_task_data_t create_task;                     ///< create_task
+  delete_agent_data_t delete_agent;                   ///< delete_agent
+  delete_config_data_t delete_config;                 ///< delete_config
+  delete_escalator_data_t delete_escalator;           ///< delete_escalator
+  delete_lsc_credential_data_t delete_lsc_credential; ///< delete_lsc_credential
+  delete_note_data_t delete_note;                     ///< delete_note
+  delete_override_data_t delete_override;             ///< delete_override
+  delete_report_data_t delete_report;                 ///< delete_report
+  delete_schedule_data_t delete_schedule;             ///< delete_schedule
+  delete_target_data_t delete_target;                 ///< delete_target
+  delete_task_data_t delete_task;                     ///< delete_task
+  get_agents_data_t get_agents;                       ///< get_agents
+  get_configs_data_t get_configs;                     ///< get_configs
+  get_dependencies_data_t get_dependencies;           ///< get_dependencies
+  get_escalators_data_t get_escalators;               ///< get_escalators
+  get_lsc_credentials_data_t get_lsc_credentials;     ///< get_lsc_credentials
+  get_notes_data_t get_notes;                         ///< get_notes
+  get_nvts_data_t get_nvts;                           ///< get_nvts
+  get_nvt_families_data_t get_nvt_families;           ///< get_nvt_families
+  get_nvt_feed_checksum_data_t get_nvt_feed_checksum; ///< get_nvt_feed_checksum
+  get_overrides_data_t get_overrides;                 ///< get_overrides
+  get_preferences_data_t get_preferences;             ///< get_preferences
+  get_reports_data_t get_reports;                     ///< get_reports
+  get_results_data_t get_results;                     ///< get_results
+  get_schedules_data_t get_schedules;                 ///< get_schedules
+  get_system_reports_data_t get_system_reports;       ///< get_system_reports
+  get_targets_data_t get_targets;                     ///< get_targets
+  get_tasks_data_t get_tasks;                         ///< get_tasks
+  modify_config_data_t modify_config;                 ///< modify_config
+  modify_report_data_t modify_report;                 ///< modify_report
+  modify_task_data_t modify_task;                     ///< modify_task
+  pause_task_data_t pause_task;                       ///< pause_task
+  resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
+  resume_paused_task_data_t resume_paused_task;       ///< resume_paused_task
+  resume_stopped_task_data_t resume_stopped_task;     ///< resume_stopped_task
+  start_task_data_t start_task;                       ///< start_task
+  stop_task_data_t stop_task;                         ///< stop_task
+  test_escalator_data_t test_escalator;               ///< test_escalator
 } command_data_t;
 
 /**
@@ -2914,8 +3071,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
             append_attribute (attribute_names, attribute_values,
-                                "lsc_credential_id",
-                                &get_lsc_credentials_data->lsc_credential_id);
+                              "lsc_credential_id",
+                              &get_lsc_credentials_data->lsc_credential_id);
             append_attribute (attribute_names, attribute_values, "format",
                               &get_lsc_credentials_data->format);
             append_attribute (attribute_names, attribute_values, "sort_field",
