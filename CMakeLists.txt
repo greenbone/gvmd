@@ -48,14 +48,14 @@ macro (Subversion_GET_REVISION dir variable)
     "\\2" ${variable} "${${variable}}")
 endmacro (Subversion_GET_REVISION)
 
-if (NOT PREPARE_RELEASE)
+if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   if (SVN_EXECUTABLE)
     Subversion_GET_REVISION(. ProjectRevision)
     set (SVN_REVISION ".SVN.r${ProjectRevision}")
   else (SVN_EXECUTABLE)
     set (SVN_REVISION ".SVN")
   endif (SVN_EXECUTABLE)
-endif (NOT PREPARE_RELEASE)
+endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 # TODO: Check sqlite3, pkg-config (maybe with code like in gsa/CMakeLists.txt).
 

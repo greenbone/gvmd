@@ -1,5 +1,10 @@
 2010-07-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* CMakeLists.txt: Replace check for PREPARE_RELEASE with check for
+	CMAKE_BUILD_TYPE == "Release".
+
+2010-07-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Post-release version bump.
 
 	* CMakeLists.txt: Updated version number.
