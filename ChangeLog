@@ -1,3 +1,11 @@
+2010-07-16  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 1.0.0.rc1 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Updated version number.
+
 2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/openvasmd.8, doc/openvasmd.html: Update from source.

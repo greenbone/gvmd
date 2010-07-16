@@ -1,3 +1,29 @@
+openvas-manager 1.0.0.rc1 (2010-07-15)
+
+This is the first release candidate of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS) leading up to the upcoming
+openvas-manager 1.0.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Michael Wiegand and Felix Wolfsteller.
+
+Main changes since 1.0.0-beta7:
+* Code cleanup: Internal resource management has been improved to use UUIDs in
+  more places.
+* Support for agents has been improved.
+* Support for external target sources has been added.
+* A bug which caused PDF exports to fail if the NVT description contained
+  certain characters has been fixed.
+* A bug which caused hosts in the scan result to be sorted incorrectly under
+  certain circumstances has been fixed.
+* Support for defining threat overrides has been added.
+* Some OMP commands have been renamed and adjusted to make the protocol more
+  concise and useful.
+* Support for event logging has been added.
+* Support for syslog escalators has been added.
+* The documentation has been updated.
+
+
 openvas-manager 1.0.0-beta7 (2010-05-28)
 
 This is the seventh beta release of the openvas-manager module for the Open
