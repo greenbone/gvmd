@@ -5,10 +5,15 @@ CREATE TABLE meta (
 
 CREATE TABLE agents (
 	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	comment text,
 	installer text,
+	installer_64 text,
+	installer_filename text,
+	installer_signature_64 text,
+	installer_trust integer,
 	howto_install text,
 	howto_use text);
 
@@ -32,6 +37,7 @@ CREATE TABLE escalator_method_data (
 
 CREATE TABLE escalators (
 	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	comment text,
@@ -55,6 +61,7 @@ CREATE TABLE nvt_selectors (
 
 CREATE TABLE targets (
 	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	hosts text,
@@ -63,6 +70,7 @@ CREATE TABLE targets (
 
 CREATE TABLE configs (
 	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	nvt_selector text REFERENCES nvt_selectors (name) ON DELETE RESTRICT,
@@ -162,10 +170,13 @@ CREATE TABLE nvts (
     tag text,
     sign_key_ids text,
     category text,
-    family text);
+    family text,
+    cvss_base text,
+    risk_factor text);
 
 CREATE TABLE lsc_credentials (
 	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
 	name text NOT NULL,
 	login text,
@@ -186,6 +197,21 @@ CREATE TABLE notes (
 	modification_time date,
 	text text,
 	hosts text,
+	port text,
+	threat text,
+	task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+	result integer REFERENCES results (id) ON DELETE RESTRICT);
+
+CREATE TABLE overrides (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	nvt text NOT NULL,  -- OID of NVT
+	creation_time date,
+	modification_time date,
+	text text,
+	hosts text,
+	new_threat text,
 	port text,
 	threat text,
 	task integer REFERENCES tasks (id) ON DELETE RESTRICT,

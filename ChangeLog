@@ -1,5 +1,13 @@
 2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (agents, nvts): Add new columns.
+	(escalators, targets, configs, lsc_credentials): Add UUID column.
+	(overrides): New table.
+
+	* doc/db.png: Update from SQL.
+
+2010-07-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c, src/omp.c, src/ompd.c, src/openvasmd.c,
 	src/otp.c: Bring static docs up to date.
 
