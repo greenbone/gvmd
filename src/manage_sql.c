@@ -3979,7 +3979,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
           tracef ("  syslog level: %s", level);
           tracef ("syslog message: %s", message);
 
-          g_log (level, G_LOG_LEVEL_MESSAGE, message);
+          g_log (level, G_LOG_LEVEL_MESSAGE, "%s", message);
 
           g_free (level);
           g_free (message);

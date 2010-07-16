@@ -1,3 +1,8 @@
+2010-07-16  Stephan Kleine
+
+	* src/manage_sql.c (escalate_1): Fix some "format not a string 
+	literal and no format arguments" error.
+
 2010-07-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Replace check for PREPARE_RELEASE with check for
