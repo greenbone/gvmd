@@ -472,7 +472,10 @@ accept_and_maybe_fork ()
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  uuid  UUID of schedule user.
+ * @param[in]  client_socket       Client socket.
+ * @param[in]  client_session      Client session.
+ * @param[in]  client_credentials  Client credentials.
+ * @param[in]  uuid                UUID of schedule user.
  *
  * @return 0 parent on success, 1 child on success, -1 error.
  */

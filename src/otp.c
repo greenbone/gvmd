@@ -361,8 +361,8 @@ typedef struct
 /**
  * @brief Write a message for g_ptr_array_foreach.
  *
+ * @param[in]  task     The task with which to associate the message.
  * @param[in]  message  The message.
- * @param[in]  stream   The stream to write the message to.
  * @param[in]  type     The message type (for example "Security Warning").
  */
 static void

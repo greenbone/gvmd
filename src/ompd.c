@@ -305,7 +305,7 @@ write_to_client (gnutls_session_t* client_session)
 }
 
 /**
- * @brief Write as much as possible from \ref to_scanner to the scanner.
+ * @brief Write as much as possible from the to_scanner buffer to the scanner.
  *
  * @param[in]  scanner_socket   The server socket.
  * @param[in]  scanner_session  The server session.

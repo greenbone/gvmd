@@ -233,7 +233,7 @@ gchar* task_db_name = NULL;
  * @brief Quotes a string of a known length to be passed to sql statements.
  *
  * @param[in]  string  String to quote.
- * @param[in]  length  Size of \param length.
+ * @param[in]  length  Size of \p string.
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
@@ -455,7 +455,6 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
 /**
  * @brief Get a particular cell from a SQL query, as an int.
  *
- * @param[in]  ret    Return value.
  * @param[in]  col    Column.
  * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
@@ -488,7 +487,6 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query, as an string.
  *
- * @param[in]  ret    Return value.
  * @param[in]  col    Column.
  * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
@@ -995,6 +993,7 @@ next (iterator_t* iterator)
 /**
  * @brief Backup the database to a file.
  *
+ * @param[in]   database     Database to backup.
  * @param[out]  backup_file  Freshly allocated name of backup file.
  *
  * @return 0 success, -1 error.
@@ -3019,6 +3018,9 @@ static migrator_t database_migrators[]
 /**
  * @brief Check whether a migration is available.
  *
+ * @param[in]  old_version  Version to migrate from.
+ * @param[in]  new_version  Version to migrate to.
+ *
  * @return 1 yes, 0 no, -1 error.
  */
 static int
@@ -4240,6 +4242,13 @@ escalator_task_iterator_uuid (iterator_t* iterator)
 
 /* Task functions. */
 
+/**
+ * @brief Append value to field of task.
+ *
+ * @param[in]  task   Task.
+ * @param[in]  field  Field.
+ * @param[in]  value  Value.
+ */
 static void
 append_to_task_string (task_t task, const char* field, const char* value)
 {
@@ -9451,8 +9460,9 @@ config_nvt_timeout (config_t config, const char *oid)
  *
  * @param[in]  nvt_selector  NVT selector name.
  * @param[in]  array         Array of OIDs of NVTs.
- * @param[in]  array_size    Size of \param array.
+ * @param[in]  array_size    Size of \p array.
  * @param[in]  exclude       If true exclude, else include.
+ * @param[in]  families      Families table, to lookup NVT family, or NULL.
  */
 static void
 clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
@@ -13814,9 +13824,11 @@ find_signature (const gchar *installer_filename, gchar **signature,
 /**
  * @brief Execute gpg to verify an installer signature.
  *
- * @param[in]  installer  Installer.
- * @param[in]  signature  Installer signature.
- * @param[out] trust       Trust value.
+ * @param[in]  installer       Installer.
+ * @param[in]  installer_size  Size of installer.
+ * @param[in]  signature       Installer signature.
+ * @param[in]  signature_size  Size of installer signature.
+ * @param[out] trust           Trust value.
  *
  * @return 0 success, -1 error.
  */

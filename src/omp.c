@@ -645,9 +645,21 @@ omp_parser_free (omp_parser_t *omp_parser)
 
 /* Command data passed between parser callbacks. */
 
+/**
+ * @brief Create a new preference.
+ *
+ * @param[in]  name      Name of preference.
+ * @param[in]  type      Type of preference.
+ * @param[in]  value     Value of preference.
+ * @param[in]  nvt_name  Name of NVT of preference.
+ * @param[in]  nvt_oid   OID of NVT of preference.
+ * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
+ *
+ * @return Newly allocated preference.
+ */
 static gpointer
 preference_new (char *name, char *type, char *value, char *nvt_name,
-                char *nvt_oid, array_t *alts /* gchar. */)
+                char *nvt_oid, array_t *alts)
 {
   preference_t *preference;
 
@@ -662,6 +674,16 @@ preference_new (char *name, char *type, char *value, char *nvt_name,
   return preference;
 }
 
+/**
+ * @brief Create a new NVT selector.
+ *
+ * @param[in]  name           Name of NVT selector.
+ * @param[in]  type           Type of NVT selector.
+ * @param[in]  include        Include/exclude flag.
+ * @param[in]  family_or_nvt  Family or NVT.
+ *
+ * @return Newly allocated NVT selector.
+ */
 static gpointer
 nvt_selector_new (char *name, char *type, int include, char *family_or_nvt)
 {
@@ -742,7 +764,11 @@ typedef struct
   char *rcfile;                      ///< RC file from which to create config.
 } create_config_data_t;
 
-// array members must be created separately
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_config_data_reset (create_config_data_t *data)
 {
@@ -803,6 +829,11 @@ typedef struct
   char *part_name;           ///< First part of data during *_data: name.
 } create_escalator_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_escalator_data_reset (create_escalator_data_t *data)
 {
@@ -831,6 +862,11 @@ typedef struct
   char *password;          ///< Password associated with login name.
 } create_lsc_credential_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
 {
@@ -856,6 +892,11 @@ typedef struct
   char *threat;       ///< Threat to which to limit override.
 } create_note_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_note_data_reset (create_note_data_t *data)
 {
@@ -885,6 +926,11 @@ typedef struct
   char *threat;       ///< Threat to which to limit override.
 } create_override_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_override_data_reset (create_override_data_t *data)
 {
@@ -918,6 +964,11 @@ typedef struct
   char *duration_unit;           ///< Unit of duration: "hour", "day", "week", ....
 } create_schedule_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_schedule_data_reset (create_schedule_data_t *data)
 {
@@ -950,6 +1001,11 @@ typedef struct
   char *target_locator_username; ///< Target locator credentials: username.
 } create_target_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_target_data_reset (create_target_data_t *data)
 {
@@ -976,6 +1032,11 @@ typedef struct
   task_t task;          ///< ID of new task.
 } create_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 create_task_data_reset (create_task_data_t *data)
 {
@@ -995,6 +1056,11 @@ typedef struct
   char *agent_id;   ///< ID of agent to delete.
 } delete_agent_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_agent_data_reset (delete_agent_data_t *data)
 {
@@ -1011,6 +1077,11 @@ typedef struct
   char *config_id;   ///< ID of config to delete.
 } delete_config_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_config_data_reset (delete_config_data_t *data)
 {
@@ -1027,6 +1098,11 @@ typedef struct
   char *escalator_id;   ///< ID of escalator to delete.
 } delete_escalator_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_escalator_data_reset (delete_escalator_data_t *data)
 {
@@ -1043,6 +1119,11 @@ typedef struct
   char *lsc_credential_id;   ///< ID of LSC credential to delete.
 } delete_lsc_credential_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_lsc_credential_data_reset (delete_lsc_credential_data_t *data)
 {
@@ -1059,6 +1140,11 @@ typedef struct
   char *note_id;   ///< ID of note to delete.
 } delete_note_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_note_data_reset (delete_note_data_t *data)
 {
@@ -1075,6 +1161,11 @@ typedef struct
   char *override_id;   ///< ID of override to delete.
 } delete_override_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_override_data_reset (delete_override_data_t *data)
 {
@@ -1091,6 +1182,11 @@ typedef struct
   char *report_id;   ///< ID of report to delete.
 } delete_report_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_report_data_reset (delete_report_data_t *data)
 {
@@ -1107,6 +1203,11 @@ typedef struct
   char *schedule_id;   ///< ID of schedule to delete.
 } delete_schedule_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_schedule_data_reset (delete_schedule_data_t *data)
 {
@@ -1123,6 +1224,11 @@ typedef struct
   char *target_id;   ///< ID of target to delete.
 } delete_target_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_target_data_reset (delete_target_data_t *data)
 {
@@ -1139,6 +1245,11 @@ typedef struct
   char *task_id;   ///< ID of task to delete.
 } delete_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 delete_task_data_reset (delete_task_data_t *data)
 {
@@ -1158,6 +1269,11 @@ typedef struct
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_agents_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_agents_data_reset (get_agents_data_t *data)
 {
@@ -1181,6 +1297,11 @@ typedef struct
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_configs_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_configs_data_reset (get_configs_data_t *data)
 {
@@ -1198,6 +1319,11 @@ typedef struct
   char *nvt_oid;  ///< OID of single NVT whose  dependencies to get.
 } get_dependencies_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_dependencies_data_reset (get_dependencies_data_t *data)
 {
@@ -1216,6 +1342,11 @@ typedef struct
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_escalators_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_escalators_data_reset (get_escalators_data_t *data)
 {
@@ -1236,6 +1367,11 @@ typedef struct
   int sort_order;          ///< Result sort order: 0 descending, else ascending.
 } get_lsc_credentials_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_lsc_credentials_data_reset (get_lsc_credentials_data_t *data)
 {
@@ -1260,6 +1396,11 @@ typedef struct
   int result;            ///< Boolean.  Whether to include associated results.
 } get_notes_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_notes_data_reset (get_notes_data_t *data)
 {
@@ -1286,6 +1427,11 @@ typedef struct
   int timeout;           ///< Boolean.  Whether to include timeout preference.
 } get_nvts_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_nvts_data_reset (get_nvts_data_t *data)
 {
@@ -1305,6 +1451,11 @@ typedef struct
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_nvt_families_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_nvt_families_data_reset (get_nvt_families_data_t *data)
 {
@@ -1319,6 +1470,11 @@ typedef struct
   char *algorithm;  ///< Algorithm requested by client.
 } get_nvt_feed_checksum_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_nvt_feed_checksum_data_reset (get_nvt_feed_checksum_data_t *data)
 {
@@ -1341,6 +1497,11 @@ typedef struct
   int result;          ///< Boolean.  Whether to include associated results.
 } get_overrides_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_overrides_data_reset (get_overrides_data_t *data)
 {
@@ -1361,6 +1522,11 @@ typedef struct
   char *preference; ///< Single preference to get.
 } get_preferences_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_preferences_data_reset (get_preferences_data_t *data)
 {
@@ -1393,6 +1559,11 @@ typedef struct
   int result_hosts_only; ///< Boolean.  Whether to include only resulted hosts.
 } get_reports_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_reports_data_reset (get_reports_data_t *data)
 {
@@ -1420,6 +1591,11 @@ typedef struct
   int overrides_details; ///< Boolean.  Whether to include details of above.
 } get_results_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_results_data_reset (get_results_data_t *data)
 {
@@ -1440,6 +1616,11 @@ typedef struct
   int details;           ///< Boolean.  Whether to include full details.
 } get_schedules_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_schedules_data_reset (get_schedules_data_t *data)
 {
@@ -1458,6 +1639,11 @@ typedef struct
   char *duration;   ///< Duration into the past to report on.
 } get_system_reports_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_system_reports_data_reset (get_system_reports_data_t *data)
 {
@@ -1478,6 +1664,11 @@ typedef struct
   int tasks;           ///< Boolean.  Whether to include tasks that use target.
 } get_targets_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_targets_data_reset (get_targets_data_t *data)
 {
@@ -1524,6 +1715,11 @@ typedef struct
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
 } get_tasks_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 get_tasks_data_reset (get_tasks_data_t *data)
 {
@@ -1533,6 +1729,11 @@ get_tasks_data_reset (get_tasks_data_t *data)
   memset (data, 0, sizeof (get_tasks_data_t));
 }
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 modify_config_data_reset (modify_config_data_t *data)
 {
@@ -1563,6 +1764,11 @@ typedef struct
   char *comment;       ///< Comment.
 } modify_report_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 modify_report_data_reset (modify_report_data_t *data)
 {
@@ -1588,6 +1794,11 @@ typedef struct
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 modify_task_data_reset (modify_task_data_t *data)
 {
@@ -1619,6 +1830,11 @@ typedef struct
   char *threat;       ///< Threat to which to limit override.
 } modify_note_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 modify_note_data_reset (modify_note_data_t *data)
 {
@@ -1650,6 +1866,11 @@ typedef struct
   char *threat;       ///< Threat to which to limit override.
 } modify_override_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 modify_override_data_reset (modify_override_data_t *data)
 {
@@ -1674,6 +1895,11 @@ typedef struct
   char *task_id;   ///< ID of task to pause.
 } pause_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 pause_task_data_reset (pause_task_data_t *data)
 {
@@ -1690,6 +1916,11 @@ typedef struct
   char *task_id;   ///< ID of task to resume or start.
 } resume_or_start_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 resume_or_start_task_data_reset (resume_or_start_task_data_t *data)
 {
@@ -1706,6 +1937,11 @@ typedef struct
   char *task_id;   ///< ID of paused task to resume.
 } resume_paused_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 resume_paused_task_data_reset (resume_paused_task_data_t *data)
 {
@@ -1722,6 +1958,11 @@ typedef struct
   char *task_id;   ///< ID of stopped task to resume.
 } resume_stopped_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 resume_stopped_task_data_reset (resume_stopped_task_data_t *data)
 {
@@ -1738,6 +1979,11 @@ typedef struct
   char *task_id;   ///< ID of task to start.
 } start_task_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 start_task_data_reset (start_task_data_t *data)
 {
@@ -1757,6 +2003,11 @@ typedef struct
 /**
  * @brief Free members of a stop_task_data_t and set them to NULL.
  */
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 stop_task_data_reset (stop_task_data_t *data)
 {
@@ -1773,6 +2024,11 @@ typedef struct
   char *escalator_id;   ///< ID of escalator to test.
 } test_escalator_data_t;
 
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
 static void
 test_escalator_data_reset (test_escalator_data_t *data)
 {
@@ -5412,7 +5668,6 @@ send_certificate (gpointer cert_gp, /*@unused@*/ gpointer dummy)
  * @brief Send XML for a requirement of a plugin.
  *
  * @param[in]  element  The required plugin.
- * @param[in]  dummy    Dummy variable for g_hash_table_find.
  * @param[in]  data     Array of two pointers: write_to_client and
  *                      write_to_client_data.
  *
@@ -5942,7 +6197,7 @@ next_break (const char* text, int line_width)
 /**
  * @brief Write verbatim LaTeX text to a stream, with wrapping.
  *
- * Write \param text to \param file , doing line wraps at 80 chars, adding a
+ * Write \p text to \p file , doing line wraps at 80 chars, adding a
  * symbol to indicate each line wrap, and putting each line in a separate
  * verbatim environment so that the text breaks across pages.
  *
@@ -6837,6 +7092,7 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
 /**
  * @brief Buffer XML for some notes.
  *
+ * @param[in]  buffer                 Buffer into which to buffer notes.
  * @param[in]  notes                  Notes iterator.
  * @param[in]  include_notes_details  Whether to include details of notes.
  * @param[in]  include_result         Whether to include associated result.
@@ -6961,6 +7217,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 /**
  * @brief Buffer XML for some overrides.
  *
+ * @param[in]  buffer                     Buffer into which to buffer overrides.
  * @param[in]  overrides                  Overrides iterator.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
  * @param[in]  include_result             Whether to include associated result.
@@ -7156,6 +7413,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
 /**
  * @brief Buffer XML for some results.
  *
+ * @param[in]  buffer                 Buffer into which to buffer results.
  * @param[in]  results                Result iterator.
  * @param[in]  task                   Task associated with results.  Only
  *                                    needed with include_notes or
@@ -14495,7 +14753,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * with functions like \ref openvas_append_text,
+ * with functions like openvas_append_text,
  * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
