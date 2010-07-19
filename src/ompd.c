@@ -169,7 +169,7 @@ read_from_client (gnutls_session_t* client_session,
             continue;
           if (count == GNUTLS_E_REHANDSHAKE)
             {
-              /* \todo Rehandshake. */
+              /** @todo Rehandshake. */
               tracef ("   FIX should rehandshake\n");
               continue;
             }
@@ -228,7 +228,7 @@ read_from_server (gnutls_session_t* server_session,
             continue;
           if (count == GNUTLS_E_REHANDSHAKE)
             {
-              /* \todo Rehandshake. */
+              /** @todo Rehandshake. */
               tracef ("   FIX should rehandshake\n");
               continue;
             }
@@ -284,7 +284,7 @@ write_to_client (gnutls_session_t* client_session)
             /* Interrupted, try write again. */
             continue;
           if (count == GNUTLS_E_REHANDSHAKE)
-            /* \todo Rehandshake. */
+            /** @todo Rehandshake. */
             continue;
           g_warning ("%s: failed to write to client: %s\n",
                      __FUNCTION__,

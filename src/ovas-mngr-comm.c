@@ -207,7 +207,7 @@ write_string_to_server (gnutls_session_t* server_session, char* const string)
             /* Interrupted, try write again. */
             continue;
           if (count == GNUTLS_E_REHANDSHAKE)
-            /* \todo Rehandshake. */
+            /** @todo Rehandshake. */
             continue;
           g_warning ("%s: failed to write to server: %s\n",
                      __FUNCTION__,
@@ -253,7 +253,7 @@ write_to_server_buffer (gnutls_session_t* server_session)
             /* Interrupted, try write again. */
             return -3;
           if (count == GNUTLS_E_REHANDSHAKE)
-            /* \todo Rehandshake. */
+            /** @todo Rehandshake. */
             continue;
           g_warning ("%s: failed to write to server: %s\n",
                      __FUNCTION__,

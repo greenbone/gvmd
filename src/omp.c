@@ -5707,7 +5707,6 @@ send_requirement (gconstpointer element, gconstpointer data)
 static gboolean
 send_dependency (gpointer key, gpointer value, gpointer data)
 {
-  /* \todo Do these reallocations affect performance? */
   gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
   char *oid = nvt_oid (key_text);
   gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name><requires>",
