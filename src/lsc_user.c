@@ -57,7 +57,7 @@
  * to be unreliable under certain circumstances, for example if this
  * application and glib are compiled with a different libc.
  *
- * @todo FIXME: handle symbolic links
+ * @todo Handle symbolic links.
  * @todo Move to libs?
  *
  * @param[in]  name  File name.
@@ -87,7 +87,7 @@ check_is_file (const char *name)
  * to be unreliable under certain circumstances, for example if this
  * application and glib are compiled with a different libc.
  *
- * @todo FIXME: handle symbolic links
+ * @todo Handle symbolic links.
  * @todo Move to libs?
  *
  * @param[in]  name  File name.

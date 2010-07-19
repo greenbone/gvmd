@@ -512,8 +512,6 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
       return NULL;
     }
   ret2 = sqlite3_column_text (stmt, col);
-  /* TODO: For efficiency, save this duplication by adjusting the task
-           interface. */
   ret = g_strdup ((char*) ret2);
   sqlite3_finalize (stmt);
   return ret;
@@ -8138,7 +8136,7 @@ make_task (char* name, unsigned int time, char* comment)
   task_t task;
   char* uuid = openvas_uuid_make ();
   if (uuid == NULL) return (task_t) 0;
-  // TODO: Escape name and comment.
+  /** @todo Escape name and comment. */
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
        "  schedule_next_time)"

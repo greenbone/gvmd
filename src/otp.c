@@ -250,7 +250,7 @@ make_message (const char* host)
   message = (message_t*) g_malloc (sizeof (message_t));
 
   message->host = g_strdup (host);
-  /* TODO: Calc subnet (__host2subnet in openvas-client/nessus/parser.c). */
+  /** @todo Calc subnet (__host2subnet in openvas-client/nessus/parser.c). */
   message->subnet = g_strdup (host);
   message->description = NULL;
   message->oid = NULL;
@@ -981,8 +981,8 @@ parse_scanner_error (char** messages)
               from_scanner_start += match - *messages;
               *messages = match;
 
-              /* TODO: Parse the list of hosts and note that permissions
-               *       prevented those scans. */
+              /** @todo Parse the list of hosts and note that permissions
+               *        prevented those scans. */
 
               set_scanner_state (SCANNER_TOP);
             }
@@ -1575,7 +1575,7 @@ process_otp_scanner_input ()
               case SCANNER_CERTIFICATE_LENGTH:
                 {
                   /* Read over the length. */
-                  // \todo TODO consider using this to read next field
+                  /** @todo Consider using this to read the next field. */
                   set_scanner_state (SCANNER_CERTIFICATE_PUBLIC_KEY);
                   switch (parse_scanner_certificate_public_key (&messages))
                     {

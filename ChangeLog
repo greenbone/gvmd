@@ -1,6 +1,11 @@
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/lsc_user.c, src/manage_sql.c, src/omp.c, src/otp.c, src/otpd.c,
+	src/oxpd.c: Convert "TODO"s to "@todo"s.  Remove TODO about efficiency.
+
 2010-07-16  Stephan Kleine
 
-	* src/manage_sql.c (escalate_1): Fix some "format not a string 
+	* src/manage_sql.c (escalate_1): Fix some "format not a string
 	literal and no format arguments" error.
 
 2010-07-16  Michael Wiegand <michael.wiegand@greenbone.net>

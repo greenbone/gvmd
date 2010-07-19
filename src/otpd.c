@@ -243,7 +243,8 @@ serve_otp (gnutls_session_t* client_session,
                         /* Interrupted, try read again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
+                        /** @todo Rehandshake. */
+                        /* Return to select. */
                         break;
                       g_warning ("%s: failed to read from client: %s\n",
                                  __FUNCTION__,
@@ -313,7 +314,8 @@ serve_otp (gnutls_session_t* client_session,
                         /* Interrupted, try write again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
+                        /** @todo Rehandshake. */
+                        /* Return to select. */
                         break;
                       g_warning ("%s: failed to write to scanner: %s\n",
                                  __FUNCTION__,
@@ -356,7 +358,8 @@ serve_otp (gnutls_session_t* client_session,
                         /* Interrupted, try read again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
+                        /** @todo Rehandshake. */
+                        /* Return to select. */
                         break;
                       if (gnutls_error_is_fatal (count) == 0
                           && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
@@ -427,7 +430,8 @@ serve_otp (gnutls_session_t* client_session,
                         /* Interrupted, try write again. */
                         continue;
                       if (count == GNUTLS_E_REHANDSHAKE)
-                        /* Return to select. TODO Rehandshake. */
+                        /** @todo Rehandshake. */
+                        /* Return to select. */
                         break;
                       g_warning ("%s: failed to write to client: %s\n",
                                  __FUNCTION__,

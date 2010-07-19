@@ -206,7 +206,8 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                     /* Interrupted, try read again. */
                     continue;
                   if (count == GNUTLS_E_REHANDSHAKE)
-                    /* Try again. TODO Rehandshake. */
+                    /** @todo Rehandshake. */
+                    /* Try again. */
                     continue;
                   break;
                 }

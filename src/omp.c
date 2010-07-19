@@ -219,7 +219,7 @@ compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
  * to be unreliable under certain circumstances, for example if this
  * application and glib are compiled with a different libc.
  *
- * @todo FIXME: handle symbolic links
+ * @todo Handle symbolic links.
  * @todo Move to libs?
  *
  * @param[in]  name  File name.
@@ -2913,7 +2913,7 @@ max_hosts (const char *hosts)
   gchar** split = g_strsplit (hosts, ",", 0);
   gchar** point = split;
 
-  // TODO: check for errors in "hosts"
+  /** @todo Check for errors in "hosts". */
 
   while (*point)
     {
@@ -3131,7 +3131,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else
           {
-            // TODO: If one of other commands, STATUS_ERROR_MUST_AUTH
+            /** @todo If a real OMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
                  (XML_ERROR_SYNTAX ("omp",
                                     "First command must be AUTHENTICATE,"
@@ -5975,9 +5975,9 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   char *end_time, *start_time, *uuid;
   array_t *result_hosts;
 
-  /* TODO: This is now out of sync with the XML report.  It is only used to
-   *       generate the "html" report and the "html-pdf", which need extensive
-   *       work anyway. */
+  /** @todo This is now out of sync with the XML report.  It is only used to
+   *        generate the "html" report and the "html-pdf", which need extensive
+   *        work anyway. */
 
   out = fopen (xml_file, "w");
 
@@ -6316,7 +6316,7 @@ latex_print_verbatim_text (FILE* file, const char* text, const char *row_colour)
 static gchar*
 latex_escape_text (const char *text)
 {
-  // TODO: Do this better.
+  /** @todo Do this better. */
 
   gsize left = strlen (text);
   gchar *new, *ch;
@@ -6398,7 +6398,7 @@ latex_escape_text (const char *text)
 static gchar*
 convert_to_newlines (const char *text)
 {
-  // TODO: Do this better.
+  /** @todo Do this better. */
 
   gsize left = strlen (text);
   gchar *new, *ch;
@@ -8871,7 +8871,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               char *start_time, *end_time;
               array_t *result_hosts;
 
-              /* TODO: Encode and send in chunks, after each printf. */
+              /** @todo Encode and send in chunks, after each printf. */
 
               /* Build the NBE in memory. */
 
@@ -9176,7 +9176,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
 
-              // TODO: This block is very similar to the HTML block above.
+              /** @todo This block is very similar to the HTML block above. */
 
               if (mkdtemp (xml_dir) == NULL)
                 {
@@ -10606,7 +10606,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 int fail = 0, first = 1;
 
-                /* \todo TODO: It'd probably be better to allow only one
+                /** @todo It'd probably be better to allow only one
                  * modification at a time, that is, one parameter or one of
                  * file, name and comment.  Otherwise a syntax error in a
                  * later part of the command would result in an error being
@@ -14374,7 +14374,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     /* The brief version. */
 
-                    // TODO: A lot of this block is the same as the one above.
+                    /** @todo This block is very similar to the one above. */
 
                     task_t index = task_iterator_task (&tasks);
                     gchar *line, *progress_xml;
