@@ -1,6 +1,10 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.c, src/ompd.d, src/openvasmd.c, src/ovas-mngr-comm.c: Convert
+	* src/ompd.c: Format @todo like others.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c, src/ompd.c, src/openvasmd.c, src/ovas-mngr-comm.c: Convert
 	"\todo"s to "@todo"s.  Remove \todo about performance.
 
 2010-07-19  Michael Meyer <michael.meyer@greenbone.net>
@@ -7381,7 +7385,7 @@
 
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>
 
-	* src/openvasmd.d (accept_and_maybe_fork): Add FORK define, for compiling
+	* src/openvasmd.c (accept_and_maybe_fork): Add FORK define, for compiling
 	to run in single process.
 
 2009-08-24  Matthew Mundell <matthew.mundell@intevation.de>

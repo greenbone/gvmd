@@ -258,7 +258,7 @@ read_from_server (gnutls_session_t* server_session,
   return -2;
 }
 
-// @todo libs?
+/** @todo Move to openvas-libraries? */
 /**
  * @brief Write as much as possible from \ref to_client to the client.
  *
