@@ -8127,8 +8127,7 @@ free_tasks ()
  * @param[in]  time     The period of the task, in seconds.
  * @param[in]  comment  A comment associated the task.
  *
- * @return A pointer to the new task or the 0 task on error (in which
- *         case the caller must free name and comment).
+ * @return A pointer to the new task.
  */
 task_t
 make_task (char* name, unsigned int time, char* comment)
@@ -8136,7 +8135,7 @@ make_task (char* name, unsigned int time, char* comment)
   task_t task;
   char* uuid = openvas_uuid_make ();
   gchar *quoted_name, *quoted_comment;
-  if (uuid == NULL) return (task_t) 0;
+  if (uuid == NULL) abort ();
   quoted_name = name ? sql_quote ((gchar*) name) : NULL;
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
@@ -8440,14 +8439,11 @@ delete_task (task_t task)
  * @param[in]  task    A pointer to the task.
  * @param[in]  text    The text to append.
  * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
  */
-int
+void
 append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
 {
   append_to_task_string (task, "comment", text);
-  return 0;
 }
 
 /**
@@ -8456,14 +8452,11 @@ append_to_task_comment (task_t task, const char* text, /*@unused@*/ int length)
  * @param[in]  task    A pointer to the task.
  * @param[in]  text    The text to append.
  * @param[in]  length  Length of the text.
- *
- * @return 0 on success, -1 if out of memory.
  */
-int
+void
 append_to_task_name (task_t task, const char* text, /*@unused@*/ int length)
 {
   append_to_task_string (task, "name", text);
-  return 0;
 }
 
 /**
@@ -8473,12 +8466,11 @@ append_to_task_name (task_t task, const char* text, /*@unused@*/ int length)
  * @param[in]  line         The line.
  * @param[in]  line_length  The length of the line.
  */
-int
+void
 add_task_description_line (task_t task, const char* line,
                            /*@unused@*/ size_t line_length)
 {
   append_to_task_string (task, "description", line);
-  return 0;
 }
 
 /**

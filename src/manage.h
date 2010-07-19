@@ -478,13 +478,13 @@ request_delete_task (task_t*);
 int
 delete_task (task_t);
 
-int
+void
 append_to_task_comment (task_t, const char*, int);
 
-int
+void
 append_to_task_name (task_t, const char*, int);
 
-int
+void
 add_task_description_line (task_t, const char*, size_t);
 
 void

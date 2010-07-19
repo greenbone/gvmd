@@ -1,5 +1,16 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_task): Abort on memory failure.
+	(append_to_task_comment, append_to_task_name)
+	(add_task_description_line): Remove returns.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_start_element): Remove old assertion.
+	Remove return checks for make_task and add_task_description_line.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/ompd.c: Format @todo like others.
 
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>

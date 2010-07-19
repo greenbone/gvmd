@@ -3114,12 +3114,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
-// FIX
-#if 0
-            assert (tasks == NULL);
-            assert (current_credentials.username == NULL);
-            assert (current_credentials.password == NULL);
-#endif
             set_client_state (CLIENT_AUTHENTICATE);
           }
         else if (strcasecmp ("COMMANDS", element_name) == 0)
@@ -3225,7 +3219,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
             create_task_data->task = make_task (NULL, 0, NULL);
-            if (create_task_data->task == (task_t) 0) abort (); // FIX
             set_client_state (CLIENT_CREATE_TASK);
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
@@ -5347,9 +5340,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         if (strcasecmp ("RCFILE", element_name) == 0)
           {
             /* Initialise the task description. */
-            if (create_task_data->task
-                && add_task_description_line (create_task_data->task, "", 0))
-              abort (); // FIX out of mem
+            if (create_task_data->task)
+              add_task_description_line (create_task_data->task, "", 0);
             set_client_state (CLIENT_CREATE_TASK_RCFILE);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
@@ -15098,10 +15090,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_RCFILE:
         /* Append the text to the task description. */
-        if (add_task_description_line (create_task_data->task,
-                                       text,
-                                       text_len))
-          abort (); // FIX out of mem
+        add_task_description_line (create_task_data->task,
+                                   text,
+                                   text_len);
         break;
 
       case CLIENT_MODIFY_NOTE_HOSTS:
