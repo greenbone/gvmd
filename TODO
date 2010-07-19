@@ -12,7 +12,9 @@
 	response could be sent to the client, instead of half a success response
 	with a closed connection.  An example is the CLIENT_GET_STATUS case of
 	omp_xml_handle_end_element where send_reports could fail after the initial
-	part of <get_status_response...> is queued.
+	part of <get_status_response...> is queued.  A problem with this is that
+	some responses are very big, and need to be sent to the client
+	incrementally.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
@@ -23,23 +25,11 @@
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Switch to logging via libopenvas.  Add function names to log and error
-	messages.
+	Add function names to log and error messages.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Convert data coming in from the server to utf-8 and going out to the
-	server to 8859-1.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	Handle the situation where the OMP response is bigger than the available
-	space in to_client.  At present the manager just closes the connection if
-	this happens.  One solution would be to try write to the client when
-	out of space in order to free some space.  This could conflict with the
-	entry above about buffering an entire response before queuing it.  Some of
-	the responses, like get_nvt_details_response, can be big if the plugin set
-	is big.
+	Convert data going out to the server to 8859-1.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
@@ -66,22 +56,9 @@
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Test the build system when SQLite is missing.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
 	Clear the "FIX"es out of the code.  Either resolve the issue or convert
-	the FIX into a (longer term) FIXME or (long term) TODO.  There are about
-	120 of these.  Some of them are duplicates.  Many are about the code
-	organisation.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	Move the approximately 25 TODOs in the code into here.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	Add a check for the UUID library to the build system.
+	the FIX into a @todo.  There are about 120 of these.  Some of them are
+	duplicates.  Many are about the code organisation.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
@@ -91,51 +68,8 @@
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Match the OMP specification.
-
-	Rethink the GET_STATUS behaviour when the client gives the ID of a task
-	that is running.  OMP specifies special output in this case.  The manager
-	simply responds as usual.
-
-	Consider using separate words for the task STATUS (the state of the task,
-	like "Done") and the request STATUS (like "404").  Perhaps the request
-	status could be called CODE, as in "HTTP error code".
-
-	Match authentication scope.  Manager authentication is per connection.
-
-	Match authentication response.  At present if AUTHENTICATE fails
-	then the manager responds to the AUTHENTICATE with
-	<authenticate_response status="400"/>.  The following command will then
-	get <omp_response status="404"/> (syntax error).
-
-	Name checksum entities consistently.  get_nvt_feed_checksum_response
-	has checksum, while get_nvt_all_response has feed_checksum.
-
-	Implement MODIFY_TASK PARAMETERS.
-
-	Implement OIDs for GET_PREFERENCES and GET_DEPENDENCIES.
-
-	Implement GET_REPORT FORMAT.
-
-	Ajust the MODIFY_TASK and MODIFY_REPORT implementations to expect at
-	least one parameter.
-
-	Remove ID attributes from all responses in the specification.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
 	Consider moving tests to openvas-manager/tests/, at least so that src/
 	compiles quicker.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	Switch the tests to the libopenvas connection handling (in
-	libopenvas/openvas_server.c).
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
-	* src/tests/common.c (wait_for_task_delete): Properly check get_status
-	response.
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
@@ -146,7 +80,7 @@
 
 	In libmanage (src/manage.c), consider separating functions that
 	communicate with the server (start_task, stop_task, request_*,
-	acknowlegde_bye) from data storage and manipulation functions (like
+	acknowledge_bye) from data storage and manipulation functions (like
 	make_task, next_task, task_name and delete report).
 
 	This could make it easier to use the library outside the manager.
