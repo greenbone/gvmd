@@ -5793,7 +5793,6 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                              "<version>%s</version>"
                              "<cvss_base>%s</cvss_base>"
                              "<risk_factor>%s</risk_factor>"
-                             // FIX spec has multiple <cve_id>s
                              "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
                              "<xrefs>%s</xrefs>"
@@ -6938,9 +6937,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                             min_cvss_base,
                             get_reports_data->apply_overrides);
       last_port = NULL;
-      /* Results are ordered by port, and then by severity (more severity
-       * before less severe). */
-      // FIX severity ordering is alphabetical on severity name
+      /* Results are ordered according to given sort parameters. */
       while (next (&results))
         {
           const char *severity, *original_severity, *cvss_base;

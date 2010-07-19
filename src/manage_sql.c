@@ -4413,7 +4413,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       g_warning ("%s: failed to create mgr directory: %s\n",
                  __FUNCTION__,
                  strerror (errno));
-      abort (); // FIX
+      abort ();
     }
 
 #ifndef S_SPLINT_S
@@ -4425,7 +4425,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       g_warning ("%s: sqlite3_open failed: %s\n",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
-      abort (); // FIX
+      abort ();
     }
 #endif /* not S_SPLINT_S */
 

@@ -1217,7 +1217,7 @@ parse_scanner_server (/*@dependent@*/ char** messages)
           if (current_certificates == NULL)
             {
               current_certificates = certificates_create ();
-              if (current_certificates == NULL) abort (); // FIX
+              if (current_certificates == NULL) abort ();
             }
           set_scanner_state (SCANNER_CERTIFICATE_FINGERPRINT);
           return 0;
@@ -1518,7 +1518,7 @@ process_otp_scanner_input ()
             field = g_convert (iso_field, match - message - 1,
                                "UTF-8", "ISO_8859-1",
                                NULL, &size_dummy, NULL);
-            if (field == NULL) abort (); // FIX
+            if (field == NULL) abort ();
           }
 #endif
 
@@ -1566,9 +1566,9 @@ process_otp_scanner_input ()
                       break;
                     }
                   current_certificate = certificate_create ();
-                  if (current_certificate == NULL) abort (); // FIX
+                  if (current_certificate == NULL) abort ();
                   if (certificate_set_fingerprint (current_certificate, field))
-                    abort (); // FIX
+                    abort ();
                   set_scanner_state (SCANNER_CERTIFICATE_OWNER);
                   break;
                 }
@@ -2027,7 +2027,7 @@ process_otp_scanner_input ()
                     }
                   assert (current_plugin == NULL);
                   current_plugin = nvti_new ();
-                  if (current_plugin == NULL) abort (); // FIX
+                  if (current_plugin == NULL) abort ();
                   nvti_set_oid (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_NAME);
                   break;

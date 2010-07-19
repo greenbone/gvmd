@@ -1,5 +1,16 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_process): Remove FIXes on aborts, as
+	they're consistent with the rest of the function.
+
+	* src/omp.c (send_nvt): Remove FIX about old spec.
+	(print_report_latex): Correct ordering comment.
+
+	* src/otp.c (parse_scanner_server, process_otp_scanner_input): Make
+	abort legitimate behaviour for out of memory failures.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (make_task): Abort on memory failure.
 	(append_to_task_comment, append_to_task_name)
 	(add_task_description_line): Remove returns.
