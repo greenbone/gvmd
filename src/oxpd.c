@@ -60,8 +60,6 @@ char from_scanner[FROM_BUFFER_SIZE];
  */
 buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 
-// FIX just make these pntrs?
-
 /**
  * @brief The start of the data in the \ref from_client buffer.
  */

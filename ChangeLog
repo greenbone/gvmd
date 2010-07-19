@@ -1,5 +1,10 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/oxpd.c: Remove FIX about making offset variables pointers, as they
+	are fully entrenched as integers now.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (OPENVASMD_VERSION, OPENVAS_OS_NAME): Set to -1.
 	(serve_client, accept_and_maybe_fork, fork_connection_for_schedular)
 	(main): Remove FIXes about getting the previous socket flags value, as
