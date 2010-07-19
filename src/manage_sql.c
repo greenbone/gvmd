@@ -1051,20 +1051,6 @@ manage_backup_db (const gchar *database)
 }
 
 /**
- * @brief Restore the database from a file.
- *
- * @param[in]  backup_file  File to restore from.
- *
- * @return 0 success, -1 fail.
- */
-int
-restore_db (const gchar *backup_file)
-{
-  // FIX ensure lock on db and db synced first
-  return -1;
-}
-
-/**
  * @brief Return the database version supported by this manager.
  *
  * @return Database version supported by this manager.
@@ -3049,7 +3035,6 @@ migrate_is_available (int old_version, int new_version)
 int
 manage_migrate (GSList *log_config, const gchar *database)
 {
-  //gchar *backup_file;
   migrator_t *migrators;
   /* The version on the disk. */
   int old_version;
@@ -3088,10 +3073,6 @@ manage_migrate (GSList *log_config, const gchar *database)
         return  2;
     }
 
-  // FIX
-  //backup_db (database, &backup_file);
-  // FIX check return
-
   /* Call the migrators to take the DB from the old version to the new. */
 
   migrators = database_migrators + old_version + 1;
@@ -3100,26 +3081,18 @@ manage_migrate (GSList *log_config, const gchar *database)
     {
       if (migrators->function == NULL)
         {
-          // FIX
-          //restore_db (backup_file);
-          //g_free (backup_file);
           cleanup_manage_process (TRUE);
           return -1;
         }
 
       if (migrators->function ())
         {
-          // FIX
-          //restore_db (backup_file);
-          //g_free (backup_file);
           cleanup_manage_process (TRUE);
           return -1;
         }
       migrators++;
     }
 
-  // FIX remove backup_file
-  //g_free (backup_file);
   cleanup_manage_process (TRUE);
   return 0;
 }

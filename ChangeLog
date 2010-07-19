@@ -1,5 +1,11 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (restore_db): Remove.
+	(manage_migrate): Remove outline for backing up database around migration,
+	as the SQL transactions have the same effect.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage_process): Remove FIXes on aborts, as
 	they're consistent with the rest of the function.
 
