@@ -8135,19 +8135,27 @@ make_task (char* name, unsigned int time, char* comment)
 {
   task_t task;
   char* uuid = openvas_uuid_make ();
+  gchar *quoted_name, *quoted_comment;
   if (uuid == NULL) return (task_t) 0;
-  /** @todo Escape name and comment. */
+  quoted_name = name ? sql_quote ((gchar*) name) : NULL;
+  quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
        "  schedule_next_time)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', %s, 0, %u, '%s', 0, 0);",
-       current_credentials.uuid, uuid, name, time, comment ? comment : "");
+       "         '%s', '%s', 0, %u, '%s', 0, 0);",
+       current_credentials.uuid,
+       uuid,
+       quoted_name ? quoted_name : "",
+       time,
+       quoted_comment ? quoted_comment : "");
   task = sqlite3_last_insert_rowid (task_db);
   set_task_run_status (task, TASK_STATUS_NEW);
   free (uuid);
   free (name);
   free (comment);
+  g_free (quoted_name);
+  g_free (quoted_comment);
   return task;
 }
 
