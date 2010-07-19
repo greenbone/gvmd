@@ -1,3 +1,11 @@
+2010-07-19  Michael Meyer <michael.meyer@greenbone.net>
+
+	* src/tests/new_task_small_rc,
+	src/tests/new_task_small__many_plugins_yes_rc,
+	src/tests/new_task_medium_rc,
+	src/tests/new_task_small__missing_targets_rc:
+	Removed references to nonexistent OIDs. Changed OID 10180 to 100315.
+
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* TODO: Update.
