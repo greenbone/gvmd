@@ -133,14 +133,14 @@
  * @brief The version number of this program.
  */
 #ifndef OPENVASMD_VERSION
-#define OPENVASMD_VERSION "FIX"
+#define OPENVASMD_VERSION "-1"
 #endif
 
 /**
  * @brief The name of the underlying Operating System.
  */
 #ifndef OPENVAS_OS_NAME
-#define OPENVAS_OS_NAME "FIX"
+#define OPENVAS_OS_NAME "-1"
 #endif
 
 /**
@@ -316,7 +316,6 @@ serve_client (int client_socket)
       goto fail;
     }
 
-  // FIX get flags first
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the data between `select' and `read'. */
   if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
@@ -432,7 +431,6 @@ accept_and_maybe_fork ()
               exit (EXIT_FAILURE);
             }
 
-          // FIX get flags first
           /* The socket must have O_NONBLOCK set, in case an "asynchronous
            * network error" removes the data between `select' and `read'.
            */
@@ -576,7 +574,6 @@ fork_connection_for_schedular (int *client_socket,
             exit (EXIT_FAILURE);
           }
 
-        // FIX get flags first
         /* The socket must have O_NONBLOCK set, in case an "asynchronous
          * network error" removes the data between `select' and `read'.
          */
@@ -1275,7 +1272,6 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-  // FIX get flags first
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the connection between `select' and `accept'. */
   if (fcntl (manager_socket, F_SETFL, O_NONBLOCK) == -1)

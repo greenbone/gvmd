@@ -1,5 +1,12 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (OPENVASMD_VERSION, OPENVAS_OS_NAME): Set to -1.
+	(serve_client, accept_and_maybe_fork, fork_connection_for_schedular)
+	(main): Remove FIXes about getting the previous socket flags value, as
+	the sockets are all used locally.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (restore_db): Remove.
 	(manage_migrate): Remove outline for backing up database around migration,
 	as the SQL transactions have the same effect.
