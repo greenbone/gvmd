@@ -41,7 +41,8 @@
 #include "oxpd.h"
 #include "logf.h"
 #include "omp.h"
-#include "otp.h" // FIX for scanner_init_state
+/** @todo For scanner_init_state. */
+#include "otp.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
@@ -58,7 +59,7 @@
 #include <openvas_server.h>
 
 #ifdef S_SPLINT_S
-/* FIX Weird that these are missing. */
+/** @todo Weird that these are missing. */
 /*@-exportheader@*/
 int socket(int domain, int type, int protocol);
 /*@=exportheader@*/
@@ -170,7 +171,7 @@ read_from_client (gnutls_session_t* client_session,
           if (count == GNUTLS_E_REHANDSHAKE)
             {
               /** @todo Rehandshake. */
-              tracef ("   FIX should rehandshake\n");
+              tracef ("   should rehandshake\n");
               continue;
             }
           if (gnutls_error_is_fatal ((int) count) == 0
@@ -197,7 +198,7 @@ read_from_client (gnutls_session_t* client_session,
   return -2;
 }
 
-// FIX combine with read_from_client
+/** @todo Consider combining with read_from_client. */
 /**
  * @brief Read as much from the server as the \ref from_scanner buffer will
  * @brief hold.
@@ -229,7 +230,7 @@ read_from_server (gnutls_session_t* server_session,
           if (count == GNUTLS_E_REHANDSHAKE)
             {
               /** @todo Rehandshake. */
-              tracef ("   FIX should rehandshake\n");
+              tracef ("   should rehandshake\n");
               continue;
             }
           if (gnutls_error_is_fatal (count) == 0
@@ -583,7 +584,7 @@ serve_omp (gnutls_session_t* client_session,
                     (int (*) (void*)) write_to_client,
                     (void*) client_session);
 #if 0
-  // FIX consider free_omp_data (); on return
+  /** @todo Consider free_omp_data (); on return. */
   if (tasks) free_tasks ();
   if (current_scanner_preference) free (current_scanner_preference);
   free_credentials (&current_credentials);
@@ -613,8 +614,8 @@ serve_omp (gnutls_session_t* client_session,
           /* In the parent after a start_task fork.  Create a new
            * server session, leaving the existing session as it is
            * so that the child can continue using it. */
-          // FIX probably need to close and free some of the existing
-          //     session
+          /** @todo Probably need to close and free some of the existing
+           *        session. */
           set_scanner_init_state (SCANNER_INIT_TOP);
           scanner_socket = recreate_session (0,
                                              scanner_session,
@@ -636,7 +637,8 @@ serve_omp (gnutls_session_t* client_session,
            * connection, as the parent process has continued the
            * session with the client. */
 #if 0
-          // FIX seems to close parent connections, maybe just do part of this
+          /** @todo This seems to close the parent connections.  Maybe just do
+           *        part of this? */
           openvas_server_free (client_socket,
                                *client_session,
                                *client_credentials);
@@ -649,7 +651,8 @@ serve_omp (gnutls_session_t* client_session,
           /* Now in a process forked to run a task, which has
            * failed in starting the task. */
 #if 0
-          // FIX as above
+          /** @todo This seems to close the parent connections.  Maybe just do
+           *        part of this? */
           openvas_server_free (client_socket,
                                *client_session,
                                *client_credentials);
@@ -701,6 +704,7 @@ serve_omp (gnutls_session_t* client_session,
   else
     client_input_stalled = 0;
 
+  /** @todo Confirm and clarify complications, especially last one. */
   /* Loop handling input from the sockets.
    *
    * That is, select on all the socket fds and then, as necessary
@@ -728,7 +732,7 @@ serve_omp (gnutls_session_t* client_session,
    *     filling up, or the to_client buffer filling up (in which case
    *     process_omp_client_input will try to write the to_client buffer
    *     itself),
-   *   - FIX a read from the scanner can, theoretically, be stalled by the
+   *   - a read from the scanner can, theoretically, be stalled by the
    *     to_scanner buffer filling up (during initialisation).
    */
 
@@ -750,11 +754,10 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&writefds);
       FD_SET (scanner_socket, &exceptfds);
 
-      // FIX shutdown if any eg read fails
+      /** @todo Shutdown on failure (for example, if a read fails). */
 
       if (client_active)
         {
-          // FIX time check error
           if ((CLIENT_TIMEOUT - (time (NULL) - last_client_activity_time))
               <= 0)
             {
@@ -973,8 +976,8 @@ serve_omp (gnutls_session_t* client_session,
               /* In the parent after a start_task fork.  Create a new
                * server session, leaving the existing session as it is
                * so that the child can continue using it. */
-              // FIX probably need to close and free some of the existing
-              //     session
+              /** @todo Probably need to close and free some of the existing
+               *        session. */
               set_scanner_init_state (SCANNER_INIT_TOP);
               scanner_socket = recreate_session (0,
                                                  scanner_session,
@@ -1001,7 +1004,8 @@ serve_omp (gnutls_session_t* client_session,
                * connection, as the parent process has continued the
                * session with the client. */
 #if 0
-              // FIX seems to close parent connections, maybe just do part of this
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);
@@ -1014,7 +1018,8 @@ serve_omp (gnutls_session_t* client_session,
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
 #if 0
-              // FIX as above
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);
@@ -1070,7 +1075,8 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -1:       /* Error. */
                 /* This may be because the scanner closed the connection
-                 * at the end of a command. */ // FIX then should get eof (-3)
+                 * at the end of a command. */
+                /** @todo Then should get EOF (-3). */
                 set_scanner_init_state (SCANNER_INIT_TOP);
                 break;
               case -2:       /* from_scanner buffer full. */
@@ -1178,7 +1184,7 @@ serve_omp (gnutls_session_t* client_session,
               case  0:      /* Wrote everything in to_scanner. */
                 break;
               case -1:      /* Error. */
-                /* FIX This may be because the scanner closed the connection
+                /** @todo This may be because the scanner closed the connection
                  * at the end of a command? */
                 if (client_active)
                   openvas_server_free (client_socket,
@@ -1240,8 +1246,8 @@ serve_omp (gnutls_session_t* client_session,
               /* In the parent after a start_task fork.  Create a new
                * server session, leaving the existing session as it is
                * so that the child can continue using it. */
-              // FIX probably need to close and free some of the existing
-              //     session
+              /** @todo Probably need to close and free some of the existing
+               *        session. */
               set_scanner_init_state (SCANNER_INIT_TOP);
               scanner_socket = recreate_session (0,
                                                  scanner_session,
@@ -1267,7 +1273,8 @@ serve_omp (gnutls_session_t* client_session,
                * connection, as the parent process has continued the
                * session with the client. */
 #if 0
-              // FIX seems to close parent connections, maybe just do part of this
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);
@@ -1279,7 +1286,8 @@ serve_omp (gnutls_session_t* client_session,
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
 #if 0
-              // FIX as above
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);

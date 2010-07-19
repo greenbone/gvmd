@@ -73,7 +73,7 @@
 
 /** @endcond */
 
-// FIX This is the definition for the entire module.
+/** @todo This is the definition for the entire module. */
 /**
  * @brief Verbose output flag.
  *
@@ -81,7 +81,7 @@
  */
 int verbose = 0;
 
-// FIX This is the definition for the entire module.
+/** @todo This is the definition for the entire module. */
 /**
  * @brief Logging parameters, as passed to setup_log_handlers.
  */

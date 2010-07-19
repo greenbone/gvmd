@@ -3828,7 +3828,7 @@ email (const char *to_address, const char *from_address, const char *subject,
   tracef ("   command: %s\n", command);
 
   if (ret = system (command),
-      // FIX ret is always -1
+      /** @todo ret is always -1. */
       0 && ((ret) == -1
             || WEXITSTATUS (ret)))
     {
@@ -5146,7 +5146,8 @@ task_count ()
 unsigned int
 task_id (task_t task)
 {
-  // FIX cast hack for tasks_fs compat, task is long long int
+  /** @todo The cast is a hack for compatibility with the old, alternate,
+   *        FS based storage mechanism. */
   return (unsigned int) task;
 }
 
@@ -6173,7 +6174,7 @@ make_task_rcfile (task_t task)
   /* Scanner set. */
 
   g_string_append (buffer, "begin(SCANNER_SET)\n");
-  // FIX how know if scanner?
+  /** @todo How know if scanner? (?) */
   g_string_append (buffer, "end(SCANNER_SET)\n\n");
 
   /* Scanner preferences. */
@@ -6211,10 +6212,10 @@ make_task_rcfile (task_t task)
   {
     /* This block is a modified copy of nvt_selector_plugins (from
      * manage.c). */
-    /* FIX config_families_growing (config) */
+    /** @todo This may be better as "config_families_growing (config)". */
     if (nvt_selector_nvts_growing (selector))
       {
-        // FIX do other cases
+        /** @todo Do other cases. (?) */
         if ((sql_int (0, 0,
                       "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                       selector)
@@ -7830,7 +7831,9 @@ trim_partial_report (report_t report)
 }
 
 
-/* FIX More task stuff. */
+/* More task stuff. */
+
+/** @todo Should be on tasks page above. */
 
 /**
  * @brief Return the number of reports associated with a task.
@@ -7898,7 +7901,8 @@ task_trend (task_t task, int override)
 
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
                         NULL, override))
-    abort (); // FIX fail better
+    /** @todo Either fail better or abort at SQL level. */
+    abort ();
 
   if (holes_a > 0)
     threat_a = 4;
@@ -7917,7 +7921,8 @@ task_trend (task_t task, int override)
 
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
                         &warns_b, NULL, override))
-    abort (); // FIX fail better
+    /** @todo Either fail better or abort at SQL level. */
+    abort ();
 
   if (holes_b > 0)
     threat_b = 4;
@@ -8356,7 +8361,7 @@ request_delete_task (task_t* task_pointer)
   switch (stop_task (task))
     {
       case 0:    /* Stopped. */
-        // FIX check error?
+        /** @todo Check delete-task return. */
         delete_task (task);
         return 0;
       case 1:    /* Stop requested. */
@@ -8394,7 +8399,7 @@ delete_task (task_t task)
 
   if (task_uuid (task, &tsk_uuid)) return -1;
 
-  // FIX may be atomic problems here
+  /** @todo There may be atomic access problems here. */
 
   if (delete_reports (task)) return -1;
 

@@ -68,7 +68,8 @@
  */
 #define G_LOG_DOMAIN "md    otp"
 
-// FIX Should probably be passed into process_otp_scanner_input.
+/** @todo As with the OMP version, this should most likely be passed to and from
+ *        the client in a data structure like an otp_parser_t. */
 extern buffer_size_t from_buffer_size;
 
 
@@ -118,7 +119,7 @@ blank_control_chars (char *string)
 
 /* Ports. */
 
-// FIX currently in manage.h
+/** @todo Currently in manage.h. */
 #if 0
 /**
  * @brief Possible port types.
@@ -207,7 +208,7 @@ print_port (FILE* stream, port_t* port)
 
 /* Messages. */
 
-// FIX should be in manage.c
+/** @todo Currently in manage.c. */
 #if 0
 /**
  * @brief The record of a message.
@@ -739,7 +740,8 @@ static certificate_t* current_certificate = NULL;
 
 /* OTP input processor. */
 
-// FIX probably should pass to process_omp_client_input
+/** @todo As with the OMP version, these should most likely be passed to and
+ *        from the client in a data structure like an otp_parser_t. */
 extern char from_scanner[];
 extern buffer_size_t from_scanner_start;
 extern buffer_size_t from_scanner_end;
@@ -763,14 +765,16 @@ sync_buffer ()
     {
       if (from_scanner_end == from_buffer_size)
         {
-          // FIX if the buffer is entirely full here then exit
-          //     (or will hang waiting for buffer to empty)
-          //     this could happen if the scanner sends a field with length >= buffer length
-          //         could realloc buffer
-          //             which may eventually use all mem and bring down manager
-          //                 would only bring down the process serving the client
-          //                 may lead to out of mem in other processes?
-          //                 could realloc to an upper limit within avail mem
+          /** @todo If the buffer is entirely full here then exit.
+           *     (Or will hang waiting for buffer to empty.)
+           *     Could happen if scanner sends a field longer than the buffer.
+           *         Could realloc buffer instead.
+           *             which may eventually use all mem and bring down manager
+           *                 would only bring down process serving the client
+           *                 may lead to out of mem in other processes?
+           *                 could realloc to an upper limit within avail mem
+           *         Could process some OTP to empty space in the buffer.
+           **/
           tracef ("   scanner buffer full\n");
           return -1;
         }
@@ -885,7 +889,7 @@ parse_scanner_bad_login (char** messages)
                        (int) '\n',
                        from_scanner_end - from_scanner_start)))
     {
-      // FIX 19 available?
+      /** @todo Are there 19 characters available? */
       if (strncasecmp ("Bad login attempt !", *messages, 19) == 0)
         {
           tracef ("match bad login\n");
@@ -996,8 +1000,9 @@ parse_scanner_error (char** messages)
   return 0;
 }
 
+/** @todo Update doc. */
 /**
- * @brief FIX Parse the final SERVER field of an OTP message.
+ * @brief Parse the final SERVER field of an OTP message.
  *
  * @param  messages  A pointer into the OTP input buffer.
  *
@@ -1192,10 +1197,10 @@ parse_scanner_server (/*@dependent@*/ char** messages)
       /*@dependent@*/ char* input;
       buffer_size_t from_start, from_end;
       match[0] = '\0';
-      // FIX is there ever whitespace before the newline?
+      /** @todo Is there ever whitespace before the newline? */
       while (*messages < end && ((*messages)[0] == ' '))
         { (*messages)++; from_scanner_start++; }
-      // FIX 20 available?
+      /** @todo Are there 20 characters available? */
       if (strncasecmp ("PLUGINS_DEPENDENCIES", *messages, 20) == 0)
         {
           from_scanner_start += match + 1 - *messages;
@@ -1204,7 +1209,7 @@ parse_scanner_server (/*@dependent@*/ char** messages)
           set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_NAME);
           return 0;
         }
-      // FIX 12 available?
+      /** @todo Are there 12 characters available? */
       if (strncasecmp ("CERTIFICATES", *messages, 12) == 0)
         {
           from_scanner_start += match + 1 - *messages;
@@ -1212,8 +1217,9 @@ parse_scanner_server (/*@dependent@*/ char** messages)
           /* current_certificates may be allocated already due to a
            * request for the list before the end of the previous
            * request.  In this case just let the responses mix.
-           * FIX depends what scanner does on multiple requests
            */
+          /** @todo Investigate what the Scanner really does in this
+           *        multiple request situation. */
           if (current_certificates == NULL)
             {
               current_certificates = certificates_create ();
@@ -1604,7 +1610,7 @@ process_otp_scanner_input ()
                 {
                   if (current_message)
                     {
-                      // FIX \n for newline in description
+                      /** @todo Replace "\n" with newline in description. */
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
@@ -1620,7 +1626,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_DEBUG_NUMBER:
                 {
-                  // FIX field could be "general"
+                  /** @todo Field could be "general". */
                   int number;
                   char *name;
                   char *protocol;
@@ -1678,7 +1684,7 @@ process_otp_scanner_input ()
                 {
                   if (current_message)
                     {
-                      // FIX \n for newline in description
+                      /** @todo Replace "\n" with newline in description. */
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
@@ -1694,7 +1700,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_HOLE_NUMBER:
                 {
-                  // FIX field could be "general"
+                  /** @todo Field could be "general". */
                   int number;
                   char *name;
                   char *protocol;
@@ -1749,7 +1755,7 @@ process_otp_scanner_input ()
                 {
                   if (current_message)
                     {
-                      // FIX \n for newline in description
+                      /** @todo Replace "\n" with newline in description. */
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
@@ -1765,7 +1771,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_INFO_NUMBER:
                 {
-                  // FIX field could be "general"
+                  /** @todo Field could be "general". */
                   int number;
                   char *name;
                   char *protocol;
@@ -1820,7 +1826,7 @@ process_otp_scanner_input ()
                 {
                   if (current_message)
                     {
-                      // FIX \n for newline in description
+                      /** @todo Replace "\n" with newline in description. */
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
@@ -1836,7 +1842,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_LOG_NUMBER:
                 {
-                  // FIX field could be "general"
+                  /** @todo Field could be "general". */
                   int number;
                   char *name;
                   char *protocol;
@@ -1891,7 +1897,7 @@ process_otp_scanner_input ()
                 {
                   if (current_message)
                     {
-                      // FIX \n for newline in description
+                      /** @todo Replace "\n" with newline in description. */
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
@@ -1907,7 +1913,7 @@ process_otp_scanner_input ()
                 }
               case SCANNER_NOTE_NUMBER:
                 {
-                  // FIX field could be "general"
+                  /** @todo Field could be "general". */
                   int number;
                   char *name;
                   char *protocol;
@@ -2185,7 +2191,7 @@ process_otp_scanner_input ()
                           set_scanner_init_state (SCANNER_INIT_DONE);
                           manage_nvt_preferences_enable ();
                           /* Return 1, as though the scanner sent BYE. */
-                          // FIX should perhaps exit more formally with scanner
+                          /** @todo Exit more formally with Scanner? */
                           scanner_active = 0;
                           goto return_bye;
                         }
@@ -2408,7 +2414,8 @@ process_otp_scanner_input ()
                   else if (strcasecmp ("SCAN_END", field) == 0)
                     set_scanner_state (SCANNER_TIME_SCAN_END);
                   else
-                    abort (); // FIX read all fields up to <|> SERVER?
+                    /** @todo Consider reading all fields up to <|> SERVER? */
+                    abort ();
                   break;
                 }
               case SCANNER_TIME_HOST_START_HOST:

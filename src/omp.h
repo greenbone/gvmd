@@ -51,8 +51,7 @@ scanner_is_active ();
 int
 process_omp_change ();
 
-// FIX probably should be passed to process_omp_client_input/init_omp_data
-//     and defined in caller
+/** @todo As described in omp.c, probably should be replaced by omp_parser_t. */
 extern char to_client[];
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;

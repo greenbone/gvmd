@@ -91,7 +91,8 @@
 
 #include "omp.h"
 #include "manage.h"
-#include "otp.h"      // FIX for access to scanner_t scanner
+/** @todo For access to scanner_t scanner. */
+#include "otp.h"
 #include "tracef.h"
 
 #include <arpa/inet.h>
@@ -3149,8 +3150,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_AUTHENTIC_COMMANDS:
         if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
-            // FIX Could check if reauthenticating current credentials, to
-            // save the loading of the tasks.
             if (save_tasks ()) abort ();
             free_tasks ();
             free_credentials (&current_credentials);
@@ -5601,7 +5600,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       default:
         assert (0);
-        // FIX respond fail to client
+        /** @todo Respond with failure to client. */
         g_set_error (error,
                      G_MARKUP_ERROR,
                      G_MARKUP_ERROR_PARSE,
@@ -5802,7 +5801,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                              "<timeout>%s</timeout>"
                              "<checksum>"
                              "<algorithm>md5</algorithm>"
-                             // FIX implement
+                             /** @todo Implement checksum. */
                              "2397586ea5cd3a69f953836f7be9ef7b"
                              "</checksum>",
                              oid,
@@ -5839,7 +5838,7 @@ send_nvt (iterator_t *nvts, int details, int pref_count, const char *timeout,
                            "<name>%s</name>"
                            "<checksum>"
                            "<algorithm>md5</algorithm>"
-                           // FIX implement
+                            /** @todo Implement checksum. */
                            "2397586ea5cd3a69f953836f7be9ef7b"
                            "</checksum>",
                            oid,
@@ -6323,7 +6322,7 @@ latex_escape_text (const char *text)
   ch = new;
   while (*ch)
     {
-      /* FIX \~ becomes \verb{~} or \~{} */
+      /** @todo \\~ should become \\verb{~} or \\~{}. */
       if (*ch == '\\')
         {
           ch++;
@@ -8363,7 +8362,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             report_t report;
 
-            // FIX check syntax of delete_report_data->report_id  STATUS_ERROR_SYNTAX
+            /** @todo Check syntax of delete_report_data->report_id and reply with
+             *        STATUS_ERROR_SYNTAX.
+             *
+             *        This is a common situation.  If it changes here then all
+             *        the commands must change.
+             */
             if (find_report (delete_report_data->report_id, &report))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_report"));
             else if (report == 0)
@@ -9064,7 +9068,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       /* RATS: ignore, command is defined above. */
                       if (ret = system (command),
-                          // FIX ret is always -1
+                          /** @todo ret is always -1. */
                           0 && ((ret) == -1
                                 || WEXITSTATUS (ret)))
                         {
@@ -9239,7 +9243,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       /* RATS: ignore, command is defined above. */
                       if (ret = system (command),
-                          // FIX ret is always -1
+                          /** @todo ret is always -1. */
                           0 && ((ret) == -1
                                 || WEXITSTATUS (ret)))
                         {
@@ -9422,7 +9426,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   /* RATS: ignore, command is defined above. */
                   else if (ret = system (command),
-                            // FIX ret is always -1
+                           /** @todo ret is always -1. */
                             0 && ((ret) == -1
                                   || WEXITSTATUS (ret)))
                     {
@@ -9593,7 +9597,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       /* RATS: ignore, command is defined above. */
                       if (ret = system (command),
-                          // FIX ret is always -1
+                          /** @todo ret is always -1. */
                           0 && ((ret) == -1
                                 || WEXITSTATUS (ret)))
                         {
@@ -10163,9 +10167,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   assert (0);
                 case -1:
                   /* to_scanner is full. */
-                  // FIX or some other error
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
+                  /** @todo Or some other error occurred. */
+                  /** @todo Consider reverting parsing for retry. */
+                  /** @todo process_omp_client_input must return -2. */
                   tracef ("delete_task failed\n");
                   abort ();
                   break;
@@ -10518,7 +10522,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_TASK:
-        // FIX update to match create_task (config, target)
+        /** @todo Update to match "create_task (config, target)". */
         if (modify_task_data->task_id)
           {
             task_t task;
@@ -10944,7 +10948,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      "Scan config could not be created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
-                                  // FIX could pass an empty rcfile?
+                                  /** @todo Legitimate to pass empty rcfile? */
                                   "CREATE_CONFIG name and rcfile must be at"
                                   " least one character long"));
             }
@@ -11850,14 +11854,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                // FIX could pass an empty hosts element?
                                 "CREATE_TARGET name must be at"
                                 " least one character long"));
           else if (strlen (create_target_data->hosts) == 0
                    && create_target_data->target_locator == NULL)
+            /** @todo Legitimate to pass an empty hosts element? */
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                // FIX could pass an empty hosts element?
                                 "CREATE_TARGET hosts must both be at least one"
                                 " character long, or TARGET_LOCATOR must"
                                 " be set"));
@@ -11968,7 +11971,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
            * including the RC file (in the description column), so on
            * failure be sure to call request_delete_task to remove the
            * task. */
-          // FIX fail cases of CLIENT_CREATE_TASK_* states must do so too
+          /** @todo Any fail cases of the CLIENT_CREATE_TASK_* states must do
+           *        so too. */
 
           /* Get the task ID. */
 
@@ -12595,8 +12599,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   assert (0);
                 case -1:
                   /* to_scanner is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
+                  /** @todo Consider reverting parsing for retry. */
+                  /** @todo process_omp_client_input must return -2. */
                   abort ();
               }
           }
@@ -12629,7 +12633,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
-              abort (); // FIX respond with error or something
+              abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
@@ -12776,8 +12780,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   assert (0);
                 case -1:
                   /* to_scanner is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
+                  /** @todo Consider reverting parsing for retry. */
+                  /** @todo process_omp_client_input must return -2. */
                   abort ();
               }
           }
@@ -12809,7 +12813,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
-              abort (); // FIX respond with error or something
+              abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
@@ -12938,7 +12942,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             else if (forked == 2)
               /* Prevent the forked child from forking again, as then both
                * forked children would be using the same server session. */
-              abort (); // FIX respond with error or something
+              abort (); /** @todo Respond with error or something. */
             else
               {
                 char *report_id;
@@ -13076,8 +13080,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   assert (0);
                 case -1:
                   /* to_scanner is full. */
-                  // FIX revert parsing for retry
-                  // process_omp_client_input must return -2
+                  /** @todo Consider reverting parsing for retry. */
+                  /** @todo process_omp_client_input must return -2. */
                   abort ();
               }
           }
@@ -14031,10 +14035,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (first_report_id, &timestamp))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         first_report = g_strdup_printf ("<first_report>"
                                                         "<report id=\"%s\">"
@@ -14078,10 +14084,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (last_report_id, &timestamp))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         last_report = g_strdup_printf ("<last_report>"
                                                        "<report id=\"%s\">"
@@ -14125,11 +14133,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (second_last_report_id,
                                               &timestamp))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         second_last_report = g_strdup_printf
                                               ("<second_last_report>"
@@ -14351,7 +14361,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         error_send_to_client (error);
                         return;
                       }
-                    // FIX need to handle err cases before send status
+                    /** @todo Handle error cases.
+                     *
+                     * The errors are either SQL errors or out of space in
+                     * buffer errors.  Both should probably just lead to aborts
+                     * at the SQL or buffer output level.
+                     */
                     (void) send_reports (task,
                                          get_tasks_data->apply_overrides,
                                          write_to_client,
@@ -14382,7 +14397,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_t schedule;
                     time_t next_time;
 
-                    // FIX buffer entire response so this can respond on err
+                    /** @todo Buffer entire response so respond with error.
+                     *
+                     * As above, this is some kind of internal error.  It may
+                     * be best to just abort within task_uuid.
+                     */
                     if (task_uuid (index, &tsk_uuid)) abort ();
 
                     target = task_target (index);
@@ -14400,10 +14419,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (first_report_id, &timestamp))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         first_report = g_strdup_printf ("<first_report>"
                                                         "<report id=\"%s\">"
@@ -14447,7 +14468,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (last_report_id, &timestamp))
                           abort ();
@@ -14513,7 +14535,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            &debugs, &holes, &infos, &logs,
                                            &warnings, &false_positives,
                                            get_tasks_data->apply_overrides))
-                          abort (); // FIX fail better
+                          /** @todo Either fail better or abort at SQL level. */
+                          abort ();
 
                         if (report_timestamp (second_last_report_id, &timestamp))
                           abort ();
@@ -15147,7 +15170,10 @@ omp_xml_handle_error (/*@unused@*/ GMarkupParseContext* context,
 
 /* OMP input processor. */
 
-// FIX probably should pass to process_omp_client_input
+/** @todo Most likely the client should get these from init_omp_process
+ *        inside an omp_parser_t and should pass the omp_parser_t to
+ *        process_omp_client_input.  process_omp_client_input can pass then
+ *        pass them on to the other Manager "libraries". */
 extern char from_client[];
 extern buffer_size_t from_client_start;
 extern buffer_size_t from_client_end;

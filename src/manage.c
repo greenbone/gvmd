@@ -148,7 +148,7 @@ delete_reports (task_t task)
 {
   report_t report;
   iterator_t iterator;
-  // FIX wrap in transaction?
+  /** @todo Wrap this in a transaction? */
   init_report_iterator (&iterator, task, 0);
   while (next_report (&iterator, &report)) delete_report (report);
   cleanup_iterator (&iterator);
@@ -1099,8 +1099,9 @@ run_task (task_t task, char **report_id, int from)
   /* Every fail exit from here must reset to this run status, and must
    * clear current_report. */
 
-  // FIX On fail exits only, if another process has set a request state then
-  //     honour that request.  (stop_task, request_delete_task)
+  /** @todo On fail exits only, may need to hour request states that one of
+   *        the other processes has set on the task (stop_task,
+   *        request_delete_task). */
 
   /** @todo Also reset status on report, as current_scanner_task is 0 here. */
 
@@ -1164,7 +1165,7 @@ run_task (task_t task, char **report_id, int from)
       current_report = (report_t) 0;
       return -10;
     }
-  // FIX still getting FINISHED msgs
+  /** @todo Confirm this really stops scanner from sending FINISHED messages. */
   if (send_to_server ("ntp_opt_show_end <|> no\n"))
     {
       free (hosts);
@@ -1407,7 +1408,7 @@ run_task (task_t task, char **report_id, int from)
   current_scanner_task = task;
 
 #if 0
-  // FIX This is what the file based tasks did.
+  /** @todo This is what the file based tasks did. */
   if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, (guint) sizeof (port_t));
   task->open_ports_size = 0;
@@ -1456,7 +1457,6 @@ stop_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task stop %u\n", task_id (task));
-  // FIX something should check safety credential before this
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSE_WAITING
@@ -1491,7 +1491,6 @@ pause_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task pause %u\n", task_id (task));
-  // FIX something should check safety credential before this
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
@@ -1521,7 +1520,6 @@ resume_paused_task (task_t task)
 {
   task_status_t run_status;
   tracef ("   request task resume %u\n", task_id (task));
-  // FIX something should check safety credential before this
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSED)
@@ -1548,7 +1546,6 @@ int
 resume_stopped_task (task_t task, char **report_id)
 {
   task_status_t run_status;
-  // FIX something should check safety credential before this
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
     return run_task (task, report_id, 1);
@@ -1655,7 +1652,6 @@ manage_check_current_task ()
 
       /* Check if some other process changed the status. */
 
-      // FIX something should check safety credential before this
       run_status = task_run_status (current_scanner_task);
       switch (run_status)
         {

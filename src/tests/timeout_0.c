@@ -50,7 +50,7 @@ main ()
       return EXIT_FAILURE;
     }
 
-  /* FIX This must be more than the client timeout, which is currently 900. */
+  /** @todo This must be more than the client timeout (currently 900). */
   sleep (960);
 
   if (openvas_server_send (&session, "<get_version/>\n") == -1)

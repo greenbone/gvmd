@@ -1,5 +1,24 @@
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c: Convert all FIX comments to @todo's.
+	(stop_task, pause_task, resume_paused_task, resume_stopped_task)
+	(manage_check_current_task): Remove FIXes about credential checks, because
+	the argument is a task_t so the credentials will have been checked already.
+
+	* src/omp.c: Convert all FIX comments to @todo's.
+	(omp_xml_handle_start_element): Remove FIX about checking for a
+	reauthentication, as this would just complicate things.
+
+	* src/ompd.c: Convert all FIX comments to @todo's.
+	(serve_omp): Remove FIX about time as argument is always NULL.
+
+	* src/manage.h, src/manage_sql.c, src/omp.h, src/ompd.h, src/openvasmd.c,
+	src/otp.c, src/otp.h, src/ovas-mngr-comm.c, src/oxpd.c, src/splint.h,
+	src/tests/read_protocol_0.c, src/tests/timeout_0.c: Convert all FIX comments
+	to @todo's.
+
+2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/oxpd.c: Remove FIX about making offset variables pointers, as they
 	are fully entrenched as integers now.
 

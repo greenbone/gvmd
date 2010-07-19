@@ -110,8 +110,10 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
   time_t start_time;
   int left;
 
+  /** @todo Ensure that the blocking state is left at its original
+   *        value, in case the callers has set it. */
+
   /* Turn on blocking. */
-  // FIX get flags first
   if (fcntl (client_socket, F_SETFL, 0L) == -1)
     {
       g_warning ("%s: failed to set client socket flag: %s\n",
@@ -131,7 +133,6 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
       g_warning ("%s: failed to get current time: %s\n",
                  __FUNCTION__,
                  strerror (errno));
-      // FIX revert blocking
       return PROTOCOL_FAIL;
     }
   ret = PROTOCOL_FAIL;
@@ -193,7 +194,6 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
                   if (from_client_end == FROM_BUFFER_SIZE)
                     {
                       tracef ("read_protocol out of space in from_client\n");
-                      // FIX revert blocking
                       return PROTOCOL_FAIL;
                     }
 
@@ -293,7 +293,6 @@ read_protocol (gnutls_session_t* client_session, int client_socket)
         }
     }
 
-  // FIX use orig value
   /* Turn blocking back off. */
   if (fcntl (client_socket, F_SETFL, O_NONBLOCK) == -1)
     {

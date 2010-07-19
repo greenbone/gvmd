@@ -45,7 +45,7 @@ main ()
   socket = connect_to_manager (&session);
   if (socket == -1) return EXIT_FAILURE;
 
-  /* FIX This must be more than the timeout, which is currently 300. */
+  /** @todo This must be more than the timeout, which is currently 300. */
   sleep (320);
 
   switch (omp_authenticate_env (&session))

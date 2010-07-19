@@ -63,7 +63,7 @@ g_ptr_array_add (/*@only@*/ GPtrArray *array,
 GSList*
 g_slist_append (/*@keep@*/ GSList* list, /*@keep@*/ gpointer data);
 
-// FIX these keeps depend on g_hash_table_new params
+/** @todo These "keep"s depend on g_hash_table_new params. */
 void
 g_hash_table_insert (GHashTable *hash_table,
                      /*@keep@*/ gpointer key,
@@ -84,7 +84,7 @@ typedef /*@out@*/ gchar* gchar_pointer;
 
 gboolean
 g_file_get_contents (const gchar *filename,
-                     /*@out@*/ /* FIX maybe? */ gchar_pointer *contents,
+                     /*@out@*/ /** @todo Maybe? */ gchar_pointer *contents,
                      /*@null@*/ /*@out@*/ gsize *length,
                      /*@null@*/ /*@out@*/ GError **error)
   /*@defines *contents*/;

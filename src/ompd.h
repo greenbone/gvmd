@@ -42,7 +42,7 @@ serve_omp (gnutls_session_t*, gnutls_session_t*,
            gnutls_certificate_credentials_t*,
            int, int*, const gchar*);
 
-// FIX Temporarily, for omp.c SEND_TO_CLIENT.
+/** @todo Temporarily declared here, for omp.c SEND_TO_CLIENT. */
 extern char to_client[];
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;

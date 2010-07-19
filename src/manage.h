@@ -48,7 +48,8 @@ typedef struct
   int rules_size;                    ///< Number of rules.
 } scanner_t;
 
-// FIX for omp.c,manage.c,otp.c access to server info (rules, prefs, ...)
+/** @todo Exported for omp.c, manage.c and otp.c access to server info (rules,
+  *       prefs, ...). */
 /**
  * @brief Information about the server.
  */
@@ -94,7 +95,7 @@ manage_migrate (GSList*, const gchar*);
 
 extern short scanner_active;
 
-// FIX should be in otp.c/h
+/** @todo Should be in otp.c/h. */
 /**
  * @brief Possible port types.
  */
@@ -105,7 +106,7 @@ typedef enum
   PORT_PROTOCOL_OTHER
 } port_protocol_t;
 
-// FIX should be in otp.c/h
+/** @todo Should be in otp.c/h. */
 /**
  * @brief A port.
  */
@@ -116,7 +117,7 @@ typedef struct
   char* string;              ///< Original string describing port.
 } port_t;
 
-// FIX should be in otp.c/h
+/** @todo Should be in otp.c/h. */
 /**
  * @brief The record of a message.
  */
@@ -568,7 +569,7 @@ result_uuid (result_t, /*@out@*/ char **);
 
 /* Reports. */
 
-// FIX how is this doc'd?
+/** @todo How is this documented? */
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
 gboolean

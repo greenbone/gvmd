@@ -35,7 +35,7 @@ init_otp_data ();
 int
 process_otp_scanner_input ();
 
-// FIX for next 2
+/** @todo Exported for following functions. */
 /**
  * @brief Possible initialisation states of the scanner.
  */
@@ -59,13 +59,13 @@ typedef enum
   SCANNER_INIT_TOP
 } scanner_init_state_t;
 
-// FIX for ompd.c
+/** @todo Exported for ompd.c. */
 extern scanner_init_state_t scanner_init_state;
 
-// FIX for otpd.c,ompd.c
+/** @todo Exported for otpd.c and ompd.c. */
 void
 set_scanner_init_state (scanner_init_state_t state);
 
-// FIX for ompd.c
+/** @todo Exported for ompd.c. */
 extern int scanner_init_offset;
 #endif

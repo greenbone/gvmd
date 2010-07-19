@@ -329,7 +329,7 @@ serve_client (int client_socket)
   /* Read a message from the client, and call the appropriate protocol
    * handler. */
 
-  // FIX some of these are client errs, all EXIT_FAILURE
+  /** @todo Some of these are client errors, all EXIT_FAILURE. */
   switch (read_protocol (&client_session, client_socket))
     {
       case PROTOCOL_OTP:
@@ -532,7 +532,7 @@ fork_connection_for_schedular (int *client_socket,
       case 0:
         /* Child.  */
 
-        /* FIX Give the parent time to prepare. */
+        /** @todo Give the parent time to prepare. */
         sleep (5);
 
         *client_socket = sockets[1];
@@ -619,7 +619,7 @@ static void
 cleanup ()
 {
   tracef ("   Cleaning up.\n");
-  // FIX should be via omp, maybe cleanup_omp ();
+  /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
   cleanup_manage_process (TRUE);
   if (manager_socket > -1) close (manager_socket);
 #if LOG
@@ -1091,7 +1091,7 @@ main (int argc, char** argv)
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
-        // FIX free servent?
+        /** @todo Free servent? */
         scanner_port = servent->s_port;
       else
         scanner_port = htons (OPENVASSD_PORT);
@@ -1124,7 +1124,7 @@ main (int argc, char** argv)
     {
       struct servent *servent = getservbyname ("otp", "tcp");
       if (servent)
-        // FIX free servent?
+        /** @todo Free servent? */
         manager_port = servent->s_port;
       else
         manager_port = htons (OPENVASMD_PORT);
