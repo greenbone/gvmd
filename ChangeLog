@@ -1,3 +1,13 @@
+2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (report_count, report_counts_id): Add host limiter arg.
+	Update callers.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (print_report_latex, omp_xml_handle_end_element): Pass host to
+	report_counts_id.
+
 2010-07-21  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/manage_sql.h: Formatted using indent.

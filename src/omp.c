@@ -6734,7 +6734,8 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
         continue;
 
       report_counts_id (report, NULL, &holes, &notes, NULL, &warnings,
-                        &false_positives, get_reports_data->apply_overrides);
+                        &false_positives, get_reports_data->apply_overrides,
+                        host);
 
       total_holes += holes;
       total_warnings += warnings;
@@ -8742,7 +8743,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                 report_counts_id (report, &debugs, &holes, &infos, &logs,
                                   &warnings, &false_positives,
-                                  get_reports_data->apply_overrides);
+                                  get_reports_data->apply_overrides, NULL);
 
                 SENDF_TO_CLIENT_OR_FAIL ("<result_count>"
                                          "%i"

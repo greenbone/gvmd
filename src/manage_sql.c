@@ -7597,11 +7597,12 @@ report_scan_result_count (report_t report, const char* levels,
  * @param[in]  report     Report.
  * @param[in]  type       Message type.
  * @param[in]  override   Whether to override the threat.
+ * @param[in]  host       Host to which to limit the count.  NULL to allow all.
  *
  * @return Message count.
  */
 int
-report_count (report_t report, const char *type, int override)
+report_count (report_t report, const char *type, int override, const char *host)
 {
   if (override)
     {
@@ -7644,18 +7645,49 @@ report_count (report_t report, const char *type, int override)
 
       g_free (ov);
 
-      count = sql_int (0, 0,
-                       "SELECT count(*), %s AS new_type"
-                       " FROM results, report_results"
-                       " WHERE new_type = '%s'"
-                       " AND results.ROWID = report_results.result"
-                       " AND report_results.report = '%llu';",
-                       new_type_sql,
-                       type,
-                       report);
+      if (host)
+        {
+          gchar* quoted_host = sql_quote (host);
+          count = sql_int (0, 0,
+                           "SELECT count(*), %s AS new_type"
+                           " FROM results, report_results"
+                           " WHERE results.host = '%s'"
+                           " AND new_type = '%s'"
+                           " AND results.ROWID = report_results.result"
+                           " AND report_results.report = '%llu';",
+                           new_type_sql,
+                           quoted_host,
+                           type,
+                           report);
+          g_free (quoted_host);
+        }
+      else
+        count = sql_int (0, 0,
+                         "SELECT count(*), %s AS new_type"
+                         " FROM results, report_results"
+                         " WHERE new_type = '%s'"
+                         " AND results.ROWID = report_results.result"
+                         " AND report_results.report = '%llu';",
+                         new_type_sql,
+                         type,
+                         report);
 
       g_free (new_type_sql);
 
+      return count;
+    }
+  else if (host)
+    {
+      gchar* quoted_host = sql_quote (host);
+      int count = sql_int (0, 0,
+                           "SELECT count(*) FROM results, report_results"
+                           " WHERE results.host = '%s' AND results.type = '%s'"
+                           " AND results.ROWID = report_results.result"
+                           " AND report_results.report = '%llu';",
+                           quoted_host,
+                           type,
+                           report);
+      g_free (quoted_host);
       return count;
     }
   else
@@ -7693,7 +7725,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   report_t report;
   if (find_report (report_id, &report)) return -1;
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
-                           false_positives, override);
+                           false_positives, override, NULL);
 }
 
 /**
@@ -7707,20 +7739,23 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @param[out]  warnings  Number of warning messages.
  * @param[out]  false_positives  Number of false positive messages.
  * @param[in]   override  Whether to override the threat.
+ * @param[in]   host      Host to which to limit the count.  NULL to allow all.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
-                  int* logs, int* warnings, int* false_positives, int override)
+                  int* logs, int* warnings, int* false_positives, int override,
+                  const char *host)
 {
-  if (debugs) *debugs = report_count (report, "Debug Message", override);
-  if (holes) *holes = report_count (report, "Security Hole", override);
-  if (infos) *infos = report_count (report, "Security Note", override);
-  if (logs) *logs = report_count (report, "Log Message", override);
-  if (warnings) *warnings = report_count (report, "Security Warning", override);
+  if (debugs) *debugs = report_count (report, "Debug Message", override, host);
+  if (holes) *holes = report_count (report, "Security Hole", override, host);
+  if (infos) *infos = report_count (report, "Security Note", override, host);
+  if (logs) *logs = report_count (report, "Log Message", override, host);
+  if (warnings)
+    *warnings = report_count (report, "Security Warning", override, host);
   if (false_positives)
-    *false_positives = report_count (report, "False Positive", override);
+    *false_positives = report_count (report, "False Positive", override, host);
   return 0;
 }
 
@@ -7900,7 +7935,7 @@ task_trend (task_t task, int override)
     return "";
 
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
-                        NULL, override))
+                        NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -7920,7 +7955,7 @@ task_trend (task_t task, int override)
     return "";
 
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
-                        &warns_b, NULL, override))
+                        &warns_b, NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
