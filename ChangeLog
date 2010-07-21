@@ -1,3 +1,12 @@
+2010-07-21  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/manage_sql.h: Formatted using indent.
+
+	* src/lsc_user.c (get_rpm_generator_path),
+	src/omp.c (buffer_results_xml): Tiny improvements of doc.
+
+	* src/tests/CMakeLists.txt: Lowercased commands.
+
 2010-07-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c: Convert all FIX comments to @todo's.

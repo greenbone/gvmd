@@ -41,7 +41,7 @@ const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
 
 lsc_credential_t target_lsc_credential (target_t);
-const char* lsc_credential_iterator_password (iterator_t *);
+const char *lsc_credential_iterator_password (iterator_t *);
 
 int create_report (task_t, char **, task_status_t);
 
@@ -51,33 +51,33 @@ time_t add_months (time_t, int);
 
 time_t months_between (time_t, time_t);
 
-void init_task_schedule_iterator (iterator_t*);
+void init_task_schedule_iterator (iterator_t *);
 
-void cleanup_task_schedule_iterator (iterator_t*);
+void cleanup_task_schedule_iterator (iterator_t *);
 
-task_t task_schedule_iterator_task (iterator_t*);
+task_t task_schedule_iterator_task (iterator_t *);
 
 const char *task_schedule_iterator_task_uuid (iterator_t *);
 
-schedule_t task_schedule_iterator_schedule (iterator_t*);
+schedule_t task_schedule_iterator_schedule (iterator_t *);
 
-time_t task_schedule_iterator_next_time (iterator_t*);
+time_t task_schedule_iterator_next_time (iterator_t *);
 
-time_t task_schedule_iterator_period (iterator_t*);
+time_t task_schedule_iterator_period (iterator_t *);
 
-time_t task_schedule_iterator_period_months (iterator_t*);
+time_t task_schedule_iterator_period_months (iterator_t *);
 
-time_t task_schedule_iterator_duration (iterator_t*);
+time_t task_schedule_iterator_duration (iterator_t *);
 
-gboolean task_schedule_iterator_start_due (iterator_t*);
+gboolean task_schedule_iterator_start_due (iterator_t *);
 
-gboolean task_schedule_iterator_stop_due (iterator_t*);
+gboolean task_schedule_iterator_stop_due (iterator_t *);
 
-time_t task_schedule_iterator_first_time (iterator_t*);
+time_t task_schedule_iterator_first_time (iterator_t *);
 
-const char *task_schedule_iterator_owner_uuid (iterator_t*);
+const char *task_schedule_iterator_owner_uuid (iterator_t *);
 
-const char *task_schedule_iterator_owner_name (iterator_t*);
+const char *task_schedule_iterator_owner_name (iterator_t *);
 
 void reinit_manage_process ();
 

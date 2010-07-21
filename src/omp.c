@@ -135,7 +135,8 @@ buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 /* Helper functions. */
 
-/** @brief Return the name of a category.
+/**
+ * @brief Return the name of a category.
  *
  * @param  category  The number of the category.
  *

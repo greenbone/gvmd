@@ -509,7 +509,8 @@ get_rpm_generator_path ()
 }
 
 /**
- * @brief Attempts creation of RPM packages to install a user's public key file.
+ * @brief Attempts creation of RPM packages to create a user and install a
+ * @brief public key file for it.
  *
  * @param[in]  username         Name of user.
  * @param[in]  public_key_path  Location of public key.
