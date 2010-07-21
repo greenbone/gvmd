@@ -6996,6 +6996,7 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
             fprintf (out,
                      "\\rowcolor%s{\\color{white}{NVT: %s}}\\\\\n",
                      latex_severity_colour (severity),
+                     /** @todo Memory leak. */
                      latex_escape_text (result_iterator_nvt_name (&results)));
 
           fprintf (out,

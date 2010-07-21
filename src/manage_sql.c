@@ -14130,6 +14130,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         g_warning ("%s: sqlite3_prepare failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
+        g_free (installer);
+        g_free (installer_signature);
         sql ("ROLLBACK;");
         return -1;
       }

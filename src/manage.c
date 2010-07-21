@@ -511,7 +511,7 @@ get_files_to_send (task_t task)
 static gchar*
 nvt_selector_plugins (config_t config)
 {
-  GString* plugins = g_string_new ("");;
+  GString* plugins = g_string_new ("");
   iterator_t families;
   gboolean first = TRUE;
 

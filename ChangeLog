@@ -1,5 +1,16 @@
 2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (nvt_selector_plugin): Remove extra semicolon.
+
+	* src/manage_sql.c (create_agent): Free installer and signature on error.
+
+	* src/omp.c (print_report_latex): Note memory leak.
+
+	* src/splint.h (uuid_error, uuid_create, uuid_export): Remove.  From
+	previous UUID library.
+
+2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (report_count, report_counts_id): Add host limiter arg.
 	Update callers.
 

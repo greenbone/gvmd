@@ -125,24 +125,6 @@ void
 g_option_context_free (/*@only@*/ /*@out@*/ GOptionContext *);
 
 
-/* UUIDS. */
-
-#include <uuid/uuid.h>
-
-/*@shared@*/ char*
-uuid_error (uuid_rc_t error);
-
-uuid_rc_t
-uuid_create (/*@special@*/ uuid_t** uuid) /*@ensures notnull *uuid@*/;
-
-typedef /*@null@*/ void* voidpointer;
-uuid_rc_t
-uuid_export (const uuid_t *uuid,
-             uuid_fmt_t fmt,
-             voidpointer* data,
-             /*@null@*/ size_t* len);
-
-
 /* GNUTLS. */
 
 #include <gnutls/gnutls.h>
