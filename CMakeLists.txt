@@ -183,9 +183,9 @@ find_program (PATH_TO_LIBOPENVASCONFIG libopenvas-config DOC "libopenvas-config 
                         " openvas-libraries in the system.")
 if (PATH_TO_LIBOPENVASCONFIG)
   # Obtain libopenvas version number
-  exec_program (libopenvas-config
-                ARGS --version
-                OUTPUT_VARIABLE LIBOPENVAS_VERSION)
+  execute_process (COMMAND libopenvas-config --version
+    OUTPUT_VARIABLE LIBOPENVAS_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
   # Make a (per definition: semicolon separated) list of it
   string (REGEX REPLACE "\\." ";" LO_VER ${LIBOPENVAS_VERSION})
   list (GET LO_VER 0 LO_MAJOR_VER)
@@ -195,15 +195,26 @@ if (PATH_TO_LIBOPENVASCONFIG)
   # TODO Would like something like set (MIN_LO_VER "3" "0" "1")
   #      which would then make it easier to modify these. However, had serious
   #      issues with the conditionals, thus this clumsy implementation.
-  if (   ${LO_MAJOR_VER} LESS 3
-      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 1
-      OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 1 AND ${LO_PATCH_VER} LESS 0 )
-      message (FATAL_ERROR "openvas-libraries version >= 3.1.0 not found.")
-  endif (   ${LO_MAJOR_VER} LESS 3
-        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} LESS 1
-        OR ${LO_MAJOR_VER} EQUAL 3 AND ${LO_MINOR_VER} EQUAL 1 AND ${LO_PATCH_VER} LESS 0 )
+  set (LO_MAJOR_MIN_VER 3)
+  set (LO_MINOR_MIN_VER 1)
+  set (LO_PATCH_MIN_VER 0)
+  set (LO_MAJOR_VER_FAIL FALSE)
+  set (LO_MINOR_VER_FAIL FALSE)
+  set (LO_PATCH_VER_FAIL FALSE)
+  if (${LO_MAJOR_VER} LESS ${LO_MAJOR_MIN_VER})
+    set (LO_MAJOR_VER_FAIL TRUE)
+  endif (${LO_MAJOR_VER} LESS ${LO_MAJOR_MIN_VER})
+  if (${LO_MAJOR_VER} EQUAL ${LO_MAJOR_MIN_VER} AND ${LO_MINOR_VER} LESS ${LO_MINOR_MIN_VER})
+    set (LO_MINOR_VER_FAIL TRUE)
+  endif (${LO_MAJOR_VER} EQUAL ${LO_MAJOR_MIN_VER} AND ${LO_MINOR_VER} LESS ${LO_MINOR_MIN_VER})
+  if (${LO_MAJOR_VER} EQUAL ${LO_MAJOR_MIN_VER} AND ${LO_MINOR_VER} EQUAL ${LO_MINOR_MIN_VER} AND ${LO_PATCH_VER} LESS ${LO_PATCH_MIN_VER})
+    set (LO_PATCH_VER_FAIL TRUE)
+  endif (${LO_MAJOR_VER} EQUAL ${LO_MAJOR_MIN_VER} AND ${LO_MINOR_VER} EQUAL ${LO_MINOR_MIN_VER} AND ${LO_PATCH_VER} LESS ${LO_PATCH_MIN_VER})
+  if (LO_MAJOR_VER_FAIL OR LO_MINOR_VER_FAIL OR LO_PATCH_VER_FAIL)
+    message (FATAL_ERROR "openvas-libraries version >= ${LO_MAJOR_MIN_VER}.${LO_MINOR_MIN_VER}.${LO_PATCH_MIN_VER} not found.")
+  endif (LO_MAJOR_VER_FAIL OR LO_MINOR_VER_FAIL OR LO_PATCH_VER_FAIL)
 else (PATH_TO_LIBOPENVASCONFIG)
-   message (FATAL_ERROR "openvas-libraries version >= 3.1.0 not found.")
+   message (FATAL_ERROR "Could not determine openvas-libraries version.")
 endif (PATH_TO_LIBOPENVASCONFIG)
 
 message (STATUS "Looking for gnutls...")

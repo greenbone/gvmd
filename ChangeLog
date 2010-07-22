@@ -1,3 +1,7 @@
+2010-07-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Fixed openvas-libraries version detection.
+
 2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (nvt_selector_plugin): Remove extra semicolon.
