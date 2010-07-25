@@ -1,3 +1,11 @@
+2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* TODO: Remove entry about FIXes in code.
+
+	* README: Neaten About section.  In particular, use either the module name
+	like "openvas-cli" or the proper name "OpenVAS CLI", instead of mixing the
+	two, like in "OpenVAS-CLI".
+
 2010-07-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* README: Slightly extended general description of module.

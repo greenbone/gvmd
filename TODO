@@ -56,12 +56,6 @@
 
 2009-06-12  Matthew Mundell <mmundell@intevation.de>
 
-	Clear the "FIX"es out of the code.  Either resolve the issue or convert
-	the FIX into a @todo.  There are about 120 of these.  Some of them are
-	duplicates.  Many are about the code organisation.
-
-2009-06-12  Matthew Mundell <mmundell@intevation.de>
-
 	Check the memory management.  A quick valgrind reported memory leaks.
 	There is initial work present for splint coverage which could be
 	completed.
