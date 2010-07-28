@@ -1,3 +1,9 @@
+2010-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (nvt_preference_iterator_config_value): Add type
+	constraint to SQL in case a broken GSA filled the database with server
+	preferences with the NVT preference name.
+
 2010-07-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* TODO: Remove entry about FIXes in code.

@@ -13040,7 +13040,9 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
   quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
   value = sql_string (0, 0,
                       "SELECT value FROM config_preferences"
-                      " WHERE config = %llu AND name = '%s';",
+                      " WHERE config = %llu"
+                      " AND name = '%s'"
+                      " AND type = 'PLUGINS_PREFS';",
                       config,
                       quoted_name);
   g_free (quoted_name);
