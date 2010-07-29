@@ -1,3 +1,55 @@
+openvas-manager 1.0.0 (2010-07-29)
+
+This is the 1.0.0 release of the openvas-manager module for the Open
+Vulnerability Assessment System (OpenVAS).
+
+OpenVAS Manager 1.0 represents almost 2 years of intensive work.  The mission of
+OpenVAS Manager is to offer powerful and comfortable vulnerability management on
+top of the actual vulnerability scanner, OpenVAS Scanner 3.1.
+
+The OpenVAS Manager is a layer between the OpenVAS Scanner and various client
+applications. The upcoming clients cover web, desktop and command line
+technology and will replace the classic OpenVAS Client.
+
+Central features of OpenVAS Manager are:
+
+* New XML-based protocol OMP (OpenVAS Management Protocol) which client tools
+  use to control scans, results, etc.
+
+* SQL database where configurations, scan results etc. are stored. Thus, clients
+  do not need to keep local storage anymore.
+
+* Full control of scan processes. This includes multiple concurrent scans as
+  well as stopping, pausing, resuming and not at least the scheduling of scans.
+
+* Management of scan notes, false positives and result escalators (notification
+  on finished scans).
+
+OpenVAS Manager is Free Software (Open Source), licensed under GNU General
+Public License Version 2 or any later version.
+
+The first compatible client application to be released will be the web client
+GSA (Greenbone Security Assistant), approximately next week.
+Beta- and alpha versions of various clients are already available for download.
+
+The OpenVAS development team offers support for any efforts to create binary
+packages for the various Linux distributions in order have this new server
+readily available for users as soon as possible. Please use our openvas-distro
+mailing list for this purpose.
+
+Many thanks to everyone who has contributed to this release since 1.0.0.rc1:
+Stephan Kleine, Matthew Mundell, Jan-Oliver Wagner, Michael Wiegand and Felix
+Wolfsteller.
+
+Main changes since 1.0.0.rc1:
+* A number of build issues has been addressed.
+* The code documentation has been updated.
+* Code cleanup: Internal error handling has been made more consistent.
+* A potential ressource leak identified by static analysis has been fixed.
+* A bug which caused NVT preferences to be displayed incorrectly has been
+  fixed.
+
+
 openvas-manager 1.0.0.rc1 (2010-07-15)
 
 This is the first release candidate of the openvas-manager module for the Open
