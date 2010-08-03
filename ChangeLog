@@ -1,3 +1,67 @@
+2010-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make the report framework use loadable report formats.
+
+	Remove all previous report formats.  Add new predefined loadable report
+	format XML.
+
+	As a result add new OMP commands CREATE_REPORT_FORMAT,
+	DELETE_REPORT_FORMAT and GET_REPORT_FORMATS.
+
+	* src/CMakeLists.txt: Remove old report XSL installs.  Add XML report
+	XSL install.
+
+	* src/manage.c (get_report_format_files, init_report_format_file_iterator)
+	(cleanup_file_iterator, next_file, file_iterator_name)
+	(file_iterator_content_64): New functions.
+
+	* src/manage_sql.c (user_owns): New function.
+	(create_tables): Add tables report_formats and report_format_params.
+	(init_manage): Ensure predefined report format XML exists.
+	(find_report_format, lookup_report_format, create_report_format)
+	(delete_report_format, report_format_uuid, report_format_name)
+	(report_format_global)
+	(init_report_format_iterator, report_format_iterator_report_format)
+	(report_format_iterator_uuid, report_format_iterator_name)
+	(report_format_iterator_extension, report_format_iterator_content_type)
+	(report_format_iterator_summary)
+	(report_format_iterator_description, report_format_iterator_global)
+	(init_report_format_param_iterator, report_format_param_iterator_name)
+	(report_format_param_iterator_value): New
+	functions.  Interface to report formats.
+
+	* src/manage.h: Add headers accordingly.
+	(report_format_t, file_iterator_t): New types.
+
+	* src/omp.c (file_utils_rmdir_rf): Export for manage_sql.c.
+	(help_text): Add report format commands.
+	(create_report_format_data_t, delete_report_format_data_t)
+	(get_report_formats_data_t): New report format types.
+	(create_report_format_data_reset, delete_report_format_data_reset)
+	(get_report_formats_data_reset): New report format functions.
+	(command_data_t): Add report format fields.
+	(create_report_format_data, delete_report_format_data)
+	(get_report_formats_data): New report format variables.
+	(client_state_t): Add states for report format commands.
+	(omp_xml_handle_start_element): Add report format commands handling.
+	(PRINT): New macro.  Helper for print_report_xml.
+	(print_report_xml): Switch to fuller XML format previously sent for "xml"
+	format.
+	(next_break, latex_print_verbatim_text, latex_escape_text)
+	(latex_severity_heading, latex_severity_colour, latex_header)
+	(latex_footer, print_report_notes_latex, print_report_overrides_latex)
+	(print_report_latex): Remove.  Replaced by Felix's XSL.
+	(omp_xml_handle_end_element): Add report format commands handling.  In
+	particular in CLIENT_GET_REPORTS remove previous static report generation
+	cases and add a single generic generator.
+	(omp_xml_handle_text): Add report format commands handling.
+
+	* src/ITG.xsl, src/CPE.xsl, src/openvasmd_report_html.xsl: Remove.
+
+	* src/report_formats/, src/report_formats/XML/,
+	src/report_formats/XML/generate: New dir and files.  Report generator for
+	XML report format.
+
 2010-07-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post branch version bump.

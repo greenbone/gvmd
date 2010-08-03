@@ -2258,6 +2258,197 @@ manage_schedule (int (*fork_connection) (int *,
 }
 
 
+/* Report formats. */
+
+/**
+ * @brief Get files associated with a report format.
+ *
+ * @param[in]   dir_name  Location of files.
+ * @param[out]  start     Files on success.
+ *
+ * @return 0 if successful, -1 otherwise.
+ */
+static int
+get_report_format_files (const char *dir_name, GPtrArray **start)
+{
+  DIR *dir;
+  struct dirent *entry;
+  GPtrArray *files;
+
+  files = g_ptr_array_new ();
+
+  dir = opendir (dir_name);
+  if (dir == NULL)
+    {
+      g_warning ("%s: failed to open dir: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  while ((entry = readdir (dir)))
+    if (strcmp (entry->d_name, ".") && strcmp (entry->d_name, ".."))
+      g_ptr_array_add (files, g_strdup (entry->d_name));
+
+  g_ptr_array_add (files, NULL);
+
+  if (closedir (dir))
+    {
+      array_free (files);
+      g_warning ("%s: failed to close dir: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  *start = files;
+  return 0;
+}
+
+/**
+ * @brief Initialise a report format file iterator.
+ *
+ * @param[in]  iterator       Iterator.
+ * @param[in]  report_format  Single report format to iterate over, NULL for
+ *                            all.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+init_report_format_file_iterator (file_iterator_t* iterator,
+                                  report_format_t report_format)
+{
+  gchar *dir_name, *name;
+
+  name = report_format_name (report_format);
+  if (name == NULL)
+    return -1;
+
+  if (report_format_global (report_format))
+    dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                 "openvasmd",
+                                 "global_report_formats",
+                                 name,
+                                 NULL);
+  else
+    {
+      assert (current_credentials.uuid);
+      dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                   "openvasmd",
+                                   "report_formats",
+                                   current_credentials.uuid,
+                                   name,
+                                   NULL);
+    }
+
+  g_free (name);
+
+  if (get_report_format_files (dir_name, &iterator->start))
+    {
+      g_free (dir_name);
+      return -1;
+    }
+
+  iterator->current = iterator->start->pdata;
+  iterator->current--;
+  iterator->dir_name = dir_name;
+  return 0;
+}
+
+/**
+ * @brief Cleanup a report type iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ */
+void
+cleanup_file_iterator (file_iterator_t* iterator)
+{
+  array_free (iterator->start);
+  g_free (iterator->dir_name);
+}
+
+/**
+ * @brief Increment a report type iterator.
+ *
+ * The caller must stop using this after it returns FALSE.
+ *
+ * @param[in]  iterator  Task iterator.
+ *
+ * @return TRUE if there was a next item, else FALSE.
+ */
+gboolean
+next_file (file_iterator_t* iterator)
+{
+  iterator->current++;
+  if (*iterator->current == NULL) return FALSE;
+  return TRUE;
+}
+
+/**
+ * @brief Return the name from a file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return File name.
+ */
+const char*
+file_iterator_name (file_iterator_t* iterator)
+{
+  return (const char*) *iterator->current;
+}
+
+/**
+ * @brief Return the file contents from a file iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Freshly allocated file contents, in base64.
+ */
+gchar*
+file_iterator_content_64 (file_iterator_t* iterator)
+{
+  gchar *path_name, *content;
+  GError *error;
+  gsize content_size;
+
+  path_name = g_build_filename (iterator->dir_name,
+                                (gchar*) *iterator->current,
+                                NULL);
+
+  /* Read in the contents. */
+
+  error = NULL;
+  if (g_file_get_contents (path_name,
+                           &content,
+                           &content_size,
+                           &error)
+      == FALSE)
+    {
+      if (error)
+        {
+          g_debug ("%s: failed to read %s: %s",
+                   __FUNCTION__, path_name, error->message);
+          g_error_free (error);
+        }
+      g_free (path_name);
+      return NULL;
+    }
+
+  g_free (path_name);
+
+  /* Base64 encode the contents. */
+
+  if (content && (content_size > 0))
+    {
+      gchar *base64 = g_base64_encode ((guchar*) content, content_size);
+      g_free (content);
+      return base64;
+    }
+
+  return content;
+}
+
+
 /* Tags. */
 
 /**

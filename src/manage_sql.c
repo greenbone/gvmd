@@ -41,6 +41,7 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -685,6 +686,35 @@ user_owns_uuid (const char *resource, const char *uuid)
 }
 
 /**
+ * @brief Test whether a user owns a resource.
+ *
+ * @param[in]  resource  Type of resource, for example "report_format".
+ * @param[in]  field     Field to compare with value.
+ * @param[in]  value     Identifier value of resource.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+static int
+user_owns (const char *resource, const char *field, const char *value)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  ret = sql_int (0, 0,
+                 "SELECT count(*) FROM %ss"
+                 " WHERE %s = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 resource,
+                 field,
+                 value,
+                 current_credentials.uuid);
+
+  return ret;
+}
+
+/**
  * @brief Test whether a user owns a result.
  *
  * @param[in]  uuid      UUID of result.
@@ -741,6 +771,8 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
@@ -4930,6 +4962,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
       current_credentials.uuid = NULL;
     }
+
+  /* Ensure the predefined report formats exist. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'XML',"
+         " 'Raw XML report.',"
+         " 'All information about a scan, in XML.',"
+         " 'xml', 'text/xml');");
 
   if (nvt_cache_mode == 0)
     {
@@ -16170,5 +16213,563 @@ DEF_ACCESS (schedule_task_iterator_uuid, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_task_iterator_name, 2);
+
+
+/* Report Formats. */
+
+/**
+ * @brief Find a report format given a UUID.
+ *
+ * @param[in]   uuid           UUID of report format.
+ * @param[out]  report_format  Report format return, 0 if succesfully failed to
+ *                             find report format.
+ *
+ * @return FALSE on success (including if failed to find report format), TRUE
+ *         on error.
+ */
+gboolean
+find_report_format (const char* uuid, report_format_t* report_format)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("report_format", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *report_format = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (report_format, 0, 0,
+                     "SELECT ROWID FROM report_formats WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report_format = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a report format given a name.
+ *
+ * @param[in]   name           Name of report_format.
+ * @param[out]  report_format  Report format return, 0 if succesfully failed to
+ *                             find report_format.
+ *
+ * @return FALSE on success (including if failed to find report format), TRUE
+ *         on error.
+ */
+gboolean
+lookup_report_format (const char* name, report_format_t* report_format)
+{
+  gchar *quoted_name = sql_quote (name);
+  if (user_owns ("report_format", "name", quoted_name) == 0)
+    {
+      g_free (quoted_name);
+      *report_format = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (report_format, 0, 0,
+                     "SELECT ROWID FROM report_formats WHERE name = '%s';",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *report_format = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/** @todo Defined in omp.c! */
+int file_utils_rmdir_rf (const gchar *);
+
+/**
+ * @brief Create a report format.
+ *
+ * @param[in]   name           Name of format.
+ * @param[in]   content_type   Content type of format.
+ * @param[in]   extension      File extension of format.
+ * @param[in]   summary        Summary of format.
+ * @param[in]   description    Description of format.
+ * @param[in]   global         Whether the report is global.
+ * @param[in]   files          Array of memory.  Each item is a file name
+ *                             string, a terminating NULL, the file contents
+ *                             in base64 and a terminating NULL.
+ * @param[in]   params         Array of memory.  Each item is a param name
+ *                             string, a terminating NULL, the param value
+ *                             and a terminating NULL.
+ * @param[out]  report_format  Created report format.
+ *
+ * @return 0 success, 1 report format exists, 2 empty file name, -1 error.
+ */
+int
+create_report_format (const char *name, const char *content_type,
+                      const char *extension, const char *summary,
+                      const char *description, int global, array_t *files,
+                      array_t *params, report_format_t *report_format)
+{
+  gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
+  gchar *quoted_content_type, *file_name, *dir, *param_name;
+  report_format_t report_format_rowid;
+  int index = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+  assert (name);
+  assert (files);
+  assert (params);
+
+  quoted_name = sql_quote (name);
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_formats"
+               " WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Write files to disk. */
+
+  if (global)
+    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                            "openvasmd",
+                            "global_report_formats",
+                            name,
+                            NULL);
+  else
+    {
+      assert (current_credentials.uuid);
+      dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                              "openvasmd",
+                              "report_formats",
+                              current_credentials.uuid,
+                              name,
+                              NULL);
+    }
+
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
+      g_free (dir);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
+      g_free (dir);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
+    {
+      gchar *contents, *file, *full_file_name;
+      gsize contents_size;
+      GError *error;
+
+      if (strlen (file_name) == 0)
+        {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+
+      file = file_name + strlen (file_name) + 1;
+      if (strlen (file))
+        contents = (gchar*) g_base64_decode (file, &contents_size);
+      else
+        {
+          contents = g_strdup ("");
+          contents_size = 0;
+        }
+
+      full_file_name = g_build_filename (dir, file_name, NULL);
+
+      error = NULL;
+      g_file_set_contents (full_file_name, contents, contents_size, &error);
+      g_free (contents);
+      g_free (full_file_name);
+      if (error)
+        {
+          g_warning ("%s: %s", __FUNCTION__, error->message);
+          g_error_free (error);
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+    }
+
+  /* Add format to database. */
+
+  quoted_summary = summary ? sql_quote (summary) : NULL;
+  quoted_description = description ? sql_quote (description) : NULL;
+  quoted_extension = extension ? sql_quote (extension) : NULL;
+  quoted_content_type = content_type ? sql_quote (content_type) : NULL;
+
+  if (global)
+    sql ("INSERT INTO report_formats"
+         " (uuid, name, owner, summary, description, extension, content_type)"
+         " VALUES (make_uuid (), '%s', NULL, '%s', '%s', '%s', '%s');",
+         quoted_name,
+         quoted_summary ? quoted_summary : "",
+         quoted_description ? quoted_description : "",
+         quoted_extension ? quoted_extension : "",
+         quoted_content_type ? quoted_content_type : "");
+  else
+    sql ("INSERT INTO report_formats"
+         " (uuid, name, owner, summary, description, extension, content_type)"
+         " VALUES (make_uuid (), '%s',"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         " '%s', '%s', '%s', '%s');",
+         quoted_name,
+         current_credentials.uuid,
+         quoted_summary ? quoted_summary : "",
+         quoted_description ? quoted_description : "",
+         quoted_extension ? quoted_extension : "",
+         quoted_content_type ? quoted_content_type : "");
+
+  g_free (quoted_summary);
+  g_free (quoted_description);
+  g_free (quoted_extension);
+  g_free (quoted_content_type);
+  g_free (quoted_name);
+
+  /* Add params to database. */
+
+  report_format_rowid = sqlite3_last_insert_rowid (task_db);
+  index = 0;
+  while ((param_name = (gchar*) g_ptr_array_index (params, index++)))
+    {
+      gchar *param, *quoted_param_name, *quoted_param_value;
+
+      param = param_name + strlen (param_name) + 1;
+
+      quoted_param_name = sql_quote (param_name);
+      quoted_param_value = sql_quote (param);
+
+      sql ("INSERT INTO report_format_params"
+           " (report_format, name, value)"
+           " VALUES (%llu, '%s', '%s');",
+           report_format_rowid,
+           quoted_param_name,
+           quoted_param_value);
+
+      g_free (quoted_param_name);
+      g_free (quoted_param_value);
+    }
+
+  if (report_format)
+    *report_format = report_format_rowid;
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+delete_report_format (report_format_t report_format)
+{
+  char *name;
+  gchar *dir;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  name = report_format_name (report_format);
+  if (name == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report_format_global (report_format))
+    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                            "openvasmd",
+                            "global_report_formats",
+                            name,
+                            NULL);
+  else
+    dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                            "openvasmd",
+                            "report_formats",
+                            current_credentials.uuid,
+                            name,
+                            NULL);
+  free (name);
+  if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
+    {
+      g_free (dir);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  g_free (dir);
+
+  sql ("DELETE FROM report_formats WHERE ROWID = %llu;", report_format);
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Return the UUID of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated UUID.
+ */
+char *
+report_format_uuid (report_format_t report_format)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM report_formats WHERE ROWID = %llu;",
+                     report_format);
+}
+
+/**
+ * @brief Return the name of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated name.
+ */
+char *
+report_format_name (report_format_t report_format)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM report_formats WHERE ROWID = %llu;",
+                     report_format);
+}
+
+/**
+ * @brief Return whether a report format is global.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if global, else 0.
+ */
+int
+report_format_global (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT owner is NULL FROM report_formats"
+                  " WHERE ROWID = %llu;",
+                  report_format);
+}
+
+/**
+ * @brief Initialise a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_report_format_iterator (iterator_t* iterator, report_format_t report_format,
+                             int ascending, const char* sort_field)
+{
+  if (report_format)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, extension, content_type,"
+                   " summary, description, owner IS NULL"
+                   " FROM report_formats"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   report_format,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, extension, content_type,"
+                   " summary, description, owner is NULL"
+                   " FROM report_formats"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the report format from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Report_Format.
+ */
+report_format_t
+report_format_iterator_report_format (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (report_format_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
+ * @brief Get the UUID from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_name, 2);
+
+/**
+ * @brief Get the extension from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Extension, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_extension, 3);
+
+/**
+ * @brief Get the content type from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Content type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_content_type, 4);
+
+/**
+ * @brief Get the summary from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Summary, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_summary, 5);
+
+/**
+ * @brief Get the description from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Description, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_description, 6);
+
+/**
+ * @brief Get the global state from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Global flag, or -1 if iteration is complete.
+ */
+int
+report_format_iterator_global (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int (iterator->stmt, 7);
+}
+
+/**
+ * @brief Initialise a report format iterator.
+ *
+ * @param[in]  iterator       Iterator.
+ * @param[in]  report_format  Single report_format to iterate over, or 0 for all.
+ * @param[in]  ascending      Whether to sort ascending or descending.
+ * @param[in]  sort_field     Field to sort on, or NULL for "ROWID".
+ */
+void
+init_report_format_param_iterator (iterator_t* iterator, report_format_t report_format,
+                                   int ascending, const char* sort_field)
+{
+  if (report_format)
+    init_iterator (iterator,
+                   "SELECT ROWID, name, value"
+                   " FROM report_format_params"
+                   " WHERE report_format = %llu"
+                   " ORDER BY %s %s;",
+                   report_format,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, name, value"
+                   " FROM report_format_params"
+                   " ORDER BY %s %s;",
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the name from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_param_iterator_name, 1);
+
+/**
+ * @brief Get the value from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_param_iterator_value, 2);
 
 #undef DEF_ACCESS

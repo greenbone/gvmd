@@ -162,6 +162,7 @@ typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
+typedef long long int report_format_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
@@ -1408,6 +1409,94 @@ schedule_task_iterator_uuid (iterator_t *);
 
 const char*
 schedule_task_iterator_name (iterator_t *);
+
+
+/* Report Formats. */
+
+gboolean
+find_report_format (const char*, report_format_t*);
+
+gboolean
+lookup_report_format (const char*, report_format_t*);
+
+int
+create_report_format (const char *, const char *, const char *, const char *,
+                      const char *, int, array_t *, array_t *,
+                      report_format_t *);
+
+int
+delete_report_format (report_format_t);
+
+char *
+report_format_uuid (report_format_t);
+
+char *
+report_format_name (report_format_t);
+
+int
+report_format_global (report_format_t);
+
+void
+init_report_format_iterator (iterator_t*, report_format_t, int, const char*);
+
+report_format_t
+report_format_iterator_report_format (iterator_t*);
+
+const char*
+report_format_iterator_uuid (iterator_t *);
+
+const char*
+report_format_iterator_name (iterator_t *);
+
+const char*
+report_format_iterator_extension (iterator_t *);
+
+const char*
+report_format_iterator_content_type (iterator_t *);
+
+const char*
+report_format_iterator_description (iterator_t *);
+
+int
+report_format_iterator_global (iterator_t *);
+
+const char*
+report_format_iterator_summary (iterator_t *);
+
+/**
+ * @brief A report format file iterator.
+ */
+typedef struct
+{
+  GPtrArray *start;    ///< Array of files.
+  gpointer *current;   ///< Current file.
+  gchar *dir_name;     ///< Dir holding files.
+} file_iterator_t;
+
+int
+init_report_format_file_iterator (file_iterator_t*, report_format_t);
+
+void
+cleanup_file_iterator (file_iterator_t*);
+
+gboolean
+next_file (file_iterator_t*);
+
+const char*
+file_iterator_name (file_iterator_t*);
+
+gchar*
+file_iterator_content_64 (file_iterator_t*);
+
+void
+init_report_format_param_iterator (iterator_t*, report_format_t, int,
+                                   const char*);
+
+const char*
+report_format_param_iterator_name (iterator_t *);
+
+const char*
+report_format_param_iterator_value (iterator_t *);
 
 
 /* Tags. */
