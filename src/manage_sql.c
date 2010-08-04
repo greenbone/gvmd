@@ -4965,13 +4965,21 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined report formats exist. */
 
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'NBE', 'Legacy OpenVAS report.',"
+         " 'The traditional OpenVAS Scanner text based format.',"
+         " 'nbe', 'text/plain');");
+
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
          " VALUES (make_uuid (), NULL, 'XML',"
          " 'Raw XML report.',"
-         " 'All information about a scan, in XML.',"
+         " 'Complete scan report in OpenVAS Manager XML format.',"
          " 'xml', 'text/xml');");
 
   if (nvt_cache_mode == 0)
