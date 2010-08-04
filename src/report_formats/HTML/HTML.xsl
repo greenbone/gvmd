@@ -148,7 +148,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <div style="width: 100%">
         NVT:
         <xsl:variable name="max" select="80"/>
-        <a href="?cmd=get_nvt_details&amp;oid={nvt/@oid}">
           <xsl:choose>
             <xsl:when test="string-length(nvt/name) &gt; $max">
               <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
@@ -157,11 +156,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <xsl:value-of select="nvt/name"/>
             </xsl:otherwise>
           </xsl:choose>
-        </a>
-        (OID:
-         <a href="?cmd=get_nvt_details&amp;oid={nvt/@oid}">
-           <xsl:value-of select="nvt/@oid"/>
-         </a>)
+        (OID: <xsl:value-of select="nvt/@oid"/>)
       </div>
     </div>
     <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
