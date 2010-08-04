@@ -2,8 +2,15 @@
 #
 # OpenVAS
 # $Id$
-# Description: Report generator script: HTML.
+# Description: Report generator script: XML.
 #
+# This report generator is the most trivial
+# one as it simply passes on the XML report
+# without any change.
+#
+# Authors:
+# Matthew Mundell <matthew.mundell@greenbone.net>
+# 
 # Copyright:
 # Copyright (C) 2010 Greenbone Networks GmbH
 #
