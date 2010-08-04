@@ -35,10 +35,10 @@ endif (NOT SQLITE3)
 
 exec_program (pkg-config
               ARGS --cflags glib-2.0
-			  OUTPUT_VARIABLE GLIB_CFLAGS)
+              OUTPUT_VARIABLE GLIB_CFLAGS)
 exec_program (pkg-config
               ARGS --libs glib-2.0
-			  OUTPUT_VARIABLE GLIB_LDFLAGS)
+              OUTPUT_VARIABLE GLIB_LDFLAGS)
 
 if (OPENVAS_HEADER_INSTALL_DIR)
   set (HEADER_TEMP "-I${OPENVAS_HEADER_INSTALL_DIR}")
@@ -57,10 +57,10 @@ endif (OPENVAS_LIB_INSTALL_DIR)
 
 exec_program (libopenvas-config
               ARGS --cflags
-			  OUTPUT_VARIABLE OPENVAS_CFLAGS)
+              OUTPUT_VARIABLE OPENVAS_CFLAGS)
 exec_program (libopenvas-config
               ARGS --libs
-			  OUTPUT_VARIABLE OPENVAS_LDFLAGS)
+              OUTPUT_VARIABLE OPENVAS_LDFLAGS)
 
 ## Libraries
 
@@ -164,15 +164,15 @@ install (FILES openvasmd_log.conf
 
 install (FILES report_formats/HTML/generate report_formats/HTML/HTML.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/HTML/
-                 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES report_formats/NBE/generate report_formats/NBE/NBE.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/NBE/
-                 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES report_formats/XML/generate
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/XML/
-		 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 ## Tests
 
