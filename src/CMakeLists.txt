@@ -162,6 +162,14 @@ install (TARGETS openvasmd
 install (FILES openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
+install (FILES report_formats/HTML/generate report_formats/HTML/HTML.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/HTML/
+                 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
+install (FILES report_formats/NBE/generate report_formats/NBE/NBE.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/NBE/
+                 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
 install (FILES report_formats/XML/generate
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/XML/
 		 PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
