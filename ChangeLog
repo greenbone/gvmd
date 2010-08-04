@@ -1,3 +1,8 @@
+2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Remove quotation marks from
+	CLIENT_RESUME_OR_START_TASK error responses.
+
 2010-08-05  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/CMakeLists.txt: Adding install targets for ITG.
@@ -6,7 +11,7 @@
 	for "ITG" report format.
 
 	* src/report_formats/ITG/, src/report_formats/ITG/ITG.xsl,
-        src/report_formats/ITG/generate: Report generator for
+	src/report_formats/ITG/generate: Report generator for
 	ITG by Matthew Mundell.
 
 2010-08-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>

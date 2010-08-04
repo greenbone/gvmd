@@ -11921,7 +11921,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Task must be in \"Stopped\" state"));
+                                          "Task must be in Stopped state"));
                       g_log ("event task", G_LOG_LEVEL_MESSAGE,
                              "Task %s has failed to start",
                              resume_or_start_task_data->task_id);
@@ -12101,7 +12101,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_stopped_task",
-                                          "Task must be in \"Stopped\" state"));
+                                          "Task must be in Stopped state"));
                       g_log ("event task", G_LOG_LEVEL_MESSAGE,
                              "Task %s has failed to resume",
                              resume_stopped_task_data->task_id);
