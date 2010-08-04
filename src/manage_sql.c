@@ -4965,6 +4965,24 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined report formats exist. */
 
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'CPE',"
+         " 'Common Product Enumeration CSV table.',"
+         " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
+         "information technology systems, platforms, and packages.  In other words: CPE\n"
+         "provides a unique identifier for virtually any software product that is known for\n"
+         "a vulnerability.\n"
+         "\n"
+         "The CPE dictionary is maintained by MITRE and NIST.  MITRE also maintains CVE\n"
+         "(Common Vulnerability Enumeration) and other relevant security standards.\n"
+         "\n"
+         "The report selects all CPE tables from the results and forms a single table\n"
+         "as a comma separated values file.\n',"
+         " 'csv', 'text/csv');");
+
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
