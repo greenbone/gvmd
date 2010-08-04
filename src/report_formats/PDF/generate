@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Report generator script: PDF.
+#
+# This report generate initially creates a LaTeX file
+# using a XML transformation with the tool xsltproc.
+# In a second step the latex file is processed with
+# the tool pdflatex and results in the final PDF file.
+# The intermediate files are stored under /tmp.
+#
+# Authors:
+# Matthew Mundell <matthew.mundell@greenbone.net>
+# 
+# Copyright:
+# Copyright (C) 2010 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+TMP=`mktemp -d` || exit 1
+
+xsltproc ./latex.xsl $1 > ${TMP}/report.tex
+
+pdflatex -output-directory ${TMP} ${TMP}/report.tex > /tmp/openvasmd_pdflatex_out 2>&1 \
+ && pdflatex -output-directory ${TMP} ${TMP}/report.tex > /tmp/openvasmd_pdflatex_out 2>&1
+
+cat ${TMP}/report.pdf && rm -rf ${TMP}
