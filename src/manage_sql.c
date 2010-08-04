@@ -4965,6 +4965,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   /* Ensure the predefined report formats exist. */
 
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'HTML', 'Single page HTML report.',"
+         " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
+         "the HTML, so the page is suitable for viewing in a browser as is.\n',"
+         " 'html', 'text/html');");
+
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
