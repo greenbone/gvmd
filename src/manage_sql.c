@@ -13138,8 +13138,7 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
   value = sql_string (0, 0,
                       "SELECT value FROM config_preferences"
                       " WHERE config = %llu"
-                      " AND name = '%s'"
-                      " AND type = 'PLUGINS_PREFS';",
+                      " AND name = '%s'",
                       config,
                       quoted_name);
   g_free (quoted_name);

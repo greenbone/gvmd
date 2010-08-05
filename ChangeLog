@@ -1,5 +1,11 @@
 2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (nvt_preference_iterator_config_value): Remove type
+	constraint from SQL, as the preference may also be a server pref.  This
+	reverts r8583.
+
+2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove quotation marks from
 	CLIENT_RESUME_OR_START_TASK error responses.
 
