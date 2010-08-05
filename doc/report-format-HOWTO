@@ -1,0 +1,68 @@
+OPENVAS-MANAGER REPORT FORMAT HOWTO
+===================================
+
+The OpenVAS Manager comes with a flexible report framework.  There are
+numerous predefined report formats.  Report formats can also be loaded at
+run time via the client protocol (OMP).
+
+Global report formats are visible to all users.
+
+
+Creating a new predefined report format
+---------------------------------------
+
+To add a new predefined global report format to OpenVAS Manager (typically in
+SVN):
+
+  - Add a new directory in src/report_formats for the format.  The directory
+	must have the same name as the report.
+
+  - Add a file called "generate" in this new directory.  This is the generator
+	shell script.  The Manager passes this to bin/sh to create the report.
+	The generator is passed a single argument: the location of a file containing
+	the report as XML.
+
+  - Add any files that the generator needs to the directory.  Typically this is
+	a single XSLT file.
+
+  - In init_manage in src/manage_sql.c add code to initialise the format in
+	the database.
+
+  - Update src/CMakeLists.txt to install the new files in src/report_format.
+
+
+Adding a report format to an existing OpenVAS Manager installation
+------------------------------------------------------------------
+
+Use the CREATE_REPORT_FORMAT OMP command to install the report format.  The
+GSA provides an upload option for this on the "Report Formats" page.
+
+
+Developing a new report format using an existing OpenVAS Manager installation
+-----------------------------------------------------------------------------
+
+To add a new global report format to an OpenVAS Manager that is installed
+in PREFIX:
+
+  - Add a new directory in PREFIX/etc/openvas/openvasmd/global_report_formats
+	for the format.  The directory must have the same name as the report.
+
+  - Add a file called "generate" in this new directory.  This is the generator
+	shell script.  The Manager passes this to bin/sh to create the report.
+	The generator is passed a single argument: the location of a file containing
+	the report as XML.
+
+  - Add files that the generator needs to the directory.  Typically this is
+	a single XSLT file.
+
+  - Make a UUID for the report (for example with the uuid command).
+
+  - Manually add the report	format to the database with this UUID.  The SQL to
+	add report format "CPE" is
+
+		INSERT into report_formats
+          (uuid, owner, name, summary, description, extension, content_type)
+          VALUES
+	      (NEW_UUID, NULL, 'CPE', 'Summary of CPE format (one line).',"
+           'Desciption of CPE format (longer than summary).\n',"
+           'csv', 'text/csv');"

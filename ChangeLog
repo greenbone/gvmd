@@ -1,5 +1,9 @@
 2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/report-format-HOWTO: New file.
+
+2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (nvt_preference_iterator_config_value): Add ordering
 	by type to SQL in case a broken GSA filled the database with server
 	preferences with the NVT preference name.
