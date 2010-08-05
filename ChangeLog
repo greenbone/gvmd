@@ -1,5 +1,9 @@
 2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/report-format-HOWTO: Convert tabs to spaces.
+
+2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/report-format-HOWTO: New file.
 
 2010-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
