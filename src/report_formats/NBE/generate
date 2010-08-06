@@ -9,7 +9,7 @@
 # via a XSL script into the line-oriented CSV
 # format called NBE.
 #
-# Toi run this generator properly, the tool xsltproc
+# To run this generator properly, the tool xsltproc
 # needs to be accesible.
 #
 # Authors:

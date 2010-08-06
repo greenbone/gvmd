@@ -1,5 +1,11 @@
 2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/report_formats/HTML/generate, src/report_formats/CPE/generate,
+	src/report_formats/NBE/generate, src/report_formats/PDF/generate:
+	Remove trailing whitespace, fixed typo.
+
+2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Added test for upcoming text report format.
 
 	* src/tests/report_formats/CMakeLists.txt: Declare new test.
