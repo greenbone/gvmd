@@ -1,6 +1,12 @@
 2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
-	* src/report_formats/NBE/nbe.xsl: Fixed to conform old nbe format.
+	* src/report_formats/TXT, src/report_formats/TXT/generate,
+	src/report_formats/TXT/TXT.xsl: Added first part of text report
+	generator.
+
+2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/report_formats/NBE/NBE.xsl: Fixed to conform old nbe format.
 
 2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
