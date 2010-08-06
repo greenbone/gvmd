@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# OpenVAS
+# $Id$
+# Description: Script to create reports and compare them with desired
+#              results conveniently, for testing.
+#
+# Authors:
+# Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2010 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+FORMAT=$1
+FILE_EXTENSION=`echo $FORMAT | tr '[:upper:]' '[:lower:]'`
+INPUT_NAME=$2
+
+REL_TEST_DATA_DIR=../../tests/report_formats
+
+INPUT=$REL_TEST_DATA_DIR/input/$INPUT_NAME.xml
+EXPECTED_OUTPUT=$REL_TEST_DATA_DIR/expected_output/$INPUT_NAME.$FILE_EXTENSION
+GENERATED_OUTPUT=$REL_TEST_DATA_DIR/generated_output/test.$INPUT_NAME.$FILE_EXTENSION
+
+rm -f $GENERATED_OUTPUT
+
+cd ../../report_formats/$1 && sh generate $INPUT > $GENERATED_OUTPUT && diff $GENERATED_OUTPUT $EXPECTED_OUTPUT | tee $REL_TEST_DATA_DIR/diffs/$INPUT_NAME.$FILE_EXTENSION.diff

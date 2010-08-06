@@ -618,4 +618,8 @@ set_target_properties (timeout_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LD
 target_link_libraries (timeout_0 common)
 add_test (timeout_0 timeout_0)
 
+## Report Format tests
+
+add_subdirectory (report_formats)
+
 ## End
