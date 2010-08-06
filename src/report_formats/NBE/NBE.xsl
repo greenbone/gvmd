@@ -51,7 +51,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </xsl:template>
 
-<xsl:template match="result">results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="nvt/@oid"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>
+<xsl:template match="result">
+results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="nvt/@oid"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>
 </xsl:template>
 
 <xsl:template match="report">

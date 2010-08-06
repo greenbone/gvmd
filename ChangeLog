@@ -1,5 +1,9 @@
 2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	* src/report_formats/NBE/nbe.xsl: Fixed to conform old nbe format.
+
+2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	* src/report_formats/HTML/generate, src/report_formats/CPE/generate,
 	src/report_formats/NBE/generate, src/report_formats/PDF/generate:
 	Remove trailing whitespace, fixed typo.
