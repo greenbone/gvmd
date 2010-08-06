@@ -1,3 +1,16 @@
+openvas-manager 1.0.1 (2010-08-06)
+
+This is the first maintenance release for the 1.0 series of the openvas-manager
+module for the Open Vulnerability Assessment System (OpenVAS).
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 1.0.0:
+* A fix for incorrect preference values in the database has been adjusted to
+  work with GSA 1.0.1 as well.
+
+
 openvas-manager 1.0.0 (2010-07-29)
 
 This is the 1.0.0 release of the openvas-manager module for the Open
