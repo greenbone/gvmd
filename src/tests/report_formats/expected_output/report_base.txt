@@ -1,0 +1,43 @@
+I Summary
+=========
+
+This document reports on the results of an automatic security scan.
+The report first summarises the results found.
+Then, for each host, the report describes every issue found.
+Please consider the advice given in each description, in order to rectify
+the issue.
+
+Scan started: Thu Aug  5 07:52:45 2010
+Scan ended:   Thu Aug  5 07:56:59 2010
+
+Host Summary
+************
+
+Host            High  Medium  Low  Log  False Positive
+1.1.1.1            1       2   20    8               0
+Total: 1           1       2   20    8               0
+
+
+II Results per Host
+===================
+
+Host 1.1.1.1
+************
+
+Scanning of this host started at: Thu Aug  5 07:52:46 2010
+Number of results: 31
+
+Port Summary for Host 1.1.1.1
+-----------------------------
+
+Service (Port)          Threat Level
+microsoft-ds (445/tcp)  High
+netbios-ns (137/udp)    Medium
+vnc-http (5800/tcp)     Medium
+general/tcp             Low
+netbios-ssn (139/tcp)   Low
+ntp (123/udp)           Low
+ssh (22/tcp)            Low
+vnc (5900/tcp)          Low
+epmap (135/tcp)         Log
+general/CPE             Log

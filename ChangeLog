@@ -1,5 +1,13 @@
 2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
+	Added test for upcoming text report format.
+
+	* src/tests/report_formats/CMakeLists.txt: Declare new test.
+
+	* src/tests/report_formats/expected_output/report_base.txt: New file.
+
+2010-08-06  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
 	Add simple setup to check report format outputs against expected
 	output. Added testing suite consisting of a single, simple test.
 

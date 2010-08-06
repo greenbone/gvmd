@@ -26,5 +26,6 @@
 ## Testing output of report generators
 
 add_test (nbe_report_base   test_report_format  NBE  report_base)
+add_test (nbe_report_base   test_report_format  TXT  report_base)
 
 ## End
