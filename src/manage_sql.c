@@ -13042,7 +13042,10 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
                       "SELECT value FROM config_preferences"
                       " WHERE config = %llu"
                       " AND name = '%s'"
-                      " AND type = 'PLUGINS_PREFS';",
+                      /* Ensure that the NVT pref comes first, in case an
+                       * error in the GSA added the NVT pref as a Scanner
+                       * pref. */
+                      " ORDER BY type",
                       config,
                       quoted_name);
   g_free (quoted_name);
