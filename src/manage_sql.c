@@ -5002,6 +5002,15 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          "as published and maintained by the German Federal Agency for IT-Security.\n',"
          " 'csv', 'text/csv');");
 
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'LaTeX',"
+         " 'LaTeX source file.',"
+         " 'Report as LaTeX source file for further processing.\n',"
+         " 'tex', 'text/plain');");
+
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"

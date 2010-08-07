@@ -174,11 +174,15 @@ install (FILES report_formats/ITG/generate report_formats/ITG/ITG.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/ITG/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
+install (FILES report_formats/LaTeX/generate report_formats/LaTeX/latex.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/LaTeX/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
 install (FILES report_formats/NBE/generate report_formats/NBE/NBE.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/NBE/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/PDF/generate report_formats/PDF/latex.xsl
+install (FILES report_formats/PDF/generate report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/PDF/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
