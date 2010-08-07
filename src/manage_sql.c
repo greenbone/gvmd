@@ -5028,6 +5028,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
          " 'Scan results in Portable Document Format (PDF).',"
          "'pdf', 'application/pdf');");
 
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'TXT', 'Plain text report.',"
+         " 'Plain text report, best viewed with fixed font size.',"
+         " 'txt', 'text/plain');");
+
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"

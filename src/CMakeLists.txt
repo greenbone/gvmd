@@ -186,6 +186,10 @@ install (FILES report_formats/PDF/generate report_formats/LaTeX/latex.xsl
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/PDF/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
+install (FILES report_formats/TXT/generate report_formats/TXT/TXT.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/TXT/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
+
 install (FILES report_formats/XML/generate
          DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/XML/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
