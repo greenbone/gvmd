@@ -1,3 +1,8 @@
+2010-08-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/openvasmd.8.xml: Fixed typo and improved general
+	description.
+
 2010-08-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/CMakeLists.txt: Install TXT report.
