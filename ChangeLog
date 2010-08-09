@@ -1,5 +1,20 @@
 2010-08-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* report_formats/, report_formats/simple_bar_chart/,
+	report_formats/simple_bar_chart/plot.xsl,
+	report_formats/simple_bar_chart/plot.plt,
+	report_formats/simple_bar_chart/generate,
+	report_formats/simple_bar_chart/create_report_import: New.
+	A report format demonstrating a simple plot
+	with gnuplot. The report format was developed by
+	Matthew Mundell.
+	Running create_report_import will create a
+	xml file that can be imported as report format.
+	The creation process for this xml file is coarse
+	and need a more generic approach.
+
+2010-08-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* doc/openvasmd.8.xml: Fixed typo.
 
 	* doc/openvasmd.html, doc/openvasmd.8: Updated.
