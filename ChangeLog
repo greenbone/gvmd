@@ -1,3 +1,7 @@
+2010-08-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/openvasmd.html, doc/openvasmd.8: Updated.
+
 2010-08-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/openvasmd.8.xml: Fixed typo and improved general

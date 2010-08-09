@@ -1,5 +1,5 @@
 <body text="#000000" link="#0000ff" bgcolor="#ffffff"><center><table width="80%">
-<tr><td><h1>openvamd</h1>
+<tr><td><h1>openvasmd</h1>
 <h2>The manager layer of the OpenVAS Security Scanner</h2>
 
 
@@ -13,15 +13,17 @@
   <h2>Description</h2>
 
 	<p>
-	  The OpenVAS security scanner consists of a server and client.  The
-	  scanner, openvassd(8), does the actual scanning, and the client,
-	  OpenVAS-Client(1), provides a user interface to the server.
+	  OpenVAS Scanner, openvassd(8), acts as a service and offers a
+	  communication protocol for its clients called OTP. The core
+	  task of the OpenVAS Scanner is the actual scan process.
 	</p>
 
 	<p>
-	  The manager is a program that provides a layer between the server and
-	  client.  This reduces the amount of work done by the server, thus
-	  reducing the amount of work done with high system privileges.
+	  The OpenVAS Manager is a OTP client and adds various management
+	  functinalities to handle and organise scan results.
+          Thus OpenVAS Manager acts as a layer between the
+	  OpenVAS Scanner and its own clients which connect via the OMP
+	  protocol to the OpenVAS Manager.
 	</p>
   
 
