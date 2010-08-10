@@ -1,3 +1,11 @@
+2010-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_iterator): Include example task when a task
+	ID is given.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS check
+	chdir return to quiet compiler.
+
 2010-08-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/, report_formats/simple_bar_chart/,
@@ -34,7 +42,7 @@
 
 	* src/manage_sql.c (init_manage): Adding default meta data
 	for "TXT" report format.
-	
+
 2010-08-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/LaTeX/, src/report_formats/LaTeX/generate: New.
@@ -85,7 +93,7 @@
 	src/tests/report_formats/generated_output,
 	src/tests/report_formats/input, src/tests/report_formats/README,
 	src/tests/report_formats/test_report_format: New, test infrastructure.
-	
+
 	* src/tests/report_formats/input/report_base.xml,
 	src/tests/report_formats/expected_output/report_base.nbe: New, data for
 	test.

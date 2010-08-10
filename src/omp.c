@@ -8537,7 +8537,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    ret,
                                    WEXITSTATUS (ret),
                                    command);
-                        chdir (previous_dir);
+                        if (chdir (previous_dir))
+                          g_warning ("%s: and chdir failed\n",
+                                     __FUNCTION__);
                         g_free (previous_dir);
                         g_free (command);
                         g_free (output_file);

@@ -4298,9 +4298,11 @@ init_task_iterator (iterator_t* iterator,
     {
       if (task)
         init_iterator (iterator,
-                       "SELECT ROWID, uuid, run_status FROM tasks WHERE owner ="
+                       "SELECT ROWID, uuid, run_status FROM tasks"
+                       /* Include NULL so everyone can see the example task. */
+                       " WHERE ((owner IS NULL) OR owner ="
                        " (SELECT ROWID FROM users"
-                       "  WHERE users.uuid = '%s')"
+                       "  WHERE users.uuid = '%s'))"
                        " AND ROWID = %llu"
                        " ORDER BY %s %s;",
                        current_credentials.uuid,
