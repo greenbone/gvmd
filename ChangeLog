@@ -1,3 +1,8 @@
+2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_21_to_22): If the new dir already exists then
+	simply remove the old dir.
+
 2010-08-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
 	* src/tests/report_formats/CMakeLists.txt: Donate unique name to test.

@@ -3002,6 +3002,9 @@ migrate_20_to_21 ()
   return 0;
 }
 
+/** @todo Defined in omp.c! */
+int file_utils_rmdir_rf (const gchar *);
+
 /**
  * @brief Migrate the report formats from version 21 to version 22.
  *
@@ -3174,8 +3177,6 @@ migrate_21_to_22 ()
                                    iterator_int64 (&rows, 2));
           if (owner_uuid == NULL)
             {
-              /* If this happens the user may be screwed, as some of the dirs
-               * may have been renamed already. */
               g_warning ("%s: owner missing from users table\n", __FUNCTION__);
               cleanup_iterator (&rows);
               sql ("ROLLBACK;");
@@ -3195,10 +3196,16 @@ migrate_21_to_22 ()
                                       NULL);
           free (owner_uuid);
         }
-      if (rename (old_dir, new_dir))
+      if (g_file_test (new_dir, G_FILE_TEST_EXISTS))
         {
-          /* If this happens the user may be screwed, as some of the dirs
-           * may have been renamed already. */
+          if (g_file_test (old_dir, G_FILE_TEST_EXISTS)
+              && file_utils_rmdir_rf (old_dir))
+            g_warning ("%s: failed to remove %s\n",
+                       __FUNCTION__,
+                       old_dir);
+        }
+      else if (rename (old_dir, new_dir))
+        {
           g_warning ("%s: renaming %s to %s failed: %s\n",
                      __FUNCTION__,
                      old_dir,
@@ -16599,9 +16606,6 @@ lookup_report_format (const char* name, report_format_t* report_format)
   g_free (quoted_name);
   return FALSE;
 }
-
-/** @todo Defined in omp.c! */
-int file_utils_rmdir_rf (const gchar *);
 
 /**
  * @brief Create a report format.
