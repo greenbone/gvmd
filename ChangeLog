@@ -1,5 +1,9 @@
 2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report_format): Remove premature free.
+
+2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_levels): Remove trailing paren as false positive
 	is now the final case.
 

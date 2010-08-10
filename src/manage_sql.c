@@ -16663,7 +16663,6 @@ create_report_format (const char *name, const char *content_type,
   uuid = openvas_uuid_make ();
   if (uuid == NULL)
     {
-      g_free (dir);
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
