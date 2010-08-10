@@ -6986,10 +6986,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (new_type = 'Debug Message')");
+        levels_sql = g_string_new (" AND (new_type = 'Debug Message'");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type = 'Debug Message')");
+                                      " OR new_type = 'Debug Message'");
       count++;
     }
 

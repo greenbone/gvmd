@@ -1,5 +1,10 @@
 2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_levels): Remove trailing paren as false positive
+	is now the final case.
+
+2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (migrate_21_to_22): If the new dir already exists then
 	simply remove the old dir.
 
