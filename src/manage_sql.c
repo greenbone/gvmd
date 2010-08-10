@@ -3003,6 +3003,227 @@ migrate_20_to_21 ()
 }
 
 /**
+ * @brief Migrate the report formats from version 21 to version 22.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_21_to_22 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 21. */
+
+  if (manage_db_version () != 21)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the report formats.
+   *
+   * The name of the report format directories on disk changed from the report
+   * format name to the report format UUID. */
+
+  /** @todo ROLLBACK on failure. */
+
+  /* Ensure that the predefined formats all exist in the database. */
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'CPE',"
+         " 'Common Product Enumeration CSV table.',"
+         " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
+         "information technology systems, platforms, and packages.  In other words: CPE\n"
+         "provides a unique identifier for virtually any software product that is known for\n"
+         "a vulnerability.\n"
+         "\n"
+         "The CPE dictionary is maintained by MITRE and NIST.  MITRE also maintains CVE\n"
+         "(Common Vulnerability Enumeration) and other relevant security standards.\n"
+         "\n"
+         "The report selects all CPE tables from the results and forms a single table\n"
+         "as a comma separated values file.\n',"
+         " 'csv', 'text/csv');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'HTML', 'Single page HTML report.',"
+         " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
+         "the HTML, so the page is suitable for viewing in a browser as is.\n',"
+         " 'html', 'text/html');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'ITG',"
+         " 'German \"IT-Grundschutz-Kataloge\" report.',"
+         " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
+         "as published and maintained by the German Federal Agency for IT-Security.\n',"
+         " 'csv', 'text/csv');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'LaTeX',"
+         " 'LaTeX source file.',"
+         " 'Report as LaTeX source file for further processing.\n',"
+         " 'tex', 'text/plain');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'NBE', 'Legacy OpenVAS report.',"
+         " 'The traditional OpenVAS Scanner text based format.',"
+         " 'nbe', 'text/plain');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'PDF',"
+         " 'Portable Document Format report.',"
+         " 'Scan results in Portable Document Format (PDF).',"
+         "'pdf', 'application/pdf');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'TXT', 'Plain text report.',"
+         " 'Plain text report, best viewed with fixed font size.',"
+         " 'txt', 'text/plain');");
+
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
+      == 0)
+    sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+         " extension, content_type)"
+         " VALUES (make_uuid (), NULL, 'XML',"
+         " 'Raw XML report.',"
+         " 'Complete scan report in OpenVAS Manager XML format.',"
+         " 'xml', 'text/xml');");
+
+  /* Update the UUIDs of the predefined formats to the new predefined UUIDs. */
+
+  sql ("UPDATE report_formats SET uuid = 'a0704abb-2120-489f-959f-251c9f4ffebd'"
+       " WHERE name = 'CPE'");
+
+  sql ("UPDATE report_formats SET uuid = 'b993b6f5-f9fb-4e6e-9c94-dd46c00e058d'"
+       " WHERE name = 'HTML'");
+
+  sql ("UPDATE report_formats SET uuid = '929884c6-c2c4-41e7-befb-2f6aa163b458'"
+       " WHERE name = 'ITG'");
+
+  sql ("UPDATE report_formats SET uuid = '9f1ab17b-aaaa-411a-8c57-12df446f5588'"
+       " WHERE name = 'LaTeX'");
+
+  sql ("UPDATE report_formats SET uuid = 'f5c2a364-47d2-4700-b21d-0a7693daddab'"
+       " WHERE name = 'NBE'");
+
+  sql ("UPDATE report_formats SET uuid = '1a60a67e-97d0-4cbf-bc77-f71b08e7043d'"
+       " WHERE name = 'PDF'");
+
+  sql ("UPDATE report_formats SET uuid = '19f6f1b3-7128-4433-888c-ccc764fe6ed5'"
+       " WHERE name = 'TXT'");
+
+  sql ("UPDATE report_formats SET uuid = 'd5da9f67-8551-4e51-807b-b6a873d70e34'"
+       " WHERE name = 'XML'");
+
+  /* Rename the directories. */
+
+  init_iterator (&rows, "SELECT ROWID, uuid, owner, name FROM report_formats;");
+  while (next (&rows))
+    {
+      const char *name, *uuid;
+      gchar *old_dir, *new_dir;
+
+      uuid = iterator_string (&rows, 1);
+      name = iterator_string (&rows, 3);
+
+      if (sql_int (0, 0,
+                   "SELECT owner is NULL FROM report_formats"
+                   " WHERE ROWID = %llu;",
+                   iterator_int64 (&rows, 0)))
+        {
+          /* Global. */
+          old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                      "openvasmd",
+                                      "global_report_formats",
+                                      name,
+                                      NULL);
+          new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                      "openvasmd",
+                                      "global_report_formats",
+                                      uuid,
+                                      NULL);
+        }
+      else
+        {
+          char *owner_uuid;
+          owner_uuid = sql_string (0, 0,
+                                   "SELECT uuid FROM users"
+                                   " WHERE ROWID = %llu;",
+                                   iterator_int64 (&rows, 2));
+          if (owner_uuid == NULL)
+            {
+              /* If this happens the user may be screwed, as some of the dirs
+               * may have been renamed already. */
+              g_warning ("%s: owner missing from users table\n", __FUNCTION__);
+              cleanup_iterator (&rows);
+              sql ("ROLLBACK;");
+              return -1;
+            }
+          old_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                      "openvasmd",
+                                      "report_formats",
+                                      owner_uuid,
+                                      name,
+                                      NULL);
+          new_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                      "openvasmd",
+                                      "report_formats",
+                                      owner_uuid,
+                                      uuid,
+                                      NULL);
+          free (owner_uuid);
+        }
+      if (rename (old_dir, new_dir))
+        {
+          /* If this happens the user may be screwed, as some of the dirs
+           * may have been renamed already. */
+          g_warning ("%s: renaming %s to %s failed: %s\n",
+                     __FUNCTION__,
+                     old_dir,
+                     new_dir,
+                     strerror (errno));
+          g_free (old_dir);
+          g_free (new_dir);
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_free (old_dir);
+      g_free (new_dir);
+    }
+
+  /* Set the database version to 22. */
+
+  set_db_version (22);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3028,6 +3249,7 @@ static migrator_t database_migrators[]
     {19, migrate_18_to_19},
     {20, migrate_19_to_20},
     {21, migrate_20_to_21},
+    {22, migrate_21_to_22},
     /* End marker. */
     {-1, NULL}};
 
@@ -4971,7 +5193,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'CPE',"
+         " VALUES ('a0704abb-2120-489f-959f-251c9f4ffebd', NULL, 'CPE',"
          " 'Common Product Enumeration CSV table.',"
          " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
          "information technology systems, platforms, and packages.  In other words: CPE\n"
@@ -4989,7 +5211,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'HTML', 'Single page HTML report.',"
+         " VALUES ('b993b6f5-f9fb-4e6e-9c94-dd46c00e058d', NULL, 'HTML',"
+         " 'Single page HTML report.',"
          " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
          "the HTML, so the page is suitable for viewing in a browser as is.\n',"
          " 'html', 'text/html');");
@@ -4998,7 +5221,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'ITG',"
+         " VALUES ('929884c6-c2c4-41e7-befb-2f6aa163b458', NULL, 'ITG',"
          " 'German \"IT-Grundschutz-Kataloge\" report.',"
          " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
          "as published and maintained by the German Federal Agency for IT-Security.\n',"
@@ -5008,7 +5231,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'LaTeX',"
+         " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
          " 'LaTeX source file.',"
          " 'Report as LaTeX source file for further processing.\n',"
          " 'tex', 'text/plain');");
@@ -5017,7 +5240,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'NBE', 'Legacy OpenVAS report.',"
+         " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
+         " 'Legacy OpenVAS report.',"
          " 'The traditional OpenVAS Scanner text based format.',"
          " 'nbe', 'text/plain');");
 
@@ -5025,7 +5249,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'PDF',"
+         " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
          " 'Portable Document Format report.',"
          " 'Scan results in Portable Document Format (PDF).',"
          "'pdf', 'application/pdf');");
@@ -5034,7 +5258,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'TXT', 'Plain text report.',"
+         " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
+         " 'Plain text report.',"
          " 'Plain text report, best viewed with fixed font size.',"
          " 'txt', 'text/plain');");
 
@@ -5042,7 +5267,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
-         " VALUES (make_uuid (), NULL, 'XML',"
+         " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
          " 'Raw XML report.',"
          " 'Complete scan report in OpenVAS Manager XML format.',"
          " 'xml', 'text/xml');");
@@ -16405,6 +16630,7 @@ create_report_format (const char *name, const char *content_type,
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *file_name, *dir, *param_name;
+  char *uuid;
   report_format_t report_format_rowid;
   int index = 0;
 
@@ -16430,13 +16656,22 @@ create_report_format (const char *name, const char *content_type,
       return 1;
     }
 
+  uuid = openvas_uuid_make ();
+  if (uuid == NULL)
+    {
+      g_free (dir);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
   /* Write files to disk. */
 
   if (global)
     dir = g_build_filename (OPENVAS_SYSCONF_DIR,
                             "openvasmd",
                             "global_report_formats",
-                            name,
+                            uuid,
                             NULL);
   else
     {
@@ -16445,7 +16680,7 @@ create_report_format (const char *name, const char *content_type,
                               "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
-                              name,
+                              uuid,
                               NULL);
     }
 
@@ -16454,6 +16689,7 @@ create_report_format (const char *name, const char *content_type,
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
+      free (uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -16463,6 +16699,7 @@ create_report_format (const char *name, const char *content_type,
       g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
+      free (uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -16478,6 +16715,7 @@ create_report_format (const char *name, const char *content_type,
           file_utils_rmdir_rf (dir);
           g_free (dir);
           g_free (quoted_name);
+          free (uuid);
           sql ("ROLLBACK;");
           return 2;
         }
@@ -16504,6 +16742,7 @@ create_report_format (const char *name, const char *content_type,
           file_utils_rmdir_rf (dir);
           g_free (dir);
           g_free (quoted_name);
+          free (uuid);
           sql ("ROLLBACK;");
           return -1;
         }
@@ -16519,7 +16758,8 @@ create_report_format (const char *name, const char *content_type,
   if (global)
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type)"
-         " VALUES (make_uuid (), '%s', NULL, '%s', '%s', '%s', '%s');",
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s');",
+         uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
          quoted_description ? quoted_description : "",
@@ -16528,9 +16768,10 @@ create_report_format (const char *name, const char *content_type,
   else
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type)"
-         " VALUES (make_uuid (), '%s',"
+         " VALUES ('%s', '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '%s', '%s', '%s');",
+         uuid,
          quoted_name,
          current_credentials.uuid,
          quoted_summary ? quoted_summary : "",
@@ -16543,6 +16784,7 @@ create_report_format (const char *name, const char *content_type,
   g_free (quoted_extension);
   g_free (quoted_content_type);
   g_free (quoted_name);
+  free (uuid);
 
   /* Add params to database. */
 
@@ -16586,13 +16828,13 @@ create_report_format (const char *name, const char *content_type,
 int
 delete_report_format (report_format_t report_format)
 {
-  char *name;
+  char *uuid;
   gchar *dir;
 
   sql ("BEGIN IMMEDIATE;");
 
-  name = report_format_name (report_format);
-  if (name == NULL)
+  uuid = report_format_uuid (report_format);
+  if (uuid == NULL)
     {
       sql ("ROLLBACK;");
       return -1;
@@ -16602,16 +16844,16 @@ delete_report_format (report_format_t report_format)
     dir = g_build_filename (OPENVAS_SYSCONF_DIR,
                             "openvasmd",
                             "global_report_formats",
-                            name,
+                            uuid,
                             NULL);
   else
     dir = g_build_filename (OPENVAS_SYSCONF_DIR,
                             "openvasmd",
                             "report_formats",
                             current_credentials.uuid,
-                            name,
+                            uuid,
                             NULL);
-  free (name);
+  free (uuid);
   if (g_file_test (dir, G_FILE_TEST_EXISTS) && file_utils_rmdir_rf (dir))
     {
       g_free (dir);

@@ -162,36 +162,42 @@ install (TARGETS openvasmd
 install (FILES openvasmd_log.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
-install (FILES report_formats/CPE/generate report_formats/CPE/CPE.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/CPE/
+install (FILES report_formats/CPE/generate
+               report_formats/CPE/CPE.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/a0704abb-2120-489f-959f-251c9f4ffebd/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/HTML/generate report_formats/HTML/HTML.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/HTML/
+install (FILES report_formats/HTML/generate
+               report_formats/HTML/HTML.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/b993b6f5-f9fb-4e6e-9c94-dd46c00e058d/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/ITG/generate report_formats/ITG/ITG.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/ITG/
+install (FILES report_formats/ITG/generate
+               report_formats/ITG/ITG.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/929884c6-c2c4-41e7-befb-2f6aa163b458/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/LaTeX/generate report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/LaTeX/
+install (FILES report_formats/LaTeX/generate
+               report_formats/LaTeX/latex.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/9f1ab17b-aaaa-411a-8c57-12df446f5588/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/NBE/generate report_formats/NBE/NBE.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/NBE/
+install (FILES report_formats/NBE/generate
+               report_formats/NBE/NBE.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/f5c2a364-47d2-4700-b21d-0a7693daddab/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
-install (FILES report_formats/PDF/generate report_formats/LaTeX/latex.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/PDF/
+install (FILES report_formats/PDF/generate
+               report_formats/LaTeX/latex.xsl
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/1a60a67e-97d0-4cbf-bc77-f71b08e7043d/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES report_formats/TXT/generate report_formats/TXT/TXT.xsl
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/TXT/
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/19f6f1b3-7128-4433-888c-ccc764fe6ed5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 install (FILES report_formats/XML/generate
-         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/XML/
+         DESTINATION ${OPENVAS_SYSCONF_DIR}/openvasmd/global_report_formats/d5da9f67-8551-4e51-807b-b6a873d70e34/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_WRITE GROUP_READ)
 
 ## Tests

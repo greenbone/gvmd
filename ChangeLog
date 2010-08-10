@@ -1,5 +1,30 @@
 2010-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use the UUIDs of report formats for the names of the directories on
+	disk.  Reference report formats in GET_REPORTS by UUID instead of name.
+	Hence increase database version to 22.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 22.
+
+	* src/CMakeLists.txt: Install report formats to UUID directories.
+
+	* src/manage_sql.c (migrate_21_to_22): New function.
+	(database_migrators): Add migrate_21_to_22.
+	(init_manage): Use predefined UUIDs for the predefined report formats.
+	(create_report_format, delete_report_format): Use UUID for report format
+	dir instead of name.
+
+	* src/manage.c (get_report_format_files): Add dir name to error message.
+	(init_report_format_file_iterator): Use UUID for report format dir instead
+	of name.
+
+	* src/omp.c (get_reports_data_t, get_preferences_data_reset)
+	(omp_xml_handle_start_element): Rename format to format_id.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS expect report format
+	as UUID instead of name, and respond with ID instead of name.
+
+2010-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_iterator): Include example task when a task
 	ID is given.
 

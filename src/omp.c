@@ -1615,7 +1615,7 @@ get_preferences_data_reset (get_preferences_data_t *data)
 typedef struct
 {
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
-  char *format;          ///< Report format: "xml", "html", ....
+  char *format_id;       ///< ID of report format.
   char *report_id;       ///< ID of single report to get.
   int first_result;      ///< Skip over results before this result number.
   int max_results;       ///< Maximum number of results return.
@@ -1639,7 +1639,7 @@ typedef struct
 static void
 get_reports_data_reset (get_reports_data_t *data)
 {
-  free (data->format);
+  free (data->format_id);
   free (data->report_id);
   free (data->sort_field);
   free (data->levels);
@@ -3658,8 +3658,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 
-            append_attribute (attribute_names, attribute_values, "format",
-                              &get_reports_data->format);
+            append_attribute (attribute_names, attribute_values, "format_id",
+                              &get_reports_data->format_id);
 
             if (find_attribute (attribute_names, attribute_values,
                                 "first_result", &attribute))
@@ -8331,10 +8331,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
-        if (get_reports_data->format == NULL)
-          get_reports_data->format = g_strdup ("XML");
+        if (get_reports_data->format_id == NULL)
+          get_reports_data->format_id
+           = g_strdup ("d5da9f67-8551-4e51-807b-b6a873d70e34");
 
-        if (lookup_report_format (get_reports_data->format, &report_format))
+        if (find_report_format (get_reports_data->format_id, &report_format))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -8346,7 +8347,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             if (send_find_error_to_client ("get_reports",
                                            "report format",
-                                           get_reports_data->format,
+                                           get_reports_data->format_id,
                                            write_to_client,
                                            write_to_client_data))
               {
@@ -8440,13 +8441,33 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
             else
               {
+                iterator_t formats;
+                const char *uuid_format;
+                char *uuid_report;
+
                 gchar *script, *script_dir;
 
+                uuid_report = report_uuid (report);
+                init_report_format_iterator (&formats,
+                                             report_format,
+                                             1,
+                                             NULL);
+                if (next (&formats) == FALSE)
+                  {
+                    cleanup_iterator (&formats);
+                    cleanup_iterator (&reports);
+                    internal_error_send_to_client (error);
+                    get_reports_data_reset (get_reports_data);
+                    set_client_state (CLIENT_AUTHENTIC);
+                    return;
+                  }
+
+                uuid_format = report_format_iterator_uuid (&formats);
                 if (report_format_global (report_format))
                   script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
                                                  "openvasmd",
                                                  "global_report_formats",
-                                                 get_reports_data->format,
+                                                 uuid_format,
                                                  NULL);
                 else
                   {
@@ -8455,7 +8476,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    "openvasmd",
                                                    "report_formats",
                                                    current_credentials.uuid,
-                                                   get_reports_data->format,
+                                                   uuid_format,
                                                    NULL);
                   }
 
@@ -8468,6 +8489,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (script);
                     g_free (script_dir);
                     g_free (xml_file);
+                    cleanup_iterator (&formats);
                     cleanup_iterator (&reports);
                     internal_error_send_to_client (error);
                     get_reports_data_reset (get_reports_data);
@@ -8491,6 +8513,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (script);
                         g_free (script_dir);
                         g_free (xml_file);
+                        cleanup_iterator (&formats);
                         cleanup_iterator (&reports);
                         internal_error_send_to_client (error);
                         get_reports_data_reset (get_reports_data);
@@ -8507,6 +8530,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (script);
                         g_free (script_dir);
                         g_free (xml_file);
+                        cleanup_iterator (&formats);
                         cleanup_iterator (&reports);
                         internal_error_send_to_client (error);
                         get_reports_data_reset (get_reports_data);
@@ -8543,6 +8567,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (previous_dir);
                         g_free (command);
                         g_free (output_file);
+                        cleanup_iterator (&formats);
                         cleanup_iterator (&reports);
                         internal_error_send_to_client (error);
                         get_reports_data_reset (get_reports_data);
@@ -8564,6 +8589,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        strerror (errno));
                             g_free (previous_dir);
                             g_free (xml_file);
+                            cleanup_iterator (&formats);
                             cleanup_iterator (&reports);
                             internal_error_send_to_client (error);
                             get_reports_data_reset (get_reports_data);
@@ -8586,6 +8612,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        __FUNCTION__,
                                        get_error->message);
                             g_error_free (get_error);
+                            cleanup_iterator (&formats);
                             cleanup_iterator (&reports);
                             internal_error_send_to_client (error);
                             get_reports_data_reset (get_reports_data);
@@ -8594,48 +8621,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           }
                         else
                           {
-                            iterator_t formats;
-                            char *uuid;
-
                             /* Remove the directory. */
 
                             file_utils_rmdir_rf (xml_dir);
 
                             /* Encode and send the output. */
 
-                            uuid = report_uuid (report);
-                            init_report_format_iterator (&formats,
-                                                         report_format,
-                                                         1,
-                                                         NULL);
-                            if (next (&formats))
-                              SENDF_TO_CLIENT_OR_FAIL
-                               ("<report"
-                                " id=\"%s\""
-                                " format=\"%s\""
-                                " extension=\"%s\""
-                                " content_type=\"%s\">",
-                                uuid,
-                                get_reports_data->format,
-                                report_format_iterator_extension (&formats),
-                                report_format_iterator_content_type
-                                 (&formats));
-                            else
-                              {
-                                cleanup_iterator (&formats);
-                                g_error_free (get_error);
-                                cleanup_iterator (&reports);
-                                internal_error_send_to_client (error);
-                                get_reports_data_reset (get_reports_data);
-                                set_client_state (CLIENT_AUTHENTIC);
-                                return;
-                              }
+                            SENDF_TO_CLIENT_OR_FAIL
+                             ("<report"
+                              " id=\"%s\""
+                              " format_id=\"%s\""
+                              " extension=\"%s\""
+                              " content_type=\"%s\">",
+                              uuid_report,
+                              get_reports_data->format_id,
+                              report_format_iterator_extension (&formats),
+                              report_format_iterator_content_type
+                               (&formats));
+
                             cleanup_iterator (&formats);
-                            free (uuid);
+                            free (uuid_report);
 
                             if (output && strlen (output))
                               {
-                                if (strcmp (get_reports_data->format, "XML"))
+                                if (strcmp
+                                     (get_reports_data->format_id,
+                                      "d5da9f67-8551-4e51-807b-b6a873d70e34"))
                                   {
                                     gchar *base64;
                                     base64 = g_base64_encode ((guchar*) output,

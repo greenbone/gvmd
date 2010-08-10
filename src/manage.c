@@ -2280,8 +2280,9 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
   dir = opendir (dir_name);
   if (dir == NULL)
     {
-      g_warning ("%s: failed to open dir: %s\n",
+      g_warning ("%s: failed to open dir %s: %s\n",
                  __FUNCTION__,
+                 dir_name,
                  strerror (errno));
       return -1;
     }
@@ -2295,8 +2296,9 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
   if (closedir (dir))
     {
       array_free (files);
-      g_warning ("%s: failed to close dir: %s\n",
+      g_warning ("%s: failed to close dir %s: %s\n",
                  __FUNCTION__,
+                 dir_name,
                  strerror (errno));
       return -1;
     }
@@ -2318,17 +2320,17 @@ int
 init_report_format_file_iterator (file_iterator_t* iterator,
                                   report_format_t report_format)
 {
-  gchar *dir_name, *name;
+  gchar *dir_name, *uuid;
 
-  name = report_format_name (report_format);
-  if (name == NULL)
+  uuid = report_format_uuid (report_format);
+  if (uuid == NULL)
     return -1;
 
   if (report_format_global (report_format))
     dir_name = g_build_filename (OPENVAS_SYSCONF_DIR,
                                  "openvasmd",
                                  "global_report_formats",
-                                 name,
+                                 uuid,
                                  NULL);
   else
     {
@@ -2337,11 +2339,11 @@ init_report_format_file_iterator (file_iterator_t* iterator,
                                    "openvasmd",
                                    "report_formats",
                                    current_credentials.uuid,
-                                   name,
+                                   uuid,
                                    NULL);
     }
 
-  g_free (name);
+  g_free (uuid);
 
   if (get_report_format_files (dir_name, &iterator->start))
     {
