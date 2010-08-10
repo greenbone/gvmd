@@ -1,3 +1,13 @@
+2010-08-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/simple_topo_plot/,
+	report_formats/simple_topo_plot/hostvisdot-summary.xsl,
+	report_formats/simple_topo_plot/create_report_import,
+	report_formats/simple_topo_plot/generate: New.
+	A report format demonstrating a simple network topology plot
+	via dot. The report format was developed by
+	Michael Wiegand.
+
 2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_format): Remove premature free.
