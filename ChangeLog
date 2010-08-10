@@ -1,3 +1,10 @@
+2010-08-10  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/tests/report_formats/CMakeLists.txt: Donate unique name to test.
+
+	* src/tests/report_formats/test_report_format: Do not use tee to keep
+	meaningful exit code, cat instead. Admit bashism.
+
 2010-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use the UUIDs of report formats for the names of the directories on

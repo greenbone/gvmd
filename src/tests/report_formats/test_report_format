@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # OpenVAS
 # $Id$
@@ -37,4 +37,4 @@ GENERATED_OUTPUT=$REL_TEST_DATA_DIR/generated_output/test.$INPUT_NAME.$FILE_EXTE
 
 rm -f $GENERATED_OUTPUT
 
-cd ../../report_formats/$1 && sh generate $INPUT > $GENERATED_OUTPUT && diff $GENERATED_OUTPUT $EXPECTED_OUTPUT | tee $REL_TEST_DATA_DIR/diffs/$INPUT_NAME.$FILE_EXTENSION.diff
+cd ../../report_formats/$1 && sh generate $INPUT > $GENERATED_OUTPUT && diff $GENERATED_OUTPUT $EXPECTED_OUTPUT > $REL_TEST_DATA_DIR/diffs/$INPUT_NAME.$FILE_EXTENSION.diff || ( cat $REL_TEST_DATA_DIR/diffs/$INPUT_NAME.$FILE_EXTENSION.diff && false )
