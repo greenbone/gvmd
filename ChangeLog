@@ -1,3 +1,8 @@
+2010-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h: Update header.  Missing part of 2010-08-10
+	CREATE_REPORT_FORMAT commit.
+
 2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_REPORT_FORMAT
