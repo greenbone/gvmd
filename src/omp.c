@@ -97,6 +97,7 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -134,6 +135,20 @@ buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 
 /* Helper functions. */
+
+/**
+ * @brief Check whether a string is a UUID.
+ *
+ * @param[in]  uuid  Potential UUID.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+is_uuid (const char *uuid)
+{
+  while (*uuid) if (isxdigit (*uuid) || (*uuid == '-')) uuid++; else return 0;
+  return 1;
+}
 
 /**
  * @brief Return the name of a category.
@@ -965,6 +980,7 @@ typedef struct
   char *file_name;        ///< Name of current file.
   array_t *files;         ///< All files.
   char *global;           ///< Global flag.
+  char *id;               ///< ID.
   int import;             ///< Boolean.  Whether to import a format.
   char *name;             ///< Name.
   char *param_value;      ///< Param value during ...GRFR_REPORT_FORMAT_PARAM.
@@ -988,6 +1004,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->file_name);
   array_free (data->files);
   free (data->global);
+  free (data->id);
   free (data->name);
   free (data->param_name);
   free (data->param_value);
@@ -5460,6 +5477,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             create_report_format_data->files = make_array ();
             create_report_format_data->params = make_array ();
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_report_format_data->id);
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           }
         else
@@ -10821,8 +10840,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "CREATE_REPORT_FORMAT"
                                     " GET_REPORT_FORMATS_RESPONSE NAME must be"
                                     " least one character long"));
+              else if (create_report_format_data->id == NULL)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report_format",
+                                    "CREATE_REPORT_FORMAT"
+                                    " GET_REPORT_FORMATS_RESPONSE requires an"
+                                    " ID attribute"));
+              else if (strlen (create_report_format_data->id) == 0)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report_format",
+                                    "CREATE_REPORT_FORMAT"
+                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
+                                    " at least one character long"));
+              else if (!is_uuid (create_report_format_data->id))
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_report_format",
+                                    "CREATE_REPORT_FORMAT"
+                                    " GET_REPORT_FORMATS_RESPONSE ID must be"
+                                    " a UUID"));
               else switch (create_report_format
-                            (create_report_format_data->name,
+                            (create_report_format_data->id,
+                             create_report_format_data->name,
                              create_report_format_data->content_type,
                              create_report_format_data->extension,
                              create_report_format_data->summary,

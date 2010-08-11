@@ -16610,6 +16610,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
 /**
  * @brief Create a report format.
  *
+ * @param[in]   uuid           UUID of format.
  * @param[in]   name           Name of format.
  * @param[in]   content_type   Content type of format.
  * @param[in]   extension      File extension of format.
@@ -16627,23 +16628,36 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @return 0 success, 1 report format exists, 2 empty file name, -1 error.
  */
 int
-create_report_format (const char *name, const char *content_type,
-                      const char *extension, const char *summary,
-                      const char *description, int global, array_t *files,
-                      array_t *params, report_format_t *report_format)
+create_report_format (const char *uuid, const char *name,
+                      const char *content_type, const char *extension,
+                      const char *summary, const char *description, int global,
+                      array_t *files, array_t *params,
+                      report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *file_name, *dir, *param_name;
-  char *uuid;
   report_format_t report_format_rowid;
   int index = 0;
 
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
+  assert (uuid);
   assert (name);
   assert (files);
   assert (params);
+
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM report_formats"
+               " WHERE uuid = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               uuid,
+               current_credentials.uuid))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
 
   quoted_name = sql_quote (name);
 
@@ -16658,14 +16672,6 @@ create_report_format (const char *name, const char *content_type,
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
-    }
-
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
-    {
-      g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return -1;
     }
 
   /* Write files to disk. */
@@ -16692,7 +16698,6 @@ create_report_format (const char *name, const char *content_type,
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
-      free (uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -16702,7 +16707,6 @@ create_report_format (const char *name, const char *content_type,
       g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
-      free (uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -16718,7 +16722,6 @@ create_report_format (const char *name, const char *content_type,
           file_utils_rmdir_rf (dir);
           g_free (dir);
           g_free (quoted_name);
-          free (uuid);
           sql ("ROLLBACK;");
           return 2;
         }
@@ -16745,7 +16748,6 @@ create_report_format (const char *name, const char *content_type,
           file_utils_rmdir_rf (dir);
           g_free (dir);
           g_free (quoted_name);
-          free (uuid);
           sql ("ROLLBACK;");
           return -1;
         }
@@ -16787,7 +16789,6 @@ create_report_format (const char *name, const char *content_type,
   g_free (quoted_extension);
   g_free (quoted_content_type);
   g_free (quoted_name);
-  free (uuid);
 
   /* Add params to database. */
 

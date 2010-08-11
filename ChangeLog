@@ -1,3 +1,18 @@
+2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	In CREATE_REPORT_FORMAT use the given UUID.
+
+	* src/manage_sql.c (create_report_format): Require UUID as arg instead of
+	generating it.
+
+	* src/omp.c (is_uuid): New function.
+	(create_report_format_data_t, create_report_format_data_reset): Add ID
+	field.
+	(omp_xml_handle_start_element): Parse CREATE_REPORT_FORMAT REPORT_FORMAT
+	ID.
+	(omp_xml_handle_end_element): In CLIENT_CREATE_REPORT_FORMAT pass ID to
+	create_report_format.
+
 2010-08-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/simple_topo_plot/,
