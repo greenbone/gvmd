@@ -1,5 +1,10 @@
 2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_REPORT_FORMAT
+	add missing word to error message.
+
+2010-08-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	In CREATE_REPORT_FORMAT use the given UUID.
 
 	* src/manage_sql.c (create_report_format): Require UUID as arg instead of

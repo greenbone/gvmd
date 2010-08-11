@@ -10839,7 +10839,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_report_format",
                                     "CREATE_REPORT_FORMAT"
                                     " GET_REPORT_FORMATS_RESPONSE NAME must be"
-                                    " least one character long"));
+                                    " at least one character long"));
               else if (create_report_format_data->id == NULL)
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report_format",
