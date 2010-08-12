@@ -1422,7 +1422,7 @@ lookup_report_format (const char*, report_format_t*);
 int
 create_report_format (const char *, const char *, const char *, const char *,
                       const char *, const char *, int, array_t *, array_t *,
-                      report_format_t *);
+                      const char *, report_format_t *);
 
 int
 delete_report_format (report_format_t);
@@ -1459,6 +1459,12 @@ report_format_iterator_description (iterator_t *);
 
 int
 report_format_iterator_global (iterator_t *);
+
+const char*
+report_format_iterator_signature (iterator_t *);
+
+const char*
+report_format_iterator_trust (iterator_t *);
 
 const char*
 report_format_iterator_summary (iterator_t *);

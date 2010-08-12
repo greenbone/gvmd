@@ -986,6 +986,7 @@ typedef struct
   char *param_value;      ///< Param value during ...GRFR_REPORT_FORMAT_PARAM.
   char *param_name;       ///< Name of above param.
   array_t *params;        ///< All params.
+  char *signature;        ///< Signature.
   char *summary;          ///< Summary.
 } create_report_format_data_t;
 
@@ -2670,7 +2671,9 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_NAME,
   CLIENT_CREATE_SCHEDULE_COMMENT,
@@ -5527,8 +5530,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_report_format_data->param_value, "");
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
           }
+        else if (strcasecmp ("SIGNATURE", element_name) == 0)
+          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
+        else if (strcasecmp ("TRUST", element_name) == 0)
+          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
         else
           {
             if (send_element_error_to_client ("create_report_format",
@@ -5683,7 +5690,39 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
+        if (send_element_error_to_client ("create_report_format",
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
+        if (send_element_error_to_client ("create_report_format",
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
         if (send_element_error_to_client ("create_report_format",
                                           element_name,
                                           write_to_client,
@@ -8755,6 +8794,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     "<content_type>%s</content_type>"
                     "<summary>%s</summary>"
                     "<description>%s</description>"
+                    "<trust>%s</trust>"
                     "<global>%i</global>",
                     report_format_iterator_uuid (&report_formats),
                     report_format_iterator_name (&report_formats),
@@ -8762,6 +8802,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_format_iterator_content_type (&report_formats),
                     report_format_iterator_summary (&report_formats),
                     report_format_iterator_description (&report_formats),
+                    report_format_iterator_trust (&report_formats),
                     report_format_iterator_global (&report_formats));
 
                   if (get_report_formats_data->params
@@ -8797,6 +8838,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           g_free (content);
                         }
                       cleanup_file_iterator (&files);
+
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<signature>%s</signature>",
+                        report_format_iterator_signature (&report_formats));
                     }
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
@@ -10870,6 +10915,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           "0"),
                              create_report_format_data->files,
                              create_report_format_data->params,
+                             create_report_format_data->signature,
                              &new_report_format))
                 {
                   case 1:
@@ -10986,8 +11032,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         assert (strcasecmp ("VALUE", element_name) == 0);
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
         break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
+        assert (strcasecmp ("SIGNATURE", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
+        break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
         assert (strcasecmp ("SUMMARY", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
+        assert (strcasecmp ("TRUST", element_name) == 0);
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
         break;
 
@@ -14361,10 +14415,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text,
                              text_len);
         break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE:
+        openvas_append_text (&create_report_format_data->signature,
+                             text,
+                             text_len);
+        break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY:
         openvas_append_text (&create_report_format_data->summary,
                              text,
                              text_len);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
         break;
 
       case CLIENT_CREATE_SCHEDULE_COMMENT:

@@ -1,5 +1,34 @@
 2010-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add report format signatures.  Hence increase database version to 23.
+	Add database migration from version 22 to 23.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 23.
+
+	* src/manage_sql.c (sign, generate_report_format_signature): New
+	functions.
+	(create_tables): Add signature and trust columns to table report_formats.
+	(migrate_22_to_23): New function.
+	(database_migrators): Add migrate_21_to_22.
+	(init_manage): Init signature and trust of predefined formats.
+	(find_signature): Add a location arg.  Update caller.
+	(create_report_format): Add a signature arg.  Verify the signature or a
+	signature in the feed.
+	(init_report_format_iterator): Add signature and trust.
+	(report_format_iterator_signature, report_format_iterator_trust): New
+	functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_report_format_data_t): Add signature.
+	(client_state_t): Add signature and trust.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add handling of CREATE_REPORT_FORMAT REPORT_FORMAT
+	SIGNATURE and TRUST.  Add trust and signature to GET_REPORT_FORMATS
+	response.
+
+2010-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.h: Update header.  Missing part of 2010-08-10
 	CREATE_REPORT_FORMAT commit.
 
