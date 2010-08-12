@@ -1,3 +1,14 @@
+2010-08-12  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+	* src/report_formats/TXT/TXT.xsl: In text report, list details for
+	each issue.
+
+	* src/tests/report_formats/expected_output/report_base.txt: Updated.
+
+	* src/tests/report_formats/CMakeLists.txt,
+	src/tests/report_formats/expected_output/report_base.html: Added
+	simple test for html report format.
+
 2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* report_formats/simple_topo_plot/create_report_import,

@@ -107,7 +107,147 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="$content"/>
   </xsl:template>
 
-  <!-- Mainly the overviews. -->
+<!-- Wrap text to max-width characters per line-->
+<xsl:template name="wrap">
+  <xsl:param name="string"/>
+  <xsl:param name="max-width">80</xsl:param>
+
+  <xsl:variable name="to-next-newline">
+    <xsl:value-of select="substring-before($string, '&#10;')"/>
+  </xsl:variable>
+  <xsl:variable name="strlen-to-next-newline">
+    <xsl:value-of select="string-length($to-next-newline)"/>
+  </xsl:variable>
+
+  <xsl:choose>
+    <!-- The string is empty. -->
+    <xsl:when test="string-length($string) = 0"/>
+    <xsl:when test="($strlen-to-next-newline = 0) and (substring($string, 1, 1) != '&#10;')">
+      <!-- A single line missing a newline, output up to the edge. -->
+      <xsl:value-of select="substring($string, 1, $max-width)"/>
+      <xsl:if test="string-length($string) &gt; $max-width">
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string" select="substring($string, $max-width+1, string-length($string))"/>
+        </xsl:call-template>
+      </xsl:if>
+    </xsl:when>
+    <xsl:when test="($strlen-to-next-newline + 1 &lt; string-length($string)) and ($strlen-to-next-newline &lt; $max-width)">
+      <!-- There's a newline before the edge, so output the line. -->
+      <xsl:value-of select="substring($string, 1, $strlen-to-next-newline + 1)"/>
+      <xsl:call-template name="wrap">
+        <xsl:with-param name="string" select="substring($string, $strlen-to-next-newline + 2, string-length($string))"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- Any newline comes after the edge, so output up to the edge. -->
+      <xsl:value-of select="substring($string, 1, $max-width)"/>
+        <xsl:if test="string-length($string) &gt; $max-width">
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string" select="substring($string, $max-width+1, string-length($string))"/>
+          </xsl:call-template>
+        </xsl:if>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="scan_end">
+    <tr><td>Scan ended:</td><td><xsl:apply-templates /></td></tr>
+  </xsl:template>
+
+  <xsl:template match="note">
+    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+      <b>Note</b>
+      <pre>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+        </xsl:call-template>
+      </pre>
+      Last modified: <xsl:value-of select="modification_time"/>.
+    </div>
+  </xsl:template>
+
+  <xsl:template match="override">
+    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+      <b>Override to <xsl:value-of select="new_threat"/></b><br/>
+      <pre>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+        </xsl:call-template>
+      </pre>
+      Last modified: <xsl:value-of select="modification_time"/>.
+    </div>
+  </xsl:template>
+
+  <!-- Template for single issue -->
+  <xsl:template match="result" mode="issue">
+    <xsl:call-template name="subsection">
+      <xsl:with-param name="name">Issue</xsl:with-param>
+    </xsl:call-template>
+
+    <xsl:text>NVT:    </xsl:text>
+    <!-- TODO wrap, 80 char limit -->
+    <!--
+        <xsl:variable name="max" select="80"/>
+          <xsl:choose>
+            <xsl:when test="string-length(nvt/name) &gt; $max">
+              <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="nvt/name"/>
+            </xsl:otherwise>
+          </xsl:choose>-->
+    <xsl:value-of select="nvt/name"/>
+    <xsl:call-template name="newline"/>
+
+    <xsl:text>OID:    </xsl:text>
+    <xsl:value-of select="nvt/@oid"/>
+    <xsl:call-template name="newline"/>
+
+    <xsl:text>Threat: </xsl:text>
+    <xsl:value-of select="threat"/>
+    <xsl:choose>
+        <xsl:when test="original_threat">
+          <xsl:choose>
+            <xsl:when test="threat = original_threat">
+              <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+                 <xsl:value-of select="concat(' (CVSS: ',nvt/cvss_base, ')')"/>
+              </xsl:if>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="concat(' (Overridden from', original_threat,')')"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+             <xsl:value-of select="concat(' (CVSS: ', nvt/cvss_base,')')"/>
+          </xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+    <xsl:call-template name="newline"/>
+
+    <xsl:text>Port:   </xsl:text>
+    <xsl:value-of select="port"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+
+    <xsl:text>Description: </xsl:text>
+    <xsl:call-template name="newline"/>
+
+    <xsl:call-template name="wrap">
+      <xsl:with-param name="string" select="description"/>
+      <xsl:with-param name="max-width" select="80"/>
+    </xsl:call-template>
+    <xsl:call-template name="newline"/>
+
+<!--
+    <xsl:apply-templates select="notes/note"/>
+    <xsl:apply-templates select="overrides/override"/>
+-->
+
+    <xsl:call-template name="newline"/>
+  </xsl:template>
+
   <xsl:template match="report">
     <xsl:text>This document reports on the results of an automatic security scan.</xsl:text><xsl:call-template name="newline"/>
     <xsl:text>The report first summarises the results found.</xsl:text><xsl:call-template name="newline"/>
@@ -235,9 +375,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
       </xsl:for-each>
 
-      <!--
-      <h3>Security Issues for Host <xsl:value-of select="$current_host" /></h3>
-      <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue"/>-->
+      <xsl:call-template name="subsection">
+        <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>
+      </xsl:call-template>
+      <xsl:call-template name="newline"/>
+
+      <xsl:apply-templates select="../results/result[host/text()=$current_host]" mode="issue"/>
     </xsl:for-each>
   </xsl:template>
 

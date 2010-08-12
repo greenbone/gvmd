@@ -41,3 +41,46 @@ ssh (22/tcp)            Low
 vnc (5900/tcp)          Low
 epmap (135/tcp)         Log
 general/CPE             Log
+
+
+Issue:
+------
+NVT: Vulnerabilities in SMB Could Allow Remote Code Execution (958687) - Remote 
+OID: 1.3.6.1.4.1.25623.1.0.900233
+Threat: High (CVSS: 7.1)
+Port: microsoft-ds (445/tcp)
+Description: 
+
+
+  Overview: This host has critical security update missing according to
+  Microsoft Bulletin MS09-001.
+
+  Vulnerability Insight:
+  The issue is due to the way Server Message Block (SMB) Protocol software
+  handles specially crafted SMB packets.
+
+  Impact: Successful exploitation could allow remote unauthenticated attackers
+  to cause denying the service by sending a specially crafted network message
+  to a system running the server service.
+
+  Impact Level: System/Network
+
+  Affected Software/OS:
+  Microsoft Windows 2K Service Pack 4 and prior.
+  Microsoft Windows XP Service Pack 3 and prior.
+  Microsoft Windows 2003 Service Pack 2 and prior.
+
+  Fix: Run Windows Update and update the listed hotfixes or download and
+  update mentioned hotfixes in the advisory from the below link,
+  http://www.microsoft.com/technet/security/bulletin/ms09-001.mspx
+
+  References:
+  http://www.milw0rm.com/exploits/6463
+  http://www.microsoft.com/technet/security/bulletin/ms09-001.mspx
+
+  CVSS Score:
+    CVSS Base Score     : 7.1 (AV:N/AC:M/Au:NR/C:N/I:N/A:C)
+    CVSS Temporal Score : 5.6
+  Risk factor : High
+CVE : CVE-2008-4114, CVE-2008-4834, CVE-2008-4835
+BID : 31179

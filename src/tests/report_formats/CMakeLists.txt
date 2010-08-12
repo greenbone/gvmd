@@ -27,5 +27,6 @@
 
 add_test (nbe_report_base   test_report_format  NBE  report_base)
 add_test (txt_report_base   test_report_format  TXT  report_base)
+add_test (html_report_base  test_report_format  HTML report_base)
 
 ## End
