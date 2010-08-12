@@ -1,3 +1,8 @@
+2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* report_formats/simple_topo_plot/create_report_import,
+	report_formats/simple_bar_chart/create_report_import: Include signature.
+
 2010-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add report format signatures.  Hence increase database version to 23.
