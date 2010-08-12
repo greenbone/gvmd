@@ -1,5 +1,15 @@
 2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Add entry for last commit.
+
+2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* report_formats/readme.txt: Remove.  Rename to README to match .. naming.
+
+	* report_formats/README: New file.
+
+2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* report_formats/readme.txt: Correct typos.  Fill paragraphs properly.
 
 2010-08-12  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
