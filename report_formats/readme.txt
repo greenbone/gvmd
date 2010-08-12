@@ -1,8 +1,8 @@
 openvas-manager/report_formats
 ==============================
 
-This directory contains a number of report formats
-that are no installed by default.
+This directory contains a number of report formats that are not installed
+by default.
 
 They might be incomplete or in other ways in the works.
 
@@ -10,14 +10,12 @@ Running
 
 . create_report_import
 
-in a subdirectory will create a .xml import file
-for uploading it into OpenVAS Manager as a personal
-report format.
+in a subdirectory will create a .xml import file for uploading it into
+OpenVAS Manager as a personal report format.
 
-The script tries to create a signature for the report
-with your default GnuPG signature key.
-You can ignore this if you don't have one or
-don't want this to be done.
+The script tries to create a signature for the report with your default
+GnuPG signature key.  You can ignore this if you don't have one or don't
+want this to be done.
 
-This processing is implemented quite coarse at the moment.
-Eventually it should be driven by a CMakeLists.txt
+This processing is implemented quite coarsely at the moment.  Eventually it
+should be driven by a CMakeLists.txt
