@@ -12883,10 +12883,11 @@ nvt_selector_remove (const char* quoted_selector,
   if (type == NVT_SELECTOR_TYPE_ANY)
     sql ("DELETE FROM nvt_selectors"
          " WHERE name = '%s'"
-         " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-         "      AND family = '%s')"
-         " OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
-         "     AND family_or_nvt = '%s');",
+         " AND"
+         " ((type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+         "   AND family = '%s')"
+         "  OR (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+         "      AND family_or_nvt = '%s'));",
          quoted_selector,
          quoted_family,
          quoted_family);

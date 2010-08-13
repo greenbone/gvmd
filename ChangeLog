@@ -1,3 +1,8 @@
+2010-08-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (nvt_selector_remove): Add parens to SQL to get
+	precedence right.
+
 2010-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Add entry for last commit.
