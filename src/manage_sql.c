@@ -746,7 +746,7 @@ user_owns_result (const char *uuid)
  *
  * @param[in]  string  String.
  *
- * @return Freshly allocated signature on success, NULL on error.
+ * @return Freshly allocated signature.  On error signature is the empty string.
  */
 static gchar *
 sign (const gchar *string, gsize string_size)
@@ -761,7 +761,7 @@ sign (const gchar *string, gsize string_size)
 
   installer_fd = mkstemp (installer_file);
   if (installer_fd == -1)
-    return NULL;
+    return g_strdup ("");
 
   g_file_set_contents (installer_file, string, string_size, &error);
   if (error)
@@ -769,7 +769,7 @@ sign (const gchar *string, gsize string_size)
       g_warning ("%s: %s", __FUNCTION__, error->message);
       g_error_free (error);
       close (installer_fd);
-      return NULL;
+      return g_strdup ("");
     }
 
   cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
@@ -840,7 +840,7 @@ sign (const gchar *string, gsize string_size)
     }
 
   close (installer_fd);
-  return NULL;
+  return g_strdup ("");
 }
 
 /**
@@ -5432,11 +5432,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
@@ -5454,11 +5455,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
@@ -5476,11 +5478,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
@@ -5497,11 +5500,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
@@ -5518,11 +5522,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
@@ -5539,11 +5544,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
@@ -5560,11 +5566,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
@@ -5581,11 +5588,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES);
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
-      if (signature == NULL)
-        return -1;
-      sql ("UPDATE report_formats SET signature = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
+           " WHERE ROWID = %llu;",
            signature,
+           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
            report_format);
+      g_free (signature);
     }
 
   if (nvt_cache_mode == 0)

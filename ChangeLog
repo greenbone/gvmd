@@ -1,3 +1,9 @@
+2010-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (sign): Return "" on error instead of -1.
+	(init_manage): Set predefined report format trust to "unknown" instead of
+	failing, on signature error.
+
 2010-08-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (nvt_selector_remove): Add parens to SQL to get
