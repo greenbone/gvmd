@@ -5198,27 +5198,56 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   if (sql_int (0, 0, "SELECT count(*) FROM users WHERE name = 'om';") == 0)
     sql ("INSERT into users (name, password) VALUES ('om', '');");
 
-  /* Ensure the predefined selectors and configs exist. */
+  /* Ensure every part of the predefined selector exists.
+   *
+   * This restores entries lost due to the error solved 2010-08-13 by r8805.  */
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM nvt_selectors WHERE name ="
-               " '" MANAGE_NVT_SELECTOR_UUID_ALL "';")
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ";")
       == 0)
     {
       sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ";")
+      == 0)
+    {
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 1, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
            " 'Port scanners', 'Port scanners');");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.14259';")
+      == 0)
+    {
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
            G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
            /* OID of the "Nmap (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
+      == 0)
+    {
       sql ("INSERT into nvt_selectors"
            " (name, exclude, type, family_or_nvt, family)"
            " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 0, "
@@ -5226,6 +5255,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            /* OID of the "Ping Host" NVT. */
            " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
     }
+
+  /* Ensure the predefined configs exist. */
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
