@@ -1,3 +1,19 @@
+openvas-manager 1.0.2 (2010-08-17)
+
+This is the second maintenance release for the 1.0 series of the openvas-manager
+module for the Open Vulnerability Assessment System (OpenVAS).
+
+It fixes a bug which could cause changes in derived scan configs to affect
+predefined scan configs under certain circumstances.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 1.0.1:
+* A bug which could cause changes in derived scan configs to affect predefined
+  scan configs under certain circumstances has been fixed.
+
+
 openvas-manager 1.0.1 (2010-08-06)
 
 This is the first maintenance release for the 1.0 series of the openvas-manager

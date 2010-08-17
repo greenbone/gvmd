@@ -1,5 +1,11 @@
 2010-08-17  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 1.0.2 release.
+
+	* CHANGES: Updated.
+
+2010-08-17  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Ensure every part of the predefined
 	NVT selector exists, instead of just checking if there is at least one
 	part. (Backport from trunk; initially committed in r8818 by Matthew
