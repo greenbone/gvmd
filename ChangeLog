@@ -1,3 +1,8 @@
+2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/Doxyfile.in, doc/Doxyfile_full.in: Turn off "RECURSIVE", to stop the
+	subdir README files from overriding the root README.
+
 2010-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Ensure every part of the predefined
