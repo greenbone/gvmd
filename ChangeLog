@@ -1,5 +1,11 @@
 2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (report_format_params, report_formats): New tables.
+
+	* doc/db.png: Update from SQL.
+
+2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/Doxyfile.in, doc/Doxyfile_full.in: Add doc to EXAMPLE_PATH, so that
 	manual page is found.
 

@@ -137,6 +137,24 @@ CREATE TABLE reports (
 	comment text,
 	scan_run_status integer);
 
+CREATE TABLE report_format_params (
+	id integer PRIMARY KEY,
+	report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
+	name text,
+	value text);
+
+CREATE TABLE report_formats (
+	id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	extension text,
+	content_type text,
+	summary text,
+	description text,
+	signature text,
+	trust integer);
+
 CREATE TABLE report_hosts (
 	id integer PRIMARY KEY,
 	report integer REFERENCES reports (id) ON DELETE RESTRICT,
