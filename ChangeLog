@@ -1,5 +1,10 @@
 2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/Doxyfile.in, doc/Doxyfile_full.in: Add doc to EXAMPLE_PATH, so that
+	manual page is found.
+
+2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/Doxyfile.in, doc/Doxyfile_full.in: Turn off "RECURSIVE", to stop the
 	subdir README files from overriding the root README.
 
