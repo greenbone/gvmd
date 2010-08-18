@@ -1,4 +1,8 @@
-2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_21_to_22): Ensure that report_formats exists.
+
+2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_lsc_credential): Allow - in login.
 

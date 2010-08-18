@@ -3205,6 +3205,12 @@ migrate_21_to_22 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure that the report_formats table exists. */
+
+  sql ("CREATE TABLE IF NOT EXISTS report_formats"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension,"
+       "  content_type, summary, description);");
+
   /* Ensure that the predefined formats all exist in the database. */
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
