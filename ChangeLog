@@ -1,5 +1,12 @@
 2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Allow - in login.
+
+	* src/omp.c (omp_xml_handle_end_element): Add - to message in
+	CLIENT_CREATE_LSC_CREDENTIAL.
+
+2010-08-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (report_format_params, report_formats): New tables.
 
 	* doc/db.png: Update from SQL.

@@ -10606,7 +10606,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
                                     "Login may only contain alphanumeric"
-                                    " characters, \\, ., @ and _"));
+                                    " characters, \\, ., @, _ and -"));
                 break;
               default:
                 assert (0);

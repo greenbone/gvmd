@@ -13856,7 +13856,7 @@ create_lsc_credential (const char* name, const char* comment,
 
   while (*s)
     if (isalnum (*s) || (*s == '\\') || (*s == '.') || (*s == '@')
-        || (*s == '_'))
+        || (*s == '_') || (*s == '-'))
       s++;
     else
       return 2;
