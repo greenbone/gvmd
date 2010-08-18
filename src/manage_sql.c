@@ -744,7 +744,8 @@ user_owns_result (const char *uuid)
 /**
  * @brief Execute gpg to create a signature for a string.
  *
- * @param[in]  string  String.
+ * @param[in]  string       String.
+ * @param[in]  string_size  Size of string.
  *
  * @return Freshly allocated signature.  On error signature is the empty string.
  */
@@ -14496,6 +14497,7 @@ find_agent (const char* uuid, agent_t* agent)
 /**
  * @brief Find a signature in a feed.
  *
+ * @param[in]   location            Feed directory to search for signature.
  * @param[in]   installer_filename  Installer filename.
  * @param[out]  signature           Installer signature.
  * @param[out]  signature_size      Size of installer signature.
