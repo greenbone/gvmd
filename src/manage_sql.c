@@ -1130,7 +1130,9 @@ next (iterator_t* iterator)
  *    the new version, all inside an exclusive transaction.  Use the generic
  *    iterator (init_iterator, iterator_string, iterator_int64...) because the
  *    specialised iterators (like init_target_iterator) can change behaviour
- *    across Manager SVN versions.
+ *    across Manager SVN versions.  Use copies of any other "manage" interfaces,
+ *    for example update_all_config_caches, as these may also change in later
+ *    versions of the Manager.
  *
  *  - Remember to ensure that tables exist in the migrator before the migrator
  *    modifies them.  If a migrator modifies a table then the table must either
@@ -1391,26 +1393,18 @@ migrate_1_to_2 ()
    * may be a redundant conversion, as SQLite may have converted these
    * values automatically in each query anyway. */
 
-  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+  init_iterator (&nvts, "SELECT ROWID, category FROM nvts;");
   while (next (&nvts))
     {
       int category;
       const char *category_string;
 
-      /* The category must be accessed with sqlite3_column_text because
-       * nvt_iterator_category returns an int now. */
-
-      if (nvts.done)
-        {
-          cleanup_iterator (&nvts);
-          return -1;
-        }
-      category_string = (const char*) sqlite3_column_text (nvts.stmt, 11);
+      category_string = (const char*) sqlite3_column_text (nvts.stmt, 1);
 
       category = atoi (category_string);
-      sql ("UPDATE nvts SET category = %i WHERE category = '%s';",
+      sql ("UPDATE nvts SET category = %i WHERE ROWID = %llu;",
            category,
-           category_string);
+           iterator_int64 (&nvts, 0));
     }
   cleanup_iterator (&nvts);
 
@@ -2166,9 +2160,14 @@ migrate_5_to_6 ()
       return -1;
     }
 
+  /* This would need a duplicate version of update_all_config_caches that
+   * worked with the version 6 database.  Just let the cache be wrong.  This
+   * is a very old version now. */
+#if 0
   /* Update cache counts for growing configs. */
 
   update_all_config_caches ();
+#endif
 
   /* Set the database version to 6. */
 
@@ -3565,6 +3564,8 @@ manage_migrate (GSList *log_config, const gchar *database)
           cleanup_manage_process (TRUE);
           return -1;
         }
+
+      tracef ("   Migrating to %i", migrators->version);
 
       if (migrators->function ())
         {

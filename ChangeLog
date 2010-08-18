@@ -1,5 +1,11 @@
 2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_1_to_2): Use generic iterator.
+	(migrate_5_to_6): Define out update_all_config_caches call, as this now
+	conflicts with the version 6 database.
+
+2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (sign, find_signature): Doc missing args.
 
 2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
