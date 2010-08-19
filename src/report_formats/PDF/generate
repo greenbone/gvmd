@@ -34,7 +34,7 @@ TMP=`mktemp -d` || exit 1
 
 xsltproc ./latex.xsl $1 > ${TMP}/report.tex
 
-pdflatex -output-directory ${TMP} ${TMP}/report.tex > /tmp/openvasmd_pdflatex_out 2>&1 \
- && pdflatex -output-directory ${TMP} ${TMP}/report.tex > /tmp/openvasmd_pdflatex_out 2>&1
+pdflatex -output-directory ${TMP} ${TMP}/report.tex > /dev/null 2>&1 \
+ && pdflatex -output-directory ${TMP} ${TMP}/report.tex > /dev/null 2>&1
 
 cat ${TMP}/report.pdf && rm -rf ${TMP}

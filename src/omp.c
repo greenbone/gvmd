@@ -8600,7 +8600,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     output_file = g_strdup_printf ("%s/report.out", xml_dir);
 
                     command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                               " 2> /tmp/openvasmd_generic",
+                                               " 2> /dev/null",
                                                script,
                                                xml_file,
                                                output_file);

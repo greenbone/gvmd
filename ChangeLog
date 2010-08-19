@@ -1,16 +1,24 @@
+2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS pipe
+	generator error output to /dev/null instead of a temp file.
+
+	* src/report_formats/PDF/generate: Pipe pdflatex output to /dev/null
+	instead of temp file.
+
 2010-08-19  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
-       * src/tests/CMakeLists.txt: Removed a couple of to-be-obsolete tests,
-       re-added report_format tests.
+	* src/tests/CMakeLists.txt: Removed a couple of to-be-obsolete tests,
+	re-added report_format tests.
 
 2010-08-19  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
 
-       * README: Added description of other invocation of tests.
+	* README: Added description of other invocation of tests.
 
-       * src/tests/CMakeLists.txt: Added new tests regarding lsc credentials
-       installer packages.
+	* src/tests/CMakeLists.txt: Added new tests regarding lsc credentials
+	installer packages.
 
-       * src/tests/lsc_user_0.c: New, base for tests.
+	* src/tests/lsc_user_0.c: New, base for tests.
 
 2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
