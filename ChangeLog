@@ -1,3 +1,17 @@
+2010-08-19  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+       * src/tests/CMakeLists.txt: Removed a couple of to-be-obsolete tests,
+       re-added report_format tests.
+
+2010-08-19  Felix Wolfsteller <felix.wolfsteller@greenbone.net>
+
+       * README: Added description of other invocation of tests.
+
+       * src/tests/CMakeLists.txt: Added new tests regarding lsc credentials
+       installer packages.
+
+       * src/tests/lsc_user_0.c: New, base for tests.
+
 2010-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_1_to_2): Use generic iterator.

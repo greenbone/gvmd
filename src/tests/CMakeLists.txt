@@ -101,12 +101,8 @@ add_test (strip_space_3 strip_space_3)
 add_executable (lsc_user_0 lsc_user_0.c ../lsc_user.c)
 set_target_properties (lsc_user_0 PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS} ${OVAS_CFLAGS}")
 set_target_properties (lsc_user_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LDFLAGS}")
-add_test (lsc_user_0_base       lsc_user_0)
-add_test (lsc_user_1_atsign     lsc_user_0 "user@domain")
-add_test (lsc_user_2_backslash  lsc_user_0 "user\\\\domain")
-add_test (lsc_user_3_underscore lsc_user_0 "ed_test")
-add_test (lsc_user_4_dash       lsc_user_0 "ed-test")
-add_test (lsc_user_5_dot        lsc_user_0 "ed.test")
+add_test (lsc_user_0_base  lsc_user_0)
+add_test (lsc_user_1_alnum lsc_user_0 "abc123")
 
 ## Tests of OMP
 
@@ -628,5 +624,8 @@ set_target_properties (timeout_0 PROPERTIES LINK_FLAGS "${OVAS_LDFLAG} ${GLIB_LD
 target_link_libraries (timeout_0 common)
 add_test (timeout_0 timeout_0)
 
+## Report Format tests
+
+add_subdirectory (report_formats)
 
 ## End
