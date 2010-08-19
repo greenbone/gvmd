@@ -94,3 +94,7 @@ and then run all the tests
 or any one of the tests, for example
 
     src/tests/omp_get_report_0
+
+or, any test containing 'help' in its name
+
+    ctest -R help
