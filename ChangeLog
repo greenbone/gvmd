@@ -1,5 +1,15 @@
 2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migration from version 23 to 24, to convert task owner
+	values to NULL as they may be 0 due to the 8 to 9 migrator.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 24.
+
+	* src/manage_sql.c (migrate_23_to_24): New function.
+	(database_migrators): Add migrate_23_to_24.
+
+2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS pipe
 	generator error output to /dev/null instead of a temp file.
 

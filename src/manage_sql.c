@@ -3449,6 +3449,41 @@ migrate_22_to_23 ()
 }
 
 /**
+ * @brief Migrate the database from version 23 to version 24.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_23_to_24 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 23. */
+
+  if (manage_db_version () != 23)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The 8 to 9 migrator cast owner to an integer because owner had
+   * changed from a string to an integer.  This means empty strings would
+   * be converted to 0 instead of NULL, so convert any 0's to NULL. */
+
+  sql ("UPDATE tasks SET owner = NULL where owner = 0;"),
+
+  /* Set the database version to 24. */
+
+  set_db_version (24);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3476,6 +3511,7 @@ static migrator_t database_migrators[]
     {21, migrate_20_to_21},
     {22, migrate_21_to_22},
     {23, migrate_22_to_23},
+    {24, migrate_23_to_24},
     /* End marker. */
     {-1, NULL}};
 
