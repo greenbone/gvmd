@@ -1,5 +1,12 @@
 2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Limit name to alphanums.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_LSC_CREDENTIAL
+	remove chars from error response.
+
+2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (email): Pipe sendmail output to /dev/null instead of
 	to temp file.
 
