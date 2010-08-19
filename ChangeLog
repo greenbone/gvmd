@@ -1,5 +1,10 @@
 2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (email): Pipe sendmail output to /dev/null instead of
+	to temp file.
+
+2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migration from version 23 to 24, to convert task owner
 	values to NULL as they may be 0 due to the 8 to 9 migrator.
 

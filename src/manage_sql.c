@@ -4335,7 +4335,7 @@ email (const char *to_address, const char *from_address, const char *subject,
                              "\n"
                              "%s\""
                              " | /usr/sbin/sendmail %s"
-                             " > /tmp/openvasmd_sendmail_out 2>&1",
+                             " > /dev/null 2>&1",
                              to_address,
                              from_address ? from_address
                                           : "automated@openvas.org",
