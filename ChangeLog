@@ -1,5 +1,10 @@
 2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* report_formats/README: Reorder sections.  Rewrite the "Developing
+	a new..." section in terms of the example report formats.
+
+2010-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Limit name to alphanums.
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_LSC_CREDENTIAL
