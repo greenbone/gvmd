@@ -1,5 +1,13 @@
 2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_set_config_preference): Return 2 if value is
+	empty with a radio and -1 if any radio option is empty.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_MODIFY_CONFIG add
+	new manage_set_config_preference return case.
+
+2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migration from version 24 to 25, to rectify any
 	radio NVT preference value errors caused by missing chunking
 	handling in the GSA.

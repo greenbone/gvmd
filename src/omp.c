@@ -9498,11 +9498,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
                 break;
-              case -1:
+              case 2:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_config",
-                                    "MODIFY_CONFIG PREFERENCE requires at least"
-                                    " one of the VALUE and NVT elements"));
+                 (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL

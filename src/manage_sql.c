@@ -11306,7 +11306,7 @@ config_nvt_selector (config_t config)
  * @param[in]  value_64  Preference value in base64.  NULL for an NVT
  *                       preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, -1 error.
+ * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
  */
 int
 manage_set_config_preference (config_t config, const char* nvt, const char* name,
@@ -11382,6 +11382,14 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
           gchar **split, **point;
           GString *string;
 
+          if (strlen (value) == 0)
+            {
+              g_free (quoted_name);
+              g_free (value);
+              sql ("ROLLBACK;");
+              return 2;
+            }
+
           /* A radio.  Put the new value on the front of the list of options. */
 
           old_value = sql_string (0, 0,
@@ -11405,6 +11413,16 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
               point = split;
               while (*point)
                 {
+                  if (strlen (*point) == 0)
+                    {
+                      g_free (quoted_name);
+                      g_strfreev (split);
+                      g_free (value);
+                      g_string_free (string, TRUE);
+                      sql ("ROLLBACK;");
+                      return -1;
+                    }
+
                   if (strcmp (*point, value))
                     {
                       g_string_append_c (string, ';');
