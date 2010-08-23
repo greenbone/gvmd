@@ -1,5 +1,9 @@
 2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/report-format-HOWTO: Improve steps slightly.
+
+2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/create_signatures: New file.
 
 2010-08-20  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>

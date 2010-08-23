@@ -28,9 +28,10 @@ To create a new report format
     Modify the data to suit the new format.
 
   - There is also a script called "generate".  This is what the Manager will run
-    to generate the report.  The Manager will pass the script a single argument,
-    the location of a file containing the OMP report (in XML, as returned by
-    GET_REPORTS).  The output of the script will be the resulting report.
+    to generate a report in this format.  The Manager will pass the script a
+    single argument, the location of a file containing the OMP report (in XML,
+    as returned by GET_REPORTS).  The output of the "generate" script will be
+    the resulting report.
 
     Modify this script to suit the new format.  Typically the script will call
     xsltproc to transform the XML in some way.
@@ -50,15 +51,17 @@ To create a new report format
 
             . generate report.xml
 
-        in the report format directory, where report.xml is the name of the
-        report from the previous step.  The output should be the required
-        report.
+        in the report format directory, where report.xml is the name of a file
+        containing the report from the previous step.  The output should be the
+        required report.
 
   - Create the report format by running
 
         . create_report_import
 
-    in the report format directory.
+    in the report format directory.  This can be added to an existing
+    installation as in the previous section.
+
 
 Creating a new predefined report format
 ---------------------------------------
@@ -80,4 +83,9 @@ SVN):
   - In init_manage in src/manage_sql.c add code to initialise the format in
     the database.
 
-  - Update src/CMakeLists.txt to install the new files in src/report_format.
+  - Update src/CMakeLists.txt to install the new files in src/report_formats.
+
+  - To create a feed signature for the report format change into
+    src/report_formats and run the command
+
+        create_signatures PREFIX/var/lib/openvas/mgr/tasks.db
