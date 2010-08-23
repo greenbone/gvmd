@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# OpenVAS
+# $Id$
+# Description: Create signatures for predefined reports.
+#
+# Call in openvas-manager/src/report_formats.  Pass one argument, the name
+# of the Manager database.  Signatures are written into report format subdirs.
+#
+# Authors:
+# Matthew Mundell <matthew.mundell@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2010 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+DB=$1
+if [ $# = 0 ]; then DB=/var/lib/openvas/mgr/tasks.db; fi
+
+echo Creating signatures from $DB:
+for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>/dev/null`; do
+  echo -n "  $uuid "
+  name=`sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
+  rm -f ${name}/${uuid}.asc
+  rm -f ${uuid}
+  fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
+  echo -n $fore > ${uuid}
+  for file in `sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`/*; do
+	case $file in
+	  *.BAK)
+		;;
+	  *.CKP)
+		;;
+	  *~)
+		;;
+	  *.bak)
+		;;
+	  *)
+	    echo -n `basename $file` >> ${uuid}
+		base64 -w 0 $file >> ${uuid}
+		;;
+	esac
+  done
+  gpg --detach-sign --armor ${uuid}
+  rm -f ${uuid}
+  mv ${uuid}.asc ${name}/${uuid}.asc
+  echo done.
+done
+echo Done.
