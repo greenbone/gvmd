@@ -1,3 +1,12 @@
+2010-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/sourcefire/,
+	report_formats/sourcefire/create_report_import,
+	report_formats/sourcefire/generate,
+	report_formats/sourcefire/sourcefire.xsl: New.
+	A report format that create Sourcefire Host Input.
+	Most work done by Felix Wolfsteller.
+
 2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_set_config_preference): Return 2 if value is
