@@ -1,5 +1,16 @@
 2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migration from version 24 to 25, to rectify any
+	radio NVT preference value errors caused by missing chunking
+	handling in the GSA.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 25.
+
+	* src/manage_sql.c (migrate_24_to_25): New function.
+	(database_migrators): Add migrate_24_to_25.
+
+2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/report-format-HOWTO: Improve steps slightly.
 
 2010-08-23  Matthew Mundell <matthew.mundell@greenbone.net>

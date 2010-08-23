@@ -3484,6 +3484,136 @@ migrate_23_to_24 ()
 }
 
 /**
+ * @brief Migrate the database from version 24 to version 25.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_24_to_25 ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 24. */
+
+  if (manage_db_version () != 24)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Missing parameter chunking handling in the GSA may have resulted in
+   * empty options in NVT radio preference values. */
+
+  init_iterator (&rows, "SELECT ROWID, name, value FROM nvt_preferences;");
+  while (next (&rows))
+    {
+      const char *name;
+      int type_start = -1, type_end = -1, count;
+
+      name = iterator_string (&rows, 1);
+
+      /* NVT[radio]:Preference */
+      count = sscanf (name, "%*[^[][%nradio%n]:", &type_start, &type_end);
+      if (count == 0 && type_start > 0 && type_end > 0)
+        {
+          const char *value;
+          gchar **split, **point, *quoted_value;
+          GString *string;
+          gboolean first;
+
+          /* Flush any empty options (";a;;b;" becomes "a;b"). */
+          first = TRUE;
+          value = iterator_string (&rows, 2);
+          split = g_strsplit (value, ";", 0);
+          string = g_string_new ("");
+          point = split;
+          while (*point)
+            {
+              if (strlen (*point))
+                {
+                  if (first)
+                    first = FALSE;
+                  else
+                    g_string_append_c (string, ';');
+                  g_string_append (string, *point);
+                }
+              point++;
+            }
+          g_strfreev (split);
+
+          quoted_value = sql_nquote (string->str, string->len);
+          g_string_free (string, TRUE);
+          sql ("UPDATE nvt_preferences SET value = '%s' WHERE ROWID = %llu",
+               quoted_value,
+               iterator_int64 (&rows, 0));
+          g_free (quoted_value);
+        }
+    }
+  cleanup_iterator (&rows);
+
+  init_iterator (&rows,
+                 "SELECT ROWID, name, value FROM config_preferences"
+                 " WHERE type = 'PLUGINS_PREFS';");
+  while (next (&rows))
+    {
+      const char *name;
+      int type_start = -1, type_end = -1, count;
+
+      name = iterator_string (&rows, 1);
+
+      /* NVT[radio]:Preference */
+      count = sscanf (name, "%*[^[][%nradio%n]:", &type_start, &type_end);
+      if (count == 0 && type_start > 0 && type_end > 0)
+        {
+          const char *value;
+          gchar **split, **point, *quoted_value;
+          GString *string;
+          gboolean first;
+
+          /* Flush any empty options (";a;;b;" becomes "a;b"). */
+          first = TRUE;
+          value = iterator_string (&rows, 2);
+          split = g_strsplit (value, ";", 0);
+          string = g_string_new ("");
+          point = split;
+          while (*point)
+            {
+              if (strlen (*point))
+                {
+                  if (first)
+                    first = FALSE;
+                  else
+                    g_string_append_c (string, ';');
+                  g_string_append (string, *point);
+                }
+              point++;
+            }
+          g_strfreev (split);
+
+          quoted_value = sql_nquote (string->str, string->len);
+          g_string_free (string, TRUE);
+          sql ("UPDATE config_preferences SET value = '%s' WHERE ROWID = %llu",
+               quoted_value,
+               iterator_int64 (&rows, 0));
+          g_free (quoted_value);
+        }
+    }
+  cleanup_iterator (&rows);
+
+  /* Set the database version to 25. */
+
+  set_db_version (25);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3512,6 +3642,7 @@ static migrator_t database_migrators[]
     {22, migrate_21_to_22},
     {23, migrate_22_to_23},
     {24, migrate_23_to_24},
+    {25, migrate_24_to_25},
     /* End marker. */
     {-1, NULL}};
 
