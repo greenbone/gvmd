@@ -1,3 +1,8 @@
+2010-08-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/simple_topo_plot/hostvisdot-summary.xsl: Improved
+	visualisation for routes without intermediate hosts.
+
 2010-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/sourcefire/,

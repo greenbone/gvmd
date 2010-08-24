@@ -55,7 +55,7 @@ digraph scan {
             <xsl:otherwise>
               <xsl:choose>
                 <xsl:when test="count(../results/result[host/text() = $current_host][threat/text() = 'Low']) &gt; 0">
-  "<xsl:value-of select="$current_host"/>" [style=filled, color=cornflowerblue, fontcolor=white, URL="http://<xsl:value-of select="$current_host"/>"];
+  "<xsl:value-of select="$current_host"/>" [style=filled, color=cornflowerblue, fontcolor=white];
                 </xsl:when>
               </xsl:choose>
             </xsl:otherwise>
@@ -79,10 +79,24 @@ digraph scan {
     <xsl:variable name="gsm" select="substring-before($fullroute, ',')" />
     <xsl:variable name="route" select="substring-after($fullroute, ',')" />
     <xsl:variable name="nexthop" select="substring-before($route, ',')" />
-    "OpenVAS" -> "<xsl:value-of select="$nexthop"/>";
-    <xsl:call-template name="trace_recurse">
-      <xsl:with-param name="trace_list" select="$route"/>
-    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="contains($route, ',')">
+        "OpenVAS" -> "<xsl:value-of select="$nexthop"/>";
+        <xsl:call-template name="trace_recurse">
+          <xsl:with-param name="trace_list" select="$route"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:choose>
+          <xsl:when test="$route">
+            "OpenVAS" -> "<xsl:value-of select="$route"/>";
+          </xsl:when>
+          <xsl:otherwise>
+            "OpenVAS" -> "127.0.0.1" [style=dashed];
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
     <!-- Enable the following block for experimental port visualisation -->
     <!--    <xsl:call-template name="port_recurse">
       <xsl:with-param name="port_list" select="$ports"/>
