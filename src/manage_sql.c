@@ -5882,6 +5882,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           nvti_set_family (nvti, nvt_iterator_family (&nvts));
           nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
           nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
+          nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
+          nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
           nvtis_add (nvti_cache, nvti);
         }
       cleanup_iterator (&nvts);
@@ -8020,6 +8022,42 @@ result_iterator_nvt_risk_factor (iterator_t *iterator)
   nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
   if (nvti)
     return nvti_risk_factor (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT CVE from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVE of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_cve (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_cve (nvti);
+  return NULL;
+}
+
+/**
+ * @brief Get the NVT BID from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The BID of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_bid (iterator_t *iterator)
+{
+  nvti_t *nvti;
+  if (iterator->done) return NULL;
+  nvti = nvtis_lookup (nvti_cache, result_iterator_nvt_oid (iterator));
+  if (nvti)
+    return nvti_bid (nvti);
   return NULL;
 }
 

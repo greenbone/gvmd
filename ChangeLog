@@ -1,3 +1,12 @@
+2010-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Include CVE and BID in NVT cache.
+	(result_iterator_nvt_cve, result_iterator_nvt_bid): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (buffer_results_xml): Add CVE and BID to RESULT.
+
 2010-08-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/simple_topo_plot/hostvisdot-summary.xsl: Improved

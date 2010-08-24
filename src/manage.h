@@ -687,6 +687,12 @@ const char*
 result_iterator_nvt_risk_factor (iterator_t *);
 
 const char*
+result_iterator_nvt_cve (iterator_t *);
+
+const char*
+result_iterator_nvt_bid (iterator_t *);
+
+const char*
 result_iterator_type (iterator_t*);
 
 const char*
