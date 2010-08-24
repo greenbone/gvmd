@@ -1242,6 +1242,7 @@ run_task (task_t task, char **report_id, int from)
  fail:
               free (hosts);
               cleanup_iterator (&credentials);
+              g_ptr_array_add (preference_files, NULL);
               array_free (preference_files);
               slist_free (files);
               set_task_run_status (task, run_status);
