@@ -57,56 +57,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:value-of select="$port_proto"/>
 </xsl:template>
 
-<!-- "CVE-ID" TO "CVEID" -->
-<xsl:template name="collapse_to_sourcefire_cve_id">
-  <xsl:param name="cve_id"/> CVE-<xsl:value-of select="substring-after($cve_id, 'CVE-')"/></xsl:template>
-
-<!-- RECURSE COMMA-SEPARATED CVE LIST -->
-<xsl:template name="cve_recurse">
-  <xsl:param name="cve_list"/>
-  <xsl:choose>
-    <!-- multiple CVEs -->
-    <xsl:when test="contains($cve_list, ', ')">
-      <xsl:variable name="head" select="substring-before($cve_list, ', ')" />
-      <xsl:variable name="tail" select="substring-after($cve_list, ', ')"/>
-      <xsl:call-template name="collapse_to_sourcefire_cve_id">
-        <xsl:with-param name="cve_id" select="$head"/>
-      </xsl:call-template>
-      <xsl:call-template name="cve_recurse">
-        <xsl:with-param name="cve_list" select="$tail"/>
-      </xsl:call-template>
-    </xsl:when>
-    <!-- single CVEs -->
-    <xsl:otherwise>
-      <xsl:call-template name="collapse_to_sourcefire_cve_id"><xsl:with-param name="cve_id" select="$cve_list"/></xsl:call-template>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<!-- CVES AS SPACE SEPARATED STRING FROM DESCRIPTION ELEMENT
-  Example input is:
-  Lengthy description of NVT...
-  continues...
-  CVE : CVE-2009-4018, CVE-2009-2626
-  other tags...
--->
-<xsl:template name="cves">
-  <xsl:choose>
-    <xsl:when test="contains(description, 'CVE : ')">
-      <xsl:variable name="after_cve" select="substring-after(description, 'CVE : ')" />
-      <xsl:variable name="cve_comma" select="substring-before($after_cve, '&#xA;')" />
-      <!-- recurse in comma separated list and output CVE IDS. Sourcefire
-unfortunately does not use the dash between "CVE" and date in the cve id.
-So from  CVE-2008-5625 we have to make CVE2008-5625. -->
-      <xsl:call-template name="cve_recurse">
-        <xsl:with-param name="cve_list" select="$cve_comma"/>
-      </xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 <!-- RECURSE COMMA-SEPARATED BID LIST -->
 <xsl:template name="bid_recurse">
   <xsl:param name="bid_list"/>
@@ -165,7 +115,7 @@ where
   proto: tcp|udp
 !-->
 <xsl:template match="result">
-AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;', &quot;'&quot;)"/>","cve_ids:<xsl:call-template name="cves" select="description"/>","bugtraq_ids: <xsl:call-template name="bids" select="description"/>"</xsl:template>
+AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;', &quot;'&quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:call-template name="bids" select="description"/>"</xsl:template>
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">
