@@ -57,49 +57,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:value-of select="$port_proto"/>
 </xsl:template>
 
-<!-- RECURSE COMMA-SEPARATED BID LIST -->
-<xsl:template name="bid_recurse">
-  <xsl:param name="bid_list"/>
-  <xsl:variable name="space"> </xsl:variable>
-  <xsl:choose>
-    <!-- multiple BIDs -->
-    <xsl:when test="contains($bid_list, ',')">
-      <xsl:variable name="head" select="substring-before($bid_list, ',')" />
-      <xsl:variable name="tail" select="substring-after($bid_list, ',')"/>
-      <xsl:value-of select="$space"/><xsl:value-of select="$head"/>
-      <xsl:call-template name="bid_recurse">
-        <xsl:with-param name="bid_list" select="$tail"/>
-      </xsl:call-template>
-    </xsl:when>
-    <!-- single BID -->
-    <xsl:otherwise>
-      <xsl:value-of select="$space"/><xsl:value-of select="$bid_list"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
-<!-- BIDS AS SPACE SEPARATED STRING FROM DESCRIPTION ELEMENT
-  Example input is:
-  Lengthy description of NVT...
-  continues...
-  BID : 32383, 32625, 32688
-  other tags...
--->
-<xsl:template name="bids">
-  <xsl:choose>
-    <xsl:when test="contains(description, 'BID : ')">
-      <xsl:variable name="after_bid" select="substring-after(description, 'BID : ')" />
-      <xsl:variable name="bid_comma" select="substring-before($after_bid, '&#xA;')" />
-      <!-- recurse in comma separated list and output BID IDS. -->
-      <xsl:call-template name="bid_recurse">
-        <xsl:with-param name="bid_list" select="$bid_comma"/>
-      </xsl:call-template>
-    </xsl:when>
-  <xsl:otherwise>
-  </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 <!-- DESCRIPTION TEXT, DOUBLE QUOTES REPLACED BY SINGLE QUOTES
 <xsl:template name="quote_replace_recurse">
   <xsl:param name="string_to_quote"/>
@@ -115,7 +72,7 @@ where
   proto: tcp|udp
 !-->
 <xsl:template match="result">
-AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;', &quot;'&quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:call-template name="bids" select="description"/>"</xsl:template>
+AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;', &quot;'&quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">

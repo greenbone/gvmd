@@ -1,6 +1,13 @@
 2010-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/sourcefire/sourcefire.xsl
+	(bid_recurse, bids): Removed work-around for parsing BID
+	from description.
+	(result): Direct use of new element "nvt/bid".
+
+2010-08-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/sourcefire/sourcefire.xsl
 	(collapse_to_sourcefire_cve_id, cves): Removed
 	work-around for parsing CVE from description.
 	(result): Direct use of new element "nvt/cve".
