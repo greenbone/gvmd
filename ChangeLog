@@ -1,5 +1,9 @@
 2010-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Add trust_time to SQL for last commit.
+
+2010-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add report format signature verification timestamps.  Hence increase
 	database version to 26.  Add database migration from version 25 to 26.
 
