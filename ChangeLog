@@ -1,3 +1,17 @@
+2010-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add report format signature verification timestamps.  Hence increase
+	database version to 26.  Add database migration from version 25 to 26.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 26.
+
+	* src/manage_sql.c (create_tables): Add signature verification time to
+	table report_formats.
+	(migrate_25_to_26): New function.
+	(database_migrators): Add migrate_25_to_26.
+	(init_manage): Init predefined format verification times.
+	(create_report_format): Set verification time.
+
 2010-08-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (run_task): Terminate array in fail case.

@@ -946,7 +946,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
@@ -3614,6 +3614,40 @@ migrate_24_to_25 ()
 }
 
 /**
+ * @brief Migrate the database from version 25 to version 26.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_25_to_26 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 25. */
+
+  if (manage_db_version () != 25)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report_formats table got a trust_time column. */
+
+  sql ("ALTER TABLE report_formats ADD column trust_time;");
+  sql ("UPDATE report_formats SET trust_time = %i;", time (NULL));
+
+  /* Set the database version to 26. */
+
+  set_db_version (26);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3643,6 +3677,7 @@ static migrator_t database_migrators[]
     {23, migrate_22_to_23},
     {24, migrate_23_to_24},
     {25, migrate_24_to_25},
+    {26, migrate_25_to_26},
     /* End marker. */
     {-1, NULL}};
 
@@ -5634,8 +5669,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            "\n"
            "The report selects all CPE tables from the results and forms a single table\n"
            "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i);",
-           TRUST_YES);
+           " 'csv', 'text/csv', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5657,8 +5693,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'Single page HTML report.',"
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i);",
-           TRUST_YES);
+           " 'html', 'text/html', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5680,8 +5717,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " 'German \"IT-Grundschutz-Kataloge\" report.',"
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i);",
-           TRUST_YES);
+           " 'csv', 'text/csv', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5702,8 +5740,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i);",
-           TRUST_YES);
+           " 'tex', 'text/plain', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5724,8 +5763,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i);",
-           TRUST_YES);
+           " 'nbe', 'text/plain', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5746,8 +5786,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i);",
-           TRUST_YES);
+           "'pdf', 'application/pdf', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5768,8 +5809,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i);",
-           TRUST_YES);
+           " 'txt', 'text/plain', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -5790,8 +5832,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i);",
-           TRUST_YES);
+           " 'xml', 'text/xml', '', %i, %i);",
+           TRUST_YES,
+           time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       signature = generate_report_format_signature (report_format);
       sql ("UPDATE report_formats SET signature = '%s', trust = %i"
@@ -17398,8 +17441,8 @@ create_report_format (const char *uuid, const char *name,
   if (global)
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i);",
+         "  signature, trust, trust_time)"
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i);",
          uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
@@ -17407,14 +17450,15 @@ create_report_format (const char *uuid, const char *name,
          quoted_extension ? quoted_extension : "",
          quoted_content_type ? quoted_content_type : "",
          quoted_signature ? quoted_signature : "",
-         format_trust);
+         format_trust,
+         time (NULL));
   else
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust)"
+         "  signature, trust, trust_time)"
          " VALUES ('%s', '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i);",
+         " '%s', '%s', '%s', '%s', '%s', %i, %i);",
          uuid,
          quoted_name,
          current_credentials.uuid,
@@ -17423,7 +17467,8 @@ create_report_format (const char *uuid, const char *name,
          quoted_extension ? quoted_extension : "",
          quoted_content_type ? quoted_content_type : "",
          quoted_signature ? quoted_signature : "",
-         format_trust);
+         format_trust,
+         time (NULL));
 
   g_free (quoted_summary);
   g_free (quoted_description);
