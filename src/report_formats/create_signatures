@@ -37,7 +37,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
   rm -f ${name}/${uuid}.asc
   rm -f ${uuid}
   fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
-  echo -n $fore > ${uuid}
+  echo -n "$fore" > ${uuid}
   for file in `sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`/*; do
 	case $file in
 	  *.BAK)
@@ -54,6 +54,7 @@ for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>
 		;;
 	esac
   done
+  echo >> ${uuid}
   gpg --detach-sign --armor ${uuid}
   rm -f ${uuid}
   mv ${uuid}.asc ${name}/${uuid}.asc

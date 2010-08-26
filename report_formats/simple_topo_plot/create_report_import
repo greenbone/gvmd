@@ -4,6 +4,7 @@ EXTENSION=svg
 CONTENT_TYPE="image/svg+xml"
 SUMMARY="Network topology SVG image."
 DESCRIPTION="Scan results in topologic structure as scalable vector graphics."
+# Names must be in alphabetical order.
 FNAME1=generate
 FILE1=`base64 -w 0 generate`
 FNAME2=hostvisdot-summary.xsl

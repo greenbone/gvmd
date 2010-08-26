@@ -4,6 +4,7 @@ EXTENSION=png
 CONTENT_TYPE="image/png"
 SUMMARY="Summary threat counts as bar chart PNG image."
 DESCRIPTION="Simple example for a summary of threat counts as bar chart PNG image."
+# Names must be in alphabetical order.
 FNAME1=generate
 FILE1=`base64 -w 0 generate`
 FNAME2=plot.plt

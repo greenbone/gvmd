@@ -4,6 +4,7 @@ EXTENSION=csv
 CONTENT_TYPE="text/csv"
 SUMMARY="Sourcefire Host Input Import."
 DESCRIPTION="Scan results in Host Input Import format for Sourcefire DC."
+# Names must be in alphabetical order.
 FNAME1=generate
 FILE1=`base64 -w 0 generate`
 FNAME2=sourcefire.xsl

@@ -40,7 +40,8 @@ To create a new report format
     this is a single XSLT file that is passed to xsltproc.
 
   - Update the "create_report_import" script to include the files added to the
-    directory in the last step.
+    directory in the last step.  These must be in alphabetical order for the
+    signature to be reproducible.
 
   - Test the generate script
 

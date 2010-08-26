@@ -2272,14 +2272,14 @@ manage_schedule (int (*fork_connection) (int *,
 static int
 get_report_format_files (const char *dir_name, GPtrArray **start)
 {
-  DIR *dir;
-  struct dirent *entry;
   GPtrArray *files;
+  struct dirent **names;
+  int n, index;
 
   files = g_ptr_array_new ();
 
-  dir = opendir (dir_name);
-  if (dir == NULL)
+  n = scandir (dir_name, &names, NULL, alphasort);
+  if (n < 0)
     {
       g_warning ("%s: failed to open dir %s: %s\n",
                  __FUNCTION__,
@@ -2288,21 +2288,16 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
       return -1;
     }
 
-  while ((entry = readdir (dir)))
-    if (strcmp (entry->d_name, ".") && strcmp (entry->d_name, ".."))
-      g_ptr_array_add (files, g_strdup (entry->d_name));
+  for (index = 0; index < n; index++)
+    {
+      if (strcmp (names[index]->d_name, ".")
+          && strcmp (names[index]->d_name, ".."))
+        g_ptr_array_add (files, g_strdup (names[index]->d_name));
+      free (names[index]);
+    }
+  free (names);
 
   g_ptr_array_add (files, NULL);
-
-  if (closedir (dir))
-    {
-      array_free (files);
-      g_warning ("%s: failed to close dir %s: %s\n",
-                 __FUNCTION__,
-                 dir_name,
-                 strerror (errno));
-      return -1;
-    }
 
   *start = files;
   return 0;

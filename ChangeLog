@@ -1,3 +1,16 @@
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/report-format-HOWTO,
+	report_formats/simple_bar_chart/create_report_import,
+	report_formats/simple_topo_plot/create_report_import,
+	report_formats/sourcefire/create_report_import: Note file ordering
+	requirement.
+
+	* src/manage.c (get_report_format_files): Order files alphabetically.
+
+	* src/report_formats/create_signatures: Quote variable to preserve
+	newlines.  Add trailing newline to content, as in Manager.
+
 2010-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Add trust_time to SQL for last commit.
