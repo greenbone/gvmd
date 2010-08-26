@@ -1,5 +1,9 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/XML/generate: Flush trailing whitespace.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/report-format-HOWTO,
 	report_formats/simple_bar_chart/create_report_import,
 	report_formats/simple_topo_plot/create_report_import,
