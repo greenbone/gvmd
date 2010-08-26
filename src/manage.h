@@ -1433,6 +1433,9 @@ create_report_format (const char *, const char *, const char *, const char *,
 int
 delete_report_format (report_format_t);
 
+int
+verify_report_format (report_format_t);
+
 char *
 report_format_uuid (report_format_t);
 

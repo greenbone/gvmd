@@ -1,5 +1,21 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP command VERIFY_REPORT_FORMAT.
+
+	* src/manage_sql.c (verify_report_format): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (help_text): Add new command.
+	(verify_report_format_data_t): New type.
+	(verify_report_format_data_reset): New function.
+	(command_data_t, client_state_t): Add new command elements.
+	(verify_report_format_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	VERIFY_REPORT_FORMAT handling.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (backup_file_name): New function.
 	(get_report_format_files): Leave out backup files.
 

@@ -17560,6 +17560,147 @@ delete_report_format (report_format_t report_format)
 }
 
 /**
+ * @brief Verify a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+verify_report_format (report_format_t report_format)
+{
+  int format_trust = TRUST_UNKNOWN;
+  iterator_t formats;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  init_report_format_iterator (&formats, report_format, 1, NULL);
+  if (next (&formats))
+    {
+      const char *signature;
+      gchar *format_signature = NULL;
+      gsize format_signature_size;
+
+      signature = report_format_iterator_signature (&formats);
+
+      find_signature ("report_formats",
+                      report_format_iterator_uuid (&formats),
+                      &format_signature,
+                      &format_signature_size);
+
+      if ((signature && strlen (signature))
+          || format_signature)
+        {
+          GString *format;
+          file_iterator_t files;
+          iterator_t params;
+          report_format_t report_format;
+
+          format = g_string_new ("");
+
+          g_string_append_printf
+           (format,
+            "%s%s%s%s%s%s%i",
+            report_format_iterator_uuid (&formats),
+            report_format_iterator_name (&formats),
+            report_format_iterator_extension (&formats),
+            report_format_iterator_content_type (&formats),
+            report_format_iterator_summary (&formats),
+            report_format_iterator_description (&formats),
+            report_format_iterator_global (&formats) & 1);
+
+          report_format = report_format_iterator_report_format (&formats);
+
+          init_report_format_file_iterator (&files, report_format);
+          while (next_file (&files))
+            {
+              gchar *content = file_iterator_content_64 (&files);
+              g_string_append_printf (format,
+                                      "%s%s",
+                                      file_iterator_name (&files),
+                                      content);
+              g_free (content);
+            }
+          cleanup_file_iterator (&files);
+
+          init_report_format_param_iterator (&params,
+                                             report_format,
+                                             1,
+                                             NULL);
+          while (next (&params))
+            g_string_append_printf
+             (format,
+              "%s%s",
+              report_format_param_iterator_name (&params),
+              report_format_param_iterator_value (&params));
+          cleanup_iterator (&params);
+
+          g_string_append_printf (format, "\n");
+
+          if (signature && strlen (signature))
+            {
+              /* Try the signature from the database. */
+              if (verify_signature (format->str, format->len, signature,
+                                    strlen (signature), &format_trust))
+                {
+                  cleanup_iterator (&formats);
+                  g_free (format_signature);
+                  sql ("ROLLBACK;");
+                  g_string_free (format, TRUE);
+                  return -1;
+                }
+            }
+
+          /* If the database signature is empty or the database
+           * signature is bad, and there is a feed signature, then
+           * try the feed signature. */
+          if (((format_trust == TRUST_NO)
+               || (format_trust == TRUST_UNKNOWN))
+              && format_signature)
+            {
+              if (verify_signature (format->str, format->len, format_signature,
+                                    strlen (format_signature), &format_trust))
+                {
+                  cleanup_iterator (&formats);
+                  g_free (format_signature);
+                  sql ("ROLLBACK;");
+                  g_string_free (format, TRUE);
+                  return -1;
+                }
+
+              if (format_trust == TRUST_YES)
+                {
+                  gchar *quoted_signature;
+                  quoted_signature = sql_quote (format_signature);
+                  sql ("UPDATE report_formats SET signature = '%s'"
+                       " WHERE ROWID = %llu;",
+                       quoted_signature,
+                       report_format);
+                  g_free (quoted_signature);
+                }
+            }
+          g_free (format_signature);
+          g_string_free (format, TRUE);
+        }
+    }
+  else
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  cleanup_iterator (&formats);
+
+  sql ("UPDATE report_formats SET trust = %i, trust_time = %i"
+       " WHERE ROWID = %llu;",
+       format_trust,
+       time (NULL),
+       report_format);
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Return the UUID of a report format.
  *
  * @param[in]  report_format  Report format.
