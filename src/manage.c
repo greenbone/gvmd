@@ -2262,6 +2262,34 @@ manage_schedule (int (*fork_connection) (int *,
 /* Report formats. */
 
 /**
+ * @brief Return whether a name is a backup file name.
+ *
+ * @return 0 if normal file name, 1 if backup file name.
+ */
+static int
+backup_file_name (const char *name)
+{
+  int length = strlen (name);
+
+  if (length && (name[length - 1] == '~'))
+    return 1;
+
+  if ((length > 3)
+      && (name[length - 4] == '.'))
+    return ((name[length - 3] == 'b')
+            && (name[length - 2] == 'a')
+            && (name[length - 1] == 'k'))
+           || ((name[length - 3] == 'B')
+               && (name[length - 2] == 'A')
+               && (name[length - 1] == 'K'))
+           || ((name[length - 3] == 'C')
+               && (name[length - 2] == 'K')
+               && (name[length - 1] == 'P'));
+
+  return 0;
+}
+
+/**
  * @brief Get files associated with a report format.
  *
  * @param[in]   dir_name  Location of files.
@@ -2291,7 +2319,8 @@ get_report_format_files (const char *dir_name, GPtrArray **start)
   for (index = 0; index < n; index++)
     {
       if (strcmp (names[index]->d_name, ".")
-          && strcmp (names[index]->d_name, ".."))
+          && strcmp (names[index]->d_name, "..")
+          && (backup_file_name (names[index]->d_name) == 0))
         g_ptr_array_add (files, g_strdup (names[index]->d_name));
       free (names[index]);
     }

@@ -1,5 +1,10 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (backup_file_name): New function.
+	(get_report_format_files): Leave out backup files.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/XML/generate: Flush trailing whitespace.
 
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
