@@ -1,5 +1,11 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (sign, generate_report_format_signature): Remove.
+	(init_manage): Verify the predefined report formats instead of signing
+	them.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_signature): Clarify argument allocation.
 	(create_report_format): Free format_signature.
 

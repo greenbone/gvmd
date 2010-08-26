@@ -741,180 +741,6 @@ user_owns_result (const char *uuid)
   return ret;
 }
 
-/**
- * @brief Execute gpg to create a signature for a string.
- *
- * @param[in]  string       String.
- * @param[in]  string_size  Size of string.
- *
- * @return Freshly allocated signature.  On error signature is the empty string.
- */
-static gchar *
-sign (const gchar *string, gsize string_size)
-{
-  gchar **cmd;
-  gint exit_status;
-  int ret = 0, installer_fd;
-  gchar *standard_out = NULL;
-  gchar *standard_err = NULL;
-  char installer_file[] = "/tmp/openvasmd-sign-XXXXXX";
-  GError *error = NULL;
-
-  installer_fd = mkstemp (installer_file);
-  if (installer_fd == -1)
-    return g_strdup ("");
-
-  g_file_set_contents (installer_file, string, string_size, &error);
-  if (error)
-    {
-      g_warning ("%s: %s", __FUNCTION__, error->message);
-      g_error_free (error);
-      close (installer_fd);
-      return g_strdup ("");
-    }
-
-  cmd = (gchar **) g_malloc (8 * sizeof (gchar *));
-
-  cmd[0] = g_strdup ("gpg");
-  cmd[1] = g_strdup ("--batch");
-  cmd[2] = g_strdup ("--quiet");
-  cmd[3] = g_strdup ("--no-tty");
-  cmd[4] = g_strdup ("--detach-sign");
-  cmd[5] = g_strdup ("--armor");
-  cmd[6] = g_strdup (installer_file);
-  cmd[7] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s %s %s\n",
-           __FUNCTION__,
-           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6]);
-  if ((g_spawn_sync ("/tmp/",
-                     cmd,
-                     NULL,                 /* Environment. */
-                     G_SPAWN_SEARCH_PATH,
-                     NULL,                 /* Setup func. */
-                     NULL,
-                     &standard_out,
-                     &standard_err,
-                     &exit_status,
-                     NULL) == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
-    {
-      g_debug ("%s: failed to run gpg --detach-sign: %d (WIF %i, WEX %i)",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s\n", __FUNCTION__, standard_out);
-      g_debug ("%s: stderr: %s\n", __FUNCTION__, standard_err);
-      ret = -1;
-    }
-
-  g_free (cmd[0]);
-  g_free (cmd[1]);
-  g_free (cmd[2]);
-  g_free (cmd[3]);
-  g_free (cmd[4]);
-  g_free (cmd[5]);
-  g_free (cmd[6]);
-  g_free (cmd);
-  g_free (standard_out);
-  g_free (standard_err);
-
-  if (ret == 0)
-    {
-      gchar *signature_file, *signature;
-      gsize signature_size;
-
-      signature_file = g_strdup_printf ("%s.asc", installer_file);
-      g_file_get_contents (signature_file, &signature, &signature_size, &error);
-      g_free (signature_file);
-      if (error)
-        {
-          g_warning ("%s: %s", __FUNCTION__, error->message);
-          g_error_free (error);
-        }
-      else
-        {
-          close (installer_fd);
-          return signature;
-        }
-    }
-
-  close (installer_fd);
-  return g_strdup ("");
-}
-
-/**
- * @brief Generate a signature for a report format.
- *
- * @param[in]  report_format  Report format.
- *
- * @return Freshly allocated SQL quoted signature, or NULL on error.
- */
-static gchar *
-generate_report_format_signature (report_format_t report_format)
-{
-  gchar *quoted_signature = NULL;
-  iterator_t report_formats;
-
-  init_report_format_iterator (&report_formats,
-                               report_format,
-                               1,
-                               NULL);
-  if (next (&report_formats))
-    {
-      gchar *signature;
-      GString *format;
-      file_iterator_t files;
-      iterator_t params;
-
-      format = g_string_new ("");
-
-      g_string_append_printf
-       (format,
-        "%s%s%s%s%s%s%i",
-        report_format_iterator_uuid (&report_formats),
-        report_format_iterator_name (&report_formats),
-        report_format_iterator_extension (&report_formats),
-        report_format_iterator_content_type (&report_formats),
-        report_format_iterator_summary (&report_formats),
-        report_format_iterator_description (&report_formats),
-        report_format_iterator_global (&report_formats));
-
-      init_report_format_file_iterator (&files, report_format);
-      while (next_file (&files))
-        {
-          gchar *content = file_iterator_content_64 (&files);
-          g_string_append_printf (format,
-                                  "%s%s",
-                                  file_iterator_name (&files),
-                                  content);
-          g_free (content);
-        }
-      cleanup_file_iterator (&files);
-
-      init_report_format_param_iterator (&params, report_format, 1, NULL);
-      while (next (&params))
-        g_string_append_printf (format,
-                                "%s%s",
-                                report_format_param_iterator_name (&params),
-                                report_format_param_iterator_value (&params));
-      cleanup_iterator (&params);
-
-      g_string_append_printf (format, "\n");
-
-      signature = sign (format->str, format->len);
-      g_string_free (format, TRUE);
-      if (signature)
-        {
-          quoted_signature = sql_quote (signature);
-          g_free (signature);
-        }
-    }
-  cleanup_iterator (&report_formats);
-  return quoted_signature;
-}
-
 
 /* Creation. */
 
@@ -5654,7 +5480,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('a0704abb-2120-489f-959f-251c9f4ffebd', NULL, 'CPE',"
@@ -5673,20 +5498,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('b993b6f5-f9fb-4e6e-9c94-dd46c00e058d', NULL, 'HTML',"
@@ -5697,20 +5515,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('929884c6-c2c4-41e7-befb-2f6aa163b458', NULL, 'ITG',"
@@ -5721,20 +5532,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
@@ -5744,20 +5548,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
@@ -5767,20 +5564,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
@@ -5790,20 +5580,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
@@ -5813,20 +5596,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
       == 0)
     {
       report_format_t report_format;
-      gchar *signature;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time)"
            " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
@@ -5836,13 +5612,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
-      signature = generate_report_format_signature (report_format);
-      sql ("UPDATE report_formats SET signature = '%s', trust = %i"
-           " WHERE ROWID = %llu;",
-           signature,
-           strlen (signature) ? TRUST_YES : TRUST_UNKNOWN,
-           report_format);
-      g_free (signature);
+      verify_report_format (report_format);
     }
 
   if (nvt_cache_mode == 0)
