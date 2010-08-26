@@ -14765,7 +14765,7 @@ find_agent (const char* uuid, agent_t* agent)
  *
  * @param[in]   location            Feed directory to search for signature.
  * @param[in]   installer_filename  Installer filename.
- * @param[out]  signature           Installer signature.
+ * @param[out]  signature           Freshly allocated installer signature.
  * @param[out]  signature_size      Size of installer signature.
  *
  * @return 0 success, -1 error.
@@ -17262,7 +17262,7 @@ create_report_format (const char *uuid, const char *name,
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir, *param_name;
   report_format_t report_format_rowid;
   int index;
-  gchar *format_signature;
+  gchar *format_signature = NULL;
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
 
@@ -17309,10 +17309,13 @@ create_report_format (const char *uuid, const char *name,
       if (verify_signature (format->str, format->len, signature,
                             strlen (signature), &format_trust))
         {
+          g_free (format_signature);
           g_string_free (format, TRUE);
           return -1;
         }
       g_string_free (format, TRUE);
+
+      g_free (format_signature);
     }
 
   sql ("BEGIN IMMEDIATE;");

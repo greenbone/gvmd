@@ -1,5 +1,10 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_signature): Clarify argument allocation.
+	(create_report_format): Free format_signature.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP command VERIFY_REPORT_FORMAT.
 
 	* src/manage_sql.c (verify_report_format): New function.
