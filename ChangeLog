@@ -1,5 +1,10 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/create_signatures: Only create a signature if the
+	associated directory exists.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_format_iterator): Add trust_time.
 	(report_format_iterator_trust_time): New function.
 

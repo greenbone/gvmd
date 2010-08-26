@@ -32,32 +32,34 @@ if [ $# = 0 ]; then DB=/var/lib/openvas/mgr/tasks.db; fi
 
 echo Creating signatures from $DB:
 for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>/dev/null`; do
-  echo -n "  $uuid "
   name=`sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
-  rm -f ${name}/${uuid}.asc
-  rm -f ${uuid}
-  fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
-  echo -n "$fore" > ${uuid}
-  for file in `sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`/*; do
-	case $file in
-	  *.BAK)
-		;;
-	  *.CKP)
-		;;
-	  *~)
-		;;
-	  *.bak)
-		;;
-	  *)
-	    echo -n `basename $file` >> ${uuid}
-		base64 -w 0 $file >> ${uuid}
-		;;
-	esac
-  done
-  echo >> ${uuid}
-  gpg --detach-sign --armor ${uuid}
-  rm -f ${uuid}
-  mv ${uuid}.asc ${name}/${uuid}.asc
-  echo done.
+  if [ -d $name ]; then
+	echo -n "  $uuid "
+	rm -f ${name}/${uuid}.asc
+	rm -f ${uuid}
+	fore=`sqlite3 -separator '' -noheader -init "" $DB "SELECT uuid, name, extension, content_type, summary, description, '1' FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
+	echo -n "$fore" > ${uuid}
+	for file in `sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`/*; do
+	  case $file in
+		*.BAK)
+		  ;;
+		*.CKP)
+		  ;;
+		*~)
+		  ;;
+		*.bak)
+		  ;;
+		*)
+		  echo -n `basename $file` >> ${uuid}
+		  base64 -w 0 $file >> ${uuid}
+		  ;;
+	  esac
+	done
+	echo >> ${uuid}
+	gpg --detach-sign --armor ${uuid}
+	rm -f ${uuid}
+	mv ${uuid}.asc ${name}/${uuid}.asc
+	echo done.
+  fi
 done
 echo Done.
