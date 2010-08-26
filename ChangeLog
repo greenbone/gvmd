@@ -1,5 +1,15 @@
 2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_format_iterator): Add trust_time.
+	(report_format_iterator_trust_time): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add trust time to report format.
+	Skip sending trust when exporting.
+
+2010-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (sign, generate_report_format_signature): Remove.
 	(init_manage): Verify the predefined report formats instead of signing
 	them.

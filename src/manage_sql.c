@@ -17534,7 +17534,8 @@ init_report_format_iterator (iterator_t* iterator, report_format_t report_format
   if (report_format)
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner IS NULL, signature, trust"
+                   " summary, description, owner IS NULL, signature, trust,"
+                   " trust_time"
                    " FROM report_formats"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -17547,7 +17548,8 @@ init_report_format_iterator (iterator_t* iterator, report_format_t report_format
   else
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, extension, content_type,"
-                   " summary, description, owner is NULL, signature, trust"
+                   " summary, description, owner is NULL, signature, trust,"
+                   " trust_time"
                    " FROM report_formats"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -17674,6 +17676,23 @@ report_format_iterator_trust (iterator_t* iterator)
       default: return NULL;
     }
 }
+
+/**
+ * @brief Get the trust time from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time report format was verified.
+ */
+time_t
+report_format_iterator_trust_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 10);
+  return ret;
+}
+
 
 /**
  * @brief Initialise a report format iterator.

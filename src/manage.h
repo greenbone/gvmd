@@ -1478,6 +1478,9 @@ report_format_iterator_trust (iterator_t *);
 const char*
 report_format_iterator_summary (iterator_t *);
 
+time_t
+report_format_iterator_trust_time (iterator_t *);
+
 /**
  * @brief A report format file iterator.
  */

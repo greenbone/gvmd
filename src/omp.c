@@ -8844,6 +8844,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            get_report_formats_data->sort_field);
               while (next (&report_formats))
                 {
+                  time_t trust_time;
+
+                  trust_time = report_format_iterator_trust_time
+                                (&report_formats);
+
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<report_format id=\"%s\">"
                     "<name>%s</name>"
@@ -8851,7 +8856,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     "<content_type>%s</content_type>"
                     "<summary>%s</summary>"
                     "<description>%s</description>"
-                    "<trust>%s</trust>"
                     "<global>%i</global>",
                     report_format_iterator_uuid (&report_formats),
                     report_format_iterator_name (&report_formats),
@@ -8859,7 +8863,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_format_iterator_content_type (&report_formats),
                     report_format_iterator_summary (&report_formats),
                     report_format_iterator_description (&report_formats),
-                    report_format_iterator_trust (&report_formats),
                     report_format_iterator_global (&report_formats));
 
                   if (get_report_formats_data->params
@@ -8900,6 +8903,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        ("<signature>%s</signature>",
                         report_format_iterator_signature (&report_formats));
                     }
+                  else
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<trust>%s<time>%s</time></trust>",
+                      report_format_iterator_trust (&report_formats),
+                      ctime_strip_newline (&trust_time));
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
                 }
