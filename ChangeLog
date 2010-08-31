@@ -1,5 +1,13 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* README: Note SIGHUP.
+
+	* doc/openvasmd.8.xml: Add SIGNALS section.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Update from source.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/openvasmd.8.xml: Replace tabs with spaces.
 
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>

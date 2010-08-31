@@ -47,6 +47,9 @@ updated every time the Scanner syncs with the NVT feed.  The --rebuild
 option is faster as it locks the database the entire time, whereas --update
 allows clients to access the Manager during the update.
 
+A rebuild within a running Manager can also be invoked by sending the main
+Manager process the SIGHUP signal (signal number 1).
+
 The program usage message follows.
 
     Usage:
