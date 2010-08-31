@@ -900,7 +900,7 @@ fork_update_nvt_cache ()
 
         tracef ("   internal NVT cache update\n");
 
-        update_or_rebuild_nvt_cache (1,
+        update_or_rebuild_nvt_cache (0,
                                      scanner_address_string,
                                      scanner_port,
                                      0);

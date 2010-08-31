@@ -1,5 +1,10 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (fork_update_nvt_cache): Call the rebuild version of
+	update_or_rebuild_nvt_cache.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (update_or_rebuild_nvt_cache): Correct doc typo.
 
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
