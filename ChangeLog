@@ -1,5 +1,9 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Indent comments properly.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main_loop): Remove.
 	(serve_and_schedule): New function.  Rename from main_loop for clarity.
 	Make the @brief doc brief.  Move `if' comments about true case inside

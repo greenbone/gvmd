@@ -762,7 +762,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /** @todo Use sigaction. */
   /* Warning from RATS heeded (signals now use small, separate handlers)
-    * hence annotations. */
+   * hence annotations. */
   if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
       || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
       || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
@@ -811,7 +811,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     return EXIT_FAILURE;
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-    * error" removes the data between `select' and `read'. */
+   * error" removes the data between `select' and `read'. */
   if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
     {
       g_warning ("%s: failed to set scanner socket flag: %s\n",
@@ -821,8 +821,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     }
 
   /* Call the OMP client serving function with a special client socket
-    * value.  This invokes a scanner-only manager loop which will
-    * request and cache the plugins, then exit. */
+   * value.  This invokes a scanner-only manager loop which will
+   * request and cache the plugins, then exit. */
 
   if (serve_omp (NULL, &scanner_session,
                  NULL, &scanner_credentials,
