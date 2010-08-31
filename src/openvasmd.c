@@ -845,13 +845,15 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 }
 
 /**
- * @brief Enter an infinite loop, waiting for connections and passing the
- * @brief work to `accept_and_maybe_fork'.
+ * @brief Serve incoming connections, scheduling periodically.
+ *
+ * Enter an infinite loop, waiting for connections and passing the work to
+ * `accept_and_maybe_fork'.
  *
  * Periodically, call the manage schedular to start and stop scheduled tasks.
  */
 static void
-main_loop ()
+serve_and_schedule ()
 {
   time_t last_schedule_time = 0;
 
@@ -878,9 +880,9 @@ main_loop ()
       timeout.tv_usec = 0;
       ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
 
-      /* Error while selecting socket occurred. */
       if (ret == -1)
         {
+          /* Error occurred while selecting socket. */
           if (errno == EINTR)
             continue;
           g_critical ("%s: select failed: %s\n",
@@ -888,9 +890,10 @@ main_loop ()
                       strerror (errno));
           exit (EXIT_FAILURE);
         }
-      /* Have an incoming connection. */
+
       if (ret > 0)
         {
+          /* Have an incoming connection. */
           if (FD_ISSET (manager_socket, &exceptfds))
             {
               g_critical ("%s: exception in select\n", __FUNCTION__);
@@ -904,7 +907,7 @@ main_loop ()
         exit (EXIT_FAILURE);
       last_schedule_time = time (NULL);
     }
-  // unreachable
+  /*@notreached@*/
 }
 
 /* Main. */
@@ -1347,6 +1350,7 @@ main (int argc, char** argv)
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
   /* Initialize the authentication system. */
+
   openvas_auth_init ();
 
   /* Initialise the process for manage_schedule. */
@@ -1355,7 +1359,8 @@ main (int argc, char** argv)
 
   /* Enter the main forever-loop. */
 
-  main_loop ();
+  serve_and_schedule ();
 
+  /*@notreached@*/
   return EXIT_SUCCESS;
 }
