@@ -1,5 +1,9 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/openvasmd.8.xml: Replace tabs with spaces.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (fork_update_nvt_cache): Call the rebuild version of
 	update_or_rebuild_nvt_cache.
 
