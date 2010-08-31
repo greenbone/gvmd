@@ -217,6 +217,16 @@ int manager_socket = -1;
  */
 struct sockaddr_in manager_address;
 
+/**
+ * @brief The Scanner port.
+ */
+static int scanner_port;
+
+/**
+ * @brief The address of the Scanner.
+ */
+static gchar *scanner_address_string = NULL;
+
 #if LOG
 /**
  * @brief The log stream.
@@ -248,6 +258,11 @@ int is_parent = 1;
  * @brief Whether to serve OTP.
  */
 gboolean otp = FALSE;
+
+/**
+ * @brief Flag for SIGHUP handler.
+ */
+int sighup_update_nvt_cache = 0;
 
 
 /* Forking, serving the client. */
@@ -670,7 +685,7 @@ handle_sigterm (/*@unused@*/ int signal)
 }
 
 /**
- * @brief Handle a SIGHUP signal.
+ * @brief Handle a SIGHUP signal by exiting.
  *
  * @param[in]  signal  The signal that caused this function to run.
  */
@@ -679,6 +694,18 @@ handle_sighup (/*@unused@*/ int signal)
 {
   cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Handle a SIGHUP signal by updating the NVT cache.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sighup_update (/*@unused@*/ int signal)
+{
+  /* Queue the update of the NVT cache. */
+  sighup_update_nvt_cache = 1;
 }
 
 /**
@@ -715,12 +742,14 @@ handle_sigsegv (/*@unused@*/ int signal)
  *                                     (1) or rebuilt (0).
  * @param[in]  scanner_address_string  Adress of the scanner as string.
  * @param[in]  scanner_port            Port of the scanner.
+ * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
 update_or_rebuild_nvt_cache (int update_nvt_cache,
-                             gchar* scanner_address_string, int scanner_port)
+                             gchar* scanner_address_string, int scanner_port,
+                             int register_cleanup)
 {
   int scanner_socket;
   gnutls_session_t scanner_session;
@@ -750,7 +779,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /* Register the `cleanup' function. */
 
-  if (atexit (&cleanup))
+  if (register_cleanup && atexit (&cleanup))
     {
       g_critical ("%s: failed to register `atexit' cleanup function\n",
                   __FUNCTION__);
@@ -845,6 +874,57 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 }
 
 /**
+ * @brief Update the NVT cache in a child process.
+ *
+ * @return 0 success, -1 error.  Always exits with EXIT_SUCCESS in child.
+ */
+static int
+fork_update_nvt_cache ()
+{
+  int pid;
+
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.   */
+
+        /* Clean up the process. */
+
+        /** @todo This should happen via omp, maybe with "cleanup_omp ();". */
+        cleanup_manage_process (TRUE);
+        if (manager_socket > -1) close (manager_socket);
+        openvas_auth_tear_down ();
+
+        /* Update the cache. */
+
+        tracef ("   internal NVT cache update\n");
+
+        update_or_rebuild_nvt_cache (1,
+                                     scanner_address_string,
+                                     scanner_port,
+                                     0);
+
+        /* Exit. */
+
+        cleanup_manage_process (FALSE);
+        exit (EXIT_SUCCESS);
+
+        /*@notreached@*/
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        return -1;
+
+      default:
+        /* Parent.  Continue. */
+        return 0;
+    }
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
@@ -871,8 +951,15 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
+          if (sighup_update_nvt_cache)
+            {
+              sighup_update_nvt_cache = 0;
+              fork_update_nvt_cache ();
+            }
+
           if (manage_schedule (fork_connection_for_schedular))
             exit (EXIT_FAILURE);
+
           last_schedule_time = time (NULL);
         }
 
@@ -905,6 +992,13 @@ serve_and_schedule ()
 
       if (manage_schedule (fork_connection_for_schedular))
         exit (EXIT_FAILURE);
+
+      if (sighup_update_nvt_cache)
+        {
+          sighup_update_nvt_cache = 0;
+          fork_update_nvt_cache ();
+        }
+
       last_schedule_time = time (NULL);
     }
   /*@notreached@*/
@@ -930,7 +1024,7 @@ serve_and_schedule ()
 int
 main (int argc, char** argv)
 {
-  int scanner_port, manager_port;
+  int manager_port;
   gchar *gnupg_home;
 
   /* Process options. */
@@ -943,7 +1037,6 @@ main (int argc, char** argv)
   static gboolean print_version = FALSE;
   static gchar *manager_address_string = NULL;
   static gchar *manager_port_string = NULL;
-  static gchar *scanner_address_string = NULL;
   static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
   GError *error = NULL;
@@ -1106,7 +1199,8 @@ main (int argc, char** argv)
 
       return update_or_rebuild_nvt_cache (update_nvt_cache,
                                           scanner_address_string,
-                                          scanner_port);
+                                          scanner_port,
+                                          1);
     }
 
   /* Run the standard manager. */
@@ -1241,7 +1335,7 @@ main (int argc, char** argv)
   if (signal (SIGTERM, handle_sigterm) == SIG_ERR   /* RATS: ignore */
       || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
       || signal (SIGINT, handle_sigint) == SIG_ERR  /* RATS: ignore */
-      || signal (SIGHUP, handle_sighup) == SIG_ERR  /* RATS: ignore */
+      || signal (SIGHUP, handle_sighup_update) == SIG_ERR  /* RATS: ignore */
       || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
       || signal (SIGCHLD, SIG_IGN) == SIG_ERR)      /* RATS: ignore */
     {

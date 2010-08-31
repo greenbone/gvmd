@@ -1,5 +1,19 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Update the database NVT cache on receiving SIGHUP.
+
+	* src/openvasmd.c (scanner_port, scanner_address_string): New variables.
+	From main.
+	(sighup_update_nvt_cache): New variable.
+	(handle_sighup_update): New function.
+	(update_or_rebuild_nvt_cache): Add flag for registering atexit handler.
+	Update caller.
+	(fork_update_nvt_cache): New function.
+	(serve_and_schedule): Call fork_update_nvt_cache if flag set.
+	(main): Use update version of SIGHUP handler.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (update_or_rebuild_nvt_cache): Indent comments properly.
 
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
