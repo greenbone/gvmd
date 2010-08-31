@@ -1,5 +1,9 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Correct doc typo.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Update the memory NVT cache on receiving SIGHUP.
 
 	* src/manage_sql.c (update_nvt_cache, manage_update_nvti_cache): New

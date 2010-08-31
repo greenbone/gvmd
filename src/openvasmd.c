@@ -740,7 +740,7 @@ handle_sigsegv (/*@unused@*/ int signal)
  *
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
  *                                     (1) or rebuilt (0).
- * @param[in]  scanner_address_string  Adress of the scanner as string.
+ * @param[in]  scanner_address_string  Address of the scanner as string.
  * @param[in]  scanner_port            Port of the scanner.
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  *
