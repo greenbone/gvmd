@@ -5128,6 +5128,48 @@ setup_full_config_prefs (config_t config, int safe_checks,
 }
 
 /**
+ * @brief Update the memory cache of NVTs.
+ */
+static void
+update_nvti_cache ()
+{
+  iterator_t nvts;
+
+  nvtis_free (nvti_cache);
+
+  nvti_cache = nvtis_new ();
+
+  init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
+  while (next (&nvts))
+    {
+      nvti_t *nvti = nvti_new ();
+      nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
+      nvti_set_name (nvti, nvt_iterator_name (&nvts));
+      nvti_set_family (nvti, nvt_iterator_family (&nvts));
+      nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
+      nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
+      nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
+      nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
+      nvtis_add (nvti_cache, nvti);
+    }
+  cleanup_iterator (&nvts);
+}
+
+/**
+ * @brief Update the memory cache of NVTs, if this has been requested.
+ */
+void
+manage_update_nvti_cache ()
+{
+  if (sql_int (0, 0,
+               "SELECT value FROM meta WHERE name = 'update_nvti_cache';"))
+    {
+      update_nvti_cache ();
+      sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
+    }
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -5233,6 +5275,14 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
 
   if (sql_int (0, 0, "SELECT count(*) FROM users WHERE name = 'om';") == 0)
     sql ("INSERT into users (name, password) VALUES ('om', '');");
+
+  /* Ensure the nvti cache update flag exists and is clear. */
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM meta WHERE name = 'update_nvti_cache';"))
+    sql ("UPDATE meta SET value = 0 WHERE name = 'update_nvti_cache';");
+  else
+    sql ("INSERT INTO meta (name, value) VALUES ('update_nvti_cache', 0);");
 
   /* Ensure every part of the predefined selector exists.
    *
@@ -5681,26 +5731,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
   /* Load the NVT cache into memory. */
 
   if (nvti_cache == NULL)
-    {
-      iterator_t nvts;
-
-      nvti_cache = nvtis_new ();
-
-      init_nvt_iterator (&nvts, (nvt_t) 0, (config_t) 0, NULL, 1, NULL);
-      while (next (&nvts))
-        {
-          nvti_t *nvti = nvti_new ();
-          nvti_set_oid (nvti, nvt_iterator_oid (&nvts));
-          nvti_set_name (nvti, nvt_iterator_name (&nvts));
-          nvti_set_family (nvti, nvt_iterator_family (&nvts));
-          nvti_set_cvss_base (nvti, nvt_iterator_cvss_base (&nvts));
-          nvti_set_risk_factor (nvti, nvt_iterator_risk_factor (&nvts));
-          nvti_set_cve (nvti, nvt_iterator_cve (&nvts));
-          nvti_set_bid (nvti, nvt_iterator_bid (&nvts));
-          nvtis_add (nvti_cache, nvti);
-        }
-      cleanup_iterator (&nvts);
-    }
+    update_nvti_cache ();
 
   sqlite3_close (task_db);
   task_db = NULL;
@@ -11678,6 +11709,8 @@ nvts_md5sum ()
 
 /**
  * @brief Set the md5sum of the plugins in the plugin cache.
+ *
+ * Also queue an update to the nvti cache.
  */
 void
 set_nvts_md5sum (const char *md5sum)
@@ -11687,6 +11720,8 @@ set_nvts_md5sum (const char *md5sum)
        " VALUES ('nvts_md5sum', '%s');",
        quoted);
   g_free (quoted);
+
+  sql ("UPDATE meta SET value = 1 WHERE name = 'update_nvti_cache';");
 }
 
 /**

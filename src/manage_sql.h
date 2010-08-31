@@ -81,4 +81,6 @@ const char *task_schedule_iterator_owner_name (iterator_t *);
 
 void reinit_manage_process ();
 
+void manage_update_nvti_cache ();
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

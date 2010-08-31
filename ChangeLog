@@ -1,5 +1,19 @@
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Update the memory NVT cache on receiving SIGHUP.
+
+	* src/manage_sql.c (update_nvt_cache, manage_update_nvti_cache): New
+	functions.
+	(init_manage): Setup nvti cache flag.  Move nvti cache update into
+	update_nvt_cache and call update_nvt_cache.
+	(set_nvts_md5sum): Queue nvti cache update.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage.c (manage_schedule): Update NVT cache if requested.
+
+2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Update the database NVT cache on receiving SIGHUP.
 
 	* src/openvasmd.c (scanner_port, scanner_address_string): New variables.

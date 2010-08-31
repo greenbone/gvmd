@@ -1985,6 +1985,8 @@ manage_schedule (int (*fork_connection) (int *,
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
 
+  manage_update_nvti_cache ();
+
   /* Assemble "starts" and "stops" list containing task uuid and owner name
    * for each (scheduled) task to start or stop. */
 
