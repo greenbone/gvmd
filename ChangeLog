@@ -1,3 +1,7 @@
+2010-09-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h (set_task_target): Correct arg type.
+
 2010-08-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README: Note SIGHUP.

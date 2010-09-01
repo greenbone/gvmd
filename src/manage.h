@@ -361,7 +361,7 @@ target_t
 task_target (task_t);
 
 void
-set_task_target (task_t, config_t);
+set_task_target (task_t, target_t);
 
 char*
 task_description (task_t);
