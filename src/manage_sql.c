@@ -4355,6 +4355,23 @@ email (const char *to_address, const char *from_address, const char *subject,
 }
 
 /**
+ * @brief Format string for simple notice escalator email.
+ */
+#define SIMPLE_NOTICE_FORMAT                                                  \
+ "%s.\n"                                                                      \
+ "\n"                                                                         \
+ "The following condition was met: %s\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is not configured to provide more details.\n"         \
+ "Full details are stored on the scan engine.\n"                              \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
  * @brief Escalate an event.
  *
  * @param[in]  escalator   Escalator.
@@ -4375,7 +4392,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
          "The escalator for task %s was triggered "
          "(Event: %s, Condition: %s)",
          task_name (task),
-         event_description (event, event_data),
+         event_description (event, event_data, NULL),
          escalator_condition_description (condition, escalator));
 
   switch (method)
@@ -4403,7 +4420,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                   gchar *event_desc, *condition_desc;
 
                   /* Summary message. */
-                  event_desc = event_description (event, event_data);
+                  event_desc = event_description (event, event_data, NULL);
                   condition_desc = escalator_condition_description (condition,
                                                                     escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
@@ -4423,14 +4440,20 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                 }
               else
                 {
-                  /* Notice message. */
+                  gchar *event_desc, *condition_desc;
+
+                  /* Simple notice message. */
+                  event_desc = event_description (event, event_data, name);
+                  condition_desc = escalator_condition_description (condition,
+                                                                    escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s':"
                                              " An event occurred",
                                              name);
-                  body = g_strdup_printf ("Task: %s\n"
-                                          "\n"
-                                          "An event occurred on the task.\n",
-                                          name);
+                  body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
+                                          event_desc,
+                                          condition_desc);
+                  g_free (event_desc);
+                  g_free (condition_desc);
                 }
               free (name);
               free (notice);
@@ -4449,7 +4472,7 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
           char *submethod;
           gchar *message, *event_desc, *level;
 
-          event_desc = event_description (event, event_data);
+          event_desc = event_description (event, event_data, NULL);
           message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
           g_free (event_desc);
 

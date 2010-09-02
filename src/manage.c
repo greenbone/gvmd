@@ -265,16 +265,22 @@ escalator_condition_description (escalator_condition_t condition,
  *
  * @param[in]  event       Event.
  * @param[in]  event_data  Event data.
+ * @param[in]  task_name   Name of task if required in description, else NULL.
  *
  * @return Freshly allocated description of event.
  */
 gchar*
-event_description (event_t event, const void *event_data)
+event_description (event_t event, const void *event_data, const char *task_name)
 {
   switch (event)
     {
       case EVENT_TASK_RUN_STATUS_CHANGED:
-        return g_strdup_printf ("Task run status changed to '%s'",
+        if (task_name)
+          return g_strdup_printf
+                  ("The security scan task '%s' changed status to '%s'",
+                   task_name,
+                   run_status_name ((task_status_t) event_data));
+        return g_strdup_printf ("Task status changed to '%s'",
                                 run_status_name ((task_status_t) event_data));
         break;
       default:
