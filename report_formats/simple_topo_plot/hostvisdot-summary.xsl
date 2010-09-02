@@ -32,7 +32,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-  <xsl:template match="report">
+<xsl:template match="report">
 digraph scan {
   nodesep = 8;
   ranksep = 2;
@@ -40,22 +40,22 @@ digraph scan {
   fontsize = 8.0;
   concentrate = "true";
   root = "OpenVAS";
-  "OpenVAS" [style=filled, color=chartreuse3];
+  "OpenVAS" [label="OpenVAS", style=filled, color=chartreuse3];
     <xsl:for-each select="host_start" >
       <xsl:variable name="current_host" select="host/text()"/>
       <xsl:choose>
         <xsl:when test="count(../results/result[host/text() = $current_host][threat/text() = 'High']) &gt; 0">
-  "<xsl:value-of select="$current_host"/>" [style=filled, color=red, fontcolor=white];
+  "<xsl:value-of select="$current_host"/>" [label="<xsl:value-of select="$current_host"/>", style=filled, shape=Mrecord, color=red, fontcolor=white];
         </xsl:when>
         <xsl:otherwise>
           <xsl:choose>
             <xsl:when test="count(../results/result[host/text() = $current_host][threat/text() = 'Medium']) &gt; 0">
-  "<xsl:value-of select="$current_host"/>" [style=filled, color=orange, fontcolor=white];
+  "<xsl:value-of select="$current_host"/>" [label="<xsl:value-of select="$current_host"/>", style=filled, shape=Mrecord, color=orange, fontcolor=white];
             </xsl:when>
             <xsl:otherwise>
               <xsl:choose>
                 <xsl:when test="count(../results/result[host/text() = $current_host][threat/text() = 'Low']) &gt; 0">
-  "<xsl:value-of select="$current_host"/>" [style=filled, color=cornflowerblue, fontcolor=white];
+  "<xsl:value-of select="$current_host"/>" [label="<xsl:value-of select="$current_host"/>", style=filled, shape=Mrecord, color=cornflowerblue, fontcolor=white];
                 </xsl:when>
               </xsl:choose>
             </xsl:otherwise>
@@ -97,12 +97,12 @@ digraph scan {
         </xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
-    <!-- Enable the following block for experimental port visualisation -->
-    <!--    <xsl:call-template name="port_recurse">
+    <!-- Enable the following block for port visualisation -->
+    <xsl:call-template name="port_recurse">
       <xsl:with-param name="port_list" select="$ports"/>
       <xsl:with-param name="port_host" select="$host"/>
-    </xsl:call-template> -->
-  </xsl:template>
+    </xsl:call-template>
+</xsl:template>
 
   <xsl:template name="trace_recurse">
     <xsl:param name="trace_list"/>
@@ -133,16 +133,16 @@ digraph scan {
       <xsl:when test="contains($port_list, ',')">
         <xsl:variable name="head" select="substring-before($port_list, ',')" />
         <xsl:variable name="tail" select="substring-after($port_list, ',')"/>
-        "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$head"/>" [label ="<xsl:value-of select="$head"/>", shape="triangle"];
-        "<xsl:value-of select="$port_host"/>" -> "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$head"/>" [len = 0.2];
+        "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$head"/>" [label ="<xsl:value-of select="$head"/>", shape="Mrecord"];
+        "<xsl:value-of select="$port_host"/>" -> "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$head"/>" [len = 0.2, arrowhead="none"];
         <xsl:call-template name="port_recurse">
           <xsl:with-param name="port_list" select="$tail"/>
           <xsl:with-param name="port_host" select="$port_host"/>
         </xsl:call-template>
       </xsl:when>
       <xsl:when test="$port_list and not (contains($port_list, ','))">
-        "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$port_list"/>" [label ="<xsl:value-of select="$port_list"/>", shape="triangle"];
-        "<xsl:value-of select="$port_host"/>" -> "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$port_list"/>" [len = 0.2];
+        "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$port_list"/>" [label ="<xsl:value-of select="$port_list"/>", shape="Mrecord"];
+        "<xsl:value-of select="$port_host"/>" -> "<xsl:value-of select="$port_host"/>:<xsl:value-of select="$port_list"/>" [len = 0.2, arrowhead="none"];
       </xsl:when>
     </xsl:choose>
   </xsl:template>

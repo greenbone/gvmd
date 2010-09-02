@@ -89,4 +89,4 @@ SVN):
   - To create a feed signature for the report format change into
     src/report_formats and run the command
 
-        create_signatures PREFIX/var/lib/openvas/mgr/tasks.db
+        ./create_signatures PREFIX/var/lib/openvas/mgr/tasks.db
