@@ -12798,7 +12798,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             max_nvt_count,
                             known_nvt_count);
                         }
-                      }
+                    }
 
                   if (get_configs_data->preferences || get_configs_data->export)
                     {
