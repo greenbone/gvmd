@@ -1,5 +1,10 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Format comments like rest of
+	file.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (compare_ports_desc, compare_ports_asc): Remove.
 	(compare_message_types_desc, compare_message_types_asc): New functions.
 	Based on compare_ports_desc and compare_ports_asc.

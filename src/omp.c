@@ -7548,8 +7548,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_AUTHENTICATE:
         switch (authenticate (&current_credentials))
           {
-            // Authentication succeeded.
-            case 0:
+            case 0:   /* Authentication succeeded. */
               if (load_tasks ())
                 {
                   g_warning ("%s: failed to load tasks\n", __FUNCTION__);
@@ -7565,14 +7564,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                 }
               break;
-            // Authentication failed.
-            case 1:
+            case 1:   /* Authentication failed. */
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
-            // Error while authenticating.
-            case -1:
+            case -1:  /* Error while authenticating. */
             default:
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("authenticate"));
@@ -11635,7 +11632,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              write_to_client,
                                              write_to_client_data))
                 {
-                  // Out of space
+                  /* Out of space. */
                   error_send_to_client (error);
                   return;
                 }
