@@ -1,5 +1,15 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add SLAVE to OMP CREATE_TASK.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset)
+	(client_state_t): Add slave elements.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	CREATE_TASK SLAVE handling.
+	(buffer_overrides_xml): Export for upcoming slave running patch.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add database migration from version 26 to 27.
 
 	* src/manage_sql.c (migrate_26_to_27): New function.

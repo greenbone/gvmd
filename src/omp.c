@@ -1102,6 +1102,7 @@ typedef struct
   char *config_id;      ///< ID of task config.
   char *escalator_id;   ///< ID of task escalator.
   char *schedule_id;    ///< ID of task schedule.
+  char *slave_id;       ///< ID of task slave.
   char *target_id;      ///< ID of task target.
   task_t task;          ///< ID of new task.
 } create_task_data_t;
@@ -1117,6 +1118,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->config_id);
   free (data->escalator_id);
   free (data->schedule_id);
+  free (data->slave_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (create_task_data_t));
@@ -2735,6 +2737,7 @@ typedef enum
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREATE_TASK_SCHEDULE,
+  CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_DELETE_AGENT,
   CLIENT_DELETE_CONFIG,
@@ -5920,6 +5923,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->schedule_id);
             set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
           }
+        else if (strcasecmp ("SLAVE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->slave_id);
+            set_client_state (CLIENT_CREATE_TASK_SLAVE);
+          }
         else if (strcasecmp ("TARGET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7262,6 +7271,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
     }
 }
 
+/* External for manage.c. */
 /**
  * @brief Buffer XML for the NVT preference of a config.
  *
@@ -7269,7 +7279,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
  * @param[in]  prefs   NVT preference iterator.
  * @param[in]  config  Config.
  */
-static void
+void
 buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                               config_t config)
 {
@@ -11401,6 +11411,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           config_t config = 0;
           target_t target = 0;
+          target_t slave = 0;
           char *tsk_uuid, *name, *description;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
@@ -11640,9 +11651,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
+          else if (create_task_data->slave_id
+                   && find_target (create_task_data->slave_id, &slave))
+            {
+              request_delete_task (&create_task_data->task);
+              free (tsk_uuid);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+          else if (create_task_data->slave_id && slave == 0)
+            {
+              request_delete_task (&create_task_data->task);
+              free (tsk_uuid);
+              if (send_find_error_to_client ("create_task",
+                                             "target",
+                                             create_task_data->slave_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  /* Out of space. */
+                  error_send_to_client (error);
+                  return;
+                }
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
           else
             {
               set_task_config (create_task_data->task, config);
+              set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
 
               /* Generate the rcfile in the task. */
@@ -11721,6 +11761,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CREATE_TASK_SCHEDULE:
         assert (strcasecmp ("SCHEDULE", element_name) == 0);
+        set_client_state (CLIENT_CREATE_TASK);
+        break;
+      case CLIENT_CREATE_TASK_SLAVE:
+        assert (strcasecmp ("SLAVE", element_name) == 0);
         set_client_state (CLIENT_CREATE_TASK);
         break;
 
