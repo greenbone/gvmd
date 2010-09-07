@@ -1,5 +1,12 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add database migration from version 26 to 27.
+
+	* src/manage_sql.c (migrate_26_to_27): New function.
+	(database_migrators): Add migrate_26_to_27.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add slave support to management interface.  Hence increase database
 	version to 27.
 

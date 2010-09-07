@@ -3474,6 +3474,44 @@ migrate_25_to_26 ()
 }
 
 /**
+ * @brief Migrate the database from version 26 to version 27.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_26_to_27 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 26. */
+
+  if (manage_db_version () != 26)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The reports table got a slave_progress column and the tasks table got a
+   * slave column. */
+
+  sql ("ALTER TABLE reports ADD column slave_progress;");
+  sql ("UPDATE reports SET slave_progress = 0;");
+
+  sql ("ALTER TABLE tasks ADD column slave;");
+  sql ("UPDATE tasks SET slave = 0;");
+
+  /* Set the database version to 27. */
+
+  set_db_version (27);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3504,6 +3542,7 @@ static migrator_t database_migrators[]
     {24, migrate_23_to_24},
     {25, migrate_24_to_25},
     {26, migrate_25_to_26},
+    {27, migrate_26_to_27},
     /* End marker. */
     {-1, NULL}};
 
