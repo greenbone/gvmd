@@ -13996,7 +13996,7 @@ create_lsc_credential (const char* name, const char* comment,
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL)",
+           "  '%s', '%s', '%s', NULL, NULL, NULL, NULL, NULL);",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
