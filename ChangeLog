@@ -1,5 +1,16 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (compare_ports_desc, compare_ports_asc): Remove.
+	(compare_message_types_desc, compare_message_types_asc): New functions.
+	Based on compare_ports_desc and compare_ports_asc.
+	(print_report_xml): Get the results for the port summary sorted in the
+	way the caller requested the main results.  This ensures that the correct
+	results are considered if a subset of the results are requested using
+	first_result or max_results.  As a result add duplicate removal to the
+	threat and ROWID sorting case.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Add sorting by ROWID.
 
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>

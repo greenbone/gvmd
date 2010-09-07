@@ -200,10 +200,12 @@ result_type_threat (const char* type)
  *         than second.
  */
 static gint
-compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
+compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
   return collate_message_type (NULL,
                                strlen (two), two,
                                strlen (one), one);
@@ -219,10 +221,12 @@ compare_ports_desc (gconstpointer arg_one, gconstpointer arg_two)
  *         than second.
  */
 static gint
-compare_ports_asc (gconstpointer arg_one, gconstpointer arg_two)
+compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
 {
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
   return collate_message_type (NULL,
                                strlen (one), one,
                                strlen (two), two);
@@ -6667,19 +6671,17 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
      (&results, report, 0, NULL,
       get_reports_data->first_result,
       get_reports_data->max_results,
-      /* Sort by port in order requested. */
-      ((get_reports_data->sort_field
-        && (strcmp (get_reports_data->sort_field, "port")
-                    == 0))
-        ? get_reports_data->sort_order
-        : 1),
-      "port",
+      /* Sort by the requested field in the requested order, in case there is
+       * a first_result and/or max_results (these are applied after the
+       * sorting). */
+      get_reports_data->sort_order,
+      get_reports_data->sort_field,
       levels,
       get_reports_data->search_phrase,
       get_reports_data->min_cvss_base,
       get_reports_data->apply_overrides);
 
-    /* Buffer the results. */
+    /* Buffer the results, removing duplicates. */
 
     last_port = NULL;
     while (next (&results))
@@ -6690,38 +6692,63 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
           {
             const char *host, *type;
             gchar *item;
-            int type_len, host_len;
+            int port_len, type_len;
 
             g_free (last_port);
             last_port = g_strdup (port);
 
             host = result_iterator_host (&results);
             type = result_iterator_type (&results);
+            port_len = strlen (port);
             type_len = strlen (type);
-            host_len = strlen (host);
-            item = g_malloc (type_len
-                              + host_len
-                              + strlen (port)
+            item = g_malloc (port_len
+                              + type_len
+                              + strlen (host)
                               + 3);
             g_array_append_val (ports, item);
-            strcpy (item, type);
-            strcpy (item + type_len + 1, host);
-            strcpy (item + type_len + host_len + 2, port);
+            strcpy (item, port);
+            strcpy (item + port_len + 1, type);
+            strcpy (item + port_len + type_len + 2, host);
           }
 
       }
     g_free (last_port);
 
-    /* Ensure the buffered results are sorted. */
+    /* Handle sorting by threat and ROWID. */
 
     if (get_reports_data->sort_field
         && strcmp (get_reports_data->sort_field, "port"))
       {
+        int index, length;
+
+        /* Sort by port. */
+
+        g_array_sort (ports, alphasort);
+
+        /* Remove duplicates. */
+
+        last_port = NULL;
+        for (index = 0, length = ports->len; index < length; index++)
+          {
+            char *port = g_array_index (ports, char*, index);
+            if (last_port && (strcmp (port, last_port) == 0))
+              {
+                g_array_remove_index_fast (ports, index);
+                length = ports->len;
+                index--;
+              }
+            else
+              last_port = port;
+          }
+
         /* Sort by threat. */
+
+        /** @todo Sort by ROWID if was requested. */
+
         if (get_reports_data->sort_order)
-          g_array_sort (ports, compare_ports_asc);
+          g_array_sort (ports, compare_message_types_asc);
         else
-          g_array_sort (ports, compare_ports_desc);
+          g_array_sort (ports, compare_message_types_desc);
       }
 
     /* Write to file from the buffer. */
@@ -6739,17 +6766,17 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
       while ((item = g_array_index (ports, gchar*, index++)))
         {
-          int type_len = strlen (item);
-          int host_len = strlen (item + type_len + 1);
+          int port_len = strlen (item);
+          int type_len = strlen (item + port_len + 1);
           PRINT (out,
                    "<port>"
                    "<host>%s</host>"
                    "%s"
                    "<threat>%s</threat>"
                    "</port>",
-                   item + type_len + 1,
-                   item + type_len + host_len + 2,
-                   result_type_threat (item));
+                   item + port_len + type_len + 2,
+                   item,
+                   result_type_threat (item + port_len + 1));
           g_free (item);
         }
       g_array_free (ports, TRUE);
