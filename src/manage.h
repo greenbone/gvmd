@@ -363,6 +363,12 @@ task_target (task_t);
 void
 set_task_target (task_t, target_t);
 
+target_t
+task_slave (task_t);
+
+void
+set_task_slave (task_t, target_t);
+
 char*
 task_description (task_t);
 
@@ -609,6 +615,9 @@ report_task (report_t, task_t*);
 
 int
 report_scan_run_status (report_t, int*);
+
+int
+report_slave_progress (report_t);
 
 int
 report_scan_result_count (report_t, const char*, const char*, const char*,

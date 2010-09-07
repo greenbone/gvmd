@@ -28,6 +28,8 @@
 
 #include "manage.h"
 
+int set_report_slave_progress (report_t, int);
+
 int set_task_requested (task_t, task_status_t *);
 
 void init_task_file_iterator (iterator_t *, task_t, const char *);

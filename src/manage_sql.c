@@ -774,13 +774,13 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time);");
+  sql ("CREATE TABLE IF NOT EXISTS tasks   (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER, time, comment, description, run_status INTEGER, start_time, end_time, config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time, slave INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS users   (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
   sql ("ANALYZE;");
@@ -5492,12 +5492,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target)"
+           " run_status, start_time, end_time, config, target, slave)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
            " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
-           " (SELECT ROWID FROM targets WHERE name = 'Localhost'));",
+           " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+           " 0);",
            TASK_STATUS_DONE);
     }
 
@@ -6078,6 +6079,45 @@ void
 set_task_target (task_t task, target_t target)
 {
   sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu;", target, task);
+}
+
+/**
+ * @brief Return the slave of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Slave of task.
+ */
+target_t
+task_slave (task_t task)
+{
+  target_t target = 0;
+  switch (sql_int64 (&target, 0, 0,
+                     "SELECT slave FROM tasks WHERE ROWID = %llu;",
+                     task))
+    {
+      case 0:
+        return target;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Set the slave of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_slave (task_t task, target_t target)
+{
+  sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", target, task);
 }
 
 /**
@@ -8579,6 +8619,38 @@ delete_report (report_t report)
 }
 
 /**
+ * @brief Return the slave progress of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Number of reports.
+ */
+int
+report_slave_progress (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT slave_progress FROM reports WHERE ROWID = %llu;",
+                  report);
+}
+
+/**
+ * @brief Set slave progress of a report.
+ *
+ * @param[in]  report    The report.
+ * @param[in]  progress  The new progress value.
+ *
+ * @return 0 success.
+ */
+int
+set_report_slave_progress (report_t report, int progress)
+{
+  sql ("UPDATE reports SET slave_progress = %i WHERE ROWID = %llu;",
+       progress,
+       report);
+  return 0;
+}
+
+/**
  * @brief Set a report parameter.
  *
  * @param[in]  report     The report.
@@ -8933,9 +9005,9 @@ make_task (char* name, unsigned int time, char* comment)
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
-       "  schedule_next_time)"
+       "  schedule_next_time, slave)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0);",
+       "         '%s', '%s', 0, %u, '%s', 0, 0, 0);",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -9908,7 +9980,9 @@ int
 target_in_use (target_t target)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks WHERE target = %llu;",
+                  "SELECT count(*) FROM tasks"
+                  " WHERE target = %llu OR slave = %llu;",
+                  target,
                   target);
 }
 

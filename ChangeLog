@@ -1,5 +1,22 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add slave support to management interface.  Hence increase database
+	version to 27.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 27.
+
+	* src/manage_sql.c (create_tables): Add slave_progress to table reports.
+	Add slave to table tasks.
+	(init_manage): Init slave column in predefined task.
+	(task_slave, set_task_slave, report_slave_progress)
+	(set_report_slave_progress): New functions.
+	(make_task): Init slave column.
+	(target_in_use): Add slave check.
+
+	* src/manage.h, src/manage_sql.h: Add headers accordingly.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Add semicolon to SQL for
 	consistency.
 
