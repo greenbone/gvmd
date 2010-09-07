@@ -7710,23 +7710,27 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                phrase_sql ? phrase_sql->str : "",
                                cvss_sql ? cvss_sql->str : "",
                                ascending
-                                ? ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host COLLATE collate_ip,"
-                                      " port,"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC"
-                                    : " ORDER BY host COLLATE collate_ip,"
-                                      " new_type COLLATE collate_message_type,"
-                                      " port")
-                                : ((strcmp (sort_field, "port") == 0)
-                                    ? " ORDER BY host COLLATE collate_ip,"
-                                      " port DESC,"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC"
-                                    : " ORDER BY host COLLATE collate_ip,"
-                                      " new_type"
-                                      " COLLATE collate_message_type DESC,"
-                                      " port"),
+                                ? ((strcmp (sort_field, "ROWID") == 0)
+                                    ? " ORDER BY results.ROWID"
+                                    : ((strcmp (sort_field, "port") == 0)
+                                        ? " ORDER BY host COLLATE collate_ip,"
+                                          " port,"
+                                          " new_type"
+                                          " COLLATE collate_message_type DESC"
+                                        : " ORDER BY host COLLATE collate_ip,"
+                                          " new_type COLLATE collate_message_type,"
+                                          " port"))
+                                : ((strcmp (sort_field, "ROWID") == 0)
+                                    ? " ORDER BY results.ROWID DESC"
+                                    : ((strcmp (sort_field, "port") == 0)
+                                        ? " ORDER BY host COLLATE collate_ip,"
+                                          " port DESC,"
+                                          " new_type"
+                                          " COLLATE collate_message_type DESC"
+                                        : " ORDER BY host COLLATE collate_ip,"
+                                          " new_type"
+                                          " COLLATE collate_message_type DESC,"
+                                          " port")),
                                max_results,
                                first_result);
 

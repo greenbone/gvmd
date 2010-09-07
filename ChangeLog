@@ -1,5 +1,9 @@
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Add sorting by ROWID.
+
+2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Align closing brace properly.
 
 2010-09-02  Matthew Mundell <matthew.mundell@greenbone.net>
