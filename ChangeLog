@@ -1,3 +1,11 @@
+2010-09-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/simple_pie_chart/,
+	report_formats/simple_pie_chart/pieplot.xsl,
+	report_formats/simple_pie_chart/create_report_import,
+	report_formats/simple_pie_chart/generate: New. A simple
+	report format that produces a pie chart using pychart.
+
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Format comments like rest of
