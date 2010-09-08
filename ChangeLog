@@ -1,3 +1,8 @@
+2010-09-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Added check for subversion directory if build type
+	is not release to avoid an incomplete version number.
+
 2010-09-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add SLAVE to OMP CREATE_TASK.
