@@ -1,3 +1,18 @@
+2010-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (wrap): Replace with line-tokenizing
+	version which calls wrap-line.
+	(wrap-line): New template.  Copy of old `wrap' template.
+	(report): Select ports from port summary instead of from results.
+
+	* src/report_formats/LaTeX/latex.xsl (text-to-escaped-row): Use
+	str:tokenize to split string into lines.
+
+	* src/report_formats/TXT/TXT.xsl (wrap): Replace with line-tokenizing
+	version which calls wrap-line.
+	(wrap-line): New template.  Copy of old `wrap' template from HTML format.
+	(report): Select ports from port summary instead of from results.
+
 2010-09-08  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CMakeLists.txt: Added check for subversion directory if build type

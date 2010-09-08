@@ -2,7 +2,8 @@
 <xsl:stylesheet
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:set="http://exslt.org/sets">
+    xmlns:str="http://exslt.org/strings"
+    extension-element-prefixes="str">
   <xsl:output method="text" encoding="string" indent="no"/>
 
 <!--
@@ -107,48 +108,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="$content"/>
   </xsl:template>
 
-<!-- Wrap text to max-width characters per line-->
 <xsl:template name="wrap">
-  <xsl:param name="string"/>
-  <xsl:param name="max-width">80</xsl:param>
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:for-each select="str:tokenize($string, '&#10;')">
+    <xsl:call-template name="wrap-line">
+      <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+    </xsl:call-template>
+    <xsl:text>
+</xsl:text>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- This is called within a PRE. -->
+<xsl:template name="wrap-line">
+  <xsl:param name="string"></xsl:param>
 
   <xsl:variable name="to-next-newline">
     <xsl:value-of select="substring-before($string, '&#10;')"/>
   </xsl:variable>
-  <xsl:variable name="strlen-to-next-newline">
-    <xsl:value-of select="string-length($to-next-newline)"/>
-  </xsl:variable>
 
   <xsl:choose>
-    <!-- The string is empty. -->
-    <xsl:when test="string-length($string) = 0"/>
-    <xsl:when test="($strlen-to-next-newline = 0) and (substring($string, 1, 1) != '&#10;')">
+    <xsl:when test="string-length($string) = 0">
+      <!-- The string is empty. -->
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) = 0) and (substring($string, 1, 1) != '&#10;')">
       <!-- A single line missing a newline, output up to the edge. -->
-      <xsl:value-of select="substring($string, 1, $max-width)"/>
-      <xsl:if test="string-length($string) &gt; $max-width">
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="substring($string, $max-width+1, string-length($string))"/>
-        </xsl:call-template>
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">!
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
       </xsl:if>
     </xsl:when>
-    <xsl:when test="($strlen-to-next-newline + 1 &lt; string-length($string)) and ($strlen-to-next-newline &lt; $max-width)">
+    <xsl:when test="(string-length($to-next-newline) + 1 &lt; string-length($string)) and (string-length($to-next-newline) &lt; 90)">
       <!-- There's a newline before the edge, so output the line. -->
-      <xsl:value-of select="substring($string, 1, $strlen-to-next-newline + 1)"/>
-      <xsl:call-template name="wrap">
-        <xsl:with-param name="string" select="substring($string, $strlen-to-next-newline + 2, string-length($string))"/>
-      </xsl:call-template>
+<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
       <!-- Any newline comes after the edge, so output up to the edge. -->
-      <xsl:value-of select="substring($string, 1, $max-width)"/>
-        <xsl:if test="string-length($string) &gt; $max-width">
-          <xsl:call-template name="wrap">
-            <xsl:with-param name="string" select="substring($string, $max-width+1, string-length($string))"/>
-          </xsl:call-template>
-        </xsl:if>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">!
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
+
+</xsl:template>
 
   <xsl:template match="scan_end">
     <tr><td>Scan ended:</td><td><xsl:apply-templates /></td></tr>
@@ -366,14 +377,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:text>Threat Level</xsl:text>
       <xsl:call-template name="newline"/>
 
-      <xsl:for-each select="set:distinct(../results/result/port)">
+      <xsl:for-each select="../ports/port">
         <xsl:call-template name="text-align-left">
           <xsl:with-param name="width" select="$t2-col1-width"/>
-          <xsl:with-param name="content" select="."/>
+          <xsl:with-param name="content" select="text()"/>
         </xsl:call-template>
-        <xsl:value-of select="../threat"/>
+        <xsl:value-of select="threat"/>
         <xsl:call-template name="newline"/>
       </xsl:for-each>
+      <xsl:call-template name="newline"/>
 
       <xsl:call-template name="subsection">
         <xsl:with-param name="name">Security Issues for Host <xsl:value-of select="$current_host" /></xsl:with-param>

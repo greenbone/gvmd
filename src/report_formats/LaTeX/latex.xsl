@@ -28,7 +28,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 TODOS: Solve Whitespace/Indentation problem of this file.
 -->
 
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet
+    version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:str="http://exslt.org/strings"
+    extension-element-prefixes="str">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
@@ -361,36 +365,11 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- -->
   <xsl:template name="text-to-escaped-row">
     <xsl:param name="string"/>
-    <xsl:param name="indented"/> <!-- shall be bool -->
-    <xsl:param name="max">80</xsl:param>
-    <xsl:variable name="head" select="substring-before($string, '&#10;')"/>
-    <xsl:variable name="tail" select="substring-after($string, '&#10;')"/>
-    <xsl:variable name="strlen-before-cr" select="string-length(head)"/>
-
-    <!-- More than $max chars without a newline -->
-    <xsl:if test="string-length($string) &gt; 0">
-      <xsl:choose>
-        <!-- String starts with newline -->
-        <xsl:when test="string-length($head) = 0 and string-length($tail) != 0">
-          <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
-        </xsl:when>
-        <xsl:when test="string-length($head) = 0 and string-length($tail) = 0">
-          <xsl:call-template name="break-into-rows">
-            <xsl:with-param name="line" select="$string"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:call-template name="break-into-rows">
-            <xsl:with-param name="string" select="$head"/>
-          </xsl:call-template>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:if test="string-length($tail) &gt; 0">
-        <xsl:call-template name="text-to-escaped-row">
-          <xsl:with-param name="string" select="$tail"/>
-        </xsl:call-template>
-      </xsl:if>
-    </xsl:if>
+    <xsl:for-each select="str:tokenize($string, '&#10;')">
+      <xsl:call-template name="break-into-rows">
+        <xsl:with-param name="string" select="."/>
+      </xsl:call-template>
+    </xsl:for-each>
   </xsl:template>
 
   <!-- The Abstract. -->
