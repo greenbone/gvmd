@@ -76,6 +76,7 @@ AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">
+AddHost,<xsl:value-of select="host"/>
 </xsl:template>
 
 <!-- MATCH HOST_END -->
@@ -120,9 +121,13 @@ AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/
 </xsl:template>
 
 <!-- MATCH REPORT -->
+<!-- the following lines are intentionally not indented because
+     empty lines with spaces will trouble the Sourcefire
+     host input importer. -->
 <xsl:template match="/report"># Sourcefire Host Input File
 SetSource,OpenVAS
-  <xsl:apply-templates/>
+<xsl:apply-templates select="host_start"/>
+<xsl:apply-templates select="results"/>
 </xsl:template>
 
 </xsl:stylesheet>
