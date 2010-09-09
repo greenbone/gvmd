@@ -1,3 +1,9 @@
+2010-09-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/sourcefire/sourcefire.xsl: Make description
+	a single line. Fix the parsing of port and protocol
+	so that it works also for "general/tcp".
+
 2010-09-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/sourcefire/sourcefire.xsl: Create "AddHost"

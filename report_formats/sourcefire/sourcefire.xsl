@@ -40,7 +40,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:template name="portport">
   <xsl:variable name="before_slash" select="substring-before(port, '/')" />
   <xsl:variable name="port_nr" select="substring-after($before_slash, '(')" />
-  <xsl:value-of select="$port_nr"/>
+  <xsl:choose>
+    <xsl:when test="string-length($port_nr) > 0">
+      <xsl:value-of select="$port_nr"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$before_slash"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <!-- PROTOCOL FROM PORT ELEMENT
@@ -54,7 +61,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 <xsl:template name="portproto">
   <xsl:variable name="after_slash" select="substring-after(port, '/')" />
   <xsl:variable name="port_proto" select="substring-before($after_slash, ')')" />
-  <xsl:value-of select="$port_proto"/>
+  <xsl:choose>
+    <xsl:when test="string-length($port_proto) > 0">
+      <xsl:value-of select="$port_proto"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$after_slash"/>
+    </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 <!-- DESCRIPTION TEXT, DOUBLE QUOTES REPLACED BY SINGLE QUOTES
@@ -72,7 +86,7 @@ where
   proto: tcp|udp
 !-->
 <xsl:template match="result">
-AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;', &quot;'&quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
+AddScanResult,<xsl:value-of select="host"/>,"OpenVAS",<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:value-of select="nvt/name"/>","<xsl:value-of select="translate(description, '&quot;&#10;', &quot;' &quot;)"/>","cve_ids: <xsl:value-of select="translate(nvt/cve, ',', '')"/>","bugtraq_ids: <xsl:value-of select="translate(nvt/bid, ',', '')"/>"</xsl:template>
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">
