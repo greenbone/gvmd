@@ -1,3 +1,15 @@
+2010-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add HTTP GET escalator.
+
+	* src/manage.c (escalator_method_t): Add ESCALATOR_METHOD_HTTP_GET.
+
+	* src/manage.c (escalator_method_name, escalator_method_from_name): Add
+	HTTP GET escalator.
+
+	* src/manage_sql.c (http_get): New function.
+	(escalate_1): Add ESCALATOR_METHOD_HTTP_GET case.
+
 2010-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (wrap): Replace with line-tokenizing
