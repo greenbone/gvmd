@@ -1455,6 +1455,9 @@ report_format_name (report_format_t);
 int
 report_format_global (report_format_t);
 
+int
+report_format_active (report_format_t);
+
 void
 init_report_format_iterator (iterator_t*, report_format_t, int, const char*);
 
@@ -1478,6 +1481,9 @@ report_format_iterator_description (iterator_t *);
 
 int
 report_format_iterator_global (iterator_t *);
+
+int
+report_format_iterator_active (iterator_t *);
 
 const char*
 report_format_iterator_signature (iterator_t *);

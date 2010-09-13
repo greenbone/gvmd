@@ -772,7 +772,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time);");
+  sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
@@ -3512,6 +3512,40 @@ migrate_26_to_27 ()
 }
 
 /**
+ * @brief Migrate the database from version 27 to version 28.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_27_to_28 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 27. */
+
+  if (manage_db_version () != 27)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report_formats table got a flags column. */
+
+  sql ("ALTER TABLE report_formats ADD COLUMN flags INTEGER;");
+  sql ("UPDATE report_formats SET flags = 1;");
+
+  /* Set the database version to 28. */
+
+  set_db_version (28);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3543,6 +3577,7 @@ static migrator_t database_migrators[]
     {25, migrate_24_to_25},
     {26, migrate_25_to_26},
     {27, migrate_26_to_27},
+    {28, migrate_27_to_28},
     /* End marker. */
     {-1, NULL}};
 
@@ -17230,6 +17265,14 @@ DEF_ACCESS (schedule_task_iterator_name, 2);
 /* Report Formats. */
 
 /**
+ * @brief Possible port types.
+ */
+typedef enum
+{
+  REPORT_FORMAT_FLAG_ACTIVE = 1
+} report_format_flag_t;
+
+/**
  * @brief Find a report format given a UUID.
  *
  * @param[in]   uuid           UUID of report format.
@@ -17525,8 +17568,8 @@ create_report_format (const char *uuid, const char *name,
   if (global)
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time)"
-         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i);",
+         "  signature, trust, trust_time, flags)"
+         " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
          uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
@@ -17539,10 +17582,10 @@ create_report_format (const char *uuid, const char *name,
   else
     sql ("INSERT INTO report_formats"
          " (uuid, name, owner, summary, description, extension, content_type,"
-         "  signature, trust, trust_time)"
+         "  signature, trust, trust_time, flags)"
          " VALUES ('%s', '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i);",
+         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0);",
          uuid,
          quoted_name,
          current_credentials.uuid,
@@ -17831,6 +17874,37 @@ report_format_global (report_format_t report_format)
 }
 
 /**
+ * @brief Return whether a report format is active.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return -1 on error, 1 if active, else 0.
+ */
+int
+report_format_active (report_format_t report_format)
+{
+  long long int flag;
+  switch (sql_int64 (&flag, 0, 0,
+                     "SELECT flags & %llu FROM report_formats"
+                     " WHERE ROWID = %llu;",
+                     (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+                     report_format))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+  return flag ? 1 : 0;
+}
+
+/**
  * @brief Initialise a report format iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -17846,7 +17920,7 @@ init_report_format_iterator (iterator_t* iterator, report_format_t report_format
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, extension, content_type,"
                    " summary, description, owner IS NULL, signature, trust,"
-                   " trust_time"
+                   " trust_time, flags"
                    " FROM report_formats"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -17860,7 +17934,7 @@ init_report_format_iterator (iterator_t* iterator, report_format_t report_format
     init_iterator (iterator,
                    "SELECT ROWID, uuid, name, extension, content_type,"
                    " summary, description, owner is NULL, signature, trust,"
-                   " trust_time"
+                   " trust_time, flags"
                    " FROM report_formats"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -18004,6 +18078,20 @@ report_format_iterator_trust_time (iterator_t* iterator)
   return ret;
 }
 
+/**
+ * @brief Get the active flag from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Active flag, or -1 if iteration is complete.
+ */
+int
+report_format_iterator_active (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return (sqlite3_column_int64 (iterator->stmt, 11) & REPORT_FORMAT_FLAG_ACTIVE)
+          ? 1 : 0;
+}
 
 /**
  * @brief Initialise a report format iterator.

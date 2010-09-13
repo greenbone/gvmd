@@ -1,3 +1,25 @@
+2010-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add an active flag to the report formats.  Hence increase database
+	version to 28.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 28.
+
+	* src/manage_sql.c (create_tables): Add flags to table report_formats.
+	(migrate_27_to_28): New function.
+	(database_migrators): Add migrate_27_to_28.
+	(report_format_flag_t): New type.
+	(create_report_format): Init flags column.
+	(report_format_active): New function.
+	(init_report_format_iterator): Add flags.
+	(report_format_iterator_active): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS require
+	that the report format be active.  In CLIENT_GET_REPORT_FORMATS add the
+	active flag to the response.
+
 2010-09-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/sourcefire/sourcefire.xsl: Make description

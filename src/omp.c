@@ -8540,6 +8540,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             break;
           }
 
+        if (report_format_active (report_format) == 0)
+          {
+            get_reports_data_reset (get_reports_data);
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("get_reports",
+                                "GET_REPORTS report format must be active"));
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
         SEND_TO_CLIENT_OR_FAIL
          ("<get_reports_response"
           " status=\"" STATUS_OK "\""
@@ -8939,9 +8949,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   else
                     SENDF_TO_CLIENT_OR_FAIL
-                     ("<trust>%s<time>%s</time></trust>",
+                     ("<trust>%s<time>%s</time></trust>"
+                      "<active>%i</active>",
                       report_format_iterator_trust (&report_formats),
-                      ctime_strip_newline (&trust_time));
+                      ctime_strip_newline (&trust_time),
+                      report_format_iterator_active (&report_formats));
 
                   SEND_TO_CLIENT_OR_FAIL ("</report_format>");
                 }
