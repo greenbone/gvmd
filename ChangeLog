@@ -1,5 +1,10 @@
 2010-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (switch_representation): Free selector at end, because
+	it's used in the body.
+
+2010-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add an active flag to the report formats.  Hence increase database
 	version to 28.
 

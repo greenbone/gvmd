@@ -11826,7 +11826,6 @@ switch_representation (config_t config, int constraining)
   selector = config_nvt_selector (config);
   if (selector == NULL)
     return -1;
-  free (selector);
   quoted_selector = sql_quote (selector);
 
   if (constraining)
@@ -11915,6 +11914,7 @@ switch_representation (config_t config, int constraining)
            config);
     }
 
+  free (selector);
   g_free (quoted_selector);
   return 0;
 }
