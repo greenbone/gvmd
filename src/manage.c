@@ -139,6 +139,9 @@ credentials_t current_credentials;
 /**
  * @brief Delete all the reports for a task.
  *
+ * It's up to the caller to ensure that this runs in a contention safe
+ * context (for example within an SQL transaction).
+ *
  * @param[in]  task  A task descriptor.
  *
  * @return 0 on success, -1 on error.
@@ -148,7 +151,6 @@ delete_reports (task_t task)
 {
   report_t report;
   iterator_t iterator;
-  /** @todo Wrap this in a transaction? */
   init_report_iterator (&iterator, task, 0);
   while (next_report (&iterator, &report)) delete_report (report);
   cleanup_iterator (&iterator);

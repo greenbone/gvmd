@@ -656,7 +656,7 @@ int
 report_timestamp (const char*, gchar**);
 
 int
-delete_report (report_t);
+manage_delete_report (report_t);
 
 int
 set_report_parameter (report_t, const char*, const char*);

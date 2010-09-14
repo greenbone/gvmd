@@ -8323,7 +8323,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            else switch (delete_report (report))
+            else switch (manage_delete_report (report))
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));

@@ -8828,6 +8828,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
 /**
  * @brief Delete a report.
  *
+ * It's up to the caller to provide the transaction.
+ *
  * @param[in]  report  Report.
  *
  * @return 0 success, 1 report is hidden, 2 report is in use.
@@ -8861,6 +8863,32 @@ delete_report (report_t report)
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
+  return 0;
+}
+
+/**
+ * @brief Delete a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return 0 success, 1 report is hidden, 2 report is in use.
+ */
+int
+manage_delete_report (report_t report)
+{
+  int ret;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  ret = delete_report (report);
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+
+  sql ("COMMIT;");
+
   return 0;
 }
 
@@ -9561,23 +9589,34 @@ delete_task (task_t task)
 
   tracef ("   delete task %u\n", task_id (task));
 
+  sql ("BEGIN EXCLUSIVE;");
+
   if (sql_int (0, 0, "SELECT hidden from tasks WHERE ROWID = %llu;", task))
-    return -1;
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
 
   /** @todo Many other places just assert this. */
-  if (current_credentials.uuid == NULL) return -1;
+  if (current_credentials.uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
 
-  if (task_uuid (task, &tsk_uuid)) return -1;
-
-  /** @todo There may be atomic access problems here. */
-
-  if (delete_reports (task)) return -1;
+  if (task_uuid (task, &tsk_uuid)
+      || delete_reports (task))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
 
   sql ("DELETE FROM results WHERE task = %llu;", task);
   sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
   sql ("DELETE FROM task_escalators WHERE task = %llu;", task);
   sql ("DELETE FROM task_files WHERE task = %llu;", task);
 
+  sql ("COMMIT;");
   return 0;
 }
 

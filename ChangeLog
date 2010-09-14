@@ -1,5 +1,21 @@
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make report deletion atomic.
+
+	* src/manage_sql.c (delete_report): Add doc about transaction.
+	(manage_delete_report): New function.
+	(delete_task): Add transaction.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
+	* src/manage.c (delete_reports): Remove transaction todo.  Add doc about
+	safe context.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_REPORT call
+	manage_delete_report instead of delete_report.
+
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS use the
 	slave progress when the report is from a slave.
 
