@@ -1,3 +1,17 @@
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Store slave task UUID.  Hence increase database version to 29.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 29.
+
+	* src/manage_sql.c (create_tables): Add slave_task_uuid to table tasks.
+	(migrate_28_to_29): New function.
+	(database_migrators): Add migrate_28_to_29.
+	(init_manage, make_report): Init slave_task_uuid.
+	(report_slave_task_uuid, set_report_slave_task_uuid): New functions.
+
+	* src/manage.h, src/manage_sql.h: Add headers accordingly.
+
 2010-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (switch_representation): Free selector at end, because

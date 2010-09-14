@@ -774,7 +774,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress);");
+  sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
@@ -3546,6 +3546,40 @@ migrate_27_to_28 ()
 }
 
 /**
+ * @brief Migrate the database from version 27 to version 28.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_28_to_29 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 28. */
+
+  if (manage_db_version () != 28)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The reports table got a slave_task_uuid column. */
+
+  sql ("ALTER TABLE reports ADD COLUMN slave_task_uuid;");
+  sql ("UPDATE reports SET slave_task_uuid = ''");
+
+  /* Set the database version to 29. */
+
+  set_db_version (29);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3578,6 +3612,7 @@ static migrator_t database_migrators[]
     {26, migrate_25_to_26},
     {27, migrate_26_to_27},
     {28, migrate_27_to_28},
+    {29, migrate_28_to_29},
     /* End marker. */
     {-1, NULL}};
 
@@ -5731,11 +5766,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       else
         {
           sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
-               " start_time, end_time, scan_run_status)"
+               " start_time, end_time, scan_run_status, slave_progress,"
+               " slave_task_uuid)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 'Tue Aug 25 21:48:25 2009', 'Tue Aug 25 21:52:16 2009',"
-               " %u);",
+               " %u, 0, '');",
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
@@ -7365,10 +7401,10 @@ make_report (task_t task, const char* uuid, task_status_t status)
   assert (current_credentials.uuid);
 
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
-       " scan_run_status)"
+       " scan_run_status, slave_progress, slave_task_uuid)"
        " VALUES ('%s',"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " 0, %llu, %i, '', '', %u);",
+       " 0, %llu, %i, '', '', %u, 0, '');",
        uuid, current_credentials.uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
   return report;
@@ -8858,6 +8894,43 @@ set_report_slave_progress (report_t report, int progress)
        progress,
        report);
   return 0;
+}
+
+/**
+ * @brief Return the UUID of the task on the slave.
+ *
+ * @param[in]  report    The report.
+ *
+ * @return UUID of the slave task if any, else NULL.
+ */
+char*
+report_slave_task_uuid (report_t report)
+{
+  char *uuid;
+
+  uuid = sql_string (0, 0,
+                     "SELECT slave_task_uuid FROM reports WHERE ROWID = %llu;",
+                     report);
+  if (uuid && strlen (uuid))
+    return uuid;
+  free (uuid);
+  return NULL;
+}
+
+/**
+ * @brief Set the UUID of the slave task, on the local task.
+ *
+ * @param[in]  report    The report.
+ * @param[in]  uuid  UUID.
+ */
+void
+set_report_slave_task_uuid (report_t report, const char *uuid)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  sql ("UPDATE reports SET slave_task_uuid = '%s' WHERE ROWID = %llu;",
+       quoted_uuid,
+       report);
+  g_free (quoted_uuid);
 }
 
 /**

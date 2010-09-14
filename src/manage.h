@@ -620,6 +620,9 @@ report_scan_run_status (report_t, int*);
 int
 report_slave_progress (report_t);
 
+char *
+report_slave_task_uuid (report_t);
+
 int
 report_scan_result_count (report_t, const char*, const char*, const char*,
                           int, int*);
