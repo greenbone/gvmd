@@ -7776,7 +7776,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
                 else if (g_hash_table_find (scanner.plugins_dependencies,
                                             send_dependency,
-                                            NULL))
+                                            data))
                   {
                     error_send_to_client (error);
                     return;

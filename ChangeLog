@@ -1,5 +1,10 @@
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_DEPENDENCIES
+	pass data to g_hash_table_find for send_dependency.
+
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/CMakeLists.txt: Turn off building of tests temporarily.
 
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
