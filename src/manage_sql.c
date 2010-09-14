@@ -9446,11 +9446,11 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
       {
         config_t config;
         target_t target;
-        char *config_name;
+        char *config_name, *config_uuid;
         char *quoted_config_name, *quoted_selector;
 
-        config_name = task_config_name (task);
-        if (config_name == NULL)
+        config_uuid = task_config_uuid (task);
+        if (config_uuid == NULL)
           {
             g_free (rc);
             sql ("ROLLBACK");
@@ -9460,22 +9460,22 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         target = task_target (task);
         if (target == 0)
           {
-            free (config_name);
+            free (config_uuid);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
           }
 
-        if (find_config (config_name, &config))
+        if (find_config (config_uuid, &config))
           {
-            free (config_name);
+            free (config_uuid);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
           }
         else if (config == 0)
           {
-            free (config_name);
+            free (config_uuid);
             g_free (rc);
             sql ("ROLLBACK");
             return -1;
@@ -9483,6 +9483,16 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
         else
           {
             char *hosts, *selector;
+
+            free (config_uuid);
+
+            config_name = task_config_name (task);
+            if (config_name == NULL)
+              {
+                g_free (rc);
+                sql ("ROLLBACK");
+                return -1;
+              }
 
             selector = config_nvt_selector (config);
             if (selector == NULL)
