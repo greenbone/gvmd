@@ -1,5 +1,9 @@
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/CMakeLists.txt: Turn off building of tests temporarily.
+
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (delete_reports): Handle delete_report return.
 
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>

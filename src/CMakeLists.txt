@@ -202,9 +202,9 @@ install (FILES report_formats/XML/generate
 
 ## Tests
 
-enable_testing ()
+# enable_testing ()
 
-add_subdirectory (tests)
+# add_subdirectory (tests)
 
 ## Static analysis
 
