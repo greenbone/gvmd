@@ -1,5 +1,10 @@
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS use the
+	slave progress when the report is from a slave.
+
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Store slave task UUID.  Hence increase database version to 29.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 29.

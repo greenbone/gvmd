@@ -13669,7 +13669,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       second_last_report = g_strdup ("");
 
                     running_report = task_current_report (task);
-                    if (running_report)
+                    if (running_report
+                        && report_slave_task_uuid (running_report))
+                      progress_xml = g_strdup_printf ("%i",
+                                                      report_slave_progress
+                                                       (running_report));
+                    else if (running_report)
                       {
                         long total = 0;
                         int num_hosts = 0, total_progress;
@@ -14067,7 +14072,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       second_last_report = g_strdup ("");
 
                     running_report = task_current_report (index);
-                    if (running_report)
+                    if (running_report
+                        && report_slave_task_uuid (running_report))
+                      progress_xml = g_strdup_printf ("%i",
+                                                      report_slave_progress
+                                                       (running_report));
+                    else if (running_report)
                       {
                         long total = 0;
                         int num_hosts = 0, total_progress;
