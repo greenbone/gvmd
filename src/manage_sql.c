@@ -8832,11 +8832,13 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  *
  * @param[in]  report  Report.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use.
+ * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
  */
 int
 delete_report (report_t report)
 {
+  task_t task;
+
   if (sql_int (0, 0, "SELECT hidden FROM reports WHERE ROWID = %llu;", report))
     return 1;
 
@@ -8860,9 +8862,38 @@ delete_report (report_t report)
                TASK_STATUS_STOP_WAITING))
     return 2;
 
+  if (report_task (report, &task))
+    return -1;
+
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
+
+  switch (sql_int64 (&report, 0, 0,
+                     "SELECT max (ROWID) FROM reports WHERE task = %llu",
+                     task))
+    {
+      case 0:
+        {
+          int status;
+          if (report_scan_run_status (report, &status))
+            return -1;
+          if (status == TASK_STATUS_STOPPED)
+            /* The newest report was stopped, so set the task to stopped. */
+            sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
+                 TASK_STATUS_STOPPED,
+                 task);
+        }
+        break;
+      case 1:        /* Too few rows in result of query. */
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return -1;
+        break;
+    }
+
   return 0;
 }
 
@@ -8871,7 +8902,7 @@ delete_report (report_t report)
  *
  * @param[in]  report  Report.
  *
- * @return 0 success, 1 report is hidden, 2 report is in use.
+ * @return 0 success, 1 report is hidden, 2 report is in use, -1 error.
  */
 int
 manage_delete_report (report_t report)

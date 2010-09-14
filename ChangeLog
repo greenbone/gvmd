@@ -1,5 +1,11 @@
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report): If the newest report is stopped after
+	removing the report, then set the task to stopped.
+	(manage_delete_report): Add return value to doc.
+
+2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make report deletion atomic.
 
 	* src/manage_sql.c (delete_report): Add doc about transaction.
