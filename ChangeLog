@@ -1,3 +1,10 @@
+2010-09-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Backporting patch r9026 from trunk by Matthew Mundell.
+
+	* src/manage_sql.c (switch_representation): Free selector at end, because
+	it's used in the body.
+
 2010-08-17  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
