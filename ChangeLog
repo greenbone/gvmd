@@ -1,5 +1,9 @@
 2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (scanner): Init.
+
+2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Make tasks with slaves run on the slaves.
 
 	* src/manage.c (update_slave_progress, update_from_slave)

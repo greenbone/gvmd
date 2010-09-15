@@ -70,7 +70,7 @@
 /**
  * @brief Information about the scanner.
  */
-scanner_t scanner;
+scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
 
 
 /* Threats. */
