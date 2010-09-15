@@ -1,5 +1,10 @@
 2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report): Set the task to the status of the
+	newest report, whatever the report status is.
+
+2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (scanner): Init.
 
 2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>

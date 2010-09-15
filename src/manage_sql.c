@@ -8904,11 +8904,9 @@ delete_report (report_t report)
             int status;
             if (report_scan_run_status (report, &status))
               return -1;
-            if (status == TASK_STATUS_STOPPED)
-              /* The newest report was stopped, so set the task to stopped. */
-              sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
-                   TASK_STATUS_STOPPED,
-                   task);
+            sql ("UPDATE tasks SET run_status = %u WHERE ROWID = %llu;",
+                 status,
+                 task);
           }
         break;
       case 1:        /* Too few rows in result of query. */
