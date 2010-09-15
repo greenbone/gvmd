@@ -149,6 +149,8 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
+int delete_slave_task (target_t, const char *);
+
 
 /* Static headers. */
 
@@ -8838,6 +8840,7 @@ int
 delete_report (report_t report)
 {
   task_t task;
+  char *slave_task_uuid;
 
   if (sql_int (0, 0, "SELECT hidden FROM reports WHERE ROWID = %llu;", report))
     return 1;
@@ -8865,9 +8868,31 @@ delete_report (report_t report)
   if (report_task (report, &task))
     return -1;
 
+  /* Remove any associated slave task. */
+
+  slave_task_uuid = report_slave_task_uuid (report);
+  if (slave_task_uuid)
+    {
+      target_t slave;
+
+      /** @todo Store slave on report, in case task's slave changes. */
+      slave = task_slave (task);
+      if (slave == 0)
+        {
+          free (slave_task_uuid);
+          return -1;
+        }
+
+      delete_slave_task (slave, slave_task_uuid);
+    }
+
+  /* Remove the report data. */
+
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
+
+  /* Update the task state. */
 
   switch (sql_int64 (&report, 0, 0,
                      "SELECT max (ROWID) FROM reports WHERE task = %llu",

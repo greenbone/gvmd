@@ -978,6 +978,667 @@ slist_free (GSList* list)
 }
 
 /**
+ * @brief Update the locally cached task progress from the slave.
+ *
+ * @param[in]  get_tasks  Slave GET_TASKS response.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_slave_progress (entity_t get_tasks)
+{
+  entity_t entity;
+
+  entity = entity_child (get_tasks, "task");
+  if (entity == NULL)
+    return -1;
+  entity = entity_child (entity, "progress");
+  if (entity == NULL)
+    return -1;
+
+  if (current_report == 0)
+    return -1;
+
+  set_report_slave_progress (current_report,
+                             atoi (entity_text (entity)));
+
+  return 0;
+}
+
+/**
+ * @brief Update the local task from the slave task.
+ *
+ * @param[in]   task         The local task.
+ * @param[in]   get_report   Slave GET_REPORT response.
+ * @param[out]  report       Report from get_report.
+ * @param[out]  next_result  Next result counter.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_from_slave (task_t task, entity_t get_report, entity_t *report,
+                   int *next_result)
+{
+  entity_t entity, host_start, start;
+  entities_t results, hosts, entities;
+
+  entity = entity_child (get_report, "report");
+  if (entity == NULL)
+    return -1;
+
+  *report = entity_child (entity, "report");
+  if (*report == NULL)
+    return -1;
+
+  /* Set the scan start time. */
+
+  entities = (*report)->entities;
+  while ((start = first_entity (entities)))
+    {
+      if (strcmp (entity_name (start), "scan_start") == 0)
+        {
+          set_task_start_time (current_scanner_task,
+                               g_strdup (entity_text (start)));
+          set_scan_start_time (current_report, entity_text (start));
+          break;
+        }
+      entities = next_entities (entities);
+    }
+
+  /* Get any new results and hosts from the slave. */
+
+  hosts = (*report)->entities;
+  while ((host_start = first_entity (hosts)))
+    {
+      if (strcmp (entity_name (host_start), "host_start") == 0)
+        {
+          entity_t host;
+
+          host = entity_child (host_start, "host");
+          if (host == NULL)
+            return -1;
+
+          set_scan_host_start_time (current_report,
+                                    entity_text (host),
+                                    entity_text (host_start));
+        }
+      hosts = next_entities (hosts);
+    }
+
+  entity = entity_child (*report, "results");
+  if (entity == NULL)
+    return -1;
+
+  assert (current_report);
+
+  results = entity->entities;
+  while ((entity = first_entity (results)))
+    {
+      if (strcmp (entity_name (entity), "result") == 0)
+        {
+          entity_t subnet, host, port, nvt, threat, description;
+          const char *oid;
+
+          subnet = entity_child (entity, "subnet");
+          if (subnet == NULL)
+            return -1;
+
+          host = entity_child (entity, "host");
+          if (host == NULL)
+            return -1;
+
+          port = entity_child (entity, "port");
+          if (port == NULL)
+            return -1;
+
+          nvt = entity_child (entity, "nvt");
+          if (nvt == NULL)
+            return -1;
+          oid = entity_attribute (nvt, "oid");
+          if ((oid == NULL) || (strlen (oid) == 0))
+            return -1;
+
+          threat = entity_child (entity, "threat");
+          if (threat == NULL)
+            return -1;
+
+          description = entity_child (entity, "description");
+          if (description == NULL)
+            return -1;
+
+          {
+            result_t result;
+
+            result = make_result (task,
+                                  entity_text (subnet),
+                                  entity_text (host),
+                                  entity_text (port),
+                                  oid,
+                                  threat_message_type (entity_text (threat)),
+                                  entity_text (description));
+            if (current_report) report_add_result (current_report, result);
+          }
+
+          (*next_result)++;
+        }
+      results = next_entities (results);
+    }
+  return 0;
+}
+
+/**
+ * @brief Authenticate with a slave.
+ *
+ * @param[in]  session           GNUTLS session.
+ * @param[in]  slave_credential  Credential used by slave target.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+slave_authenticate (gnutls_session_t *session,
+                    lsc_credential_t slave_credential)
+{
+  iterator_t credentials;
+  init_lsc_credential_iterator (&credentials, slave_credential, 1, NULL);
+  if (next (&credentials))
+    {
+      int ret;
+      const char *user, *password;
+      gchar *user_copy, *password_copy;
+
+      user = lsc_credential_iterator_login (&credentials);
+      password = lsc_credential_iterator_password (&credentials);
+
+      if (user == NULL || password == NULL)
+        {
+          cleanup_iterator (&credentials);
+          return -1;
+        }
+
+      user_copy = g_strdup (user);
+      password_copy = g_strdup (password);
+      cleanup_iterator (&credentials);
+
+      ret = omp_authenticate (session, user_copy, password_copy);
+      g_free (user_copy);
+      g_free (password_copy);
+      if (ret)
+        return -1;
+    }
+  return 0;
+}
+
+/* Defined in omp.c. */
+void buffer_config_preference_xml (GString *, iterator_t *, config_t);
+
+/**
+ * @brief Start a task on a slave.
+ *
+ * @param[in]   task        The task.
+ * @param[out]  report_id   The report ID.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
+ *                          continue if stopped else start from beginning.
+ * @param[out]  target      Task target.
+ * @param[out]  credential  Target credential.
+ * @param[out]  last_stopped_report  Last stopped report if any, else 0.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+run_slave_task (task_t task, char **report_id, int from, target_t target,
+                lsc_credential_t target_credential,
+                report_t last_stopped_report)
+{
+  target_t slave;
+  char *host, *name;
+  int socket, ret, next_result;
+  gnutls_session_t session;
+  lsc_credential_t slave_credential;
+  iterator_t credentials, targets;
+  gchar *slave_credential_uuid = NULL, *slave_target_uuid, *slave_config_uuid;
+  gchar *slave_task_uuid, *slave_report_uuid;
+
+  /* Some of the cases in here must write to the session outside an open
+   * statement.  For example, the omp_create_lsc_credential must come after
+   * cleaning up the credential iterator.  This is because the slave may be
+   * the master, and the open statement would prevent the slave from getting
+   * a lock on the database and fulfilling the request. */
+
+  tracef ("   Running slave task %llu\n", task);
+
+  slave = task_slave (task);
+  tracef ("   %s: slave: %llu\n", __FUNCTION__, slave);
+  assert (slave);
+  if (slave == 0) return -1;
+
+  host = target_hosts (slave);
+  if (host == NULL) return -1;
+
+  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+
+  slave_credential = target_lsc_credential (slave);
+  tracef ("   %s: slave cred: %llu\n", __FUNCTION__, slave_credential);
+  if (slave_credential == 0) return -1;
+
+  socket = openvas_server_open (&session, host, 9390); // FIX port
+  free (host);
+  if (socket == -1) return -1;
+
+  tracef ("   %s: connected\n", __FUNCTION__);
+
+  name = openvas_uuid_make ();
+  if (name == NULL)
+    {
+      openvas_server_close (socket, session);
+      return -1;
+    }
+
+  /* Authenticate using the slave credential. */
+
+  if (slave_authenticate (&session, slave_credential))
+    goto fail;
+
+  tracef ("   %s: authenticated\n", __FUNCTION__);
+
+  if (last_stopped_report)
+    {
+      /* Resume the task on the slave. */
+
+      slave_task_uuid = report_slave_task_uuid (last_stopped_report);
+      if (slave_task_uuid == NULL)
+        goto fail;
+
+      if (omp_resume_stopped_task_report (&session, slave_task_uuid,
+                                          &slave_report_uuid))
+        {
+          free (slave_task_uuid);
+          goto fail;
+        }
+      if (slave_report_uuid == NULL)
+        goto fail;
+
+      set_task_run_status (task, TASK_STATUS_REQUESTED);
+    }
+  else
+    {
+      /* Create the target credential on the slave. */
+
+      init_lsc_credential_iterator (&credentials, target_credential, 1, NULL);
+      if (next (&credentials))
+        {
+          const char *user, *password;
+          gchar *user_copy, *password_copy;
+
+          user = lsc_credential_iterator_login (&credentials);
+          password = lsc_credential_iterator_password (&credentials);
+#if 0
+          /** @todo Need more OMP support for this. */
+          public_key = lsc_credential_iterator_public_key (&credentials);
+          private_key = lsc_credential_iterator_private_key (&credentials);
+#endif
+
+          if (user == NULL || password == NULL)
+            {
+              cleanup_iterator (&credentials);
+              goto fail;
+            }
+
+          user_copy = g_strdup (user);
+          password_copy = g_strdup (password);
+          cleanup_iterator (&credentials);
+
+          ret = omp_create_lsc_credential (&session, name, user_copy, password_copy,
+                                           "", &slave_credential_uuid);
+          g_free (user_copy);
+          g_free (password_copy);
+          if (ret)
+            goto fail;
+        }
+
+      tracef ("   %s: slave credential uuid: %s\n", __FUNCTION__,
+              slave_credential_uuid);
+
+      /* Create the target on the slave. */
+
+      init_target_iterator (&targets, target, 1, NULL);
+      if (next (&targets))
+        {
+          const char *hosts;
+          gchar *hosts_copy;
+
+          hosts = target_iterator_hosts (&targets);
+          if (hosts == NULL)
+            {
+              cleanup_iterator (&targets);
+              goto fail_credential;
+            }
+
+          hosts_copy = g_strdup (hosts);
+          cleanup_iterator (&targets);
+
+          ret = omp_create_target (&session, name, hosts_copy, "",
+                                   slave_credential_uuid, &slave_target_uuid);
+          g_free (hosts_copy);
+          if (ret)
+            goto fail_credential;
+        }
+      else
+        {
+          cleanup_iterator (&targets);
+          goto fail_credential;
+        }
+
+      tracef ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
+
+      /* Create the config on the slave. */
+
+      {
+        config_t config;
+        iterator_t prefs, selectors;
+
+        /* This must follow the GET_CONFIGS_RESPONSE export case. */
+
+        config = task_config (task);
+        if (config == 0)
+          goto fail_target;
+
+        if (openvas_server_sendf (&session,
+                                  "<create_config>"
+                                  "<get_configs_response"
+                                  " status=\"200\""
+                                  " status_text=\"OK\">"
+                                  "<config id=\"XXX\">"
+                                  "<name>%s</name>"
+                                  "<comment></comment>"
+                                  "<preferences>",
+                                  name))
+          goto fail_target;
+
+        init_nvt_preference_iterator (&prefs, NULL);
+        while (next (&prefs))
+          {
+            GString *buffer = g_string_new ("");
+            buffer_config_preference_xml (buffer, &prefs, config);
+            if (openvas_server_send (&session, buffer->str))
+              {
+                cleanup_iterator (&prefs);
+                goto fail_target;
+              }
+            g_string_free (buffer, TRUE);
+          }
+        cleanup_iterator (&prefs);
+
+        if (openvas_server_send (&session,
+                                 "</preferences>"
+                                 "<nvt_selectors>"))
+          {
+            cleanup_iterator (&prefs);
+            goto fail_target;
+          }
+
+        init_nvt_selector_iterator (&selectors,
+                                    NULL,
+                                    config,
+                                    NVT_SELECTOR_TYPE_ANY);
+        while (next (&selectors))
+          {
+            int type = nvt_selector_iterator_type (&selectors);
+            if (openvas_server_sendf
+                 (&session,
+                  "<nvt_selector>"
+                  "<name>%s</name>"
+                  "<include>%i</include>"
+                  "<type>%i</type>"
+                  "<family_or_nvt>%s</family_or_nvt>"
+                  "</nvt_selector>",
+                  nvt_selector_iterator_name (&selectors),
+                  nvt_selector_iterator_include (&selectors),
+                  type,
+                  (type == NVT_SELECTOR_TYPE_ALL
+                    ? ""
+                    : nvt_selector_iterator_nvt (&selectors))))
+              goto fail_target;
+          }
+        cleanup_iterator (&selectors);
+
+        if (openvas_server_send (&session,
+                                 "</nvt_selectors>"
+                                 "</config>"
+                                 "</get_configs_response>"
+                                 "</create_config>")
+            || (omp_read_create_response (&session, &slave_config_uuid) != 201))
+          goto fail_target;
+      }
+
+      tracef ("   %s: slave config uuid: %s\n", __FUNCTION__, slave_config_uuid);
+
+      /* Create the task on the slave. */
+
+      if (omp_create_task (&session, name, slave_config_uuid, slave_target_uuid,
+                           "", &slave_task_uuid))
+        goto fail_config;
+
+      /* Start the task on the slave. */
+
+      if (omp_start_task_report (&session, slave_task_uuid, &slave_report_uuid))
+        goto fail_task;
+      if (slave_report_uuid == NULL)
+        goto fail_stop_task;
+
+      set_report_slave_task_uuid (current_report, slave_task_uuid);
+    }
+
+  /* Setup the current task for functions like set_task_run_status. */
+
+  current_scanner_task = task;
+
+  /* Poll the slave until the task is finished. */
+
+  next_result = 1;
+  while (1)
+    {
+      entity_t get_tasks, report, get_report;
+      const char *status;
+      task_status_t run_status;
+
+      /* Check if some other process changed the task status. */
+
+      run_status = task_run_status (task);
+      switch (run_status)
+        {
+          case TASK_STATUS_PAUSE_REQUESTED:
+            if (omp_pause_task (&session, slave_task_uuid))
+              goto fail_stop_task;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_PAUSE_WAITING);
+            break;
+          case TASK_STATUS_RESUME_REQUESTED:
+            if (omp_resume_paused_task (&session, slave_task_uuid))
+              goto fail_stop_task;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_RESUME_WAITING);
+            break;
+          case TASK_STATUS_STOP_REQUESTED:
+            if (omp_stop_task (&session, slave_task_uuid))
+              goto fail_stop_task;
+            set_task_run_status (current_scanner_task,
+                                 TASK_STATUS_STOP_WAITING);
+            break;
+          case TASK_STATUS_PAUSED:
+            /* Keep doing the status checks even though the task is paused, in
+             * case someone resumes the task on the slave. */
+            break;
+          case TASK_STATUS_STOPPED:
+            assert (0);
+            goto fail_stop_task;
+            break;
+          case TASK_STATUS_PAUSE_WAITING:
+          case TASK_STATUS_RESUME_WAITING:
+          case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DONE:
+          case TASK_STATUS_NEW:
+          case TASK_STATUS_REQUESTED:
+          case TASK_STATUS_RUNNING:
+          case TASK_STATUS_STOP_WAITING:
+          case TASK_STATUS_INTERNAL_ERROR:
+            break;
+        }
+
+      if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
+        goto fail_task;
+
+      status = omp_task_status (get_tasks);
+      if ((strcmp (status, "Running") == 0)
+          || (strcmp (status, "Done") == 0))
+        {
+          if ((run_status == TASK_STATUS_REQUESTED)
+              || (run_status == TASK_STATUS_RESUME_WAITING)
+              /* In case someone resumes the task on the slave. */
+              || (run_status == TASK_STATUS_PAUSED))
+            set_task_run_status (task, TASK_STATUS_RUNNING);
+
+          if (update_slave_progress (get_tasks))
+            {
+              free_entity (get_tasks);
+              goto fail_stop_task;
+            }
+
+          if (omp_get_report (&session, slave_report_uuid,
+                              "d5da9f67-8551-4e51-807b-b6a873d70e34",
+                              next_result,
+                              &get_report))
+            {
+              free_entity (get_tasks);
+              goto fail_stop_task;
+            }
+
+          if (update_from_slave (task, get_report, &report, &next_result))
+            {
+              free_entity (get_tasks);
+              free_entity (get_report);
+              goto fail_stop_task;
+            }
+
+          if (strcmp (status, "Running") == 0)
+            free_entity (get_report);
+        }
+      else if (strcmp (status, "Paused") == 0)
+        set_task_run_status (task, TASK_STATUS_PAUSED);
+      else if (strcmp (status, "Pause Requested") == 0)
+        set_task_run_status (task, TASK_STATUS_PAUSE_WAITING);
+      else if (strcmp (status, "Stopped") == 0)
+        {
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          goto succeed_stopped;
+        }
+      else if (strcmp (status, "Stop Requested") == 0)
+        set_task_run_status (task, TASK_STATUS_STOP_WAITING);
+      else if (strcmp (status, "Resume Requested") == 0)
+        set_task_run_status (task, TASK_STATUS_RESUME_WAITING);
+      else if ((strcmp (status, "Internal Error") == 0)
+               || (strcmp (status, "Delete Requested") == 0))
+        {
+          free_entity (get_tasks);
+          goto fail_stop_task;
+        }
+
+      if (strcmp (status, "Done") == 0)
+        {
+          entity_t end;
+          entities_t entities;
+
+          /* Set the host end times. */
+
+          entities = report->entities;
+          while ((end = first_entity (entities)))
+            {
+              if (strcmp (entity_name (end), "host_end") == 0)
+                {
+                  entity_t host;
+
+                  host = entity_child (end, "host");
+                  if (host == NULL)
+                    {
+                      free_entity (get_tasks);
+                      free_entity (get_report);
+                      goto fail_stop_task;
+                    }
+
+                  set_scan_host_end_time (current_report,
+                                          entity_text (host),
+                                          entity_text (end));
+                }
+              entities = next_entities (entities);
+            }
+
+          /* Set the scan end time. */
+
+          entities = report->entities;
+          while ((end = first_entity (entities)))
+            {
+              if (strcmp (entity_name (end), "scan_end") == 0)
+                {
+                  set_task_end_time (current_scanner_task,
+                                     g_strdup (entity_text (end)));
+                  set_scan_end_time (current_report, entity_text (end));
+                  break;
+                }
+              entities = next_entities (entities);
+            }
+
+          free_entity (get_report);
+          set_task_run_status (task, TASK_STATUS_DONE);
+          break;
+        }
+
+      free_entity (get_tasks);
+
+      sleep (25);
+    }
+
+  /* Cleanup. */
+
+  current_scanner_task = (task_t) 0;
+
+  omp_delete_task (&session, slave_task_uuid);
+  set_report_slave_task_uuid (current_report, "");
+  omp_delete_config (&session, slave_config_uuid);
+  omp_delete_target (&session, slave_target_uuid);
+  omp_delete_lsc_credential (&session, slave_credential_uuid);
+ succeed_stopped:
+  free (slave_task_uuid);
+  free (slave_report_uuid);
+  free (slave_config_uuid);
+  free (slave_target_uuid);
+  free (slave_credential_uuid);
+  free (name);
+  openvas_server_close (socket, session);
+  return 0;
+
+ fail_stop_task:
+  omp_stop_task (&session, slave_task_uuid);
+  free (slave_report_uuid);
+ fail_task:
+  omp_delete_task (&session, slave_task_uuid);
+  set_report_slave_task_uuid (current_report, "");
+  free (slave_task_uuid);
+ fail_config:
+  omp_delete_config (&session, slave_config_uuid);
+  free (slave_config_uuid);
+ fail_target:
+  omp_delete_target (&session, slave_target_uuid);
+  free (slave_target_uuid);
+ fail_credential:
+  omp_delete_lsc_credential (&session, slave_credential_uuid);
+  free (slave_credential_uuid);
+ fail:
+  current_scanner_task = (task_t) 0;
+  free (name);
+  openvas_server_close (socket, session);
+  return -1;
+}
+
+/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -1126,6 +1787,18 @@ run_task (task_t task, char **report_id, int from)
   /* Reset any running information. */
 
   reset_task (task);
+
+  if (task_slave (task))
+    {
+      if (run_slave_task (task, report_id, from, target, credential,
+                          last_stopped_report))
+        {
+          free (hosts);
+          set_task_run_status (task, run_status);
+          exit (EXIT_FAILURE);
+        }
+      exit (EXIT_SUCCESS);
+    }
 
   /* Send the preferences header. */
 
@@ -2550,4 +3223,116 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
   else
     *tags = g_string_free (tags_buffer, FALSE);
   g_strfreev (split);
+}
+
+
+/* Slaves. */
+
+/**
+ * @brief Delete a task on a slave.
+ *
+ * @param[in]   slave            The slave.
+ * @param[in]   slave_task_uuid  UUID of task on slave.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+delete_slave_task (target_t slave, const char *slave_task_uuid)
+{
+  int socket;
+  gnutls_session_t session;
+  char *host;
+  entity_t get_tasks, get_targets, entity, task;
+  lsc_credential_t slave_credential;
+  const char *slave_config_uuid, *slave_target_uuid, *slave_credential_uuid;
+
+  assert (slave);
+
+  /* Connect to the slave. */
+
+  host = target_hosts (slave);
+  if (host == NULL) return -1;
+
+  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+
+  slave_credential = target_lsc_credential (slave);
+  tracef ("   %s: slave cred: %llu\n", __FUNCTION__, slave_credential);
+  if (slave_credential == 0) return -1;
+
+  socket = openvas_server_open (&session, host, 9390); // FIX port
+  free (host);
+  if (socket == -1) return -1;
+
+  tracef ("   %s: connected\n", __FUNCTION__);
+
+  /* Authenticate using the slave credential. */
+
+  if (slave_authenticate (&session, slave_credential))
+    goto fail;
+
+  tracef ("   %s: authenticated\n", __FUNCTION__);
+
+  /* Get the UUIDs of the slave resources. */
+
+  if (omp_get_tasks (&session, slave_task_uuid, 0, 0, &get_tasks))
+    goto fail;
+
+  task = entity_child (get_tasks, "task");
+  if (task == NULL)
+    goto fail_free_task;
+
+  entity = entity_child (task, "config");
+  if (entity == NULL)
+    goto fail_free_task;
+  slave_config_uuid = entity_attribute (entity, "id");
+
+  entity = entity_child (task, "target");
+  if (entity == NULL)
+    goto fail_free_task;
+  slave_target_uuid = entity_attribute (entity, "id");
+
+  if (omp_get_targets (&session, slave_target_uuid, 0, 0, &get_targets))
+    goto fail_free_task;
+
+  entity = entity_child (get_targets, "target");
+  if (entity == NULL)
+    goto fail_free;
+
+  entity = entity_child (entity, "lsc_credential");
+  if (entity == NULL)
+    goto fail_free;
+  slave_credential_uuid = entity_attribute (entity, "id");
+
+  /* Remove the slave resources. */
+
+  omp_stop_task (&session, slave_task_uuid);
+  if (omp_delete_task (&session, slave_task_uuid))
+    goto fail_config;
+  if (omp_delete_config (&session, slave_config_uuid))
+    goto fail_target;
+  if (omp_delete_target (&session, slave_target_uuid))
+    goto fail_credential;
+  if (omp_delete_lsc_credential (&session, slave_credential_uuid))
+    goto fail;
+
+  /* Cleanup. */
+
+  free_entity (get_targets);
+  free_entity (get_tasks);
+  openvas_server_close (socket, session);
+  return 0;
+
+ fail_config:
+  omp_delete_config (&session, slave_config_uuid);
+ fail_target:
+  omp_delete_target (&session, slave_target_uuid);
+ fail_credential:
+  omp_delete_lsc_credential (&session, slave_credential_uuid);
+ fail_free:
+  free_entity (get_targets);
+ fail_free_task:
+  free_entity (get_tasks);
+ fail:
+  openvas_server_close (socket, session);
+  return -1;
 }

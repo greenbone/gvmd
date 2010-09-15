@@ -1,5 +1,20 @@
 2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make tasks with slaves run on the slaves.
+
+	* src/manage.c (update_slave_progress, update_from_slave)
+	(slave_authenticate): New functions.  Support for run_slave_task and
+	delete_slave_task.
+	(buffer_config_preference_xml): New header.
+	(run_slave_task): New function.
+	(run_task): Use run_slave_task if the task has a slave.
+	(delete_slave_task): New function.
+
+	* src/manage_sql.c (delete_slave_task): New header.
+	(delete_report): Remove slave task if the task has a slave.
+
+2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report): Before updating the report status
 	check that there was actually a report.
 
