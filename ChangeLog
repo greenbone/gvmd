@@ -1,3 +1,8 @@
+2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_report): Before updating the report status
+	check that there was actually a report.
+
 2010-09-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_parameter): Pass config UUID instead of name
