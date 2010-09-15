@@ -2083,6 +2083,9 @@ run_task (task_t task, char **report_id, int from)
 
   /* Send the attack command. */
 
+  /* Send all the hosts to the Scanner.  When resuming a stopped task,
+   * the hosts that have been completely scanned are excluded by being
+   * included in the RULES above. */
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
                           strlen (hosts),
                           hosts);
