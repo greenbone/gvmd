@@ -1,5 +1,9 @@
 2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (MAX_CONTENT_LENGTH): Set to something sensible.
+
+2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Include report in summary version of email escalator.
 
 	* src/omp.c (buffer_results_xml): Export for manage_sql.c.

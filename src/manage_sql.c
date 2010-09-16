@@ -4574,7 +4574,7 @@ http_get (const char *url)
 /**
  * @brief Maximum number of bytes of the report included in email escalations.
  */
-#define MAX_CONTENT_LENGTH 20
+#define MAX_CONTENT_LENGTH 2000
 
 /**
  * @brief Format string for simple notice escalator email.
