@@ -1,3 +1,30 @@
+2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Include report in summary version of email escalator.
+
+	* src/omp.c (buffer_results_xml): Export for manage_sql.c.
+	(result_type_threat): Remove.
+	(compare_message_types_desc, compare_message_types_asc)
+	(array_add_new_string, PRINT, print_report_xml): Remove.  Moved to
+	manage_sql.c.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS replace report
+	generation with call to manage_report.
+
+	* src/manage.c (manage_result_type_threat): New function.  Body from
+	result_type_threat from omp.c.  Update callers.
+
+	* src/manage_sql.c (array_add_new_string, PRINT, print_report_xml): New
+	functions.  From omp.c.
+	(REPORT_NOTICE_FORMAT, MAX_CONTENT_LENGTH): New defines.
+	(escalate_1): Include report in mail in place of summary message.
+	(compare_message_types_desc, compare_message_types_asc)
+	(print_report_xml): New functions.  From omp.c.
+	(PRINT): New macro.  From omp.c.
+	(manage_report): New function.  Body based on report generation code from
+	omp.c.
+
+	* src/manage.h: Add headers accordingly.
+
 2010-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (run_task): Note how the targets are controlled when

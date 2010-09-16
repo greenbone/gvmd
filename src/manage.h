@@ -574,6 +574,9 @@ find_result (const char*, result_t*);
 int
 result_uuid (result_t, /*@out@*/ char **);
 
+const char*
+manage_result_type_threat (const char*);
+
 
 /* Reports. */
 
@@ -743,6 +746,11 @@ collate_message_type (void* data, int, const void*, int, const void*);
 
 void
 trim_partial_report (report_t);
+
+gchar *
+manage_report (report_t, report_format_t, int, const char*, int, const char *,
+               const char *, int, const char *, int, int, int, int, int, int,
+               gsize *, gchar **, gchar **);
 
 
 /* RC's. */

@@ -162,6 +162,27 @@ delete_reports (task_t task)
   return 0;
 }
 
+/**
+ * @brief Return the threat associated with a result type.
+ *
+ * @param[in]  type  Result type.
+ *
+ * @return Threat name.
+ */
+const char*
+manage_result_type_threat (const char* type)
+{
+  if (strcasecmp (type, "Security Hole") == 0)
+    return "High";
+  if (strcasecmp (type, "Security Warning") == 0)
+    return "Medium";
+  if (strcasecmp (type, "Security Note") == 0)
+    return "Low";
+  if (strcasecmp (type, "False Positive") == 0)
+    return "False Positive";
+  return "Log";
+}
+
 
 /* Task globals. */
 

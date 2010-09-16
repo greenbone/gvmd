@@ -98,7 +98,6 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib/gstdio.h>
@@ -130,7 +129,8 @@
 
 /* Static headers. */
 
-static void
+/** @todo Exported for manage_sql.c. */
+void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
 
 
@@ -166,70 +166,6 @@ category_name (int category)
       return categories[category];
     }
   return categories[ACT_UNKNOWN];
-}
-
-/**
- * @brief Return the threat associated with a result type.
- *
- * @param[in]  type  Result type.
- *
- * @return Threat name.
- */
-static const char*
-result_type_threat (const char* type)
-{
-  if (strcasecmp (type, "Security Hole") == 0)
-    return "High";
-  if (strcasecmp (type, "Security Warning") == 0)
-    return "Medium";
-  if (strcasecmp (type, "Security Note") == 0)
-    return "Low";
-  if (strcasecmp (type, "False Positive") == 0)
-    return "False Positive";
-  return "Log";
-}
-
-/**
- * @brief Compares two textual threat level representations, sorting
- * @brief descending.
- *
- * @param[in]  arg_one  First threat level.
- * @param[in]  arg_two  Second threat level.
- *
- * @return 1, 0 or -1 if first given threat is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  return collate_message_type (NULL,
-                               strlen (two), two,
-                               strlen (one), one);
-}
-
-/**
- * @brief Compares two textual threat level representations, sorting ascending.
- *
- * @param[in]  arg_one  First threat level.
- * @param[in]  arg_two  Second threat level.
- *
- * @return -1, 0 or 1 if first given threat is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  return collate_message_type (NULL,
-                               strlen (one), one,
-                               strlen (two), two);
 }
 
 /** @todo Duplicated from lsc_user.c. */
@@ -423,22 +359,6 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
     }
 
   return -1;
-}
-
-/**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
 }
 
 
@@ -6520,424 +6440,6 @@ send_reports (task_t task, int apply_overrides, int (*write_to_client) (void*),
 }
 
 /**
- * @brief Write to a file or exit.
- *
- * @param[in]   stream    Stream to write to.
- * @param[in]   format    Format specification.
- * @param[in]   args      Arguments.
- */
-#define PRINT(stream, format, args...)                                       \
-  do                                                                         \
-    {                                                                        \
-      if (fprintf (stream, format , ## args) < 0)                            \
-        return -1;                                                           \
-    }                                                                        \
-  while (0)
-
-/**
- * @brief Print the XML for a report to a file.
- *
- * @param[in]  report      The report.
- * @param[in]  task        Task associated with report.
- * @param[in]  xml_file    File name.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "type".
- * @param[in]  result_hosts_only  Whether to show only hosts with results.
- * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
- *                                results if NULL.
- * @param[in]  report_format  Format of report that will be created from XML.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_xml (report_t report, task_t task, gchar* xml_file,
-                  int ascending, const char* sort_field, int result_hosts_only,
-                  const char *min_cvss_base, report_format_t report_format)
-{
-  FILE *out;
-  char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int result_count, filtered_result_count, run_status;
-  const char *levels;
-  array_t *result_hosts;
-  iterator_t results, params;
-
-  out = fopen (xml_file, "w");
-
-  if (out == NULL)
-    {
-      g_warning ("%s: fopen failed: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  levels = get_reports_data->levels
-            ? get_reports_data->levels : "hmlgd";
-
-  if (task && task_uuid (task, &tsk_uuid))
-    {
-      fclose (out);
-      return -1;
-    }
-
-  uuid = report_uuid (report);
-  PRINT (out, "<report id=\"%s\">", uuid);
-  free (uuid);
-
-  PRINT (out, "<report_format>");
-  init_report_format_param_iterator (&params, report_format, 1, NULL);
-  while (next (&params))
-    PRINT (out,
-           "<param><name>%s</name><value>%s</value></param>",
-           report_format_param_iterator_name (&params),
-           report_format_param_iterator_value (&params));
-  cleanup_iterator (&params);
-  PRINT (out, "</report_format>");
-
-  report_scan_result_count (report, NULL, NULL, NULL,
-                            get_reports_data->apply_overrides,
-                            &result_count);
-  report_scan_result_count (report,
-                            levels,
-                            get_reports_data->search_phrase,
-                            get_reports_data->min_cvss_base,
-                            get_reports_data->apply_overrides,
-                            &filtered_result_count);
-  report_scan_run_status (report, &run_status);
-  PRINT
-   (out,
-    "<sort><field>%s<order>%s</order></field></sort>"
-    "<filters>"
-    "%s"
-    "<phrase>%s</phrase>"
-    "<notes>%i</notes>"
-    "<overrides>%i</overrides>"
-    "<apply_overrides>%i</apply_overrides>"
-    "<result_hosts_only>%i</result_hosts_only>"
-    "<min_cvss_base>%s</min_cvss_base>",
-    get_reports_data->sort_field ? get_reports_data->sort_field
-                                : "type",
-    get_reports_data->sort_order ? "ascending" : "descending",
-    levels,
-    get_reports_data->search_phrase
-      ? get_reports_data->search_phrase
-      : "",
-    get_reports_data->notes ? 1 : 0,
-    get_reports_data->overrides ? 1 : 0,
-    get_reports_data->apply_overrides ? 1 : 0,
-    get_reports_data->result_hosts_only ? 1 : 0,
-    get_reports_data->min_cvss_base
-      ? get_reports_data->min_cvss_base
-      : "");
-
-  if (strchr (levels, 'h'))
-    PRINT (out, "<filter>High</filter>");
-  if (strchr (levels, 'm'))
-    PRINT (out, "<filter>Medium</filter>");
-  if (strchr (levels, 'l'))
-    PRINT (out, "<filter>Low</filter>");
-  if (strchr (levels, 'g'))
-    PRINT (out, "<filter>Log</filter>");
-  if (strchr (levels, 'd'))
-    PRINT (out, "<filter>Debug</filter>");
-  if (strchr (levels, 'f'))
-    PRINT (out, "<filter>False Positive</filter>");
-
-  PRINT
-   (out,
-    "</filters>"
-    "<scan_run_status>%s</scan_run_status>",
-    run_status_name (run_status
-                      ? run_status
-                      : TASK_STATUS_INTERNAL_ERROR));
-
-  if (task && tsk_uuid)
-    {
-      char* tsk_name = task_name (task);
-      PRINT (out,
-             "<task id=\"%s\">"
-             "<name>%s</name>"
-             "</task>",
-             tsk_uuid,
-             tsk_name ? tsk_name : "");
-      free (tsk_name);
-      free (tsk_uuid);
-    }
-
-  start_time = scan_start_time (report);
-  PRINT (out,
-         "<scan_start>%s</scan_start>",
-         start_time);
-  free (start_time);
-
-  /* Port summary. */
-
-  {
-    gchar *last_port;
-    GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
-
-    init_result_iterator
-     (&results, report, 0, NULL,
-      get_reports_data->first_result,
-      get_reports_data->max_results,
-      /* Sort by the requested field in the requested order, in case there is
-       * a first_result and/or max_results (these are applied after the
-       * sorting). */
-      get_reports_data->sort_order,
-      get_reports_data->sort_field,
-      levels,
-      get_reports_data->search_phrase,
-      get_reports_data->min_cvss_base,
-      get_reports_data->apply_overrides);
-
-    /* Buffer the results, removing duplicates. */
-
-    last_port = NULL;
-    while (next (&results))
-      {
-        const char *port = result_iterator_port (&results);
-
-        if (last_port == NULL || strcmp (port, last_port))
-          {
-            const char *host, *type;
-            gchar *item;
-            int port_len, type_len;
-
-            g_free (last_port);
-            last_port = g_strdup (port);
-
-            host = result_iterator_host (&results);
-            type = result_iterator_type (&results);
-            port_len = strlen (port);
-            type_len = strlen (type);
-            item = g_malloc (port_len
-                              + type_len
-                              + strlen (host)
-                              + 3);
-            g_array_append_val (ports, item);
-            strcpy (item, port);
-            strcpy (item + port_len + 1, type);
-            strcpy (item + port_len + type_len + 2, host);
-          }
-
-      }
-    g_free (last_port);
-
-    /* Handle sorting by threat and ROWID. */
-
-    if (get_reports_data->sort_field
-        && strcmp (get_reports_data->sort_field, "port"))
-      {
-        int index, length;
-
-        /* Sort by port. */
-
-        g_array_sort (ports, alphasort);
-
-        /* Remove duplicates. */
-
-        last_port = NULL;
-        for (index = 0, length = ports->len; index < length; index++)
-          {
-            char *port = g_array_index (ports, char*, index);
-            if (last_port && (strcmp (port, last_port) == 0))
-              {
-                g_array_remove_index_fast (ports, index);
-                length = ports->len;
-                index--;
-              }
-            else
-              last_port = port;
-          }
-
-        /* Sort by threat. */
-
-        /** @todo Sort by ROWID if was requested. */
-
-        if (get_reports_data->sort_order)
-          g_array_sort (ports, compare_message_types_asc);
-        else
-          g_array_sort (ports, compare_message_types_desc);
-      }
-
-    /* Write to file from the buffer. */
-
-    PRINT (out,
-             "<ports"
-             " start=\"%i\""
-             " max=\"%i\">",
-             /* Add 1 for 1 indexing. */
-             get_reports_data->first_result + 1,
-             get_reports_data->max_results);
-    {
-      gchar *item;
-      int index = 0;
-
-      while ((item = g_array_index (ports, gchar*, index++)))
-        {
-          int port_len = strlen (item);
-          int type_len = strlen (item + port_len + 1);
-          PRINT (out,
-                   "<port>"
-                   "<host>%s</host>"
-                   "%s"
-                   "<threat>%s</threat>"
-                   "</port>",
-                   item + port_len + type_len + 2,
-                   item,
-                   result_type_threat (item + port_len + 1));
-          g_free (item);
-        }
-      g_array_free (ports, TRUE);
-    }
-    PRINT (out, "</ports>");
-    cleanup_iterator (&results);
-  }
-
-  /* Result counts. */
-
-  {
-    int debugs, holes, infos, logs, warnings, false_positives;
-
-    report_counts_id (report, &debugs, &holes, &infos, &logs,
-                      &warnings, &false_positives,
-                      get_reports_data->apply_overrides, NULL);
-
-    PRINT (out,
-             "<result_count>"
-             "%i"
-             "<filtered>%i</filtered>"
-             "<debug>%i</debug>"
-             "<hole>%i</hole>"
-             "<info>%i</info>"
-             "<log>%i</log>"
-             "<warning>%i</warning>"
-             "<false_positive>%i</false_positive>"
-             "</result_count>",
-             result_count,
-             filtered_result_count,
-             debugs,
-             holes,
-             infos,
-             logs,
-             warnings,
-             false_positives);
-  }
-
-  /* Results. */
-
-  init_result_iterator (&results, report, 0, NULL,
-                        get_reports_data->first_result,
-                        get_reports_data->max_results,
-                        get_reports_data->sort_order,
-                        get_reports_data->sort_field,
-                        levels,
-                        get_reports_data->search_phrase,
-                        get_reports_data->min_cvss_base,
-                        get_reports_data->apply_overrides);
-
-  PRINT (out,
-           "<results"
-           " start=\"%i\""
-           " max=\"%i\">",
-           /* Add 1 for 1 indexing. */
-           get_reports_data->first_result + 1,
-           get_reports_data->max_results);
-  if (get_reports_data->result_hosts_only)
-    result_hosts = make_array ();
-  else
-    /* Quiet erroneous compiler warning. */
-    result_hosts = NULL;
-  while (next (&results))
-    {
-      GString *buffer = g_string_new ("");
-      buffer_results_xml (buffer,
-                          &results,
-                          task,
-                          get_reports_data->notes,
-                          get_reports_data->notes_details,
-                          get_reports_data->overrides,
-                          get_reports_data->overrides_details);
-      PRINT (out, "%s", buffer->str);
-      g_string_free (buffer, TRUE);
-      if (get_reports_data->result_hosts_only)
-        array_add_new_string (result_hosts,
-                              result_iterator_host (&results));
-    }
-  PRINT (out, "</results>");
-  cleanup_iterator (&results);
-
-  if (get_reports_data->result_hosts_only)
-    {
-      gchar *host;
-      int index = 0;
-      array_terminate (result_hosts);
-      while ((host = g_ptr_array_index (result_hosts, index++)))
-        {
-          iterator_t hosts;
-          init_host_iterator (&hosts, report, host);
-          if (next (&hosts))
-            {
-              PRINT (out,
-                       "<host_start>"
-                       "<host>%s</host>%s"
-                       "</host_start>",
-                       host,
-                       host_iterator_start_time (&hosts));
-              PRINT (out,
-                       "<host_end>"
-                       "<host>%s</host>%s"
-                       "</host_end>",
-                       host,
-                       host_iterator_end_time (&hosts)
-                         ? host_iterator_end_time (&hosts)
-                         : "");
-            }
-          cleanup_iterator (&hosts);
-        }
-      array_free (result_hosts);
-    }
-  else
-    {
-      iterator_t hosts;
-      init_host_iterator (&hosts, report, NULL);
-      while (next (&hosts))
-        PRINT (out,
-                 "<host_start><host>%s</host>%s</host_start>",
-                 host_iterator_host (&hosts),
-                 host_iterator_start_time (&hosts));
-      cleanup_iterator (&hosts);
-
-      init_host_iterator (&hosts, report, NULL);
-      while (next (&hosts))
-        PRINT (out,
-                 "<host_end><host>%s</host>%s</host_end>",
-                 host_iterator_host (&hosts),
-                 host_iterator_end_time (&hosts)
-                  ? host_iterator_end_time (&hosts)
-                  : "");
-      cleanup_iterator (&hosts);
-    }
-  end_time = scan_end_time (report);
-  PRINT (out,
-           "<scan_end>%s</scan_end>",
-           end_time);
-  free (end_time);
-
-  PRINT (out, "</report>");
-
-  if (fclose (out))
-    {
-      g_warning ("%s: fclose failed: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
  * @brief Convert \n's to real newline's.
  *
  * @param[in]  text  The text in which to insert newlines.
@@ -7335,6 +6837,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   free (oid);
 }
 
+/** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
  *
@@ -7348,7 +6851,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
  * @param[in]  include_overrides          Whether to include overrides.
  * @param[in]  include_overrides_details  Whether to include details of overrides.
  */
-static void
+void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_notes, int include_notes_details,
                     int include_overrides, int include_overrides_details)
@@ -7389,13 +6892,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     risk_factor ? risk_factor : "",
     cve ? cve : "",
     bid ? bid : "",
-    result_type_threat (result_iterator_type (results)),
+    manage_result_type_threat (result_iterator_type (results)),
     descr ? nl_descr : "");
 
   if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>",
-                              result_type_threat
+                              manage_result_type_threat
                                (result_iterator_original_type (results)));
 
   free (uuid);
@@ -8557,13 +8060,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
           {
-            task_t task;
-            gchar *xml_file;
-            char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+            gchar *extension, *content_type, *output;
+            gsize output_len;
 
-            /* Generate the report. */
-
-            if (report_task (report, &task))
+            output = manage_report (report,
+                                    report_format,
+                                    get_reports_data->sort_order,
+                                    get_reports_data->sort_field,
+                                    get_reports_data->result_hosts_only,
+                                    get_reports_data->min_cvss_base,
+                                    get_reports_data->levels,
+                                    get_reports_data->apply_overrides,
+                                    get_reports_data->search_phrase,
+                                    get_reports_data->notes,
+                                    get_reports_data->notes_details,
+                                    get_reports_data->overrides,
+                                    get_reports_data->overrides_details,
+                                    get_reports_data->first_result,
+                                    get_reports_data->max_results,
+                                    &output_len,
+                                    &extension,
+                                    &content_type);
+            if (output == NULL)
               {
                 cleanup_iterator (&reports);
                 internal_error_send_to_client (error);
@@ -8572,277 +8090,57 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 return;
               }
 
-            if (mkdtemp (xml_dir) == NULL)
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<report"
+              " id=\"%s\""
+              " format_id=\"%s\""
+              " extension=\"%s\""
+              " content_type=\"%s\">",
+              report_iterator_uuid (&reports),
+              get_reports_data->format_id,
+              extension,
+              content_type);
+
+            g_free (extension);
+            g_free (content_type);
+
+            if (output && strlen (output))
               {
-                g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
-                cleanup_iterator (&reports);
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
-            else if (xml_file = g_strdup_printf ("%s/report.xml", xml_dir),
-                     print_report_xml (report,
-                                       task,
-                                       xml_file,
-                                       get_reports_data->sort_order,
-                                       get_reports_data->sort_field,
-                                       get_reports_data->result_hosts_only,
-                                       get_reports_data->min_cvss_base,
-                                       report_format))
-              {
-                g_free (xml_file);
-                cleanup_iterator (&reports);
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
-            else
-              {
-                iterator_t formats;
-                const char *uuid_format;
-                char *uuid_report;
+                /* Encode and send the output. */
 
-                gchar *script, *script_dir;
-
-                uuid_report = report_uuid (report);
-                init_report_format_iterator (&formats,
-                                             report_format,
-                                             1,
-                                             NULL);
-                if (next (&formats) == FALSE)
+                if (strcmp (get_reports_data->format_id,
+                            "d5da9f67-8551-4e51-807b-b6a873d70e34"))
                   {
-                    cleanup_iterator (&formats);
-                    cleanup_iterator (&reports);
-                    internal_error_send_to_client (error);
-                    get_reports_data_reset (get_reports_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    return;
-                  }
-
-                uuid_format = report_format_iterator_uuid (&formats);
-                if (report_format_global (report_format))
-                  script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                                 "openvasmd",
-                                                 "global_report_formats",
-                                                 uuid_format,
-                                                 NULL);
-                else
-                  {
-                    assert (current_credentials.uuid);
-                    script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
-                                                   "openvasmd",
-                                                   "report_formats",
-                                                   current_credentials.uuid,
-                                                   uuid_format,
-                                                   NULL);
-                  }
-
-                script = g_build_filename (script_dir,
-                                           "generate",
-                                           NULL);
-
-                if (!g_file_test (script, G_FILE_TEST_EXISTS))
-                  {
-                    g_free (script);
-                    g_free (script_dir);
-                    g_free (xml_file);
-                    cleanup_iterator (&formats);
-                    cleanup_iterator (&reports);
-                    internal_error_send_to_client (error);
-                    get_reports_data_reset (get_reports_data);
-                    set_client_state (CLIENT_AUTHENTIC);
-                    return;
+                    gchar *base64;
+                    base64 = g_base64_encode ((guchar*) output, output_len);
+                    if (send_to_client (base64,
+                                        write_to_client,
+                                        write_to_client_data))
+                      {
+                        g_free (output);
+                        g_free (base64);
+                        cleanup_iterator (&reports);
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_free (base64);
                   }
                 else
                   {
-                    gchar *output_file, *command;
-                    char *previous_dir;
-                    int ret;
-
-                    /** @todo NULL arg is glibc extension. */
-                    previous_dir = getcwd (NULL, 0);
-                    if (previous_dir == NULL)
+                    /* Special case the XML report, bah. */
+                    if (send_to_client (output,
+                                        write_to_client,
+                                        write_to_client_data))
                       {
-                        g_warning ("%s: Failed to getcwd: %s\n",
-                                   __FUNCTION__,
-                                   strerror (errno));
-                        g_free (previous_dir);
-                        g_free (script);
-                        g_free (script_dir);
-                        g_free (xml_file);
-                        cleanup_iterator (&formats);
+                        g_free (output);
                         cleanup_iterator (&reports);
-                        internal_error_send_to_client (error);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
+                        error_send_to_client (error);
                         return;
-                      }
-
-                    if (chdir (script_dir))
-                      {
-                        g_warning ("%s: Failed to chdir: %s\n",
-                                   __FUNCTION__,
-                                   strerror (errno));
-                        g_free (previous_dir);
-                        g_free (script);
-                        g_free (script_dir);
-                        g_free (xml_file);
-                        cleanup_iterator (&formats);
-                        cleanup_iterator (&reports);
-                        internal_error_send_to_client (error);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                      }
-                    g_free (script_dir);
-
-                    output_file = g_strdup_printf ("%s/report.out", xml_dir);
-
-                    command = g_strdup_printf ("/bin/sh %s %s > %s"
-                                               " 2> /dev/null",
-                                               script,
-                                               xml_file,
-                                               output_file);
-                    g_free (script);
-
-                    g_message ("   command: %s\n", command);
-
-                    /* RATS: ignore, command is defined above. */
-                    if (ret = system (command),
-                        /** @todo ret is always -1. */
-                        0 && ((ret) == -1
-                              || WEXITSTATUS (ret)))
-                      {
-                        g_warning ("%s: system failed with ret %i, %i, %s\n",
-                                   __FUNCTION__,
-                                   ret,
-                                   WEXITSTATUS (ret),
-                                   command);
-                        if (chdir (previous_dir))
-                          g_warning ("%s: and chdir failed\n",
-                                     __FUNCTION__);
-                        g_free (previous_dir);
-                        g_free (command);
-                        g_free (output_file);
-                        cleanup_iterator (&formats);
-                        cleanup_iterator (&reports);
-                        internal_error_send_to_client (error);
-                        get_reports_data_reset (get_reports_data);
-                        set_client_state (CLIENT_AUTHENTIC);
-                        return;
-                      }
-                    else
-                      {
-                        GError *get_error;
-                        gchar *output;
-                        gsize output_len;
-
-                        g_free (command);
-
-                        if (chdir (previous_dir))
-                          {
-                            g_warning ("%s: Failed to chdir back: %s\n",
-                                       __FUNCTION__,
-                                       strerror (errno));
-                            g_free (previous_dir);
-                            g_free (xml_file);
-                            cleanup_iterator (&formats);
-                            cleanup_iterator (&reports);
-                            internal_error_send_to_client (error);
-                            get_reports_data_reset (get_reports_data);
-                            set_client_state (CLIENT_AUTHENTIC);
-                            return;
-                          }
-                        g_free (previous_dir);
-
-                        /* Send the output to the client. */
-
-                        get_error = NULL;
-                        g_file_get_contents (output_file,
-                                             &output,
-                                             &output_len,
-                                             &get_error);
-                        g_free (output_file);
-                        if (get_error)
-                          {
-                            g_warning ("%s: Failed to get output: %s\n",
-                                       __FUNCTION__,
-                                       get_error->message);
-                            g_error_free (get_error);
-                            cleanup_iterator (&formats);
-                            cleanup_iterator (&reports);
-                            internal_error_send_to_client (error);
-                            get_reports_data_reset (get_reports_data);
-                            set_client_state (CLIENT_AUTHENTIC);
-                            return;
-                          }
-                        else
-                          {
-                            /* Remove the directory. */
-
-                            file_utils_rmdir_rf (xml_dir);
-
-                            /* Encode and send the output. */
-
-                            SENDF_TO_CLIENT_OR_FAIL
-                             ("<report"
-                              " id=\"%s\""
-                              " format_id=\"%s\""
-                              " extension=\"%s\""
-                              " content_type=\"%s\">",
-                              uuid_report,
-                              get_reports_data->format_id,
-                              report_format_iterator_extension (&formats),
-                              report_format_iterator_content_type
-                               (&formats));
-
-                            cleanup_iterator (&formats);
-                            free (uuid_report);
-
-                            if (output && strlen (output))
-                              {
-                                if (strcmp
-                                     (get_reports_data->format_id,
-                                      "d5da9f67-8551-4e51-807b-b6a873d70e34"))
-                                  {
-                                    gchar *base64;
-                                    base64 = g_base64_encode ((guchar*) output,
-                                                              output_len);
-                                    if (send_to_client (base64,
-                                                        write_to_client,
-                                                        write_to_client_data))
-                                      {
-                                        g_free (output);
-                                        g_free (base64);
-                                        cleanup_iterator (&reports);
-                                        error_send_to_client (error);
-                                        return;
-                                      }
-                                    g_free (base64);
-                                  }
-                                else
-                                  {
-                                    /* Special case the XML report, bah. */
-                                    if (send_to_client (output,
-                                                        write_to_client,
-                                                        write_to_client_data))
-                                      {
-                                        g_free (output);
-                                        cleanup_iterator (&reports);
-                                        error_send_to_client (error);
-                                        return;
-                                      }
-                                  }
-                              }
-                            g_free (output);
-                            SEND_TO_CLIENT_OR_FAIL
-                             ("</report>");
-                          }
                       }
                   }
               }
+            g_free (output);
+            SEND_TO_CLIENT_OR_FAIL ("</report>");
           }
         cleanup_iterator (&reports);
         SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");

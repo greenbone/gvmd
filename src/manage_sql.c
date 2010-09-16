@@ -37,6 +37,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -741,6 +742,22 @@ user_owns_result (const char *uuid)
                  current_credentials.uuid);
 
   return ret;
+}
+
+/**
+ * @brief Ensure a string is in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.  Copied into array.
+ */
+static void
+array_add_new_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    if (strcmp (g_ptr_array_index (array, index), string) == 0)
+      return;
+  array_add (array, g_strdup (string));
 }
 
 
@@ -4536,6 +4553,32 @@ http_get (const char *url)
 /**
  * @brief Format string for simple notice escalator email.
  */
+#define REPORT_NOTICE_FORMAT                                                  \
+ "%s.\n"                                                                      \
+ "\n"                                                                         \
+ "The following condition was met: %s\n"                                      \
+ "\n"                                                                         \
+ "This email escalation is configured to apply report format '%s'.\n"         \
+ "Full details and other report formats are available on the scan engine.\n"  \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "%.*s"                                                                       \
+ "%s"                                                                         \
+ "\n"                                                                         \
+ "\n"                                                                         \
+ "Note:\n"                                                                    \
+ "This email was sent to you as a configured security scan escalation.\n"     \
+ "Please contact your local system administrator if you think you\n"          \
+ "should not have received it.\n"
+
+/**
+ * @brief Maximum number of bytes of the report included in email escalations.
+ */
+#define MAX_CONTENT_LENGTH 20
+
+/**
+ * @brief Format string for simple notice escalator email.
+ */
 #define SIMPLE_NOTICE_FORMAT                                                  \
  "%s.\n"                                                                      \
  "\n"                                                                         \
@@ -4596,24 +4639,95 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
-                  gchar *event_desc, *condition_desc;
+                  gchar *event_desc, *condition_desc, *report_content;
+                  char *format_uuid, *format_name;
+                  report_t report;
+                  report_format_t report_format = 0;
+                  gsize content_length;
 
-                  /* Summary message. */
+                  /* Message with report. */
+
+                  switch (sql_int64 (&report, 0, 0,
+                                     "SELECT max (ROWID) FROM reports"
+                                     " WHERE task = %llu",
+                                     task))
+                    {
+                      case 0:
+                        if (report)
+                          break;
+                      case 1:        /* Too few rows in result of query. */
+                      case -1:
+                        free (notice);
+                        free (name);
+                        free (to_address);
+                        free (from_address);
+                        return -1;
+                        break;
+                      default:       /* Programming error. */
+                        assert (0);
+                        return -1;
+                    }
+
+                  format_uuid = escalator_data (escalator,
+                                                "method",
+                                                "notice_report_format");
+                  if ((find_report_format (format_uuid, &report_format)
+                       || (report_format == 0))
+                      /* Fallback to TXT. */
+                      && (find_report_format
+                           ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
+                            &report_format)
+                          || (report_format == 0)))
+                    {
+                      g_free (format_uuid);
+                      free (notice);
+                      free (name);
+                      free (to_address);
+                      free (from_address);
+                      return -1;
+                    }
+                  g_free (format_uuid);
+                  format_name = report_format_name (report_format);
+
                   event_desc = event_description (event, event_data, NULL);
                   condition_desc = escalator_condition_description (condition,
                                                                     escalator);
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
-                  body = g_strdup_printf ("Task: %s\n"
-                                          "Event: %s\n"
-                                          "Condition: %s\n"
-                                          "\n"
-                                          "The event occurred and matched the"
-                                          " task and condition.\n",
-                                          name ? name : "Internal Error",
+                  report_content = manage_report (report,
+                                                  report_format,
+                                                  1,       /* Ascending. */
+                                                  NULL,    /* Sort field. */
+                                                  1,       /* Result hosts only. */
+                                                  NULL,    /* Min CVSS base. */
+                                                  NULL,    /* Levels. */
+                                                  1,       /* Apply overrides. */
+                                                  NULL,    /* Search phrase. */
+                                                  1,       /* Notes. */
+                                                  0,       /* Notes details. */
+                                                  1,       /* Overrides. */
+                                                  0,       /* Overrides details. */
+                                                  0,       /* First results. */
+                                                  1000,    /* Max results. */
+                                                  &content_length,
+                                                  NULL,    /* Extension. */
+                                                  NULL);   /* Content type. */
+                  body = g_strdup_printf (REPORT_NOTICE_FORMAT,
                                           event_desc,
-                                          condition_desc);
+                                          condition_desc,
+                                          format_name,
+                                          MIN (content_length,
+                                               MAX_CONTENT_LENGTH),
+                                          report_content,
+                                          ((content_length > MAX_CONTENT_LENGTH)
+                                            ? "\n... (report truncated after"
+                                              " "
+                                              G_STRINGIFY (MAX_CONTENT_LENGTH)
+                                              " characters)\n"
+                                            : ""));
+                  free (format_name);
+                  g_free (report_content);
                   g_free (event_desc);
                   g_free (condition_desc);
                 }
@@ -9081,6 +9195,733 @@ trim_partial_report (report_t report)
        " WHERE report = %llu"
        " AND (end_time is NULL OR end_time = '');",
        report);
+}
+
+/**
+ * @brief Compares two textual threat level representations, sorting
+ * @brief descending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return 1, 0 or -1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  return collate_message_type (NULL,
+                               strlen (two), two,
+                               strlen (one), one);
+}
+
+/**
+ * @brief Compares two textual threat level representations, sorting ascending.
+ *
+ * @param[in]  arg_one  First threat level.
+ * @param[in]  arg_two  Second threat level.
+ *
+ * @return -1, 0 or 1 if first given threat is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  return collate_message_type (NULL,
+                               strlen (one), one,
+                               strlen (two), two);
+}
+
+/**
+ * @brief Write to a file or exit.
+ *
+ * @param[in]   stream    Stream to write to.
+ * @param[in]   format    Format specification.
+ * @param[in]   args      Arguments.
+ */
+#define PRINT(stream, format, args...)                                       \
+  do                                                                         \
+    {                                                                        \
+      if (fprintf (stream, format , ## args) < 0)                            \
+        return -1;                                                           \
+    }                                                                        \
+  while (0)
+
+/** @todo Defined in omp.c! */
+void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
+
+/**
+ * @brief Print the XML for a report to a file.
+ *
+ * @param[in]  report      The report.
+ * @param[in]  task        Task associated with report.
+ * @param[in]  xml_file    File name.
+ * @param[in]  sort_order  Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  report_format  Format of report that will be created from XML.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  search_phrase      Phrase that results must include.  All results
+ *                                if NULL or "".
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_xml (report_t report, task_t task, gchar* xml_file,
+                  int sort_order, const char* sort_field, int result_hosts_only,
+                  const char *min_cvss_base, report_format_t report_format,
+                  const char *levels, int apply_overrides,
+                  const char *search_phrase, int notes, int notes_details,
+                  int overrides, int overrides_details, int first_result,
+                  int max_results)
+{
+  FILE *out;
+  char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
+  int result_count, filtered_result_count, run_status;
+  array_t *result_hosts;
+  iterator_t results, params;
+
+  out = fopen (xml_file, "w");
+
+  if (out == NULL)
+    {
+      g_warning ("%s: fopen failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  levels = levels ? levels : "hmlgd";
+
+  if (task && task_uuid (task, &tsk_uuid))
+    {
+      fclose (out);
+      return -1;
+    }
+
+  uuid = report_uuid (report);
+  PRINT (out, "<report id=\"%s\">", uuid);
+  free (uuid);
+
+  PRINT (out, "<report_format>");
+  init_report_format_param_iterator (&params, report_format, 1, NULL);
+  while (next (&params))
+    PRINT (out,
+           "<param><name>%s</name><value>%s</value></param>",
+           report_format_param_iterator_name (&params),
+           report_format_param_iterator_value (&params));
+  cleanup_iterator (&params);
+  PRINT (out, "</report_format>");
+
+  report_scan_result_count (report, NULL, NULL, NULL,
+                            apply_overrides,
+                            &result_count);
+  report_scan_result_count (report,
+                            levels,
+                            search_phrase,
+                            min_cvss_base,
+                            apply_overrides,
+                            &filtered_result_count);
+  report_scan_run_status (report, &run_status);
+  PRINT
+   (out,
+    "<sort><field>%s<order>%s</order></field></sort>"
+    "<filters>"
+    "%s"
+    "<phrase>%s</phrase>"
+    "<notes>%i</notes>"
+    "<overrides>%i</overrides>"
+    "<apply_overrides>%i</apply_overrides>"
+    "<result_hosts_only>%i</result_hosts_only>"
+    "<min_cvss_base>%s</min_cvss_base>",
+    sort_field ? sort_field : "type",
+    sort_order ? "ascending" : "descending",
+    levels,
+    search_phrase ? search_phrase : "",
+    notes ? 1 : 0,
+    overrides ? 1 : 0,
+    apply_overrides ? 1 : 0,
+    result_hosts_only ? 1 : 0,
+    min_cvss_base ? min_cvss_base : "");
+
+  if (strchr (levels, 'h'))
+    PRINT (out, "<filter>High</filter>");
+  if (strchr (levels, 'm'))
+    PRINT (out, "<filter>Medium</filter>");
+  if (strchr (levels, 'l'))
+    PRINT (out, "<filter>Low</filter>");
+  if (strchr (levels, 'g'))
+    PRINT (out, "<filter>Log</filter>");
+  if (strchr (levels, 'd'))
+    PRINT (out, "<filter>Debug</filter>");
+  if (strchr (levels, 'f'))
+    PRINT (out, "<filter>False Positive</filter>");
+
+  PRINT
+   (out,
+    "</filters>"
+    "<scan_run_status>%s</scan_run_status>",
+    run_status_name (run_status
+                      ? run_status
+                      : TASK_STATUS_INTERNAL_ERROR));
+
+  if (task && tsk_uuid)
+    {
+      char* tsk_name = task_name (task);
+      PRINT (out,
+             "<task id=\"%s\">"
+             "<name>%s</name>"
+             "</task>",
+             tsk_uuid,
+             tsk_name ? tsk_name : "");
+      free (tsk_name);
+      free (tsk_uuid);
+    }
+
+  start_time = scan_start_time (report);
+  PRINT (out,
+         "<scan_start>%s</scan_start>",
+         start_time);
+  free (start_time);
+
+  /* Port summary. */
+
+  {
+    gchar *last_port;
+    GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+
+    init_result_iterator
+     (&results, report, 0, NULL,
+      first_result,
+      max_results,
+      /* Sort by the requested field in the requested order, in case there is
+       * a first_result and/or max_results (these are applied after the
+       * sorting). */
+      sort_order,
+      sort_field,
+      levels,
+      search_phrase,
+      min_cvss_base,
+      apply_overrides);
+
+    /* Buffer the results, removing duplicates. */
+
+    last_port = NULL;
+    while (next (&results))
+      {
+        const char *port = result_iterator_port (&results);
+
+        if (last_port == NULL || strcmp (port, last_port))
+          {
+            const char *host, *type;
+            gchar *item;
+            int port_len, type_len;
+
+            g_free (last_port);
+            last_port = g_strdup (port);
+
+            host = result_iterator_host (&results);
+            type = result_iterator_type (&results);
+            port_len = strlen (port);
+            type_len = strlen (type);
+            item = g_malloc (port_len
+                              + type_len
+                              + strlen (host)
+                              + 3);
+            g_array_append_val (ports, item);
+            strcpy (item, port);
+            strcpy (item + port_len + 1, type);
+            strcpy (item + port_len + type_len + 2, host);
+          }
+
+      }
+    g_free (last_port);
+
+    /* Handle sorting by threat and ROWID. */
+
+    if (sort_field && strcmp (sort_field, "port"))
+      {
+        int index, length;
+
+        /* Sort by port. */
+
+        g_array_sort (ports, alphasort);
+
+        /* Remove duplicates. */
+
+        last_port = NULL;
+        for (index = 0, length = ports->len; index < length; index++)
+          {
+            char *port = g_array_index (ports, char*, index);
+            if (last_port && (strcmp (port, last_port) == 0))
+              {
+                g_array_remove_index_fast (ports, index);
+                length = ports->len;
+                index--;
+              }
+            else
+              last_port = port;
+          }
+
+        /* Sort by threat. */
+
+        /** @todo Sort by ROWID if was requested. */
+
+        if (sort_order)
+          g_array_sort (ports, compare_message_types_asc);
+        else
+          g_array_sort (ports, compare_message_types_desc);
+      }
+
+    /* Write to file from the buffer. */
+
+    PRINT (out,
+             "<ports"
+             " start=\"%i\""
+             " max=\"%i\">",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results);
+    {
+      gchar *item;
+      int index = 0;
+
+      while ((item = g_array_index (ports, gchar*, index++)))
+        {
+          int port_len = strlen (item);
+          int type_len = strlen (item + port_len + 1);
+          PRINT (out,
+                   "<port>"
+                   "<host>%s</host>"
+                   "%s"
+                   "<threat>%s</threat>"
+                   "</port>",
+                   item + port_len + type_len + 2,
+                   item,
+                   manage_result_type_threat (item + port_len + 1));
+          g_free (item);
+        }
+      g_array_free (ports, TRUE);
+    }
+    PRINT (out, "</ports>");
+    cleanup_iterator (&results);
+  }
+
+  /* Result counts. */
+
+  {
+    int debugs, holes, infos, logs, warnings, false_positives;
+
+    report_counts_id (report, &debugs, &holes, &infos, &logs,
+                      &warnings, &false_positives,
+                      apply_overrides, NULL);
+
+    PRINT (out,
+             "<result_count>"
+             "%i"
+             "<filtered>%i</filtered>"
+             "<debug>%i</debug>"
+             "<hole>%i</hole>"
+             "<info>%i</info>"
+             "<log>%i</log>"
+             "<warning>%i</warning>"
+             "<false_positive>%i</false_positive>"
+             "</result_count>",
+             result_count,
+             filtered_result_count,
+             debugs,
+             holes,
+             infos,
+             logs,
+             warnings,
+             false_positives);
+  }
+
+  /* Results. */
+
+  init_result_iterator (&results, report, 0, NULL,
+                        first_result,
+                        max_results,
+                        sort_order,
+                        sort_field,
+                        levels,
+                        search_phrase,
+                        min_cvss_base,
+                        apply_overrides);
+
+  PRINT (out,
+           "<results"
+           " start=\"%i\""
+           " max=\"%i\">",
+           /* Add 1 for 1 indexing. */
+           first_result + 1,
+           max_results);
+  if (result_hosts_only)
+    result_hosts = make_array ();
+  else
+    /* Quiet erroneous compiler warning. */
+    result_hosts = NULL;
+  while (next (&results))
+    {
+      GString *buffer = g_string_new ("");
+      buffer_results_xml (buffer,
+                          &results,
+                          task,
+                          notes,
+                          notes_details,
+                          overrides,
+                          overrides_details);
+      PRINT (out, "%s", buffer->str);
+      g_string_free (buffer, TRUE);
+      if (result_hosts_only)
+        array_add_new_string (result_hosts,
+                              result_iterator_host (&results));
+    }
+  PRINT (out, "</results>");
+  cleanup_iterator (&results);
+
+  if (result_hosts_only)
+    {
+      gchar *host;
+      int index = 0;
+      array_terminate (result_hosts);
+      while ((host = g_ptr_array_index (result_hosts, index++)))
+        {
+          iterator_t hosts;
+          init_host_iterator (&hosts, report, host);
+          if (next (&hosts))
+            {
+              PRINT (out,
+                       "<host_start>"
+                       "<host>%s</host>%s"
+                       "</host_start>",
+                       host,
+                       host_iterator_start_time (&hosts));
+              PRINT (out,
+                       "<host_end>"
+                       "<host>%s</host>%s"
+                       "</host_end>",
+                       host,
+                       host_iterator_end_time (&hosts)
+                         ? host_iterator_end_time (&hosts)
+                         : "");
+            }
+          cleanup_iterator (&hosts);
+        }
+      array_free (result_hosts);
+    }
+  else
+    {
+      iterator_t hosts;
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        PRINT (out,
+                 "<host_start><host>%s</host>%s</host_start>",
+                 host_iterator_host (&hosts),
+                 host_iterator_start_time (&hosts));
+      cleanup_iterator (&hosts);
+
+      init_host_iterator (&hosts, report, NULL);
+      while (next (&hosts))
+        PRINT (out,
+                 "<host_end><host>%s</host>%s</host_end>",
+                 host_iterator_host (&hosts),
+                 host_iterator_end_time (&hosts)
+                  ? host_iterator_end_time (&hosts)
+                  : "");
+      cleanup_iterator (&hosts);
+    }
+  end_time = scan_end_time (report);
+  PRINT (out,
+           "<scan_end>%s</scan_end>",
+           end_time);
+  free (end_time);
+
+  PRINT (out, "</report>");
+
+  if (fclose (out))
+    {
+      g_warning ("%s: fclose failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Generate a report.
+ *
+ * @param[in]  report             Report.
+ * @param[in]  report_format      Report format.
+ * @param[in]  sort_order         Whether to sort ascending or descending.
+ * @param[in]  sort_field         Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  search_phrase      Phrase that results must include.  All results
+ *                                if NULL or "".
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ * @param[out] output_length      NULL or location for length of return.
+ * @param[out] extension          NULL or location for report format extension.
+ * @param[out] content_type       NULL or location for report format extension.
+ *
+ * @return Contents of report on success, NULL on error.
+ */
+gchar *
+manage_report (report_t report, report_format_t report_format, int sort_order,
+               const char* sort_field, int result_hosts_only,
+               const char *min_cvss_base, const char *levels,
+               int apply_overrides, const char *search_phrase, int notes,
+               int notes_details, int overrides, int overrides_details,
+               int first_result, int max_results, gsize *output_length,
+               gchar **extension, gchar **content_type)
+{
+  task_t task;
+  gchar *xml_file;
+  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+  /* Print the report as XML to a file. */
+
+  if (report_task (report, &task))
+    return NULL;
+
+  if (mkdtemp (xml_dir) == NULL)
+    {
+      g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+      return NULL;
+    }
+
+  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
+  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
+                        result_hosts_only, min_cvss_base, report_format,
+                        levels, apply_overrides, search_phrase, notes,
+                        notes_details, overrides, overrides_details,
+                        first_result, max_results))
+    {
+      g_free (xml_file);
+      return NULL;
+    }
+
+  /* Pass the file to the report format generate script, sending the output
+   * to a file. */
+
+  {
+    iterator_t formats;
+    const char *uuid_format;
+    char *uuid_report;
+    gchar *script, *script_dir;
+
+    /* Setup file names. */
+
+    uuid_report = report_uuid (report);
+    init_report_format_iterator (&formats, report_format, 1, NULL);
+    if (next (&formats) == FALSE)
+      {
+        g_free (xml_file);
+        cleanup_iterator (&formats);
+        return NULL;
+      }
+
+    /* Set convenience return parameters. */
+    assert (report_format_iterator_extension (&formats));
+    assert (report_format_iterator_content_type (&formats));
+    if (extension)
+      *extension = g_strdup (report_format_iterator_extension (&formats));
+    if (content_type)
+      *content_type = g_strdup (report_format_iterator_content_type (&formats));
+
+    uuid_format = report_format_iterator_uuid (&formats);
+    if (report_format_global (report_format))
+      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                     "openvasmd",
+                                     "global_report_formats",
+                                     uuid_format,
+                                     NULL);
+    else
+      {
+        assert (current_credentials.uuid);
+        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                       "openvasmd",
+                                       "report_formats",
+                                       current_credentials.uuid,
+                                       uuid_format,
+                                       NULL);
+      }
+
+    cleanup_iterator (&formats);
+
+    script = g_build_filename (script_dir, "generate", NULL);
+
+    if (!g_file_test (script, G_FILE_TEST_EXISTS))
+      {
+        g_free (script);
+        g_free (script_dir);
+        if (extension) g_free (*extension);
+        if (content_type) g_free (*content_type);
+        g_free (xml_file);
+        return NULL;
+      }
+
+    {
+      gchar *output_file, *command;
+      char *previous_dir;
+      int ret;
+
+      /* Change into the script directory. */
+
+      /** @todo NULL arg is glibc extension. */
+      previous_dir = getcwd (NULL, 0);
+      if (previous_dir == NULL)
+        {
+          g_warning ("%s: Failed to getcwd: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          g_free (xml_file);
+          return NULL;
+        }
+
+      if (chdir (script_dir))
+        {
+          g_warning ("%s: Failed to chdir: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          g_free (xml_file);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          return NULL;
+        }
+      g_free (script_dir);
+
+      output_file = g_strdup_printf ("%s/report.out", xml_dir);
+
+      /* Call the script. */
+
+      command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                 " 2> /dev/null",
+                                 script,
+                                 xml_file,
+                                 output_file);
+      g_free (script);
+
+      g_message ("   command: %s\n", command);
+
+      /* RATS: ignore, command is defined above. */
+      if (ret = system (command),
+          /** @todo ret is always -1. */
+          0 && ((ret) == -1
+                || WEXITSTATUS (ret)))
+        {
+          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                     __FUNCTION__,
+                     ret,
+                     WEXITSTATUS (ret),
+                     command);
+          if (chdir (previous_dir))
+            g_warning ("%s: and chdir failed\n",
+                       __FUNCTION__);
+          g_free (previous_dir);
+          g_free (command);
+          g_free (output_file);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          return NULL;
+        }
+
+      {
+        GError *get_error;
+        gchar *output;
+        gsize output_len;
+
+        g_free (command);
+
+        /* Change back to the previous directory. */
+
+        if (chdir (previous_dir))
+          {
+            g_warning ("%s: Failed to chdir back: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (previous_dir);
+            g_free (xml_file);
+            if (extension) g_free (*extension);
+            if (content_type) g_free (*content_type);
+            return NULL;
+          }
+        g_free (previous_dir);
+
+        /* Read the script output from file. */
+
+        get_error = NULL;
+        g_file_get_contents (output_file,
+                             &output,
+                             &output_len,
+                             &get_error);
+        g_free (output_file);
+        if (get_error)
+          {
+            g_warning ("%s: Failed to get output: %s\n",
+                       __FUNCTION__,
+                       get_error->message);
+            g_error_free (get_error);
+            if (extension) g_free (*extension);
+            if (content_type) g_free (*content_type);
+            return NULL;
+          }
+
+        /* Remove the directory. */
+
+        file_utils_rmdir_rf (xml_dir);
+
+        /* Return the output. */
+
+        if (output_length) *output_length = output_len;
+
+        return output;
+      }
+    }
+  }
 }
 
 
