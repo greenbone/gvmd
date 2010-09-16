@@ -427,6 +427,7 @@ static char* help_text = "\n"
 "    START_TASK             Manually start an existing task.\n"
 "    STOP_TASK              Stop a running task.\n"
 "    TEST_ESCALATOR         Run an escalator.\n"
+"    VERIFY_AGENT           Verify an agent.\n"
 "    VERIFY_REPORT_FORMAT   Verify a report format.\n";
 
 
@@ -2081,6 +2082,27 @@ test_escalator_data_reset (test_escalator_data_t *data)
 }
 
 /**
+ * @brief Command data for the verify_agent command.
+ */
+typedef struct
+{
+  char *agent_id;   ///< ID of agent to verify.
+} verify_agent_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+verify_agent_data_reset (verify_agent_data_t *data)
+{
+  free (data->agent_id);
+
+  memset (data, 0, sizeof (verify_agent_data_t));
+}
+
+/**
  * @brief Command data for the verify_report_format command.
  */
 typedef struct
@@ -2155,6 +2177,7 @@ typedef union
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
   test_escalator_data_t test_escalator;               ///< test_escalator
+  verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
 } command_data_t;
 
@@ -2488,6 +2511,12 @@ test_escalator_data_t *test_escalator_data
  = (test_escalator_data_t*) &(command_data.test_escalator);
 
 /**
+ * @brief Parser callback data for VERIFY_AGENT.
+ */
+verify_agent_data_t *verify_agent_data
+ = (verify_agent_data_t*) &(command_data.verify_agent);
+
+/**
  * @brief Parser callback data for VERIFY_REPORT_FORMAT.
  */
 verify_report_format_data_t *verify_report_format_data
@@ -2740,6 +2769,7 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ESCALATOR,
+  CLIENT_VERIFY_AGENT,
   CLIENT_VERIFY_REPORT_FORMAT
 } client_state_t;
 
@@ -3964,6 +3994,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "escalator_id",
                               &test_escalator_data->escalator_id);
             set_client_state (CLIENT_TEST_ESCALATOR);
+          }
+        else if (strcasecmp ("VERIFY_AGENT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "agent_id",
+                              &verify_agent_data->agent_id);
+            set_client_state (CLIENT_VERIFY_AGENT);
           }
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
@@ -6069,6 +6105,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_STOP_TASK:
         if (send_element_error_to_client ("stop_task", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
+      case CLIENT_VERIFY_AGENT:
+        if (send_element_error_to_client ("verify_agent", element_name,
                                           write_to_client,
                                           write_to_client_data))
           {
@@ -13561,6 +13612,53 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           }
 
         get_tasks_data_reset (get_tasks_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_VERIFY_AGENT:
+        assert (strcasecmp ("VERIFY_AGENT", element_name) == 0);
+        if (verify_agent_data->agent_id)
+          {
+            agent_t agent;
+
+            if (find_agent (verify_agent_data->agent_id, &agent))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("verify_agent"));
+            else if (agent == 0)
+              {
+                if (send_find_error_to_client
+                     ("verify_agent",
+                      "report format",
+                      verify_agent_data->agent_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (verify_agent (agent))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_agent"));
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("verify_agent",
+                                      "Attempt to verify a hidden report"
+                                      " format"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("verify_agent"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("verify_agent",
+                              "VERIFY_AGENT requires a agent_id"
+                              " attribute"));
+        verify_agent_data_reset (verify_agent_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

@@ -1,5 +1,24 @@
 2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP command VERIFY_AGENT.
+
+	* src/manage_sql.c (verify_agent): New function.
+	(init_agent_iterator): Add installer and installer signature
+	(agent_iterator_installer): New functions.  Adjust other accessors
+	accordingly.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add new command.
+	(verify_agent_data_t): New type.
+	(verify_agent_data_reset): New function.
+	(command_data_t, client_state_t): Add new command elements.
+	(verify_agent_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	VERIFY_AGENT handling.
+
+2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add agent trust time.  Hence increase database version to 30.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 30.

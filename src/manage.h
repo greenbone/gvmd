@@ -1158,6 +1158,9 @@ int
 delete_agent (agent_t);
 
 int
+verify_agent (agent_t);
+
+int
 agent_uuid (agent_t, char **);
 
 void
@@ -1173,10 +1176,19 @@ const char*
 agent_iterator_comment (iterator_t*);
 
 const char*
+agent_iterator_installer (iterator_t*);
+
+gsize
+agent_iterator_installer_size (iterator_t*);
+
+const char*
 agent_iterator_installer_64 (iterator_t*);
 
 const char*
 agent_iterator_installer_filename (iterator_t*);
+
+const char*
+agent_iterator_installer_signature_64 (iterator_t*);
 
 const char*
 agent_iterator_trust (iterator_t*);

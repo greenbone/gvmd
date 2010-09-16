@@ -16414,6 +16414,117 @@ delete_agent (agent_t agent)
 }
 
 /**
+ * @brief Verify an agent.
+ *
+ * @param[in]  agent  Agent.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+verify_agent (agent_t agent)
+{
+  int agent_trust = TRUST_UNKNOWN;
+  iterator_t agents;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  init_agent_iterator (&agents, agent, 1, NULL);
+  if (next (&agents))
+    {
+      const char *signature_64;
+      gchar *agent_signature = NULL;
+      gsize agent_signature_size;
+
+      signature_64 = agent_iterator_installer_signature_64 (&agents);
+
+      find_signature ("agents",
+                      agent_iterator_installer_filename (&agents),
+                      &agent_signature,
+                      &agent_signature_size);
+
+      if ((signature_64 && strlen (signature_64))
+          || agent_signature)
+        {
+          const char *installer;
+          gsize installer_size;
+
+          installer = agent_iterator_installer (&agents);
+          installer_size = agent_iterator_installer_size (&agents);
+
+          if (signature_64 && strlen (signature_64))
+            {
+              gchar *signature;
+              gsize signature_length;
+
+              /* Try the signature from the database. */
+
+              signature = (gchar*) g_base64_decode (signature_64,
+                                                    &signature_length);
+
+              if (verify_signature (installer, installer_size, signature,
+                                    signature_length, &agent_trust))
+                {
+                  cleanup_iterator (&agents);
+                  g_free (agent_signature);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+            }
+
+          /* If the database signature is empty or the database
+           * signature is bad, and there is a feed signature, then
+           * try the feed signature. */
+          if (((agent_trust == TRUST_NO)
+               || (agent_trust == TRUST_UNKNOWN))
+              && agent_signature)
+            {
+              if (verify_signature (installer, installer_size, agent_signature,
+                                    strlen (agent_signature), &agent_trust))
+                {
+                  cleanup_iterator (&agents);
+                  g_free (agent_signature);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+
+              if (agent_trust == TRUST_YES)
+                {
+                  gchar *quoted_signature, *base64;
+                  base64 = (strlen (agent_signature)
+                            ? g_base64_encode ((guchar*) agent_signature,
+                                               agent_signature_size)
+                            : g_strdup (""));
+                  quoted_signature = sql_quote (base64);
+                  g_free (base64);
+                  sql ("UPDATE agents SET installer_signature_64 = '%s'"
+                       " WHERE ROWID = %llu;",
+                       quoted_signature,
+                       agent);
+                  g_free (quoted_signature);
+                }
+            }
+          g_free (agent_signature);
+        }
+    }
+  else
+    {
+      cleanup_iterator (&agents);
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  cleanup_iterator (&agents);
+
+  sql ("UPDATE agents SET installer_trust = %i, installer_trust_time = %i"
+       " WHERE ROWID = %llu;",
+       agent_trust,
+       time (NULL),
+       agent);
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Return the UUID of a agent.
  *
  * @param[in]   agent  Agent.
@@ -16446,9 +16557,10 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
 
   if (agent)
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer_64,"
-                   " installer_filename, installer_trust, installer_trust_time,"
-                   " howto_install, howto_use"
+                   "SELECT uuid, name, comment, installer, installer_64,"
+                   " installer_filename, installer_signature_64,"
+                   " installer_trust, installer_trust_time, howto_install,"
+                   " howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -16460,9 +16572,10 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT uuid, name, comment, installer_64,"
-                   " installer_filename, installer_trust, installer_trust_time,"
-                   " howto_install, howto_use"
+                   "SELECT uuid, name, comment, installer, installer_64,"
+                   " installer_filename, installer_signature_64,"
+                   " installer_trust, installer_trust_time, howto_install,"
+                   " howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -16509,6 +16622,16 @@ agent_iterator_comment (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the installer from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Installer, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
+DEF_ACCESS (agent_iterator_installer, 3);
+
+/**
  * @brief Get the installer_64 from an agent iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -16516,7 +16639,33 @@ agent_iterator_comment (iterator_t* iterator)
  * @return Base 64 encoded installer, or NULL if iteration is complete.  Freed
  *         by cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_64, 3);
+DEF_ACCESS (agent_iterator_installer_64, 4);
+
+/**
+ * @brief Get the installer size from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Installer size, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
+gsize
+agent_iterator_installer_size (iterator_t* iterator)
+{
+  const char *installer_64;
+  gsize installer_size;
+
+  installer_64 = agent_iterator_installer_64 (iterator);
+  if (installer_64 && strlen (installer_64))
+    {
+      gchar *installer;
+      installer = (gchar*) g_base64_decode ((gchar*) installer_64,
+                                            &installer_size);
+      g_free (installer);
+      return installer_size;
+    }
+  return 0;
+}
 
 /**
  * @brief Get the installer_filename from an agent iterator.
@@ -16526,7 +16675,17 @@ DEF_ACCESS (agent_iterator_installer_64, 3);
  * @return Installer filename, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_installer_filename, 4);
+DEF_ACCESS (agent_iterator_installer_filename, 5);
+
+/**
+ * @brief Get the installer_signature_64 from an agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Installer signature in base64, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (agent_iterator_installer_signature_64, 6);
 
 /**
  * @brief Get the trust value from an agent iterator.
@@ -16539,7 +16698,7 @@ const char*
 agent_iterator_trust (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  switch (sqlite3_column_int (iterator->stmt, 5))
+  switch (sqlite3_column_int (iterator->stmt, 7))
     {
       case 1:  return "yes";
       case 2:  return "no";
@@ -16560,7 +16719,7 @@ agent_iterator_trust_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 8);
   return ret;
 }
 
@@ -16572,7 +16731,7 @@ agent_iterator_trust_time (iterator_t* iterator)
  * @return Install HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_install, 7);
+DEF_ACCESS (agent_iterator_howto_install, 9);
 
 /**
  * @brief Get the usage HOWTO from an agent iterator.
@@ -16582,7 +16741,7 @@ DEF_ACCESS (agent_iterator_howto_install, 7);
  * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_use, 8);
+DEF_ACCESS (agent_iterator_howto_use, 10);
 
 /**
  * @brief Get the name of an agent.
