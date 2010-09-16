@@ -769,7 +769,7 @@ array_add_new_string (array_t *array, const gchar *string)
 static void
 create_tables ()
 {
-  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, howto_install TEXT, howto_use TEXT);");
+  sql ("CREATE TABLE IF NOT EXISTS agents (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment, installer TEXT, installer_64 TEXT, installer_filename, installer_signature_64 TEXT, installer_trust INTEGER, installer_trust_time, howto_install TEXT, howto_use TEXT);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS configs (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, nvt_selector, comment, family_count INTEGER, nvt_count INTEGER, families_growing INTEGER, nvts_growing INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS escalator_condition_data (id INTEGER PRIMARY KEY, escalator INTEGER, name, data);");
@@ -3599,6 +3599,40 @@ migrate_28_to_29 ()
 }
 
 /**
+ * @brief Migrate the database from version 29 to version 30.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_29_to_30 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 29. */
+
+  if (manage_db_version () != 29)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The agents table got an installer_trust_time column. */
+
+  sql ("ALTER TABLE agents ADD column installer_trust_time;");
+  sql ("UPDATE agents SET installer_trust_time = %i;", time (NULL));
+
+  /* Set the database version to 30. */
+
+  set_db_version (30);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3632,6 +3666,7 @@ static migrator_t database_migrators[]
     {27, migrate_26_to_27},
     {28, migrate_27_to_28},
     {29, migrate_28_to_29},
+    {30, migrate_29_to_30},
     /* End marker. */
     {-1, NULL}};
 
@@ -16168,8 +16203,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      " (uuid, name, owner, comment, installer,"
                                      "  installer_64, installer_filename,"
                                      "  installer_signature_64,"
-                                     "  installer_trust, howto_install,"
-                                     "  howto_use)"
+                                     "  installer_trust, installer_trust_time,"
+                                     "  howto_install, howto_use)"
                                      " VALUES"
                                      " (make_uuid (), '%s',"
                                      "  (SELECT ROWID FROM users"
@@ -16178,13 +16213,14 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  $installer, $installer_64,"
                                      "  '%s',"
                                      "  $installer_signature_64,"
-                                     "  %i, $howto_install,"
+                                     "  %i, %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_comment,
                                      quoted_filename,
-                                     installer_trust);
+                                     installer_trust,
+                                     (int) time (NULL));
         g_free (quoted_comment);
       }
     else
@@ -16203,12 +16239,13 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                      "  $installer, $installer_64,"
                                      "  '%s',"
                                      "  $installer_signature_64,"
-                                     "  %i, $howto_install,"
+                                     "  %i, %i, $howto_install,"
                                      "  $howto_use);",
                                      quoted_name,
                                      current_credentials.uuid,
                                      quoted_filename,
-                                     installer_trust);
+                                     installer_trust,
+                                     (int) time (NULL));
       }
 
     g_free (quoted_name);
@@ -16410,8 +16447,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
   if (agent)
     init_iterator (iterator,
                    "SELECT uuid, name, comment, installer_64,"
-                   " installer_filename, installer_trust, howto_install,"
-                   " howto_use"
+                   " installer_filename, installer_trust, installer_trust_time,"
+                   " howto_install, howto_use"
                    " FROM agents"
                    " WHERE ROWID = %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -16424,8 +16461,8 @@ init_agent_iterator (iterator_t* iterator, agent_t agent,
   else
     init_iterator (iterator,
                    "SELECT uuid, name, comment, installer_64,"
-                   " installer_filename, installer_trust, howto_install,"
-                   " howto_use"
+                   " installer_filename, installer_trust, installer_trust_time,"
+                   " howto_install, howto_use"
                    " FROM agents"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -16512,6 +16549,22 @@ agent_iterator_trust (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the installer trust time from a agent iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time agent installer was verified.
+ */
+time_t
+agent_iterator_trust_time (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt, 6);
+  return ret;
+}
+
+/**
  * @brief Get the install HOWTO from an agent iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -16519,7 +16572,7 @@ agent_iterator_trust (iterator_t* iterator)
  * @return Install HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_install, 6);
+DEF_ACCESS (agent_iterator_howto_install, 7);
 
 /**
  * @brief Get the usage HOWTO from an agent iterator.
@@ -16529,7 +16582,7 @@ DEF_ACCESS (agent_iterator_howto_install, 6);
  * @return Usage HOWTO, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (agent_iterator_howto_use, 7);
+DEF_ACCESS (agent_iterator_howto_use, 8);
 
 /**
  * @brief Get the name of an agent.

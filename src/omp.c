@@ -11992,17 +11992,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           agent_iterator_howto_use (&agents));
                         break;
                       default:
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<agent id=\"%s\">"
-                          "<name>%s</name>"
-                          "<comment>%s</comment>"
-                          "<in_use>0</in_use>"
-                          "<installer><trust>%s</trust></installer>"
-                          "</agent>",
-                          agent_iterator_uuid (&agents),
-                          agent_iterator_name (&agents),
-                          agent_iterator_comment (&agents),
-                          agent_iterator_trust (&agents));
+                        {
+                          time_t trust_time;
+
+                          trust_time = agent_iterator_trust_time (&agents);
+
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<agent id=\"%s\">"
+                            "<name>%s</name>"
+                            "<comment>%s</comment>"
+                            "<in_use>0</in_use>"
+                            "<installer>"
+                            "<trust>%s<time>%s</time></trust>"
+                            "</installer>"
+                            "</agent>",
+                            agent_iterator_uuid (&agents),
+                            agent_iterator_name (&agents),
+                            agent_iterator_comment (&agents),
+                            agent_iterator_trust (&agents),
+                            ctime_strip_newline (&trust_time));
+                        }
                         break;
                     }
                 }

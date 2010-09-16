@@ -1,5 +1,25 @@
 2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add agent trust time.  Hence increase database version to 30.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 30.
+
+	* src/manage_sql.c (create_tables): Add installer_trust_time to table
+	agents.
+	(migrate_29_to_30): New function.
+	(database_migrators): Add migrate_29_to_30.
+	(create_agent): Set installer_trust_time.
+	(init_agent_iterator): Include installer_trust_time.
+	(agent_iterator_trust_time): New function.  Adjust other accessors
+	accordingly.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGENTS add trust
+	time to standard response.
+
+2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (MAX_CONTENT_LENGTH): Set to something sensible.
 
 2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>

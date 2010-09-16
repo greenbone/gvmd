@@ -1181,6 +1181,9 @@ agent_iterator_installer_filename (iterator_t*);
 const char*
 agent_iterator_trust (iterator_t*);
 
+time_t
+agent_iterator_trust_time (iterator_t*);
+
 const char*
 agent_iterator_howto_install (iterator_t*);
 
