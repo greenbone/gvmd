@@ -149,6 +149,9 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \usepackage{url}
 \usepackage[utf8x]{inputenc}
 
+\DeclareUnicodeCharacter {135}{{\textascii ?}}
+\DeclareUnicodeCharacter {129}{{\textascii ?}}
+
 \usepackage{colortbl}
 
 % must come last

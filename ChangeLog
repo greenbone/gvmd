@@ -1,3 +1,8 @@
+2010-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (header): Define two Greek characters
+	that seem to be missing from Debian Lenny ucs LaTeX package.
+
 2010-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP command VERIFY_AGENT.
