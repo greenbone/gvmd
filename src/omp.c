@@ -419,6 +419,7 @@ static char* help_text = "\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_OVERRIDE        Modify an existing override.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
+"    MODIFY_REPORT_FORMAT   Modify an existing report format.\n"
 "    MODIFY_TASK            Update an existing task.\n"
 "    PAUSE_TASK             Pause a running task.\n"
 "    RESUME_OR_START_TASK   Resume task if stopped, else start task.\n"
@@ -1823,6 +1824,31 @@ modify_report_data_reset (modify_report_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_report_format command.
+ */
+typedef struct
+{
+  char *name;                 ///< Name.
+  char *report_format_id;     ///< ID of report format to modify.
+  char *summary;              ///< Summary.
+} modify_report_format_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_report_format_data_reset (modify_report_format_data_t *data)
+{
+  free (data->name);
+  free (data->report_format_id);
+  free (data->summary);
+
+  memset (data, 0, sizeof (modify_report_format_data_t));
+}
+
+/**
  * @brief Command data for the modify_task command.
  */
 typedef struct
@@ -2169,6 +2195,7 @@ typedef union
   get_tasks_data_t get_tasks;                         ///< get_tasks
   modify_config_data_t modify_config;                 ///< modify_config
   modify_report_data_t modify_report;                 ///< modify_report
+  modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_task_data_t modify_task;                     ///< modify_task
   pause_task_data_t pause_task;                       ///< pause_task
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
@@ -2463,6 +2490,12 @@ modify_report_data_t *modify_report_data
  = &(command_data.modify_report);
 
 /**
+ * @brief Parser callback data for MODIFY_REPORT_FORMAT.
+ */
+modify_report_format_data_t *modify_report_format_data
+ = &(command_data.modify_report_format);
+
+/**
  * @brief Parser callback data for MODIFY_TASK.
  */
 modify_task_data_t *modify_task_data
@@ -2726,6 +2759,9 @@ typedef enum
   CLIENT_HELP,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
+  CLIENT_MODIFY_REPORT_FORMAT,
+  CLIENT_MODIFY_REPORT_FORMAT_NAME,
+  CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
@@ -3946,6 +3982,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_report_data->report_id);
             set_client_state (CLIENT_MODIFY_REPORT);
           }
+        else if (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values,
+                              "report_format_id",
+                              &modify_report_format_data->report_format_id);
+            set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
+          }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -4858,6 +4901,29 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("modify_report", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_REPORT_FORMAT:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_NAME);
+        else if (strcasecmp ("SUMMARY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
+        else
+          {
+            if (send_element_error_to_client ("modify_report_format",
+                                              element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -9136,6 +9202,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
+          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
         }
         modify_report_data_reset (modify_report_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -9143,6 +9210,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_COMMENT:
         assert (strcasecmp ("COMMENT", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT);
+        break;
+
+      case CLIENT_MODIFY_REPORT_FORMAT:
+        {
+          report_format_t report_format = 0;
+
+          if (modify_report_format_data->report_format_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_report_format",
+                                "MODIFY_REPORT_FORMAT requires a"
+                                " report_format_id attribute"));
+          else if (find_report_format
+                    (modify_report_format_data->report_format_id,
+                     &report_format))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_report_format"));
+          else if (report_format == 0)
+            {
+              if (send_find_error_to_client
+                   ("modify_report_format",
+                    "report format",
+                    modify_report_format_data->report_format_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              if (modify_report_format_data->name)
+                set_report_format_name (report_format,
+                                        modify_report_format_data->name);
+              if (modify_report_format_data->summary)
+                set_report_format_summary (report_format,
+                                           modify_report_format_data->summary);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
+            }
+        }
+        modify_report_format_data_reset (modify_report_format_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
+        assert (strcasecmp ("SUMMARY", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -13792,6 +13909,17 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT_COMMENT:
         openvas_append_text (&modify_report_data->comment,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_MODIFY_REPORT_FORMAT_NAME:
+        openvas_append_text (&modify_report_format_data->name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
+        openvas_append_text (&modify_report_format_data->summary,
                              text,
                              text_len);
         break;

@@ -1478,6 +1478,12 @@ report_format_uuid (report_format_t);
 char *
 report_format_name (report_format_t);
 
+void
+set_report_format_name (report_format_t, const char *);
+
+void
+set_report_format_summary (report_format_t, const char *);
+
 int
 report_format_global (report_format_t);
 

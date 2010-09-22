@@ -19088,6 +19088,22 @@ report_format_name (report_format_t report_format)
 }
 
 /**
+ * @brief Set the name of the report format.
+ *
+ * @param[in]  report_format  The report format.
+ * @param[in]  name           Name.
+ */
+void
+set_report_format_name (report_format_t report_format, const char *name)
+{
+  gchar *quoted_name = sql_quote (name);
+  sql ("UPDATE report_formats SET name = '%s' WHERE ROWID = %llu;",
+       quoted_name,
+       report_format);
+  g_free (quoted_name);
+}
+
+/**
  * @brief Return whether a report format is global.
  *
  * @param[in]  report_format  Report format.
@@ -19132,6 +19148,22 @@ report_format_active (report_format_t report_format)
         break;
     }
   return flag ? 1 : 0;
+}
+
+/**
+ * @brief Set the summary of the report format.
+ *
+ * @param[in]  report_format  The report format.
+ * @param[in]  summary           Summary.
+ */
+void
+set_report_format_summary (report_format_t report_format, const char *summary)
+{
+  gchar *quoted_summary = sql_quote (summary);
+  sql ("UPDATE report_formats SET summary = '%s' WHERE ROWID = %llu;",
+       quoted_summary,
+       report_format);
+  g_free (quoted_summary);
 }
 
 /**
