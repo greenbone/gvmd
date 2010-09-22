@@ -1,5 +1,11 @@
 2010-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (modify_report_data_t, modify_report_data_reset): Alphabetise.
+	(omp_xml_handle_end_element): Correct command name in CLIENT_MODIFY_CONFIG
+	response.  Init report in CLIENT_MODIFY_REPORT.
+
+2010-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP command MODIFY_REPORT_FORMAT.
 
 	* src/manage_sql.c (set_report_format_name)

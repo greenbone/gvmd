@@ -1805,8 +1805,8 @@ modify_config_data_reset (modify_config_data_t *data)
  */
 typedef struct
 {
-  char *report_id;     ///< ID of report to modify.
   char *comment;       ///< Comment.
+  char *report_id;     ///< ID of report to modify.
 } modify_report_data_t;
 
 /**
@@ -1817,8 +1817,8 @@ typedef struct
 static void
 modify_report_data_reset (modify_report_data_t *data)
 {
-  free (data->report_id);
   free (data->comment);
+  free (data->report_id);
 
   memset (data, 0, sizeof (modify_report_data_t));
 }
@@ -8998,7 +8998,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 #endif
                   default:
                     SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_report"));
+                     (XML_INTERNAL_ERROR ("modify_config"));
                     g_log ("event config", G_LOG_LEVEL_MESSAGE,
                            "Scan config %s could not be modified",
                            modify_config_data->config_id);
@@ -9033,7 +9033,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 break;
               default:
                 SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("modify_report"));
+                 (XML_INTERNAL_ERROR ("modify_config"));
                 break;
             }
         }
@@ -9155,7 +9155,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT:
         {
-          report_t report;
+          report_t report = 0;
 
           if (modify_report_data->report_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
