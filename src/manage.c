@@ -1797,7 +1797,7 @@ run_task (task_t task, char **report_id, int from)
   /* Every fail exit from here must reset to this run status, and must
    * clear current_report. */
 
-  /** @todo On fail exits only, may need to hour request states that one of
+  /** @todo On fail exits only, may need to honour request states that one of
    *        the other processes has set on the task (stop_task,
    *        request_delete_task). */
 

@@ -1,3 +1,7 @@
+2010-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): Correct typo in comment.
+
 2010-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (modify_report_data_t, modify_report_data_reset): Alphabetise.
