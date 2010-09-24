@@ -1,5 +1,13 @@
 2010-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (agents): Add installer_trust_time.
+	(tasks): Add slave.
+	(reports): Add slave_progress and slave_task_uuid.
+	(report_formats): Add trust_time and flags.
+	(slaves): New table.
+
+2010-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Correct typo in comment.
 
 2010-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -188,7 +196,7 @@
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 29.
 
-	* src/manage_sql.c (create_tables): Add slave_task_uuid to table tasks.
+	* src/manage_sql.c (create_tables): Add slave_task_uuid to table reports.
 	(migrate_28_to_29): New function.
 	(database_migrators): Add migrate_28_to_29.
 	(init_manage, make_report): Init slave_task_uuid.

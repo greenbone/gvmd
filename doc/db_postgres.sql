@@ -14,6 +14,7 @@ CREATE TABLE agents (
 	installer_filename text,
 	installer_signature_64 text,
 	installer_trust integer,
+	installer_trust_time date,
 	howto_install text,
 	howto_use text);
 
@@ -100,7 +101,8 @@ CREATE TABLE tasks (
 	config integer REFERENCES configs (id) ON DELETE RESTRICT,
 	target integer REFERENCES targets (id) ON DELETE RESTRICT,
 	schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
-	schedule_next_time date);
+	schedule_next_time date,
+	slave integer REFERENCES slaves (id) ON DELETE RESTRICT);
 
 CREATE TABLE task_files (
 	id integer PRIMARY KEY,
@@ -135,7 +137,9 @@ CREATE TABLE reports (
 	end_time date,
 	nbefile text,
 	comment text,
-	scan_run_status integer);
+	scan_run_status integer,
+	slave_progress text,
+	slave_task_uuid text);
 
 CREATE TABLE report_format_params (
 	id integer PRIMARY KEY,
@@ -153,7 +157,9 @@ CREATE TABLE report_formats (
 	summary text,
 	description text,
 	signature text,
-	trust integer);
+	trust integer,
+	trust_time date,
+	flags integer);
 
 CREATE TABLE report_hosts (
 	id integer PRIMARY KEY,
@@ -245,3 +251,14 @@ CREATE TABLE schedules (
 	period integer,
 	period_months integer,
 	duration integer);
+
+CREATE TABLE slaves (
+	id integer PRIMARY KEY,
+	uuid text UNIQUE NOT NULL,
+	owner integer REFERENCES users (id) ON DELETE RESTRICT,
+	name text NOT NULL,
+	comment text,
+	host text,
+	port text,
+	login text,
+	password text);
