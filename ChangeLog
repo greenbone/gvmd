@@ -1,4 +1,8 @@
-2010-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/db.png: Update from SQL.
+
+2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql (agents): Add installer_trust_time.
 	(tasks): Add slave.
