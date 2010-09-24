@@ -150,7 +150,7 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (target_t, const char *);
+int delete_slave_task (slave_t, const char *);
 
 
 /* Static headers. */
@@ -796,6 +796,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
+  sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_escalators (id INTEGER PRIMARY KEY, task INTEGER, escalator INTEGER);");
@@ -3633,6 +3634,40 @@ migrate_29_to_30 ()
 }
 
 /**
+ * @brief Migrate the database from version 30 to version 31.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_30_to_31 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 30. */
+
+  if (manage_db_version () != 30)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Slaves switched from being targets to being resources of their own.
+   * Just clear any task slaves. */
+
+  sql ("UPDATE tasks SET slave = 0;");
+
+  /* Set the database version to 31. */
+
+  set_db_version (31);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3667,6 +3702,7 @@ static migrator_t database_migrators[]
     {28, migrate_27_to_28},
     {29, migrate_28_to_29},
     {30, migrate_29_to_30},
+    {31, migrate_30_to_31},
     /* End marker. */
     {-1, NULL}};
 
@@ -6485,16 +6521,16 @@ set_task_target (task_t task, target_t target)
  *
  * @return Slave of task.
  */
-target_t
+slave_t
 task_slave (task_t task)
 {
-  target_t target = 0;
-  switch (sql_int64 (&target, 0, 0,
+  slave_t slave = 0;
+  switch (sql_int64 (&slave, 0, 0,
                      "SELECT slave FROM tasks WHERE ROWID = %llu;",
                      task))
     {
       case 0:
-        return target;
+        return slave;
         break;
       case 1:        /* Too few rows in result of query. */
       default:       /* Programming error. */
@@ -6508,13 +6544,13 @@ task_slave (task_t task)
 /**
  * @brief Set the slave of a task.
  *
- * @param[in]  task    Task.
- * @param[in]  target  Target.
+ * @param[in]  task   Task.
+ * @param[in]  slave  Slave.
  */
 void
-set_task_slave (task_t task, target_t target)
+set_task_slave (task_t task, slave_t slave)
 {
-  sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", target, task);
+  sql ("UPDATE tasks SET slave = %llu WHERE ROWID = %llu;", slave, task);
 }
 
 /**
@@ -9022,7 +9058,7 @@ delete_report (report_t report)
   slave_task_uuid = report_slave_task_uuid (report);
   if (slave_task_uuid)
     {
-      target_t slave;
+      slave_t slave;
 
       /** @todo Store slave on report, in case task's slave changes. */
       slave = task_slave (task);
@@ -11243,9 +11279,7 @@ int
 target_in_use (target_t target)
 {
   return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
-                  " WHERE target = %llu OR slave = %llu;",
-                  target,
+                  "SELECT count(*) FROM tasks WHERE target = %llu;",
                   target);
 }
 
@@ -19404,5 +19438,457 @@ DEF_ACCESS (report_format_param_iterator_name, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (report_format_param_iterator_value, 2);
+
+
+/* Slaves. */
+
+/**
+ * @brief Find a slave given a UUID.
+ *
+ * @param[in]   uuid   UUID of slave.
+ * @param[out]  slave  Slave return, 0 if succesfully failed to find slave.
+ *
+ * @return FALSE on success (including if failed to find slave), TRUE on error.
+ */
+gboolean
+find_slave (const char* uuid, slave_t* slave)
+{
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_owns_uuid ("slave", quoted_uuid) == 0)
+    {
+      g_free (quoted_uuid);
+      *slave = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (slave, 0, 0,
+                     "SELECT ROWID FROM slaves WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *slave = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Create a slave.
+ *
+ * @param[in]   name            Name of slave.
+ * @param[in]   comment         Comment on slave.
+ * @param[in]   host            Host of slave.
+ * @param[in]   port            Port on host.
+ * @param[in]   login           Host login name.
+ * @param[in]   password        Password for \p login.
+ * @param[out]  slave           NULL, or address for created slave.
+ *
+ * @return 0 success, 1 slave exists already, -1 error.
+ */
+int
+create_slave (const char* name, const char* comment, const char* host,
+              const char* port, const char* login, const char* password,
+              slave_t* slave)
+{
+  gchar *quoted_name, *quoted_host, *quoted_port, *quoted_login;
+  gchar *quoted_password;
+
+  assert (name);
+  assert (host);
+  assert (port);
+  assert (login);
+  assert (password);
+
+  quoted_name = sql_quote (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  /* Check whether a slave with the same name exists already. */
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM slaves"
+               " WHERE name = '%s'"
+               " AND ((owner IS NULL) OR (owner ="
+               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+               quoted_name,
+               current_credentials.uuid))
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_host = sql_quote (host);
+  quoted_port = sql_quote (port);
+  quoted_login = sql_quote (login);
+  quoted_password = sql_quote (password);
+
+  if (comment)
+    {
+      gchar *quoted_comment = sql_quote (comment);
+      sql ("INSERT INTO slaves"
+           " (uuid, name, owner, comment, host, port, login, password)"
+           " VALUES (make_uuid (), '%s',"
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+           " '%s', '%s', '%s', '%s', '%s');",
+           quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
+           quoted_port, quoted_login, quoted_password);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO slaves"
+         " (uuid, name, owner, comment, host, port, login, password)"
+         " VALUES (make_uuid (), '%s',"
+         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         " '%s', '', '%s', '%s', '%s');",
+         quoted_name, current_credentials.uuid, quoted_host, quoted_port,
+         quoted_login, quoted_password);
+
+  if (slave)
+    *slave = sqlite3_last_insert_rowid (task_db);
+
+  g_free (quoted_name);
+  g_free (quoted_host);
+  g_free (quoted_port);
+  g_free (quoted_login);
+  g_free (quoted_password);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 0 success, 1 fail because a task refers to the slave, -1 error.
+ */
+int
+delete_slave (slave_t slave)
+{
+  sql ("BEGIN IMMEDIATE;");
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks WHERE slave = %llu;",
+               slave))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Initialise a slave iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  slave       Slave to limit iteration to.  0 for all.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
+ */
+void
+init_slave_iterator (iterator_t* iterator, slave_t slave, int ascending,
+                     const char* sort_field)
+{
+  assert (current_credentials.uuid);
+
+  if (slave)
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, host, port, login,"
+                   " password"
+                   " FROM slaves"
+                   " WHERE ROWID = %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   slave,
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+  else
+    init_iterator (iterator,
+                   "SELECT ROWID, uuid, name, comment, host, port, login,"
+                   " password"
+                   " FROM slaves"
+                   " WHERE ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   " ORDER BY %s %s;",
+                   current_credentials.uuid,
+                   sort_field ? sort_field : "ROWID",
+                   ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Slave.
+ */
+slave_t
+slave_iterator_slave (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (slave_t) sqlite3_column_int64 (iterator->stmt, 0);
+}
+
+/**
+ * @brief Get the UUID of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_uuid, 1);
+
+/**
+ * @brief Get the name of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_name, 2);
+
+/**
+ * @brief Get the comment from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Comment.
+ */
+const char*
+slave_iterator_comment (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return "";
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the host of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Host of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_host, 4);
+
+/**
+ * @brief Get the port of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_port, 5);
+
+/**
+ * @brief Get the login of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Login of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_login, 6);
+
+/**
+ * @brief Get the password of the slave from a slave iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Password of the slave or NULL if iteration is complete.
+ */
+DEF_ACCESS (slave_iterator_password, 7);
+
+/**
+ * @brief Return the UUID of a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+slave_uuid (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the name of a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+slave_name (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT name FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the host associated with a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated host if available, else NULL.
+ */
+char*
+slave_host (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT host FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the login associated with a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated login if available, else NULL.
+ */
+char*
+slave_login (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT login FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the password associated with a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Newly allocated password if available, else NULL.
+ */
+char*
+slave_password (slave_t slave)
+{
+  return sql_string (0, 0,
+                     "SELECT password FROM slaves WHERE ROWID = %llu;",
+                     slave);
+}
+
+/**
+ * @brief Return the port associated with a slave.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return Port number on success; -1 on error.
+ */
+int
+slave_port (slave_t slave)
+{
+  int ret;
+  char *port = sql_string (0, 0,
+                           "SELECT port FROM slaves WHERE ROWID = %llu;",
+                           slave);
+  if (port == NULL)
+    return -1;
+  ret = atoi (port);
+  free (port);
+  return ret;
+}
+
+/**
+ * @brief Set the host associated with a slave.
+ *
+ * @param[in]  slave  Slave.
+ * @param[in]  host   New value for host.
+ */
+void
+set_slave_host (slave_t slave, const char *host)
+{
+  gchar* quoted_host;
+
+  assert (host);
+
+  quoted_host = sql_quote (host);
+  sql ("UPDATE slaves SET host = '%s' WHERE ROWID = %llu;",
+       quoted_host, slave);
+  g_free (quoted_host);
+}
+
+/**
+ * @brief Return whether a slave is referenced by a task
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+slave_in_use (slave_t slave)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) FROM tasks WHERE slave = %llu;",
+                  slave);
+}
+
+/**
+ * @brief Initialise a slave task iterator.
+ *
+ * Iterates over all tasks that use the slave.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  slave      Slave.
+ * @param[in]  ascending  Whether to sort ascending or descending.
+ */
+void
+init_slave_task_iterator (iterator_t* iterator, slave_t slave, int ascending)
+{
+  assert (current_credentials.uuid);
+
+  init_iterator (iterator,
+                 "SELECT name, uuid FROM tasks"
+                 " WHERE slave = %llu"
+                 " AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY name %s;",
+                 slave,
+                 current_credentials.uuid,
+                 ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the name from a slave task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (slave_task_iterator_name, 0);
+
+/**
+ * @brief Get the uuid from a slave task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The uuid of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (slave_task_iterator_uuid, 1);
 
 #undef DEF_ACCESS

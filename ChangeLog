@@ -1,5 +1,45 @@
 2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add slaves.  Use slaves instead of targets to represent slave managers.
+	Hence increase database version to 31.  Add database migration from
+	version 30 to 31.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 31.
+
+	* src/manage_sql.c (create_tables): Add slaves table.
+	(migrate_30_to_31): New function.
+	(database_migrators): Add migrate_30_to_31.
+	(task_slave, set_task_slave): Use slave_t for slave.
+	(target_in_use): Remove slave constraint.
+	(find_slave, create_slave, delete_slave, init_slave_iterator)
+	(slave_iterator_slave, slave_iterator_uuid, slave_iterator_name)
+	(slave_iterator_comment, slave_iterator_host, slave_iterator_port)
+	(slave_iterator_login, slave_iterator_password, slave_uuid)
+	(slave_name, slave_host, slave_login, slave_password, slave_port)
+	(set_slave_host, slave_in_use, init_slave_task_iterator)
+	(slave_task_iterator_name, slave_task_iterator_uuid): New functions.
+
+	* src/manage.h: Add headers accordingly.
+	(slave_t): New type.
+
+	* src/manage.c (slave_authenticate): Replace credential param with slave.
+	(run_slave_task, delete_slave_task): Use slave_t interface for slaves.
+
+	* src/omp.c (help_text): Add slave commands.
+	(create_slave_data_t, delete_slave_data_t, get_slaves_data_t): New slave
+	types.
+	(create_slave_data_reset, delete_slave_data_reset)
+	(get_slaves_data_reset): New slave functions.
+	(command_data_t): Add slave fields.
+	(create_slave_data, delete_slave_data, get_slaves_data): New slave
+	variables.
+	(client_state_t): Add states for slave commands.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add slave command handling.  In CLIENT_CREATE_TASK
+	use slave_t interface for slaves.
+
+2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db.png: Update from SQL.
 
 2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>

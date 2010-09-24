@@ -1150,42 +1150,33 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
 /**
  * @brief Authenticate with a slave.
  *
- * @param[in]  session           GNUTLS session.
- * @param[in]  slave_credential  Credential used by slave target.
+ * @param[in]  session  GNUTLS session.
+ * @param[in]  slave    Slave.
  *
  * @return 0 success, -1 error.
  */
 int
-slave_authenticate (gnutls_session_t *session,
-                    lsc_credential_t slave_credential)
+slave_authenticate (gnutls_session_t *session, slave_t slave)
 {
-  iterator_t credentials;
-  init_lsc_credential_iterator (&credentials, slave_credential, 1, NULL);
-  if (next (&credentials))
+  int ret;
+  gchar *login, *password;
+
+  login = slave_login (slave);
+  if (login == NULL)
+    return -1;
+
+  password = slave_password (slave);
+  if (password == NULL)
     {
-      int ret;
-      const char *user, *password;
-      gchar *user_copy, *password_copy;
-
-      user = lsc_credential_iterator_login (&credentials);
-      password = lsc_credential_iterator_password (&credentials);
-
-      if (user == NULL || password == NULL)
-        {
-          cleanup_iterator (&credentials);
-          return -1;
-        }
-
-      user_copy = g_strdup (user);
-      password_copy = g_strdup (password);
-      cleanup_iterator (&credentials);
-
-      ret = omp_authenticate (session, user_copy, password_copy);
-      g_free (user_copy);
-      g_free (password_copy);
-      if (ret)
-        return -1;
+      g_free (login);
+      return -1;
     }
+
+  ret = omp_authenticate (session, login, password);
+  g_free (login);
+  g_free (password);
+  if (ret)
+    return -1;
   return 0;
 }
 
@@ -1200,7 +1191,7 @@ void buffer_config_preference_xml (GString *, iterator_t *, config_t);
  * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
  *                          continue if stopped else start from beginning.
  * @param[out]  target      Task target.
- * @param[out]  credential  Target credential.
+ * @param[out]  target_credential    Target credential.
  * @param[out]  last_stopped_report  Last stopped report if any, else 0.
  *
  * @return 0 success, -1 error.
@@ -1210,11 +1201,10 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
                 lsc_credential_t target_credential,
                 report_t last_stopped_report)
 {
-  target_t slave;
+  slave_t slave;
   char *host, *name;
-  int socket, ret, next_result;
+  int port, socket, ret, next_result;
   gnutls_session_t session;
-  lsc_credential_t slave_credential;
   iterator_t credentials, targets;
   gchar *slave_credential_uuid = NULL, *slave_target_uuid, *slave_config_uuid;
   gchar *slave_task_uuid, *slave_report_uuid;
@@ -1232,16 +1222,19 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
   assert (slave);
   if (slave == 0) return -1;
 
-  host = target_hosts (slave);
+  host = slave_host (slave);
   if (host == NULL) return -1;
 
   tracef ("   %s: host: %s\n", __FUNCTION__, host);
 
-  slave_credential = target_lsc_credential (slave);
-  tracef ("   %s: slave cred: %llu\n", __FUNCTION__, slave_credential);
-  if (slave_credential == 0) return -1;
+  port = slave_port (slave);
+  if (port == -1)
+    {
+      free (host);
+      return -1;
+    }
 
-  socket = openvas_server_open (&session, host, 9390); // FIX port
+  socket = openvas_server_open (&session, host, port);
   free (host);
   if (socket == -1) return -1;
 
@@ -1254,9 +1247,9 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       return -1;
     }
 
-  /* Authenticate using the slave credential. */
+  /* Authenticate using the slave login. */
 
-  if (slave_authenticate (&session, slave_credential))
+  if (slave_authenticate (&session, slave))
     goto fail;
 
   tracef ("   %s: authenticated\n", __FUNCTION__);
@@ -3261,37 +3254,40 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
  * @return 0 success, -1 error.
  */
 int
-delete_slave_task (target_t slave, const char *slave_task_uuid)
+delete_slave_task (slave_t slave, const char *slave_task_uuid)
 {
   int socket;
   gnutls_session_t session;
   char *host;
+  int port;
   entity_t get_tasks, get_targets, entity, task;
-  lsc_credential_t slave_credential;
   const char *slave_config_uuid, *slave_target_uuid, *slave_credential_uuid;
 
   assert (slave);
 
   /* Connect to the slave. */
 
-  host = target_hosts (slave);
+  host = slave_host (slave);
   if (host == NULL) return -1;
 
   tracef ("   %s: host: %s\n", __FUNCTION__, host);
 
-  slave_credential = target_lsc_credential (slave);
-  tracef ("   %s: slave cred: %llu\n", __FUNCTION__, slave_credential);
-  if (slave_credential == 0) return -1;
+  port = slave_port (slave);
+  if (port == -1)
+    {
+      free (host);
+      return -1;
+    }
 
-  socket = openvas_server_open (&session, host, 9390); // FIX port
+  socket = openvas_server_open (&session, host, port);
   free (host);
   if (socket == -1) return -1;
 
   tracef ("   %s: connected\n", __FUNCTION__);
 
-  /* Authenticate using the slave credential. */
+  /* Authenticate using the slave login. */
 
-  if (slave_authenticate (&session, slave_credential))
+  if (slave_authenticate (&session, slave))
     goto fail;
 
   tracef ("   %s: authenticated\n", __FUNCTION__);

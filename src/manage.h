@@ -158,6 +158,7 @@ typedef enum
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int escalator_t;
+typedef long long int slave_t;
 typedef long long int target_t;
 typedef long long int task_t;
 typedef long long int result_t;
@@ -1563,6 +1564,76 @@ report_format_param_iterator_name (iterator_t *);
 
 const char*
 report_format_param_iterator_value (iterator_t *);
+
+
+/* Slaves. */
+
+gboolean
+find_slave (const char*, slave_t*);
+
+int
+create_slave (const char*, const char*, const char*, const char*,
+              const char*, const char*, slave_t*);
+
+int
+delete_slave (slave_t);
+
+void
+init_slave_iterator (iterator_t*, slave_t, int, const char*);
+
+slave_t
+slave_iterator_slave (iterator_t*);
+
+const char*
+slave_iterator_uuid (iterator_t*);
+
+const char*
+slave_iterator_name (iterator_t*);
+
+const char*
+slave_iterator_comment (iterator_t*);
+
+const char*
+slave_iterator_host (iterator_t*);
+
+const char*
+slave_iterator_port (iterator_t*);
+
+const char*
+slave_iterator_login (iterator_t*);
+
+const char*
+slave_iterator_password (iterator_t*);
+
+char*
+slave_uuid (slave_t);
+
+char*
+slave_name (slave_t);
+
+char*
+slave_host (slave_t);
+
+char*
+slave_login (slave_t);
+
+char*
+slave_password (slave_t);
+
+int
+slave_port (slave_t);
+
+int
+slave_in_use (slave_t);
+
+void
+init_slave_task_iterator (iterator_t*, slave_t, int);
+
+const char*
+slave_task_iterator_name (iterator_t*);
+
+const char*
+slave_task_iterator_uuid (iterator_t*);
 
 
 /* Tags. */

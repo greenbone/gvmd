@@ -378,6 +378,7 @@ static char* help_text = "\n"
 "    CREATE_OVERRIDE        Create an override.\n"
 "    CREATE_REPORT_FORMAT   Create a report format.\n"
 "    CREATE_SCHEDULE        Create a schedule.\n"
+"    CREATE_SLAVE           Create a slave.\n"
 "    CREATE_TARGET          Create a target.\n"
 "    CREATE_TASK            Create a task.\n"
 "    DELETE_AGENT           Delete an agent.\n"
@@ -389,6 +390,7 @@ static char* help_text = "\n"
 "    DELETE_REPORT          Delete a report.\n"
 "    DELETE_REPORT_FORMAT   Delete a report format.\n"
 "    DELETE_SCHEDULE        Delete a schedule.\n"
+"    DELETE_SLAVE           Delete a slave.\n"
 "    DELETE_TARGET          Delete a target.\n"
 "    DELETE_TASK            Delete a task.\n"
 "    GET_AGENTS             Get all agents.\n"
@@ -409,6 +411,7 @@ static char* help_text = "\n"
 "    GET_REPORT_FORMATS     Get all report formats.\n"
 "    GET_RESULTS            Get results.\n"
 "    GET_SCHEDULES          Get all schedules.\n"
+"    GET_SLAVES             Get all slaves.\n"
 "    GET_SYSTEM_REPORTS     Get all system reports.\n"
 "    GET_TARGET_LOCATORS    Get configured target locators.\n"
 "    GET_TARGETS            Get all targets.\n"
@@ -984,6 +987,37 @@ create_schedule_data_reset (create_schedule_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_slave command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *host;                    ///< Host for new slave.
+  char *login;                   ///< Login on slave.
+  char *name;                    ///< Name of new slave.
+  char *password;                ///< Password for login.
+  char *port;                    ///< Port on host.
+} create_slave_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_slave_data_reset (create_slave_data_t *data)
+{
+  free (data->comment);
+  free (data->host);
+  free (data->login);
+  free (data->name);
+  free (data->password);
+  free (data->port);
+
+  memset (data, 0, sizeof (create_slave_data_t));
+}
+
+/**
  * @brief Command data for the create_target command.
  */
 typedef struct
@@ -1233,6 +1267,27 @@ delete_schedule_data_reset (delete_schedule_data_t *data)
   free (data->schedule_id);
 
   memset (data, 0, sizeof (delete_schedule_data_t));
+}
+
+/**
+ * @brief Command data for the delete_slave command.
+ */
+typedef struct
+{
+  char *slave_id;   ///< ID of slave to delete.
+} delete_slave_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_slave_data_reset (delete_slave_data_t *data)
+{
+  free (data->slave_id);
+
+  memset (data, 0, sizeof (delete_slave_data_t));
 }
 
 /**
@@ -1672,6 +1727,31 @@ get_schedules_data_reset (get_schedules_data_t *data)
   free (data->schedule_id);
 
   memset (data, 0, sizeof (get_schedules_data_t));
+}
+
+/**
+ * @brief Command data for the get_slaves command.
+ */
+typedef struct
+{
+  char *sort_field;    ///< Field to sort results on.
+  int sort_order;      ///< Result sort order: 0 descending, else ascending.
+  char *slave_id;      ///< ID of single slave to get.
+  int tasks;           ///< Boolean.  Whether to include tasks that use slave.
+} get_slaves_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_slaves_data_reset (get_slaves_data_t *data)
+{
+  free (data->slave_id);
+  free (data->sort_field);
+
+  memset (data, 0, sizeof (get_slaves_data_t));
 }
 
 /**
@@ -2162,6 +2242,7 @@ typedef union
   create_override_data_t create_override;             ///< create_override
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_schedule_data_t create_schedule;             ///< create_schedule
+  create_slave_data_t create_slave;                   ///< create_slave
   create_target_data_t create_target;                 ///< create_target
   create_task_data_t create_task;                     ///< create_task
   delete_agent_data_t delete_agent;                   ///< delete_agent
@@ -2173,6 +2254,7 @@ typedef union
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
+  delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_target_data_t delete_target;                 ///< delete_target
   delete_task_data_t delete_task;                     ///< delete_task
   get_agents_data_t get_agents;                       ///< get_agents
@@ -2190,6 +2272,7 @@ typedef union
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
   get_results_data_t get_results;                     ///< get_results
   get_schedules_data_t get_schedules;                 ///< get_schedules
+  get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
@@ -2274,6 +2357,12 @@ create_schedule_data_t *create_schedule_data
  = (create_schedule_data_t*) &(command_data.create_schedule);
 
 /**
+ * @brief Parser callback data for CREATE_SLAVE.
+ */
+create_slave_data_t *create_slave_data
+ = (create_slave_data_t*) &(command_data.create_slave);
+
+/**
  * @brief Parser callback data for CREATE_TARGET.
  */
 create_target_data_t *create_target_data
@@ -2338,6 +2427,12 @@ delete_report_format_data_t *delete_report_format_data
  */
 delete_schedule_data_t *delete_schedule_data
  = (delete_schedule_data_t*) &(command_data.delete_schedule);
+
+/**
+ * @brief Parser callback data for DELETE_SLAVE.
+ */
+delete_slave_data_t *delete_slave_data
+ = (delete_slave_data_t*) &(command_data.delete_slave);
 
 /**
  * @brief Parser callback data for DELETE_TARGET.
@@ -2440,6 +2535,12 @@ get_results_data_t *get_results_data
  */
 get_schedules_data_t *get_schedules_data
  = &(command_data.get_schedules);
+
+/**
+ * @brief Parser callback data for GET_SLAVES.
+ */
+get_slaves_data_t *get_slaves_data
+ = &(command_data.get_slaves);
 
 /**
  * @brief Parser callback data for GET_SYSTEM_REPORTS.
@@ -2704,6 +2805,13 @@ typedef enum
   CLIENT_CREATE_SCHEDULE_DURATION_UNIT,
   CLIENT_CREATE_SCHEDULE_PERIOD,
   CLIENT_CREATE_SCHEDULE_PERIOD_UNIT,
+  CLIENT_CREATE_SLAVE,
+  CLIENT_CREATE_SLAVE_COMMENT,
+  CLIENT_CREATE_SLAVE_HOST,
+  CLIENT_CREATE_SLAVE_LOGIN,
+  CLIENT_CREATE_SLAVE_NAME,
+  CLIENT_CREATE_SLAVE_PASSWORD,
+  CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -2730,6 +2838,7 @@ typedef enum
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_SCHEDULE,
+  CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TASK,
   CLIENT_DELETE_TARGET,
   CLIENT_GET_AGENTS,
@@ -2750,6 +2859,7 @@ typedef enum
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_SCHEDULES,
+  CLIENT_GET_SLAVES,
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TARGETS,
@@ -3386,6 +3496,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_FORMAT);
+        else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
+          {
+            openvas_append_string (&create_slave_data->comment, "");
+            openvas_append_string (&create_slave_data->password, "");
+            set_client_state (CLIENT_CREATE_SLAVE);
+          }
         else if (strcasecmp ("CREATE_SCHEDULE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCHEDULE);
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
@@ -3455,6 +3571,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "schedule_id",
                               &delete_schedule_data->schedule_id);
             set_client_state (CLIENT_DELETE_SCHEDULE);
+          }
+        else if (strcasecmp ("DELETE_SLAVE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "slave_id",
+                              &delete_slave_data->slave_id);
+            set_client_state (CLIENT_DELETE_SLAVE);
           }
         else if (strcasecmp ("DELETE_TARGET", element_name) == 0)
           {
@@ -3880,6 +4002,25 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_schedules_data->sort_order = 1;
 
             set_client_state (CLIENT_GET_SCHEDULES);
+          }
+        else if (strcasecmp ("GET_SLAVES", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "slave_id",
+                              &get_slaves_data->slave_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_slaves_data->tasks = strcmp (attribute, "0");
+            else
+              get_slaves_data->tasks = 0;
+            append_attribute (attribute_names, attribute_values, "sort_field",
+                              &get_slaves_data->sort_field);
+            if (find_attribute (attribute_names, attribute_values,
+                                "sort_order", &attribute))
+              get_slaves_data->sort_order = strcmp (attribute, "descending");
+            else
+              get_slaves_data->sort_order = 1;
+            set_client_state (CLIENT_GET_SLAVES);
           }
         else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
           {
@@ -4371,6 +4512,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                      "Error");
         break;
 
+      case CLIENT_DELETE_SLAVE:
+        if (send_element_error_to_client ("delete_slave", element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
+        break;
+
       case CLIENT_DELETE_TARGET:
         if (send_element_error_to_client ("delete_target", element_name,
                                           write_to_client,
@@ -4657,6 +4813,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_SCHEDULES:
           {
             if (send_element_error_to_client ("get_schedules", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_GET_SLAVES:
+          {
+            if (send_element_error_to_client ("get_slaves", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -5847,6 +6020,36 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else
           {
             if (send_element_error_to_client ("create_override", element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CREATE_SLAVE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_COMMENT);
+        else if (strcasecmp ("HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_HOST);
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_LOGIN);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_NAME);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_PASSWORD);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SLAVE_PORT);
+        else
+          {
+            if (send_element_error_to_client ("create_slave", element_name,
                                               write_to_client,
                                               write_to_client_data))
               {
@@ -8762,6 +8965,56 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_SLAVE:
+        assert (strcasecmp ("DELETE_SLAVE", element_name) == 0);
+        if (delete_slave_data->slave_id)
+          {
+            slave_t slave = 0;
+
+            if (find_slave (delete_slave_data->slave_id, &slave))
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
+            else if (slave == 0)
+              {
+                if (send_find_error_to_client ("delete_slave",
+                                               "slave",
+                                               delete_slave_data->slave_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+              }
+            else switch (delete_slave (slave))
+              {
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_slave"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave %s has been deleted",
+                         delete_slave_data->slave_id);
+                  break;
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_slave",
+                                                            "Slave is in use"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave %s could not be deleted",
+                         delete_slave_data->slave_id);
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_slave"));
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave %s could not be deleted",
+                         delete_slave_data->slave_id);
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_slave",
+                              "DELETE_SLAVE requires a slave_id attribute"));
+        delete_slave_data_reset (delete_slave_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_DELETE_TARGET:
         assert (strcasecmp ("DELETE_TARGET", element_name) == 0);
         if (delete_target_data->target_id)
@@ -10768,6 +11021,113 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_SCHEDULE_PERIOD);
         break;
 
+      case CLIENT_CREATE_SLAVE:
+        {
+          slave_t new_slave;
+
+          assert (strcasecmp ("CREATE_SLAVE", element_name) == 0);
+
+          if (create_slave_data->host == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE requires a HOST"));
+          else if (strlen (create_slave_data->host) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE HOST must be at"
+                                " least one character long"));
+          else if (create_slave_data->login == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE requires a LOGIN"));
+          else if (strlen (create_slave_data->login) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE LOGIN must be at"
+                                " least one character long"));
+          else if (create_slave_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE requires a NAME"));
+          else if (strlen (create_slave_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE NAME must be at"
+                                " least one character long"));
+          else if (create_slave_data->port == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE requires a PORT"));
+          else if (strlen (create_slave_data->port) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_slave",
+                                "CREATE_SLAVE PORT must be at"
+                                " least one character long"));
+          /* Create slave from host string. */
+          else switch (create_slave
+                        (create_slave_data->name,
+                         create_slave_data->comment,
+                         create_slave_data->host,
+                         create_slave_data->port,
+                         create_slave_data->login,
+                         create_slave_data->password,
+                         &new_slave))
+            {
+              case 0:
+                {
+                  char *uuid = slave_uuid (new_slave);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_slave"),
+                                           uuid);
+                  g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                         "Slave %s has been created", uuid);
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_slave",
+                                    "Slave exists already"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be created");
+                break;
+              default:
+                assert (0);
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_slave"));
+                g_log ("event slave", G_LOG_LEVEL_MESSAGE,
+                       "Slave could not be created");
+                break;
+            }
+
+          create_slave_data_reset (create_slave_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      case CLIENT_CREATE_SLAVE_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+      case CLIENT_CREATE_SLAVE_HOST:
+        assert (strcasecmp ("HOST", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+      case CLIENT_CREATE_SLAVE_LOGIN:
+        assert (strcasecmp ("LOGIN", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+      case CLIENT_CREATE_SLAVE_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+      case CLIENT_CREATE_SLAVE_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+      case CLIENT_CREATE_SLAVE_PORT:
+        assert (strcasecmp ("PORT", element_name) == 0);
+        set_client_state (CLIENT_CREATE_SLAVE);
+        break;
+
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t lsc_credential = 0;
@@ -10889,7 +11249,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           config_t config = 0;
           target_t target = 0;
-          target_t slave = 0;
+          slave_t slave = 0;
           char *tsk_uuid, *name, *description;
 
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
@@ -11130,7 +11490,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
           else if (create_task_data->slave_id
-                   && find_target (create_task_data->slave_id, &slave))
+                   && find_slave (create_task_data->slave_id, &slave))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -12763,6 +13123,86 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
+      case CLIENT_GET_SLAVES:
+        {
+          slave_t slave = 0;
+
+          assert (strcasecmp ("GET_SLAVES", element_name) == 0);
+
+          if (get_slaves_data->slave_id
+              && find_slave (get_slaves_data->slave_id, &slave))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_slaves"));
+          else if (get_slaves_data->slave_id && slave == 0)
+            {
+              if (send_find_error_to_client ("get_slaves",
+                                             "slave",
+                                             get_slaves_data->slave_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else
+            {
+              iterator_t slaves;
+
+              SEND_TO_CLIENT_OR_FAIL ("<get_slaves_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
+              init_slave_iterator (&slaves,
+                                   slave,
+                                   get_slaves_data->sort_order,
+                                   get_slaves_data->sort_field);
+              while (next (&slaves))
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<slave id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<comment>%s</comment>"
+                                           "<host>%s</host>"
+                                           "<port>%s</port>"
+                                           "<login>%s</login>"
+                                           "<in_use>%i</in_use>",
+                                           slave_iterator_uuid (&slaves),
+                                           slave_iterator_name (&slaves),
+                                           slave_iterator_comment (&slaves),
+                                           slave_iterator_host (&slaves),
+                                           slave_iterator_port (&slaves),
+                                           slave_iterator_login (&slaves),
+                                           slave_in_use
+                                            (slave_iterator_slave (&slaves)));
+
+                  if (get_slaves_data->tasks)
+                    {
+                      iterator_t tasks;
+
+                      SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                      init_slave_task_iterator (&tasks,
+                                                slave_iterator_slave
+                                                 (&slaves),
+                                                get_slaves_data->sort_order);
+                      while (next (&tasks))
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<task id=\"%s\">"
+                          "<name>%s</name>"
+                          "</task>",
+                          slave_task_iterator_uuid (&tasks),
+                          slave_task_iterator_name (&tasks));
+                      cleanup_iterator (&tasks);
+                      SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                    }
+
+                  SEND_TO_CLIENT_OR_FAIL ("</slave>");
+                }
+              cleanup_iterator (&slaves);
+              SEND_TO_CLIENT_OR_FAIL ("</get_slaves_response>");
+            }
+          get_slaves_data_reset (get_slaves_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_SYSTEM_REPORTS:
         {
           assert (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0);
@@ -14213,6 +14653,25 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         openvas_append_text (&create_schedule_data->period_unit,
                              text,
                              text_len);
+        break;
+
+      case CLIENT_CREATE_SLAVE_COMMENT:
+        openvas_append_text (&create_slave_data->comment, text, text_len);
+        break;
+      case CLIENT_CREATE_SLAVE_HOST:
+        openvas_append_text (&create_slave_data->host, text, text_len);
+        break;
+      case CLIENT_CREATE_SLAVE_LOGIN:
+        openvas_append_text (&create_slave_data->login, text, text_len);
+        break;
+      case CLIENT_CREATE_SLAVE_NAME:
+        openvas_append_text (&create_slave_data->name, text, text_len);
+        break;
+      case CLIENT_CREATE_SLAVE_PASSWORD:
+        openvas_append_text (&create_slave_data->password, text, text_len);
+        break;
+      case CLIENT_CREATE_SLAVE_PORT:
+        openvas_append_text (&create_slave_data->port, text, text_len);
         break;
 
       case CLIENT_CREATE_TARGET_COMMENT:
