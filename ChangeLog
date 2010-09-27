@@ -1,5 +1,10 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS free target
+	UUID.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_slave_task): Create slave resources with comments.
 
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
