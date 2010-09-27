@@ -1302,7 +1302,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
           cleanup_iterator (&credentials);
 
           ret = omp_create_lsc_credential (&session, name, user_copy, password_copy,
-                                           "", &slave_credential_uuid);
+                                           "Slave credential created by Master",
+                                           &slave_credential_uuid);
           g_free (user_copy);
           g_free (password_copy);
           if (ret)
@@ -1330,7 +1331,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
           hosts_copy = g_strdup (hosts);
           cleanup_iterator (&targets);
 
-          ret = omp_create_target (&session, name, hosts_copy, "",
+          ret = omp_create_target (&session, name, hosts_copy,
+                                   "Slave target created by Master",
                                    slave_credential_uuid, &slave_target_uuid);
           g_free (hosts_copy);
           if (ret)
@@ -1363,7 +1365,9 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
                                   " status_text=\"OK\">"
                                   "<config id=\"XXX\">"
                                   "<name>%s</name>"
-                                  "<comment></comment>"
+                                  "<comment>"
+                                  "Slave config created by Master"
+                                  "</comment>"
                                   "<preferences>",
                                   name))
           goto fail_target;
@@ -1429,7 +1433,7 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       /* Create the task on the slave. */
 
       if (omp_create_task (&session, name, slave_config_uuid, slave_target_uuid,
-                           "", &slave_task_uuid))
+                           "Slave task created by Master", &slave_task_uuid))
         goto fail_config;
 
       /* Start the task on the slave. */

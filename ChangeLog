@@ -1,5 +1,9 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_slave_task): Create slave resources with comments.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (modify_task_data_t, modify_task_data_reset): Add slave_id.
 	(client_state_t): Add slave entry.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add slave
