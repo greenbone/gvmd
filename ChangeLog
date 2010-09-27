@@ -1,3 +1,8 @@
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS add slave to
+	response.
+
 2010-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add slaves.  Use slaves instead of targets to represent slave managers.

@@ -13418,9 +13418,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int ret, maximum_hosts;
                     gchar *response, *progress_xml;
                     target_t target;
+                    slave_t slave;
                     char *name, *config, *config_uuid;
                     char *escalator, *escalator_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
+                    char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name, *comment;
                     gchar *first_report_id, *first_report;
                     char* description;
@@ -13434,6 +13436,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? max_hosts (hosts) : 0;
+
+                    slave = task_slave (task);
 
                     first_report_id = task_first_report_id (task);
                     if (first_report_id)
@@ -13680,6 +13684,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     config_uuid = task_config_uuid (task);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
+                    task_slave_uuid = slave_uuid (slave);
+                    task_slave_name = slave_name (slave);
                     schedule = task_schedule (task);
                     if (schedule)
                       {
@@ -13705,6 +13711,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<target id=\"%s\">"
                                  "<name>%s</name>"
                                  "</target>"
+                                 "<slave id=\"%s\">"
+                                 "<name>%s</name>"
+                                 "</slave>"
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
@@ -13734,6 +13743,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  escalator ? escalator : "",
                                  task_target_uuid ? task_target_uuid : "",
                                  task_target_name ? task_target_name : "",
+                                 task_slave_uuid ? task_slave_uuid : "",
+                                 task_slave_name ? task_slave_name : "",
                                  task_run_status_name (task),
                                  progress_xml,
                                  description64,
@@ -13770,6 +13781,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (description64);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
+                    free (task_slave_uuid);
+                    free (task_slave_name);
                     if (ret)
                       {
                         cleanup_iterator (&tasks);
@@ -13799,9 +13812,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     char *name = task_name (index);
                     char *comment = task_comment (index);
                     target_t target;
+                    slave_t slave;
                     char *tsk_uuid, *config, *config_uuid;
                     char *escalator, *escalator_uuid;
                     char *task_target_uuid, *task_target_name, *hosts;
+                    char *task_slave_uuid, *task_slave_name;
                     char *task_schedule_uuid, *task_schedule_name;
                     gchar *first_report_id, *first_report;
                     char *description;
@@ -13822,6 +13837,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     target = task_target (index);
                     hosts = target ? target_hosts (target) : NULL;
                     maximum_hosts = hosts ? max_hosts (hosts) : 0;
+
+                    slave = task_slave (index);
 
                     first_report_id = task_first_report_id (index);
                     if (first_report_id)
@@ -14059,6 +14076,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     escalator_uuid = task_escalator_uuid (index);
                     task_target_uuid = target_uuid (target);
                     task_target_name = target_name (target);
+                    task_slave_uuid = slave_uuid (slave);
+                    task_slave_name = slave_name (slave);
                     schedule = task_schedule (index);
                     if (schedule)
                       {
@@ -14084,6 +14103,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<target id=\"%s\">"
                                             "<name>%s</name>"
                                             "</target>"
+                                            "<slave id=\"%s\">"
+                                            "<name>%s</name>"
+                                            "</slave>"
                                             "<status>%s</status>"
                                             "<progress>%s</progress>"
                                             "%s"
@@ -14116,6 +14138,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             escalator ? escalator : "",
                                             task_target_uuid ? task_target_uuid : "",
                                             task_target_name ? task_target_name : "",
+                                            task_slave_uuid ? task_slave_uuid : "",
+                                            task_slave_name ? task_slave_name : "",
                                             task_run_status_name (index),
                                             progress_xml,
                                             description64,
@@ -14151,6 +14175,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     free (tsk_uuid);
                     free (task_schedule_uuid);
                     free (task_schedule_name);
+                    free (task_slave_uuid);
+                    free (task_slave_name);
                     if (send_to_client (line,
                                         write_to_client,
                                         write_to_client_data))
