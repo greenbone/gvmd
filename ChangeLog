@@ -1,5 +1,15 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_report_scan_run_status): New function.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage.c (run_slave_task): Revert last change.
+	(run_task): In the resume case, mark just the report as requested before
+	forking, to match the normal behaviour.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_slave_task): Set task to requested after START_TASK.
 
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>

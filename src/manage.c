@@ -1461,8 +1461,6 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       if (slave_report_uuid == NULL)
         goto fail_stop_task;
 
-      set_task_run_status (task, TASK_STATUS_REQUESTED);
-
       set_report_slave_task_uuid (current_report, slave_task_uuid);
     }
 
@@ -1761,6 +1759,10 @@ run_task (task_t task, char **report_id, int from)
       /* Remove partial host information from the report. */
 
       trim_partial_report (last_stopped_report);
+
+      /* Ensure the report is marked as requested. */
+
+      set_report_scan_run_status (current_report, TASK_STATUS_REQUESTED);
 
       /* Clear the end times of the task and partial report. */
 

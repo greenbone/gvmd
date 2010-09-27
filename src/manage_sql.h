@@ -32,6 +32,8 @@ void trim_report (report_t);
 
 int delete_report (report_t);
 
+int set_report_scan_run_status (report_t, task_status_t);
+
 int set_report_slave_progress (report_t, int);
 
 void set_report_slave_task_uuid (report_t, const char *);

@@ -8751,6 +8751,23 @@ report_scan_run_status (report_t report, int* status)
 }
 
 /**
+ * @brief Return the run status of the scan associated with a report.
+ *
+ * @param[in]   report  Report.
+ * @param[out]  status  Scan run status.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+set_report_scan_run_status (report_t report, task_status_t status)
+{
+  sql ("UPDATE reports SET scan_run_status = %u WHERE ROWID = %llu;",
+       status,
+       report);
+  return 0;
+}
+
+/**
  * @brief Get the number of results in the scan associated with a report.
  *
  * @param[in]   report         Report.
