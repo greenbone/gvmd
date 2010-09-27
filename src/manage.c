@@ -1461,6 +1461,8 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
       if (slave_report_uuid == NULL)
         goto fail_stop_task;
 
+      set_task_run_status (task, TASK_STATUS_REQUESTED);
+
       set_report_slave_task_uuid (current_report, slave_task_uuid);
     }
 

@@ -1,5 +1,9 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_slave_task): Set task to requested after START_TASK.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trim_report): New function.
 
 	* src/manage_sql.h: Add header accordingly.
