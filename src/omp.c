@@ -1941,6 +1941,7 @@ typedef struct
   char *name;          ///< New name for task.
   char *rcfile;        ///< New definition for task, as an RC file.
   char *schedule_id;   ///< ID of new schedule for task.
+  char *slave_id;      ///< ID of new slave for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -1960,6 +1961,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->name);
   free (data->rcfile);
   free (data->schedule_id);
+  free (data->slave_id);
   free (data->task_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
@@ -2908,6 +2910,7 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
+  CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_PAUSE_TASK,
   CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_PAUSED_TASK,
@@ -5132,6 +5135,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &modify_task_data->schedule_id);
             set_client_state (CLIENT_MODIFY_TASK_SCHEDULE);
+          }
+        else if (strcasecmp ("SLAVE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->slave_id);
+            set_client_state (CLIENT_MODIFY_TASK_SLAVE);
           }
         else if (strcasecmp ("FILE", element_name) == 0)
           {
@@ -9723,6 +9732,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->slave_id)
+                  {
+                    slave_t slave = 0;
+
+                    if (strcmp (modify_task_data->slave_id, "0") == 0)
+                      {
+                        set_task_slave (task, 0);
+                        first = 0;
+                      }
+                    else if ((fail = find_slave
+                                      (modify_task_data->slave_id,
+                                       &slave)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (slave == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task",
+                              "slave",
+                              modify_task_data->slave_id,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      {
+                        set_task_slave (task, slave);
+                        first = 0;
+                      }
+                  }
+
                 if (fail == 0)
                   {
                     assert (first == 0);
@@ -9758,6 +9802,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_TASK_SCHEDULE:
         assert (strcasecmp ("SCHEDULE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_TASK);
+        break;
+      case CLIENT_MODIFY_TASK_SLAVE:
+        assert (strcasecmp ("SLAVE", element_name) == 0);
         set_client_state (CLIENT_MODIFY_TASK);
         break;
       case CLIENT_MODIFY_TASK_FILE:

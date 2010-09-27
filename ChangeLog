@@ -1,5 +1,12 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (modify_task_data_t, modify_task_data_reset): Add slave_id.
+	(client_state_t): Add slave entry.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add slave
+	handling to MODIFY_TASK.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS add slave to
 	response.
 
