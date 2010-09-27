@@ -9230,6 +9230,42 @@ set_report_parameter (report_t report, const char* parameter, const char* value)
 }
 
 /**
+ * @brief Prepare a partial report for restarting the scan from the beginning.
+ *
+ * @param[in]  report  The report.
+ */
+void
+trim_report (report_t report)
+{
+  /* Remove results for all hosts. */
+
+  sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
+       " (SELECT results.ROWID FROM report_results, results, report_hosts"
+       "  WHERE report_results.report = %llu"
+       "  AND report_results.result = results.ROWID"
+       "  AND report_hosts.report = %llu"
+       "  AND results.host = report_hosts.host);",
+       report,
+       report,
+       report);
+
+  sql ("DELETE FROM results WHERE ROWID IN"
+       " (SELECT results.ROWID FROM report_results, results, report_hosts"
+       "  WHERE report_results.report = %llu"
+       "  AND report_results.result = results.ROWID"
+       "  AND report_hosts.report = %llu"
+       "  AND results.host = report_hosts.host);",
+       report,
+       report);
+
+  /* Remove all hosts. */
+
+  sql ("DELETE FROM report_hosts"
+       " WHERE report = %llu;",
+       report);
+}
+
+/**
  * @brief Prepare a partial report for resumption of the scan.
  *
  * @param[in]  report  The report.

@@ -1,5 +1,17 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (trim_report): New function.
+
+	* src/manage_sql.h: Add header accordingly.
+
+	* src/manage.c (run_slave_task): When resuming and the task UUID is
+	missing or the resume fails in OMP, then start the task from the
+	beginning.  This can happen if someone edits the slave of the task,
+	or messes with the task on the slave.
+	(run_task): Similarly, in the resume case, clear the slave record.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Note contention hole.
 
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>

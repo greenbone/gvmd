@@ -1260,20 +1260,38 @@ run_slave_task (task_t task, char **report_id, int from, target_t target,
 
       slave_task_uuid = report_slave_task_uuid (last_stopped_report);
       if (slave_task_uuid == NULL)
-        goto fail;
-
-      if (omp_resume_stopped_task_report (&session, slave_task_uuid,
-                                          &slave_report_uuid))
         {
-          free (slave_task_uuid);
-          goto fail;
+          /* This may happen if someone sets a slave on a local task.  Clear
+           * all the report results and start the task from the beginning.  */
+          trim_report (last_stopped_report);
+          last_stopped_report = 0;
         }
-      if (slave_report_uuid == NULL)
-        goto fail;
-
-      set_task_run_status (task, TASK_STATUS_REQUESTED);
+      else switch (omp_resume_stopped_task_report (&session, slave_task_uuid,
+                                                   &slave_report_uuid))
+        {
+          case 0:
+            if (slave_report_uuid == NULL)
+              goto fail;
+            set_task_run_status (task, TASK_STATUS_REQUESTED);
+            break;
+          case 1:
+            /* The resume may have failed because the task slave changed or
+             * because someone removed the task on the slave.  Clear all the
+             * report results and start the task from the beginning.
+             *
+             * This and the if above both "leak" the resources on the slave,
+             * because on the report these resources are replaced with the new
+             * resources. */
+            trim_report (last_stopped_report);
+            last_stopped_report = 0;
+            break;
+          default:
+            free (slave_task_uuid);
+            goto fail;
+        }
     }
-  else
+
+  if (last_stopped_report == 0)
     {
       /* Create the target credential on the slave. */
 
@@ -1731,6 +1749,9 @@ run_task (task_t task, char **report_id, int from)
           set_task_run_status (task, run_status);
           return -1;
         }
+
+      /* Clear slave record, in case slave changed. */
+      set_report_slave_task_uuid (last_stopped_report, "");
 
       current_report = last_stopped_report;
       if (report_id) *report_id = report_uuid (last_stopped_report);

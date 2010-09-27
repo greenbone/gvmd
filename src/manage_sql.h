@@ -28,6 +28,8 @@
 
 #include "manage.h"
 
+void trim_report (report_t);
+
 int delete_report (report_t);
 
 int set_report_slave_progress (report_t, int);
