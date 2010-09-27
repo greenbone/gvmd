@@ -1,5 +1,9 @@
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Note contention hole.
+
+2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS free target
 	UUID.
 

@@ -11403,6 +11403,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
                 }
+              /** @todo
+               *
+               * This is a contention hole.  Some other process could remove
+               * the schedule at this point.  The variable "schedule" would
+               * still refer to the removed schedule.
+               *
+               * This happens all over the place.  Anywhere that a libmanage
+               * client gets a reference to a resource, in fact.
+               *
+               * Possibly libmanage should lock the db whenever it hands out a
+               * reference, and the client should call something to release
+               * the lock when it's done.
+               *
+               * In many cases, like this one, the client could pass the UUID
+               * directly to libmanage, instead of getting the reference.  In
+               * this case the client would then need something like
+               * set_task_schedule_uuid.
+               */
               set_task_schedule (create_task_data->task, schedule);
             }
 
