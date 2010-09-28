@@ -2433,6 +2433,102 @@ manage_check_current_task ()
 /* System reports. */
 
 /**
+ * @brief Get system report types from a slave.
+ *
+ * @param[in]   required_type  Single type to limit types to.
+ * @param[out]  types          Types on success.
+ * @param[out]  start          Actual start of types, which caller must free.
+ * @param[out]  slave_id       ID of slave.
+ *
+ * @return 0 if successful, 2 failed to find slave, -1 otherwise.
+ */
+static int
+get_slave_system_report_types (const char *required_type, gchar ***start,
+                               gchar ***types, const char *slave_id)
+{
+  slave_t slave = 0;
+  char *host, **end;
+  int port, socket;
+  gnutls_session_t session;
+  entity_t get, report;
+  entities_t reports;
+
+  if (find_slave (slave_id, &slave))
+    return -1;
+  if (slave == 0)
+    return 2;
+
+  host = slave_host (slave);
+  if (host == NULL) return -1;
+
+  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+
+  port = slave_port (slave);
+  if (port == -1)
+    {
+      free (host);
+      return -1;
+    }
+
+  socket = openvas_server_open (&session, host, port);
+  free (host);
+  if (socket == -1) return -1;
+
+  tracef ("   %s: connected\n", __FUNCTION__);
+
+  /* Authenticate using the slave login. */
+
+  if (slave_authenticate (&session, slave))
+    goto fail;
+
+  tracef ("   %s: authenticated\n", __FUNCTION__);
+
+  if (omp_get_system_reports (&session, required_type, 1, &get))
+    goto fail;
+
+  openvas_server_close (socket, session);
+
+  reports = get->entities;
+  end = *types = *start = g_malloc ((xml_count_entities (reports) + 1)
+                                    * sizeof (gchar*));
+  while ((report = first_entity (reports)))
+    {
+      if (strcmp (entity_name (report), "system_report") == 0)
+        {
+          entity_t name, title;
+          gchar *pair;
+          char *name_text, *title_text;
+          name = entity_child (report, "name");
+          title = entity_child (report, "title");
+          if (name == NULL || title == NULL)
+            {
+              *end = NULL;
+              g_strfreev (*start);
+              free_entity (get);
+              return -1;
+            }
+          name_text = entity_text (name);
+          title_text = entity_text (title);
+          *end = pair = g_malloc (strlen (name_text) + strlen (title_text) + 2);
+          strcpy (pair, name_text);
+          pair += strlen (name_text) + 1;
+          strcpy (pair, title_text);
+          end++;
+        }
+      reports = next_entities (reports);
+    }
+  *end = NULL;
+
+  free_entity (get);
+
+  return 0;
+
+ fail:
+  openvas_server_close (socket, session);
+  return -1;
+}
+
+/**
  * @brief Command called by get_system_report_types.
  */
 #define COMMAND "openvasmr 0 titles"
@@ -2443,17 +2539,22 @@ manage_check_current_task ()
  * @param[in]   required_type  Single type to limit types to.
  * @param[out]  types          Types on success.
  * @param[out]  start          Actual start of types, which caller must free.
+ * @param[out]  slave_id       ID of slave.
  *
- * @return 0 if successful, -1 otherwise.
+ * @return 0 if successful, 2 failed to find slave, -1 otherwise.
  */
 static int
 get_system_report_types (const char *required_type, gchar ***start,
-                         gchar ***types)
+                         gchar ***types, const char *slave_id)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
   GError *err = NULL;
   gint exit_status;
+
+  if (slave_id && strcmp (slave_id, "0"))
+    return get_slave_system_report_types (required_type, start, types,
+                                          slave_id);
 
   tracef ("   command: " COMMAND);
 
@@ -2531,14 +2632,17 @@ get_system_report_types (const char *required_type, gchar ***start,
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  type        Single report type to iterate over, NULL for all.
+ * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
  * @return 0 on success, -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
-                                  const char* type)
+                                  const char* type,
+                                  const char* slave_id)
 {
-  if (get_system_report_types (type, &iterator->start, &iterator->current))
+  if (get_system_report_types (type, &iterator->start, &iterator->current,
+                               slave_id))
     return -1;
   iterator->current--;
   return 0;
@@ -2596,17 +2700,96 @@ report_type_iterator_title (report_type_iterator_t* iterator)
 }
 
 /**
+ * @brief Get a system report from a slave.
+ *
+ * @param[in]   name      Name of report.
+ * @param[in]   duration  Time range of report, in seconds.
+ * @param[in]   slave_id  ID of slave to get report from.  0 for local.
+ * @param[out]  report    On success, report in base64 if such a report exists
+ *                        else NULL.  Arbitrary on error.
+ *
+ * @return 0 if successful, 2 failed to find slave, -1 otherwise.
+ */
+static int
+slave_system_report (const char *name, const char *duration,
+                     const char *slave_id, char **report)
+{
+  slave_t slave = 0;
+  char *host;
+  int port, socket;
+  gnutls_session_t session;
+  entity_t get, entity;
+  entities_t reports;
+
+  if (find_slave (slave_id, &slave))
+    return -1;
+  if (slave == 0)
+    return 2;
+
+  host = slave_host (slave);
+  if (host == NULL) return -1;
+
+  tracef ("   %s: host: %s\n", __FUNCTION__, host);
+
+  port = slave_port (slave);
+  if (port == -1)
+    {
+      free (host);
+      return -1;
+    }
+
+  socket = openvas_server_open (&session, host, port);
+  free (host);
+  if (socket == -1) return -1;
+
+  tracef ("   %s: connected\n", __FUNCTION__);
+
+  /* Authenticate using the slave login. */
+
+  if (slave_authenticate (&session, slave))
+    goto fail;
+
+  tracef ("   %s: authenticated\n", __FUNCTION__);
+
+  if (omp_get_system_reports (&session, name, 0, &get))
+    goto fail;
+
+  openvas_server_close (socket, session);
+
+  reports = get->entities;
+  if ((entity = first_entity (reports))
+      && (strcmp (entity_name (entity), "system_report") == 0))
+    {
+      entity = entity_child (entity, "report");
+      if (entity)
+        {
+          *report = g_strdup (entity_text (entity));
+          return 0;
+        }
+    }
+
+  free_entity (get);
+  return -1;
+
+ fail:
+  openvas_server_close (socket, session);
+  return -1;
+}
+
+/**
  * @brief Get a system report.
  *
  * @param[in]   name      Name of report.
  * @param[in]   duration  Time range of report, in seconds.
+ * @param[in]   slave_id  ID of slave to get report from.  0 for local.
  * @param[out]  report    On success, report in base64 if such a report exists
  *                        else NULL.  Arbitrary on error.
  *
  * @return 0 if successful (including failure to find report), -1 on error.
  */
 int
-manage_system_report (const char *name, const char *duration, char **report)
+manage_system_report (const char *name, const char *duration,
+                      const char *slave_id, char **report)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
@@ -2618,6 +2801,9 @@ manage_system_report (const char *name, const char *duration, char **report)
 
   if (duration == NULL)
     duration = "86400";
+
+  if (slave_id && strcmp (slave_id, "0"))
+    return slave_system_report (name, duration, slave_id, report);
 
   /* For simplicity, it's up to the command to do the base64 encoding. */
   command = g_strdup_printf ("openvasmr %s %s", duration, name);
@@ -2648,7 +2834,7 @@ manage_system_report (const char *name, const char *duration, char **report)
       g_free (astdout);
       if (strcmp (name, "blank") == 0)
         return -1;
-      return manage_system_report ("blank", duration, report);
+      return manage_system_report ("blank", duration, NULL, report);
     }
   else
     *report = astdout;

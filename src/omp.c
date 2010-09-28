@@ -1762,6 +1762,7 @@ typedef struct
   int brief;        ///< Boolean.  Whether respond in brief.
   char *name;       ///< Name of single report to get.
   char *duration;   ///< Duration into the past to report on.
+  char *slave_id;   ///< Slave that reports apply to, 0 for local Manager.
 } get_system_reports_data_t;
 
 /**
@@ -1774,6 +1775,7 @@ get_system_reports_data_reset (get_system_reports_data_t *data)
 {
   free (data->name);
   free (data->duration);
+  free (data->slave_id);
 
   memset (data, 0, sizeof (get_system_reports_data_t));
 }
@@ -4036,6 +4038,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &get_system_reports_data->name);
             append_attribute (attribute_names, attribute_values, "duration",
                               &get_system_reports_data->duration);
+            append_attribute (attribute_names, attribute_values, "slave_id",
+                              &get_system_reports_data->slave_id);
             if (find_attribute (attribute_names, attribute_values,
                                 "brief", &attribute))
               get_system_reports_data->brief = strcmp (attribute, "0");
@@ -13275,54 +13279,88 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           report_type_iterator_t types;
 
-          if (init_system_report_type_iterator (&types,
-                                                get_system_reports_data->name))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("get_system_reports"));
-          else
+          switch (init_system_report_type_iterator
+                   (&types,
+                    get_system_reports_data->name,
+                    get_system_reports_data->slave_id))
             {
-              char *report;
-              SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
-                                      " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">");
-              while (next_report_type (&types))
-                if (get_system_reports_data->brief)
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<system_report>"
-                    "<name>%s</name>"
-                    "<title>%s</title>"
-                    "</system_report>",
-                    report_type_iterator_name (&types),
-                    report_type_iterator_title (&types));
-                else if (manage_system_report
-                          (report_type_iterator_name (&types),
-                           get_system_reports_data->duration,
-                           &report))
+              case 1:
+                if (send_find_error_to_client ("get_system_reports",
+                                               "system report",
+                                               get_targets_data->target_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
-                    cleanup_report_type_iterator (&types);
-                    internal_error_send_to_client (error);
+                    error_send_to_client (error);
                     return;
                   }
-                else if (report)
+                break;
+              case 2:
+                if (send_find_error_to_client ("get_system_reports",
+                                               "slave",
+                                               get_system_reports_data->slave_id,
+                                               write_to_client,
+                                               write_to_client_data))
                   {
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<system_report>"
-                      "<name>%s</name>"
-                      "<title>%s</title>"
-                      "<report format=\"png\" duration=\"%s\">"
-                      "%s"
-                      "</report>"
-                      "</system_report>",
-                      report_type_iterator_name (&types),
-                      report_type_iterator_title (&types),
-                      get_system_reports_data->duration
-                       ? get_system_reports_data->duration
-                       : "86400",
-                      report);
-                    free (report);
+                    error_send_to_client (error);
+                    return;
                   }
-              cleanup_report_type_iterator (&types);
-              SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
+                break;
+              default:
+                assert (0);
+                /*@fallthrough@*/
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_system_reports"));
+                break;
+              case 0:
+                {
+                  char *report;
+                  SEND_TO_CLIENT_OR_FAIL ("<get_system_reports_response"
+                                          " status=\"" STATUS_OK "\""
+                                          " status_text=\""
+                                          STATUS_OK_TEXT
+                                          "\">");
+                  while (next_report_type (&types))
+                    if (get_system_reports_data->brief)
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<system_report>"
+                        "<name>%s</name>"
+                        "<title>%s</title>"
+                        "</system_report>",
+                        report_type_iterator_name (&types),
+                        report_type_iterator_title (&types));
+                    else if (manage_system_report
+                              (report_type_iterator_name (&types),
+                               get_system_reports_data->duration,
+                               get_system_reports_data->slave_id,
+                               &report))
+                      {
+                        cleanup_report_type_iterator (&types);
+                        internal_error_send_to_client (error);
+                        return;
+                      }
+                    else if (report)
+                      {
+                        SENDF_TO_CLIENT_OR_FAIL
+                         ("<system_report>"
+                          "<name>%s</name>"
+                          "<title>%s</title>"
+                          "<report format=\"png\" duration=\"%s\">"
+                          "%s"
+                          "</report>"
+                          "</system_report>",
+                          report_type_iterator_name (&types),
+                          report_type_iterator_title (&types),
+                          get_system_reports_data->duration
+                           ? get_system_reports_data->duration
+                           : "86400",
+                          report);
+                        free (report);
+                      }
+                  cleanup_report_type_iterator (&types);
+                  SEND_TO_CLIENT_OR_FAIL ("</get_system_reports_response>");
+                }
             }
 
           get_system_reports_data_reset (get_system_reports_data);

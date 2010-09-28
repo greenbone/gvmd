@@ -1357,7 +1357,8 @@ typedef struct
 } report_type_iterator_t;
 
 int
-init_system_report_type_iterator (report_type_iterator_t*, const char*);
+init_system_report_type_iterator (report_type_iterator_t*, const char*,
+                                  const char*);
 
 void
 cleanup_report_type_iterator (report_type_iterator_t*);
@@ -1372,7 +1373,7 @@ const char*
 report_type_iterator_title (report_type_iterator_t*);
 
 int
-manage_system_report (const char *, const char *, char **);
+manage_system_report (const char *, const char *, const char *, char **);
 
 
 /* Scheduling. */

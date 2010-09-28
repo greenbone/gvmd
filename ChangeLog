@@ -1,3 +1,20 @@
+2010-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Extend GET_SYSTEM_REPORTS for getting slave system reports.
+
+	* src/manage.c (get_slave_system_report_types): New function.
+	(get_system_report_types, init_system_report_type_iterator): Add slave
+	arg.
+	(slave_system_report): New function.
+	(manage_system_report): Add slave arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_system_reports_data_t)
+	(get_system_reports_data_reset): Add slave_id.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add slave_id
+	attribute to GET_SYSTEM_REPORTS.
+
 2010-09-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_report_scan_run_status): New function.
