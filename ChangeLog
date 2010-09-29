@@ -1,3 +1,9 @@
+2010-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp.c: Define two Greek characters that seem to be missing from
+	Debian Lenny ucs LaTeX package. Adapted from commit r9065 by Matthew
+	Mundell.
+
 2010-09-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Backporting patch r9026 from trunk by Matthew Mundell.
