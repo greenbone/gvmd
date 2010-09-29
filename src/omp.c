@@ -13287,7 +13287,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("get_system_reports",
                                                "system report",
-                                               get_targets_data->target_id,
+                                               get_system_reports_data->name,
                                                write_to_client,
                                                write_to_client_data))
                   {
@@ -13296,11 +13296,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
                 break;
               case 2:
-                if (send_find_error_to_client ("get_system_reports",
-                                               "slave",
-                                               get_system_reports_data->slave_id,
-                                               write_to_client,
-                                               write_to_client_data))
+                if (send_find_error_to_client
+                     ("get_system_reports",
+                      "slave",
+                      get_system_reports_data->slave_id,
+                      write_to_client,
+                      write_to_client_data))
                   {
                     error_send_to_client (error);
                     return;

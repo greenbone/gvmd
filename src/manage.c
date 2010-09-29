@@ -2541,7 +2541,8 @@ get_slave_system_report_types (const char *required_type, gchar ***start,
  * @param[out]  start          Actual start of types, which caller must free.
  * @param[out]  slave_id       ID of slave.
  *
- * @return 0 if successful, 2 failed to find slave, -1 otherwise.
+ * @return 0 if successful, 1 failed to find report type, 2 failed to find
+ *         slave, -1 otherwise.
  */
 static int
 get_system_report_types (const char *required_type, gchar ***start,
@@ -2613,12 +2614,14 @@ get_system_report_types (const char *required_type, gchar ***start,
       if (required_type)
         {
           /* Failed to find the single given type. */
+          g_free (astdout);
+          g_free (astderr);
           g_strfreev (*types);
-          *start = *types = NULL;
+          return 1;
         }
     }
   else
-    *start = *types = NULL;
+    *start = *types = g_malloc0 (sizeof (gchar*));
 
   g_free (astdout);
   g_free (astderr);
@@ -2634,16 +2637,19 @@ get_system_report_types (const char *required_type, gchar ***start,
  * @param[in]  type        Single report type to iterate over, NULL for all.
  * @param[in]  slave_id    ID of slave to get reports from.  0 for local.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, 1 failed to find report type, 2 failed to find slave,
+ *         -1 on error.
  */
 int
 init_system_report_type_iterator (report_type_iterator_t* iterator,
                                   const char* type,
                                   const char* slave_id)
 {
-  if (get_system_report_types (type, &iterator->start, &iterator->current,
-                               slave_id))
-    return -1;
+  int ret;
+  ret = get_system_report_types (type, &iterator->start, &iterator->current,
+                                 slave_id);
+  if (ret)
+    return ret;
   iterator->current--;
   return 0;
 }

@@ -1,3 +1,17 @@
+2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Ensure GET_SYSTEM_REPORTS responds properly when the given type is
+	missing.
+
+	* src/manage.c (get_system_report_types): Return 1 on failure to find
+	report.  Always init types args when getting all reports.
+	(init_system_report_type_iterator): Add fail returns.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SYSTEM_REPORTS
+	correct error response variable and bring line width in range.
+
 2010-09-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Extend GET_SYSTEM_REPORTS for getting slave system reports.
