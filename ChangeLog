@@ -1,5 +1,15 @@
 2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a param to the Pie chart, as an example.
+
+	* report_formats/simple_pie_chart/create_report_import: Add "Width" param.
+
+	* report_formats/simple_pie_chart/generate: Pipe error output to files.
+
+	* report_formats/simple_pie_chart/pieplot.xsl: Respect "Width" param.
+
+2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Ensure GET_SYSTEM_REPORTS responds properly when the given type is
 	missing.
 

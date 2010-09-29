@@ -45,7 +45,7 @@ data = [("High (<xsl:value-of select="count (report/results/result[threat='High'
         ("Low (<xsl:value-of select="count (report/results/result[threat='Low'])"/>)",
          <xsl:value-of select="count (report/results/result[threat='Low'])"/>)]
 
-ar = area.T(size=(300,300), legend=None,
+ar = area.T(size=(<xsl:value-of select="report/report_format/param[name='Width']/value"/>,<xsl:value-of select="report/report_format/param[name='Width']/value"/>), legend=None,
             x_grid_style = None, y_grid_style = None)
 
 # The "High" element is pulled out of the pie with offset=10

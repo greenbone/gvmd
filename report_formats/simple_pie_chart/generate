@@ -12,7 +12,7 @@
 #
 # Authors:
 # Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
-# 
+#
 # Copyright:
 # Copyright (C) 2010 Greenbone Networks GmbH
 #
@@ -33,6 +33,6 @@
 SRC=`pwd`
 TMP=`mktemp -d` || exit 1
 
-xsltproc ./pieplot.xsl $1 > ${TMP}/pieplot.py 2>/dev/null \
+xsltproc ./pieplot.xsl $1 > ${TMP}/pieplot.py 2>${TMP}/xlstproc.err \
  && cd ${TMP} 2>/dev/null \
- && python pieplot.py 2>/dev/null
+ && python pieplot.py 2>${TMP}/python.err
