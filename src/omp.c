@@ -1911,6 +1911,8 @@ modify_report_data_reset (modify_report_data_t *data)
 typedef struct
 {
   char *name;                 ///< Name.
+  char *param_name;           ///< Param name.
+  char *param_value;          ///< Param value.
   char *report_format_id;     ///< ID of report format to modify.
   char *summary;              ///< Summary.
 } modify_report_format_data_t;
@@ -1924,6 +1926,8 @@ static void
 modify_report_format_data_reset (modify_report_format_data_t *data)
 {
   free (data->name);
+  free (data->param_name);
+  free (data->param_value);
   free (data->report_format_id);
   free (data->summary);
 
@@ -2876,6 +2880,9 @@ typedef enum
   CLIENT_MODIFY_REPORT_FORMAT,
   CLIENT_MODIFY_REPORT_FORMAT_NAME,
   CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
+  CLIENT_MODIFY_REPORT_FORMAT_PARAM,
+  CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME,
+  CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE,
   CLIENT_MODIFY_CONFIG,
   CLIENT_MODIFY_CONFIG_PREFERENCE,
   CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
@@ -5100,6 +5107,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_NAME);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
+        else if (strcasecmp ("PARAM", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
         else
           {
             if (send_element_error_to_client ("modify_report_format",
@@ -5116,6 +5125,46 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME);
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
+        else
+          {
+            if (send_element_error_to_client ("modify_report_format",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
+        if (send_element_error_to_client ("modify_report_format",
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -9513,6 +9562,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (modify_report_format_data->summary)
                 set_report_format_summary (report_format,
                                            modify_report_format_data->summary);
+              if (modify_report_format_data->param_name)
+                set_report_format_param
+                 (report_format,
+                  modify_report_format_data->param_name,
+                  modify_report_format_data->param_value);
               SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
             }
         }
@@ -9526,6 +9580,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
         assert (strcasecmp ("SUMMARY", element_name) == 0);
         set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM:
+        assert (strcasecmp ("PARAM", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
+        assert (strcasecmp ("VALUE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM);
         break;
 
       case CLIENT_MODIFY_TASK:
@@ -14493,6 +14559,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_REPORT_FORMAT_SUMMARY:
         openvas_append_text (&modify_report_format_data->summary,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
+        openvas_append_text (&modify_report_format_data->param_name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
+        openvas_append_text (&modify_report_format_data->param_value,
                              text,
                              text_len);
         break;

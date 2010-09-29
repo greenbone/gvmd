@@ -1,5 +1,19 @@
 2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add PARAM to OMP MODIFY_REPORT_FORMAT.
+
+	* src/manage_sql.c (set_report_format_param): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (modify_report_format_data_t)
+	(modify_report_format_data_reset, client_state_t): Add param name and
+	value.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_REPORT_FORMAT PARAM handling.
+
+2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_format): Remove params too.
 
 2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>

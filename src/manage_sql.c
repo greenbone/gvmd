@@ -19244,7 +19244,7 @@ report_format_active (report_format_t report_format)
  * @brief Set the summary of the report format.
  *
  * @param[in]  report_format  The report format.
- * @param[in]  summary           Summary.
+ * @param[in]  summary        Summary.
  */
 void
 set_report_format_summary (report_format_t report_format, const char *summary)
@@ -19254,6 +19254,42 @@ set_report_format_summary (report_format_t report_format, const char *summary)
        quoted_summary,
        report_format);
   g_free (quoted_summary);
+}
+
+/**
+ * @brief Set the value of the report format param.
+ *
+ * @param[in]  report_format  The report format.
+ * @param[in]  name           Param name.
+ * @param[in]  value_64       Param value in base64.
+ */
+void
+set_report_format_param (report_format_t report_format, const char *name,
+                         const char *value_64)
+{
+  gchar *quoted_name, *quoted_value, *value;
+  gsize value_size;
+
+  quoted_name = sql_quote (name);
+
+  if (strlen (value_64))
+    value = (gchar*) g_base64_decode (value_64, &value_size);
+  else
+    {
+      value = g_strdup ("");
+      value_size = 0;
+    }
+  quoted_value = sql_quote (value);
+  g_free (value);
+
+  sql ("UPDATE report_format_params SET value = '%s'"
+       " WHERE report_format = %llu AND name = '%s';",
+       quoted_value,
+       report_format,
+       quoted_name);
+
+  g_free (quoted_name);
+  g_free (quoted_value);
 }
 
 /**

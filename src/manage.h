@@ -1486,6 +1486,9 @@ set_report_format_name (report_format_t, const char *);
 void
 set_report_format_summary (report_format_t, const char *);
 
+void
+set_report_format_param (report_format_t, const char *, const char *);
+
 int
 report_format_global (report_format_t);
 
