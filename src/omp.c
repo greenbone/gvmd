@@ -1910,6 +1910,7 @@ modify_report_data_reset (modify_report_data_t *data)
  */
 typedef struct
 {
+  char *active;               ///< Boolean.  Whether report format is active.
   char *name;                 ///< Name.
   char *param_name;           ///< Param name.
   char *param_value;          ///< Param value.
@@ -1925,6 +1926,7 @@ typedef struct
 static void
 modify_report_format_data_reset (modify_report_format_data_t *data)
 {
+  free (data->active);
   free (data->name);
   free (data->param_name);
   free (data->param_value);
@@ -2878,6 +2880,7 @@ typedef enum
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
   CLIENT_MODIFY_REPORT_FORMAT,
+  CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
   CLIENT_MODIFY_REPORT_FORMAT_NAME,
   CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
   CLIENT_MODIFY_REPORT_FORMAT_PARAM,
@@ -5103,7 +5106,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_REPORT_FORMAT:
-        if (strcasecmp ("NAME", element_name) == 0)
+        if (strcasecmp ("ACTIVE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE);
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_NAME);
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_SUMMARY);
@@ -5150,6 +5155,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
+      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME:
       case CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE:
         if (send_element_error_to_client ("modify_report_format",
@@ -9556,6 +9562,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
+              if (modify_report_format_data->active)
+                set_report_format_active
+                 (report_format,
+                  strcmp (modify_report_format_data->active, "0"));
               if (modify_report_format_data->name)
                 set_report_format_name (report_format,
                                         modify_report_format_data->name);
@@ -9572,6 +9582,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
         modify_report_format_data_reset (modify_report_format_data);
         set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
+        assert (strcasecmp ("ACTIVE", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
         break;
       case CLIENT_MODIFY_REPORT_FORMAT_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
@@ -14552,6 +14566,11 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
                              text_len);
         break;
 
+      case CLIENT_MODIFY_REPORT_FORMAT_ACTIVE:
+        openvas_append_text (&modify_report_format_data->active,
+                             text,
+                             text_len);
+        break;
       case CLIENT_MODIFY_REPORT_FORMAT_NAME:
         openvas_append_text (&modify_report_format_data->name,
                              text,

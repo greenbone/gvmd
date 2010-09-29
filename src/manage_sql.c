@@ -19163,6 +19163,25 @@ report_format_uuid (report_format_t report_format)
 }
 
 /**
+ * @brief Set the active flag of a report format.
+ *
+ * @param[in]  report_format  The report format.
+ * @param[in]  active         Active flag.
+ */
+void
+set_report_format_active (report_format_t report_format, int active)
+{
+  if (active)
+    sql ("UPDATE report_formats SET flags = (flags | %llu) WHERE ROWID = %llu;",
+         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+         report_format);
+  else
+    sql ("UPDATE report_formats SET flags = (flags & ~ %llu) WHERE ROWID = %llu;",
+         (long long int) REPORT_FORMAT_FLAG_ACTIVE,
+         report_format);
+}
+
+/**
  * @brief Return the name of a report format.
  *
  * @param[in]  report_format  Report format.

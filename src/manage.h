@@ -1477,6 +1477,9 @@ verify_report_format (report_format_t);
 char *
 report_format_uuid (report_format_t);
 
+void
+set_report_format_active (report_format_t, int);
+
 char *
 report_format_name (report_format_t);
 
