@@ -1,5 +1,9 @@
 2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format): Remove params too.
+
+2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add a param to the Pie chart, as an example.
 
 	* report_formats/simple_pie_chart/create_report_import: Add "Width" param.

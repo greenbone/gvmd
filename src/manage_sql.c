@@ -18998,6 +18998,9 @@ delete_report_format (report_format_t report_format)
   g_free (dir);
 
   sql ("DELETE FROM report_formats WHERE ROWID = %llu;", report_format);
+  sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
+       report_format);
+
   sql ("COMMIT;");
 
   return 0;
