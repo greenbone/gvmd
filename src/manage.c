@@ -3191,6 +3191,58 @@ manage_schedule (int (*fork_connection) (int *,
 /* Report formats. */
 
 /**
+ * @brief Get the name of a report format param type.
+ *
+ * @param[in]  type  Param type.
+ *
+ * @return The name of the param type.
+ */
+const char *
+report_format_param_type_name (report_format_param_type_t type)
+{
+  switch (type)
+    {
+      case REPORT_FORMAT_PARAM_TYPE_BOOLEAN:
+        return "boolean";
+      case REPORT_FORMAT_PARAM_TYPE_INTEGER:
+        return "integer";
+      case REPORT_FORMAT_PARAM_TYPE_SELECTION:
+        return "selection";
+      case REPORT_FORMAT_PARAM_TYPE_STRING:
+        return "string";
+      case REPORT_FORMAT_PARAM_TYPE_TEXT:
+        return "text";
+      default:
+        assert (0);
+      case REPORT_FORMAT_PARAM_TYPE_ERROR:
+        return "ERROR";
+    }
+}
+
+/**
+ * @brief Get a report format param type from a name.
+ *
+ * @param[in]  name  Param type name.
+ *
+ * @return The param type.
+ */
+report_format_param_type_t
+report_format_param_type_from_name (const char *name)
+{
+  if (strcmp (name, "boolean") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_BOOLEAN;
+  if (strcmp (name, "integer") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_INTEGER;
+  if (strcmp (name, "selection") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_SELECTION;
+  if (strcmp (name, "string") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_STRING;
+  if (strcmp (name, "text") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_TEXT;
+  return REPORT_FORMAT_PARAM_TYPE_ERROR;
+}
+
+/**
  * @brief Return whether a name is a backup file name.
  *
  * @return 0 if normal file name, 1 if backup file name.

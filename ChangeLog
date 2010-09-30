@@ -1,3 +1,47 @@
+2010-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add report format param types.  Hence increase database version to 32.
+	Add database migration from version 31 to 32.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 32.
+
+	* src/manage_sql.c (create_tables): Add report_format_param_options table.
+	Add type column to report_format_params table.
+	(migrate_31_to_32): New function.
+	(database_migrators): Add migrate_31_to_32.
+	(create_report_format): Add params_options arg.
+	(set_report_format_param): Add value_64 NULL guard.
+	(init_report_format_param_iterator): Add type.
+	(report_format_param_iterator_param)
+	(report_format_param_iterator_type_name)
+	(report_format_param_iterator_type, init_param_option_iterator)
+	(param_option_iterator_value): New function.
+
+	* src/manage.c (report_format_param_type_name)
+	(report_format_param_type_from_name): New functions.
+
+	* src/manage.h: Update headers accordingly.
+	(report_format_param_t, report_format_param_type_t): New types.
+
+	* src/manage_sql.h (rowid_t): New type.
+
+	* src/omp.c (create_report_format_data_t)
+	(create_report_format_data_reset, client_state_t): Add param option
+	entries.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	OPTIONS/OPTION handling to CREATE_REPORT_FORMAT/REPORT_FORMAT/PARAM.
+	Add options to GET_REPORT_FORMATS response.
+
+	* report_formats/simple_bar_chart/create_report_import: Neaten name.
+	Switch to XSL plot file.  Add a report param of each types.
+
+	* report_formats/simple_bar_chart/generate: Generate the plot file too,
+	in order to access the report format params.
+
+	* report_formats/simple_bar_chart/plot.plt: Remove.  Replaced with XSL.
+
+	* report_formats/simple_bar_chart/plot-plt.xsl: New file.
+
 2010-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add ACTIVE to OMP MODIFY_REPORT_FORMAT.

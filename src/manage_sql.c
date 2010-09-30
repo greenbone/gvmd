@@ -790,7 +790,8 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
@@ -3668,6 +3669,40 @@ migrate_30_to_31 ()
 }
 
 /**
+ * @brief Migrate the database from version 31 to version 32.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_31_to_32 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 31. */
+
+  if (manage_db_version () != 31)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report_format_params table got a type colum. */
+
+  sql ("ALTER TABLE report_format_params ADD column type INTEGER;");
+  sql ("UPDATE report_format_params SET type = 3;");
+
+  /* Set the database version to 32. */
+
+  set_db_version (32);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -3703,6 +3738,7 @@ static migrator_t database_migrators[]
     {29, migrate_28_to_29},
     {30, migrate_29_to_30},
     {31, migrate_30_to_31},
+    {32, migrate_31_to_32},
     /* End marker. */
     {-1, NULL}};
 
@@ -18687,6 +18723,9 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @param[in]   params         Array of memory.  Each item is a param name
  *                             string, a terminating NULL, the param value
  *                             and a terminating NULL.
+ * @param[in]   params_options Array.  Each item is an array corresponding to
+ *                             params.  Each item of an inner array is a string,
+ *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
@@ -18696,8 +18735,8 @@ int
 create_report_format (const char *uuid, const char *name,
                       const char *content_type, const char *extension,
                       const char *summary, const char *description, int global,
-                      array_t *files, array_t *params, const char *signature,
-                      report_format_t *report_format)
+                      array_t *files, array_t *params, array_t *params_options,
+                      const char *signature, report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir, *param_name;
@@ -18737,10 +18776,30 @@ create_report_format (const char *uuid, const char *name,
 
       index = 0;
       while ((param_name = (gchar*) g_ptr_array_index (params, index++)))
-        g_string_append_printf (format,
-                                "%s%s",
-                                param_name,
-                                param_name + strlen (param_name) + 1);
+        {
+          const gchar *param_type;
+
+          param_type = param_name + strlen (param_name) + 1;
+          g_string_append_printf (format,
+                                  "%s%s%s",
+                                  param_name,
+                                  param_type,
+                                  param_type + strlen (param_type) + 1);
+
+          {
+            array_t *options;
+            int option_index;
+            gchar *option_value;
+
+            options = (array_t*) g_ptr_array_index (params_options, index - 1);
+            if (options == NULL)
+              return -1;
+            option_index = 0;
+            while ((option_value = (gchar*) g_ptr_array_index (options,
+                                                               option_index++)))
+              g_string_append_printf (format, "%s", option_value);
+          }
+        }
 
       g_string_append_printf (format, "\n");
 
@@ -18927,22 +18986,56 @@ create_report_format (const char *uuid, const char *name,
   index = 0;
   while ((param_name = (gchar*) g_ptr_array_index (params, index++)))
     {
-      gchar *param, *quoted_param_name, *quoted_param_value;
+      gchar *param, *type, *quoted_param_name, *quoted_param_value;
+      GString *option_string;
+      rowid_t param_rowid;
 
-      param = param_name + strlen (param_name) + 1;
+      option_string = g_string_new ("");
+
+      type = param_name + strlen (param_name) + 1;
+      param = type + strlen (type) + 1;
 
       quoted_param_name = sql_quote (param_name);
       quoted_param_value = sql_quote (param);
 
       sql ("INSERT INTO report_format_params"
-           " (report_format, name, value)"
-           " VALUES (%llu, '%s', '%s');",
+           " (report_format, name, type, value)"
+           " VALUES (%llu, '%s', %u, '%s');",
            report_format_rowid,
            quoted_param_name,
+           report_format_param_type_from_name (type),
            quoted_param_value);
 
       g_free (quoted_param_name);
       g_free (quoted_param_value);
+
+      param_rowid = sqlite3_last_insert_rowid (task_db);
+
+      {
+        array_t *options;
+        int option_index;
+        gchar *option_value;
+
+        options = (array_t*) g_ptr_array_index (params_options, index - 1);
+        if (options == NULL)
+          {
+            sql ("ROLLBACK;");
+            return -1;
+          }
+        option_index = 0;
+        while ((option_value = (gchar*) g_ptr_array_index (options,
+                                                           option_index++)))
+          {
+            gchar *quoted_option_value = sql_quote (option_value);
+            sql ("INSERT INTO report_format_param_options"
+                 " (report_format_param, value)"
+                 " VALUES (%llu, '%s');",
+                 param_rowid,
+                 quoted_option_value);
+            g_free (quoted_option_value);
+          }
+      }
+
     }
 
   if (report_format)
@@ -19291,7 +19384,7 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   quoted_name = sql_quote (name);
 
-  if (strlen (value_64))
+  if (value_64 && strlen (value_64))
     value = (gchar*) g_base64_decode (value_64, &value_size);
   else
     {
@@ -19514,7 +19607,7 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
 {
   if (report_format)
     init_iterator (iterator,
-                   "SELECT ROWID, name, value"
+                   "SELECT ROWID, name, value, type"
                    " FROM report_format_params"
                    " WHERE report_format = %llu"
                    " ORDER BY %s %s;",
@@ -19523,11 +19616,25 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, name, value"
+                   "SELECT ROWID, name, value, type"
                    " FROM report_format_params"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "ROWID",
                    ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the report format param from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Report format param.
+ */
+report_format_param_t
+report_format_param_iterator_param (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (report_format_param_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
 /**
@@ -19549,6 +19656,67 @@ DEF_ACCESS (report_format_param_iterator_name, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (report_format_param_iterator_value, 2);
+
+/**
+ * @brief Get the name of the type of a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Static string naming type, or NULL if iteration is complete.
+ */
+const char *
+report_format_param_iterator_type_name (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return report_format_param_type_name (sqlite3_column_int (iterator->stmt, 3));
+}
+
+/**
+ * @brief Get the type from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type.
+ */
+report_format_param_type_t
+report_format_param_iterator_type (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int (iterator->stmt, 3);
+}
+
+/**
+ * @brief Initialise a report format param option iterator.
+ *
+ * @param[in]  iterator             Iterator.
+ * @param[in]  report_foramt_param  Param whose options to iterate over.
+ * @param[in]  ascending            Whether to sort ascending or descending.
+ * @param[in]  sort_field           Field to sort on, or NULL for "ROWID".
+ */
+void
+init_param_option_iterator (iterator_t* iterator,
+                            report_format_param_t report_format_param,
+                            int ascending, const char *sort_field)
+{
+  init_iterator (iterator,
+                 "SELECT ROWID, value"
+                 " FROM report_format_param_options"
+                 " WHERE report_format_param = %llu"
+                 " ORDER BY %s %s;",
+                 report_format_param,
+                 sort_field ? sort_field : "ROWID",
+                 ascending ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Get the value from a report format param option iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (param_option_iterator_value, 1);
 
 
 /* Slaves. */

@@ -28,6 +28,8 @@
 
 #include "manage.h"
 
+typedef long long int rowid_t;
+
 void trim_report (report_t);
 
 int delete_report (report_t);

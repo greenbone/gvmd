@@ -164,6 +164,7 @@ typedef long long int task_t;
 typedef long long int result_t;
 typedef long long int report_t;
 typedef long long int report_format_t;
+typedef long long int report_format_param_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
 typedef long long int override_t;
@@ -1466,7 +1467,7 @@ lookup_report_format (const char*, report_format_t*);
 int
 create_report_format (const char *, const char *, const char *, const char *,
                       const char *, const char *, int, array_t *, array_t *,
-                      const char *, report_format_t *);
+                      array_t *, const char *, report_format_t *);
 
 int
 delete_report_format (report_format_t);
@@ -1562,15 +1563,53 @@ file_iterator_name (file_iterator_t*);
 gchar*
 file_iterator_content_64 (file_iterator_t*);
 
+/**
+ * @brief Report format param types.
+ *
+ * These numbers are used in the database, so if the number associated with
+ * any symbol changes then a migrator must be added to update existing data.
+ */
+typedef enum
+{
+  REPORT_FORMAT_PARAM_TYPE_BOOLEAN = 0,
+  REPORT_FORMAT_PARAM_TYPE_INTEGER = 1,
+  REPORT_FORMAT_PARAM_TYPE_SELECTION = 2,
+  REPORT_FORMAT_PARAM_TYPE_STRING = 3,
+  REPORT_FORMAT_PARAM_TYPE_TEXT = 4,
+  REPORT_FORMAT_PARAM_TYPE_ERROR = 100
+} report_format_param_type_t;
+
+const char *
+report_format_param_type_name (report_format_param_type_t);
+
+report_format_param_type_t
+report_format_param_type_from_name (const char *);
+
 void
 init_report_format_param_iterator (iterator_t*, report_format_t, int,
                                    const char*);
+
+report_format_param_t
+report_format_param_iterator_param (iterator_t*);
 
 const char*
 report_format_param_iterator_name (iterator_t *);
 
 const char*
 report_format_param_iterator_value (iterator_t *);
+
+const char*
+report_format_param_iterator_type_name (iterator_t *);
+
+report_format_param_type_t
+report_format_param_iterator_type (iterator_t *);
+
+void
+init_param_option_iterator (iterator_t*, report_format_param_t, int,
+                            const char *);
+
+const char*
+param_option_iterator_value (iterator_t *);
 
 
 /* Slaves. */

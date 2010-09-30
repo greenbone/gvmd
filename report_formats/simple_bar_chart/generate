@@ -8,11 +8,11 @@
 # with a plot of the numbers of threat counts.
 # After the XML transformation via XSL with
 # xsltproc, gnuplot is executed with a predefined
-# plot file. 
+# plot file.
 #
 # Authors:
 # Matthew Mundell <matthew.mundell@greenbone.net>
-# 
+#
 # Copyright:
 # Copyright (C) 2010 Greenbone Networks GmbH
 #
@@ -33,6 +33,7 @@
 SRC=`pwd`
 TMP=`mktemp -d` || exit 1
 
-xsltproc ./plot.xsl $1 > ${TMP}/plot.dat 2>/dev/null \
+xsltproc ./plot.xsl $1 > ${TMP}/plot.dat 2>xsltproc1.err \
+ && xsltproc ./plot-plt.xsl $1 > ${TMP}/plot.plt 2>xsltproc2.err \
  && cd ${TMP} 2>/dev/null \
- && gnuplot "${SRC}/plot.plt" 2>/dev/null
+ && gnuplot plot.plt 2>gnuplot.err
