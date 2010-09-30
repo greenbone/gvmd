@@ -1,5 +1,10 @@
 2010-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (escalate_1): Cast format length specifier to int for
+	64 bit.
+
+2010-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add report format param types.  Hence increase database version to 32.
 	Add database migration from version 31 to 32.
 

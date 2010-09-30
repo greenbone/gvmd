@@ -4824,8 +4824,10 @@ escalate_1 (escalator_t escalator, task_t task, event_t event,
                                           event_desc,
                                           condition_desc,
                                           format_name,
-                                          MIN (content_length,
-                                               MAX_CONTENT_LENGTH),
+                                          /* Cast for 64 bit.  Safe because
+                                           * MAX_CONTENT_LENGTH is small. */
+                                          (int) MIN (content_length,
+                                                     MAX_CONTENT_LENGTH),
                                           report_content,
                                           ((content_length > MAX_CONTENT_LENGTH)
                                             ? "\n... (report truncated after"
