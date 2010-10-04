@@ -1,3 +1,8 @@
+2010-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (migrate_31_to_32): Ensure table report_format_params
+	exists.
+
 2010-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_1): Cast format length specifier to int for

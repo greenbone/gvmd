@@ -3688,6 +3688,11 @@ migrate_31_to_32 ()
 
   /* Update the database. */
 
+  /* Ensure that the report_format_params table exists. */
+
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params"
+       " (id INTEGER PRIMARY KEY, report_format, name, value);");
+
   /* The report_format_params table got a type colum. */
 
   sql ("ALTER TABLE report_format_params ADD column type INTEGER;");
