@@ -11117,7 +11117,7 @@ create_target (const char* name, const char* hosts, const char* comment,
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, comment, lsc_credential)"
-         " VALUES (make_uuid, '%s',"
+         " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          " '%s', '', %llu);",
          quoted_name, current_credentials.uuid, quoted_hosts, lsc_credential);
@@ -19098,6 +19098,9 @@ delete_report_format (report_format_t report_format)
   g_free (dir);
 
   sql ("DELETE FROM report_formats WHERE ROWID = %llu;", report_format);
+  sql ("DELETE FROM report_format_param_options WHERE report_format_param"
+       " IN (SELECT ROWID from report_format_params WHERE report_format = %llu);",
+       report_format);
   sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
        report_format);
 

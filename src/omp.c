@@ -11385,9 +11385,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
-          assert (&create_target_data->name != NULL);
-          assert (&create_target_data->target_locator
-                  || &create_target_data->hosts != NULL);
+          assert (create_target_data->name != NULL);
+          assert (create_target_data->target_locator
+                  || create_target_data->hosts != NULL);
 
           if (strlen (create_target_data->name) == 0)
             SEND_TO_CLIENT_OR_FAIL

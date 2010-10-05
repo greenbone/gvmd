@@ -1,3 +1,11 @@
+2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_target): Add missing arg list in SQL.
+	(delete_report_format): Remove param options too.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET make the
+	assertions about the values instead of the addresses.
+
 2010-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (migrate_31_to_32): Ensure table report_format_params
