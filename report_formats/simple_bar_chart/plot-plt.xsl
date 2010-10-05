@@ -11,7 +11,7 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: Stylesheet for generating results per threat data for Gnuplot.
+Description: Stylesheet for generating results per threat code for Gnuplot.
 
 Authors:
 Matthew Mundell <matthew.mundell@greenbone.net>

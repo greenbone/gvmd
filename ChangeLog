@@ -1,5 +1,12 @@
 2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* report_formats/simple_bar_chart/create_report_import: Add example MINs,
+	MAXes and DEFAULT.
+
+	* report_formats/simple_bar_chart/plot-plt.xsl: Correct description.
+
+2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add report format param defaults and validation.  Hence increase database
 	version to 33.  Add database migration from version 32 to 33.
 
