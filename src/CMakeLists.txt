@@ -24,7 +24,7 @@
 
 ## Config
 
-add_definitions (-Werror)
+add_definitions (-Werror -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE)
 
 message (STATUS "Looking for sqlite3...")
 find_library (SQLITE3 sqlite3)

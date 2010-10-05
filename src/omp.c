@@ -914,11 +914,14 @@ typedef struct
   int import;             ///< Boolean.  Whether to import a format.
   char *name;             ///< Name.
   char *param_value;      ///< Param value during ...GRFR_REPORT_FORMAT_PARAM.
+  char *param_default;    ///< Default value for above param.
   char *param_name;       ///< Name of above param.
   char *param_option;     ///< Current option of above param.
   array_t *param_options; ///< Options for above param.
   array_t *params_options; ///< Options for all params.
   char *param_type;       ///< Type of above param.
+  char *param_type_min;   ///< Min qualifier of above type.
+  char *param_type_max;   ///< Max qualifier of above type.
   array_t *params;        ///< All params.
   char *signature;        ///< Signature.
   char *summary;          ///< Summary.
@@ -941,6 +944,7 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->global);
   free (data->id);
   free (data->name);
+  free (data->param_default);
   free (data->param_name);
 
   {
@@ -955,6 +959,8 @@ create_report_format_data_reset (create_report_format_data_t *data)
   }
 
   free (data->param_type);
+  free (data->param_type_min);
+  free (data->param_type_max);
   free (data->param_value);
   array_free (data->params);
   free (data->summary);
@@ -2814,10 +2820,13 @@ typedef enum
   CLIENT_CRF_GRFR_REPORT_FORMAT_GLOBAL,
   CLIENT_CRF_GRFR_REPORT_FORMAT_NAME,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX,
+  CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN,
   CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SIGNATURE,
   CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY,
@@ -5981,7 +5990,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
-        if (strcasecmp ("NAME", element_name) == 0)
+        if (strcasecmp ("DEFAULT", element_name) == 0)
+          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT);
+        else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME);
         else if (strcasecmp ("OPTIONS", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
@@ -6033,8 +6044,39 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         break;
 
-      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
+        if (strcasecmp ("MAX", element_name) == 0)
+          {
+            set_client_state
+             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX);
+          }
+        else if (strcasecmp ("MIN", element_name) == 0)
+          {
+            set_client_state
+             (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN);
+          }
+        else
+          {
+            if (send_element_error_to_client ("create_report_format",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE:
         if (send_element_error_to_client ("create_report_format",
                                           element_name,
@@ -8661,16 +8703,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         NULL);
                       while (next (&params))
                         {
+                          long long int min, max;
                           iterator_t options;
 
                           SENDF_TO_CLIENT_OR_FAIL
                            ("<param>"
                             "<name>%s</name>"
-                            "<type>%s</type>"
-                            "<value>%s</value>",
+                            "<type>%s",
                             report_format_param_iterator_name (&params),
-                            report_format_param_iterator_type_name (&params),
-                            report_format_param_iterator_value (&params));
+                            report_format_param_iterator_type_name (&params));
+
+                          min = report_format_param_iterator_type_min (&params);
+                          if (min > LLONG_MIN)
+                            SENDF_TO_CLIENT_OR_FAIL ("<min>%lli</min>", min);
+
+                          max = report_format_param_iterator_type_max (&params);
+                          if (max < LLONG_MAX)
+                            SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
+
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("</type>"
+                            "<value>%s</value>"
+                            "<default>%s</default>",
+                            report_format_param_iterator_value (&params),
+                            report_format_param_iterator_fallback (&params));
 
                           if (report_format_param_iterator_type (&params)
                               == REPORT_FORMAT_PARAM_TYPE_SELECTION)
@@ -9656,11 +9712,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 set_report_format_summary (report_format,
                                            modify_report_format_data->summary);
               if (modify_report_format_data->param_name)
-                set_report_format_param
-                 (report_format,
-                  modify_report_format_data->param_name,
-                  modify_report_format_data->param_value);
-              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
+                {
+                  switch (set_report_format_param
+                           (report_format,
+                            modify_report_format_data->param_name,
+                            modify_report_format_data->param_value))
+                    {
+                      case 0:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_OK ("modify_report_format"));
+                        break;
+                      case 1:
+                        if (send_find_error_to_client
+                             ("modify_report_format",
+                              "param",
+                              modify_report_format_data->param_name,
+                              write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        break;
+                      case 2:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("modify_report_format",
+                                            "Parameter validation failed"));
+                        break;
+                      default:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("modify_report_format"));
+                        break;
+                    }
+                }
+              else
+                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
             }
         }
         modify_report_format_data_reset (modify_report_format_data);
@@ -10988,6 +11074,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
                            "Report format could not be created");
                     break;
+                  case 3:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "Parameter value validation failed"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
+                  case 4:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "Parameter default validation failed"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
                   default:
                     {
                       char *uuid = report_format_uuid (new_report_format);
@@ -11061,7 +11161,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
         {
-          gchar *string;
+          create_report_format_param_t *param;
 
           assert (strcasecmp ("PARAM", element_name) == 0);
           assert (create_report_format_data->params);
@@ -11069,19 +11169,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_report_format_data->param_type);
           assert (create_report_format_data->param_value);
 
-          string = g_strconcat (create_report_format_data->param_name,
-                                "0",
-                                create_report_format_data->param_type,
-                                "0",
-                                create_report_format_data->param_value,
-                                NULL);
-          string[strlen (create_report_format_data->param_name)] = '\0';
-          string[strlen (create_report_format_data->param_name)
-                 + 1
-                 + strlen (create_report_format_data->param_type)] = '\0';
-          array_add (create_report_format_data->params, string);
+          param = g_malloc (sizeof (*param));
+          param->fallback
+           = create_report_format_data->param_default
+              ? g_strdup (create_report_format_data->param_default)
+              : g_strdup (create_report_format_data->param_value);
+          param->name = g_strdup (create_report_format_data->param_name);
+          param->type = g_strdup (create_report_format_data->param_type);
+          param->type_max
+           = create_report_format_data->param_type_max
+              ? g_strdup (create_report_format_data->param_type_max)
+              : g_strdup_printf ("%lli", LLONG_MAX);
+          param->type_min
+           = create_report_format_data->param_type_min
+              ? g_strdup (create_report_format_data->param_type_min)
+              : g_strdup_printf ("%lli", LLONG_MIN);
+          param->value = g_strdup (create_report_format_data->param_value);
+
+          array_add (create_report_format_data->params, param);
+          openvas_free_string_var (&create_report_format_data->param_default);
           openvas_free_string_var (&create_report_format_data->param_name);
           openvas_free_string_var (&create_report_format_data->param_type);
+          openvas_free_string_var (&create_report_format_data->param_type_max);
+          openvas_free_string_var (&create_report_format_data->param_type_min);
           openvas_free_string_var (&create_report_format_data->param_value);
 
           array_terminate (create_report_format_data->param_options);
@@ -11091,6 +11201,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT);
           break;
         }
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
+        assert (strcasecmp ("DEFAULT", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
+        break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
         assert (strcasecmp ("NAME", element_name) == 0);
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
@@ -11126,6 +11240,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    create_report_format_data->param_option);
         create_report_format_data->param_option = NULL;
         set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
+        break;
+
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
+        assert (strcasecmp ("MAX", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
+        assert (strcasecmp ("MIN", element_name) == 0);
+        set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
         break;
 
       case CLIENT_CREATE_SCHEDULE:
@@ -14931,6 +15054,11 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CRF_GRFR_REPORT_FORMAT_NAME:
         openvas_append_text (&create_report_format_data->name, text, text_len);
         break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT:
+        openvas_append_text (&create_report_format_data->param_default,
+                             text,
+                             text_len);
+        break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME:
         openvas_append_text (&create_report_format_data->param_name,
                              text,
@@ -14943,6 +15071,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE:
         openvas_append_text (&create_report_format_data->param_type,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MAX:
+        openvas_append_text (&create_report_format_data->param_type_max,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE_MIN:
+        openvas_append_text (&create_report_format_data->param_type_min,
                              text,
                              text_len);
         break;

@@ -212,6 +212,10 @@ task_owner_uuid (task_t);
 static int
 insert_nvt_selectors (const char *, const array_t*);
 
+static int
+validate_param_value (report_format_t, report_format_param_t param, const char *,
+                      const char *);
+
 
 /* Variables. */
 
@@ -791,7 +795,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
-  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
@@ -3693,7 +3697,7 @@ migrate_31_to_32 ()
   sql ("CREATE TABLE IF NOT EXISTS report_format_params"
        " (id INTEGER PRIMARY KEY, report_format, name, value);");
 
-  /* The report_format_params table got a type colum. */
+  /* The report_format_params table got a type column. */
 
   sql ("ALTER TABLE report_format_params ADD column type INTEGER;");
   sql ("UPDATE report_format_params SET type = 3;");
@@ -3701,6 +3705,49 @@ migrate_31_to_32 ()
   /* Set the database version to 32. */
 
   set_db_version (32);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 32 to version 33.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+migrate_32_to_33 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 32. */
+
+  if (manage_db_version () != 32)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The report_format_params table got a few new columns. */
+
+  sql ("ALTER TABLE report_format_params ADD column type_min;");
+  sql ("UPDATE report_format_params SET type_min = %lli;", LLONG_MIN);
+
+  sql ("ALTER TABLE report_format_params ADD column type_max;");
+  sql ("UPDATE report_format_params SET type_max = %lli;", LLONG_MAX);
+
+  sql ("ALTER TABLE report_format_params ADD column type_regex;");
+  sql ("UPDATE report_format_params SET type_regex = '';");
+
+  sql ("ALTER TABLE report_format_params ADD column fallback;");
+  sql ("UPDATE report_format_params SET fallback = value;");
+
+  /* Set the database version to 33. */
+
+  set_db_version (33);
 
   sql ("COMMIT;");
 
@@ -3744,6 +3791,7 @@ static migrator_t database_migrators[]
     {30, migrate_29_to_30},
     {31, migrate_30_to_31},
     {32, migrate_31_to_32},
+    {33, migrate_32_to_33},
     /* End marker. */
     {-1, NULL}};
 
@@ -18727,16 +18775,15 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @param[in]   files          Array of memory.  Each item is a file name
  *                             string, a terminating NULL, the file contents
  *                             in base64 and a terminating NULL.
- * @param[in]   params         Array of memory.  Each item is a param name
- *                             string, a terminating NULL, the param value
- *                             and a terminating NULL.
+ * @param[in]   params         Array of params.
  * @param[in]   params_options Array.  Each item is an array corresponding to
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
- * @return 0 success, 1 report format exists, 2 empty file name, -1 error.
+ * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
+ *         validation failed, 4 param value validation failed, -1 error.
  */
 int
 create_report_format (const char *uuid, const char *name,
@@ -18746,12 +18793,13 @@ create_report_format (const char *uuid, const char *name,
                       const char *signature, report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
-  gchar *quoted_content_type, *quoted_signature, *file_name, *dir, *param_name;
+  gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
   report_format_t report_format_rowid;
   int index;
   gchar *format_signature = NULL;
   gsize format_signature_size;
   int format_trust = TRUST_UNKNOWN;
+  create_report_format_param_t *param;
 
   /* Verify the signature. */
 
@@ -18782,16 +18830,15 @@ create_report_format (const char *uuid, const char *name,
                                 file_name + strlen (file_name) + 1);
 
       index = 0;
-      while ((param_name = (gchar*) g_ptr_array_index (params, index++)))
+      while ((param
+               = (create_report_format_param_t*) g_ptr_array_index (params,
+                                                                    index++)))
         {
-          const gchar *param_type;
-
-          param_type = param_name + strlen (param_name) + 1;
           g_string_append_printf (format,
                                   "%s%s%s",
-                                  param_name,
-                                  param_type,
-                                  param_type + strlen (param_type) + 1);
+                                  param->name,
+                                  param->type,
+                                  param->value);
 
           {
             array_t *options;
@@ -18991,30 +19038,39 @@ create_report_format (const char *uuid, const char *name,
 
   report_format_rowid = sqlite3_last_insert_rowid (task_db);
   index = 0;
-  while ((param_name = (gchar*) g_ptr_array_index (params, index++)))
+  while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
+                                                                     index++)))
     {
-      gchar *param, *type, *quoted_param_name, *quoted_param_value;
+      gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
       GString *option_string;
       rowid_t param_rowid;
+      long long int min, max;
 
       option_string = g_string_new ("");
 
-      type = param_name + strlen (param_name) + 1;
-      param = type + strlen (type) + 1;
+      /* Simply truncate out of range values. */
+      min = strtoll (param->type_min, NULL, 0);
+      max = strtoll (param->type_max, NULL, 0);
 
-      quoted_param_name = sql_quote (param_name);
-      quoted_param_value = sql_quote (param);
+      quoted_param_name = sql_quote (param->name);
+      quoted_param_value = sql_quote (param->value);
+      quoted_param_fallback = sql_quote (param->fallback);
 
       sql ("INSERT INTO report_format_params"
-           " (report_format, name, type, value)"
-           " VALUES (%llu, '%s', %u, '%s');",
+           " (report_format, name, type, value, type_min, type_max, type_regex,"
+           "  fallback)"
+           " VALUES (%llu, '%s', %u, '%s', %lli, %lli, '', '%s');",
            report_format_rowid,
            quoted_param_name,
-           report_format_param_type_from_name (type),
-           quoted_param_value);
+           report_format_param_type_from_name (param->type),
+           quoted_param_value,
+           min,
+           max,
+           quoted_param_fallback);
 
       g_free (quoted_param_name);
       g_free (quoted_param_value);
+      g_free (quoted_param_fallback);
 
       param_rowid = sqlite3_last_insert_rowid (task_db);
 
@@ -19043,6 +19099,19 @@ create_report_format (const char *uuid, const char *name,
           }
       }
 
+      if (validate_param_value (report_format_rowid, param_rowid, param->name,
+                                param->value))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      if (validate_param_value (report_format_rowid, param_rowid, param->name,
+                                param->fallback))
+        {
+          sql ("ROLLBACK;");
+          return 4;
+        }
     }
 
   if (report_format)
@@ -19379,20 +19448,189 @@ set_report_format_summary (report_format_t report_format, const char *summary)
 }
 
 /**
+ * @brief Return the type max of a report format param.
+ *
+ * @param[in]  report_format  Report format.
+ * @param[in]  name           Name of param.
+ *
+ * @return Param type.
+ */
+static report_format_param_type_t
+report_format_param_type (report_format_t report_format, const char *name)
+{
+  report_format_param_type_t type;
+  gchar *quoted_name = sql_quote (name);
+  type = (report_format_param_type_t)
+         sql_int (0, 0,
+                  "SELECT type FROM report_format_params"
+                  " WHERE report_format = %llu AND name = '%s';",
+                  report_format,
+                  quoted_name);
+  g_free (quoted_name);
+  return type;
+}
+
+/**
+ * @brief Return the type max of a report format param.
+ *
+ * @param[in]  report_format  Report format.
+ * @param[in]  name           Name of param.
+ *
+ * @return Max.
+ */
+static long long int
+report_format_param_type_max (report_format_t report_format, const char *name)
+{
+  long long int max = 0;
+  gchar *quoted_name = sql_quote (name);
+  /* Assume it's there. */
+  sql_int64 (&max, 0, 0,
+             "SELECT type_max FROM report_format_params"
+             " WHERE report_format = %llu AND name = '%s';",
+             report_format,
+             quoted_name);
+  g_free (quoted_name);
+  return max;
+}
+
+/**
+ * @brief Return the type min of a report format param.
+ *
+ * @param[in]  report_format  Report format.
+ * @param[in]  name           Name of param.
+ *
+ * @return Min.
+ */
+static long long int
+report_format_param_type_min (report_format_t report_format, const char *name)
+{
+  long long int min = 0;
+  gchar *quoted_name = sql_quote (name);
+  /* Assume it's there. */
+  sql_int64 (&min, 0, 0,
+             "SELECT type_min FROM report_format_params"
+             " WHERE report_format = %llu AND name = '%s';",
+             report_format,
+             quoted_name);
+  g_free (quoted_name);
+  return min;
+}
+
+
+/**
+ * @brief Validate a value for a report format param.
+ *
+ * @param[in]  report_format  Report format.
+ * @param[in]  param          Param.
+ * @param[in]  name           Name of param.
+ * @param[in]  value          Potential value of param.
+ *
+ * @return 0 success, 1 fail.
+ */
+static int
+validate_param_value (report_format_t report_format,
+                      report_format_param_t param, const char *name,
+                      const char *value)
+{
+  switch (report_format_param_type (report_format, name))
+    {
+      case REPORT_FORMAT_PARAM_TYPE_INTEGER:
+        {
+          long long int min, max, actual;
+          min = report_format_param_type_min (report_format, name);
+          /* Simply truncate out of range values. */
+          actual = strtoll (value, NULL, 0);
+          if (actual < min)
+            return 1;
+          max = report_format_param_type_max (report_format, name);
+          if (actual > max)
+            return 1;
+        }
+        break;
+      case REPORT_FORMAT_PARAM_TYPE_SELECTION:
+        {
+          iterator_t options;
+          int found = 0;
+
+          init_param_option_iterator (&options, param, 1, NULL);
+          while (next (&options))
+            if (param_option_iterator_value (&options)
+                && (strcmp (param_option_iterator_value (&options), value)
+                    == 0))
+              {
+                found = 1;
+                break;
+              }
+          cleanup_iterator (&options);
+          if (found)
+            break;
+          return 1;
+        }
+      case REPORT_FORMAT_PARAM_TYPE_STRING:
+      case REPORT_FORMAT_PARAM_TYPE_TEXT:
+        {
+          long long int min, max, actual;
+          min = report_format_param_type_min (report_format, name);
+          actual = strlen (value);
+          if (actual < min)
+            return 1;
+          max = report_format_param_type_max (report_format, name);
+          if (actual > max)
+            return 1;
+        }
+        break;
+      default:
+        break;
+    }
+  return 0;
+}
+
+/**
  * @brief Set the value of the report format param.
  *
  * @param[in]  report_format  The report format.
  * @param[in]  name           Param name.
  * @param[in]  value_64       Param value in base64.
+ *
+ * @return 0 success, 1 failed to find param, 2 validation of value failed,
+ *         -1 error.
  */
-void
+int
 set_report_format_param (report_format_t report_format, const char *name,
                          const char *value_64)
 {
   gchar *quoted_name, *quoted_value, *value;
   gsize value_size;
+  report_format_param_t param;
 
   quoted_name = sql_quote (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  /* Ensure the param exists. */
+
+  switch (sql_int64 (&param, 0, 0,
+                     "SELECT ROWID FROM report_format_params"
+                     " WHERE name = '%s';",
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        g_free (quoted_name);
+        sql ("ROLLBACK;");
+        return 1;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        sql ("ROLLBACK;");
+        return -1;
+        break;
+    }
+
+  /* Translate the value. */
 
   if (value_64 && strlen (value_64))
     value = (gchar*) g_base64_decode (value_64, &value_size);
@@ -19401,8 +19639,20 @@ set_report_format_param (report_format_t report_format, const char *name,
       value = g_strdup ("");
       value_size = 0;
     }
+
+  /* Validate the value. */
+
+  if (validate_param_value (report_format, param, name, value))
+    {
+      sql ("ROLLBACK;");
+      g_free (quoted_name);
+      return 2;
+    }
+
   quoted_value = sql_quote (value);
   g_free (value);
+
+  /* Update the database. */
 
   sql ("UPDATE report_format_params SET value = '%s'"
        " WHERE report_format = %llu AND name = '%s';",
@@ -19412,6 +19662,10 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   g_free (quoted_name);
   g_free (quoted_value);
+
+  sql ("COMMIT;");
+
+  return 0;
 }
 
 /**
@@ -19617,7 +19871,8 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
 {
   if (report_format)
     init_iterator (iterator,
-                   "SELECT ROWID, name, value, type"
+                   "SELECT ROWID, name, value, type, type_min, type_max,"
+                   " fallback"
                    " FROM report_format_params"
                    " WHERE report_format = %llu"
                    " ORDER BY %s %s;",
@@ -19626,7 +19881,8 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT ROWID, name, value, type"
+                   "SELECT ROWID, name, value, type, type_min, type_max,"
+                   " fallback"
                    " FROM report_format_params"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "ROWID",
@@ -19694,6 +19950,44 @@ report_format_param_iterator_type (iterator_t* iterator)
   if (iterator->done) return -1;
   return sqlite3_column_int (iterator->stmt, 3);
 }
+
+/**
+ * @brief Get the type min from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type min.
+ */
+long long int
+report_format_param_iterator_type_min (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int64 (iterator->stmt, 4);
+}
+
+/**
+ * @brief Get the type max from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type max.
+ */
+long long int
+report_format_param_iterator_type_max (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int64 (iterator->stmt, 5);
+}
+
+/**
+ * @brief Get the default from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Default, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_param_iterator_fallback, 6);
 
 /**
  * @brief Initialise a report format param option iterator.

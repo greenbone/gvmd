@@ -1464,6 +1464,19 @@ find_report_format (const char*, report_format_t*);
 gboolean
 lookup_report_format (const char*, report_format_t*);
 
+/**
+ * @brief Struct for defining a report format param.
+ */
+typedef struct
+{
+  gchar *fallback;
+  gchar *name;
+  gchar *type;
+  gchar *type_max;
+  gchar *type_min;
+  gchar *value;
+} create_report_format_param_t;
+
 int
 create_report_format (const char *, const char *, const char *, const char *,
                       const char *, const char *, int, array_t *, array_t *,
@@ -1490,7 +1503,7 @@ set_report_format_name (report_format_t, const char *);
 void
 set_report_format_summary (report_format_t, const char *);
 
-void
+int
 set_report_format_param (report_format_t, const char *, const char *);
 
 int
@@ -1603,6 +1616,15 @@ report_format_param_iterator_type_name (iterator_t *);
 
 report_format_param_type_t
 report_format_param_iterator_type (iterator_t *);
+
+long long int
+report_format_param_iterator_type_min (iterator_t *);
+
+long long int
+report_format_param_iterator_type_max (iterator_t *);
+
+const char*
+report_format_param_iterator_fallback (iterator_t *);
 
 void
 init_param_option_iterator (iterator_t*, report_format_param_t, int,

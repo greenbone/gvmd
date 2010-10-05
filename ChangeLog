@@ -1,5 +1,41 @@
 2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add report format param defaults and validation.  Hence increase database
+	version to 33.  Add database migration from version 32 to 33.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 33.
+
+	* src/manage_sql.c (create_tables): Add type_min, type_max, type_regex
+	and fallback columns to report_format_params table.
+	(migrate_32_to_33): New function.
+	(database_migrators): Add migrate_32_to_33.
+	(create_report_format): Add min and max param type qualifiers, and param
+	value validation according to type.
+	(report_format_param_type, report_format_param_type_max)
+	(report_format_param_type_max, validate_param_value): New functions.
+	(set_report_format_param): Ensure that the param exists.  Validate value
+	according to param type.
+	(init_report_format_param_iterator): Add new columns.
+	(report_format_param_iterator_type_min)
+	(report_format_param_iterator_type_max)
+	(report_format_param_iterator_fallback): New functions.
+
+	* src/manage.h: Update headers accordingly.
+	(create_report_format_param_t): New type.
+
+	* src/omp.c (create_report_format_data_t)
+	(create_report_format_data_reset, client_state_t): Add param entries.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	PARAM/DEFAULT, PARAM/TYPE/MIN and PARAM/TYPE/MAX handling to
+	CREATE_REPORT_FORMAT/REPORT_FORMAT.  Add same to GET_REPORT_FORMATS
+	response.  Expand the set_report_format_param check to include param
+	validation.
+
+	* src/CMakeLists.txt: Define feature macros for c99, for LLONG_MAX and
+	LLONG_MIN.
+
+2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_target): Add missing arg list in SQL.
 	(delete_report_format): Remove param options too.
 
