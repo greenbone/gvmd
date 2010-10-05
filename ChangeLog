@@ -1,5 +1,13 @@
 2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql (report_format_params): Add type, type_min,
+	type_max, type_regex and fallback.
+	(report_format_param_options): New table.
+
+	* doc/db.png: Update from SQL.
+
+2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* report_formats/simple_bar_chart/create_report_import: Add example MINs,
 	MAXes and DEFAULT.
 

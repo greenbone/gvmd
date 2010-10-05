@@ -145,6 +145,16 @@ CREATE TABLE report_format_params (
 	id integer PRIMARY KEY,
 	report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
 	name text,
+	type integer,
+	value text,
+	type_min integer,
+	type_max integer,
+	type_regex text,
+	fallback text);
+
+CREATE TABLE report_format_param_options (
+	id integer PRIMARY KEY,
+	report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
 	value text);
 
 CREATE TABLE report_formats (
