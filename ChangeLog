@@ -1,5 +1,9 @@
 2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* report_formats/simple_topo_plot/create_report_import: Remove extra FILE.
+
+2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Include params in report format verification.
 
 	* src/manage_sql.c (create_report_format): Get param type and value the
