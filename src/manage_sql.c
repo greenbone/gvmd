@@ -18783,7 +18783,9 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @param[out]  report_format  Created report format.
  *
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
- *         validation failed, 4 param value validation failed, -1 error.
+ *         validation failed, 4 param value validation failed, 5 param default
+ *         missing, 6 param min or max out of range, 7 param type missing,
+ *         -1 error.
  */
 int
 create_report_format (const char *uuid, const char *name,
@@ -18837,8 +18839,30 @@ create_report_format (const char *uuid, const char *name,
           g_string_append_printf (format,
                                   "%s%s%s",
                                   param->name,
-                                  param->type,
-                                  param->value);
+                                  param->value,
+                                  param->type);
+
+          if (param->type_min)
+            {
+              long long int min;
+              min = strtoll (param->type_min, NULL, 0);
+              if (min == LLONG_MIN)
+                return 6;
+              g_string_append_printf (format, "%lli", min);
+            }
+
+          if (param->type_max)
+            {
+              long long int max;
+              max = strtoll (param->type_max, NULL, 0);
+              if (max == LLONG_MAX)
+                return 6;
+              g_string_append_printf (format, "%lli", max);
+            }
+
+          g_string_append_printf (format,
+                                  "%s",
+                                  param->fallback);
 
           {
             array_t *options;
@@ -19048,12 +19072,48 @@ create_report_format (const char *uuid, const char *name,
 
       option_string = g_string_new ("");
 
-      /* Simply truncate out of range values. */
-      min = strtoll (param->type_min, NULL, 0);
-      max = strtoll (param->type_max, NULL, 0);
+      if (param->type == NULL)
+        {
+          sql ("ROLLBACK;");
+          return 7;
+        }
+
+      /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
+       * that they were missing, so if the user gives LLONG_MIN or LLONG_MAX it
+       * is an error.  This ensures that GPG verification works, because the
+       * verification knows when to leave out min and max. */
+
+      if (param->type_min)
+        {
+          min = strtoll (param->type_min, NULL, 0);
+          if (min == LLONG_MIN)
+            {
+              sql ("ROLLBACK;");
+              return 6;
+            }
+        }
+      else
+        min = LLONG_MIN;
+
+      if (param->type_max)
+        {
+          max = strtoll (param->type_max, NULL, 0);
+          if (max == LLONG_MAX)
+            {
+              sql ("ROLLBACK;");
+              return 6;
+            }
+        }
+      else
+        max = LLONG_MAX;
 
       quoted_param_name = sql_quote (param->name);
       quoted_param_value = sql_quote (param->value);
+      if (param->fallback == NULL)
+        {
+          sql ("ROLLBACK;");
+          return 5;
+        }
       quoted_param_fallback = sql_quote (param->fallback);
 
       sql ("INSERT INTO report_format_params"
@@ -19247,11 +19307,47 @@ verify_report_format (report_format_t report_format)
                                              1,
                                              NULL);
           while (next (&params))
-            g_string_append_printf
-             (format,
-              "%s%s",
-              report_format_param_iterator_name (&params),
-              report_format_param_iterator_value (&params));
+            {
+              g_string_append_printf
+               (format,
+                "%s%s%s",
+                report_format_param_iterator_name (&params),
+                report_format_param_iterator_value (&params),
+                report_format_param_iterator_type_name (&params));
+
+              if (report_format_param_iterator_type_min (&params) > LLONG_MIN)
+                g_string_append_printf
+                 (format,
+                  "%lli",
+                  report_format_param_iterator_type_min (&params));
+
+              if (report_format_param_iterator_type_max (&params) < LLONG_MAX)
+                g_string_append_printf
+                 (format,
+                  "%lli",
+                  report_format_param_iterator_type_max (&params));
+
+              g_string_append_printf
+               (format,
+                "%s%s",
+                report_format_param_iterator_type_regex (&params),
+                report_format_param_iterator_fallback (&params));
+
+              {
+                iterator_t options;
+                init_param_option_iterator
+                 (&options,
+                  report_format_param_iterator_param (&params),
+                  1,
+                  NULL);
+                while (next (&options))
+                  if (param_option_iterator_value (&options))
+                    g_string_append_printf
+                     (format,
+                      "%s",
+                      param_option_iterator_value (&options));
+              }
+            }
           cleanup_iterator (&params);
 
           g_string_append_printf (format, "\n");
@@ -19872,7 +19968,7 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
   if (report_format)
     init_iterator (iterator,
                    "SELECT ROWID, name, value, type, type_min, type_max,"
-                   " fallback"
+                   " type_regex, fallback"
                    " FROM report_format_params"
                    " WHERE report_format = %llu"
                    " ORDER BY %s %s;",
@@ -19882,7 +19978,7 @@ init_report_format_param_iterator (iterator_t* iterator, report_format_t report_
   else
     init_iterator (iterator,
                    "SELECT ROWID, name, value, type, type_min, type_max,"
-                   " fallback"
+                   " type_regex, fallback"
                    " FROM report_format_params"
                    " ORDER BY %s %s;",
                    sort_field ? sort_field : "ROWID",
@@ -19980,6 +20076,16 @@ report_format_param_iterator_type_max (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the type regex from a report format param iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type regex, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_param_iterator_type_regex, 6);
+
+/**
  * @brief Get the default from a report format param iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -19987,7 +20093,7 @@ report_format_param_iterator_type_max (iterator_t* iterator)
  * @return Default, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (report_format_param_iterator_fallback, 6);
+DEF_ACCESS (report_format_param_iterator_fallback, 7);
 
 /**
  * @brief Initialise a report format param option iterator.

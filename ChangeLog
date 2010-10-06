@@ -1,3 +1,27 @@
+2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Include params in report format verification.
+
+	* src/manage_sql.c (create_report_format): Get param type and value the
+	right way round for verification.  Add type min, type max and fallback to
+	verification.  Require params to have a type.  Use range ends to indicate
+	when type min and max were left out.  Require params to have a fallback.
+	(verify_report_format): Add param type qualifiers.
+	(init_report_format_param_iterator): Add type_regex.
+	(report_format_param_iterator_type_regex)
+	(report_format_param_iterator_fallback): New functions.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): In CREATE_REPORT_FORMAT PARAM require TYPE,
+	require DEFAULT and use range ends to indicate when TYPE MIN and MAX are
+	left out.
+
+	* report_formats/simple_bar_chart/create_report_import,
+	report_formats/simple_pie_chart/create_report_import: Add params to
+	signature.
+
 2010-10-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql (report_format_params): Add type, type_min,

@@ -5864,7 +5864,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             assert (create_report_format_data->param_type == NULL);
             assert (create_report_format_data->param_value == NULL);
             openvas_append_string (&create_report_format_data->param_name, "");
-            openvas_append_string (&create_report_format_data->param_type, "");
             openvas_append_string (&create_report_format_data->param_value, "");
             create_report_format_data->param_options = make_array ();
             set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM);
@@ -5991,13 +5990,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
         if (strcasecmp ("DEFAULT", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT);
+          {
+            openvas_append_string (&create_report_format_data->param_default,
+                                   "");
+            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_DEFAULT);
+          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_NAME);
         else if (strcasecmp ("OPTIONS", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS);
         else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
+          {
+            openvas_append_string (&create_report_format_data->param_type, "");
+            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE);
+          }
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_VALUE);
         else
@@ -11088,6 +11094,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
                            "Report format could not be created");
                     break;
+                  case 5:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "CREATE_REPORT_FORMAT PARAM requires a"
+                                        " DEFAULT element"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
+                  case 6:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "CREATE_REPORT_FORMAT PARAM MIN or MAX"
+                                        " out of range"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
+                  case 7:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "CREATE_REPORT_FORMAT PARAM requires a"
+                                        " TYPE element"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
                   default:
                     {
                       char *uuid = report_format_uuid (new_report_format);
@@ -11166,24 +11196,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("PARAM", element_name) == 0);
           assert (create_report_format_data->params);
           assert (create_report_format_data->param_name);
-          assert (create_report_format_data->param_type);
           assert (create_report_format_data->param_value);
 
           param = g_malloc (sizeof (*param));
           param->fallback
            = create_report_format_data->param_default
               ? g_strdup (create_report_format_data->param_default)
-              : g_strdup (create_report_format_data->param_value);
+              : NULL;
           param->name = g_strdup (create_report_format_data->param_name);
-          param->type = g_strdup (create_report_format_data->param_type);
+          param->type
+           = create_report_format_data->param_type
+              ? g_strdup (create_report_format_data->param_type)
+              : NULL;
           param->type_max
            = create_report_format_data->param_type_max
               ? g_strdup (create_report_format_data->param_type_max)
-              : g_strdup_printf ("%lli", LLONG_MAX);
+              : NULL;
           param->type_min
            = create_report_format_data->param_type_min
               ? g_strdup (create_report_format_data->param_type_min)
-              : g_strdup_printf ("%lli", LLONG_MIN);
+              : NULL;
           param->value = g_strdup (create_report_format_data->param_value);
 
           array_add (create_report_format_data->params, param);
