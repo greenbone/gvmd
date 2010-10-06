@@ -1,5 +1,10 @@
 2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* report_formats/simple_bar_chart/create_report_import: Remove + from
+	example range end, to ensure verification succeeds.
+
+2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* report_formats/simple_topo_plot/create_report_import: Remove extra FILE.
 
 2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
