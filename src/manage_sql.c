@@ -18785,7 +18785,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
  *         validation failed, 4 param value validation failed, 5 param default
  *         missing, 6 param min or max out of range, 7 param type missing,
- *         8 duplicate param name, -1 error.
+ *         8 duplicate param name, 9 bogus param type name, -1 error.
  */
 int
 create_report_format (const char *uuid, const char *name,
@@ -19078,6 +19078,15 @@ create_report_format (const char *uuid, const char *name,
           g_free (dir);
           sql ("ROLLBACK;");
           return 7;
+        }
+
+      if (report_format_param_type_from_name (param->type)
+          == REPORT_FORMAT_PARAM_TYPE_ERROR)
+        {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return 9;
         }
 
       /* Param min and max are optional.  LLONG_MIN and LLONG_MAX mark in the db
