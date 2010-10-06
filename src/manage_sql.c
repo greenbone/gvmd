@@ -19066,11 +19066,8 @@ create_report_format (const char *uuid, const char *name,
                                                                      index++)))
     {
       gchar *quoted_param_name, *quoted_param_value, *quoted_param_fallback;
-      GString *option_string;
       rowid_t param_rowid;
       long long int min, max;
-
-      option_string = g_string_new ("");
 
       if (param->type == NULL)
         {
