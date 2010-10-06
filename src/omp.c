@@ -11118,6 +11118,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
                            "Report format could not be created");
                     break;
+                  case 8:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_report_format",
+                                        "Duplicate PARAM name"));
+                    g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                           "Report format could not be created");
+                    break;
                   default:
                     {
                       char *uuid = report_format_uuid (new_report_format);

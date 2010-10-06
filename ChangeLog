@@ -1,5 +1,13 @@
 2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report_format): Check for duplicate param
+	names.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_REPORT_FORMAT add
+	duplicate param case.
+
+2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* report_formats/simple_bar_chart/create_report_import: Cleanup
 	range end examples after second last commit.
 

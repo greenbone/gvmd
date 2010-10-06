@@ -18785,7 +18785,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
  *         validation failed, 4 param value validation failed, 5 param default
  *         missing, 6 param min or max out of range, 7 param type missing,
- *         -1 error.
+ *         8 duplicate param name, -1 error.
  */
 int
 create_report_format (const char *uuid, const char *name,
@@ -19113,8 +19113,6 @@ create_report_format (const char *uuid, const char *name,
       else
         max = LLONG_MAX;
 
-      quoted_param_name = sql_quote (param->name);
-      quoted_param_value = sql_quote (param->value);
       if (param->fallback == NULL)
         {
           file_utils_rmdir_rf (dir);
@@ -19122,6 +19120,23 @@ create_report_format (const char *uuid, const char *name,
           sql ("ROLLBACK;");
           return 5;
         }
+
+      quoted_param_name = sql_quote (param->name);
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM report_format_params"
+                   " WHERE name = '%s' AND report_format = %llu;",
+                   quoted_param_name,
+                   report_format_rowid))
+        {
+          g_free (quoted_param_name);
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return 8;
+        }
+
+      quoted_param_value = sql_quote (param->value);
       quoted_param_fallback = sql_quote (param->fallback);
 
       sql ("INSERT INTO report_format_params"
