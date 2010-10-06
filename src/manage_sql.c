@@ -19074,6 +19074,8 @@ create_report_format (const char *uuid, const char *name,
 
       if (param->type == NULL)
         {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
           sql ("ROLLBACK;");
           return 7;
         }
@@ -19088,6 +19090,8 @@ create_report_format (const char *uuid, const char *name,
           min = strtoll (param->type_min, NULL, 0);
           if (min == LLONG_MIN)
             {
+              file_utils_rmdir_rf (dir);
+              g_free (dir);
               sql ("ROLLBACK;");
               return 6;
             }
@@ -19100,6 +19104,8 @@ create_report_format (const char *uuid, const char *name,
           max = strtoll (param->type_max, NULL, 0);
           if (max == LLONG_MAX)
             {
+              file_utils_rmdir_rf (dir);
+              g_free (dir);
               sql ("ROLLBACK;");
               return 6;
             }
@@ -19111,6 +19117,8 @@ create_report_format (const char *uuid, const char *name,
       quoted_param_value = sql_quote (param->value);
       if (param->fallback == NULL)
         {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
           sql ("ROLLBACK;");
           return 5;
         }
@@ -19142,6 +19150,8 @@ create_report_format (const char *uuid, const char *name,
         options = (array_t*) g_ptr_array_index (params_options, index - 1);
         if (options == NULL)
           {
+            file_utils_rmdir_rf (dir);
+            g_free (dir);
             sql ("ROLLBACK;");
             return -1;
           }
@@ -19162,6 +19172,8 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->value))
         {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
           sql ("ROLLBACK;");
           return 3;
         }
@@ -19169,6 +19181,8 @@ create_report_format (const char *uuid, const char *name,
       if (validate_param_value (report_format_rowid, param_rowid, param->name,
                                 param->fallback))
         {
+          file_utils_rmdir_rf (dir);
+          g_free (dir);
           sql ("ROLLBACK;");
           return 4;
         }
@@ -19176,6 +19190,8 @@ create_report_format (const char *uuid, const char *name,
 
   if (report_format)
     *report_format = report_format_rowid;
+
+  g_free (dir);
 
   sql ("COMMIT;");
 
