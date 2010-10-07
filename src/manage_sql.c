@@ -20224,7 +20224,7 @@ DEF_ACCESS (report_format_param_iterator_fallback, 7);
  * @brief Initialise a report format param option iterator.
  *
  * @param[in]  iterator             Iterator.
- * @param[in]  report_foramt_param  Param whose options to iterate over.
+ * @param[in]  report_format_param  Param whose options to iterate over.
  * @param[in]  ascending            Whether to sort ascending or descending.
  * @param[in]  sort_field           Field to sort on, or NULL for "ROWID".
  */

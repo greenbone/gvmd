@@ -1,5 +1,9 @@
 2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_param_option_iterator): Correct doc param name.
+
+2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Move password check into
 	package case, so that password-only credentials can have any password.
 
