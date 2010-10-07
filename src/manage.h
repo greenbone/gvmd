@@ -1095,6 +1095,21 @@ create_lsc_credential (const char*, const char*, const char*, const char*,
 int
 delete_lsc_credential (lsc_credential_t);
 
+int
+lsc_credential_packaged (lsc_credential_t);
+
+void
+set_lsc_credential_name (lsc_credential_t, const char *);
+
+void
+set_lsc_credential_comment (lsc_credential_t, const char *);
+
+void
+set_lsc_credential_login (lsc_credential_t, const char *);
+
+void
+set_lsc_credential_password (lsc_credential_t, const char *);
+
 void
 init_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, const char*);
 

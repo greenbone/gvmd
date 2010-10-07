@@ -419,6 +419,7 @@ static char* help_text = "\n"
 "    GET_VERSION            Get the OpenVAS Manager Protocol version.\n"
 "    HELP                   Get this help text.\n"
 "    MODIFY_CONFIG          Update an existing config.\n"
+"    MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.\n"
 "    MODIFY_NOTE            Modify an existing note.\n"
 "    MODIFY_OVERRIDE        Modify an existing override.\n"
 "    MODIFY_REPORT          Modify an existing report.\n"
@@ -1906,6 +1907,35 @@ modify_config_data_reset (modify_config_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_lsc_credential command.
+ */
+typedef struct
+{
+  char *lsc_credential_id;    ///< ID of credential to modify.
+  char *name;                 ///< Name.
+  char *comment;              ///< Comment.
+  char *login;                ///< Login.
+  char *password;             ///< Password.
+} modify_lsc_credential_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_lsc_credential_data_reset (modify_lsc_credential_data_t *data)
+{
+  free (data->lsc_credential_id);
+  free (data->name);
+  free (data->comment);
+  free (data->login);
+  free (data->password);
+
+  memset (data, 0, sizeof (modify_lsc_credential_data_t));
+}
+
+/**
  * @brief Command data for the modify_report command.
  */
 typedef struct
@@ -2310,6 +2340,7 @@ typedef union
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
   modify_config_data_t modify_config;                 ///< modify_config
+  modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_task_data_t modify_task;                     ///< modify_task
@@ -2604,6 +2635,12 @@ import_config_data_t *import_config_data
  */
 modify_config_data_t *modify_config_data
  = &(command_data.modify_config);
+
+/**
+ * @brief Parser callback data for MODIFY_LSC_CREDENTIAL.
+ */
+modify_lsc_credential_data_t *modify_lsc_credential_data
+ = &(command_data.modify_lsc_credential);
 
 /**
  * @brief Parser callback data for MODIFY_NOTE.
@@ -2906,6 +2943,11 @@ typedef enum
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_HELP,
+  CLIENT_MODIFY_LSC_CREDENTIAL,
+  CLIENT_MODIFY_LSC_CREDENTIAL_NAME,
+  CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT,
+  CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN,
+  CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD,
   CLIENT_MODIFY_REPORT,
   CLIENT_MODIFY_REPORT_COMMENT,
   CLIENT_MODIFY_REPORT_FORMAT,
@@ -4151,6 +4193,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_config_data->config_id);
             set_client_state (CLIENT_MODIFY_CONFIG);
           }
+        else if (strcasecmp ("MODIFY_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values,
+                              "lsc_credential_id",
+                              &modify_lsc_credential_data->lsc_credential_id);
+            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
+          }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "note_id",
@@ -5112,6 +5161,60 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
                          "Error");
           }
+        break;
+
+      case CLIENT_MODIFY_LSC_CREDENTIAL:
+        if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_NAME);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_lsc_credential_data->comment);
+            openvas_append_string (&modify_lsc_credential_data->comment, "");
+            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT);
+          }
+        else if (strcasecmp ("LOGIN", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN);
+        else if (strcasecmp ("PASSWORD", element_name) == 0)
+          {
+            openvas_free_string_var (&modify_lsc_credential_data->password);
+            openvas_append_string (&modify_lsc_credential_data->password, "");
+            set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD);
+          }
+        else
+          {
+            if (send_element_error_to_client ("modify_lsc_credential",
+                                              element_name,
+                                              write_to_client,
+                                              write_to_client_data))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            set_client_state (CLIENT_AUTHENTIC);
+            g_set_error (error,
+                         G_MARKUP_ERROR,
+                         G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                         "Error");
+          }
+        break;
+
+      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
+      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
+      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
+      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
+        if (send_element_error_to_client ("modify_lsc_credential",
+                                          element_name,
+                                          write_to_client,
+                                          write_to_client_data))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        set_client_state (CLIENT_AUTHENTIC);
+        g_set_error (error,
+                     G_MARKUP_ERROR,
+                     G_MARKUP_ERROR_UNKNOWN_ELEMENT,
+                     "Error");
         break;
 
       case CLIENT_MODIFY_REPORT:
@@ -9617,6 +9720,79 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         /* Init, so it's the empty string when the value is empty. */
         openvas_append_string (&modify_config_data->preference_value, "");
         set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        break;
+
+      case CLIENT_MODIFY_LSC_CREDENTIAL:
+        {
+          lsc_credential_t lsc_credential = 0;
+
+          if (modify_lsc_credential_data->lsc_credential_id == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                "MODIFY_LSC_CREDENTIAL requires a"
+                                " lsc_credential_id attribute"));
+          else if (find_lsc_credential
+                    (modify_lsc_credential_data->lsc_credential_id,
+                     &lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_INTERNAL_ERROR ("modify_lsc_credential"));
+          else if (lsc_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("modify_lsc_credential",
+                    "LSC credential",
+                    modify_lsc_credential_data->lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+          else if ((modify_lsc_credential_data->login
+                    || modify_lsc_credential_data->password)
+                   && lsc_credential_packaged (lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_lsc_credential",
+                                "Attempt to change login or password of"
+                                " packaged LSC credential"));
+          else
+            {
+              if (modify_lsc_credential_data->name)
+                set_lsc_credential_name (lsc_credential,
+                                         modify_lsc_credential_data->name);
+              if (modify_lsc_credential_data->comment)
+                set_lsc_credential_comment
+                 (lsc_credential,
+                  modify_lsc_credential_data->comment);
+              if (modify_lsc_credential_data->login)
+                set_lsc_credential_login (lsc_credential,
+                                          modify_lsc_credential_data->login);
+              if (modify_lsc_credential_data->password)
+                set_lsc_credential_password
+                 (lsc_credential,
+                  modify_lsc_credential_data->password);
+              SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_lsc_credential"));
+            }
+        }
+        modify_lsc_credential_data_reset (modify_lsc_credential_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
+        assert (strcasecmp ("NAME", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
+        assert (strcasecmp ("COMMENT", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
+        assert (strcasecmp ("LOGIN", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
+        assert (strcasecmp ("PASSWORD", element_name) == 0);
+        set_client_state (CLIENT_MODIFY_LSC_CREDENTIAL);
         break;
 
       case CLIENT_MODIFY_REPORT:
@@ -14833,6 +15009,27 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
         openvas_append_text (&modify_config_data->family_selection_growing_text,
+                             text,
+                             text_len);
+        break;
+
+      case CLIENT_MODIFY_LSC_CREDENTIAL_NAME:
+        openvas_append_text (&modify_lsc_credential_data->name,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_COMMENT:
+        openvas_append_text (&modify_lsc_credential_data->comment,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_LOGIN:
+        openvas_append_text (&modify_lsc_credential_data->login,
+                             text,
+                             text_len);
+        break;
+      case CLIENT_MODIFY_LSC_CREDENTIAL_PASSWORD:
+        openvas_append_text (&modify_lsc_credential_data->password,
                              text,
                              text_len);
         break;

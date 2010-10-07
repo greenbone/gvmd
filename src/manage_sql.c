@@ -15814,6 +15814,88 @@ delete_lsc_credential (lsc_credential_t lsc_credential)
 }
 
 /**
+ * @brief Set the name of an LSC credential.
+ *
+ * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  name            Name.
+ */
+void
+set_lsc_credential_name (lsc_credential_t lsc_credential, const char *name)
+{
+  gchar *quoted_name = sql_quote (name);
+  sql ("UPDATE lsc_credentials SET name = '%s' WHERE ROWID = %llu;",
+       quoted_name,
+       lsc_credential);
+  g_free (quoted_name);
+}
+
+/**
+ * @brief Set the comment of an LSC credential.
+ *
+ * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  comment         Comment.
+ */
+void
+set_lsc_credential_comment (lsc_credential_t lsc_credential,
+                            const char *comment)
+{
+  gchar *quoted_comment = sql_quote (comment);
+  sql ("UPDATE lsc_credentials SET comment = '%s' WHERE ROWID = %llu;",
+       quoted_comment,
+       lsc_credential);
+  g_free (quoted_comment);
+}
+
+/**
+ * @brief Set the login of an LSC credential.
+ *
+ * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  login           Login.
+ */
+void
+set_lsc_credential_login (lsc_credential_t lsc_credential, const char *login)
+{
+  gchar *quoted_login = sql_quote (login);
+  sql ("UPDATE lsc_credentials SET login = '%s' WHERE ROWID = %llu;",
+       quoted_login,
+       lsc_credential);
+  g_free (quoted_login);
+}
+
+/**
+ * @brief Set the password of an LSC credential.
+ *
+ * @param[in]  lsc_credential  The LSC credential.
+ * @param[in]  password        Password.
+ */
+void
+set_lsc_credential_password (lsc_credential_t lsc_credential,
+                             const char *password)
+{
+  gchar *quoted_password = sql_quote (password);
+  sql ("UPDATE lsc_credentials SET password = '%s' WHERE ROWID = %llu;",
+       quoted_password,
+       lsc_credential);
+  g_free (quoted_password);
+}
+
+/**
+ * @brief Return whether an LSC credential is the packaged type.
+ *
+ * @param[in]  lsc_credential  The LSC credential.
+ *
+ * @return 0 false, else true.
+ */
+int
+lsc_credential_packaged (lsc_credential_t lsc_credential)
+{
+  return sql_int (0, 0,
+                  "SELECT public_key NOTNULL FROM lsc_credentials"
+                  " WHERE ROWID = %llu;",
+                  lsc_credential);
+}
+
+/**
  * @brief Initialise an LSC Credential iterator.
  *
  * @param[in]  iterator        Iterator.

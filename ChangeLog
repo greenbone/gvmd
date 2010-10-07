@@ -1,3 +1,21 @@
+2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP command MODIFY_LSC_CREDENTIAL.
+
+	* src/manage_sql.c (set_lsc_credential_name, set_lsc_credential_comment)
+	(set_lsc_credential_login, set_lsc_credential_password)
+	(lsc_credential_packaged): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (help_text): Add new command.
+	(modify_lsc_credential_data_t): New type.
+	(modify_lsc_credential_data_reset): New function.
+	(command_data_t, client_state_t): Add new command elements.
+	(modify_lsc_credential_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_LSC_CREDENTIAL handling.
+
 2010-10-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_format): Remove stray variable.
