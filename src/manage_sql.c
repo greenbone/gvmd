@@ -15475,12 +15475,6 @@ create_lsc_credential (const char* name, const char* comment,
   assert (login && strlen (login) > 0);
   assert (current_credentials.uuid);
 
-  while (*s)
-    if (isalnum (*s))
-      s++;
-    else
-      return 2;
-
   quoted_name = sql_quote (name);
 
   sql ("BEGIN IMMEDIATE;");
@@ -15529,6 +15523,18 @@ create_lsc_credential (const char* name, const char* comment,
       sql ("COMMIT;");
       return 0;
     }
+
+  /* Ensure the password is alphanumeric, to help the package generation. */
+
+  while (*s)
+    if (isalnum (*s))
+      s++;
+    else
+      {
+        g_free (quoted_name);
+        sql ("ROLLBACK;");
+        return 2;
+      }
 
   /* Create the keys and packages. */
 

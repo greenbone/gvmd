@@ -1,5 +1,10 @@
 2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Move password check into
+	package case, so that password-only credentials can have any password.
+
+2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP command MODIFY_LSC_CREDENTIAL.
 
 	* src/manage_sql.c (set_lsc_credential_name, set_lsc_credential_comment)
