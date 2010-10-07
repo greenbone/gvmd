@@ -1,3 +1,9 @@
+2010-10-07  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c (where_levels): Remove trailing paren as false positive
+	is now the final case. (Backport from trunk; initially committed in
+	r8759 by Matthew Mundell.)
+
 2010-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c: Define two Greek characters that seem to be missing from
