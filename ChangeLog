@@ -1,3 +1,9 @@
+2010-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_lsc_credential): Correct comment on second
+	last commit, which is actually moving the login check so that
+	password-only credentials can have any login.
+
 2010-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_param_option_iterator): Correct doc param name.

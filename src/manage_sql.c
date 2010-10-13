@@ -15524,7 +15524,7 @@ create_lsc_credential (const char* name, const char* comment,
       return 0;
     }
 
-  /* Ensure the password is alphanumeric, to help the package generation. */
+  /* Ensure the login is alphanumeric, to help the package generation. */
 
   while (*s)
     if (isalnum (*s))
