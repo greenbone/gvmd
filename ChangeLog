@@ -1,5 +1,12 @@
 2010-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp (omp_xml_handle_end_element): Terminate MODIFY_CONFIG arrays at
+	the close of the associated element instead of before handling the
+	request.  This ensures that the arrays are always terminated, even in the
+	error response cases.
+
+2010-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Correct comment on second
 	last commit, which is actually moving the login check so that
 	password-only credentials can have any login.
