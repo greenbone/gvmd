@@ -10235,9 +10235,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else if (modify_config_data->nvt_selection_family)
             {
-              assert (modify_config_data->nvt_selection);
-
-              array_terminate (modify_config_data->nvt_selection);
               switch (manage_set_config_nvts
                        (config,
                         modify_config_data->nvt_selection_family,
@@ -10278,12 +10275,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               /* There was a FAMILY_SELECTION. */
 
-              assert (modify_config_data->families_growing_all);
-              assert (modify_config_data->families_static_all);
-
-              array_terminate (modify_config_data->families_growing_all);
-              array_terminate (modify_config_data->families_static_all);
-              array_terminate (modify_config_data->families_growing_empty);
               switch (manage_set_config_families
                        (config,
                         modify_config_data->families_growing_all,
@@ -10358,10 +10349,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
       case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
         assert (strcasecmp ("FAMILY_SELECTION", element_name) == 0);
+        assert (modify_config_data->families_growing_all);
+        assert (modify_config_data->families_static_all);
+        assert (modify_config_data->families_growing_empty);
+        array_terminate (modify_config_data->families_growing_all);
+        array_terminate (modify_config_data->families_static_all);
+        array_terminate (modify_config_data->families_growing_empty);
         set_client_state (CLIENT_MODIFY_CONFIG);
         break;
       case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
         assert (strcasecmp ("NVT_SELECTION", element_name) == 0);
+        assert (modify_config_data->nvt_selection);
+        array_terminate (modify_config_data->nvt_selection);
         set_client_state (CLIENT_MODIFY_CONFIG);
         break;
       case CLIENT_MODIFY_CONFIG_PREFERENCE:

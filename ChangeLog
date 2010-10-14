@@ -1,3 +1,11 @@
+2010-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp (omp_xml_handle_end_element): Terminate MODIFY_CONFIG arrays at
+	the close of the associated element instead of before handling the
+	request.  This ensures that the arrays are always terminated, even in the
+	error response cases. (Backport from trunk; initially committed in
+	r9214 by Matthew Mundell.)
+
 2010-10-07  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/manage_sql.c (where_levels): Remove trailing paren as false positive
