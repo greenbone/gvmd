@@ -1,3 +1,30 @@
+2010-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Extend OMP HELP to return a documented partial OMP schema in various
+	formats.
+
+	* src/omp (help_data_t): New type.
+	(help_data_reset): New function.
+	(command_data_t): Add help.
+	(help_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add format
+	attribute to OMP HELP.
+
+	* src/manage_sql.c (manage_schema): New function.  Returns schema in
+	given format.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/CMakeLists.txt: Install schema formats.
+
+	* src/schema_formats/, src/schema_formats/HTML/,
+	src/schema_formats/HTML/HTML.xsl, src/schema_formats/HTML/generate,
+	src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/,
+	src/schema_formats/RNC/RNC.xsl, src/schema_formats/RNC/generate,
+	src/schema_formats/RNC/rnc.xsl, src/schema_formats/XML/,
+	src/schema_formats/XML/OMP.xml, src/schema_formats/XML/generate: New dirs
+	and files.  First schema formats.
+
 2010-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp (omp_xml_handle_end_element): Terminate MODIFY_CONFIG arrays at

@@ -1,0 +1,475 @@
+<!--
+OpenVAS Manager
+$Id$
+Description: OMP schema with embedded documentation, in OMP.
+
+Authors:
+Matthew Mundell <matthew.mundell@greenbone.de>
+
+Copyright:
+Copyright (C) 2010 Greenbone Networks GmbH
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2,
+or, at your option, any later version as published by the Free
+Software Foundation
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+
+<protocol>
+  <name>OpenVAS Management Protocol</name>
+  <abbreviation>OMP</abbreviation>
+  <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
+  <version>1.0</version>
+  <type>
+    <name>base64</name>
+    <summary>Base64 encoded data</summary>
+    <pattern>xsd:base64Binary</pattern>
+  </type>
+  <type>
+    <name>boolean</name>
+    <pattern>text</pattern>
+  </type>
+  <type>
+    <name>boolean_atoi</name>
+    <pattern>text</pattern>
+  </type>
+  <type>
+    <name>name</name>
+    <pattern>xsd:string</pattern>
+  </type>
+  <type>
+    <name>oid</name>
+    <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
+  </type>
+  <type>
+    <name>sort_order</name>
+    <pattern>text</pattern>
+  </type>
+  <type>
+    <name>status</name>
+    <pattern>xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }</pattern>
+  </type>
+  <type>
+    <name>uuid</name>
+    <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
+  </type>
+  <command>
+    <name>commands</name>
+    <summary>Run a list of commands</summary>
+    <description>
+      The client uses the commands command to run a list of commands.  The
+      elements are executed as OMP commands in the given sequence.  The reply
+      contains the result of each command, in the same order as the given
+      commands.
+    </description>
+    <pattern><any><c>command</c></any></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><c>response</c></any>
+      </pattern>
+    </response>
+  </command>
+  <command>
+    <name>delete_config</name>
+    <summary>Delete a config</summary>
+    <description>
+      <p>
+        The client uses the delete_config command to delete an existing config.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>config_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+  </command>
+  <command>
+    <name>get_notes</name>
+    <summary>Get all notes</summary>
+    <description>
+      The client uses the get_notes command to get note information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of notes to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>note_id</name>
+        <summary>ID of single note to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>nvt_id</name>
+        <type>oid</type>
+      </attrib>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Get all notes</summary>
+      <request>
+        <get_notes></get_notes>
+      </request>
+      <response>
+        <get_notes_response status="200" status_text="OK">
+          <note id="b76b81a7-9df8-42df-afff-baa9d4620128">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.75">
+              <name>Test NVT: long lines</name>
+            </nvt>
+            <text excerpt="0">This is the full text of the note.</text>
+            <orphan>1</orphan>
+          </note>
+          <truncated>...</truncated>
+        </get_notes_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_version</name>
+    <summary>Get the OpenVAS Manager Protocol version</summary>
+    <pattern></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+  </command>
+  <command>
+    <name>help</name>
+    <summary>Get the help text</summary>
+    <pattern></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+  </command>
+  <command>
+    <name>modify_config</name>
+    <summary>Update an existing config</summary>
+    <description>
+      <p>
+        This command can take three forms: with a preference, with a family selection
+        or with an NVT selection.
+      </p>
+      <p>
+        The first form modifies a preference on the config.
+        If the preference includes an NVT, then the preference is an NVT preference,
+        otherwise the preference is a scanner preference.  If the preference includes
+        a value then the manager updates the value of the preference, otherwise the
+        manager removes the preference.
+      </p>
+
+      <p>
+        The second form, with a family selection, lets the client modify the
+        NVTs selected by the config at a family level.  The idea is that the
+        client modifies the entire family selection at once, so a client will
+        often need to include many families in a family selection.
+      </p>
+
+      <p>
+        The family_selection may include a growing element to indicate whether new
+        families should be added to the selection.  It may also include any number
+        of family elements.
+      </p>
+
+      <p>
+        A family element must always include a name and may include a growing element
+        and an all element.  The all element indicates whether all NVTs in the family
+        should be selected.  The growing element indicates whether new NVTs in the
+        family should be added to the selection as they arrive.  Leaving a family
+        out of the family_selection is equivalent to including the family with all
+        0 and growing 0.
+      </p>
+
+      <p>
+        The effect of the all 0 and growing 0 case is subtle: if
+        all NVTs were selected then all are removed (effectively removing the
+        family from the config).  However if some NVTs were selected then they
+        remain selected.  As a result the client must include in the
+        family_selection all families that must have all NVTs selected.
+      </p>
+
+      <p>
+        The third option, an NVT selection, must include a family and may include any
+        number of NVTs.  The manager updates the given family in the config to
+        include only the given NVTs.
+      </p>
+
+      <p>
+        If there was no error with the command sent by the client, the manager will
+        apply the changes to the config and will reply with a response code indicating
+        success.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>config_id</name>
+        <summary>ID of config to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <or>
+        <e>preference</e>
+        <e>family_selection</e>
+        <e>nvt_selection</e>
+      </or>
+    </pattern>
+    <ele>
+      <name>preference</name>
+      <pattern>
+        <e>name</e>
+        <o><e>nvt</e></o>
+        <o><e>value</e></o>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the preference to modify</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>nvt</name>
+        <summary>NVT associated with preference to modify</summary>
+        <description>
+          If this element is present then the preference is an NVT
+          preference, otherwise it is a Scanner preference.
+        </description>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>New value for preference</summary>
+        <pattern><t>base64</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>family_selection</name>
+      <pattern>
+        <o><e>growing</e></o>
+        <any><e>family</e></any>
+      </pattern>
+      <ele>
+        <name>growing</name>
+        <summary>Whether new families should be added to the config</summary>
+        <pattern><t>boolean_atoi</t></pattern>
+      </ele>
+      <ele>
+        <name>family</name>
+        <pattern>
+          <o><e>all</e></o>
+          <o><e>growing</e></o>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>all</name>
+          <summary>Whether to select all NVTs initially</summary>
+          <pattern><t>boolean_atoi</t></pattern>
+        </ele>
+        <ele>
+          <name>growing</name>
+          <summary>Whether to add newly arrived nvts to the selection</summary>
+          <pattern><t>boolean_atoi</t></pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>nvt_selection</name>
+      <pattern>
+        <e>family</e>
+        <any><e>nvt</e></any>
+      </pattern>
+      <ele>
+        <name>family</name>
+        <summary>Name of family to modify</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a config preference</summary>
+      <request>
+        <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <preference>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.14259"></nvt>
+            <name>Nmap (NASL wrapper)[checkbox]:UDP port scan</name>
+            <value>eWVz</value>
+          </preference>
+        </modify_config>
+      </request>
+      <response>
+        <modify_config_response status="200" status_text="OK">
+        </modify_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Modify the families that a config selects</summary>
+      <description>
+        <p>
+          The outer "growing" element sets the config to add any new families
+          that arrive.
+        </p>
+        <p>
+          The client requests the Manager to keep a single selected
+          family (Debian Local Security Checks), to select all NVTs in
+          this family, and to automatically add any new NVTs in this family
+          to the config.
+        </p>
+      </description>
+      <request>
+        <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <family_selection>
+            <growing>1</growing>
+            <family>
+              <name>Debian Local Security Checks</name>
+              <all>1</all>
+              <growing>1</growing>
+            </family>
+          </family_selection>
+        </modify_config>
+      </request>
+      <response>
+        <modify_config_response status="200" status_text="OK">
+        </modify_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Modify the NVTs that a config selects in a particular family</summary>
+      <request>
+        <modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <nvt_selection>
+            <family>Debian Local Security Checks</family>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.53797"></nvt>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.63272"></nvt>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.55615"></nvt>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.53546"></nvt>
+          </nvt_selection>
+        </modify_config>
+      </request>
+      <response>
+        <modify_config_response status="200" status_text="OK">
+        </modify_config_response>
+      </response>
+    </example>
+  </command>
+</protocol>

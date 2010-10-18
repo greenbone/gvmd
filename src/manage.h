@@ -1722,6 +1722,12 @@ const char*
 slave_task_iterator_uuid (iterator_t*);
 
 
+/* Schema. */
+
+int
+manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
+
+
 /* Tags. */
 
 void

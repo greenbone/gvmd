@@ -20705,4 +20705,219 @@ DEF_ACCESS (slave_task_iterator_name, 0);
  */
 DEF_ACCESS (slave_task_iterator_uuid, 1);
 
+
+/* Schema. */
+
+/**
+ * @brief Generate the OMP schema.
+ *
+ * @param[in]  format         Name of schema format, "XML" or NULL for XML.
+ * @param[out] output_length  NULL or location for length of return.
+ * @param[out] extension      NULL or location for report format extension.
+ * @param[out] content_type   NULL or location for report format content type.
+ *
+ * @return 0 success, 1 failed to find schema format, -1 error.
+ */
+int
+manage_schema (gchar *format, gchar **output_return, gsize *output_length,
+               gchar **extension, gchar **content_type)
+{
+  /* Pass the XML file to the report format generate script, sending the output
+   * to a file. */
+
+  {
+    gchar *script, *script_dir;
+    gchar *uuid_format;
+    char output_dir[] = "/tmp/openvasmd_schema_XXXXXX";
+
+    if (mkdtemp (output_dir) == NULL)
+      {
+        g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+        return -1;
+      }
+
+    /* Setup file names. */
+
+    if (format == NULL)
+      {
+        if (extension)
+          *extension = g_strdup ("xml");
+        if (content_type)
+          *content_type = g_strdup ("text/xml");
+        uuid_format = "18e826fc-dab6-11df-b913-002264764cea";
+      }
+    else if (strcasecmp (format, "HTML") == 0)
+      {
+        if (extension)
+          *extension = g_strdup ("html");
+        if (content_type)
+          *content_type = g_strdup ("text/html");
+        uuid_format = "02052818-dab6-11df-9be4-002264764cea";
+      }
+    else if (strcasecmp (format, "RNC") == 0)
+      {
+        if (extension)
+          *extension = g_strdup ("rnc");
+        if (content_type)
+          *content_type = g_strdup ("text/x-rnc");
+        uuid_format = "787a4a18-dabc-11df-9486-002264764cea";
+      }
+    else if (strcasecmp (format, "XML") == 0)
+      {
+        if (extension)
+          *extension = g_strdup ("xml");
+        if (content_type)
+          *content_type = g_strdup ("text/xml");
+        uuid_format = "18e826fc-dab6-11df-b913-002264764cea";
+      }
+    else
+      return 1;
+
+    script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                   "openvasmd",
+                                   "global_schema_formats",
+                                   uuid_format,
+                                   NULL);
+
+    script = g_build_filename (script_dir, "generate", NULL);
+
+    if (!g_file_test (script, G_FILE_TEST_EXISTS))
+      {
+        g_free (script);
+        g_free (script_dir);
+        if (extension) g_free (*extension);
+        if (content_type) g_free (*content_type);
+        return -1;
+      }
+
+    {
+      gchar *output_file, *command;
+      char *previous_dir;
+      int ret;
+
+      /* Change into the script directory. */
+
+      /** @todo NULL arg is glibc extension. */
+      previous_dir = getcwd (NULL, 0);
+      if (previous_dir == NULL)
+        {
+          g_warning ("%s: Failed to getcwd: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          return -1;
+        }
+
+      if (chdir (script_dir))
+        {
+          g_warning ("%s: Failed to chdir: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          return -1;
+        }
+      g_free (script_dir);
+
+      output_file = g_strdup_printf ("%s/report.out", output_dir);
+
+      /* Call the script. */
+
+      command = g_strdup_printf ("/bin/sh %s " OPENVAS_SYSCONF_DIR
+                                 "/openvasmd/global_schema_formats"
+                                 "/18e826fc-dab6-11df-b913-002264764cea/OMP.xml"
+                                 " > %s"
+                                 " 2> /dev/null",
+                                 script,
+                                 output_file);
+      g_free (script);
+
+      g_message ("   command: %s\n", command);
+
+      /* RATS: ignore, command is defined above. */
+      if (ret = system (command),
+          /** @todo ret is always -1. */
+          0 && ((ret) == -1
+                || WEXITSTATUS (ret)))
+        {
+          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                     __FUNCTION__,
+                     ret,
+                     WEXITSTATUS (ret),
+                     command);
+          if (chdir (previous_dir))
+            g_warning ("%s: and chdir failed\n",
+                       __FUNCTION__);
+          g_free (previous_dir);
+          g_free (command);
+          g_free (output_file);
+          if (extension) g_free (*extension);
+          if (content_type) g_free (*content_type);
+          return -1;
+        }
+
+      {
+        GError *get_error;
+        gchar *output;
+        gsize output_len;
+
+        g_free (command);
+
+        /* Change back to the previous directory. */
+
+        if (chdir (previous_dir))
+          {
+            g_warning ("%s: Failed to chdir back: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (previous_dir);
+            if (extension) g_free (*extension);
+            if (content_type) g_free (*content_type);
+            return -1;
+          }
+        g_free (previous_dir);
+
+        /* Read the script output from file. */
+
+        get_error = NULL;
+        g_file_get_contents (output_file,
+                             &output,
+                             &output_len,
+                             &get_error);
+        g_free (output_file);
+        if (get_error)
+          {
+            g_warning ("%s: Failed to get output: %s\n",
+                       __FUNCTION__,
+                       get_error->message);
+            g_error_free (get_error);
+            if (extension) g_free (*extension);
+            if (content_type) g_free (*content_type);
+            return -1;
+          }
+
+        /* Remove the output directory. */
+
+        file_utils_rmdir_rf (output_dir);
+
+        /* Return the output. */
+
+        if (output_length) *output_length = output_len;
+
+        if (output_return) *output_return = output;
+        return 0;
+      }
+    }
+  }
+}
+
+
+
 #undef DEF_ACCESS

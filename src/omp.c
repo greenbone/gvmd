@@ -1881,6 +1881,27 @@ get_tasks_data_reset (get_tasks_data_t *data)
 }
 
 /**
+ * @brief Command data for the help command.
+ */
+typedef struct
+{
+  char *format;       ///< Format.
+} help_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+help_data_reset (help_data_t *data)
+{
+  free (data->format);
+
+  memset (data, 0, sizeof (help_data_t));
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -2339,6 +2360,7 @@ typedef union
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
   get_targets_data_t get_targets;                     ///< get_targets
   get_tasks_data_t get_tasks;                         ///< get_tasks
+  help_data_t help;                                   ///< help
   modify_config_data_t modify_config;                 ///< modify_config
   modify_lsc_credential_data_t modify_lsc_credential; ///< modify_lsc_credential
   modify_report_data_t modify_report;                 ///< modify_report
@@ -2623,6 +2645,12 @@ get_targets_data_t *get_targets_data
  */
 get_tasks_data_t *get_tasks_data
  = &(command_data.get_tasks);
+
+/**
+ * @brief Parser callback data for HELP.
+ */
+help_data_t *help_data
+ = &(command_data.help);
 
 /**
  * @brief Parser callback data for CREATE_CONFIG (import).
@@ -4186,7 +4214,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_GET_VERSION_AUTHENTIC);
         else if (strcasecmp ("HELP", element_name) == 0)
-          set_client_state (CLIENT_HELP);
+          {
+            append_attribute (attribute_names, attribute_values, "format",
+                              &help_data->format);
+            set_client_state (CLIENT_HELP);
+          }
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "config_id",
@@ -9442,11 +9474,105 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_HELP:
-        SEND_TO_CLIENT_OR_FAIL ("<help_response"
-                                " status=\"" STATUS_OK "\""
-                                " status_text=\"" STATUS_OK_TEXT "\">");
-        SEND_TO_CLIENT_OR_FAIL (help_text);
-        SEND_TO_CLIENT_OR_FAIL ("</help_response>");
+        if (help_data->format == NULL
+            || (strcmp (help_data->format, "text") == 0))
+          {
+            SEND_TO_CLIENT_OR_FAIL ("<help_response"
+                                    " status=\"" STATUS_OK "\""
+                                    " status_text=\"" STATUS_OK_TEXT "\">");
+            SEND_TO_CLIENT_OR_FAIL (help_text);
+            SEND_TO_CLIENT_OR_FAIL ("</help_response>");
+          }
+        else
+          {
+            gchar *extension, *content_type, *output;
+            gsize output_len;
+
+            switch (manage_schema (help_data->format,
+                                   &output,
+                                   &output_len,
+                                   &extension,
+                                   &content_type))
+              {
+                case 0:
+                  break;
+                case 1:
+                  assert (help_data->format);
+                  if (send_find_error_to_client ("help",
+                                                 "schema_format",
+                                                 help_data->format,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  help_data_reset (help_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
+                  help_data_reset (help_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  return;
+                  break;
+              }
+
+            SENDF_TO_CLIENT_OR_FAIL ("<help_response"
+                                     " status=\"" STATUS_OK "\""
+                                     " status_text=\"" STATUS_OK_TEXT "\">"
+                                     "<schema"
+                                     " format=\"%s\""
+                                     " extension=\"%s\""
+                                     " content_type=\"%s\">",
+                                     help_data->format
+                                      ? help_data->format
+                                      : "XML",
+                                     extension,
+                                     content_type);
+            g_free (extension);
+            g_free (content_type);
+
+            if (output && strlen (output))
+              {
+                /* Encode and send the output. */
+
+                if (help_data->format
+                    && strcasecmp (help_data->format, "XML"))
+                  {
+                    gchar *base64;
+
+                    base64 = g_base64_encode ((guchar*) output, output_len);
+                    if (send_to_client (base64,
+                                        write_to_client,
+                                        write_to_client_data))
+                      {
+                        g_free (output);
+                        g_free (base64);
+                        error_send_to_client (error);
+                        return;
+                      }
+                    g_free (base64);
+                  }
+                else
+                  {
+                    /* Special case the XML schema, bah. */
+                    if (send_to_client (output,
+                                        write_to_client,
+                                        write_to_client_data))
+                      {
+                        g_free (output);
+                        error_send_to_client (error);
+                        return;
+                      }
+                  }
+              }
+            g_free (output);
+            SEND_TO_CLIENT_OR_FAIL ("</schema>"
+                                    "</help_response>");
+          }
+        help_data_reset (help_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
