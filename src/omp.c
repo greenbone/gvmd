@@ -3401,7 +3401,9 @@ max_hosts (const char *hosts)
 
               /* Convert text after slash to a bit netmask. */
 
-              if (atoi (slash) > 32 && inet_aton (slash, &addr))
+              if (strchr (slash, '.')
+                  && (atoi (slash) > 32)
+                  && inet_aton (slash, &addr))
                 {
                   in_addr_t haddr;
 

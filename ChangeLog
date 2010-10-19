@@ -1,5 +1,9 @@
 2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (max_hosts): Ensure mask has dots in subnet mask case.
+
+2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (check_host_netmasks): New function.  From GSA
 	validate_hosts_parameter.
 	(omp_xml_handle_end_element): Check host netmasks for CREATE_TARGET,
