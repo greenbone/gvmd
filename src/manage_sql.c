@@ -9912,7 +9912,8 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
  * @param[in]  max_results        The maximum number of results returned.
  * @param[out] output_length      NULL or location for length of return.
  * @param[out] extension          NULL or location for report format extension.
- * @param[out] content_type       NULL or location for report format extension.
+ * @param[out] content_type       NULL or location for report format content
+ *                                type.
  *
  * @return Contents of report on success, NULL on error.
  */
@@ -9936,7 +9937,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
 
   if (mkdtemp (xml_dir) == NULL)
     {
-      g_warning ("%s: g_mkdtemp failed\n", __FUNCTION__);
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
       return NULL;
     }
 
@@ -10028,9 +10029,9 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
           g_free (previous_dir);
           g_free (script);
           g_free (script_dir);
+          g_free (xml_file);
           if (extension) g_free (*extension);
           if (content_type) g_free (*content_type);
-          g_free (xml_file);
           return NULL;
         }
 

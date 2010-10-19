@@ -1,5 +1,10 @@
 2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Correct param doc.
+	(manage_report): Correct error message.  Free params in same order.
+
+2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (max_hosts): Ensure mask has dots in subnet mask case.
 
 2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
