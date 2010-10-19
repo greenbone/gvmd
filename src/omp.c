@@ -12038,6 +12038,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_TARGET hosts must both be at least one"
                                 " character long, or TARGET_LOCATOR must"
                                 " be set"));
+          else if (create_target_data->target_locator == NULL
+                   && (max_hosts (create_target_data->hosts) == -1))
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "Error in host specification"));
           else if (strlen (create_target_data->hosts) != 0
                    && create_target_data->target_locator != NULL)
             SEND_TO_CLIENT_OR_FAIL

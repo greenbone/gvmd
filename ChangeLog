@@ -1,5 +1,10 @@
 2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TARGET only
+	allow creation if max_hosts succeeds on the hosts value.
+
+2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (strbchr): New function.
 	(max_hosts): Handle addresses with ranges.
 
