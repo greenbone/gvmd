@@ -3303,13 +3303,37 @@ internal_error_send_to_client (GError** error)
  " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
 
 /**
+ * @brief Search backwards in a string for a character.
+ *
+ * Start at the character before \p point.
+ *
+ * @param[in]  start  Start of string.
+ * @param[in]  point  Current position.
+ * @param[in]  ch     Character.
+ *
+ * @return Address of matching character, else NULL.
+ */
+static char *
+strbchr (char *start, char *point, char ch)
+{
+  while (1)
+    {
+      if (point == start)
+        return NULL;
+      point--;
+      if (*point == ch)
+        return point;
+    }
+}
+
+/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  hosts  String describing hosts.
  *
  * @return Number of hosts, or -1 on error.
  */
-int
+static int
 max_hosts (const char *hosts)
 {
   long count = 0;
@@ -3320,9 +3344,15 @@ max_hosts (const char *hosts)
 
   while (*point)
     {
-      gchar* slash = strchr (*point, '/');
+      gchar *slash, *hyphen;
+      slash = strchr (*point, '/');
+      hyphen = strchr (*point, '-');
       if (slash)
         {
+          if (hyphen)
+            /* Range and netmask. */
+            return -1;
+
           slash++;
           if (*slash)
             {
@@ -3363,6 +3393,142 @@ max_hosts (const char *hosts)
             }
           else
             /* Just a trailing /. */
+            count++;
+        }
+      else if (hyphen)
+        {
+          hyphen++;
+          if (*hyphen)
+            {
+              int dot_count, total_dot_count;
+              const gchar* dot;
+
+              /* An address specifying a range. */
+
+              if (strchr (hyphen, '-'))
+                /* Multiple ranges. */
+                return -1;
+
+              dot_count = 0;
+              dot = hyphen;
+              while ((dot = strchr (dot, '.')))
+                dot++, dot_count++;
+
+              dot_count = 0;
+              dot = hyphen;
+              while ((dot = strchr (dot, '.')))
+                dot++, dot_count++;
+
+              total_dot_count = 0;
+              dot = *point;
+              while ((dot = strchr (dot, '.')))
+                dot++, total_dot_count++;
+
+              if (total_dot_count == 6)
+                {
+                  int one, two, subcount;
+                  char *pos_one, *pos_two;
+
+                  /* 192.168.1.102-192.168.1.104 */
+
+                  pos_one = *point;
+                  pos_two = hyphen;
+                  subcount = 0;
+
+                  /* First. */
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 256 * 256 * 255;
+
+                  /* Second. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 256 * 255;
+
+                  /* Third. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 255;
+
+                  /* Fourth. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+                  if (*pos_two == '\0')
+                    /* Trailing dot. */
+                    return -1;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1);
+
+                  count += subcount;
+                }
+              else if (total_dot_count <= 3)
+                {
+                  int start, end;
+
+                  /* 192.168.1.102-104 */
+
+                  end = atoi (hyphen);
+                  dot = strbchr (*point, hyphen, '.');
+                  dot = dot ? (dot + 1) : *point;
+                  start = atoi (dot);
+
+                  if (end < start)
+                    {
+                      int tem = end;
+                      end = start;
+                      start = tem;
+                    }
+
+                  if (start == end)
+                    count++;
+                  else
+                    count += (end - start + 1);
+                }
+              else
+                {
+                  /* 192.168-169.1.102-104 */
+                  return -1;
+                }
+            }
+          else
+            /* Just a trailing -. */
             count++;
         }
       else

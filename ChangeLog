@@ -1,3 +1,8 @@
+2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (strbchr): New function.
+	(max_hosts): Handle addresses with ranges.
+
 2010-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/Doxyfile.in: Remove accidental junk from last commit.
