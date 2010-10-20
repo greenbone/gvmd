@@ -1,5 +1,9 @@
 2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (max_hosts): Add counting for IPv6 addresses.
+
+2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Correct param doc.
 	(manage_report): Correct error message.  Free params in same order.
 

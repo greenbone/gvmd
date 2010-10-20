@@ -3399,39 +3399,47 @@ max_hosts (const char *hosts)
               long int mask;
               struct in_addr addr;
 
-              /* Convert text after slash to a bit netmask. */
-
-              if (strchr (slash, '.')
-                  && (atoi (slash) > 32)
-                  && inet_aton (slash, &addr))
-                {
-                  in_addr_t haddr;
-
-                  /* 192.168.200.0/255.255.255.252 */
-
-                  haddr = ntohl (addr.s_addr);
-                  mask = 32;
-                  while ((haddr & 1) == 0)
-                    {
-                      mask--;
-                      haddr = haddr >> 1;
-                    }
-                  if (mask < 8 || mask > 32) return -1;
-                }
+              if (strchr (*point, ':'))
+                /* IPv6.  Scanner current only supports single addresses. */
+                count++;
               else
                 {
-                  /* 192.168.200.0/30 */
+                  /* IPv4. */
 
-                  errno = 0;
-                  mask = strtol (slash, NULL, 10);
-                  if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                  /* Convert text after slash to a bit netmask. */
+
+                  if (strchr (slash, '.')
+                      && (atoi (slash) > 32)
+                      && inet_aton (slash, &addr))
+                    {
+                      in_addr_t haddr;
+
+                      /* 192.168.200.0/255.255.255.252 */
+
+                      haddr = ntohl (addr.s_addr);
+                      mask = 32;
+                      while ((haddr & 1) == 0)
+                        {
+                          mask--;
+                          haddr = haddr >> 1;
+                        }
+                      if (mask < 8 || mask > 32) return -1;
+                    }
+                  else
+                    {
+                      /* 192.168.200.0/30 */
+
+                      errno = 0;
+                      mask = strtol (slash, NULL, 10);
+                      if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                    }
+
+                  /* Calculate number of hosts. */
+
+                  count += 1L << (32 - mask);
+                  /* Leave out the network and broadcast addresses. */
+                  if (mask < 31) count--;
                 }
-
-              /* Calculate number of hosts. */
-
-              count += 1L << (32 - mask);
-              /* Leave out the network and broadcast addresses. */
-              if (mask < 31) count--;
             }
           else
             /* Just a trailing /. */
