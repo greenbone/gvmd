@@ -333,7 +333,8 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:template name="wrap-row">
     <xsl:param name="line"/>
     <xsl:param name="indented"/> <!-- shall be bool -->
-    <xsl:text>\rowcolor{white}{</xsl:text>
+    <xsl:param name="color">white</xsl:param>
+    <xsl:text>\rowcolor{</xsl:text><xsl:value-of select="$color"/><xsl:text>}{</xsl:text>
     <xsl:if test="$indented = 1">
       <xsl:text>$\hookrightarrow$</xsl:text>
     </xsl:if>
@@ -348,12 +349,14 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:param name="string"/>
     <xsl:param name="indented"/> <!-- shall be bool -->
     <xsl:param name="max">80</xsl:param>
+    <xsl:param name="color">white</xsl:param>
     <xsl:variable name="head" select="substring($string, 1, $max)"/>
     <xsl:variable name="tail" select="substring($string, $max+1)"/>
     <xsl:if test="string-length($head) &gt; 0">
       <xsl:call-template name="wrap-row">
         <xsl:with-param name="line" select="$head"/>
         <xsl:with-param name="indented" select="$indented"/>
+        <xsl:with-param name="color" select="$color"/>
       </xsl:call-template>
     </xsl:if>
     <xsl:if test="string-length($tail) &gt; 0">
@@ -361,6 +364,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
         <xsl:with-param name="string" select="$tail"/>
         <xsl:with-param name="indented">1</xsl:with-param>
         <xsl:with-param name="max">78</xsl:with-param>
+        <xsl:with-param name="color" select="$color"/>
       </xsl:call-template>
     </xsl:if>
   </xsl:template>
@@ -368,9 +372,11 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <!-- -->
   <xsl:template name="text-to-escaped-row">
     <xsl:param name="string"/>
+    <xsl:param name="color">white</xsl:param>
     <xsl:for-each select="str:tokenize($string, '&#10;')">
       <xsl:call-template name="break-into-rows">
         <xsl:with-param name="string" select="."/>
+        <xsl:with-param name="color" select="$color"/>
       </xsl:call-template>
     </xsl:for-each>
   </xsl:template>
@@ -479,6 +485,16 @@ advice given in each description, in order to rectify the issue.
         <xsl:call-template name="latex-newline"/>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="/report/filters/notes = 0">
+        <xsl:text>Notes are excluded from the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>Notes are included in the report.</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:text>This report might not show details of all issues that were found.</xsl:text><xsl:call-template name="latex-newline"/>
     <xsl:if test="/report/filters/result_hosts_only = 1">
       <xsl:text>It only lists hosts that produced issues.</xsl:text><xsl:call-template name="latex-newline"/>
@@ -487,27 +503,27 @@ advice given in each description, in order to rectify the issue.
       <xsl:text>It shows issues that contain the search phrase "</xsl:text><xsl:value-of select="/report/filters/phrase"/><xsl:text>".</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'h') = false">
+    <xsl:if test="contains(/report/filters/text(), 'h') = false">
       <xsl:text>Issues with the threat level "High" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'm') = false">
+    <xsl:if test="contains(/report/filters/text(), 'm') = false">
       <xsl:text>Issues with the threat level "Medium" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'l') = false">
+    <xsl:if test="contains(/report/filters/text(), 'l') = false">
       <xsl:text>Issues with the threat level "Low" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'g') = false">
+    <xsl:if test="contains(/report/filters/text(), 'g') = false">
       <xsl:text>Issues with the threat level "Log" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'd') = false">
+    <xsl:if test="contains(/report/filters/text(), 'd') = false">
       <xsl:text>Issues with the threat level "Debug" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:if test="contains(/report/filters, 'f') = false">
+    <xsl:if test="contains(/report/filters/text(), 'f') = false">
       <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
@@ -519,7 +535,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
     <xsl:for-each select="/report/ports/port[host=$host]">
       <xsl:variable name="port_service" select="text()"/>
-        <xsl:if test="/report/results/result[host=$host][threat=$threat][port=$port_service]">
+        <xsl:if test="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
           <xsl:call-template name="latex-hyperref">
             <xsl:with-param name="target" select="concat('port:', $host, ' ', $port_service)"/>
             <xsl:with-param name="text" select="$port_service"/>
@@ -571,7 +587,7 @@ advice given in each description, in order to rectify the issue.
       <xsl:when test="threat='Medium'">openvas_warning</xsl:when>
       <xsl:when test="threat='Low'">openvas_note</xsl:when>
       <xsl:when test="threat='Log'">openvas_log</xsl:when>
-      <!-- TODO False Positive -->
+      <xsl:when test="threat='False Positive'">openvas_log</xsl:when>
     </xsl:choose>
   </xsl:template>
 
@@ -587,16 +603,44 @@ advice given in each description, in order to rectify the issue.
     </xsl:choose>
   </xsl:template>
 
+  <!-- Text of a note. -->
+  <xsl:template name="notes">
+    <xsl:for-each select="notes/note">
+      <xsl:call-template name="latex-newline"/>
+      <xsl:text>\rowcolor{openvas_user_note}{\textbf{Note}}</xsl:text>\\<xsl:call-template name="latex-newline"/>
+      <xsl:call-template name="text-to-escaped-row">
+        <xsl:with-param name="color" select="'openvas_user_note'"/>
+        <xsl:with-param name="string" select="text"/>
+      </xsl:call-template>
+      <xsl:text>\rowcolor{openvas_user_note}{}</xsl:text><xsl:call-template name="latex-newline"/>
+      <xsl:text>\rowcolor{openvas_user_note}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- Text of an override. -->
   <xsl:template name="overrides">
-    <xsl:for-each select="overrides/override">
-      <xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_override}{\textbf{Override to </xsl:text>
-      <xsl:value-of select="new_threat"/><xsl:text>}}</xsl:text>\\<xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_override}{\verb=</xsl:text><xsl:value-of select="text"/><xsl:text>=}</xsl:text><xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_override}{}</xsl:text><xsl:call-template name="latex-newline"/>
-      <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
-    </xsl:for-each>
+    <xsl:if test="/report/filters/apply_overrides/text()='1'">
+      <xsl:for-each select="overrides/override">
+        <xsl:call-template name="latex-newline"/>
+        <xsl:text>\rowcolor{openvas_user_override}{\textbf{Override from </xsl:text>
+        <xsl:choose>
+          <xsl:when test="string-length(threat) = 0">
+            <xsl:text>Any</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="threat"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text> to </xsl:text>
+        <xsl:value-of select="new_threat"/><xsl:text>}}</xsl:text>\\<xsl:call-template name="latex-newline"/>
+        <xsl:call-template name="text-to-escaped-row">
+          <xsl:with-param name="color" select="'openvas_user_override'"/>
+          <xsl:with-param name="string" select="text"/>
+        </xsl:call-template>
+        <xsl:text>\rowcolor{openvas_user_override}{}</xsl:text><xsl:call-template name="latex-newline"/>
+        <xsl:text>\rowcolor{openvas_user_override}{Last modified: </xsl:text><xsl:value-of select="modification_time"/><xsl:text>}</xsl:text><xsl:call-template name="latex-newline"/>
+      </xsl:for-each>
+    </xsl:if>
   </xsl:template>
 
 <!-- SUBSECTION: Results for a single host. -->
@@ -606,11 +650,11 @@ advice given in each description, in order to rectify the issue.
     <xsl:param name="host"/>
     <xsl:param name="port_service"/>
     <xsl:param name="threat"/>
-    <xsl:if test="/report/results/result[host=$host][threat=$threat][port=$port_service]">
+    <xsl:if test="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
       <xsl:call-template name="latex-subsubsection"><xsl:with-param name="subsubsection_string" select="$port_service"/></xsl:call-template>
       <xsl:call-template name="latex-label"><xsl:with-param name="label_string" select="concat('port:', $host, ' ', $port_service)"/></xsl:call-template>
       <xsl:call-template name="newline"/>
-      <xsl:for-each select="/report/results/result[host=$host][threat=$threat][port=$port_service]">
+      <xsl:for-each select="/report/results/result[host=$host][threat/text()=$threat][port=$port_service]">
         <xsl:text>\begin{longtable}{|p{\textwidth * 1}|}</xsl:text><xsl:call-template name="newline"/>
         <xsl:call-template name="latex-hline"/>
         <xsl:text>\rowcolor{</xsl:text>
@@ -619,11 +663,31 @@ advice given in each description, in order to rectify the issue.
         </xsl:call-template>
         <xsl:text>}{\color{white}{</xsl:text>
         <xsl:value-of select="$threat"/>
-        <xsl:if test="nvt/cvss_base != ''">
-          <xsl:text> (CVSS: </xsl:text>
-          <xsl:value-of select="nvt/cvss_base"/>
-          <xsl:text>) </xsl:text>
-        </xsl:if>
+        <xsl:choose>
+          <xsl:when test="original_threat">
+            <xsl:choose>
+              <xsl:when test="threat = original_threat">
+                <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+                  <xsl:text> (CVSS: </xsl:text>
+                  <xsl:value-of select="nvt/cvss_base"/>
+                  <xsl:text>) </xsl:text>
+                </xsl:if>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text> (Overridden from </xsl:text>
+                <xsl:value-of select="original_threat"/>
+                <xsl:text>) </xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:if test="string-length(nvt/cvss_base) &gt; 0">
+              <xsl:text> (CVSS: </xsl:text>
+              <xsl:value-of select="nvt/cvss_base"/>
+              <xsl:text>) </xsl:text>
+            </xsl:if>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>}}</xsl:text>
         <xsl:call-template name="latex-newline"/>
         <xsl:text>\rowcolor{</xsl:text>
@@ -654,6 +718,7 @@ advice given in each description, in order to rectify the issue.
         <xsl:call-template name="latex-newline"/>
         <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
         <xsl:call-template name="latex-newline"/>
+        <xsl:call-template name="notes"/>
         <xsl:call-template name="overrides"/>
         <xsl:text>\end{longtable}</xsl:text>
         <xsl:call-template name="newline"/>
@@ -719,7 +784,7 @@ advice given in each description, in order to rectify the issue.
       <xsl:call-template name="result-details-host-port-threat">
         <xsl:with-param name="threat">False Positive</xsl:with-param>
         <xsl:with-param name="host"><xsl:value-of select="$host"/></xsl:with-param>
-        <xsl:with-param name="port_service"><xsl:value-of select="port"/></xsl:with-param>
+        <xsl:with-param name="port_service"><xsl:value-of select="text()"/></xsl:with-param>
       </xsl:call-template>
     </xsl:for-each>
   </xsl:template>

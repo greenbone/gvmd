@@ -113,15 +113,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="override">
-    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
-      <b>Override to <xsl:value-of select="new_threat"/></b><br/>
-      <pre>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
-        </xsl:call-template>
-      </pre>
-      Last modified: <xsl:value-of select="modification_time"/>.
-    </div>
+    <xsl:if test="/report/filters/apply_overrides/text()='1'">
+      <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+        <b>
+          Override from
+          <xsl:choose>
+            <xsl:when test="string-length(threat) = 0">
+              Any
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="threat"/>
+            </xsl:otherwise>
+          </xsl:choose>
+          to <xsl:value-of select="new_threat"/></b><br/>
+        <pre>
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string"><xsl:value-of select="text"/></xsl:with-param>
+          </xsl:call-template>
+        </pre>
+        Last modified: <xsl:value-of select="modification_time"/>.
+      </div>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="result" mode="issue">
@@ -193,6 +205,56 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       The report first summarises the results found.  Then, for each host,
       the report describes every issue found.  Please consider the
       advice given in each description, in order to rectify the issue.
+    </p>
+
+    <p>
+      <xsl:choose>
+        <xsl:when test="filters/apply_overrides/text()='1'">
+          Overrides are on.  When a result has an override, this report uses the threat of the override.
+        </xsl:when>
+        <xsl:otherwise>
+          Overrides are off.  Even when a result has an override, this report uses the actual threat of the result.
+        </xsl:otherwise>
+      </xsl:choose>
+    </p>
+
+    <p>
+      <xsl:choose>
+        <xsl:when test="/report/filters/notes = 0">
+          Notes are excluded from the report.
+        </xsl:when>
+        <xsl:otherwise>
+          Notes are included in the report.
+        </xsl:otherwise>
+      </xsl:choose>
+    </p>
+
+    <p>
+      This report might not show details of all issues that were found.
+      <xsl:if test="filters/result_hosts_only = 1">
+        It only lists hosts that produced issues.
+      </xsl:if>
+      <xsl:if test="string-length(filters/phrase) &gt; 0">
+        It shows issues that contain the search phrase "<xsl:value-of select="filters/phrase"/>".
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'h') = false">
+        Issues with the threat level "High" are not shown.
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'm') = false">
+        Issues with the threat level "Medium" are not shown.
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'l') = false">
+        Issues with the threat level "Low" are not shown.
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'g') = false">
+        Issues with the threat level "Log" are not shown.
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'd') = false">
+        Issues with the threat level "Debug" are not shown.
+      </xsl:if>
+      <xsl:if test="contains(filters/text(), 'f') = false">
+        Issues with the threat level "False Positive" are not shown.
+      </xsl:if>
     </p>
 
     <table>

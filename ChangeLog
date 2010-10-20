@@ -1,5 +1,28 @@
 2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Ensure that the LaTeX and HTML reports match the GSA report in terms of
+	note and override information.
+
+	* src/report_formats/LaTeX/latex.xsl (wrap-row, break-into-rows)
+	(text-to-escaped-row): Add colour param.
+	(results-overview): Say whether notes are included.  Match filters by
+	text so they show up.
+	(single-host-overview-table-row): Match threat by text.
+	(threat-to-color): Add False Positive.
+	(notes): New template.
+	(overrides): Add the original threat to the heading.  Use
+	text-to-escaped-row for the text, in case there are newlines.
+	(result-details-host-port-threat): Match threat by text.  Add original
+	threat to heading.
+	(result-details-host-port-threat): Include notes.
+	(results-per-host-single-host-findings): Correct False Positive select.
+
+	* src/report_formats/HTML/HTML.xsl (override): Only include when overrides
+	are in effect.
+	(report): Note what the report contains.
+
+2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Set flags to enable report formats when
 	creating them.
 
