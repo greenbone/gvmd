@@ -6079,7 +6079,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('a0704abb-2120-489f-959f-251c9f4ffebd', NULL, 'CPE',"
            " 'Common Product Enumeration CSV table.',"
            " 'CPE stands for Common Product Enumeration.  It is a structured naming scheme for\n"
@@ -6092,7 +6092,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            "\n"
            "The report selects all CPE tables from the results and forms a single table\n"
            "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i, %i);",
+           " 'csv', 'text/csv', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6104,12 +6104,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('b993b6f5-f9fb-4e6e-9c94-dd46c00e058d', NULL, 'HTML',"
            " 'Single page HTML report.',"
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i, %i);",
+           " 'html', 'text/html', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6121,12 +6121,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('929884c6-c2c4-41e7-befb-2f6aa163b458', NULL, 'ITG',"
            " 'German \"IT-Grundschutz-Kataloge\" report.',"
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i, %i);",
+           " 'csv', 'text/csv', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6138,11 +6138,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('9f1ab17b-aaaa-411a-8c57-12df446f5588', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i, %i);",
+           " 'tex', 'text/plain', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6154,11 +6154,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('f5c2a364-47d2-4700-b21d-0a7693daddab', NULL, 'NBE',"
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i, %i);",
+           " 'nbe', 'text/plain', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6170,11 +6170,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('1a60a67e-97d0-4cbf-bc77-f71b08e7043d', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i, %i);",
+           "'pdf', 'application/pdf', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6186,11 +6186,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('19f6f1b3-7128-4433-888c-ccc764fe6ed5', NULL, 'TXT',"
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i, %i);",
+           " 'txt', 'text/plain', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
@@ -6202,11 +6202,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       report_format_t report_format;
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
-           " extension, content_type, signature, trust, trust_time)"
+           " extension, content_type, signature, trust, trust_time, flags)"
            " VALUES ('d5da9f67-8551-4e51-807b-b6a873d70e34', NULL, 'XML',"
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i, %i);",
+           " 'xml', 'text/xml', '', %i, %i, 1);",
            TRUST_YES,
            time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);

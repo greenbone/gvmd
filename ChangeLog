@@ -1,4 +1,9 @@
-2010-10-19  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Set flags to enable report formats when
+	creating them.
+
+2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (max_hosts): Add counting for IPv6 addresses.
 
