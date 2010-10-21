@@ -63,6 +63,88 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
   </type>
   <command>
+    <name>authenticate</name>
+    <summary>Authenticate with the manager</summary>
+    <description>
+      <p>
+        The client uses the authenticate command to authenticate with the
+        Manager.
+      </p>
+      <p>
+        The client normally executes this command at the beginning of each
+        connection.  The only commands permitted before authentication are
+        get_version and commands.
+      </p>
+    </description>
+    <pattern>
+      <e>credentials</e>
+    </pattern>
+    <ele>
+      <name>credentials</name>
+      <pattern>
+        <e>username</e>
+        <e>password</e>
+      </pattern>
+      <ele>
+        <name>username</name>
+        <summary>The login name of the user</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>password</name>
+        <summary>The user's password</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Authenticate with a good password</summary>
+      <request>
+        <authenticate>
+          <credentials>
+            <username>sally</username>
+            <password>secret</password>
+          </credentials>
+        </authenticate>
+      </request>
+      <response>
+        <authenticate_response status="200" status_text="OK"/>
+      </response>
+    </example>
+    <example>
+      <summary>Authenticate with a bad password</summary>
+      <request>
+        <authenticate>
+          <credentials>
+            <username>sally</username>
+            <password>secrte</password>
+          </credentials>
+        </authenticate>
+      </request>
+      <response>
+        <authenticate_response status="400"
+                               status_text="Authentication failed"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>commands</name>
     <summary>Run a list of commands</summary>
     <description>

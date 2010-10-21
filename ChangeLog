@@ -1,5 +1,9 @@
 2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add AUTHENTICATE.
+
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add missing delete commands.
 
 2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
