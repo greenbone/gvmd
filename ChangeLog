@@ -1,4 +1,9 @@
-2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/TXT/TXT.xsl (override): Only include override when
+	overrides are in effect, as in other reports.
+
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Ensure that the TXT report matches the GSA report in terms of note and
 	override information.

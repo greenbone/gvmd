@@ -179,27 +179,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="override">
-    <xsl:text>Override from </xsl:text>
-    <xsl:choose>
-      <xsl:when test="string-length(threat) = 0">
-        <xsl:text>Any</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="threat"/>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:text> to </xsl:text>
-    <xsl:value-of select="new_threat"/>
-    <xsl:text>:</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="wrap">
-      <xsl:with-param name="string" select="text"/>
-    </xsl:call-template>
-    <xsl:text>Override last modified: </xsl:text>
-    <xsl:value-of select="modification_time"/>
-    <xsl:text>.</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
+    <xsl:if test="/report/filters/apply_overrides/text()='1'">
+      <xsl:text>Override from </xsl:text>
+      <xsl:choose>
+        <xsl:when test="string-length(threat) = 0">
+          <xsl:text>Any</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="threat"/>
+        </xsl:otherwise>
+      </xsl:choose>
+      <xsl:text> to </xsl:text>
+      <xsl:value-of select="new_threat"/>
+      <xsl:text>:</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="wrap">
+        <xsl:with-param name="string" select="text"/>
+      </xsl:call-template>
+      <xsl:text>Override last modified: </xsl:text>
+      <xsl:value-of select="modification_time"/>
+      <xsl:text>.</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
   </xsl:template>
 
   <!-- Template for single issue -->
