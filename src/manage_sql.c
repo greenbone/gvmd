@@ -17684,7 +17684,8 @@ modify_override (override_t override, const char* text, const char* hosts,
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, ""))
+      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);

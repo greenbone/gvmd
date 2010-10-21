@@ -1,3 +1,8 @@
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_override): Add "False Positive" to possible
+	new_threat values.
+
 2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Ensure that the LaTeX and HTML reports match the GSA report in terms of
