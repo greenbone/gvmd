@@ -1,3 +1,14 @@
+2010-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Ensure that the TXT report matches the GSA report in terms of note and
+	override information.
+
+	* src/report_formats/TXT/TXT.xsl (wrap-line): Bring max down to 80.
+	(note, override): Replace HTML with text.
+	(result [issue]): Add space after "Overriden from".  Remove arg.  Enable
+	notes and overrides selections.
+	(report): Add details of what the report includes.
+
 2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_override): Add "False Positive" to possible
