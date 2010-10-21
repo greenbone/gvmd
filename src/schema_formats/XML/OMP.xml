@@ -89,6 +89,51 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </response>
   </command>
   <command>
+    <name>delete_agent</name>
+    <summary>Delete an agent</summary>
+    <description>
+      <p>
+        The client uses the delete_agent command to delete an existing agent.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an agent</summary>
+      <request>
+        <delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_agent>
+      </request>
+      <response>
+        <delete_agent_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_config</name>
     <summary>Delete a config</summary>
     <description>
@@ -97,7 +142,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
       <p>
         Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the Manager.
+        for confirmation from the user before sending this command to the
+        Manager.
       </p>
     </description>
     <pattern>
@@ -121,6 +167,379 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </attrib>
       </pattern>
     </response>
+    <example>
+      <summary>Delete a config</summary>
+      <request>
+        <delete_config config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_config>
+      </request>
+      <response>
+        <delete_config_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_escalator</name>
+    <summary>Delete an escalator</summary>
+    <description>
+      <p>
+        The client uses the delete_escalator command to delete an existing
+        escalator.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>escalator_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an escalator</summary>
+      <request>
+        <delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_escalator>
+      </request>
+      <response>
+        <delete_escalator_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_lsc_credential</name>
+    <summary>Delete an LSC credential</summary>
+    <description>
+      <p>
+        The client uses the delete_lsc_credential command to delete an
+        existing LSC credential.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>lsc_credential_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an LSC credential</summary>
+      <request>
+        <delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_lsc_credential>
+      </request>
+      <response>
+        <delete_lsc_credential_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_note</name>
+    <summary>Delete a note</summary>
+    <description>
+      <p>
+        The client uses the delete_note command to delete an existing note.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>note_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a note</summary>
+      <request>
+        <delete_note note_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_note>
+      </request>
+      <response>
+        <delete_note_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_override</name>
+    <summary>Delete a override</summary>
+    <description>
+      <p>
+        The client uses the delete_override command to delete an existing override.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>override_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a override</summary>
+      <request>
+        <delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_override>
+      </request>
+      <response>
+        <delete_override_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_report</name>
+    <summary>Delete a report</summary>
+    <description>
+      <p>
+        The client uses the delete_report command to delete an existing report.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a report</summary>
+      <request>
+        <delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_report>
+      </request>
+      <response>
+        <delete_report_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_schedule</name>
+    <summary>Delete a schedule</summary>
+    <description>
+      <p>
+        The client uses the delete_schedule command to delete an existing schedule.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>schedule_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a schedule</summary>
+      <request>
+        <delete_schedule schedule_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_schedule>
+      </request>
+      <response>
+        <delete_schedule_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_target</name>
+    <summary>Delete a target</summary>
+    <description>
+      <p>
+        The client uses the delete_target command to delete an existing target.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>target_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a target</summary>
+      <request>
+        <delete_target target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_target>
+      </request>
+      <response>
+        <delete_target_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_task</name>
+    <summary>Delete a task</summary>
+    <description>
+      <p>
+        The client uses the delete_task command to delete an existing task,
+        including all reports associated with the task.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a task</summary>
+      <request>
+        <delete_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_task>
+      </request>
+      <response>
+        <delete_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
   </command>
   <command>
     <name>get_notes</name>

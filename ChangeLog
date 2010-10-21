@@ -1,5 +1,9 @@
 2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add missing delete commands.
+
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_config_data_reset)
 	(create_report_format_data_reset): Iterate over array using length,
 	instead of depending on terminator.
