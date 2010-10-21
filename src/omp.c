@@ -765,8 +765,6 @@ typedef struct
 static void
 create_config_data_reset (create_config_data_t *data)
 {
-  int index = 0;
-  const preference_t *preference;
   import_config_data_t *import = (import_config_data_t*) &data->import;
 
   free (data->comment);
@@ -781,9 +779,14 @@ create_config_data_reset (create_config_data_t *data)
 
   if (import->preferences)
     {
-      while ((preference = (preference_t*) g_ptr_array_index (import->preferences,
-                                                              index++)))
-        array_free (preference->alts);
+      guint index = import->preferences->len;
+      while (index--)
+        {
+          const preference_t *preference;
+          preference = (preference_t*) g_ptr_array_index (import->preferences,
+                                                          index);
+          array_free (preference->alts);
+        }
       array_free (import->preferences);
     }
 
@@ -988,16 +991,14 @@ create_report_format_data_reset (create_report_format_data_t *data)
   free (data->param_default);
   free (data->param_name);
 
-  {
-    array_t *options;
-    int index;
-
-    index = 0;
-    while ((options = (array_t*) g_ptr_array_index (data->params_options,
-                                                    index++)))
-      array_free (options);
-    g_ptr_array_free (data->params_options, TRUE);
-  }
+  if (data->params_options)
+    {
+      guint index = data->params_options->len;
+      while (index--)
+        array_free ((array_t*) g_ptr_array_index (data->params_options,
+                                                  index));
+      g_ptr_array_free (data->params_options, TRUE);
+    }
 
   free (data->param_type);
   free (data->param_type_min);

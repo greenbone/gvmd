@@ -1,5 +1,11 @@
 2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_config_data_reset)
+	(create_report_format_data_reset): Iterate over array using length,
+	instead of depending on terminator.
+
+2010-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl (override): Only include override when
 	overrides are in effect, as in other reports.
 
