@@ -1,3 +1,9 @@
+2010-10-22  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp.c (create_config_data_reset): Iterate over array using length,
+	instead of depending on terminator. (Adapted from r9251, initially
+	committed by Matthew Mundell.)
+
 2010-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp (omp_xml_handle_end_element): Terminate MODIFY_CONFIG arrays at

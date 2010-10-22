@@ -774,8 +774,6 @@ typedef struct
 static void
 create_config_data_reset (create_config_data_t *data)
 {
-  int index = 0;
-  const preference_t *preference;
   import_config_data_t *import = (import_config_data_t*) &data->import;
 
   free (data->comment);
@@ -790,9 +788,14 @@ create_config_data_reset (create_config_data_t *data)
 
   if (import->preferences)
     {
-      while ((preference = (preference_t*) g_ptr_array_index (import->preferences,
-                                                              index++)))
-        array_free (preference->alts);
+      guint index = import->preferences->len;
+      while (index--)
+        {
+          const preference_t *preference;
+          preference = (preference_t*) g_ptr_array_index (import->preferences,
+                                                          index);
+          array_free (preference->alts);
+        }
       array_free (import->preferences);
     }
 
