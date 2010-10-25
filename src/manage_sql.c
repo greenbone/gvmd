@@ -35,6 +35,7 @@
 #include "lsc_user.h"
 #include "tracef.h"
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -11079,6 +11080,252 @@ find_target (const char* uuid, target_t* target)
 }
 
 /**
+ * @brief Search backwards in a string for a character.
+ *
+ * Start at the character before \p point.
+ *
+ * @param[in]  start  Start of string.
+ * @param[in]  point  Current position.
+ * @param[in]  ch     Character.
+ *
+ * @return Address of matching character, else NULL.
+ */
+static char *
+strbchr (char *start, char *point, char ch)
+{
+  while (1)
+    {
+      if (point == start)
+        return NULL;
+      point--;
+      if (*point == ch)
+        return point;
+    }
+}
+
+/**
+ * @brief Return number of hosts described by a hosts string.
+ *
+ * @param[in]  hosts  String describing hosts.
+ *
+ * @return Number of hosts, or -1 on error.
+ */
+int
+manage_max_hosts (const char *hosts)
+{
+  long count = 0;
+  gchar** split = g_strsplit (hosts, ",", 0);
+  gchar** point = split;
+
+  /** @todo Check for errors in "hosts". */
+
+  while (*point)
+    {
+      gchar *slash, *hyphen;
+      slash = strchr (*point, '/');
+      hyphen = strchr (*point, '-');
+      if (slash)
+        {
+          if (hyphen)
+            /* Range and netmask. */
+            return -1;
+
+          slash++;
+          if (*slash)
+            {
+              long int mask;
+              struct in_addr addr;
+
+              if (strchr (*point, ':'))
+                /* IPv6.  Scanner current only supports single addresses. */
+                count++;
+              else
+                {
+                  /* IPv4. */
+
+                  /* Convert text after slash to a bit netmask. */
+
+                  if (strchr (slash, '.')
+                      && (atoi (slash) > 32)
+                      && inet_aton (slash, &addr))
+                    {
+                      in_addr_t haddr;
+
+                      /* 192.168.200.0/255.255.255.252 */
+
+                      haddr = ntohl (addr.s_addr);
+                      mask = 32;
+                      while ((haddr & 1) == 0)
+                        {
+                          mask--;
+                          haddr = haddr >> 1;
+                        }
+                      if (mask < 8 || mask > 32) return -1;
+                    }
+                  else
+                    {
+                      /* 192.168.200.0/30 */
+
+                      errno = 0;
+                      mask = strtol (slash, NULL, 10);
+                      if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                    }
+
+                  /* Calculate number of hosts. */
+
+                  count += 1L << (32 - mask);
+                  /* Leave out the network and broadcast addresses. */
+                  if (mask < 31) count--;
+                }
+            }
+          else
+            /* Just a trailing /. */
+            count++;
+        }
+      else if (hyphen)
+        {
+          hyphen++;
+          if (*hyphen)
+            {
+              int dot_count, total_dot_count;
+              const gchar* dot;
+
+              /* An address specifying a range. */
+
+              if (strchr (hyphen, '-'))
+                /* Multiple ranges. */
+                return -1;
+
+              dot_count = 0;
+              dot = hyphen;
+              while ((dot = strchr (dot, '.')))
+                dot++, dot_count++;
+
+              dot_count = 0;
+              dot = hyphen;
+              while ((dot = strchr (dot, '.')))
+                dot++, dot_count++;
+
+              total_dot_count = 0;
+              dot = *point;
+              while ((dot = strchr (dot, '.')))
+                dot++, total_dot_count++;
+
+              if (total_dot_count == 6)
+                {
+                  int one, two, subcount;
+                  char *pos_one, *pos_two;
+
+                  /* 192.168.1.102-192.168.1.104 */
+
+                  pos_one = *point;
+                  pos_two = hyphen;
+                  subcount = 0;
+
+                  /* First. */
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 256 * 256 * 255;
+
+                  /* Second. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 256 * 255;
+
+                  /* Third. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1) * 255;
+
+                  /* Fourth. */
+
+                  pos_one = strchr (pos_one, '.');
+                  pos_one++;
+
+                  pos_two = strchr (pos_two, '.');
+                  pos_two++;
+                  if (*pos_two == '\0')
+                    /* Trailing dot. */
+                    return -1;
+
+                  one = atoi (pos_one);
+                  two = atoi (pos_two);
+
+                  if (one > two)
+                    return -1;
+                  if (one < two)
+                    subcount += (two - one + 1);
+
+                  count += subcount;
+                }
+              else if (total_dot_count <= 3)
+                {
+                  int start, end;
+
+                  /* 192.168.1.102-104 */
+
+                  end = atoi (hyphen);
+                  dot = strbchr (*point, hyphen, '.');
+                  dot = dot ? (dot + 1) : *point;
+                  start = atoi (dot);
+
+                  if (end < start)
+                    {
+                      int tem = end;
+                      end = start;
+                      start = tem;
+                    }
+
+                  if (start == end)
+                    count++;
+                  else
+                    count += (end - start + 1);
+                }
+              else
+                {
+                  /* 192.168-169.1.102-104 */
+                  return -1;
+                }
+            }
+          else
+            /* Just a trailing -. */
+            count++;
+        }
+      else
+        count++;
+      point += 1;
+    }
+  return count;
+}
+
+/**
  * @brief Create a target.
  *
  * The \param hosts and \param target_locator parameters are mutually
@@ -11094,8 +11341,9 @@ find_target (const char* uuid, target_t* target)
  * @param[in]   password        Password for user \p username.
  * @param[out]  target          Created target.
  *
- * @return 0 success, 1 target exists already, -1 if import from target locator
- *         failed or response was empty.
+ * @return 0 success, 1 target exists already, 2 error in host specification,
+ *         3 too many hosts, -1 if import from target locator failed or response
+ *         was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* comment,
@@ -11126,6 +11374,7 @@ create_target (const char* name, const char* hosts, const char* comment,
   /* Import targets from target locator. */
   if (target_locator != NULL)
     {
+      int max;
       GSList* hosts_list = resource_request_resource (target_locator,
                                                       RESOURCE_TYPE_TARGET,
                                                       username ? username : "",
@@ -11142,12 +11391,44 @@ create_target (const char* name, const char* hosts, const char* comment,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
+      max = manage_max_hosts (import_hosts);
+      if (max == -1)
+        {
+          g_free (import_hosts);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (max > MANAGE_MAX_HOSTS)
+        {
+          g_free (import_hosts);
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 3;
+        }
       quoted_hosts = sql_nquote (import_hosts, strlen (import_hosts));
       g_free (import_hosts);
     }
   else
     {
+      int max;
+
       /* User provided hosts. */
+
+      max = manage_max_hosts (hosts);
+      if (max == -1)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (max > MANAGE_MAX_HOSTS)
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
       quoted_hosts = sql_nquote (hosts, strlen (hosts));
     }
 

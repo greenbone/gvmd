@@ -763,6 +763,14 @@ rc_preference (const char*, const char*);
 
 /* Targets. */
 
+/**
+ * @brief Maximum number of hosts a target may specify.
+ */
+#define MANAGE_MAX_HOSTS 4095
+
+int
+manage_max_hosts (const char *);
+
 gboolean
 find_target (const char*, target_t*);
 

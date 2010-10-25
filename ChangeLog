@@ -1,5 +1,19 @@
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (strbchr, manage_max_hosts): New functions.  From
+	omp.c.
+	(create_target): Count hosts here, to ensure within limit in import case.
+
+	* src/omp.c (strbchr, max_hosts, MAX_HOSTS): Remove.  To manage_sql.c and
+	manage.h.  Update callers.
+	(omp_xml_handle_end_element): In CREATE_TARGET move hosts error cases into
+	create_target returns.
+
+	* src/manage.h: Add header accordingly.
+	(MANAGE_MAX_HOSTS): New define.
+
+2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/CMakeLists.txt (doc, doc-full): Add OMP docs.
 	(omp.rnc, omp.html): New targets.
 

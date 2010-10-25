@@ -3304,257 +3304,6 @@ internal_error_send_to_client (GError** error)
  " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
 
 /**
- * @brief Search backwards in a string for a character.
- *
- * Start at the character before \p point.
- *
- * @param[in]  start  Start of string.
- * @param[in]  point  Current position.
- * @param[in]  ch     Character.
- *
- * @return Address of matching character, else NULL.
- */
-static char *
-strbchr (char *start, char *point, char ch)
-{
-  while (1)
-    {
-      if (point == start)
-        return NULL;
-      point--;
-      if (*point == ch)
-        return point;
-    }
-}
-
-/**
- * @brief Maximum number of hosts a target may specify.
- */
-#define MAX_HOSTS 4095
-
-/**
- * @brief Return number of hosts described by a hosts string.
- *
- * @param[in]  hosts  String describing hosts.
- *
- * @return Number of hosts, or -1 on error.
- */
-static int
-max_hosts (const char *hosts)
-{
-  long count = 0;
-  gchar** split = g_strsplit (hosts, ",", 0);
-  gchar** point = split;
-
-  /** @todo Check for errors in "hosts". */
-
-  while (*point)
-    {
-      gchar *slash, *hyphen;
-      slash = strchr (*point, '/');
-      hyphen = strchr (*point, '-');
-      if (slash)
-        {
-          if (hyphen)
-            /* Range and netmask. */
-            return -1;
-
-          slash++;
-          if (*slash)
-            {
-              long int mask;
-              struct in_addr addr;
-
-              if (strchr (*point, ':'))
-                /* IPv6.  Scanner current only supports single addresses. */
-                count++;
-              else
-                {
-                  /* IPv4. */
-
-                  /* Convert text after slash to a bit netmask. */
-
-                  if (strchr (slash, '.')
-                      && (atoi (slash) > 32)
-                      && inet_aton (slash, &addr))
-                    {
-                      in_addr_t haddr;
-
-                      /* 192.168.200.0/255.255.255.252 */
-
-                      haddr = ntohl (addr.s_addr);
-                      mask = 32;
-                      while ((haddr & 1) == 0)
-                        {
-                          mask--;
-                          haddr = haddr >> 1;
-                        }
-                      if (mask < 8 || mask > 32) return -1;
-                    }
-                  else
-                    {
-                      /* 192.168.200.0/30 */
-
-                      errno = 0;
-                      mask = strtol (slash, NULL, 10);
-                      if (errno == ERANGE || mask < 8 || mask > 32) return -1;
-                    }
-
-                  /* Calculate number of hosts. */
-
-                  count += 1L << (32 - mask);
-                  /* Leave out the network and broadcast addresses. */
-                  if (mask < 31) count--;
-                }
-            }
-          else
-            /* Just a trailing /. */
-            count++;
-        }
-      else if (hyphen)
-        {
-          hyphen++;
-          if (*hyphen)
-            {
-              int dot_count, total_dot_count;
-              const gchar* dot;
-
-              /* An address specifying a range. */
-
-              if (strchr (hyphen, '-'))
-                /* Multiple ranges. */
-                return -1;
-
-              dot_count = 0;
-              dot = hyphen;
-              while ((dot = strchr (dot, '.')))
-                dot++, dot_count++;
-
-              dot_count = 0;
-              dot = hyphen;
-              while ((dot = strchr (dot, '.')))
-                dot++, dot_count++;
-
-              total_dot_count = 0;
-              dot = *point;
-              while ((dot = strchr (dot, '.')))
-                dot++, total_dot_count++;
-
-              if (total_dot_count == 6)
-                {
-                  int one, two, subcount;
-                  char *pos_one, *pos_two;
-
-                  /* 192.168.1.102-192.168.1.104 */
-
-                  pos_one = *point;
-                  pos_two = hyphen;
-                  subcount = 0;
-
-                  /* First. */
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 256 * 256 * 255;
-
-                  /* Second. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 256 * 255;
-
-                  /* Third. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1) * 255;
-
-                  /* Fourth. */
-
-                  pos_one = strchr (pos_one, '.');
-                  pos_one++;
-
-                  pos_two = strchr (pos_two, '.');
-                  pos_two++;
-                  if (*pos_two == '\0')
-                    /* Trailing dot. */
-                    return -1;
-
-                  one = atoi (pos_one);
-                  two = atoi (pos_two);
-
-                  if (one > two)
-                    return -1;
-                  if (one < two)
-                    subcount += (two - one + 1);
-
-                  count += subcount;
-                }
-              else if (total_dot_count <= 3)
-                {
-                  int start, end;
-
-                  /* 192.168.1.102-104 */
-
-                  end = atoi (hyphen);
-                  dot = strbchr (*point, hyphen, '.');
-                  dot = dot ? (dot + 1) : *point;
-                  start = atoi (dot);
-
-                  if (end < start)
-                    {
-                      int tem = end;
-                      end = start;
-                      start = tem;
-                    }
-
-                  if (start == end)
-                    count++;
-                  else
-                    count += (end - start + 1);
-                }
-              else
-                {
-                  /* 192.168-169.1.102-104 */
-                  return -1;
-                }
-            }
-          else
-            /* Just a trailing -. */
-            count++;
-        }
-      else
-        count++;
-      point += 1;
-    }
-  return count;
-}
-
-/**
  * @brief Find an attribute in a parser callback list of attributes.
  *
  * @param[in]   attribute_names   List of names.
@@ -11275,15 +11024,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
-          else if ((max = max_hosts (create_note_data->hosts)) == -1)
+          else if ((max = manage_max_hosts (create_note_data->hosts)) == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Error in host specification"));
-          else if (max > MAX_HOSTS)
+          else if (max > MANAGE_MAX_HOSTS)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Host specification exceeds"
-                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
+                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_note_data->task_id
                    && find_task (create_note_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
@@ -11392,15 +11141,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
-          else if ((max = max_hosts (create_override_data->hosts)) == -1)
+          else if ((max = manage_max_hosts (create_override_data->hosts)) == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Error in host specification"));
-          else if (max > MAX_HOSTS)
+          else if (max > MANAGE_MAX_HOSTS)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Host specification exceeds"
-                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
+                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_override_data->new_threat == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -12055,7 +11804,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           lsc_credential_t lsc_credential = 0;
           target_t new_target;
-          int max;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (create_target_data->name != NULL);
@@ -12075,17 +11823,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_TARGET hosts must both be at least one"
                                 " character long, or TARGET_LOCATOR must"
                                 " be set"));
-          else if (create_target_data->target_locator == NULL
-                   && ((max = max_hosts (create_target_data->hosts)) == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_target",
-                                "Error in host specification"));
-          else if (create_target_data->target_locator == NULL
-                   && (max > MAX_HOSTS))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_target",
-                                "Host specification exceeds"
-                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
           else if (strlen (create_target_data->hosts) != 0
                    && create_target_data->target_locator != NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -12125,6 +11862,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Target exists already"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Error in host specification"));
+                g_log ("event target", G_LOG_LEVEL_MESSAGE,
+                       "Target could not be created");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Host specification exceeds"
+                                    " " G_STRINGIFY (MANAGE_MAX_HOSTS)
+                                    " hosts"));
                 g_log ("event target", G_LOG_LEVEL_MESSAGE,
                        "Target could not be created");
                 break;
@@ -14304,7 +14057,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            target_iterator_uuid (&targets),
                                            target_iterator_name (&targets),
                                            target_iterator_hosts (&targets),
-                                           max_hosts
+                                           manage_max_hosts
                                             (target_iterator_hosts (&targets)),
                                            target_iterator_comment (&targets),
                                            target_in_use
@@ -14423,7 +14176,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     target = task_target (task);
                     hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
+                    maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
 
                     slave = task_slave (task);
 
@@ -14825,7 +14578,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     target = task_target (index);
                     hosts = target ? target_hosts (target) : NULL;
-                    maximum_hosts = hosts ? max_hosts (hosts) : 0;
+                    maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
 
                     slave = task_slave (index);
 
