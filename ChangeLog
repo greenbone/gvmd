@@ -1,5 +1,21 @@
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/report-format-HOWTO: Note the extra report element.
+
+	* report_formats/simple_pie_chart/create_report_import: Add param Height.
+
+	* report_formats/simple_pie_chart/pieplot.xsl: Read height from new param.
+
+	* report_formats/simple_topo_plot/create_report_import: Add params "Graph
+	Type" and "Node Distance".
+
+	* report_formats/simple_topo_plot/generate: Read plot tool from param.
+
+	* report_formats/simple_topo_plot/hostvisdot-summary.xsl: Read nodesep
+	from param.
+
+2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Increase GET_VERSION version.
 
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -45,8 +45,15 @@ To create a new report format
 
   - Test the generate script
 
-      - Get an OMP report (download the report with the GSA, or do a GET_REPORTS
-        request with some other client like the omp command).
+      - Get an OMP report (download the report with the GSA or do a GET_REPORTS
+        request with some other client like the omp command, and extract the
+        innermost REPORT element).
+
+        A command like
+
+            omp -R REPORT_ID | xmlstarlet sel -t -m /report -c report
+
+        will do the trick.
 
       - Run the command
 

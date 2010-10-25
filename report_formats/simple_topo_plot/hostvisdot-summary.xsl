@@ -34,7 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <xsl:template match="report">
 digraph scan {
-  nodesep = 8;
+  nodesep = <xsl:value-of select="report_format/param[name = 'Node Distance']/value"/>;
   ranksep = 2;
   overlap = "true";
   fontsize = 8.0;

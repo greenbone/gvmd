@@ -8,11 +8,11 @@
 # network topology. In a first step, the OMP report is
 # transformed via XSL with the tool xsltproc.
 # Next duplicate lines are removed with awk and finally
-# twopi of GraphViz creates the SVG file. 
+# twopi of GraphViz creates the SVG file.
 #
 # Authors:
 # Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
-# 
+#
 # Copyright:
 # Copyright (C) 2010 Greenbone Networks GmbH
 #
@@ -37,7 +37,8 @@ xsltproc ./hostvisdot-summary.xsl $1 > ${TMP}/summary-rgb.dot
 # remove duplicate lines:
 awk '!($0 in a) {a[$0];print}' ${TMP}/summary-rgb.dot > ${TMP}/summary-rgb-nondup.dot
 
-# use twopi (or dot or any other GraphViz module) to generate an SVG graphic
-twopi -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
+# Generate an SVG graphic using one of the GraphViz modules.
+`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Graph Type']/value"` \
+ -Tsvg ${TMP}/summary-rgb-nondup.dot -o ${TMP}/summary-rgb-nondup.svg
 
 cat ${TMP}/summary-rgb-nondup.svg
