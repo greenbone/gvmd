@@ -361,46 +361,6 @@ interval_from_strings (const char *value, const char *unit, time_t *months)
   return -1;
 }
 
-/**
- * @brief Check the netmask sizes in a target host string.
- *
- * @param  hosts  String containing hostnames, IPs etc.
- *
- * @return 0 valid, 1 CIDR mask out of range.
- */
-static int
-check_host_netmasks (const char* hosts)
-{
-  char* slashpos;
-  char* copy = g_strdup (hosts);
-  int cidr_mask = 32;
-
-  slashpos = strchr (copy, '/');
-  while (slashpos)
-    {
-      char* commapos;
-
-      commapos = strchr (slashpos, ',');
-      if (commapos != NULL)
-        commapos[0] = '\0';
-      if (slashpos[1] == '\0')
-        {
-          g_free (copy);
-          return 0;
-        }
-      cidr_mask = atoi (slashpos + 1);
-      if (cidr_mask < 20)
-        {
-          g_free (copy);
-          return 1;
-        }
-      slashpos = strchr (slashpos + 1, '/');
-    }
-
-  g_free (copy);
-  return 0;
-}
-
 
 /* Help message. */
 
@@ -3366,6 +3326,11 @@ strbchr (char *start, char *point, char ch)
         return point;
     }
 }
+
+/**
+ * @brief Maximum number of hosts a target may specify.
+ */
+#define MAX_HOSTS 4095
 
 /**
  * @brief Return number of hosts described by a hosts string.
@@ -11298,6 +11263,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           note_t new_note;
+          int max;
 
           assert (strcasecmp ("CREATE_NOTE", element_name) == 0);
 
@@ -11309,14 +11275,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
-          else if (max_hosts (create_note_data->hosts) == -1)
+          else if ((max = max_hosts (create_note_data->hosts)) == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Error in host specification"));
-          else if (check_host_netmasks (create_note_data->hosts))
+          else if (max > MAX_HOSTS)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
-                                "Host netmasks must be at most CIDR /20"));
+                                "Host specification exceeds"
+                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
           else if (create_note_data->task_id
                    && find_task (create_note_data->task_id, &task))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
@@ -11413,6 +11380,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           override_t new_override;
+          int max;
 
           assert (strcasecmp ("CREATE_OVERRIDE", element_name) == 0);
 
@@ -11424,14 +11392,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
-          else if (max_hosts (create_override_data->hosts) == -1)
+          else if ((max = max_hosts (create_override_data->hosts)) == -1)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Error in host specification"));
-          else if (check_host_netmasks (create_override_data->hosts))
+          else if (max > MAX_HOSTS)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
-                                "Host netmasks must be at most CIDR /20"));
+                                "Host specification exceeds"
+                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
           else if (create_override_data->new_threat == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -12086,6 +12055,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           lsc_credential_t lsc_credential = 0;
           target_t new_target;
+          int max;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
           assert (create_target_data->name != NULL);
@@ -12106,15 +12076,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " character long, or TARGET_LOCATOR must"
                                 " be set"));
           else if (create_target_data->target_locator == NULL
-                   && (max_hosts (create_target_data->hosts) == -1))
+                   && ((max = max_hosts (create_target_data->hosts)) == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
                                 "Error in host specification"));
           else if (create_target_data->target_locator == NULL
-                   && check_host_netmasks (create_target_data->hosts))
+                   && (max > MAX_HOSTS))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "Host netmasks must be at most CIDR /20"));
+                                "Host specification exceeds"
+                                " " G_STRINGIFY (MAX_HOSTS) " hosts"));
           else if (strlen (create_target_data->hosts) != 0
                    && create_target_data->target_locator != NULL)
             SEND_TO_CLIENT_OR_FAIL
