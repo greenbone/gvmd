@@ -1,5 +1,12 @@
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/CMakeLists.txt (doc, doc-full): Add OMP docs.
+	(omp.rnc, omp.html): New targets.
+
+	* doc/omp.html, doc/omp.rnc: New files.  Generated from XML source.
+
+2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add task control commmands.
 
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>

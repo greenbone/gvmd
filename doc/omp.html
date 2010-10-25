@@ -1,0 +1,1755 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>OMP</title>
+</head>
+<body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
+<h1>OMP:
+                  OpenVAS Management Protocol</h1>
+<p>The "management" protocol of the Open Vulnerability Assessment System.</p>
+<h2 id="command_summary">1 Summary of Commands</h2>
+<table id="index">
+<tr id="index">
+<td id="index"><a href="#authenticate">authenticate</a></td>
+<td id="index"><div style="margin-left: 15px;">Authenticate with the manager.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#commands">commands</a></td>
+<td id="index"><div style="margin-left: 15px;">Run a list of commands.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_agent">delete_agent</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete an agent.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_config">delete_config</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a config.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_escalator">delete_escalator</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete an escalator.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_lsc_credential">delete_lsc_credential</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete an LSC credential.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_note">delete_note</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a note.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_override">delete_override</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a override.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_report">delete_report</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a report.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_schedule">delete_schedule</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a schedule.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_target">delete_target</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a target.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#delete_task">delete_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Delete a task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_notes">get_notes</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all notes.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_version">get_version</a></td>
+<td id="index"><div style="margin-left: 15px;">Get the OpenVAS Manager Protocol version.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#help">help</a></td>
+<td id="index"><div style="margin-left: 15px;">Get the help text.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#modify_config">modify_config</a></td>
+<td id="index"><div style="margin-left: 15px;">Update an existing config.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#pause_task">pause_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Pause a running task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#resume_or_start_task">resume_or_start_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Resume task if stopped, else start task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#resume_paused_task">resume_paused_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Resume a paused task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#resume_stopped_task">resume_stopped_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Resume a stopped task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#start_task">start_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Manually start an existing task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#stop_task">stop_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Stop a running task.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#test_escalator">test_escalator</a></td>
+<td id="index"><div style="margin-left: 15px;">Run an escalator.</div></td>
+</tr>
+</table>
+<h2 id="command_summary">2 Command Details</h2>
+<div>
+<div><h3 id="authenticate">2.1
+          Command <tt>authenticate</tt>
+</h3></div>
+<p><b>In short: </b>Authenticate with the manager.</p>
+<p>
+        The client uses the authenticate command to authenticate with the
+        Manager.
+      </p>
+<p>
+        The client normally executes this command at the beginning of each
+        connection.  The only commands permitted before authentication are
+        get_version and commands.
+      </p>
+<h4>2.1.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;credentials&gt;</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;username&gt;</b><div style="margin-left: 15px; display: inline;">The login name of the user.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;password&gt;</b><div style="margin-left: 15px; display: inline;">The user's password.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.1.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>authenticate
+ = element authenticate
+     {
+       authenticate_credentials
+     }
+
+authenticate_credentials
+ = element credentials
+     {
+       authenticate_credentials_username
+       &amp; authenticate_credentials_password
+     }
+
+authenticate_credentials_username
+ = element username
+     {
+       ""
+     }
+
+authenticate_credentials_password
+ = element password
+     {
+       ""
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>authenticate_response
+ = element authenticate_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.1.1 Example: Authenticate with a good password</h4>
+<b>Client:</b><br><pre> &lt;authenticate&gt;
+   &lt;credentials&gt;
+     &lt;username&gt;sally&lt;/username&gt;
+     &lt;password&gt;secret&lt;/password&gt;
+   &lt;/credentials&gt;
+ &lt;/authenticate&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;authenticate_response status="200" status_text="OK"/&gt;
+</pre>
+<h4>2.1.1 Example: Authenticate with a bad password</h4>
+<b>Client:</b><br><pre> &lt;authenticate&gt;
+   &lt;credentials&gt;
+     &lt;username&gt;sally&lt;/username&gt;
+     &lt;password&gt;secrte&lt;/password&gt;
+   &lt;/credentials&gt;
+ &lt;/authenticate&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;authenticate_response status="400" status_text="Authentication failed"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="commands">2.2
+          Command <tt>commands</tt>
+</h3></div>
+<p><b>In short: </b>Run a list of commands.</p>
+<p>
+      The client uses the commands command to run a list of commands.  The
+      elements are executed as OMP commands in the given sequence.  The reply
+      contains the result of each command, in the same order as the given
+      commands.
+    </p>
+<h4>2.2.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.2.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>commands
+ = element commands
+     {
+       command*
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>commands_response
+ = element commands_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; response*
+     }
+</pre>
+</div>
+</div>
+<div>
+<div><h3 id="delete_agent">2.3
+          Command <tt>delete_agent</tt>
+</h3></div>
+<p><b>In short: </b>Delete an agent.</p>
+<p>
+        The client uses the delete_agent command to delete an existing agent.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.3.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"agent_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.3.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_agent
+ = element delete_agent
+     {
+       attribute agent_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_agent_response
+ = element delete_agent_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.3.1 Example: Delete an agent</h4>
+<b>Client:</b><br><pre> &lt;delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_agent_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_config">2.4
+          Command <tt>delete_config</tt>
+</h3></div>
+<p><b>In short: </b>Delete a config.</p>
+<p>
+        The client uses the delete_config command to delete an existing config.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.4.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"config_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.4.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_config
+ = element delete_config
+     {
+       attribute config_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_config_response
+ = element delete_config_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.4.1 Example: Delete a config</h4>
+<b>Client:</b><br><pre> &lt;delete_config config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_config_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_escalator">2.5
+          Command <tt>delete_escalator</tt>
+</h3></div>
+<p><b>In short: </b>Delete an escalator.</p>
+<p>
+        The client uses the delete_escalator command to delete an existing
+        escalator.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.5.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"escalator_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.5.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_escalator
+ = element delete_escalator
+     {
+       attribute escalator_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_escalator_response
+ = element delete_escalator_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.5.1 Example: Delete an escalator</h4>
+<b>Client:</b><br><pre> &lt;delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_escalator_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_lsc_credential">2.6
+          Command <tt>delete_lsc_credential</tt>
+</h3></div>
+<p><b>In short: </b>Delete an LSC credential.</p>
+<p>
+        The client uses the delete_lsc_credential command to delete an
+        existing LSC credential.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.6.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"lsc_credential_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.6.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_lsc_credential
+ = element delete_lsc_credential
+     {
+       attribute lsc_credential_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_lsc_credential_response
+ = element delete_lsc_credential_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.6.1 Example: Delete an LSC credential</h4>
+<b>Client:</b><br><pre> &lt;delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_lsc_credential_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_note">2.7
+          Command <tt>delete_note</tt>
+</h3></div>
+<p><b>In short: </b>Delete a note.</p>
+<p>
+        The client uses the delete_note command to delete an existing note.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.7.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"note_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.7.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_note
+ = element delete_note
+     {
+       attribute note_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_note_response
+ = element delete_note_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.7.1 Example: Delete a note</h4>
+<b>Client:</b><br><pre> &lt;delete_note note_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_note_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_override">2.8
+          Command <tt>delete_override</tt>
+</h3></div>
+<p><b>In short: </b>Delete a override.</p>
+<p>
+        The client uses the delete_override command to delete an existing override.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.8.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"override_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.8.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_override
+ = element delete_override
+     {
+       attribute override_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_override_response
+ = element delete_override_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.8.1 Example: Delete a override</h4>
+<b>Client:</b><br><pre> &lt;delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_override_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_report">2.9
+          Command <tt>delete_report</tt>
+</h3></div>
+<p><b>In short: </b>Delete a report.</p>
+<p>
+        The client uses the delete_report command to delete an existing report.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.9.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"report_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.9.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_report
+ = element delete_report
+     {
+       attribute report_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_report_response
+ = element delete_report_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.9.1 Example: Delete a report</h4>
+<b>Client:</b><br><pre> &lt;delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_report_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_schedule">2.10
+          Command <tt>delete_schedule</tt>
+</h3></div>
+<p><b>In short: </b>Delete a schedule.</p>
+<p>
+        The client uses the delete_schedule command to delete an existing schedule.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.10.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"schedule_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.10.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_schedule
+ = element delete_schedule
+     {
+       attribute schedule_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_schedule_response
+ = element delete_schedule_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.10.1 Example: Delete a schedule</h4>
+<b>Client:</b><br><pre> &lt;delete_schedule schedule_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_schedule_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_target">2.11
+          Command <tt>delete_target</tt>
+</h3></div>
+<p><b>In short: </b>Delete a target.</p>
+<p>
+        The client uses the delete_target command to delete an existing target.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.11.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"target_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.11.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_target
+ = element delete_target
+     {
+       attribute target_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_target_response
+ = element delete_target_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.11.1 Example: Delete a target</h4>
+<b>Client:</b><br><pre> &lt;delete_target target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_target_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_task">2.12
+          Command <tt>delete_task</tt>
+</h3></div>
+<p><b>In short: </b>Delete a task.</p>
+<p>
+        The client uses the delete_task command to delete an existing task,
+        including all reports associated with the task.
+      </p>
+<p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+<h4>2.12.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.12.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>delete_task
+ = element delete_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>delete_task_response
+ = element delete_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.12.1 Example: Delete a task</h4>
+<b>Client:</b><br><pre> &lt;delete_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;delete_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_notes">2.13
+          Command <tt>get_notes</tt>
+</h3></div>
+<p><b>In short: </b>Get all notes.</p>
+<p>
+      The client uses the get_notes command to get note information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of notes to the client.
+    </p>
+<h4>2.13.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"note_id"</b>
+          (uuid)
+          ID of single note to get.
+          </li>
+<li>
+<b>"nvt_id"</b>
+          (oid)
+          </li>
+<li>
+<b>"task_id"</b>
+          (uuid)
+          </li>
+<li>
+<b>"details"</b>
+          (boolean)
+          </li>
+<li>
+<b>"result"</b>
+          (boolean)
+          </li>
+<li>
+<b>"sort_order"</b>
+          (sort_order)
+          </li>
+<li>
+<b>"sort_field"</b>
+          (text)
+          </li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.13.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_notes
+ = element get_notes
+     {
+       attribute note_id { uuid }?
+       &amp; attribute nvt_id { oid }?
+       &amp; attribute task_id { uuid }?
+       &amp; attribute details { boolean }?
+       &amp; attribute result { boolean }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_notes_response
+ = element get_notes_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.13.1 Example: Get all notes</h4>
+<b>Client:</b><br><pre> &lt;get_notes/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
+   &lt;note id="b76b81a7-9df8-42df-afff-baa9d4620128"&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+       &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+     &lt;/nvt&gt;
+     &lt;text excerpt="0"&gt;This is the full text of the note.&lt;/text&gt;
+     &lt;orphan&gt;1&lt;/orphan&gt;
+   &lt;/note&gt;
+   ...
+ &lt;/get_notes_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_version">2.14
+          Command <tt>get_version</tt>
+</h3></div>
+<p><b>In short: </b>Get the OpenVAS Manager Protocol version.</p>
+<h4>2.14.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><i>Empty single element.</i></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.14.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_version
+ = element get_version
+     {
+       ""
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_version_response
+ = element get_version_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+</div>
+<div>
+<div><h3 id="help">2.15
+          Command <tt>help</tt>
+</h3></div>
+<p><b>In short: </b>Get the help text.</p>
+<h4>2.15.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><i>Empty single element.</i></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.15.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>help
+ = element help
+     {
+       ""
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>help_response
+ = element help_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+</div>
+<div>
+<div><h3 id="modify_config">2.16
+          Command <tt>modify_config</tt>
+</h3></div>
+<p><b>In short: </b>Update an existing config.</p>
+<p>
+        This command can take three forms: with a preference, with a family selection
+        or with an NVT selection.
+      </p>
+<p>
+        The first form modifies a preference on the config.
+        If the preference includes an NVT, then the preference is an NVT preference,
+        otherwise the preference is a scanner preference.  If the preference includes
+        a value then the manager updates the value of the preference, otherwise the
+        manager removes the preference.
+      </p>
+<p>
+        The second form, with a family selection, lets the client modify the
+        NVTs selected by the config at a family level.  The idea is that the
+        client modifies the entire family selection at once, so a client will
+        often need to include many families in a family selection.
+      </p>
+<p>
+        The family_selection may include a growing element to indicate whether new
+        families should be added to the selection.  It may also include any number
+        of family elements.
+      </p>
+<p>
+        A family element must always include a name and may include a growing element
+        and an all element.  The all element indicates whether all NVTs in the family
+        should be selected.  The growing element indicates whether new NVTs in the
+        family should be added to the selection as they arrive.  Leaving a family
+        out of the family_selection is equivalent to including the family with all
+        0 and growing 0.
+      </p>
+<p>
+        The effect of the all 0 and growing 0 case is subtle: if
+        all NVTs were selected then all are removed (effectively removing the
+        family from the config).  However if some NVTs were selected then they
+        remain selected.  As a result the client must include in the
+        family_selection all families that must have all NVTs selected.
+      </p>
+<p>
+        The third option, an NVT selection, must include a family and may include any
+        number of NVTs.  The manager updates the given family in the config to
+        include only the given NVTs.
+      </p>
+<p>
+        If there was no error with the command sent by the client, the manager will
+        apply the changes to the config and will reply with a response code indicating
+        success.
+      </p>
+<h4>2.16.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"config_id"</b>
+          (uuid)
+          ID of config to modify.
+          </li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+<b>
+            &lt;preference&gt;</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the preference to modify.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;?</b><div style="margin-left: 15px; display: inline;">NVT associated with preference to modify.</div>
+<ul style="list-style: none"><li>
+<b>"oid"</b>
+          (oid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;value&gt;?</b><div style="margin-left: 15px; display: inline;">New value for preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;family_selection&gt;</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;growing&gt;?</b><div style="margin-left: 15px; display: inline;">Whether new families should be added to the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;family&gt;*</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;all&gt;?</b><div style="margin-left: 15px; display: inline;">Whether to select all NVTs initially.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;growing&gt;?</b><div style="margin-left: 15px; display: inline;">Whether to add newly arrived nvts to the selection.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;nvt_selection&gt;</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;family&gt;</b><div style="margin-left: 15px; display: inline;">Name of family to modify.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;*</b><ul style="list-style: none"><li>
+<b>"oid"</b>
+          (oid)
+          </li></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.16.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>modify_config
+ = element modify_config
+     {
+       attribute config_id { uuid }
+       &amp; ( modify_config_preference
+           | modify_config_family_selection
+           | modify_config_nvt_selection )
+     }
+
+modify_config_preference
+ = element preference
+     {
+       modify_config_preference_name
+       &amp; modify_config_preference_nvt?
+       &amp; modify_config_preference_value?
+     }
+
+modify_config_preference_name
+ = element name
+     {
+       name
+     }
+
+modify_config_preference_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+modify_config_preference_value
+ = element value
+     {
+       base64
+     }
+
+modify_config_family_selection
+ = element family_selection
+     {
+       modify_config_family_selection_growing?
+       &amp; modify_config_family_selection_family*
+     }
+
+modify_config_family_selection_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family
+ = element family
+     {
+       modify_config_family_selection_family_all?
+       &amp; modify_config_family_selection_family_growing?
+       &amp; modify_config_family_selection_family_name
+     }
+
+modify_config_family_selection_family_all
+ = element all
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family_name
+ = element name
+     {
+       name
+     }
+
+modify_config_nvt_selection
+ = element nvt_selection
+     {
+       modify_config_nvt_selection_family
+       &amp; modify_config_nvt_selection_nvt*
+     }
+
+modify_config_nvt_selection_family
+ = element family
+     {
+       name
+     }
+
+modify_config_nvt_selection_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>modify_config_response
+ = element modify_config_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.16.1 Example: Modify a config preference</h4>
+<b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;preference&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
+     &lt;name&gt;Nmap (NASL wrapper)[checkbox]:UDP port scan&lt;/name&gt;
+     &lt;value&gt;eWVz&lt;/value&gt;
+   &lt;/preference&gt;
+ &lt;/modify_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+</pre>
+<h4>2.16.1 Example: Modify the families that a config selects</h4>
+<p>
+          The outer "growing" element sets the config to add any new families
+          that arrive.
+        </p>
+<p>
+          The client requests the Manager to keep a single selected
+          family (Debian Local Security Checks), to select all NVTs in
+          this family, and to automatically add any new NVTs in this family
+          to the config.
+        </p>
+<b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;family_selection&gt;
+     &lt;growing&gt;1&lt;/growing&gt;
+     &lt;family&gt;
+       &lt;name&gt;Debian Local Security Checks&lt;/name&gt;
+       &lt;all&gt;1&lt;/all&gt;
+       &lt;growing&gt;1&lt;/growing&gt;
+     &lt;/family&gt;
+   &lt;/family_selection&gt;
+ &lt;/modify_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+</pre>
+<h4>2.16.1 Example: Modify the NVTs that a config selects in a particular family</h4>
+<b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;nvt_selection&gt;
+     &lt;family&gt;Debian Local Security Checks&lt;/family&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.53797"/&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.63272"/&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.55615"/&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.53546"/&gt;
+   &lt;/nvt_selection&gt;
+ &lt;/modify_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="pause_task">2.17
+          Command <tt>pause_task</tt>
+</h3></div>
+<p><b>In short: </b>Pause a running task.</p>
+<p>
+        The client uses the pause_task command to manually pause a running task.
+      </p>
+<h4>2.17.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.17.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>pause_task
+ = element pause_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>pause_task_response
+ = element pause_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.17.1 Example: Pause a running task</h4>
+<b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_or_start_task">2.18
+          Command <tt>resume_or_start_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume task if stopped, else start task.</p>
+<p>
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
+      </p>
+<h4>2.18.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.18.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.18.1 Example: Resume a running task</h4>
+<b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_paused_task">2.19
+          Command <tt>resume_paused_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume a paused task.</p>
+<p>
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
+      </p>
+<h4>2.19.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.19.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_paused_task
+ = element resume_paused_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.19.1 Example: Resume a paused task</h4>
+<b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_stopped_task">2.20
+          Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+<h4>2.20.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.20.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_stopped_task
+ = element resume_stopped_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.20.1 Example: Resume a stopped task</h4>
+<b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="start_task">2.21
+          Command <tt>start_task</tt>
+</h3></div>
+<p><b>In short: </b>Manually start an existing task.</p>
+<p>
+        The client uses the start_task command to manually start an
+        existing task.
+      </p>
+<h4>2.21.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.21.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.21.1 Example: Start a task</h4>
+<b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="stop_task">2.22
+          Command <tt>stop_task</tt>
+</h3></div>
+<p><b>In short: </b>Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>2.22.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.22.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>stop_task
+ = element stop_task
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>stop_task_response
+ = element stop_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.22.1 Example: Stop a running task</h4>
+<b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="test_escalator">2.23
+          Command <tt>test_escalator</tt>
+</h3></div>
+<p><b>In short: </b>Run an escalator.</p>
+<p>
+        The client uses the test_escalator command to invoke a test run of
+        an escalator.
+      </p>
+<h4>2.23.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.23.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>test_escalator
+ = element test_escalator
+     {
+       attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>test_escalator_response
+ = element test_escalator_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.23.1 Example: Test an escalator</h4>
+<b>Client:</b><br><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div style="text-align: center; padding: 5px;">
+                  This file was automatically generated.
+                </div>
+</td></tr></table></div></body>
+</html>

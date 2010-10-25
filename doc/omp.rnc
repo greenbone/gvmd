@@ -1,0 +1,641 @@
+#### OpenVAS Management Protocol (OMP)
+####
+#### The "management" protocol of the Open Vulnerability Assessment System.
+
+### Preamble
+
+start = command | response
+
+command
+  = authenticate
+    | commands
+    | delete_agent
+    | delete_config
+    | delete_escalator
+    | delete_lsc_credential
+    | delete_note
+    | delete_override
+    | delete_report
+    | delete_schedule
+    | delete_target
+    | delete_task
+    | get_notes
+    | get_version
+    | help
+    | modify_config
+    | pause_task
+    | resume_or_start_task
+    | resume_paused_task
+    | resume_stopped_task
+    | start_task
+    | stop_task
+    | test_escalator
+
+response
+  = authenticate_response
+    | commands_response
+    | delete_agent_response
+    | delete_config_response
+    | delete_escalator_response
+    | delete_lsc_credential_response
+    | delete_note_response
+    | delete_override_response
+    | delete_report_response
+    | delete_schedule_response
+    | delete_target_response
+    | delete_task_response
+    | get_notes_response
+    | get_version_response
+    | help_response
+    | modify_config_response
+    | pause_task_response
+    | resume_or_start_task_response
+    | resume_paused_task_response
+    | resume_stopped_task_response
+    | start_task_response
+    | stop_task_response
+    | test_escalator_response
+
+### Data Types
+
+# Base64 encoded data.
+base64 = xsd:base64Binary
+
+boolean = text
+
+boolean_atoi = text
+
+name = xsd:string
+
+oid = xsd:token { pattern = "[0-9\.]{1,80}" }
+
+sort_order = text
+
+status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
+
+uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
+
+### Commands
+
+## Command authenticate
+##
+## Authenticate with the manager.
+
+authenticate
+ = element authenticate
+     {
+       authenticate_credentials
+     }
+
+authenticate_credentials
+ = element credentials
+     {
+       authenticate_credentials_username
+       & authenticate_credentials_password
+     }
+
+# The login name of the user.
+authenticate_credentials_username
+ = element username
+     {
+       ""
+     }
+
+# The user's password.
+authenticate_credentials_password
+ = element password
+     {
+       ""
+     }
+
+## Command commands
+##
+## Run a list of commands.
+
+commands
+ = element commands
+     {
+       command*
+     }
+
+## Command delete_agent
+##
+## Delete an agent.
+
+delete_agent
+ = element delete_agent
+     {
+       attribute agent_id { uuid }
+     }
+
+## Command delete_config
+##
+## Delete a config.
+
+delete_config
+ = element delete_config
+     {
+       attribute config_id { uuid }
+     }
+
+## Command delete_escalator
+##
+## Delete an escalator.
+
+delete_escalator
+ = element delete_escalator
+     {
+       attribute escalator_id { uuid }
+     }
+
+## Command delete_lsc_credential
+##
+## Delete an LSC credential.
+
+delete_lsc_credential
+ = element delete_lsc_credential
+     {
+       attribute lsc_credential_id { uuid }
+     }
+
+## Command delete_note
+##
+## Delete a note.
+
+delete_note
+ = element delete_note
+     {
+       attribute note_id { uuid }
+     }
+
+## Command delete_override
+##
+## Delete a override.
+
+delete_override
+ = element delete_override
+     {
+       attribute override_id { uuid }
+     }
+
+## Command delete_report
+##
+## Delete a report.
+
+delete_report
+ = element delete_report
+     {
+       attribute report_id { uuid }
+     }
+
+## Command delete_schedule
+##
+## Delete a schedule.
+
+delete_schedule
+ = element delete_schedule
+     {
+       attribute schedule_id { uuid }
+     }
+
+## Command delete_target
+##
+## Delete a target.
+
+delete_target
+ = element delete_target
+     {
+       attribute target_id { uuid }
+     }
+
+## Command delete_task
+##
+## Delete a task.
+
+delete_task
+ = element delete_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command get_notes
+##
+## Get all notes.
+
+get_notes
+ = element get_notes
+     {
+       # ID of single note to get.
+       attribute note_id { uuid }?
+       & attribute nvt_id { oid }?
+       & attribute task_id { uuid }?
+       & attribute details { boolean }?
+       & attribute result { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_version
+##
+## Get the OpenVAS Manager Protocol version.
+
+get_version
+ = element get_version
+     {
+       ""
+     }
+
+## Command help
+##
+## Get the help text.
+
+help
+ = element help
+     {
+       ""
+     }
+
+## Command modify_config
+##
+## Update an existing config.
+
+modify_config
+ = element modify_config
+     {
+       # ID of config to modify.
+       attribute config_id { uuid }
+       & ( modify_config_preference
+           | modify_config_family_selection
+           | modify_config_nvt_selection )
+     }
+
+modify_config_preference
+ = element preference
+     {
+       modify_config_preference_name
+       & modify_config_preference_nvt?
+       & modify_config_preference_value?
+     }
+
+# The name of the preference to modify.
+modify_config_preference_name
+ = element name
+     {
+       name
+     }
+
+# NVT associated with preference to modify.
+modify_config_preference_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+# New value for preference.
+modify_config_preference_value
+ = element value
+     {
+       base64
+     }
+
+modify_config_family_selection
+ = element family_selection
+     {
+       modify_config_family_selection_growing?
+       & modify_config_family_selection_family*
+     }
+
+# Whether new families should be added to the config.
+modify_config_family_selection_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family
+ = element family
+     {
+       modify_config_family_selection_family_all?
+       & modify_config_family_selection_family_growing?
+       & modify_config_family_selection_family_name
+     }
+
+# Whether to select all NVTs initially.
+modify_config_family_selection_family_all
+ = element all
+     {
+       boolean_atoi
+     }
+
+# Whether to add newly arrived nvts to the selection.
+modify_config_family_selection_family_growing
+ = element growing
+     {
+       boolean_atoi
+     }
+
+modify_config_family_selection_family_name
+ = element name
+     {
+       name
+     }
+
+modify_config_nvt_selection
+ = element nvt_selection
+     {
+       modify_config_nvt_selection_family
+       & modify_config_nvt_selection_nvt*
+     }
+
+# Name of family to modify.
+modify_config_nvt_selection_family
+ = element family
+     {
+       name
+     }
+
+modify_config_nvt_selection_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+     }
+
+## Command pause_task
+##
+## Pause a running task.
+
+pause_task
+ = element pause_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_or_start_task
+##
+## Resume task if stopped, else start task.
+
+resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_paused_task
+##
+## Resume a paused task.
+
+resume_paused_task
+ = element resume_paused_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command resume_stopped_task
+##
+## Resume a stopped task.
+
+resume_stopped_task
+ = element resume_stopped_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command start_task
+##
+## Manually start an existing task.
+
+start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command stop_task
+##
+## Stop a running task.
+
+stop_task
+ = element stop_task
+     {
+       attribute task_id { uuid }
+     }
+
+## Command test_escalator
+##
+## Run an escalator.
+
+test_escalator
+ = element test_escalator
+     {
+       attribute task_id { uuid }
+     }
+
+### Responses
+
+## Response to authenticate
+
+authenticate_response
+ = element authenticate_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to commands
+
+commands_response
+ = element commands_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & response*
+     }
+
+## Response to delete_agent
+
+delete_agent_response
+ = element delete_agent_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_config
+
+delete_config_response
+ = element delete_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_escalator
+
+delete_escalator_response
+ = element delete_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_lsc_credential
+
+delete_lsc_credential_response
+ = element delete_lsc_credential_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_note
+
+delete_note_response
+ = element delete_note_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_override
+
+delete_override_response
+ = element delete_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_report
+
+delete_report_response
+ = element delete_report_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_schedule
+
+delete_schedule_response
+ = element delete_schedule_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_target
+
+delete_target_response
+ = element delete_target_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_task
+
+delete_task_response
+ = element delete_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to get_notes
+
+get_notes_response
+ = element get_notes_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to get_version
+
+get_version_response
+ = element get_version_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to help
+
+help_response
+ = element help_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_config
+
+modify_config_response
+ = element modify_config_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to pause_task
+
+pause_task_response
+ = element pause_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_or_start_task
+
+resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_paused_task
+
+resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to resume_stopped_task
+
+resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to start_task
+
+start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to stop_task
+
+stop_task_response
+ = element stop_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to test_escalator
+
+test_escalator_response
+ = element test_escalator_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
