@@ -973,4 +973,291 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <command>
+    <name>pause_task</name>
+    <summary>Pause a running task</summary>
+    <description>
+      <p>
+        The client uses the pause_task command to manually pause a running task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Pause a running task</summary>
+      <request>
+        <pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </pause_task>
+      </request>
+      <response>
+        <pause_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>resume_or_start_task</name>
+    <summary>Resume task if stopped, else start task</summary>
+    <description>
+      <p>
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Resume a running task</summary>
+      <request>
+        <resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </resume_or_start_task>
+      </request>
+      <response>
+        <resume_or_start_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>resume_paused_task</name>
+    <summary>Resume a paused task</summary>
+    <description>
+      <p>
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Resume a paused task</summary>
+      <request>
+        <resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </resume_paused_task>
+      </request>
+      <response>
+        <resume_paused_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>resume_stopped_task</name>
+    <summary>Resume a stopped task</summary>
+    <description>
+      <p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Resume a stopped task</summary>
+      <request>
+        <resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </resume_stopped_task>
+      </request>
+      <response>
+        <resume_stopped_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>start_task</name>
+    <summary>Manually start an existing task</summary>
+    <description>
+      <p>
+        The client uses the start_task command to manually start an
+        existing task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Start a task</summary>
+      <request>
+        <start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </start_task>
+      </request>
+      <response>
+        <start_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>stop_task</name>
+    <summary>Stop a running task</summary>
+    <description>
+      <p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Stop a running task</summary>
+      <request>
+        <stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </stop_task>
+      </request>
+      <response>
+        <stop_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>test_escalator</name>
+    <summary>Run an escalator</summary>
+    <description>
+      <p>
+        The client uses the test_escalator command to invoke a test run of
+        an escalator.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Test an escalator</summary>
+      <request>
+        <test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea">
+        </test_escalator>
+      </request>
+      <response>
+        <test_escalator_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
 </protocol>

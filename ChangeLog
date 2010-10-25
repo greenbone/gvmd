@@ -1,5 +1,9 @@
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add task control commmands.
+
+2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/report-format-HOWTO: Note the extra report element.
 
 	* report_formats/simple_pie_chart/create_report_import: Add param Height.
