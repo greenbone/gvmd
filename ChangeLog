@@ -1,5 +1,9 @@
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Increase GET_VERSION version.
+
+2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (check_host_netmasks): Remove.
 	(MAX_HOSTS): New define.
 	(omp_xml_handle_end_element): Limit number of hosts in CREATE_NOTE,
