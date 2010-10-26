@@ -1,3 +1,8 @@
+2010-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (header): Define another character
+	that seems to be missing from Debian Lenny ucs LaTeX package.
+
 2010-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/rnc.xsl: Always

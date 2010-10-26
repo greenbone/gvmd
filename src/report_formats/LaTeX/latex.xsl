@@ -151,6 +151,7 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 
 \DeclareUnicodeCharacter {135}{{\textascii ?}}
 \DeclareUnicodeCharacter {129}{{\textascii ?}}
+\DeclareUnicodeCharacter {128}{{\textascii ?}}
 
 \usepackage{colortbl}
 
