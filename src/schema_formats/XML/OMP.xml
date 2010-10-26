@@ -59,6 +59,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }</pattern>
   </type>
   <type>
+    <name>threat</name>
+    <pattern>xsd:token { pattern = "High|Medium|Low|Log|Debug" }</pattern>
+  </type>
+  <type>
     <name>uuid</name>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
   </type>
@@ -970,6 +974,387 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_config_response status="200" status_text="OK">
         </modify_config_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_note</name>
+    <summary>Modify an existing note</summary>
+    <description>
+      <p>
+        The client uses the modify_note command to change an existing note.
+      </p>
+      <p>
+        If an optional element is left out, the existing value will be
+        cleared, generalising that constraint.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>note_id</name>
+        <summary>ID of note to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>hosts</e></o>
+      <o><e>port</e></o>
+      <o><e>result</e></o>
+      <o><e>task</e></o>
+      <e>text</e>
+      <o><e>threat</e></o>
+    </pattern>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which note applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>text</name>
+      <summary>The text of the note</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>Threat level to which note applies</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the text and result of a note</summary>
+      <request>
+        <modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <text>This issue should be resolved after the upgrade.</text>
+          <result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/>
+        </modify_note>
+      </request>
+      <response>
+        <modify_note_response status="200" status_text="OK">
+        </modify_note_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_override</name>
+    <summary>Modify an existing override</summary>
+    <description>
+      <p>
+        The client uses the modify_override command to change an existing
+        override.
+      </p>
+      <p>
+        If an optional element is left out, the existing value will be
+        cleared, generalising that constraint.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>override_id</name>
+        <summary>ID of override to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>hosts</e></o>
+      <o><e>new_threat</e></o>
+      <o><e>port</e></o>
+      <o><e>result</e></o>
+      <o><e>task</e></o>
+      <e>text</e>
+      <o><e>threat</e></o>
+    </pattern>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>new_threat</name>
+      <summary>New threat level for result</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which override applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>text</name>
+      <summary>Text describing the override</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>Threat level to which override applies</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Set the override threat to Low</summary>
+      <request>
+        <modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <text>This issue is less important in our setup.</text>
+          <new_threat>Low</new_threat>
+        </modify_override>
+      </request>
+      <response>
+        <modify_override_response status="200" status_text="OK">
+        </modify_override_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_report</name>
+    <summary>Modify an existing report</summary>
+    <description>
+      <p>
+        The client uses the modify_report command to change an existing
+        report.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of report to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>comment</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>The comment on the report</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a report comment</summary>
+      <request>
+        <modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <comment>Monthly scan of the webserver.</comment>
+        </modify_report>
+      </request>
+      <response>
+        <modify_report_response status="200" status_text="OK">
+        </modify_report_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_task</name>
+    <summary>Modify an existing task</summary>
+    <description>
+      <p>
+        The client uses the modify_task command to change an existing
+        task.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <summary>ID of task to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <or>
+        <e>comment</e>
+        <e>escalator</e>
+        <e>name</e>
+        <e>rcfile</e>
+        <e>schedule</e>
+        <e>file</e>
+      </or>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>The comment on the task</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>escalator</name>
+      <summary>Task escalator</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>The name of the task</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>An openvasrc style file describing the task</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>schedule</name>
+      <summary>Task schedule</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>file</name>
+      <summary>File to attach to task</summary>
+      <pattern>
+        <attrib>
+          <name>name</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <t>base64</t>
+        <attrib>
+          <name>action</name>
+          <type>xsd:token { pattern = "update|remove" }</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a task comment</summary>
+      <request>
+        <modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <comment>Monthly scan of the webserver.</comment>
+        </modify_task>
+      </request>
+      <response>
+        <modify_task_response status="200" status_text="OK">
+        </modify_task_response>
       </response>
     </example>
   </command>
