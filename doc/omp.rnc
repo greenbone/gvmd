@@ -23,6 +23,10 @@ command
     | get_version
     | help
     | modify_config
+    | modify_note
+    | modify_override
+    | modify_report
+    | modify_task
     | pause_task
     | resume_or_start_task
     | resume_paused_task
@@ -48,6 +52,10 @@ response
     | get_version_response
     | help_response
     | modify_config_response
+    | modify_note_response
+    | modify_override_response
+    | modify_report_response
+    | modify_task_response
     | pause_task_response
     | resume_or_start_task_response
     | resume_paused_task_response
@@ -73,6 +81,8 @@ sort_order = text
 
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 
+threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 
 ### Commands
@@ -84,13 +94,15 @@ uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 authenticate
  = element authenticate
      {
-       authenticate_credentials
+       ""
+       & authenticate_credentials
      }
 
 authenticate_credentials
  = element credentials
      {
-       authenticate_credentials_username
+       ""
+       & authenticate_credentials_username
        & authenticate_credentials_password
      }
 
@@ -98,14 +110,14 @@ authenticate_credentials
 authenticate_credentials_username
  = element username
      {
-       ""
+       text
      }
 
 # The user's password.
 authenticate_credentials_password
  = element password
      {
-       ""
+       text
      }
 
 ## Command commands
@@ -115,7 +127,8 @@ authenticate_credentials_password
 commands
  = element commands
      {
-       command*
+       ""
+       & command*
      }
 
 ## Command delete_agent
@@ -125,7 +138,8 @@ commands
 delete_agent
  = element delete_agent
      {
-       attribute agent_id { uuid }
+       ""
+       & attribute agent_id { uuid }
      }
 
 ## Command delete_config
@@ -135,7 +149,8 @@ delete_agent
 delete_config
  = element delete_config
      {
-       attribute config_id { uuid }
+       ""
+       & attribute config_id { uuid }
      }
 
 ## Command delete_escalator
@@ -145,7 +160,8 @@ delete_config
 delete_escalator
  = element delete_escalator
      {
-       attribute escalator_id { uuid }
+       ""
+       & attribute escalator_id { uuid }
      }
 
 ## Command delete_lsc_credential
@@ -155,7 +171,8 @@ delete_escalator
 delete_lsc_credential
  = element delete_lsc_credential
      {
-       attribute lsc_credential_id { uuid }
+       ""
+       & attribute lsc_credential_id { uuid }
      }
 
 ## Command delete_note
@@ -165,7 +182,8 @@ delete_lsc_credential
 delete_note
  = element delete_note
      {
-       attribute note_id { uuid }
+       ""
+       & attribute note_id { uuid }
      }
 
 ## Command delete_override
@@ -175,7 +193,8 @@ delete_note
 delete_override
  = element delete_override
      {
-       attribute override_id { uuid }
+       ""
+       & attribute override_id { uuid }
      }
 
 ## Command delete_report
@@ -185,7 +204,8 @@ delete_override
 delete_report
  = element delete_report
      {
-       attribute report_id { uuid }
+       ""
+       & attribute report_id { uuid }
      }
 
 ## Command delete_schedule
@@ -195,7 +215,8 @@ delete_report
 delete_schedule
  = element delete_schedule
      {
-       attribute schedule_id { uuid }
+       ""
+       & attribute schedule_id { uuid }
      }
 
 ## Command delete_target
@@ -205,7 +226,8 @@ delete_schedule
 delete_target
  = element delete_target
      {
-       attribute target_id { uuid }
+       ""
+       & attribute target_id { uuid }
      }
 
 ## Command delete_task
@@ -215,7 +237,8 @@ delete_target
 delete_task
  = element delete_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command get_notes
@@ -225,7 +248,8 @@ delete_task
 get_notes
  = element get_notes
      {
-       # ID of single note to get.
+       ""
+       & # ID of single note to get.
        attribute note_id { uuid }?
        & attribute nvt_id { oid }?
        & attribute task_id { uuid }?
@@ -262,7 +286,8 @@ help
 modify_config
  = element modify_config
      {
-       # ID of config to modify.
+       ""
+       & # ID of config to modify.
        attribute config_id { uuid }
        & ( modify_config_preference
            | modify_config_family_selection
@@ -272,7 +297,8 @@ modify_config
 modify_config_preference
  = element preference
      {
-       modify_config_preference_name
+       ""
+       & modify_config_preference_name
        & modify_config_preference_nvt?
        & modify_config_preference_value?
      }
@@ -288,7 +314,8 @@ modify_config_preference_name
 modify_config_preference_nvt
  = element nvt
      {
-       attribute oid { oid }
+       ""
+       & attribute oid { oid }
      }
 
 # New value for preference.
@@ -301,7 +328,8 @@ modify_config_preference_value
 modify_config_family_selection
  = element family_selection
      {
-       modify_config_family_selection_growing?
+       ""
+       & modify_config_family_selection_growing?
        & modify_config_family_selection_family*
      }
 
@@ -315,7 +343,8 @@ modify_config_family_selection_growing
 modify_config_family_selection_family
  = element family
      {
-       modify_config_family_selection_family_all?
+       ""
+       & modify_config_family_selection_family_all?
        & modify_config_family_selection_family_growing?
        & modify_config_family_selection_family_name
      }
@@ -343,7 +372,8 @@ modify_config_family_selection_family_name
 modify_config_nvt_selection
  = element nvt_selection
      {
-       modify_config_nvt_selection_family
+       ""
+       & modify_config_nvt_selection_family
        & modify_config_nvt_selection_nvt*
      }
 
@@ -357,7 +387,224 @@ modify_config_nvt_selection_family
 modify_config_nvt_selection_nvt
  = element nvt
      {
-       attribute oid { oid }
+       ""
+       & attribute oid { oid }
+     }
+
+## Command modify_note
+##
+## Modify an existing note.
+
+modify_note
+ = element modify_note
+     {
+       ""
+       & # ID of note to modify.
+       attribute note_id { uuid }
+       & modify_note_hosts?
+       & modify_note_port?
+       & modify_note_result?
+       & modify_note_task?
+       & modify_note_text
+       & modify_note_threat?
+     }
+
+# A textual list of hosts.
+modify_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+modify_note_port
+ = element port
+     {
+       text
+     }
+
+# The text of the note.
+modify_note_text
+ = element text
+     {
+       text
+     }
+
+# Threat level to which note applies.
+modify_note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+modify_note_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Result to which note applies.
+modify_note_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+## Command modify_override
+##
+## Modify an existing override.
+
+modify_override
+ = element modify_override
+     {
+       ""
+       & # ID of override to modify.
+       attribute override_id { uuid }
+       & modify_override_hosts?
+       & modify_override_new_threat?
+       & modify_override_port?
+       & modify_override_result?
+       & modify_override_task?
+       & modify_override_text
+       & modify_override_threat?
+     }
+
+# A textual list of hosts.
+modify_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# New threat level for result.
+modify_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Port to which override applies.
+modify_override_port
+ = element port
+     {
+       text
+     }
+
+# Text describing the override.
+modify_override_text
+ = element text
+     {
+       text
+     }
+
+# Threat level to which override applies.
+modify_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which override applies.
+modify_override_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Result to which override applies.
+modify_override_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+## Command modify_report
+##
+## Modify an existing report.
+
+modify_report
+ = element modify_report
+     {
+       ""
+       & # ID of report to modify.
+       attribute report_id { uuid }
+       & modify_report_comment
+     }
+
+# The comment on the report.
+modify_report_comment
+ = element comment
+     {
+       text
+     }
+
+## Command modify_task
+##
+## Modify an existing task.
+
+modify_task
+ = element modify_task
+     {
+       ""
+       & # ID of task to modify.
+       attribute task_id { uuid }
+       & ( modify_task_comment
+           | modify_task_escalator
+           | modify_task_name
+           | modify_task_rcfile
+           | modify_task_schedule
+           | modify_task_file )
+     }
+
+# The comment on the task.
+modify_task_comment
+ = element comment
+     {
+       text
+     }
+
+# Task escalator.
+modify_task_escalator
+ = element escalator
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# The name of the task.
+modify_task_name
+ = element name
+     {
+       text
+     }
+
+# An openvasrc style file describing the task.
+modify_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+# Task schedule.
+modify_task_schedule
+ = element schedule
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# File to attach to task.
+modify_task_file
+ = element file
+     {
+       base64
+       & attribute name { text }
+       & attribute action { xsd:token { pattern = "update|remove" } }
      }
 
 ## Command pause_task
@@ -367,7 +614,8 @@ modify_config_nvt_selection_nvt
 pause_task
  = element pause_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command resume_or_start_task
@@ -377,7 +625,8 @@ pause_task
 resume_or_start_task
  = element resume_or_start_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command resume_paused_task
@@ -387,7 +636,8 @@ resume_or_start_task
 resume_paused_task
  = element resume_paused_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command resume_stopped_task
@@ -397,7 +647,8 @@ resume_paused_task
 resume_stopped_task
  = element resume_stopped_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command start_task
@@ -407,7 +658,8 @@ resume_stopped_task
 start_task
  = element start_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command stop_task
@@ -417,7 +669,8 @@ start_task
 stop_task
  = element stop_task
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ## Command test_escalator
@@ -427,7 +680,8 @@ stop_task
 test_escalator
  = element test_escalator
      {
-       attribute task_id { uuid }
+       ""
+       & attribute task_id { uuid }
      }
 
 ### Responses
@@ -437,7 +691,8 @@ test_escalator
 authenticate_response
  = element authenticate_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -446,7 +701,8 @@ authenticate_response
 commands_response
  = element commands_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
        & response*
      }
@@ -456,7 +712,8 @@ commands_response
 delete_agent_response
  = element delete_agent_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -465,7 +722,8 @@ delete_agent_response
 delete_config_response
  = element delete_config_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -474,7 +732,8 @@ delete_config_response
 delete_escalator_response
  = element delete_escalator_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -483,7 +742,8 @@ delete_escalator_response
 delete_lsc_credential_response
  = element delete_lsc_credential_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -492,7 +752,8 @@ delete_lsc_credential_response
 delete_note_response
  = element delete_note_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -501,7 +762,8 @@ delete_note_response
 delete_override_response
  = element delete_override_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -510,7 +772,8 @@ delete_override_response
 delete_report_response
  = element delete_report_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -519,7 +782,8 @@ delete_report_response
 delete_schedule_response
  = element delete_schedule_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -528,7 +792,8 @@ delete_schedule_response
 delete_target_response
  = element delete_target_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -537,7 +802,8 @@ delete_target_response
 delete_task_response
  = element delete_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -546,7 +812,8 @@ delete_task_response
 get_notes_response
  = element get_notes_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -555,7 +822,8 @@ get_notes_response
 get_version_response
  = element get_version_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -564,7 +832,8 @@ get_version_response
 help_response
  = element help_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -573,7 +842,48 @@ help_response
 modify_config_response
  = element modify_config_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_note
+
+modify_note_response
+ = element modify_note_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_override
+
+modify_override_response
+ = element modify_override_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_report
+
+modify_report_response
+ = element modify_report_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_task
+
+modify_task_response
+ = element modify_task_response
+     {
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -582,7 +892,8 @@ modify_config_response
 pause_task_response
  = element pause_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -591,7 +902,8 @@ pause_task_response
 resume_or_start_task_response
  = element resume_or_start_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -600,7 +912,8 @@ resume_or_start_task_response
 resume_paused_task_response
  = element resume_paused_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -609,7 +922,8 @@ resume_paused_task_response
 resume_stopped_task_response
  = element resume_stopped_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -618,7 +932,8 @@ resume_stopped_task_response
 start_task_response
  = element start_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -627,7 +942,8 @@ start_task_response
 stop_task_response
  = element stop_task_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }
 
@@ -636,6 +952,7 @@ stop_task_response
 test_escalator_response
  = element test_escalator_response
      {
-       attribute status { status }
+       ""
+       & attribute status { status }
        & attribute status_text { text }
      }

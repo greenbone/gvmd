@@ -117,7 +117,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:text> )</xsl:text>
       </xsl:when>
       <xsl:when test="name()='t'">
-        <xsl:call-template name="t"/>
       </xsl:when>
       <xsl:otherwise>
         ERROR
@@ -127,13 +126,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="pattern" match="pattern">
     <xsl:param name="parent-name"/>
-    <xsl:for-each select="*">
+    <xsl:choose>
+      <xsl:when test="(count (t) = 0) and (string-length (normalize-space (text ())) = 0)">
+        <xsl:text>       ""</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:when test="count (t) = 0">
+        <xsl:text>       </xsl:text>
+        <xsl:value-of select="normalize-space (text ())"/>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>       </xsl:text>
+        <!-- There should be only one t. -->
+        <xsl:for-each select="t">
+          <xsl:call-template name="t"/>
+          <xsl:call-template name="newline"/>
+        </xsl:for-each>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:for-each select="*[name()!='t']">
       <xsl:choose>
         <xsl:when test="preceding-sibling::*">
           <xsl:text>       &amp; </xsl:text>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:text>       </xsl:text>
+          <xsl:text>       &amp; </xsl:text>
         </xsl:otherwise>
       </xsl:choose>
       <xsl:call-template name="pattern-part">
@@ -171,10 +189,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:with-param name="parent-name" select="concat ($command-name, '_')"/>
       </xsl:call-template>
     </xsl:for-each>
-    <xsl:if test="count (pattern/*) = 0">
-      <xsl:text>       ""</xsl:text>
-      <xsl:call-template name="newline"/>
-    </xsl:if>
     <xsl:text>     }</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:for-each select="ele">
@@ -201,10 +215,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:with-param name="parent-name" select="concat ($command-name, '_')"/>
       </xsl:call-template>
     </xsl:for-each>
-    <xsl:if test="count (response/pattern/*) = 0">
-      <xsl:text>       ""</xsl:text>
-      <xsl:call-template name="newline"/>
-    </xsl:if>
     <xsl:text>     }</xsl:text>
     <xsl:call-template name="newline"/>
     <xsl:for-each select="response/ele">

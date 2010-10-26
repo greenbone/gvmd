@@ -1,5 +1,12 @@
 2010-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/rnc.xsl: Always
+	print the text content of an element.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2010-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add modify commmands.
 
 2010-10-25  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -75,6 +75,22 @@
 <td id="index"><div style="margin-left: 15px;">Update an existing config.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#modify_note">modify_note</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing note.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#modify_override">modify_override</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing override.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#modify_report">modify_report</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing report.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#modify_task">modify_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Modify an existing task.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#pause_task">pause_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Pause a running task.</div></td>
 </tr>
@@ -158,33 +174,36 @@
 <pre>authenticate
  = element authenticate
      {
-       authenticate_credentials
+       ""
+       &amp; authenticate_credentials
      }
 
 authenticate_credentials
  = element credentials
      {
-       authenticate_credentials_username
+       ""
+       &amp; authenticate_credentials_username
        &amp; authenticate_credentials_password
      }
 
 authenticate_credentials_username
  = element username
      {
-       ""
+       text
      }
 
 authenticate_credentials_password
  = element password
      {
-       ""
+       text
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>authenticate_response
  = element authenticate_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -247,14 +266,16 @@ authenticate_credentials_password
 <pre>commands
  = element commands
      {
-       command*
+       ""
+       &amp; command*
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>commands_response
  = element commands_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
        &amp; response*
      }
@@ -303,14 +324,16 @@ authenticate_credentials_password
 <pre>delete_agent
  = element delete_agent
      {
-       attribute agent_id { uuid }
+       ""
+       &amp; attribute agent_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_agent_response
  = element delete_agent_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -363,14 +386,16 @@ authenticate_credentials_password
 <pre>delete_config
  = element delete_config
      {
-       attribute config_id { uuid }
+       ""
+       &amp; attribute config_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_config_response
  = element delete_config_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -424,14 +449,16 @@ authenticate_credentials_password
 <pre>delete_escalator
  = element delete_escalator
      {
-       attribute escalator_id { uuid }
+       ""
+       &amp; attribute escalator_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_escalator_response
  = element delete_escalator_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -485,14 +512,16 @@ authenticate_credentials_password
 <pre>delete_lsc_credential
  = element delete_lsc_credential
      {
-       attribute lsc_credential_id { uuid }
+       ""
+       &amp; attribute lsc_credential_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_lsc_credential_response
  = element delete_lsc_credential_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -545,14 +574,16 @@ authenticate_credentials_password
 <pre>delete_note
  = element delete_note
      {
-       attribute note_id { uuid }
+       ""
+       &amp; attribute note_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_note_response
  = element delete_note_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -605,14 +636,16 @@ authenticate_credentials_password
 <pre>delete_override
  = element delete_override
      {
-       attribute override_id { uuid }
+       ""
+       &amp; attribute override_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_override_response
  = element delete_override_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -665,14 +698,16 @@ authenticate_credentials_password
 <pre>delete_report
  = element delete_report
      {
-       attribute report_id { uuid }
+       ""
+       &amp; attribute report_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_report_response
  = element delete_report_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -725,14 +760,16 @@ authenticate_credentials_password
 <pre>delete_schedule
  = element delete_schedule
      {
-       attribute schedule_id { uuid }
+       ""
+       &amp; attribute schedule_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_schedule_response
  = element delete_schedule_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -785,14 +822,16 @@ authenticate_credentials_password
 <pre>delete_target
  = element delete_target
      {
-       attribute target_id { uuid }
+       ""
+       &amp; attribute target_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_target_response
  = element delete_target_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -846,14 +885,16 @@ authenticate_credentials_password
 <pre>delete_task
  = element delete_task
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute task_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>delete_task_response
  = element delete_task_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -930,7 +971,8 @@ authenticate_credentials_password
 <pre>get_notes
  = element get_notes
      {
-       attribute note_id { uuid }?
+       ""
+       &amp; attribute note_id { uuid }?
        &amp; attribute nvt_id { oid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
@@ -943,7 +985,8 @@ authenticate_credentials_password
 <pre>get_notes_response
  = element get_notes_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -1001,7 +1044,8 @@ authenticate_credentials_password
 <pre>get_version_response
  = element get_version_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -1045,7 +1089,8 @@ authenticate_credentials_password
 <pre>help_response
  = element help_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -1208,7 +1253,8 @@ authenticate_credentials_password
 <pre>modify_config
  = element modify_config
      {
-       attribute config_id { uuid }
+       ""
+       &amp; attribute config_id { uuid }
        &amp; ( modify_config_preference
            | modify_config_family_selection
            | modify_config_nvt_selection )
@@ -1217,7 +1263,8 @@ authenticate_credentials_password
 modify_config_preference
  = element preference
      {
-       modify_config_preference_name
+       ""
+       &amp; modify_config_preference_name
        &amp; modify_config_preference_nvt?
        &amp; modify_config_preference_value?
      }
@@ -1231,7 +1278,8 @@ modify_config_preference_name
 modify_config_preference_nvt
  = element nvt
      {
-       attribute oid { oid }
+       ""
+       &amp; attribute oid { oid }
      }
 
 modify_config_preference_value
@@ -1243,7 +1291,8 @@ modify_config_preference_value
 modify_config_family_selection
  = element family_selection
      {
-       modify_config_family_selection_growing?
+       ""
+       &amp; modify_config_family_selection_growing?
        &amp; modify_config_family_selection_family*
      }
 
@@ -1256,7 +1305,8 @@ modify_config_family_selection_growing
 modify_config_family_selection_family
  = element family
      {
-       modify_config_family_selection_family_all?
+       ""
+       &amp; modify_config_family_selection_family_all?
        &amp; modify_config_family_selection_family_growing?
        &amp; modify_config_family_selection_family_name
      }
@@ -1282,7 +1332,8 @@ modify_config_family_selection_family_name
 modify_config_nvt_selection
  = element nvt_selection
      {
-       modify_config_nvt_selection_family
+       ""
+       &amp; modify_config_nvt_selection_family
        &amp; modify_config_nvt_selection_nvt*
      }
 
@@ -1295,14 +1346,16 @@ modify_config_nvt_selection_family
 modify_config_nvt_selection_nvt
  = element nvt
      {
-       attribute oid { oid }
+       ""
+       &amp; attribute oid { oid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>modify_config_response
  = element modify_config_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
@@ -1357,21 +1410,64 @@ modify_config_nvt_selection_nvt
 </pre>
 </div>
 <div>
-<div><h3 id="pause_task">2.17
-          Command <tt>pause_task</tt>
+<div><h3 id="modify_note">2.17
+          Command <tt>modify_note</tt>
 </h3></div>
-<p><b>In short: </b>Pause a running task.</p>
+<p><b>In short: </b>Modify an existing note.</p>
 <p>
-        The client uses the pause_task command to manually pause a running task.
+        The client uses the modify_note command to change an existing note.
+      </p>
+<p>
+        If an optional element is left out, the existing value will be
+        cleared, generalising that constraint.
       </p>
 <h4>2.17.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"note_id"</b>
+          (uuid)
+          ID of note to modify.
+          </li>
+<li>
+<b>
+            &lt;hosts&gt;?</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;?</b><div style="margin-left: 15px; display: inline;">Port to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
+<b>"id"</b>
           (uuid)
           </li></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the note.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;?</b><div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
@@ -1390,45 +1486,141 @@ modify_config_nvt_selection_nvt
 <h4>2.17.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>pause_task
- = element pause_task
+<pre>modify_note
+ = element modify_note
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute note_id { uuid }
+       &amp; modify_note_hosts?
+       &amp; modify_note_port?
+       &amp; modify_note_result?
+       &amp; modify_note_task?
+       &amp; modify_note_text
+       &amp; modify_note_threat?
+     }
+
+modify_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+modify_note_port
+ = element port
+     {
+       text
+     }
+
+modify_note_text
+ = element text
+     {
+       text
+     }
+
+modify_note_threat
+ = element threat
+     {
+       threat
+     }
+
+modify_note_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+modify_note_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>pause_task_response
- = element pause_task_response
+<pre>modify_note_response
+ = element modify_note_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.17.1 Example: Pause a running task</h4>
-<b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.17.1 Example: Modify the text and result of a note</h4>
+<b>Client:</b><br><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
+   &lt;result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/&gt;
+ &lt;/modify_note&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;modify_note_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_or_start_task">2.18
-          Command <tt>resume_or_start_task</tt>
+<div><h3 id="modify_override">2.18
+          Command <tt>modify_override</tt>
 </h3></div>
-<p><b>In short: </b>Resume task if stopped, else start task.</p>
+<p><b>In short: </b>Modify an existing override.</p>
 <p>
-        The client uses the resume_or_start_task command to manually start
-        an existing task, ensuring that the task will resume from its
-        previous position if the task is in the Stopped state.
+        The client uses the modify_override command to change an existing
+        override.
+      </p>
+<p>
+        If an optional element is left out, the existing value will be
+        cleared, generalising that constraint.
       </p>
 <h4>2.18.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"override_id"</b>
+          (uuid)
+          ID of override to modify.
+          </li>
+<li>
+<b>
+            &lt;hosts&gt;?</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;new_threat&gt;?</b><div style="margin-left: 15px; display: inline;">New threat level for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;?</b><div style="margin-left: 15px; display: inline;">Port to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
+<b>"id"</b>
           (uuid)
           </li></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">Text describing the override.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;?</b><div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
@@ -1447,44 +1639,108 @@ modify_config_nvt_selection_nvt
 <h4>2.18.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>resume_or_start_task
- = element resume_or_start_task
+<pre>modify_override
+ = element modify_override
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute override_id { uuid }
+       &amp; modify_override_hosts?
+       &amp; modify_override_new_threat?
+       &amp; modify_override_port?
+       &amp; modify_override_result?
+       &amp; modify_override_task?
+       &amp; modify_override_text
+       &amp; modify_override_threat?
+     }
+
+modify_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+modify_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+modify_override_port
+ = element port
+     {
+       text
+     }
+
+modify_override_text
+ = element text
+     {
+       text
+     }
+
+modify_override_threat
+ = element threat
+     {
+       threat
+     }
+
+modify_override_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+modify_override_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>resume_or_start_task_response
- = element resume_or_start_task_response
+<pre>modify_override_response
+ = element modify_override_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.18.1 Example: Resume a running task</h4>
-<b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.18.1 Example: Set the override threat to Low</h4>
+<b>Client:</b><br><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
+   &lt;new_threat&gt;Low&lt;/new_threat&gt;
+ &lt;/modify_override&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;modify_override_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_paused_task">2.19
-          Command <tt>resume_paused_task</tt>
+<div><h3 id="modify_report">2.19
+          Command <tt>modify_report</tt>
 </h3></div>
-<p><b>In short: </b>Resume a paused task.</p>
+<p><b>In short: </b>Modify an existing report.</p>
 <p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
+        The client uses the modify_report command to change an existing
+        report.
       </p>
 <h4>2.19.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
+<ul style="list-style: none">
+<li>
+<b>"report_id"</b>
           (uuid)
-          </li></ul>
+          ID of report to modify.
+          </li>
+<li>
+<b>
+            &lt;comment&gt;</b><div style="margin-left: 15px; display: inline;">The comment on the report.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
@@ -1503,44 +1759,107 @@ modify_config_nvt_selection_nvt
 <h4>2.19.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>resume_paused_task
- = element resume_paused_task
+<pre>modify_report
+ = element modify_report
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute report_id { uuid }
+       &amp; modify_report_comment
+     }
+
+modify_report_comment
+ = element comment
+     {
+       text
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>resume_paused_task_response
- = element resume_paused_task_response
+<pre>modify_report_response
+ = element modify_report_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.19.1 Example: Resume a paused task</h4>
-<b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.19.1 Example: Modify a report comment</h4>
+<b>Client:</b><br><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
+ &lt;/modify_report&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;modify_report_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_stopped_task">2.20
-          Command <tt>resume_stopped_task</tt>
+<div><h3 id="modify_task">2.20
+          Command <tt>modify_task</tt>
 </h3></div>
-<p><b>In short: </b>Resume a stopped task.</p>
+<p><b>In short: </b>Modify an existing task.</p>
 <p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
+        The client uses the modify_task command to change an existing
+        task.
       </p>
 <h4>2.20.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
 <b>"task_id"</b>
           (uuid)
+          ID of task to modify.
+          </li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+<b>
+            &lt;comment&gt;</b><div style="margin-left: 15px; display: inline;">The comment on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;escalator&gt;</b><div style="margin-left: 15px; display: inline;">Task escalator.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
           </li></ul>
+</li>
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;rcfile&gt;</b><div style="margin-left: 15px; display: inline;">An openvasrc style file describing the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;schedule&gt;</b><div style="margin-left: 15px; display: inline;">Task schedule.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;file&gt;</b><div style="margin-left: 15px; display: inline;">File to attach to task.</div>
+<ul style="list-style: none">
+<li>
+<b>"name"</b>
+          (text)
+          </li>
+<li>
+<b>"action"</b>
+          (xsd:token { pattern = "update|remove" })
+          </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
@@ -1559,35 +1878,84 @@ modify_config_nvt_selection_nvt
 <h4>2.20.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>resume_stopped_task
- = element resume_stopped_task
+<pre>modify_task
+ = element modify_task
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute task_id { uuid }
+       &amp; ( modify_task_comment
+           | modify_task_escalator
+           | modify_task_name
+           | modify_task_rcfile
+           | modify_task_schedule
+           | modify_task_file )
+     }
+
+modify_task_comment
+ = element comment
+     {
+       text
+     }
+
+modify_task_escalator
+ = element escalator
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+modify_task_name
+ = element name
+     {
+       text
+     }
+
+modify_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+modify_task_schedule
+ = element schedule
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+modify_task_file
+ = element file
+     {
+       base64
+       &amp; attribute name { text }
+       &amp; attribute action { xsd:token { pattern = "update|remove" } }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>resume_stopped_task_response
- = element resume_stopped_task_response
+<pre>modify_task_response
+ = element modify_task_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.20.1 Example: Resume a stopped task</h4>
-<b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.20.1 Example: Modify a task comment</h4>
+<b>Client:</b><br><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
+   &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
+ &lt;/modify_task&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;modify_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="start_task">2.21
-          Command <tt>start_task</tt>
+<div><h3 id="pause_task">2.21
+          Command <tt>pause_task</tt>
 </h3></div>
-<p><b>In short: </b>Manually start an existing task.</p>
+<p><b>In short: </b>Pause a running task.</p>
 <p>
-        The client uses the start_task command to manually start an
-        existing task.
+        The client uses the pause_task command to manually pause a running task.
       </p>
 <h4>2.21.1 Breakdown</h4>
 <ul style="list-style: none">
@@ -1615,35 +1983,38 @@ modify_config_nvt_selection_nvt
 <h4>2.21.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>start_task
- = element start_task
+<pre>pause_task
+ = element pause_task
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute task_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>start_task_response
- = element start_task_response
+<pre>pause_task_response
+ = element pause_task_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.21.1 Example: Start a task</h4>
-<b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.21.1 Example: Pause a running task</h4>
+<b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="stop_task">2.22
-          Command <tt>stop_task</tt>
+<div><h3 id="resume_or_start_task">2.22
+          Command <tt>resume_or_start_task</tt>
 </h3></div>
-<p><b>In short: </b>Stop a running task.</p>
+<p><b>In short: </b>Resume task if stopped, else start task.</p>
 <p>
-        The client uses the stop_task command to manually stop a
-        running task.
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
       </p>
 <h4>2.22.1 Breakdown</h4>
 <ul style="list-style: none">
@@ -1671,35 +2042,37 @@ modify_config_nvt_selection_nvt
 <h4>2.22.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>stop_task
- = element stop_task
+<pre>resume_or_start_task
+ = element resume_or_start_task
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute task_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>stop_task_response
- = element stop_task_response
+<pre>resume_or_start_task_response
+ = element resume_or_start_task_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.22.1 Example: Stop a running task</h4>
-<b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.22.1 Example: Resume a running task</h4>
+<b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="test_escalator">2.23
-          Command <tt>test_escalator</tt>
+<div><h3 id="resume_paused_task">2.23
+          Command <tt>resume_paused_task</tt>
 </h3></div>
-<p><b>In short: </b>Run an escalator.</p>
+<p><b>In short: </b>Resume a paused task.</p>
 <p>
-        The client uses the test_escalator command to invoke a test run of
-        an escalator.
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
       </p>
 <h4>2.23.1 Breakdown</h4>
 <ul style="list-style: none">
@@ -1727,22 +2100,256 @@ modify_config_nvt_selection_nvt
 <h4>2.23.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
+<pre>resume_paused_task
+ = element resume_paused_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.23.1 Example: Resume a paused task</h4>
+<b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_stopped_task">2.24
+          Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+<h4>2.24.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.24.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_stopped_task
+ = element resume_stopped_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.24.1 Example: Resume a stopped task</h4>
+<b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="start_task">2.25
+          Command <tt>start_task</tt>
+</h3></div>
+<p><b>In short: </b>Manually start an existing task.</p>
+<p>
+        The client uses the start_task command to manually start an
+        existing task.
+      </p>
+<h4>2.25.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.25.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>start_task
+ = element start_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>start_task_response
+ = element start_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.25.1 Example: Start a task</h4>
+<b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="stop_task">2.26
+          Command <tt>stop_task</tt>
+</h3></div>
+<p><b>In short: </b>Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>2.26.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.26.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>stop_task
+ = element stop_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>stop_task_response
+ = element stop_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.26.1 Example: Stop a running task</h4>
+<b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="test_escalator">2.27
+          Command <tt>test_escalator</tt>
+</h3></div>
+<p><b>In short: </b>Run an escalator.</p>
+<p>
+        The client uses the test_escalator command to invoke a test run of
+        an escalator.
+      </p>
+<h4>2.27.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.27.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
 <pre>test_escalator
  = element test_escalator
      {
-       attribute task_id { uuid }
+       ""
+       &amp; attribute task_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
 <pre>test_escalator_response
  = element test_escalator_response
      {
-       attribute status { status }
+       ""
+       &amp; attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre>
 </div>
-<h4>2.23.1 Example: Test an escalator</h4>
+<h4>2.27.1 Example: Test an escalator</h4>
 <b>Client:</b><br><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;
