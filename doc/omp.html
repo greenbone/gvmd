@@ -19,6 +19,42 @@
 <td id="index"><div style="margin-left: 15px;">Run a list of commands.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#create_agent">create_agent</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an agent.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_config">create_config</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a config.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_escalator">create_escalator</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an escalator.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_lsc_credential">create_lsc_credential</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an LSC credential.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_note">create_note</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a note.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_override">create_override</a></td>
+<td id="index"><div style="margin-left: 15px;">Create an override.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_schedule">create_schedule</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a schedule.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_target">create_target</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a target.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#create_task">create_task</a></td>
+<td id="index"><div style="margin-left: 15px;">Create a task.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#delete_agent">delete_agent</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete an agent.</div></td>
 </tr>
@@ -283,7 +319,1529 @@ authenticate_credentials_password
 </div>
 </div>
 <div>
-<div><h3 id="delete_agent">2.3
+<div><h3 id="create_agent">2.3
+          Command <tt>create_agent</tt>
+</h3></div>
+<p><b>In short: </b>Create an agent.</p>
+<p>
+        The client uses the create_agent command to create a new agent.
+      </p>
+<h4>2.3.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;installer&gt;</b><div style="margin-left: 15px; display: inline;">A file that installs the agent on a target machine.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;signature&gt;</b><div style="margin-left: 15px; display: inline;">A detached OpenPGP signature of the installer.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the installer.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;howto_install&gt;?</b><div style="margin-left: 15px; display: inline;">A file that describes how to install the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;howto_use&gt;?</b><div style="margin-left: 15px; display: inline;">A file that describes how to use the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.3.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_agent
+ = element create_agent
+     {
+       ""
+       &amp; create_agent_installer
+       &amp; create_agent_name
+       &amp; create_agent_comment?
+       &amp; create_agent_howto_install?
+       &amp; create_agent_howto_use?
+     }
+
+create_agent_installer
+ = element installer
+     {
+       base64
+       &amp; create_agent_installer_signature
+     }
+
+create_agent_installer_signature
+ = element signature
+     {
+       base64
+     }
+
+create_agent_name
+ = element name
+     {
+       name
+     }
+
+create_agent_comment
+ = element comment
+     {
+       text
+     }
+
+create_agent_howto_install
+ = element howto_install
+     {
+       base64
+     }
+
+create_agent_howto_use
+ = element howto_use
+     {
+       base64
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_agent_response
+ = element create_agent_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.3.1 Example: Create an agent</h4>
+<b>Client:</b><br><pre> &lt;create_agent&gt;
+   &lt;installer&gt;
+     asdf3235saf3kjBVF...
+     &lt;signature&gt;iEYEABECAAYFA...&lt;/signature&gt;
+   &lt;/installer&gt;
+   &lt;name&gt;SLAD&lt;/name&gt;
+ &lt;/create_agent&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_agent_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_config">2.4
+          Command <tt>create_config</tt>
+</h3></div>
+<p><b>In short: </b>Create a config.</p>
+<p>
+        The client uses the create_config command to create a new config.
+      </p>
+<p>This command can be called in three ways:<ul>
+<li>
+          With a copy element.  The new config is a copy of the existing
+          config, with the given name.
+        </li>
+<li>
+          With an embedded get_configs response element.  The config is
+          created as defined by the get_configs response element.  Name is
+          actually optional in this case.  The config is given the name of
+          the config in the get_configs response.  If there is already a
+          config with this name, then a number is attached to the name to
+          make it unique.
+        </li>
+<li>
+          With an rcfile element. The config is created as described in
+          the RC file.  In this case a name element is required.  The new
+          config is given this name.
+        </li>
+</ul></p>
+<h4>2.4.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+<b>
+            &lt;copy&gt;</b><div style="margin-left: 15px; display: inline;">The UUID of an existing config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;get_configs&gt;</b><div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#get_configs">get_configs</a> command.
+          </div>
+</li>
+<li>
+<b>
+            &lt;rcfile&gt;</b><div style="margin-left: 15px; display: inline;">A openvasrc style file that defines the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.4.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_config
+ = element create_config
+     {
+       ""
+       &amp; create_config_comment?
+       &amp; ( create_config_copy
+           | get_configs_response
+           | create_config_rcfile )
+       &amp; create_config_name
+     }
+
+create_config_comment
+ = element comment
+     {
+       text
+     }
+
+create_config_copy
+ = element copy
+     {
+       uuid
+     }
+
+create_config_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+create_config_name
+ = element name
+     {
+       name
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_config_response
+ = element create_config_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.4.1 Example: Copy a config</h4>
+<b>Client:</b><br><pre> &lt;create_config&gt;
+   &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
+   &lt;name&gt;Full&lt;/name&gt;
+ &lt;/create_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+<h4>2.4.1 Example: Create a config from an RC file</h4>
+<b>Client:</b><br><pre> &lt;create_config&gt;
+   &lt;rcfile&gt;asdf3235saf3kjBVF...&lt;/rcfile&gt;
+   &lt;name&gt;Full&lt;/name&gt;
+ &lt;/create_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+<h4>2.4.1 Example: Create a config from a GET_CONFIGS response</h4>
+<b>Client:</b><br><pre> &lt;create_config&gt;
+   &lt;get_configs_response&gt;
+     &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
+       &lt;name&gt;Full and fast&lt;/name&gt;
+       ...
+     &lt;/config&gt;
+   &lt;/get_configs_response&gt;
+ &lt;/create_config&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_escalator">2.5
+          Command <tt>create_escalator</tt>
+</h3></div>
+<p><b>In short: </b>Create an escalator.</p>
+<p>
+        The client uses the create_escalator command to create a new
+        escalator.
+      </p>
+<h4>2.5.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the escalator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the escalator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;condition&gt;</b><div style="margin-left: 15px; display: inline;">The condition that must be satisfied for escalation.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;data&gt;</b><div style="margin-left: 15px; display: inline;">Some data that defines the condition.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the condition data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+<b>
+            &lt;event&gt;</b><div style="margin-left: 15px; display: inline;">The event that must happen for escalation.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;data&gt;</b><div style="margin-left: 15px; display: inline;">Some data that defines the event.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the event data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+<b>
+            &lt;method&gt;</b><div style="margin-left: 15px; display: inline;">The method by which escalation must occur.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;data&gt;</b><div style="margin-left: 15px; display: inline;">Some data that defines the method.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the method data.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.5.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_escalator
+ = element create_escalator
+     {
+       ""
+       &amp; create_escalator_name
+       &amp; create_escalator_comment?
+       &amp; create_escalator_condition
+       &amp; create_escalator_event
+       &amp; create_escalator_method
+     }
+
+create_escalator_name
+ = element name
+     {
+       name
+     }
+
+create_escalator_comment
+ = element comment
+     {
+       text
+     }
+
+create_escalator_condition
+ = element condition
+     {
+       text
+       &amp; create_escalator_condition_data
+     }
+
+create_escalator_condition_data
+ = element data
+     {
+       text
+       &amp; create_escalator_condition_data_name
+     }
+
+create_escalator_condition_data_name
+ = element name
+     {
+       text
+     }
+
+create_escalator_event
+ = element event
+     {
+       text
+       &amp; create_escalator_event_data
+     }
+
+create_escalator_event_data
+ = element data
+     {
+       text
+       &amp; create_escalator_event_data_name
+     }
+
+create_escalator_event_data_name
+ = element name
+     {
+       text
+     }
+
+create_escalator_method
+ = element method
+     {
+       text
+       &amp; create_escalator_method_data
+     }
+
+create_escalator_method_data
+ = element data
+     {
+       text
+       &amp; create_escalator_method_data_name
+     }
+
+create_escalator_method_data_name
+ = element name
+     {
+       text
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_escalator_response
+ = element create_escalator_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.5.1 Example: Create an escalator</h4>
+<b>Client:</b><br><pre> &lt;create_escalator&gt;
+   &lt;name&gt;emergency&lt;/name&gt;
+   &lt;condition&gt;
+     Threat level at least
+     &lt;data&gt;
+       High
+       &lt;name&gt;level&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/condition&gt;
+   &lt;event&gt;
+     Task run status changed
+     &lt;data&gt;
+       Done
+       &lt;name&gt;status&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/event&gt;
+   &lt;method&gt;
+     Email
+     &lt;data&gt;
+       sally@example.org
+       &lt;name&gt;to_address&lt;/name&gt;
+     &lt;/data&gt;
+     &lt;data&gt;
+       bob@example.org
+       &lt;name&gt;from_address&lt;/name&gt;
+     &lt;/data&gt;
+   &lt;/method&gt;
+ &lt;/create_escalator&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_escalator_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_lsc_credential">2.6
+          Command <tt>create_lsc_credential</tt>
+</h3></div>
+<p><b>In short: </b>Create an LSC credential.</p>
+<p>
+        The client uses the create_lsc_credential command to create a new
+        LSC credential.
+      </p>
+<p>
+        If the command includes a password, then the manager creates a
+        password only credential, otherwise the manager creates a key-based
+        credential.
+      </p>
+<h4>2.6.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;login&gt;</b><div style="margin-left: 15px; display: inline;">The user name of the credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;password&gt;?</b><div style="margin-left: 15px; display: inline;">The password for the credential login.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.6.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_lsc_credential
+ = element create_lsc_credential
+     {
+       ""
+       &amp; create_lsc_credential_name
+       &amp; create_lsc_credential_comment?
+       &amp; create_lsc_credential_login
+       &amp; create_lsc_credential_password?
+     }
+
+create_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+create_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+create_lsc_credential_login
+ = element login
+     {
+       text
+     }
+
+create_lsc_credential_password
+ = element password
+     {
+       text
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_lsc_credential_response
+ = element create_lsc_credential_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.6.1 Example: Create an LSC credential</h4>
+<b>Client:</b><br><pre> &lt;create_lsc_credential&gt;
+   &lt;name&gt;cluster sally&lt;/name&gt;
+   &lt;login&gt;sally&lt;/login&gt;
+   &lt;password&gt;secret&lt;/password&gt;
+   &lt;comment&gt;Sally's login to the cluster.&lt;/comment&gt;
+ &lt;/create_lsc_credential&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_lsc_credential_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_note">2.7
+          Command <tt>create_note</tt>
+</h3></div>
+<p><b>In short: </b>Create a note.</p>
+<p>
+        The client uses the create_note command to create a new note.
+      </p>
+<h4>2.7.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the note.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;</b><div style="margin-left: 15px; display: inline;">NVT to which note applies.</div>
+<ul style="list-style: none"><li>
+<b>"oid"</b>
+          (oid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the note.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hosts&gt;?</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;?</b><div style="margin-left: 15px; display: inline;">Port to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;?</b><div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.7.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_note
+ = element create_note
+     {
+       ""
+       &amp; create_note_text
+       &amp; create_note_nvt
+       &amp; create_note_comment?
+       &amp; create_note_hosts?
+       &amp; create_note_port?
+       &amp; create_note_result?
+       &amp; create_note_task?
+       &amp; create_note_threat?
+     }
+
+create_note_text
+ = element text
+     {
+       text
+     }
+
+create_note_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+     }
+
+create_note_comment
+ = element comment
+     {
+       text
+     }
+
+create_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+create_note_port
+ = element port
+     {
+       text
+     }
+
+create_note_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_note_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_note_threat
+ = element threat
+     {
+       threat
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_note_response
+ = element create_note_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.7.1 Example: Create a note</h4>
+<b>Client:</b><br><pre> &lt;create_note&gt;
+   &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
+   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
+   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
+ &lt;/create_note&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_note_response status="202" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_override">2.8
+          Command <tt>create_override</tt>
+</h3></div>
+<p><b>In short: </b>Create an override.</p>
+<p>
+        The client uses the create_override command to create a new override.
+      </p>
+<h4>2.8.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the override.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;</b><div style="margin-left: 15px; display: inline;">NVT to which override applies.</div>
+<ul style="list-style: none"><li>
+<b>"oid"</b>
+          (oid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the override.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hosts&gt;?</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;new_threat&gt;?</b><div style="margin-left: 15px; display: inline;">New threat level for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;?</b><div style="margin-left: 15px; display: inline;">Port to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;?</b><div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.8.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_override
+ = element create_override
+     {
+       ""
+       &amp; create_override_text
+       &amp; create_override_nvt
+       &amp; create_override_comment?
+       &amp; create_override_hosts?
+       &amp; create_override_new_threat?
+       &amp; create_override_port?
+       &amp; create_override_result?
+       &amp; create_override_task?
+       &amp; create_override_threat?
+     }
+
+create_override_text
+ = element text
+     {
+       text
+     }
+
+create_override_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+     }
+
+create_override_comment
+ = element comment
+     {
+       text
+     }
+
+create_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+create_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+create_override_port
+ = element port
+     {
+       text
+     }
+
+create_override_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_override_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_override_threat
+ = element threat
+     {
+       threat
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_override_response
+ = element create_override_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.8.1 Example: Create an override</h4>
+<b>Client:</b><br><pre> &lt;create_override&gt;
+   &lt;text&gt;This is actually of little concern.&lt;/text&gt;
+   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
+   &lt;new_threat&gt;Low&lt;/new_threat&gt;
+   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
+ &lt;/create_override&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_override_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_schedule">2.9
+          Command <tt>create_schedule</tt>
+</h3></div>
+<p><b>In short: </b>Create a schedule.</p>
+<p>
+        The client uses the create_schedule command to create a new schedule.
+      </p>
+<h4>2.9.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;first_time&gt;</b><div style="margin-left: 15px; display: inline;">The first time the schedule will run.</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;minute&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hour&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;day_of_month&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;month&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;year&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;duration&gt;</b><div style="margin-left: 15px; display: inline;">How long the Manager will run the scheduled task for.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;unit&gt;</b><div style="margin-left: 15px; display: inline;">Duration time unit.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+<b>
+            &lt;period&gt;</b><div style="margin-left: 15px; display: inline;">How often the Manager will repeat the scheduled task.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;unit&gt;</b><div style="margin-left: 15px; display: inline;">Period time unit.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.9.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_schedule
+ = element create_schedule
+     {
+       ""
+       &amp; create_schedule_name
+       &amp; create_schedule_comment?
+       &amp; create_schedule_first_time
+       &amp; create_schedule_duration
+       &amp; create_schedule_period
+     }
+
+create_schedule_name
+ = element name
+     {
+       name
+     }
+
+create_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+create_schedule_first_time
+ = element first_time
+     {
+       ""
+       &amp; create_schedule_first_time_minute
+       &amp; create_schedule_first_time_hour
+       &amp; create_schedule_first_time_day_of_month
+       &amp; create_schedule_first_time_month
+       &amp; create_schedule_first_time_year
+     }
+
+create_schedule_first_time_minute
+ = element minute
+     {
+       integer
+     }
+
+create_schedule_first_time_hour
+ = element hour
+     {
+       integer
+     }
+
+create_schedule_first_time_day_of_month
+ = element day_of_month
+     {
+       integer
+     }
+
+create_schedule_first_time_month
+ = element month
+     {
+       integer
+     }
+
+create_schedule_first_time_year
+ = element year
+     {
+       integer
+     }
+
+create_schedule_duration
+ = element duration
+     {
+       ""
+       &amp; create_schedule_duration_unit
+     }
+
+create_schedule_duration_unit
+ = element unit
+     {
+       time_unit
+     }
+
+create_schedule_period
+ = element period
+     {
+       ""
+       &amp; create_schedule_period_unit
+     }
+
+create_schedule_period_unit
+ = element unit
+     {
+       time_unit
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_schedule_response
+ = element create_schedule_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.9.1 Example: Create a schedule</h4>
+<b>Client:</b><br><pre> &lt;create_schedule&gt;
+   &lt;name&gt;Every night&lt;/name&gt;
+   &lt;first_time&gt;
+     &lt;day_of_month&gt;1&lt;/day_of_month&gt;
+     &lt;hour&gt;0&lt;/hour&gt;
+     &lt;minute&gt;0&lt;/minute&gt;
+     &lt;month&gt;1&lt;/month&gt;
+     &lt;year&gt;2011&lt;/year&gt;
+   &lt;/first_time&gt;
+   &lt;duration&gt;
+     3
+     &lt;unit&gt;hour&lt;/unit&gt;
+   &lt;/duration&gt;
+   &lt;period&gt;
+     1
+     &lt;unit&gt;day&lt;/unit&gt;
+   &lt;/period&gt;
+ &lt;/create_schedule&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_schedule_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_target">2.10
+          Command <tt>create_target</tt>
+</h3></div>
+<p><b>In short: </b>Create a target.</p>
+<p>
+        The client uses the create_target command to create a new target.
+      </p>
+<p>
+        If the list of hosts is empty, the command must also include a
+        target locator.
+      </p>
+<h4>2.10.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the target.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the target.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hosts&gt;</b><div style="margin-left: 15px; display: inline;">A textual list of hosts, which may be empty.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">Login credentials for target.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;target_locator&gt;</b><div style="margin-left: 15px; display: inline;">Target locator (for example, for LDAP).</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;username&gt;?</b><div style="margin-left: 15px; display: inline;">The login for the target locator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;password&gt;?</b><div style="margin-left: 15px; display: inline;">The password for the target locator.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.10.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_target
+ = element create_target
+     {
+       ""
+       &amp; create_target_name
+       &amp; create_target_comment?
+       &amp; create_target_hosts
+       &amp; create_target_lsc_credential
+       &amp; create_target_target_locator
+     }
+
+create_target_name
+ = element name
+     {
+       name
+     }
+
+create_target_comment
+ = element comment
+     {
+       text
+     }
+
+create_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+create_target_lsc_credential
+ = element lsc_credential
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_target_target_locator
+ = element target_locator
+     {
+       ""
+       &amp; create_target_target_locator_username?
+       &amp; create_target_target_locator_password?
+     }
+
+create_target_target_locator_username
+ = element username
+     {
+       text
+     }
+
+create_target_target_locator_password
+ = element password
+     {
+       text
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_target_response
+ = element create_target_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.10.1 Example: Create a target, giving a host list</h4>
+<b>Client:</b><br><pre> &lt;create_target&gt;
+   &lt;create_target&gt;
+     &lt;name&gt;All GNU/Linux machines&lt;/name&gt;
+     &lt;hosts&gt;192.168.1.0/24&lt;/hosts&gt;
+   &lt;/create_target&gt;
+ &lt;/create_target&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_target_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="create_task">2.11
+          Command <tt>create_task</tt>
+</h3></div>
+<p><b>In short: </b>Create a task.</p>
+<p>
+        The client uses the create_task command to create a new task.
+      </p>
+<p>
+        If an rcfile is given, then config and target should actually be
+        left out.  This form of the command is special support for
+        OpenVAS-Client, and will likely be removed in future versions.
+      </p>
+<h4>2.11.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">A name for the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;?</b><div style="margin-left: 15px; display: inline;">A comment on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;config&gt;</b><div style="margin-left: 15px; display: inline;">The scan configuration used by the task.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;target&gt;</b><div style="margin-left: 15px; display: inline;">The hosts scanned by the task.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;escalator&gt;?</b><div style="margin-left: 15px; display: inline;">An escalator that applies to the task.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;schedule&gt;?</b><div style="margin-left: 15px; display: inline;">When the task will run.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;rcfile&gt;?</b><div style="margin-left: 15px; display: inline;">An openvasrc style file defining the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.11.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>create_task
+ = element create_task
+     {
+       ""
+       &amp; create_task_name
+       &amp; create_task_comment?
+       &amp; create_task_config
+       &amp; create_task_target
+       &amp; create_task_escalator?
+       &amp; create_task_schedule?
+       &amp; create_task_rcfile?
+     }
+
+create_task_name
+ = element name
+     {
+       name
+     }
+
+create_task_comment
+ = element comment
+     {
+       text
+     }
+
+create_task_config
+ = element config
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_task_target
+ = element target
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_task_escalator
+ = element escalator
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_task_schedule
+ = element schedule
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+create_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>create_task_response
+ = element create_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
+     }
+</pre>
+</div>
+<h4>2.11.1 Example: Create a task, giving a host list</h4>
+<b>Client:</b><br><pre> &lt;create_task&gt;
+   &lt;name&gt;Scan Webserver&lt;/name&gt;
+   &lt;comment&gt;Hourly scan of the webserver&lt;/comment&gt;
+   &lt;config id="daba56c8-73ec-11df-a475-002264764cea"/&gt;
+   &lt;target id="b493b7a8-7489-11df-a3ec-002264764cea"/&gt;
+ &lt;/create_task&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;create_task_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="delete_agent">2.12
           Command <tt>delete_agent</tt>
 </h3></div>
 <p><b>In short: </b>Delete an agent.</p>
@@ -295,7 +1853,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.3.1 Breakdown</h4>
+<h4>2.12.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -318,7 +1876,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.3.2 RNC</h4>
+<h4>2.12.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_agent
@@ -338,14 +1896,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.3.1 Example: Delete an agent</h4>
+<h4>2.12.1 Example: Delete an agent</h4>
 <b>Client:</b><br><pre> &lt;delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_agent_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_config">2.4
+<div><h3 id="delete_config">2.13
           Command <tt>delete_config</tt>
 </h3></div>
 <p><b>In short: </b>Delete a config.</p>
@@ -357,7 +1915,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.4.1 Breakdown</h4>
+<h4>2.13.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -380,7 +1938,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.4.2 RNC</h4>
+<h4>2.13.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_config
@@ -400,14 +1958,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.4.1 Example: Delete a config</h4>
+<h4>2.13.1 Example: Delete a config</h4>
 <b>Client:</b><br><pre> &lt;delete_config config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_config_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_escalator">2.5
+<div><h3 id="delete_escalator">2.14
           Command <tt>delete_escalator</tt>
 </h3></div>
 <p><b>In short: </b>Delete an escalator.</p>
@@ -420,7 +1978,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.5.1 Breakdown</h4>
+<h4>2.14.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -443,7 +2001,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.5.2 RNC</h4>
+<h4>2.14.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_escalator
@@ -463,14 +2021,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.5.1 Example: Delete an escalator</h4>
+<h4>2.14.1 Example: Delete an escalator</h4>
 <b>Client:</b><br><pre> &lt;delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_escalator_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_lsc_credential">2.6
+<div><h3 id="delete_lsc_credential">2.15
           Command <tt>delete_lsc_credential</tt>
 </h3></div>
 <p><b>In short: </b>Delete an LSC credential.</p>
@@ -483,7 +2041,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.6.1 Breakdown</h4>
+<h4>2.15.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -506,7 +2064,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.6.2 RNC</h4>
+<h4>2.15.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_lsc_credential
@@ -526,14 +2084,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.6.1 Example: Delete an LSC credential</h4>
+<h4>2.15.1 Example: Delete an LSC credential</h4>
 <b>Client:</b><br><pre> &lt;delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_lsc_credential_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_note">2.7
+<div><h3 id="delete_note">2.16
           Command <tt>delete_note</tt>
 </h3></div>
 <p><b>In short: </b>Delete a note.</p>
@@ -545,7 +2103,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.7.1 Breakdown</h4>
+<h4>2.16.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -568,7 +2126,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.7.2 RNC</h4>
+<h4>2.16.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_note
@@ -588,14 +2146,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.7.1 Example: Delete a note</h4>
+<h4>2.16.1 Example: Delete a note</h4>
 <b>Client:</b><br><pre> &lt;delete_note note_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_note_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_override">2.8
+<div><h3 id="delete_override">2.17
           Command <tt>delete_override</tt>
 </h3></div>
 <p><b>In short: </b>Delete a override.</p>
@@ -607,7 +2165,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.8.1 Breakdown</h4>
+<h4>2.17.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -630,7 +2188,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.8.2 RNC</h4>
+<h4>2.17.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_override
@@ -650,14 +2208,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.8.1 Example: Delete a override</h4>
+<h4>2.17.1 Example: Delete a override</h4>
 <b>Client:</b><br><pre> &lt;delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_override_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_report">2.9
+<div><h3 id="delete_report">2.18
           Command <tt>delete_report</tt>
 </h3></div>
 <p><b>In short: </b>Delete a report.</p>
@@ -669,7 +2227,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.9.1 Breakdown</h4>
+<h4>2.18.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -692,7 +2250,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.9.2 RNC</h4>
+<h4>2.18.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_report
@@ -712,14 +2270,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.9.1 Example: Delete a report</h4>
+<h4>2.18.1 Example: Delete a report</h4>
 <b>Client:</b><br><pre> &lt;delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_report_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_schedule">2.10
+<div><h3 id="delete_schedule">2.19
           Command <tt>delete_schedule</tt>
 </h3></div>
 <p><b>In short: </b>Delete a schedule.</p>
@@ -731,7 +2289,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.10.1 Breakdown</h4>
+<h4>2.19.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -754,7 +2312,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.10.2 RNC</h4>
+<h4>2.19.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_schedule
@@ -774,14 +2332,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.10.1 Example: Delete a schedule</h4>
+<h4>2.19.1 Example: Delete a schedule</h4>
 <b>Client:</b><br><pre> &lt;delete_schedule schedule_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_schedule_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_target">2.11
+<div><h3 id="delete_target">2.20
           Command <tt>delete_target</tt>
 </h3></div>
 <p><b>In short: </b>Delete a target.</p>
@@ -793,7 +2351,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.11.1 Breakdown</h4>
+<h4>2.20.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -816,7 +2374,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.11.2 RNC</h4>
+<h4>2.20.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_target
@@ -836,14 +2394,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.11.1 Example: Delete a target</h4>
+<h4>2.20.1 Example: Delete a target</h4>
 <b>Client:</b><br><pre> &lt;delete_target target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_target_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_task">2.12
+<div><h3 id="delete_task">2.21
           Command <tt>delete_task</tt>
 </h3></div>
 <p><b>In short: </b>Delete a task.</p>
@@ -856,7 +2414,7 @@ authenticate_credentials_password
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.12.1 Breakdown</h4>
+<h4>2.21.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -879,7 +2437,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.12.2 RNC</h4>
+<h4>2.21.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_task
@@ -899,14 +2457,14 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.12.1 Example: Delete a task</h4>
+<h4>2.21.1 Example: Delete a task</h4>
 <b>Client:</b><br><pre> &lt;delete_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="get_notes">2.13
+<div><h3 id="get_notes">2.22
           Command <tt>get_notes</tt>
 </h3></div>
 <p><b>In short: </b>Get all notes.</p>
@@ -915,7 +2473,7 @@ authenticate_credentials_password
       If the command sent by the client was valid, the manager will
       reply with a list of notes to the client.
     </p>
-<h4>2.13.1 Breakdown</h4>
+<h4>2.22.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -965,7 +2523,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.13.2 RNC</h4>
+<h4>2.22.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_notes
@@ -991,7 +2549,7 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.13.1 Example: Get all notes</h4>
+<h4>2.22.1 Example: Get all notes</h4>
 <b>Client:</b><br><pre> &lt;get_notes/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
@@ -1007,11 +2565,11 @@ authenticate_credentials_password
 </pre>
 </div>
 <div>
-<div><h3 id="get_version">2.14
+<div><h3 id="get_version">2.23
           Command <tt>get_version</tt>
 </h3></div>
 <p><b>In short: </b>Get the OpenVAS Manager Protocol version.</p>
-<h4>2.14.1 Breakdown</h4>
+<h4>2.23.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1031,7 +2589,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.14.2 RNC</h4>
+<h4>2.23.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_version
@@ -1052,11 +2610,11 @@ authenticate_credentials_password
 </div>
 </div>
 <div>
-<div><h3 id="help">2.15
+<div><h3 id="help">2.24
           Command <tt>help</tt>
 </h3></div>
 <p><b>In short: </b>Get the help text.</p>
-<h4>2.15.1 Breakdown</h4>
+<h4>2.24.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1076,7 +2634,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.15.2 RNC</h4>
+<h4>2.24.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>help
@@ -1097,7 +2655,7 @@ authenticate_credentials_password
 </div>
 </div>
 <div>
-<div><h3 id="modify_config">2.16
+<div><h3 id="modify_config">2.25
           Command <tt>modify_config</tt>
 </h3></div>
 <p><b>In short: </b>Update an existing config.</p>
@@ -1148,7 +2706,7 @@ authenticate_credentials_password
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>2.16.1 Breakdown</h4>
+<h4>2.25.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1247,7 +2805,7 @@ authenticate_credentials_password
 </ul>
 </li>
 </ul>
-<h4>2.16.2 RNC</h4>
+<h4>2.25.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_config
@@ -1360,7 +2918,7 @@ modify_config_nvt_selection_nvt
      }
 </pre>
 </div>
-<h4>2.16.1 Example: Modify a config preference</h4>
+<h4>2.25.1 Example: Modify a config preference</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
@@ -1371,7 +2929,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.16.1 Example: Modify the families that a config selects</h4>
+<h4>2.25.1 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -1395,7 +2953,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.16.1 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>2.25.1 Example: Modify the NVTs that a config selects in a particular family</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
      &lt;family&gt;Debian Local Security Checks&lt;/family&gt;
@@ -1410,7 +2968,7 @@ modify_config_nvt_selection_nvt
 </pre>
 </div>
 <div>
-<div><h3 id="modify_note">2.17
+<div><h3 id="modify_note">2.26
           Command <tt>modify_note</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing note.</p>
@@ -1421,7 +2979,7 @@ modify_config_nvt_selection_nvt
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.17.1 Breakdown</h4>
+<h4>2.26.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1483,7 +3041,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>2.17.2 RNC</h4>
+<h4>2.26.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_note
@@ -1547,7 +3105,7 @@ modify_note_result
      }
 </pre>
 </div>
-<h4>2.17.1 Example: Modify the text and result of a note</h4>
+<h4>2.26.1 Example: Modify the text and result of a note</h4>
 <b>Client:</b><br><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
    &lt;result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/&gt;
@@ -1557,7 +3115,7 @@ modify_note_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_override">2.18
+<div><h3 id="modify_override">2.27
           Command <tt>modify_override</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing override.</p>
@@ -1569,7 +3127,7 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.18.1 Breakdown</h4>
+<h4>2.27.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1636,7 +3194,7 @@ modify_note_result
 </ul>
 </li>
 </ul>
-<h4>2.18.2 RNC</h4>
+<h4>2.27.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_override
@@ -1707,7 +3265,7 @@ modify_override_result
      }
 </pre>
 </div>
-<h4>2.18.1 Example: Set the override threat to Low</h4>
+<h4>2.27.1 Example: Set the override threat to Low</h4>
 <b>Client:</b><br><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
    &lt;new_threat&gt;Low&lt;/new_threat&gt;
@@ -1717,7 +3275,7 @@ modify_override_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_report">2.19
+<div><h3 id="modify_report">2.28
           Command <tt>modify_report</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing report.</p>
@@ -1725,7 +3283,7 @@ modify_override_result
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>2.19.1 Breakdown</h4>
+<h4>2.28.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1756,7 +3314,7 @@ modify_override_result
 </ul>
 </li>
 </ul>
-<h4>2.19.2 RNC</h4>
+<h4>2.28.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_report
@@ -1783,7 +3341,7 @@ modify_report_comment
      }
 </pre>
 </div>
-<h4>2.19.1 Example: Modify a report comment</h4>
+<h4>2.28.1 Example: Modify a report comment</h4>
 <b>Client:</b><br><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_report&gt;
@@ -1792,7 +3350,7 @@ modify_report_comment
 </pre>
 </div>
 <div>
-<div><h3 id="modify_task">2.20
+<div><h3 id="modify_task">2.29
           Command <tt>modify_task</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing task.</p>
@@ -1800,7 +3358,7 @@ modify_report_comment
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>2.20.1 Breakdown</h4>
+<h4>2.29.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1875,7 +3433,7 @@ modify_report_comment
 </ul>
 </li>
 </ul>
-<h4>2.20.2 RNC</h4>
+<h4>2.29.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_task
@@ -1907,7 +3465,7 @@ modify_task_escalator
 modify_task_name
  = element name
      {
-       text
+       name
      }
 
 modify_task_rcfile
@@ -1941,7 +3499,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.20.1 Example: Modify a task comment</h4>
+<h4>2.29.1 Example: Modify a task comment</h4>
 <b>Client:</b><br><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_task&gt;
@@ -1950,14 +3508,14 @@ modify_task_file
 </pre>
 </div>
 <div>
-<div><h3 id="pause_task">2.21
+<div><h3 id="pause_task">2.30
           Command <tt>pause_task</tt>
 </h3></div>
 <p><b>In short: </b>Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
       </p>
-<h4>2.21.1 Breakdown</h4>
+<h4>2.30.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1980,7 +3538,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.21.2 RNC</h4>
+<h4>2.30.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>pause_task
@@ -2000,14 +3558,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.21.1 Example: Pause a running task</h4>
+<h4>2.30.1 Example: Pause a running task</h4>
 <b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_or_start_task">2.22
+<div><h3 id="resume_or_start_task">2.31
           Command <tt>resume_or_start_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume task if stopped, else start task.</p>
@@ -2016,7 +3574,7 @@ modify_task_file
         an existing task, ensuring that the task will resume from its
         previous position if the task is in the Stopped state.
       </p>
-<h4>2.22.1 Breakdown</h4>
+<h4>2.31.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2039,7 +3597,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.22.2 RNC</h4>
+<h4>2.31.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_or_start_task
@@ -2059,14 +3617,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.22.1 Example: Resume a running task</h4>
+<h4>2.31.1 Example: Resume a running task</h4>
 <b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_paused_task">2.23
+<div><h3 id="resume_paused_task">2.32
           Command <tt>resume_paused_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume a paused task.</p>
@@ -2074,7 +3632,7 @@ modify_task_file
         The client uses the resume_paused_task command to manually resume a
         paused task.
       </p>
-<h4>2.23.1 Breakdown</h4>
+<h4>2.32.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2097,7 +3655,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.23.2 RNC</h4>
+<h4>2.32.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_paused_task
@@ -2117,14 +3675,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.23.1 Example: Resume a paused task</h4>
+<h4>2.32.1 Example: Resume a paused task</h4>
 <b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_stopped_task">2.24
+<div><h3 id="resume_stopped_task">2.33
           Command <tt>resume_stopped_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume a stopped task.</p>
@@ -2132,7 +3690,7 @@ modify_task_file
         The client uses the resume_stopped_task command to manually resume a
         stopped task.
       </p>
-<h4>2.24.1 Breakdown</h4>
+<h4>2.33.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2155,7 +3713,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.24.2 RNC</h4>
+<h4>2.33.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_stopped_task
@@ -2175,14 +3733,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.24.1 Example: Resume a stopped task</h4>
+<h4>2.33.1 Example: Resume a stopped task</h4>
 <b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="start_task">2.25
+<div><h3 id="start_task">2.34
           Command <tt>start_task</tt>
 </h3></div>
 <p><b>In short: </b>Manually start an existing task.</p>
@@ -2190,7 +3748,7 @@ modify_task_file
         The client uses the start_task command to manually start an
         existing task.
       </p>
-<h4>2.25.1 Breakdown</h4>
+<h4>2.34.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2213,7 +3771,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.25.2 RNC</h4>
+<h4>2.34.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>start_task
@@ -2233,14 +3791,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.25.1 Example: Start a task</h4>
+<h4>2.34.1 Example: Start a task</h4>
 <b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="stop_task">2.26
+<div><h3 id="stop_task">2.35
           Command <tt>stop_task</tt>
 </h3></div>
 <p><b>In short: </b>Stop a running task.</p>
@@ -2248,7 +3806,7 @@ modify_task_file
         The client uses the stop_task command to manually stop a
         running task.
       </p>
-<h4>2.26.1 Breakdown</h4>
+<h4>2.35.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2271,7 +3829,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.26.2 RNC</h4>
+<h4>2.35.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>stop_task
@@ -2291,14 +3849,14 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.26.1 Example: Stop a running task</h4>
+<h4>2.35.1 Example: Stop a running task</h4>
 <b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="test_escalator">2.27
+<div><h3 id="test_escalator">2.36
           Command <tt>test_escalator</tt>
 </h3></div>
 <p><b>In short: </b>Run an escalator.</p>
@@ -2306,7 +3864,7 @@ modify_task_file
         The client uses the test_escalator command to invoke a test run of
         an escalator.
       </p>
-<h4>2.27.1 Breakdown</h4>
+<h4>2.36.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2329,7 +3887,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>2.27.2 RNC</h4>
+<h4>2.36.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>test_escalator
@@ -2349,7 +3907,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.27.1 Example: Test an escalator</h4>
+<h4>2.36.1 Example: Test an escalator</h4>
 <b>Client:</b><br><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;

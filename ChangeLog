@@ -1,4 +1,17 @@
-2010-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+2010-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add create commmands.
+
+	* src/schema_formats/HTML/HTML.xsl (description): Add lists.
+	(pretty): Explicitly indent element text.
+	(breakdown-line): Add r, to refer to command responses.
+
+	* src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/rnc.xsl: Add r
+	to pattern, to refer to command responses.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2010-10-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (header): Define another character
 	that seems to be missing from Debian Lenny ucs LaTeX package.

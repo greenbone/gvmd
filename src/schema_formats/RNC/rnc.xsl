@@ -63,6 +63,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="text()"/>
   </xsl:template>
 
+  <xsl:template name="r" match="r">
+    <xsl:param name="parent-name"/>
+    <xsl:value-of select="text()"/>
+    <xsl:text>_response</xsl:text>
+  </xsl:template>
+
   <xsl:template name="t" match="t">
     <xsl:value-of select="text()"/>
   </xsl:template>
@@ -115,6 +121,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:if>
         </xsl:for-each>
         <xsl:text> )</xsl:text>
+      </xsl:when>
+      <xsl:when test="name()='r'">
+        <xsl:call-template name="r">
+          <xsl:with-param name="parent-name" select="$parent-name"/>
+        </xsl:call-template>
       </xsl:when>
       <xsl:when test="name()='t'">
       </xsl:when>

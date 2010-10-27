@@ -43,6 +43,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>text</pattern>
   </type>
   <type>
+    <name>integer</name>
+    <summary>An integer</summary>
+    <pattern>xsd:integer</pattern>
+  </type>
+  <type>
     <name>name</name>
     <pattern>xsd:string</pattern>
   </type>
@@ -61,6 +66,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <type>
     <name>threat</name>
     <pattern>xsd:token { pattern = "High|Medium|Low|Log|Debug" }</pattern>
+  </type>
+  <type>
+    <name>time_unit</name>
+    <summary>A unit of time</summary>
+    <pattern>xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }</pattern>
   </type>
   <type>
     <name>uuid</name>
@@ -173,6 +183,1082 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <any><c>response</c></any>
       </pattern>
     </response>
+  </command>
+  <command>
+    <name>create_agent</name>
+    <summary>Create an agent</summary>
+    <description>
+      <p>
+        The client uses the create_agent command to create a new agent.
+      </p>
+    </description>
+    <pattern>
+      <e>installer</e>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>howto_install</e></o>
+      <o><e>howto_use</e></o>
+    </pattern>
+    <ele>
+      <name>installer</name>
+      <summary>A file that installs the agent on a target machine</summary>
+      <pattern>
+        <t>base64</t>
+        <e>signature</e>
+      </pattern>
+      <ele>
+        <name>signature</name>
+        <summary>A detached OpenPGP signature of the installer</summary>
+        <pattern><t>base64</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>A name for the installer</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the agent</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>howto_install</name>
+      <summary>A file that describes how to install the agent</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>howto_use</name>
+      <summary>A file that describes how to use the agent</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an agent</summary>
+      <request>
+        <create_agent>
+          <installer>
+            asdf3235saf3kjBVF...
+            <signature>iEYEABECAAYFA...</signature>
+          </installer>
+          <name>SLAD</name>
+        </create_agent>
+      </request>
+      <response>
+        <create_agent_response status="201" status_text="OK, resource created"
+                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_agent_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_config</name>
+    <summary>Create a config</summary>
+    <description>
+      <p>
+        The client uses the create_config command to create a new config.
+      </p>
+      <l>
+        <lh>This command can be called in three ways:</lh>
+        <li>
+          With a copy element.  The new config is a copy of the existing
+          config, with the given name.
+        </li>
+        <li>
+          With an embedded get_configs response element.  The config is
+          created as defined by the get_configs response element.  Name is
+          actually optional in this case.  The config is given the name of
+          the config in the get_configs response.  If there is already a
+          config with this name, then a number is attached to the name to
+          make it unique.
+        </li>
+        <li>
+          With an rcfile element. The config is created as described in
+          the RC file.  In this case a name element is required.  The new
+          config is given this name.
+        </li>
+      </l>
+    </description>
+    <pattern>
+      <o><e>comment</e></o>
+      <or>
+        <e>copy</e>
+        <r>get_configs</r>
+        <e>rcfile</e>
+      </or>
+      <e>name</e>
+    </pattern>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the config</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <!-- TODO UUIDs are normally in attributes. -->
+      <summary>The UUID of an existing config</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>A openvasrc style file that defines the config</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>A name for the config</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Copy a config</summary>
+      <request>
+        <create_config>
+          <copy>daba56c8-73ec-11df-a475-002264764cea</copy>
+          <name>Full</name>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a config from an RC file</summary>
+      <request>
+        <create_config>
+          <rcfile>asdf3235saf3kjBVF...</rcfile>
+          <name>Full</name>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a config from a GET_CONFIGS response</summary>
+      <request>
+        <create_config>
+          <get_configs_response>
+            <config id="daba56c8-73ec-11df-a475-002264764cea">
+              <name>Full and fast</name>
+              <truncated>...</truncated>
+            </config>
+          </get_configs_response>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_escalator</name>
+    <summary>Create an escalator</summary>
+    <description>
+      <p>
+        The client uses the create_escalator command to create a new
+        escalator.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>condition</e>
+      <e>event</e>
+      <e>method</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the escalator</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the escalator</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>condition</name>
+      <summary>The condition that must be satisfied for escalation</summary>
+      <pattern>
+        text
+        <e>data</e>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the condition</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the condition data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>event</name>
+      <summary>The event that must happen for escalation</summary>
+      <pattern>
+        text
+        <e>data</e>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the event</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the event data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>method</name>
+      <summary>The method by which escalation must occur</summary>
+      <pattern>
+        text
+        <e>data</e>
+      </pattern>
+      <ele>
+        <name>data</name>
+        <summary>Some data that defines the method</summary>
+        <pattern>
+          text
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the method data</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an escalator</summary>
+      <request>
+        <create_escalator>
+          <name>emergency</name>
+          <condition>
+            Threat level at least
+            <data>
+              <name>level</name>
+              High
+            </data>
+          </condition>
+          <event>
+            Task run status changed
+            <data>
+              <name>status</name>
+              Done
+            </data>
+          </event>
+          <method>
+            Email
+            <data>
+              <name>to_address</name>
+              sally@example.org
+            </data>
+            <data>
+              <name>from_address</name>
+              bob@example.org
+            </data>
+          </method>
+        </create_escalator>
+      </request>
+      <response>
+        <create_escalator_response status="201"
+                                   status_text="OK, resource created"
+                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_escalator_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_lsc_credential</name>
+    <summary>Create an LSC credential</summary>
+    <description>
+      <p>
+        The client uses the create_lsc_credential command to create a new
+        LSC credential.
+      </p>
+      <p>
+        If the command includes a password, then the manager creates a
+        password only credential, otherwise the manager creates a key-based
+        credential.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>login</e>
+      <o><e>password</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the LSC credential</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the LSC credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>login</name>
+      <summary>The user name of the credential</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>password</name>
+      <summary>The password for the credential login</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an LSC credential</summary>
+      <request>
+        <create_lsc_credential>
+          <name>cluster sally</name>
+          <login>sally</login>
+          <password>secret</password>
+          <comment>Sally's login to the cluster.</comment>
+        </create_lsc_credential>
+      </request>
+      <response>
+        <create_lsc_credential_response status="201"
+                                        status_text="OK, resource created"
+                                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_lsc_credential_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_note</name>
+    <summary>Create a note</summary>
+    <description>
+      <p>
+        The client uses the create_note command to create a new note.
+      </p>
+    </description>
+    <pattern>
+      <e>text</e>
+      <e>nvt</e>
+      <o><e>comment</e></o>
+      <o><e>hosts</e></o>
+      <o><e>port</e></o>
+      <o><e>result</e></o>
+      <o><e>task</e></o>
+      <o><e>threat</e></o>
+    </pattern>
+    <ele>
+      <name>text</name>
+      <summary>The text of the note</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <summary>NVT to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the note</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which note applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>Threat level to which note applies</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a note</summary>
+      <request>
+        <create_note>
+          <text>This issue should be resolved after the upgrade.</text>
+          <nvt>1.3.6.1.4.1.25623.1.0.10330</nvt>
+          <result>254cd3ef-bbe1-4d58-859d-21b8d0c046c6</result>
+        </create_note>
+      </request>
+      <response>
+        <create_note_response status="202"
+                              status_text="OK, resource created"
+                              id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_note_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_override</name>
+    <summary>Create an override</summary>
+    <description>
+      <p>
+        The client uses the create_override command to create a new override.
+      </p>
+    </description>
+    <pattern>
+      <e>text</e>
+      <e>nvt</e>
+      <o><e>comment</e></o>
+      <o><e>hosts</e></o>
+      <o><e>new_threat</e></o>
+      <o><e>port</e></o>
+      <o><e>result</e></o>
+      <o><e>task</e></o>
+      <o><e>threat</e></o>
+    </pattern>
+    <ele>
+      <name>text</name>
+      <summary>The text of the override</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <summary>NVT to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the override</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>new_threat</name>
+      <summary>New threat level for result</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which override applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>Threat level to which override applies</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an override</summary>
+      <request>
+        <create_override>
+          <text>This is actually of little concern.</text>
+          <nvt>1.3.6.1.4.1.25623.1.0.10330</nvt>
+          <new_threat>Low</new_threat>
+          <result>254cd3ef-bbe1-4d58-859d-21b8d0c046c6</result>
+        </create_override>
+      </request>
+      <response>
+        <create_override_response status="201"
+                                   status_text="OK, resource created"
+                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_override_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_schedule</name>
+    <summary>Create a schedule</summary>
+    <description>
+      <p>
+        The client uses the create_schedule command to create a new schedule.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>first_time</e>
+      <e>duration</e>
+      <e>period</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the schedule</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the schedule</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>first_time</name>
+      <summary>The first time the schedule will run</summary>
+      <pattern>
+        <e>minute</e>
+        <e>hour</e>
+        <e>day_of_month</e>
+        <e>month</e>
+        <e>year</e>
+      </pattern>
+      <ele>
+        <name>minute</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>hour</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>day_of_month</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>month</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>year</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>duration</name>
+      <summary>How long the Manager will run the scheduled task for</summary>
+      <description>A duration of 0 means to run to completion.</description>
+      <pattern>
+        <e>unit</e>
+      </pattern>
+      <ele>
+        <name>unit</name>
+        <summary>Duration time unit</summary>
+        <pattern><t>time_unit</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>period</name>
+      <summary>How often the Manager will repeat the scheduled task</summary>
+      <description>A period of 0 means to run once.</description>
+      <pattern>
+        <e>unit</e>
+      </pattern>
+      <ele>
+        <name>unit</name>
+        <summary>Period time unit</summary>
+        <pattern><t>time_unit</t></pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a schedule</summary>
+      <request>
+        <create_schedule>
+          <name>Every night</name>
+          <first_time>
+            <day_of_month>1</day_of_month>
+            <hour>0</hour>
+            <minute>0</minute>
+            <month>1</month>
+            <year>2011</year>
+          </first_time>
+          <duration>
+            3
+            <unit>hour</unit>
+          </duration>
+          <period>
+            1
+            <unit>day</unit>
+          </period>
+        </create_schedule>
+      </request>
+      <response>
+        <create_schedule_response status="201"
+                                   status_text="OK, resource created"
+                                   id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_schedule_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_target</name>
+    <summary>Create a target</summary>
+    <description>
+      <p>
+        The client uses the create_target command to create a new target.
+      </p>
+      <p>
+        If the list of hosts is empty, the command must also include a
+        target locator.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>hosts</e>
+      <e>lsc_credential</e>
+      <e>target_locator</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the target</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the target</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts, which may be empty</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>lsc_credential</name>
+      <summary>Login credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target_locator</name>
+      <summary>Target locator (for example, for LDAP)</summary>
+      <pattern>
+        <o><e>username</e></o>
+        <o><e>password</e></o>
+      </pattern>
+      <ele>
+        <name>username</name>
+        <summary>The login for the target locator</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>password</name>
+        <summary>The password for the target locator</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a target, giving a host list</summary>
+      <request>
+        <create_target>
+          <create_target>
+            <name>All GNU/Linux machines</name>
+            <hosts>192.168.1.0/24</hosts>
+          </create_target>
+        </create_target>
+      </request>
+      <response>
+        <create_target_response status="201"
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_target_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_task</name>
+    <summary>Create a task</summary>
+    <description>
+      <p>
+        The client uses the create_task command to create a new task.
+      </p>
+      <p>
+        If an rcfile is given, then config and target should actually be
+        left out.  This form of the command is special support for
+        OpenVAS-Client, and will likely be removed in future versions.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>config</e>
+      <e>target</e>
+      <o><e>escalator</e></o>
+      <o><e>schedule</e></o>
+      <o><e>rcfile</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the task</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the task</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>config</name>
+      <summary>The scan configuration used by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target</name>
+      <summary>The hosts scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>escalator</name>
+      <summary>An escalator that applies to the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>schedule</name>
+      <summary>When the task will run</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>An openvasrc style file defining the task</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a task, giving a host list</summary>
+      <request>
+        <create_task>
+          <name>Scan Webserver</name>
+          <comment>Hourly scan of the webserver</comment>
+          <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+          <target id="b493b7a8-7489-11df-a3ec-002264764cea"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_task_response>
+      </response>
+    </example>
   </command>
   <command>
     <name>delete_agent</name>
@@ -1292,9 +2378,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>name</name>
       <summary>The name of the task</summary>
-      <pattern>
-        text
-      </pattern>
+      <pattern><t>name</t></pattern>
     </ele>
     <ele>
       <name>rcfile</name>

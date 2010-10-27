@@ -9,6 +9,15 @@ start = command | response
 command
   = authenticate
     | commands
+    | create_agent
+    | create_config
+    | create_escalator
+    | create_lsc_credential
+    | create_note
+    | create_override
+    | create_schedule
+    | create_target
+    | create_task
     | delete_agent
     | delete_config
     | delete_escalator
@@ -38,6 +47,15 @@ command
 response
   = authenticate_response
     | commands_response
+    | create_agent_response
+    | create_config_response
+    | create_escalator_response
+    | create_lsc_credential_response
+    | create_note_response
+    | create_override_response
+    | create_schedule_response
+    | create_target_response
+    | create_task_response
     | delete_agent_response
     | delete_config_response
     | delete_escalator_response
@@ -72,6 +90,8 @@ base64 = xsd:base64Binary
 boolean = text
 
 boolean_atoi = text
+# An integer.
+integer = xsd:integer
 
 name = xsd:string
 
@@ -82,6 +102,8 @@ sort_order = text
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 
 threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+# A unit of time.
+time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 
@@ -129,6 +151,647 @@ commands
      {
        ""
        & command*
+     }
+
+## Command create_agent
+##
+## Create an agent.
+
+create_agent
+ = element create_agent
+     {
+       ""
+       & create_agent_installer
+       & create_agent_name
+       & create_agent_comment?
+       & create_agent_howto_install?
+       & create_agent_howto_use?
+     }
+
+# A file that installs the agent on a target machine.
+create_agent_installer
+ = element installer
+     {
+       base64
+       & create_agent_installer_signature
+     }
+
+# A detached OpenPGP signature of the installer.
+create_agent_installer_signature
+ = element signature
+     {
+       base64
+     }
+
+# A name for the installer.
+create_agent_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the agent.
+create_agent_comment
+ = element comment
+     {
+       text
+     }
+
+# A file that describes how to install the agent.
+create_agent_howto_install
+ = element howto_install
+     {
+       base64
+     }
+
+# A file that describes how to use the agent.
+create_agent_howto_use
+ = element howto_use
+     {
+       base64
+     }
+
+## Command create_config
+##
+## Create a config.
+
+create_config
+ = element create_config
+     {
+       ""
+       & create_config_comment?
+       & ( create_config_copy
+           | get_configs_response
+           | create_config_rcfile )
+       & create_config_name
+     }
+
+# A comment on the config.
+create_config_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing config.
+create_config_copy
+ = element copy
+     {
+       uuid
+     }
+
+# A openvasrc style file that defines the config.
+create_config_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+# A name for the config.
+create_config_name
+ = element name
+     {
+       name
+     }
+
+## Command create_escalator
+##
+## Create an escalator.
+
+create_escalator
+ = element create_escalator
+     {
+       ""
+       & create_escalator_name
+       & create_escalator_comment?
+       & create_escalator_condition
+       & create_escalator_event
+       & create_escalator_method
+     }
+
+# A name for the escalator.
+create_escalator_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the escalator.
+create_escalator_comment
+ = element comment
+     {
+       text
+     }
+
+# The condition that must be satisfied for escalation.
+create_escalator_condition
+ = element condition
+     {
+       text
+       & create_escalator_condition_data
+     }
+
+# Some data that defines the condition.
+create_escalator_condition_data
+ = element data
+     {
+       text
+       & create_escalator_condition_data_name
+     }
+
+# The name of the condition data.
+create_escalator_condition_data_name
+ = element name
+     {
+       text
+     }
+
+# The event that must happen for escalation.
+create_escalator_event
+ = element event
+     {
+       text
+       & create_escalator_event_data
+     }
+
+# Some data that defines the event.
+create_escalator_event_data
+ = element data
+     {
+       text
+       & create_escalator_event_data_name
+     }
+
+# The name of the event data.
+create_escalator_event_data_name
+ = element name
+     {
+       text
+     }
+
+# The method by which escalation must occur.
+create_escalator_method
+ = element method
+     {
+       text
+       & create_escalator_method_data
+     }
+
+# Some data that defines the method.
+create_escalator_method_data
+ = element data
+     {
+       text
+       & create_escalator_method_data_name
+     }
+
+# The name of the method data.
+create_escalator_method_data_name
+ = element name
+     {
+       text
+     }
+
+## Command create_lsc_credential
+##
+## Create an LSC credential.
+
+create_lsc_credential
+ = element create_lsc_credential
+     {
+       ""
+       & create_lsc_credential_name
+       & create_lsc_credential_comment?
+       & create_lsc_credential_login
+       & create_lsc_credential_password?
+     }
+
+# A name for the LSC credential.
+create_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the LSC credential.
+create_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# The user name of the credential.
+create_lsc_credential_login
+ = element login
+     {
+       text
+     }
+
+# The password for the credential login.
+create_lsc_credential_password
+ = element password
+     {
+       text
+     }
+
+## Command create_note
+##
+## Create a note.
+
+create_note
+ = element create_note
+     {
+       ""
+       & create_note_text
+       & create_note_nvt
+       & create_note_comment?
+       & create_note_hosts?
+       & create_note_port?
+       & create_note_result?
+       & create_note_task?
+       & create_note_threat?
+     }
+
+# The text of the note.
+create_note_text
+ = element text
+     {
+       text
+     }
+
+# NVT to which note applies.
+create_note_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+     }
+
+# A comment on the note.
+create_note_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+create_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+create_note_port
+ = element port
+     {
+       text
+     }
+
+# Result to which note applies.
+create_note_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Task to which note applies.
+create_note_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Threat level to which note applies.
+create_note_threat
+ = element threat
+     {
+       threat
+     }
+
+## Command create_override
+##
+## Create an override.
+
+create_override
+ = element create_override
+     {
+       ""
+       & create_override_text
+       & create_override_nvt
+       & create_override_comment?
+       & create_override_hosts?
+       & create_override_new_threat?
+       & create_override_port?
+       & create_override_result?
+       & create_override_task?
+       & create_override_threat?
+     }
+
+# The text of the override.
+create_override_text
+ = element text
+     {
+       text
+     }
+
+# NVT to which override applies.
+create_override_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+     }
+
+# A comment on the override.
+create_override_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+create_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# New threat level for result.
+create_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Port to which override applies.
+create_override_port
+ = element port
+     {
+       text
+     }
+
+# Result to which override applies.
+create_override_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Task to which override applies.
+create_override_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Threat level to which override applies.
+create_override_threat
+ = element threat
+     {
+       threat
+     }
+
+## Command create_schedule
+##
+## Create a schedule.
+
+create_schedule
+ = element create_schedule
+     {
+       ""
+       & create_schedule_name
+       & create_schedule_comment?
+       & create_schedule_first_time
+       & create_schedule_duration
+       & create_schedule_period
+     }
+
+# A name for the schedule.
+create_schedule_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the schedule.
+create_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+# The first time the schedule will run.
+create_schedule_first_time
+ = element first_time
+     {
+       ""
+       & create_schedule_first_time_minute
+       & create_schedule_first_time_hour
+       & create_schedule_first_time_day_of_month
+       & create_schedule_first_time_month
+       & create_schedule_first_time_year
+     }
+
+create_schedule_first_time_minute
+ = element minute
+     {
+       integer
+     }
+
+create_schedule_first_time_hour
+ = element hour
+     {
+       integer
+     }
+
+create_schedule_first_time_day_of_month
+ = element day_of_month
+     {
+       integer
+     }
+
+create_schedule_first_time_month
+ = element month
+     {
+       integer
+     }
+
+create_schedule_first_time_year
+ = element year
+     {
+       integer
+     }
+
+# How long the Manager will run the scheduled task for.
+create_schedule_duration
+ = element duration
+     {
+       ""
+       & create_schedule_duration_unit
+     }
+
+# Duration time unit.
+create_schedule_duration_unit
+ = element unit
+     {
+       time_unit
+     }
+
+# How often the Manager will repeat the scheduled task.
+create_schedule_period
+ = element period
+     {
+       ""
+       & create_schedule_period_unit
+     }
+
+# Period time unit.
+create_schedule_period_unit
+ = element unit
+     {
+       time_unit
+     }
+
+## Command create_target
+##
+## Create a target.
+
+create_target
+ = element create_target
+     {
+       ""
+       & create_target_name
+       & create_target_comment?
+       & create_target_hosts
+       & create_target_lsc_credential
+       & create_target_target_locator
+     }
+
+# A name for the target.
+create_target_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the target.
+create_target_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts, which may be empty.
+create_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Login credentials for target.
+create_target_lsc_credential
+ = element lsc_credential
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Target locator (for example, for LDAP).
+create_target_target_locator
+ = element target_locator
+     {
+       ""
+       & create_target_target_locator_username?
+       & create_target_target_locator_password?
+     }
+
+# The login for the target locator.
+create_target_target_locator_username
+ = element username
+     {
+       text
+     }
+
+# The password for the target locator.
+create_target_target_locator_password
+ = element password
+     {
+       text
+     }
+
+## Command create_task
+##
+## Create a task.
+
+create_task
+ = element create_task
+     {
+       ""
+       & create_task_name
+       & create_task_comment?
+       & create_task_config
+       & create_task_target
+       & create_task_escalator?
+       & create_task_schedule?
+       & create_task_rcfile?
+     }
+
+# A name for the task.
+create_task_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the task.
+create_task_comment
+ = element comment
+     {
+       text
+     }
+
+# The scan configuration used by the task.
+create_task_config
+ = element config
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# The hosts scanned by the task.
+create_task_target
+ = element target
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# An escalator that applies to the task.
+create_task_escalator
+ = element escalator
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# When the task will run.
+create_task_schedule
+ = element schedule
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# An openvasrc style file defining the task.
+create_task_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 ## Command delete_agent
@@ -580,7 +1243,7 @@ modify_task_escalator
 modify_task_name
  = element name
      {
-       text
+       name
      }
 
 # An openvasrc style file describing the task.
@@ -705,6 +1368,105 @@ commands_response
        & attribute status { status }
        & attribute status_text { text }
        & response*
+     }
+
+## Response to create_agent
+
+create_agent_response
+ = element create_agent_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_config
+
+create_config_response
+ = element create_config_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_escalator
+
+create_escalator_response
+ = element create_escalator_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_lsc_credential
+
+create_lsc_credential_response
+ = element create_lsc_credential_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_note
+
+create_note_response
+ = element create_note_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_override
+
+create_override_response
+ = element create_override_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_schedule
+
+create_schedule_response
+ = element create_schedule_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_target
+
+create_target_response
+ = element create_target_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_task
+
+create_task_response
+ = element create_task_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
      }
 
 ## Response to delete_agent

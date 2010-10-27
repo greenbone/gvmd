@@ -48,12 +48,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="description">
     <xsl:choose>
-      <xsl:when test="(count(p) = 0) and (string-length(normalize-space(text())) &gt; 0)">
+      <xsl:when test="(count(*) = 0) and (string-length(normalize-space(text())) &gt; 0)">
         <p><xsl:value-of select="text()"/></p>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:for-each select="p">
-          <p><xsl:value-of select="text()"/></p>
+        <xsl:for-each select="*">
+          <xsl:choose>
+            <xsl:when test="name()='p'">
+              <p><xsl:value-of select="text()"/></p>
+            </xsl:when>
+            <xsl:when test="name()='l'">
+              <p>
+                <xsl:value-of select="lh"/>
+                <ul>
+                  <xsl:for-each select="li">
+                    <li><xsl:value-of select="text()"/></li>
+                  </xsl:for-each>
+                </ul>
+                <xsl:value-of select="lf"/>
+              </p>
+            </xsl:when>
+          </xsl:choose>
         </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
@@ -118,9 +133,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="newline"/>
         <xsl:if test="string-length(normalize-space(text())) &gt; 0">
           <xsl:call-template name="print-space">
-            <xsl:with-param name="count" select="$level * 2"/>
+            <xsl:with-param name="count" select="$level * 2 + 2"/>
           </xsl:call-template>
-          <xsl:value-of select="text()"/>
+          <xsl:value-of select="normalize-space(text())"/>
           <xsl:call-template name="newline"/>
         </xsl:if>
         <xsl:for-each select="*">
@@ -168,6 +183,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:if test="summary">
             <xsl:value-of select="summary"/>.
           </xsl:if>
+        </li>
+      </xsl:when>
+      <xsl:when test="name() = 'r'">
+        <li>
+          <xsl:variable name="element-name" select="text()"/>
+          <b>
+            &lt;<xsl:value-of select="text()"/>&gt;<xsl:value-of select="$element-suffix"/>
+          </b>
+          <div style="margin-left: 15px; display: inline;">
+            A response to a <a href="#{$element-name}"><xsl:value-of select="$element-name"/></a> command.
+          </div>
         </li>
       </xsl:when>
       <xsl:when test="name() = 'e'">
