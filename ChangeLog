@@ -1,3 +1,9 @@
+2010-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp.c: Define another character that seems to be missing from
+	Debian Lenny ucs LaTeX package, adapted from commit r9289 by Matthew
+	Mundell. Donate newlines to character definitions.
+
 2010-10-22  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c (create_config_data_reset): Iterate over array using length,
