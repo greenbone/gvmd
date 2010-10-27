@@ -10141,6 +10141,310 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
   }
 }
 
+/**
+ * @brief Size of base64 chunk in manage_send_report.
+ */
+#define MANAGE_SEND_REPORT_CHUNK64_SIZE 262144
+
+/**
+ * @brief Size of file chunk in manage_send_report.
+ */
+#define MANAGE_SEND_REPORT_CHUNK_SIZE (MANAGE_SEND_REPORT_CHUNK64_SIZE * 3 / 4)
+
+/**
+ * @brief Generate a report.
+ *
+ * @param[in]  report             Report.
+ * @param[in]  report_format      Report format.
+ * @param[in]  sort_order         Whether to sort ascending or descending.
+ * @param[in]  sort_field         Field to sort on, or NULL for "type".
+ * @param[in]  result_hosts_only  Whether to show only hosts with results.
+ * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  levels         String describing threat levels (message types)
+ *                            to include in count (for example, "hmlgd" for
+ *                            High, Medium, Low, loG and Debug).  All levels if
+ *                            NULL.
+ * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  search_phrase      Phrase that results must include.  All results
+ *                                if NULL or "".
+ * @param[in]  notes              Whether to include notes.
+ * @param[in]  notes_details      If notes, Whether to include details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  If overrides, Whether to include details.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  base64             Whether to base64 encode the report.
+ * @param[in]  send               Function to write to client.
+ * @param[in]  send_data_1        Second argument to \p send.
+ * @param[in]  send_data_2        Third argument to \p send.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_send_report (report_t report, report_format_t report_format,
+                    int sort_order, const char* sort_field,
+                    int result_hosts_only, const char *min_cvss_base,
+                    const char *levels, int apply_overrides,
+                    const char *search_phrase, int notes, int notes_details,
+                    int overrides, int overrides_details, int first_result,
+                    int max_results, int base64,
+                    gboolean (*send) (const char *, int (*) (void*), void*),
+                    int (*send_data_1) (void*), void *send_data_2)
+{
+  task_t task;
+  gchar *xml_file;
+  char xml_dir[] = "/tmp/openvasmd_XXXXXX";
+
+  /* Print the report as XML to a file. */
+
+  if (report_task (report, &task))
+    return -1;
+
+  if (mkdtemp (xml_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed\n", __FUNCTION__);
+      return -1;
+    }
+
+  xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
+  if (print_report_xml (report, task, xml_file, sort_order, sort_field,
+                        result_hosts_only, min_cvss_base, report_format,
+                        levels, apply_overrides, search_phrase, notes,
+                        notes_details, overrides, overrides_details,
+                        first_result, max_results))
+    {
+      g_free (xml_file);
+      return -1;
+    }
+
+  /* Pass the file to the report format generate script, sending the output
+   * to a file. */
+
+  {
+    iterator_t formats;
+    const char *uuid_format;
+    char *uuid_report;
+    gchar *script, *script_dir;
+
+    /* Setup file names. */
+
+    uuid_report = report_uuid (report);
+    init_report_format_iterator (&formats, report_format, 1, NULL);
+    if (next (&formats) == FALSE)
+      {
+        g_free (xml_file);
+        cleanup_iterator (&formats);
+        return -1;
+      }
+
+    uuid_format = report_format_iterator_uuid (&formats);
+    if (report_format_global (report_format))
+      script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                     "openvasmd",
+                                     "global_report_formats",
+                                     uuid_format,
+                                     NULL);
+    else
+      {
+        assert (current_credentials.uuid);
+        script_dir = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                       "openvasmd",
+                                       "report_formats",
+                                       current_credentials.uuid,
+                                       uuid_format,
+                                       NULL);
+      }
+
+    cleanup_iterator (&formats);
+
+    script = g_build_filename (script_dir, "generate", NULL);
+
+    if (!g_file_test (script, G_FILE_TEST_EXISTS))
+      {
+        g_free (script);
+        g_free (script_dir);
+        g_free (xml_file);
+        return -1;
+      }
+
+    {
+      gchar *output_file, *command;
+      char *previous_dir;
+      int ret;
+
+      /* Change into the script directory. */
+
+      /** @todo NULL arg is glibc extension. */
+      previous_dir = getcwd (NULL, 0);
+      if (previous_dir == NULL)
+        {
+          g_warning ("%s: Failed to getcwd: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          g_free (xml_file);
+          return -1;
+        }
+
+      if (chdir (script_dir))
+        {
+          g_warning ("%s: Failed to chdir: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          g_free (previous_dir);
+          g_free (script);
+          g_free (script_dir);
+          g_free (xml_file);
+          return -1;
+        }
+      g_free (script_dir);
+
+      output_file = g_strdup_printf ("%s/report.out", xml_dir);
+
+      /* Call the script. */
+
+      command = g_strdup_printf ("/bin/sh %s %s > %s"
+                                 " 2> /dev/null",
+                                 script,
+                                 xml_file,
+                                 output_file);
+      g_free (script);
+      g_free (xml_file);
+
+      g_message ("   command: %s\n", command);
+
+      /* RATS: ignore, command is defined above. */
+      if (ret = system (command),
+          /** @todo ret is always -1. */
+          0 && ((ret) == -1
+                || WEXITSTATUS (ret)))
+        {
+          g_warning ("%s: system failed with ret %i, %i, %s\n",
+                     __FUNCTION__,
+                     ret,
+                     WEXITSTATUS (ret),
+                     command);
+          if (chdir (previous_dir))
+            g_warning ("%s: and chdir failed\n",
+                       __FUNCTION__);
+          g_free (previous_dir);
+          g_free (command);
+          g_free (output_file);
+          return -1;
+        }
+
+      {
+        char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
+        FILE *stream;
+
+        g_free (command);
+
+        /* Change back to the previous directory. */
+
+        if (chdir (previous_dir))
+          {
+            g_warning ("%s: Failed to chdir back: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            g_free (previous_dir);
+            g_free (output_file);
+            return -1;
+          }
+        g_free (previous_dir);
+
+        /* Read the script output from file in chunks, sending to client. */
+
+        stream = fopen (output_file, "r");
+        g_free (output_file);
+        if (stream == NULL)
+          {
+            g_warning ("%s: %s\n",
+                       __FUNCTION__,
+                       strerror (errno));
+            return -1;
+          }
+
+        while (1)
+          {
+            int left;
+            char *dest;
+
+            /* Read a chunk. */
+
+            left = MANAGE_SEND_REPORT_CHUNK_SIZE;
+            dest = chunk;
+            while (1)
+              {
+                int ret = fread (dest, 1, left, stream);
+                if (ferror (stream))
+                  {
+                    fclose (stream);
+                    g_warning ("%s: error after fread\n", __FUNCTION__);
+                    return -1;
+                  }
+                left -= ret;
+                if (left == 0)
+                  break;
+                if (feof (stream))
+                  break;
+                dest += ret;
+              }
+
+            /* Send the chunk. */
+
+            if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
+              {
+                if (base64)
+                  {
+                    gchar *chunk64;
+                    chunk64 = g_base64_encode ((guchar*) chunk,
+                                               MANAGE_SEND_REPORT_CHUNK_SIZE
+                                                - left);
+                    if (send (chunk64, send_data_1, send_data_2))
+                      {
+                        g_free (chunk64);
+                        fclose (stream);
+                        g_warning ("%s: send error\n", __FUNCTION__);
+                        return -1;
+                      }
+                    g_free (chunk64);
+                  }
+                else
+                  {
+                    chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
+                    if (send (chunk, send_data_1, send_data_2))
+                      {
+                        fclose (stream);
+                        g_warning ("%s: send error\n", __FUNCTION__);
+                        return -1;
+                      }
+                  }
+              }
+
+            /* Check if there's more. */
+
+            if (feof (stream))
+              break;
+          }
+
+        fclose (stream);
+
+        /* Remove the directory. */
+
+        file_utils_rmdir_rf (xml_dir);
+
+        /* Return the output. */
+
+        return 0;
+      }
+    }
+  }
+}
+
 
 /* More task stuff. */
 
@@ -19869,6 +20173,37 @@ report_format_name (report_format_t report_format)
 {
   return sql_string (0, 0,
                      "SELECT name FROM report_formats WHERE ROWID = %llu;",
+                     report_format);
+}
+
+/**
+ * @brief Return the content type of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated content type.
+ */
+char *
+report_format_content_type (report_format_t report_format)
+{
+  return sql_string (0, 0,
+                     "SELECT content_type FROM report_formats WHERE ROWID = %llu;",
+                     report_format);
+}
+
+
+/**
+ * @brief Return the extension of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated extension.
+ */
+char *
+report_format_extension (report_format_t report_format)
+{
+  return sql_string (0, 0,
+                     "SELECT extension FROM report_formats WHERE ROWID = %llu;",
                      report_format);
 }
 

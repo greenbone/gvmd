@@ -8617,35 +8617,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         init_report_iterator (&reports, 0, request_report);
         while (next_report (&reports, &report))
           {
-            gchar *extension, *content_type, *output;
-            gsize output_len;
+            gchar *extension, *content_type;
 
-            output = manage_report (report,
-                                    report_format,
-                                    get_reports_data->sort_order,
-                                    get_reports_data->sort_field,
-                                    get_reports_data->result_hosts_only,
-                                    get_reports_data->min_cvss_base,
-                                    get_reports_data->levels,
-                                    get_reports_data->apply_overrides,
-                                    get_reports_data->search_phrase,
-                                    get_reports_data->notes,
-                                    get_reports_data->notes_details,
-                                    get_reports_data->overrides,
-                                    get_reports_data->overrides_details,
-                                    get_reports_data->first_result,
-                                    get_reports_data->max_results,
-                                    &output_len,
-                                    &extension,
-                                    &content_type);
-            if (output == NULL)
-              {
-                cleanup_iterator (&reports);
-                internal_error_send_to_client (error);
-                get_reports_data_reset (get_reports_data);
-                set_client_state (CLIENT_AUTHENTIC);
-                return;
-              }
+            content_type = report_format_content_type (report_format);
+            extension = report_format_extension (report_format);
 
             SENDF_TO_CLIENT_OR_FAIL
              ("<report"
@@ -8661,42 +8636,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_free (extension);
             g_free (content_type);
 
-            if (output && strlen (output))
+            if (manage_send_report (report,
+                                    report_format,
+                                    get_reports_data->sort_order,
+                                    get_reports_data->sort_field,
+                                    get_reports_data->result_hosts_only,
+                                    get_reports_data->min_cvss_base,
+                                    get_reports_data->levels,
+                                    get_reports_data->apply_overrides,
+                                    get_reports_data->search_phrase,
+                                    get_reports_data->notes,
+                                    get_reports_data->notes_details,
+                                    get_reports_data->overrides,
+                                    get_reports_data->overrides_details,
+                                    get_reports_data->first_result,
+                                    get_reports_data->max_results,
+                                    /* Special case the XML report, bah. */
+                                    strcmp
+                                     (get_reports_data->format_id,
+                                      "d5da9f67-8551-4e51-807b-b6a873d70e34"),
+                                    send_to_client,
+                                    write_to_client,
+                                    write_to_client_data))
               {
-                /* Encode and send the output. */
-
-                if (strcmp (get_reports_data->format_id,
-                            "d5da9f67-8551-4e51-807b-b6a873d70e34"))
-                  {
-                    gchar *base64;
-                    base64 = g_base64_encode ((guchar*) output, output_len);
-                    if (send_to_client (base64,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        g_free (base64);
-                        cleanup_iterator (&reports);
-                        error_send_to_client (error);
-                        return;
-                      }
-                    g_free (base64);
-                  }
-                else
-                  {
-                    /* Special case the XML report, bah. */
-                    if (send_to_client (output,
-                                        write_to_client,
-                                        write_to_client_data))
-                      {
-                        g_free (output);
-                        cleanup_iterator (&reports);
-                        error_send_to_client (error);
-                        return;
-                      }
-                  }
+                cleanup_iterator (&reports);
+                internal_error_send_to_client (error);
+                get_reports_data_reset (get_reports_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                return;
               }
-            g_free (output);
             SEND_TO_CLIENT_OR_FAIL ("</report>");
           }
         cleanup_iterator (&reports);

@@ -1,5 +1,18 @@
 2010-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (MANAGE_SEND_REPORT_CHUNK64_SIZE)
+	(MANAGE_SEND_REPORT_CHUNK_SIZE): New defines.
+	(manage_send_report, report_format_content_type)
+	(report_format_extension): New functions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS call
+	manage_send_report instead of using manage_report, so that big reports
+	are sent in chunks.
+
+2010-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add create commmands.
 
 	* src/schema_formats/HTML/HTML.xsl (description): Add lists.

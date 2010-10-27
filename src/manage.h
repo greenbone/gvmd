@@ -754,6 +754,13 @@ manage_report (report_t, report_format_t, int, const char*, int, const char *,
                const char *, int, const char *, int, int, int, int, int, int,
                gsize *, gchar **, gchar **);
 
+int
+manage_send_report (report_t, report_format_t, int, const char*, int,
+                    const char *, const char *, int, const char *, int, int,
+                    int, int, int, int, int,
+                    gboolean (*) (const char *, int (*) (void*), void*),
+                    int (*) (void*), void *);
+
 
 /* RC's. */
 
@@ -1519,6 +1526,12 @@ set_report_format_active (report_format_t, int);
 
 char *
 report_format_name (report_format_t);
+
+char *
+report_format_content_type (report_format_t);
+
+char *
+report_format_extension (report_format_t);
 
 void
 set_report_format_name (report_format_t, const char *);
