@@ -1,3 +1,20 @@
+2010-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/HTML/HTML.xsl (type): New template.
+	(breakdown-line): Add alts, for types that are a simple choice of strings.
+	Add g, to group elements in patterns.
+
+	* src/schema_formats/HTML/rnc.xsl,
+	src/schema_formats/RNC/rnc.xsl (rnc-type): New template.
+	(attrib): Call type template instead of matching.
+	(t): Add alts handling.
+	(pattern-part): Add g handling.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/schema_formats/XML/OMP.xml: Add more get commmands.  Use alts
+	instead of xsd:token string for file modify_task attach action.
+
 2010-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (MANAGE_SEND_REPORT_CHUNK64_SIZE)

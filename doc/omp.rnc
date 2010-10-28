@@ -28,7 +28,12 @@ command
     | delete_schedule
     | delete_target
     | delete_task
+    | get_agents
+    | get_nvts
+    | get_nvt_families
+    | get_nvt_feed_checksum
     | get_notes
+    | get_overrides
     | get_version
     | help
     | modify_config
@@ -66,7 +71,12 @@ response
     | delete_schedule_response
     | delete_target_response
     | delete_task_response
+    | get_agents_response
+    | get_nvts_response
+    | get_nvt_families_response
+    | get_nvt_feed_checksum_response
     | get_notes_response
+    | get_overrides_response
     | get_version_response
     | help_response
     | modify_config_response
@@ -90,6 +100,8 @@ base64 = xsd:base64Binary
 boolean = text
 
 boolean_atoi = text
+
+ctime = text
 # An integer.
 integer = xsd:integer
 
@@ -904,6 +916,69 @@ delete_task
        & attribute task_id { uuid }
      }
 
+## Command get_agents
+##
+## Get all agents.
+
+get_agents
+ = element get_agents
+     {
+       ""
+       & # ID of single agent to get.
+       attribute agent_id { uuid }?
+       & attribute format { installerhowto_installhowto_use }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_nvts
+##
+## Get all NVTs.
+
+get_nvts
+ = element get_nvts
+     {
+       ""
+       & # Single NVT to get.
+       attribute nvt_oid { oid }
+       & # Whether to include full details.
+       attribute details { boolean }?
+       & # Whether to include preference.
+       attribute preferences { boolean }?
+       & # Whether to include preference count.
+       attribute preference_count { boolean }?
+       & # Whether to include the special timeout preference.
+       attribute timeout { boolean }?
+       & # ID of config to which to limit the NVT listing.
+       attribute config_id { uuid }?
+       & # Family to which to limit NVT listing.
+       attribute family { text }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_nvt_families
+##
+## Get a list of all NVT families.
+
+get_nvt_families
+ = element get_nvt_families
+     {
+       ""
+       & attribute sort_order { sort_order }?
+     }
+
+## Command get_nvt_feed_checksum
+##
+## Get checksum for entire NVT collection.
+
+get_nvt_feed_checksum
+ = element get_nvt_feed_checksum
+     {
+       ""
+       & attribute algorithm { text }?
+     }
+
 ## Command get_notes
 ##
 ## Get all notes.
@@ -914,7 +989,25 @@ get_notes
        ""
        & # ID of single note to get.
        attribute note_id { uuid }?
-       & attribute nvt_id { oid }?
+       & attribute nvt_oid { oid }?
+       & attribute task_id { uuid }?
+       & attribute details { boolean }?
+       & attribute result { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_overrides
+##
+## Get all overrides.
+
+get_overrides
+ = element get_overrides
+     {
+       ""
+       & # ID of single override to get.
+       attribute override_id { uuid }?
+       & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
        & attribute details { boolean }?
        & attribute result { boolean }?
@@ -1267,7 +1360,7 @@ modify_task_file
      {
        base64
        & attribute name { text }
-       & attribute action { xsd:token { pattern = "update|remove" } }
+       & attribute action { updateremove }
      }
 
 ## Command pause_task
@@ -1569,6 +1662,318 @@ delete_task_response
        & attribute status_text { text }
      }
 
+## Response to get_agents
+
+get_agents_response
+ = element get_agents_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_agents_response_agent*
+     }
+
+get_agents_response_agent
+ = element agent
+     {
+       ""
+       & attribute id { uuid }
+       & get_agents_response_agent_name
+       & get_agents_response_agent_comment
+       & get_agents_response_agent_in_use
+       & ( get_agents_response_agent_installer
+           | get_agents_response_agent_package )
+     }
+
+# The name of the agent.
+get_agents_response_agent_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the agent.
+get_agents_response_agent_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether the agent is in use.
+get_agents_response_agent_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_agents_response_agent_installer
+ = element installer
+     {
+       ""
+       & get_agents_response_agent_installer_trust
+     }
+
+# Whether signature verification succeeded.
+get_agents_response_agent_installer_trust
+ = element trust
+     {
+       
+     }
+
+# Either the installer or one of the HOWTOs.
+get_agents_response_agent_package
+ = element package
+     {
+       base64
+       & get_agents_response_agent_package_filename
+     }
+
+# The filename of the package.
+get_agents_response_agent_package_filename
+ = element filename
+     {
+       text
+     }
+
+## Response to get_nvts
+
+get_nvts_response
+ = element get_nvts_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_nvts_response_nvt
+     }
+
+get_nvts_response_nvt
+ = element nvt
+     {
+       ""
+       & attribute id { uuid }
+       & get_nvts_response_nvt_name
+       & get_nvts_response_nvt_checksum
+       & 
+        ERROR
+      ?
+     }
+
+# The name of the NVT.
+get_nvts_response_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_nvts_response_nvt_category
+ = element category
+     {
+       text
+     }
+
+get_nvts_response_nvt_copyright
+ = element copyright
+     {
+       text
+     }
+
+get_nvts_response_nvt_description
+ = element description
+     {
+       text
+     }
+
+get_nvts_response_nvt_summary
+ = element summary
+     {
+       text
+     }
+
+get_nvts_response_nvt_family
+ = element family
+     {
+       text
+     }
+
+get_nvts_response_nvt_version
+ = element version
+     {
+       text
+     }
+
+get_nvts_response_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_nvts_response_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_nvts_response_nvt_cve_id
+ = element cve_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_bugtraq_id
+ = element bugtraq_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_xrefs
+ = element xrefs
+     {
+       text
+     }
+
+get_nvts_response_nvt_fingerprints
+ = element fingerprints
+     {
+       text
+     }
+
+get_nvts_response_nvt_tags
+ = element tags
+     {
+       text
+     }
+
+get_nvts_response_nvt_preference_count
+ = element preference_count
+     {
+       text
+     }
+
+get_nvts_response_nvt_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_checksum
+ = element checksum
+     {
+       text
+       & get_nvts_response_nvt_checksum_algorithm
+     }
+
+get_nvts_response_nvt_checksum_algorithm
+ = element algorithm
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences
+ = element preferences
+     {
+       text
+       & get_nvts_response_nvt_preferences_timeout
+       & get_nvts_response_nvt_preferences_preference*
+     }
+
+get_nvts_response_nvt_preferences_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference
+ = element preference
+     {
+       ""
+       & get_nvts_response_nvt_preferences_preference_nvt
+       & get_nvts_response_nvt_preferences_preference_name
+       & get_nvts_response_nvt_preferences_preference_type
+       & get_nvts_response_nvt_preferences_preference_value
+     }
+
+get_nvts_response_nvt_preferences_preference_nvt
+ = element nvt
+     {
+       oid
+     }
+
+get_nvts_response_nvt_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_type
+ = element type
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_value
+ = element value
+     {
+       text
+     }
+
+## Response to get_nvt_families
+
+get_nvt_families_response
+ = element get_nvt_families_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_nvt_families_response_families
+     }
+
+get_nvt_families_response_families
+ = element families
+     {
+       ""
+       & get_nvt_families_response_families_family*
+     }
+
+get_nvt_families_response_families_family
+ = element family
+     {
+       ""
+       & get_nvt_families_response_families_family_name
+       & get_nvt_families_response_families_family_max_nvt_count
+     }
+
+# The name of the family.
+get_nvt_families_response_families_family_name
+ = element name
+     {
+       name
+     }
+
+# The number of NVTs in the family.
+get_nvt_families_response_families_family_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+## Response to get_nvt_feed_checksum
+
+get_nvt_feed_checksum_response
+ = element get_nvt_feed_checksum_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_nvt_feed_checksum_response_checksum
+     }
+
+get_nvt_feed_checksum_response_checksum
+ = element checksum
+     {
+       base64
+       & attribute algorithm { text }
+     }
+
 ## Response to get_notes
 
 get_notes_response
@@ -1577,6 +1982,335 @@ get_notes_response
        ""
        & attribute status { status }
        & attribute status_text { text }
+       & get_notes_response_note*
+     }
+
+get_notes_response_note
+ = element note
+     {
+       ""
+       & get_notes_response_note_nvt
+       & get_notes_response_note_text
+       & get_notes_response_note_orphan
+       & 
+        ERROR
+      ?
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+get_notes_response_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+# A textual list of hosts.
+get_notes_response_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+get_notes_response_note_port
+ = element port
+     {
+       text
+     }
+
+# Threat level to which note applies.
+get_notes_response_note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+get_notes_response_note_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Result to which note applies.
+get_notes_response_note_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+       & get_notes_response_note_result_subnet
+       & get_notes_response_note_result_host
+       & get_notes_response_note_result_port
+       & get_notes_response_note_result_nvt
+       & get_notes_response_note_result_threat
+       & get_notes_response_note_result_description
+     }
+
+get_notes_response_note_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_notes_response_note_result_host
+ = element host
+     {
+       text
+     }
+
+get_notes_response_note_result_port
+ = element port
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_notes_response_note_result_nvt_name
+       & get_notes_response_note_result_nvt_cvss_base
+       & get_notes_response_note_result_nvt_risk_factor
+     }
+
+get_notes_response_note_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_notes_response_note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_notes_response_note_result_description
+ = element description
+     {
+       text
+     }
+
+## Response to get_overrides
+
+get_overrides_response
+ = element get_overrides_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_overrides_response_override*
+     }
+
+get_overrides_response_override
+ = element override
+     {
+       ""
+       & get_overrides_response_override_nvt
+       & get_overrides_response_override_text
+       & get_overrides_response_override_threat
+       & get_overrides_response_override_new_threat
+       & get_overrides_response_override_orphan
+       & 
+        ERROR
+      ?
+     }
+
+get_overrides_response_override_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_overrides_response_override_nvt_name
+     }
+
+get_overrides_response_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the override.
+get_overrides_response_override_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Threat level to which override applies.
+get_overrides_response_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# New threat for result.
+get_overrides_response_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Whether the override is an orphan.
+get_overrides_response_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_overrides_response_override_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_overrides_response_override_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+# A textual list of hosts.
+get_overrides_response_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which override applies.
+get_overrides_response_override_port
+ = element port
+     {
+       text
+     }
+
+# Task to which override applies.
+get_overrides_response_override_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Result to which override applies.
+get_overrides_response_override_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+       & get_overrides_response_override_result_subnet
+       & get_overrides_response_override_result_host
+       & get_overrides_response_override_result_port
+       & get_overrides_response_override_result_nvt
+       & get_overrides_response_override_result_threat
+       & get_overrides_response_override_result_description
+     }
+
+get_overrides_response_override_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_overrides_response_override_result_host
+ = element host
+     {
+       text
+     }
+
+get_overrides_response_override_result_port
+ = element port
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_overrides_response_override_result_nvt_name
+       & get_overrides_response_override_result_nvt_cvss_base
+       & get_overrides_response_override_result_nvt_risk_factor
+     }
+
+get_overrides_response_override_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_overrides_response_override_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_overrides_response_override_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_overrides_response_override_result_description
+ = element description
+     {
+       text
      }
 
 ## Response to get_version

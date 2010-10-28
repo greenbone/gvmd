@@ -34,6 +34,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Commands. -->
 
+  <xsl:template name="rnc-type">
+    <xsl:choose>
+      <xsl:when test="count (alts) &gt; 0">
+        <xsl:for-each select="alts/alt">
+          <xsl:choose>
+            <xsl:when test="following-sibling::alt and preceding-sibling::alt">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:when>
+            <xsl:when test="count (following-sibling::alt) = 0">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+              <xsl:text>" }</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>xsd:token { pattern = "</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="text()"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template name="attrib" match="attrib">
     <xsl:if test="($rnc-comments = 1) and summary">
       <xsl:text># </xsl:text>
@@ -45,7 +72,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>attribute </xsl:text>
     <xsl:value-of select="name"/>
     <xsl:text> { </xsl:text>
-    <xsl:value-of select="type"/>
+    <xsl:for-each select="type">
+      <xsl:call-template name="rnc-type"/>
+    </xsl:for-each>
     <xsl:text> }</xsl:text>
     <xsl:choose>
       <xsl:when test="required=1"></xsl:when>
@@ -70,7 +99,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="t" match="t">
-    <xsl:value-of select="text()"/>
+    <xsl:choose>
+      <xsl:when test="count (alts) &gt; 0">
+        <xsl:for-each select="alts/alt">
+          <xsl:choose>
+            <xsl:when test="following-sibling::alt and preceding-sibling::alt">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:when>
+            <xsl:when test="count (following-sibling::alt) = 0">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+              <xsl:text>" }</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>xsd:token { pattern = "</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="text()"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template name="pattern-part">
@@ -94,6 +146,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:call-template name="e">
           <xsl:with-param name="parent-name" select="$parent-name"/>
         </xsl:call-template>
+      </xsl:when>
+      <xsl:when test="name()='g'">
+        <xsl:text>( </xsl:text>
+        <xsl:for-each select="*">
+          <xsl:choose>
+            <xsl:when test="preceding-sibling::*">
+              <xsl:text>           &amp; </xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:call-template name="pattern-part">
+            <xsl:with-param name="parent-name" select="$parent-name"/>
+          </xsl:call-template>
+          <xsl:if test="following-sibling::*">
+            <xsl:call-template name="newline"/>
+          </xsl:if>
+        </xsl:for-each>
+        <xsl:text> )</xsl:text>
       </xsl:when>
       <xsl:when test="name()='o'">
         <xsl:for-each select="*">

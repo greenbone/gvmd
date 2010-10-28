@@ -164,6 +164,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pre><xsl:call-template name="response-body"/></pre>
   </xsl:template>
 
+  <xsl:template match="type">
+    <xsl:choose>
+      <xsl:when test="count (alts) &gt; 0">
+        <xsl:for-each select="alts/alt">
+          <xsl:choose>
+            <xsl:when test="following-sibling::alt and preceding-sibling::alt">
+              <xsl:text>, </xsl:text>
+            </xsl:when>
+            <xsl:when test="count (following-sibling::alt) = 0">
+              <xsl:text> or </xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text>"</xsl:text>
+          <xsl:value-of select="."/>
+          <xsl:text>"</xsl:text>
+        </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="text()"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template name="breakdown-line">
     <xsl:param name="line-element"/>
     <xsl:param name="element-suffix"/>
@@ -179,7 +204,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:when test="name() = 'attrib'">
         <li>
           <b>"<xsl:value-of select="name"/>"</b>
-          (<xsl:value-of select="type"/>)
+          (<xsl:apply-templates select="type"/>)
           <xsl:if test="summary">
             <xsl:value-of select="summary"/>.
           </xsl:if>
@@ -211,6 +236,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:for-each select="$new-line-element/pattern/*">
               <xsl:call-template name="breakdown-line">
                 <xsl:with-param name="line-element" select="$new-line-element"/>
+              </xsl:call-template>
+            </xsl:for-each>
+          </ul>
+        </li>
+      </xsl:when>
+      <xsl:when test="name() = 'g'">
+        <li>
+          <i>The group</i><b><xsl:value-of select="$element-suffix"/></b>
+          <ul style="list-style: none">
+            <xsl:for-each select="*">
+              <xsl:call-template name="breakdown-line">
+                <xsl:with-param name="line-element" select="$line-element"/>
               </xsl:call-template>
             </xsl:for-each>
           </ul>

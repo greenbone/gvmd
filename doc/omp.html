@@ -95,8 +95,28 @@
 <td id="index"><div style="margin-left: 15px;">Delete a task.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#get_agents">get_agents</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all agents.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_nvts">get_nvts</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all NVTs.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_nvt_families">get_nvt_families</a></td>
+<td id="index"><div style="margin-left: 15px;">Get a list of all NVT families.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_nvt_feed_checksum">get_nvt_feed_checksum</a></td>
+<td id="index"><div style="margin-left: 15px;">Get checksum for entire NVT collection.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#get_notes">get_notes</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all notes.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#get_overrides">get_overrides</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all overrides.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#get_version">get_version</a></td>
@@ -2464,7 +2484,926 @@ create_task_rcfile
 </pre>
 </div>
 <div>
-<div><h3 id="get_notes">2.22
+<div><h3 id="get_agents">2.22
+          Command <tt>get_agents</tt>
+</h3></div>
+<p><b>In short: </b>Get all agents.</p>
+<p>
+        The client uses the get_agents command to get agent information.
+        If the command sent by the client was valid, the manager will
+        reply with a list of agents to the client.
+      </p>
+<p>
+        If the request includes a format then the agents in the response
+        include installer elements, otherwise they include package
+        elements.
+      </p>
+<h4>2.22.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"agent_id"</b>
+          (uuid)
+          ID of single agent to get.
+          </li>
+<li>
+<b>"format"</b>
+          ("installer", "howto_install" or "howto_use")
+          </li>
+<li>
+<b>"sort_order"</b>
+          (sort_order)
+          </li>
+<li>
+<b>"sort_field"</b>
+          (text)
+          </li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>
+            &lt;agent&gt;*</b><ul style="list-style: none">
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;comment&gt;</b><div style="margin-left: 15px; display: inline;">The comment on the agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;in_use&gt;</b><div style="margin-left: 15px; display: inline;">Whether the agent is in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+<b>
+            &lt;installer&gt;</b><ul style="list-style: none"><li>
+<b>
+            &lt;trust&gt;</b><div style="margin-left: 15px; display: inline;">Whether signature verification succeeded.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+<b>
+            &lt;package&gt;</b><div style="margin-left: 15px; display: inline;">Either the installer or one of the HOWTOs.</div>
+<ul style="list-style: none"><li>
+<b>
+            &lt;filename&gt;</b><div style="margin-left: 15px; display: inline;">The filename of the package.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.22.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_agents
+ = element get_agents
+     {
+       ""
+       &amp; attribute agent_id { uuid }?
+       &amp; attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_agents_response
+ = element get_agents_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_agents_response_agent*
+     }
+
+get_agents_response_agent
+ = element agent
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_agents_response_agent_name
+       &amp; get_agents_response_agent_comment
+       &amp; get_agents_response_agent_in_use
+       &amp; ( get_agents_response_agent_installer
+           | get_agents_response_agent_package )
+     }
+
+get_agents_response_agent_name
+ = element name
+     {
+       name
+     }
+
+get_agents_response_agent_comment
+ = element comment
+     {
+       text
+     }
+
+get_agents_response_agent_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_agents_response_agent_installer
+ = element installer
+     {
+       ""
+       &amp; get_agents_response_agent_installer_trust
+     }
+
+get_agents_response_agent_installer_trust
+ = element trust
+     {
+       xsd:token { pattern = "yes|no|unknown" }
+     }
+
+get_agents_response_agent_package
+ = element package
+     {
+       base64
+       &amp; get_agents_response_agent_package_filename
+     }
+
+get_agents_response_agent_package_filename
+ = element filename
+     {
+       text
+     }
+</pre>
+</div>
+<h4>2.22.1 Example: Get all agents</h4>
+<b>Client:</b><br><pre> &lt;get_agents/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+   &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;installer&gt;
+       &lt;trust&gt;yes&lt;/trust&gt;
+     &lt;/installer&gt;
+   &lt;/agent&gt;
+   ...
+ &lt;/get_agents_response&gt;
+</pre>
+<h4>2.22.1 Example: Get one agent</h4>
+<b>Client:</b><br><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+   &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;installer&gt;
+       &lt;trust&gt;yes&lt;/trust&gt;
+     &lt;/installer&gt;
+   &lt;/agent&gt;
+ &lt;/get_agents_response&gt;
+</pre>
+<h4>2.22.1 Example: Get one agent, including the installer package</h4>
+<b>Client:</b><br><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf" format="installer"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+   &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;package format="installer"&gt;
+       CgoKCgoKCgoKCgoKCSAgI...
+       &lt;filename&gt;agent.deb&lt;/filename&gt;
+     &lt;/package&gt;
+   &lt;/agent&gt;
+ &lt;/get_agents_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_nvts">2.23
+          Command <tt>get_nvts</tt>
+</h3></div>
+<p><b>In short: </b>Get all NVTs.</p>
+<p>
+        The client uses the get_nvts command to get NVT information.
+      </p>
+<p>
+        This command may always include a details flag, a config, a sort
+        order and a sort field.  If the command includes a details flag, the
+        manager also consults the timeout, preference_count and preferences
+        flags.  The timeout and preferences flags require a config.
+      </p>
+<p>
+        The NVT OID, family name and config attributes limit the listing to
+        a single NVT or all NVTs in a particular family and/or config.
+      </p>
+<p>
+        If the details flag is present the manager will send full details
+        of the NVT, otherwise it will send just the NVT name and checksum.
+      </p>
+<p>
+        With the preferences flag the manager includes in the listing, the
+        values of each listed NVT's preferences for the given config.  The
+        timeout flag does the same for the special timeout preference.
+      </p>
+<p>
+        If the manager possesses an NVT collection, it will reply with the
+        NVT information.  If the manager cannot access a list of available
+        NVTs at that time, it will reply with the 503 response.
+      </p>
+<h4>2.23.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"nvt_oid"</b>
+          (oid)
+          Single NVT to get.
+          </li>
+<li>
+<b>"details"</b>
+          (boolean)
+          Whether to include full details.
+          </li>
+<li>
+<b>"preferences"</b>
+          (boolean)
+          Whether to include preference.
+          </li>
+<li>
+<b>"preference_count"</b>
+          (boolean)
+          Whether to include preference count.
+          </li>
+<li>
+<b>"timeout"</b>
+          (boolean)
+          Whether to include the special timeout preference.
+          </li>
+<li>
+<b>"config_id"</b>
+          (uuid)
+          ID of config to which to limit the NVT listing.
+          </li>
+<li>
+<b>"family"</b>
+          (text)
+          Family to which to limit NVT listing.
+          </li>
+<li>
+<b>"sort_order"</b>
+          (sort_order)
+          </li>
+<li>
+<b>"sort_field"</b>
+          (text)
+          </li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none">
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;checksum&gt;</b><ul style="list-style: none"><li>
+<b>
+            &lt;algorithm&gt;</b><ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;category&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;copyright&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;description&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;summary&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;family&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;version&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;cvss_base&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;risk_factor&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;cve_id&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;bugtraq_id&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;xrefs&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;fingerprints&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;tags&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;preference_count&gt;?</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;timeout&gt;?</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;preferences&gt;?</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;timeout&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;preference&gt;*</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;type&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;value&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.23.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_nvts
+ = element get_nvts
+     {
+       ""
+       &amp; attribute nvt_oid { oid }
+       &amp; attribute details { boolean }?
+       &amp; attribute preferences { boolean }?
+       &amp; attribute preference_count { boolean }?
+       &amp; attribute timeout { boolean }?
+       &amp; attribute config_id { uuid }?
+       &amp; attribute family { text }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_nvts_response
+ = element get_nvts_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_nvts_response_nvt
+     }
+
+get_nvts_response_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_nvts_response_nvt_name
+       &amp; get_nvts_response_nvt_checksum
+       &amp; ( get_nvts_response_nvt_category
+           &amp; get_nvts_response_nvt_copyright
+           &amp; get_nvts_response_nvt_description
+           &amp; get_nvts_response_nvt_summary
+           &amp; get_nvts_response_nvt_family
+           &amp; get_nvts_response_nvt_version
+           &amp; get_nvts_response_nvt_cvss_base
+           &amp; get_nvts_response_nvt_risk_factor
+           &amp; get_nvts_response_nvt_cve_id
+           &amp; get_nvts_response_nvt_bugtraq_id
+           &amp; get_nvts_response_nvt_xrefs
+           &amp; get_nvts_response_nvt_fingerprints
+           &amp; get_nvts_response_nvt_tags
+           &amp; get_nvts_response_nvt_preference_count?
+           &amp; get_nvts_response_nvt_timeout?
+           &amp; get_nvts_response_nvt_preferences? )?
+     }
+
+get_nvts_response_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_nvts_response_nvt_category
+ = element category
+     {
+       text
+     }
+
+get_nvts_response_nvt_copyright
+ = element copyright
+     {
+       text
+     }
+
+get_nvts_response_nvt_description
+ = element description
+     {
+       text
+     }
+
+get_nvts_response_nvt_summary
+ = element summary
+     {
+       text
+     }
+
+get_nvts_response_nvt_family
+ = element family
+     {
+       text
+     }
+
+get_nvts_response_nvt_version
+ = element version
+     {
+       text
+     }
+
+get_nvts_response_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_nvts_response_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_nvts_response_nvt_cve_id
+ = element cve_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_bugtraq_id
+ = element bugtraq_id
+     {
+       text
+     }
+
+get_nvts_response_nvt_xrefs
+ = element xrefs
+     {
+       text
+     }
+
+get_nvts_response_nvt_fingerprints
+ = element fingerprints
+     {
+       text
+     }
+
+get_nvts_response_nvt_tags
+ = element tags
+     {
+       text
+     }
+
+get_nvts_response_nvt_preference_count
+ = element preference_count
+     {
+       text
+     }
+
+get_nvts_response_nvt_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_checksum
+ = element checksum
+     {
+       text
+       &amp; get_nvts_response_nvt_checksum_algorithm
+     }
+
+get_nvts_response_nvt_checksum_algorithm
+ = element algorithm
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences
+ = element preferences
+     {
+       text
+       &amp; get_nvts_response_nvt_preferences_timeout
+       &amp; get_nvts_response_nvt_preferences_preference*
+     }
+
+get_nvts_response_nvt_preferences_timeout
+ = element timeout
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference
+ = element preference
+     {
+       ""
+       &amp; get_nvts_response_nvt_preferences_preference_nvt
+       &amp; get_nvts_response_nvt_preferences_preference_name
+       &amp; get_nvts_response_nvt_preferences_preference_type
+       &amp; get_nvts_response_nvt_preferences_preference_value
+     }
+
+get_nvts_response_nvt_preferences_preference_nvt
+ = element nvt
+     {
+       oid
+     }
+
+get_nvts_response_nvt_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_type
+ = element type
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_value
+ = element value
+     {
+       text
+     }
+</pre>
+</div>
+<h4>2.23.1 Example: Get full NVT listing</h4>
+<b>Client:</b><br><pre> &lt;get_nvts details="1" timeout="1" preference_count="1" preferences="1"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
+   &lt;nvt oid="1.3.6.1.4.1.25623.1.7.13005"&gt;
+     &lt;name&gt;Services&lt;/name&gt;
+     &lt;category&gt;Services&lt;/category&gt;
+     &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
+     &lt;description&gt;
+       This script attepts to detects with service is running on which port.
+     &lt;/description&gt;
+     &lt;summary&gt;Find what is listening on which port&lt;/summary&gt;
+     &lt;family&gt;Service detection&lt;/family&gt;
+     &lt;version&gt;$Revision: 1852 $&lt;/version&gt;
+     &lt;cvss_base/&gt;
+     &lt;risk_factor&gt;None&lt;/risk_factor&gt;
+     &lt;cve_id&gt;NOCVE&lt;/cve_id&gt;
+     &lt;bugtraq_id&gt;NOBID&lt;/bugtraq_id&gt;
+     &lt;xrefs&gt;NOXREF&lt;/xrefs&gt;
+     &lt;fingerprints&gt;NOSIGNKEYS&lt;/fingerprints&gt;
+     &lt;tags&gt;NOTAG&lt;/tags&gt;
+     &lt;preference_count&gt;-1&lt;/preference_count&gt;
+     &lt;timeout/&gt;
+     &lt;checksum&gt;
+       2397586ea5cd3a69f953836f7be9ef7b
+       &lt;algorithm&gt;md5&lt;/algorithm&gt;
+     &lt;/checksum&gt;
+     &lt;preferences&gt;
+       &lt;timeout/&gt;
+       &lt;preference&gt;
+         &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
+           &lt;name&gt;Services&lt;/name&gt;
+         &lt;/nvt&gt;
+         &lt;name&gt;Network connection timeout :&lt;/name&gt;
+         &lt;type&gt;entry&lt;/type&gt;
+         &lt;value&gt;5&lt;/value&gt;
+       &lt;/preference&gt;
+       ...
+     &lt;/preferences&gt;
+   &lt;/nvt&gt;
+   &lt;nvt oid="1.3.6.1.4.1.25623.1.7.13006"&gt;
+     &lt;name&gt;FooBar 21&lt;/name&gt;
+     &lt;category&gt;Services&lt;/category&gt;
+     &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
+     &lt;description&gt;
+       This script detects whether the FooBar 2.1 XSS vulnerability is present.
+     &lt;/description&gt;
+     ...
+   &lt;/nvt&gt;
+   ...
+ &lt;/get_nvts_response&gt;
+</pre>
+<h4>2.23.1 Example: Get minimal information about one NVT</h4>
+<b>Client:</b><br><pre> &lt;get_nvts nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
+   &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
+     &lt;name&gt;Services&lt;/name&gt;
+     &lt;checksum&gt;
+       2397586ea5cd3a69f953836f7be9ef7b
+       &lt;algorithm&gt;md5&lt;/algorithm&gt;
+     &lt;/checksum&gt;
+   &lt;/nvt&gt;
+ &lt;/get_nvts_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_nvt_families">2.24
+          Command <tt>get_nvt_families</tt>
+</h3></div>
+<p><b>In short: </b>Get a list of all NVT families.</p>
+<p>
+        The client uses the get_nvt_families command to get NVT family
+        information.  If the command sent by the client was valid, the
+        manager will reply with a list of NVT families to the client.
+      </p>
+<h4>2.24.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"sort_order"</b>
+          (sort_order)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>
+            &lt;families&gt;</b><ul style="list-style: none"><li>
+<b>
+            &lt;family&gt;*</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;name&gt;</b><div style="margin-left: 15px; display: inline;">The name of the family.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;max_nvt_count&gt;</b><div style="margin-left: 15px; display: inline;">The number of NVTs in the family.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.24.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_nvt_families
+ = element get_nvt_families
+     {
+       ""
+       &amp; attribute sort_order { sort_order }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_nvt_families_response
+ = element get_nvt_families_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_nvt_families_response_families
+     }
+
+get_nvt_families_response_families
+ = element families
+     {
+       ""
+       &amp; get_nvt_families_response_families_family*
+     }
+
+get_nvt_families_response_families_family
+ = element family
+     {
+       ""
+       &amp; get_nvt_families_response_families_family_name
+       &amp; get_nvt_families_response_families_family_max_nvt_count
+     }
+
+get_nvt_families_response_families_family_name
+ = element name
+     {
+       name
+     }
+
+get_nvt_families_response_families_family_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+</pre>
+</div>
+<h4>2.24.1 Example: Get the NVT families</h4>
+<b>Client:</b><br><pre> &lt;get_nvt_families/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_nvt_families_response status="200" status_text="OK"&gt;
+   &lt;families&gt;
+     &lt;family&gt;
+       &lt;name&gt;Credentials&lt;/name&gt;
+       &lt;max_nvt_count&gt;8&lt;/max_nvt_count&gt;
+     &lt;/family&gt;
+     &lt;family&gt;
+       &lt;name&gt;Port scanners&lt;/name&gt;
+       &lt;max_nvt_count&gt;12&lt;/max_nvt_count&gt;
+     &lt;/family&gt;
+     ...
+   &lt;/families&gt;
+ &lt;/get_nvt_families_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_nvt_feed_checksum">2.25
+          Command <tt>get_nvt_feed_checksum</tt>
+</h3></div>
+<p><b>In short: </b>Get checksum for entire NVT collection.</p>
+<p>
+        The client uses the get_nvt_feed_checksum command to request a
+        checksum for the complete NVT collection available through this
+        manager.  The client may specify an algorithm to be used for
+        computing this checksum.
+      </p>
+<p>
+        If the specified algorithm is not implemented in the manager, then
+        the manager will reply with a response code in the 4xx range.
+      </p>
+<p>
+        If the client does not specify a checksum algorithm, the manager is
+        expected to use the MD5 algorithm for computing the checksum.
+      </p>
+<p>
+        If the manager possesses such a collection, it will reply with a
+        response code indicating success, and the checksum over all NVT
+        files. If the manager cannot access a list of available NVTs at
+        present, it will reply with the 503 response.
+      </p>
+<h4>2.25.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"algorithm"</b>
+          (text)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>
+            &lt;checksum&gt;</b><ul style="list-style: none"><li>
+<b>"algorithm"</b>
+          (text)
+          </li></ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.25.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_nvt_feed_checksum
+ = element get_nvt_feed_checksum
+     {
+       ""
+       &amp; attribute algorithm { text }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_nvt_feed_checksum_response
+ = element get_nvt_feed_checksum_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_nvt_feed_checksum_response_checksum
+     }
+
+get_nvt_feed_checksum_response_checksum
+ = element checksum
+     {
+       base64
+       &amp; attribute algorithm { text }
+     }
+</pre>
+</div>
+<h4>2.25.1 Example: Get the NVT feed checksum</h4>
+<b>Client:</b><br><pre> &lt;get_nvt_feed_checksum/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_nvt_feed_checksum_response status="200" status_text="OK"&gt;
+   &lt;checksum algorithm="md5"&gt;931db829a06b9a440a2ecaeb68c03715&lt;/checksum&gt;
+ &lt;/get_nvt_feed_checksum_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_notes">2.26
           Command <tt>get_notes</tt>
 </h3></div>
 <p><b>In short: </b>Get all notes.</p>
@@ -2473,7 +3412,7 @@ create_task_rcfile
       If the command sent by the client was valid, the manager will
       reply with a list of notes to the client.
     </p>
-<h4>2.22.1 Breakdown</h4>
+<h4>2.26.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2484,7 +3423,7 @@ create_task_rcfile
           ID of single note to get.
           </li>
 <li>
-<b>"nvt_id"</b>
+<b>"nvt_oid"</b>
           (oid)
           </li>
 <li>
@@ -2520,10 +3459,127 @@ create_task_rcfile
 <b>"status_text"</b>
           (text)
           </li>
+<li>
+<b>
+            &lt;note&gt;*</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none">
+<li>
+<b>"oid"</b>
+          (oid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the note.</div>
+<ul style="list-style: none"><li>
+<b>"excerpt"</b>
+          (boolean)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;orphan&gt;</b><div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;creation_time&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;modification_time&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hosts&gt;</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;</b><div style="margin-left: 15px; display: inline;">Port to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;</b><div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
+<ul style="list-style: none">
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+<li>
+<b>
+            &lt;subnet&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;host&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none">
+<li>
+<b>"oid"</b>
+          (oid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;cvss_base&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;risk_factor&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;description&gt;</b><ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
-<h4>2.22.2 RNC</h4>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.26.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_notes
@@ -2531,7 +3587,7 @@ create_task_rcfile
      {
        ""
        &amp; attribute note_id { uuid }?
-       &amp; attribute nvt_id { oid }?
+       &amp; attribute nvt_oid { oid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
        &amp; attribute result { boolean }?
@@ -2546,10 +3602,162 @@ create_task_rcfile
        ""
        &amp; attribute status { status }
        &amp; attribute status_text { text }
+       &amp; get_notes_response_note*
+     }
+
+get_notes_response_note
+ = element note
+     {
+       ""
+       &amp; get_notes_response_note_nvt
+       &amp; get_notes_response_note_text
+       &amp; get_notes_response_note_orphan
+       &amp; ( get_notes_response_note_creation_time
+           &amp; get_notes_response_note_modification_time
+           &amp; get_notes_response_note_hosts
+           &amp; get_notes_response_note_port
+           &amp; get_notes_response_note_threat
+           &amp; get_notes_response_note_task
+           &amp; get_notes_response_note_result? )?
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
+     }
+
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+get_notes_response_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+get_notes_response_note_port
+ = element port
+     {
+       text
+     }
+
+get_notes_response_note_threat
+ = element threat
+     {
+       threat
+     }
+
+get_notes_response_note_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+get_notes_response_note_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_notes_response_note_result_subnet
+       &amp; get_notes_response_note_result_host
+       &amp; get_notes_response_note_result_port
+       &amp; get_notes_response_note_result_nvt
+       &amp; get_notes_response_note_result_threat
+       &amp; get_notes_response_note_result_description
+     }
+
+get_notes_response_note_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_notes_response_note_result_host
+ = element host
+     {
+       text
+     }
+
+get_notes_response_note_result_port
+ = element port
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_notes_response_note_result_nvt_name
+       &amp; get_notes_response_note_result_nvt_cvss_base
+       &amp; get_notes_response_note_result_nvt_risk_factor
+     }
+
+get_notes_response_note_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_notes_response_note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_notes_response_note_result_description
+ = element description
+     {
+       text
      }
 </pre>
 </div>
-<h4>2.22.1 Example: Get all notes</h4>
+<h4>2.26.1 Example: Get all notes</h4>
 <b>Client:</b><br><pre> &lt;get_notes/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
@@ -2563,13 +3771,455 @@ create_task_rcfile
    ...
  &lt;/get_notes_response&gt;
 </pre>
+<h4>2.26.1 Example: Get details of a single note</h4>
+<b>Client:</b><br><pre> &lt;get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
+   &lt;note id="7f618bbb-4664-419e-9bbf-367d93954cb0"&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
+       &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+     &lt;/nvt&gt;
+     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
+     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
+     &lt;text&gt;note fixed to result&lt;/text&gt;
+     &lt;hosts&gt;127.0.0.1&lt;/hosts&gt;
+     &lt;port&gt;general/tcp&lt;/port&gt;
+     &lt;threat&gt;Medium&lt;/threat&gt;
+     &lt;task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"&gt;
+       &lt;name&gt;test&lt;/name&gt;
+     &lt;/task&gt;
+     &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"&gt;
+       &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
+       &lt;host&gt;127.0.0.1&lt;/host&gt;
+       &lt;port&gt;general/tcp&lt;/port&gt;
+       &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
+         &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+         &lt;cvss_base/&gt;
+         &lt;risk_factor/&gt;
+       &lt;/nvt&gt;
+       &lt;threat&gt;Medium&lt;/threat&gt;
+       &lt;description&gt;Warning with control char between fullstops: . .&lt;/description&gt;
+     &lt;/result&gt;
+   &lt;/note&gt;
+   ...
+ &lt;/get_notes_response&gt;
+</pre>
 </div>
 <div>
-<div><h3 id="get_version">2.23
+<div><h3 id="get_overrides">2.27
+          Command <tt>get_overrides</tt>
+</h3></div>
+<p><b>In short: </b>Get all overrides.</p>
+<p>
+      The client uses the get_overrides command to get override information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of overrides to the client.
+    </p>
+<h4>2.27.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none">
+<li>
+<b>"override_id"</b>
+          (uuid)
+          ID of single override to get.
+          </li>
+<li>
+<b>"nvt_oid"</b>
+          (oid)
+          </li>
+<li>
+<b>"task_id"</b>
+          (uuid)
+          </li>
+<li>
+<b>"details"</b>
+          (boolean)
+          </li>
+<li>
+<b>"result"</b>
+          (boolean)
+          </li>
+<li>
+<b>"sort_order"</b>
+          (sort_order)
+          </li>
+<li>
+<b>"sort_field"</b>
+          (text)
+          </li>
+</ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+<li>
+<b>
+            &lt;override&gt;*</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none">
+<li>
+<b>"oid"</b>
+          (oid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the override.</div>
+<ul style="list-style: none"><li>
+<b>"excerpt"</b>
+          (boolean)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;</b><div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;new_threat&gt;</b><div style="margin-left: 15px; display: inline;">New threat for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;orphan&gt;</b><div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+<b>
+            &lt;creation_time&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;modification_time&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;hosts&gt;</b><div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;</b><div style="margin-left: 15px; display: inline;">Port to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;task&gt;</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
+<ul style="list-style: none"><li>
+<b>"id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<b>
+            &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
+<ul style="list-style: none">
+<li>
+<b>"id"</b>
+          (uuid)
+          </li>
+<li>
+<b>
+            &lt;subnet&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;host&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;port&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;nvt&gt;</b><ul style="list-style: none">
+<li>
+<b>"oid"</b>
+          (oid)
+          </li>
+<li>
+<b>
+            &lt;name&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;cvss_base&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;risk_factor&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+<b>
+            &lt;threat&gt;</b><ul style="list-style: none"></ul>
+</li>
+<li>
+<b>
+            &lt;description&gt;</b><ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>2.27.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>get_overrides
+ = element get_overrides
+     {
+       ""
+       &amp; attribute override_id { uuid }?
+       &amp; attribute nvt_oid { oid }?
+       &amp; attribute task_id { uuid }?
+       &amp; attribute details { boolean }?
+       &amp; attribute result { boolean }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>get_overrides_response
+ = element get_overrides_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_overrides_response_override*
+     }
+
+get_overrides_response_override
+ = element override
+     {
+       ""
+       &amp; get_overrides_response_override_nvt
+       &amp; get_overrides_response_override_text
+       &amp; get_overrides_response_override_threat
+       &amp; get_overrides_response_override_new_threat
+       &amp; get_overrides_response_override_orphan
+       &amp; ( get_overrides_response_override_creation_time
+           &amp; get_overrides_response_override_modification_time
+           &amp; get_overrides_response_override_hosts
+           &amp; get_overrides_response_override_port
+           &amp; get_overrides_response_override_task
+           &amp; get_overrides_response_override_result? )?
+     }
+
+get_overrides_response_override_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_overrides_response_override_nvt_name
+     }
+
+get_overrides_response_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_overrides_response_override_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
+     }
+
+get_overrides_response_override_threat
+ = element threat
+     {
+       threat
+     }
+
+get_overrides_response_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+get_overrides_response_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_overrides_response_override_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_overrides_response_override_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+get_overrides_response_override_hosts
+ = element hosts
+     {
+       text
+     }
+
+get_overrides_response_override_port
+ = element port
+     {
+       text
+     }
+
+get_overrides_response_override_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+     }
+
+get_overrides_response_override_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_overrides_response_override_result_subnet
+       &amp; get_overrides_response_override_result_host
+       &amp; get_overrides_response_override_result_port
+       &amp; get_overrides_response_override_result_nvt
+       &amp; get_overrides_response_override_result_threat
+       &amp; get_overrides_response_override_result_description
+     }
+
+get_overrides_response_override_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_overrides_response_override_result_host
+ = element host
+     {
+       text
+     }
+
+get_overrides_response_override_result_port
+ = element port
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_overrides_response_override_result_nvt_name
+       &amp; get_overrides_response_override_result_nvt_cvss_base
+       &amp; get_overrides_response_override_result_nvt_risk_factor
+     }
+
+get_overrides_response_override_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_overrides_response_override_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_overrides_response_override_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_overrides_response_override_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_overrides_response_override_result_description
+ = element description
+     {
+       text
+     }
+</pre>
+</div>
+<h4>2.27.1 Example: Get all overrides</h4>
+<b>Client:</b><br><pre> &lt;get_overrides/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
+   &lt;override id="b76b81a7-9df8-42df-afff-baa9d4620128"&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+       &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+     &lt;/nvt&gt;
+     &lt;text excerpt="0"&gt;This is the full text of the override.&lt;/text&gt;
+     &lt;threat&gt;High&lt;/threat&gt;
+     &lt;new_threat&gt;Log&lt;/new_threat&gt;
+     &lt;orphan&gt;1&lt;/orphan&gt;
+   &lt;/override&gt;
+   ...
+ &lt;/get_overrides_response&gt;
+</pre>
+<h4>2.27.1 Example: Get details of a single override</h4>
+<b>Client:</b><br><pre> &lt;get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
+   &lt;override id="7f618bbb-4664-419e-9bbf-367d93954cb0"&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
+       &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+     &lt;/nvt&gt;
+     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
+     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
+     &lt;text&gt;override fixed to result&lt;/text&gt;
+     &lt;hosts&gt;127.0.0.1&lt;/hosts&gt;
+     &lt;port&gt;general/tcp&lt;/port&gt;
+     &lt;threat&gt;Medium&lt;/threat&gt;
+     &lt;new_threat&gt;Low&lt;/new_threat&gt;
+     &lt;task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"&gt;
+       &lt;name&gt;test&lt;/name&gt;
+     &lt;/task&gt;
+     &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"/&gt;
+   &lt;/override&gt;
+   ...
+ &lt;/get_overrides_response&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="get_version">2.28
           Command <tt>get_version</tt>
 </h3></div>
 <p><b>In short: </b>Get the OpenVAS Manager Protocol version.</p>
-<h4>2.23.1 Breakdown</h4>
+<h4>2.28.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2589,7 +4239,7 @@ create_task_rcfile
 </ul>
 </li>
 </ul>
-<h4>2.23.2 RNC</h4>
+<h4>2.28.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_version
@@ -2610,11 +4260,11 @@ create_task_rcfile
 </div>
 </div>
 <div>
-<div><h3 id="help">2.24
+<div><h3 id="help">2.29
           Command <tt>help</tt>
 </h3></div>
 <p><b>In short: </b>Get the help text.</p>
-<h4>2.24.1 Breakdown</h4>
+<h4>2.29.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2634,7 +4284,7 @@ create_task_rcfile
 </ul>
 </li>
 </ul>
-<h4>2.24.2 RNC</h4>
+<h4>2.29.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>help
@@ -2655,7 +4305,7 @@ create_task_rcfile
 </div>
 </div>
 <div>
-<div><h3 id="modify_config">2.25
+<div><h3 id="modify_config">2.30
           Command <tt>modify_config</tt>
 </h3></div>
 <p><b>In short: </b>Update an existing config.</p>
@@ -2706,7 +4356,7 @@ create_task_rcfile
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>2.25.1 Breakdown</h4>
+<h4>2.30.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -2805,7 +4455,7 @@ create_task_rcfile
 </ul>
 </li>
 </ul>
-<h4>2.25.2 RNC</h4>
+<h4>2.30.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_config
@@ -2918,7 +4568,7 @@ modify_config_nvt_selection_nvt
      }
 </pre>
 </div>
-<h4>2.25.1 Example: Modify a config preference</h4>
+<h4>2.30.1 Example: Modify a config preference</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
@@ -2929,7 +4579,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.25.1 Example: Modify the families that a config selects</h4>
+<h4>2.30.1 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -2953,7 +4603,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.25.1 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>2.30.1 Example: Modify the NVTs that a config selects in a particular family</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
      &lt;family&gt;Debian Local Security Checks&lt;/family&gt;
@@ -2968,7 +4618,7 @@ modify_config_nvt_selection_nvt
 </pre>
 </div>
 <div>
-<div><h3 id="modify_note">2.26
+<div><h3 id="modify_note">2.31
           Command <tt>modify_note</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing note.</p>
@@ -2979,7 +4629,7 @@ modify_config_nvt_selection_nvt
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.26.1 Breakdown</h4>
+<h4>2.31.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -3041,7 +4691,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>2.26.2 RNC</h4>
+<h4>2.31.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_note
@@ -3105,7 +4755,7 @@ modify_note_result
      }
 </pre>
 </div>
-<h4>2.26.1 Example: Modify the text and result of a note</h4>
+<h4>2.31.1 Example: Modify the text and result of a note</h4>
 <b>Client:</b><br><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
    &lt;result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/&gt;
@@ -3115,7 +4765,7 @@ modify_note_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_override">2.27
+<div><h3 id="modify_override">2.32
           Command <tt>modify_override</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing override.</p>
@@ -3127,7 +4777,7 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.27.1 Breakdown</h4>
+<h4>2.32.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -3194,7 +4844,7 @@ modify_note_result
 </ul>
 </li>
 </ul>
-<h4>2.27.2 RNC</h4>
+<h4>2.32.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_override
@@ -3265,7 +4915,7 @@ modify_override_result
      }
 </pre>
 </div>
-<h4>2.27.1 Example: Set the override threat to Low</h4>
+<h4>2.32.1 Example: Set the override threat to Low</h4>
 <b>Client:</b><br><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
    &lt;new_threat&gt;Low&lt;/new_threat&gt;
@@ -3275,7 +4925,7 @@ modify_override_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_report">2.28
+<div><h3 id="modify_report">2.33
           Command <tt>modify_report</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing report.</p>
@@ -3283,7 +4933,7 @@ modify_override_result
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>2.28.1 Breakdown</h4>
+<h4>2.33.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -3314,7 +4964,7 @@ modify_override_result
 </ul>
 </li>
 </ul>
-<h4>2.28.2 RNC</h4>
+<h4>2.33.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_report
@@ -3341,7 +4991,7 @@ modify_report_comment
      }
 </pre>
 </div>
-<h4>2.28.1 Example: Modify a report comment</h4>
+<h4>2.33.1 Example: Modify a report comment</h4>
 <b>Client:</b><br><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_report&gt;
@@ -3350,7 +5000,7 @@ modify_report_comment
 </pre>
 </div>
 <div>
-<div><h3 id="modify_task">2.29
+<div><h3 id="modify_task">2.34
           Command <tt>modify_task</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing task.</p>
@@ -3358,7 +5008,7 @@ modify_report_comment
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>2.29.1 Breakdown</h4>
+<h4>2.34.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -3411,7 +5061,7 @@ modify_report_comment
           </li>
 <li>
 <b>"action"</b>
-          (xsd:token { pattern = "update|remove" })
+          ("update" or "remove")
           </li>
 </ul>
 </li>
@@ -3433,7 +5083,7 @@ modify_report_comment
 </ul>
 </li>
 </ul>
-<h4>2.29.2 RNC</h4>
+<h4>2.34.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_task
@@ -3499,7 +5149,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.29.1 Example: Modify a task comment</h4>
+<h4>2.34.1 Example: Modify a task comment</h4>
 <b>Client:</b><br><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_task&gt;
@@ -3508,303 +5158,12 @@ modify_task_file
 </pre>
 </div>
 <div>
-<div><h3 id="pause_task">2.30
+<div><h3 id="pause_task">2.35
           Command <tt>pause_task</tt>
 </h3></div>
 <p><b>In short: </b>Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
-      </p>
-<h4>2.30.1 Breakdown</h4>
-<ul style="list-style: none">
-<li>
-<div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
-          </li></ul>
-</li>
-<li>
-<div style="font-weight:bold;">Response</div>
-<ul style="list-style: none">
-<li>
-<b>"status"</b>
-          (status)
-          </li>
-<li>
-<b>"status_text"</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>2.30.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<div style="font-weight:bold;">Command</div>
-<pre>pause_task
- = element pause_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre>
-<div style="font-weight:bold;">Response</div>
-<pre>pause_task_response
- = element pause_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre>
-</div>
-<h4>2.30.1 Example: Pause a running task</h4>
-<b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre>
-<br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
-</pre>
-</div>
-<div>
-<div><h3 id="resume_or_start_task">2.31
-          Command <tt>resume_or_start_task</tt>
-</h3></div>
-<p><b>In short: </b>Resume task if stopped, else start task.</p>
-<p>
-        The client uses the resume_or_start_task command to manually start
-        an existing task, ensuring that the task will resume from its
-        previous position if the task is in the Stopped state.
-      </p>
-<h4>2.31.1 Breakdown</h4>
-<ul style="list-style: none">
-<li>
-<div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
-          </li></ul>
-</li>
-<li>
-<div style="font-weight:bold;">Response</div>
-<ul style="list-style: none">
-<li>
-<b>"status"</b>
-          (status)
-          </li>
-<li>
-<b>"status_text"</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>2.31.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<div style="font-weight:bold;">Command</div>
-<pre>resume_or_start_task
- = element resume_or_start_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre>
-<div style="font-weight:bold;">Response</div>
-<pre>resume_or_start_task_response
- = element resume_or_start_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre>
-</div>
-<h4>2.31.1 Example: Resume a running task</h4>
-<b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre>
-<br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
-</pre>
-</div>
-<div>
-<div><h3 id="resume_paused_task">2.32
-          Command <tt>resume_paused_task</tt>
-</h3></div>
-<p><b>In short: </b>Resume a paused task.</p>
-<p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
-      </p>
-<h4>2.32.1 Breakdown</h4>
-<ul style="list-style: none">
-<li>
-<div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
-          </li></ul>
-</li>
-<li>
-<div style="font-weight:bold;">Response</div>
-<ul style="list-style: none">
-<li>
-<b>"status"</b>
-          (status)
-          </li>
-<li>
-<b>"status_text"</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>2.32.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<div style="font-weight:bold;">Command</div>
-<pre>resume_paused_task
- = element resume_paused_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre>
-<div style="font-weight:bold;">Response</div>
-<pre>resume_paused_task_response
- = element resume_paused_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre>
-</div>
-<h4>2.32.1 Example: Resume a paused task</h4>
-<b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre>
-<br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
-</pre>
-</div>
-<div>
-<div><h3 id="resume_stopped_task">2.33
-          Command <tt>resume_stopped_task</tt>
-</h3></div>
-<p><b>In short: </b>Resume a stopped task.</p>
-<p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
-      </p>
-<h4>2.33.1 Breakdown</h4>
-<ul style="list-style: none">
-<li>
-<div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
-          </li></ul>
-</li>
-<li>
-<div style="font-weight:bold;">Response</div>
-<ul style="list-style: none">
-<li>
-<b>"status"</b>
-          (status)
-          </li>
-<li>
-<b>"status_text"</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>2.33.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<div style="font-weight:bold;">Command</div>
-<pre>resume_stopped_task
- = element resume_stopped_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre>
-<div style="font-weight:bold;">Response</div>
-<pre>resume_stopped_task_response
- = element resume_stopped_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre>
-</div>
-<h4>2.33.1 Example: Resume a stopped task</h4>
-<b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre>
-<br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
-</pre>
-</div>
-<div>
-<div><h3 id="start_task">2.34
-          Command <tt>start_task</tt>
-</h3></div>
-<p><b>In short: </b>Manually start an existing task.</p>
-<p>
-        The client uses the start_task command to manually start an
-        existing task.
-      </p>
-<h4>2.34.1 Breakdown</h4>
-<ul style="list-style: none">
-<li>
-<div style="font-weight:bold;">Command</div>
-<ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
-          </li></ul>
-</li>
-<li>
-<div style="font-weight:bold;">Response</div>
-<ul style="list-style: none">
-<li>
-<b>"status"</b>
-          (status)
-          </li>
-<li>
-<b>"status_text"</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>2.34.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<div style="font-weight:bold;">Command</div>
-<pre>start_task
- = element start_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre>
-<div style="font-weight:bold;">Response</div>
-<pre>start_task_response
- = element start_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre>
-</div>
-<h4>2.34.1 Example: Start a task</h4>
-<b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre>
-<br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
-</pre>
-</div>
-<div>
-<div><h3 id="stop_task">2.35
-          Command <tt>stop_task</tt>
-</h3></div>
-<p><b>In short: </b>Stop a running task.</p>
-<p>
-        The client uses the stop_task command to manually stop a
-        running task.
       </p>
 <h4>2.35.1 Breakdown</h4>
 <ul style="list-style: none">
@@ -3832,16 +5191,16 @@ modify_task_file
 <h4>2.35.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
-<pre>stop_task
- = element stop_task
+<pre>pause_task
+ = element pause_task
      {
        ""
        &amp; attribute task_id { uuid }
      }
 </pre>
 <div style="font-weight:bold;">Response</div>
-<pre>stop_task_response
- = element stop_task_response
+<pre>pause_task_response
+ = element pause_task_response
      {
        ""
        &amp; attribute status { status }
@@ -3849,20 +5208,21 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.35.1 Example: Stop a running task</h4>
-<b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<h4>2.35.1 Example: Pause a running task</h4>
+<b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
-<br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+<br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="test_escalator">2.36
-          Command <tt>test_escalator</tt>
+<div><h3 id="resume_or_start_task">2.36
+          Command <tt>resume_or_start_task</tt>
 </h3></div>
-<p><b>In short: </b>Run an escalator.</p>
+<p><b>In short: </b>Resume task if stopped, else start task.</p>
 <p>
-        The client uses the test_escalator command to invoke a test run of
-        an escalator.
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
       </p>
 <h4>2.36.1 Breakdown</h4>
 <ul style="list-style: none">
@@ -3890,6 +5250,296 @@ modify_task_file
 <h4>2.36.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
+<pre>resume_or_start_task
+ = element resume_or_start_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.36.1 Example: Resume a running task</h4>
+<b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_paused_task">2.37
+          Command <tt>resume_paused_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume a paused task.</p>
+<p>
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
+      </p>
+<h4>2.37.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.37.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_paused_task
+ = element resume_paused_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.37.1 Example: Resume a paused task</h4>
+<b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="resume_stopped_task">2.38
+          Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p><b>In short: </b>Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+<h4>2.38.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.38.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>resume_stopped_task
+ = element resume_stopped_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.38.1 Example: Resume a stopped task</h4>
+<b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="start_task">2.39
+          Command <tt>start_task</tt>
+</h3></div>
+<p><b>In short: </b>Manually start an existing task.</p>
+<p>
+        The client uses the start_task command to manually start an
+        existing task.
+      </p>
+<h4>2.39.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.39.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>start_task
+ = element start_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>start_task_response
+ = element start_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.39.1 Example: Start a task</h4>
+<b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="stop_task">2.40
+          Command <tt>stop_task</tt>
+</h3></div>
+<p><b>In short: </b>Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>2.40.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.40.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
+<pre>stop_task
+ = element stop_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre>
+<div style="font-weight:bold;">Response</div>
+<pre>stop_task_response
+ = element stop_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre>
+</div>
+<h4>2.40.1 Example: Stop a running task</h4>
+<b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre>
+<br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+</pre>
+</div>
+<div>
+<div><h3 id="test_escalator">2.41
+          Command <tt>test_escalator</tt>
+</h3></div>
+<p><b>In short: </b>Run an escalator.</p>
+<p>
+        The client uses the test_escalator command to invoke a test run of
+        an escalator.
+      </p>
+<h4>2.41.1 Breakdown</h4>
+<ul style="list-style: none">
+<li>
+<div style="font-weight:bold;">Command</div>
+<ul style="list-style: none"><li>
+<b>"task_id"</b>
+          (uuid)
+          </li></ul>
+</li>
+<li>
+<div style="font-weight:bold;">Response</div>
+<ul style="list-style: none">
+<li>
+<b>"status"</b>
+          (status)
+          </li>
+<li>
+<b>"status_text"</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>2.41.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<div style="font-weight:bold;">Command</div>
 <pre>test_escalator
  = element test_escalator
      {
@@ -3907,7 +5557,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.36.1 Example: Test an escalator</h4>
+<h4>2.41.1 Example: Test an escalator</h4>
 <b>Client:</b><br><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;

@@ -43,6 +43,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>text</pattern>
   </type>
   <type>
+    <name>ctime</name>
+    <pattern>text</pattern>
+  </type>
+  <type>
     <name>integer</name>
     <summary>An integer</summary>
     <pattern>xsd:integer</pattern>
@@ -1714,6 +1718,635 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_agents</name>
+    <summary>Get all agents</summary>
+    <description>
+      <p>
+        The client uses the get_agents command to get agent information.
+        If the command sent by the client was valid, the manager will
+        reply with a list of agents to the client.
+      </p>
+      <p>
+        If the request includes a format then the agents in the response
+        include installer elements, otherwise they include package
+        elements.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_id</name>
+        <summary>ID of single agent to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>format</name>
+        <type>
+          <alts>
+            <alt>installer</alt>
+            <alt>howto_install</alt>
+            <alt>howto_use</alt>
+          </alts>
+        </type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>comment</e>
+          <e>in_use</e>
+          <or>
+            <e>installer</e>
+            <e>package</e>
+          </or>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the agent</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the agent</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the agent is in use</summary>
+          <pattern>boolean</pattern>
+        </ele>
+        <ele>
+          <name>installer</name>
+          <pattern>
+            <e>trust</e>
+          </pattern>
+          <ele>
+            <name>trust</name>
+            <summary>Whether signature verification succeeded</summary>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>yes</alt>
+                  <alt>no</alt>
+                  <alt>unknown</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>package</name>
+          <summary>Either the installer or one of the HOWTOs</summary>
+          <pattern>
+            <e>filename</e>
+            <t>base64</t>
+          </pattern>
+          <ele>
+            <name>filename</name>
+            <summary>The filename of the package</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all agents</summary>
+      <request>
+        <get_agents></get_agents>
+      </request>
+      <response>
+        <get_agents_response status="200" status_text="OK">
+          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Custom Scan Agent</name>
+            <comment>Custom agent for use on the Web servers.</comment>
+            <in_use>1</in_use>
+            <installer><trust>yes</trust></installer>
+          </agent>
+          <truncated>...</truncated>
+        </get_agents_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get one agent</summary>
+      <request>
+        <get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+        </get_agents>
+      </request>
+      <response>
+        <get_agents_response status="200" status_text="OK">
+          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Custom Scan Agent</name>
+            <comment>Custom agent for use on the Web servers.</comment>
+            <in_use>1</in_use>
+            <installer><trust>yes</trust></installer>
+          </agent>
+        </get_agents_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get one agent, including the installer package</summary>
+      <request>
+        <get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
+                    format="installer">
+        </get_agents>
+      </request>
+      <response>
+        <get_agents_response status="200" status_text="OK">
+          <agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Custom Scan Agent</name>
+            <comment>Custom agent for use on the Web servers.</comment>
+            <in_use>1</in_use>
+            <package format="installer">
+              <filename>agent.deb</filename>
+              CgoKCgoKCgoKCgoKCSAgI...
+            </package>
+          </agent>
+        </get_agents_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_nvts</name>
+    <summary>Get all NVTs</summary>
+    <description>
+      <p>
+        The client uses the get_nvts command to get NVT information.
+      </p>
+      <!-- TODO The RNC should specify that some flags require others. -->
+      <p>
+        This command may always include a details flag, a config, a sort
+        order and a sort field.  If the command includes a details flag, the
+        manager also consults the timeout, preference_count and preferences
+        flags.  The timeout and preferences flags require a config.
+      </p>
+      <p>
+        The NVT OID, family name and config attributes limit the listing to
+        a single NVT or all NVTs in a particular family and/or config.
+      </p>
+      <p>
+        If the details flag is present the manager will send full details
+        of the NVT, otherwise it will send just the NVT name and checksum.
+      </p>
+      <p>
+        With the preferences flag the manager includes in the listing, the
+        values of each listed NVT's preferences for the given config.  The
+        timeout flag does the same for the special timeout preference.
+      </p>
+      <p>
+        If the manager possesses an NVT collection, it will reply with the
+        NVT information.  If the manager cannot access a list of available
+        NVTs at that time, it will reply with the 503 response.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>nvt_oid</name>
+        <summary>Single NVT to get</summary>
+        <type>oid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include full details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>preferences</name>
+        <summary>Whether to include preference</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>preference_count</name>
+        <summary>Whether to include preference count</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>timeout</name>
+        <summary>Whether to include the special timeout preference</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>ID of config to which to limit the NVT listing</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>family</name>
+        <summary>Family to which to limit NVT listing</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>nvt</e>
+      </pattern>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>checksum</e>
+          <o>
+            <g>
+              <e>category</e>
+              <e>copyright</e>
+              <e>description</e>
+              <e>summary</e>
+              <e>family</e>
+              <e>version</e>
+              <e>cvss_base</e>
+              <e>risk_factor</e>
+              <e>cve_id</e>
+              <e>bugtraq_id</e>
+              <e>xrefs</e>
+              <e>fingerprints</e>
+              <e>tags</e>
+              <o><e>preference_count</e></o>
+              <o><e>timeout</e></o>
+              <o><e>preferences</e></o>
+            </g>
+          </o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the NVT</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>category</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>copyright</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>summary</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>family</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cvss_base</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>risk_factor</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cve_id</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bugtraq_id</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>xrefs</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>fingerprints</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>tags</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>preference_count</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>timeout</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <pattern>
+            <e>algorithm</e>
+            text
+          </pattern>
+          <ele>
+            <name>algorithm</name>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <pattern>
+            <e>timeout</e>
+            <any><e>preference</e></any>
+            text
+          </pattern>
+          <ele>
+            <name>timeout</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <e>nvt</e>
+              <e>name</e>
+              <e>type</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>nvt</name>
+              <pattern><t>oid</t></pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get full NVT listing</summary>
+      <request>
+        <get_nvts details="1" timeout="1" preference_count="1" preferences="1">
+        </get_nvts>
+      </request>
+      <response>
+        <get_nvts_response status="200" status_text="OK">
+          <nvt oid="1.3.6.1.4.1.25623.1.7.13005">
+            <name>Services</name>
+            <category>Services</category>
+            <copyright>GNU GPL v2</copyright>
+            <description>This script attepts to detects with service is running on which port.</description>
+            <summary>Find what is listening on which port</summary>
+            <family>Service detection</family>
+            <version>$Revision: 1852 $</version>
+            <cvss_base></cvss_base>
+            <risk_factor>None</risk_factor>
+            <cve_id>NOCVE</cve_id>
+            <bugtraq_id>NOBID</bugtraq_id>
+            <xrefs>NOXREF</xrefs>
+            <fingerprints>NOSIGNKEYS</fingerprints>
+            <tags>NOTAG</tags>
+            <preference_count>-1</preference_count>
+            <timeout></timeout>
+            <checksum>
+              <algorithm>md5</algorithm>
+              2397586ea5cd3a69f953836f7be9ef7b
+            </checksum>
+            <preferences>
+              <timeout></timeout>
+              <preference>
+                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+                  <name>Services</name>
+                </nvt>
+                <name>Network connection timeout :</name>
+                <type>entry</type>
+                <value>5</value>
+              </preference>
+              <truncated>...</truncated>
+            </preferences>
+          </nvt>
+          <nvt oid="1.3.6.1.4.1.25623.1.7.13006">
+            <name>FooBar 21</name>
+            <category>Services</category>
+            <copyright>GNU GPL v2</copyright>
+            <description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>
+            <truncated>...</truncated>
+          </nvt>
+          <truncated>...</truncated>
+        </get_nvts_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get minimal information about one NVT</summary>
+      <request>
+        <get_nvts nvt_oid="1.3.6.1.4.1.25623.1.0.10330">
+        </get_nvts>
+      </request>
+      <response>
+        <get_nvts_response status="200" status_text="OK">
+          <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+            <name>Services</name>
+            <checksum>
+              <algorithm>md5</algorithm>
+              2397586ea5cd3a69f953836f7be9ef7b
+            </checksum>
+          </nvt>
+        </get_nvts_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_nvt_families</name>
+    <summary>Get a list of all NVT families</summary>
+    <description>
+      <p>
+        The client uses the get_nvt_families command to get NVT family
+        information.  If the command sent by the client was valid, the
+        manager will reply with a list of NVT families to the client.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>families</e>
+      </pattern>
+      <ele>
+        <name>families</name>
+        <pattern><any><e>family</e></any></pattern>
+        <ele>
+          <name>family</name>
+          <pattern>
+            <e>name</e>
+            <e>max_nvt_count</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the family</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>max_nvt_count</name>
+            <summary>The number of NVTs in the family</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the NVT families</summary>
+      <request>
+        <get_nvt_families></get_nvt_families>
+      </request>
+      <response>
+        <get_nvt_families_response status="200" status_text="OK">
+          <families>
+            <family>
+              <name>Credentials</name>
+              <max_nvt_count>8</max_nvt_count>
+            </family>
+            <family>
+              <name>Port scanners</name>
+              <max_nvt_count>12</max_nvt_count>
+            </family>
+            <truncated>...</truncated>
+          </families>
+        </get_nvt_families_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_nvt_feed_checksum</name>
+    <summary>Get checksum for entire NVT collection</summary>
+    <description>
+      <p>
+        The client uses the get_nvt_feed_checksum command to request a
+        checksum for the complete NVT collection available through this
+        manager.  The client may specify an algorithm to be used for
+        computing this checksum.
+      </p>
+      <p>
+        If the specified algorithm is not implemented in the manager, then
+        the manager will reply with a response code in the 4xx range.
+      </p>
+      <p>
+        If the client does not specify a checksum algorithm, the manager is
+        expected to use the MD5 algorithm for computing the checksum.
+      </p>
+      <p>
+        If the manager possesses such a collection, it will reply with a
+        response code indicating success, and the checksum over all NVT
+        files. If the manager cannot access a list of available NVTs at
+        present, it will reply with the 503 response.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>algorithm</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>checksum</e>
+      </pattern>
+      <ele>
+        <name>checksum</name>
+        <pattern>
+          <attrib>
+            <name>algorithm</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+          <t>base64</t>
+        </pattern>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the NVT feed checksum</summary>
+      <request>
+        <get_nvt_feed_checksum></get_nvt_feed_checksum>
+      </request>
+      <response>
+        <get_nvt_feed_checksum_response status="200" status_text="OK">
+          <checksum algorithm="md5">931db829a06b9a440a2ecaeb68c03715</checksum>
+        </get_nvt_feed_checksum_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_notes</name>
     <summary>Get all notes</summary>
     <description>
@@ -1728,7 +2361,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>nvt_id</name>
+        <name>nvt_oid</name>
         <type>oid</type>
       </attrib>
       <attrib>
@@ -1764,7 +2397,164 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <any><e>note</e></any>
       </pattern>
+      <ele>
+        <name>note</name>
+        <pattern>
+          <e>nvt</e>
+          <e>text</e>
+          <e>orphan</e>
+          <o>
+            <g>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>hosts</e>
+              <e>port</e>
+              <e>threat</e>
+              <e>task</e>
+              <o><e>result</e></o>
+            </g>
+          </o>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>text</name>
+          <summary>The text of the note</summary>
+          <pattern>
+            <attrib>
+              <name>excerpt</name>
+              <name>Whether the contents is an excerpt of the full text</name>
+              <type>boolean</type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphan</name>
+          <summary>Whether the note is an orphan</summary>
+          <pattern>boolean</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>A textual list of hosts</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Port to which note applies</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>threat</name>
+          <summary>Threat level to which note applies</summary>
+          <pattern>
+            <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Task to which note applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>result</name>
+          <summary>Result to which note applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>subnet</e>
+            <e>host</e>
+            <e>port</e>
+            <e>nvt</e>
+            <e>threat</e>
+            <e>description</e>
+          </pattern>
+          <ele>
+            <name>subnet</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>host</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>port</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <type>oid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>cvss_base</e>
+              <e>risk_factor</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>cvss_base</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>risk_factor</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <pattern>
+              <t>threat</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
     </response>
     <example>
       <summary>Get all notes</summary>
@@ -1782,6 +2572,313 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </note>
           <truncated>...</truncated>
         </get_notes_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get details of a single note</summary>
+      <request>
+        <get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1">
+        </get_notes>
+      </request>
+      <response>
+        <get_notes_response status="200" status_text="OK">
+          <note id="7f618bbb-4664-419e-9bbf-367d93954cb0">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.77">
+              <name>Test NVT: control chars in report result</name>
+            </nvt>
+            <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+            <text>note fixed to result</text>
+            <hosts>127.0.0.1</hosts>
+            <port>general/tcp</port>
+            <threat>Medium</threat>
+            <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
+              <name>test</name>
+            </task>
+            <orphan>0</orphan>
+            <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
+              <subnet>127.0.0.1</subnet>
+              <host>127.0.0.1</host>
+              <port>general/tcp</port>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.77">
+                <name>Test NVT: control chars in report result</name>
+                <cvss_base></cvss_base>
+                <risk_factor></risk_factor>
+              </nvt>
+              <threat>Medium</threat>
+              <description>Warning with control char between fullstops: . .</description>
+            </result>
+          </note>
+          <truncated>...</truncated>
+        </get_notes_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_overrides</name>
+    <summary>Get all overrides</summary>
+    <description>
+      The client uses the get_overrides command to get override information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of overrides to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>override_id</name>
+        <summary>ID of single override to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>nvt_oid</name>
+        <type>oid</type>
+      </attrib>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>override</e></any>
+      </pattern>
+      <ele>
+        <name>override</name>
+        <pattern>
+          <e>nvt</e>
+          <e>text</e>
+          <e>threat</e>
+          <e>new_threat</e>
+          <e>orphan</e>
+          <o>
+            <g>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>hosts</e>
+              <e>port</e>
+              <e>task</e>
+              <o><e>result</e></o>
+            </g>
+          </o>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>text</name>
+          <summary>The text of the override</summary>
+          <pattern>
+            <attrib>
+              <name>excerpt</name>
+              <name>Whether the contents is an excerpt of the full text</name>
+              <type>boolean</type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>threat</name>
+          <summary>Threat level to which override applies</summary>
+          <pattern>
+            <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>new_threat</name>
+          <summary>New threat for result</summary>
+          <pattern>
+            <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphan</name>
+          <summary>Whether the override is an orphan</summary>
+          <pattern>boolean</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>A textual list of hosts</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Port to which override applies</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Task to which override applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>result</name>
+          <summary>Result to which override applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>subnet</e>
+            <e>host</e>
+            <e>port</e>
+            <e>nvt</e>
+            <e>threat</e>
+            <e>description</e>
+          </pattern>
+          <ele>
+            <name>subnet</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>host</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>port</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <type>oid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>cvss_base</e>
+              <e>risk_factor</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>cvss_base</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>risk_factor</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <pattern>
+              <t>threat</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all overrides</summary>
+      <request>
+        <get_overrides></get_overrides>
+      </request>
+      <response>
+        <get_overrides_response status="200" status_text="OK">
+          <override id="b76b81a7-9df8-42df-afff-baa9d4620128">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.75">
+              <name>Test NVT: long lines</name>
+            </nvt>
+            <text excerpt="0">This is the full text of the override.</text>
+            <threat>High</threat>
+            <new_threat>Log</new_threat>
+            <orphan>1</orphan>
+          </override>
+          <truncated>...</truncated>
+        </get_overrides_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get details of a single override</summary>
+      <request>
+        <get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1">
+        </get_overrides>
+      </request>
+      <response>
+        <get_overrides_response status="200" status_text="OK">
+          <override id="7f618bbb-4664-419e-9bbf-367d93954cb0">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.77">
+              <name>Test NVT: control chars in report result</name>
+            </nvt>
+            <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+            <text>override fixed to result</text>
+            <hosts>127.0.0.1</hosts>
+            <port>general/tcp</port>
+            <threat>Medium</threat>
+            <new_threat>Low</new_threat>
+            <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
+              <name>test</name>
+            </task>
+            <orphan>0</orphan>
+            <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de" />
+          </override>
+          <truncated>...</truncated>
+        </get_overrides_response>
       </response>
     </example>
   </command>
@@ -2410,7 +3507,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <t>base64</t>
         <attrib>
           <name>action</name>
-          <type>xsd:token { pattern = "update|remove" }</type>
+          <type>
+            <alts>
+              <alt>update</alt>
+              <alt>remove</alt>
+            </alts>
+          </type>
           <required>1</required>
         </attrib>
       </pattern>
