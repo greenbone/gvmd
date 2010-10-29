@@ -1,4 +1,12 @@
-2010-09-29  Michael Wiegand <michael.wiegand@greenbone.net>
+2010-10-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 1.0.3 release.
+
+	* CHANGES: Updated.
+
+	* ChangeLog: Fixed date of last entry.
+
+2010-10-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c: Define another character that seems to be missing from
 	Debian Lenny ucs LaTeX package, adapted from commit r9289 by Matthew

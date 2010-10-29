@@ -1,3 +1,21 @@
+openvas-manager 1.0.3 (2010-10-29)
+
+This is the third maintenance release for the 1.0 series of the openvas-manager
+module for the Open Vulnerability Assessment System (OpenVAS).
+
+It fixes two bugs which caused to manager to fail to reply properly on certain
+request and improves the PDF report generation.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 1.0.2:
+* Two bugs which caused the manager to fail to give adequate replies on certain
+  report and scan config requests have been fixed.
+* A bug which caused PDF reports to be unavailable for reports which contained
+  certain unicode character has been fixed.
+
+
 openvas-manager 1.0.2 (2010-08-17)
 
 This is the second maintenance release for the 1.0 series of the openvas-manager
