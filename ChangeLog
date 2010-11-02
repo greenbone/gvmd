@@ -1,5 +1,11 @@
 2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In the CLIENT_GET_REPORTS LaTeX
+	case use batch mode, so TeX does its best to produce the document,
+	including dealing with missing Unicode chars or other binary in the doc.
+
+2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (member): New function.
 	(print_report_latex): Add latex_file_2 arg.  Rename Result Overview
 	columns to threats.  Loop over the results instead of looping over the

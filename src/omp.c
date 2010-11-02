@@ -9441,7 +9441,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_client_state (CLIENT_AUTHENTIC);
                   return;
                 }
-              else if (latex_file = g_strdup_printf ("%s/report.tex",
+              else if (latex_file = g_strdup_printf ("%s/report1.tex",
                                                      latex_dir),
                        latex_file_2 = g_strdup_printf ("%s/report2.tex",
                                                        latex_dir),
@@ -9467,13 +9467,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   gint pdf_fd;
                   int ret;
 
-                  pdf_file = g_strdup (latex_file);
-                  memcpy (pdf_file + strlen (pdf_file) - 10,
-                          "texput",
-                          strlen ("texput"));
-                  pdf_file[strlen (pdf_file) - 1] = dvi ? 'i' : 'f';
-                  pdf_file[strlen (pdf_file) - 2] = dvi ? 'v' : 'd';
-                  pdf_file[strlen (pdf_file) - 3] = dvi ? 'd' : 'p';
+                  pdf_file = g_strdup_printf ("%s/report.%s",
+                                              latex_dir,
+                                              dvi ? "dvi" : "pdf");
 
                   pdf_fd = open (pdf_file,
                                  O_RDWR | O_CREAT,
@@ -9481,31 +9477,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   if (dvi)
                     command = g_strdup_printf
-                               ("cat %s %s"
-                                " | latex -halt-on-error -file-line-error -output-directory %s"
-                                " > /tmp/openvasmd_latex_out 2>&1"
-                                " && cat %s %s"
-                                " | latex -halt-on-error -file-line-error -output-directory %s"
+                               ("cat %s %s > %s/report.tex"
+                                " && latex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_latex_out 2>&1;"
+                                " latex -interaction batchmode -output-directory %s %s/report.tex"
                                 " > /tmp/openvasmd_latex_out 2>&1",
                                 latex_file,
                                 latex_file_2,
                                 latex_dir,
-                                latex_file,
-                                latex_file_2,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
                                 latex_dir);
                   else
                     command = g_strdup_printf
-                               ("cat %s %s"
-                                " | pdflatex -halt-on-error -file-line-error -output-directory %s"
-                                " > /tmp/openvasmd_pdflatex_out 2>&1"
-                                " && cat %s %s"
-                                " | pdflatex -halt-on-error -file-line-error -output-directory %s"
+                               ("cat %s %s > %s/report.tex"
+                                " && pdflatex -interaction batchmode -output-directory %s %s/report.tex"
+                                " > /tmp/openvasmd_pdflatex_out 2>&1;"
+                                " pdflatex -interaction batchmode -output-directory %s %s/report.tex"
                                 " > /tmp/openvasmd_pdflatex_out 2>&1",
                                 latex_file,
                                 latex_file_2,
                                 latex_dir,
-                                latex_file,
-                                latex_file_2,
+                                latex_dir,
+                                latex_dir,
+                                latex_dir,
                                 latex_dir);
 
                   g_free (latex_file);
