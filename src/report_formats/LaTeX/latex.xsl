@@ -467,7 +467,7 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="longtable-continue-block">
       <xsl:with-param name="number-of-columns">6</xsl:with-param>
       <xsl:with-param name="header-color">openvas_report</xsl:with-param>
-      <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;Holes&amp;Warnings&amp;Notes&amp;False Positives</xsl:with-param>
+      <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;High&amp;Medium&amp;Low&amp;False Positives</xsl:with-param>
     </xsl:call-template>
     <xsl:for-each select="host_start"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>

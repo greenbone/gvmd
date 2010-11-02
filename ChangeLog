@@ -1,5 +1,10 @@
 2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl (longtable-continue-block): Rename
+	Result Overview columns with threat names.
+
+2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_host_iterator): Add const to arg.
 
 	* src/manage.h: Update headers accordingly.
