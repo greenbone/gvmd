@@ -1,3 +1,13 @@
+2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_host_iterator): Add const to arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/report_formats/PDF/generate: Use batch mode, so TeX does its best
+	to produce the document, including dealing with missing Unicode chars
+	or other binary in the doc.
+
 2010-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/HTML/HTML.xsl (type): New template.

@@ -720,7 +720,7 @@ const char*
 result_iterator_descr (iterator_t*);
 
 void
-init_host_iterator (iterator_t*, report_t, char *);
+init_host_iterator (iterator_t*, report_t, const char *);
 
 const char*
 host_iterator_host (iterator_t*);

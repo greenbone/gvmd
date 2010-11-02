@@ -8542,7 +8542,7 @@ DEF_ACCESS (descr, 7);
  * @param[in]  host      Single host to iterate over.  All hosts if NULL.
  */
 void
-init_host_iterator (iterator_t* iterator, report_t report, char *host)
+init_host_iterator (iterator_t* iterator, report_t report, const char *host)
 {
   gchar* sql;
 
