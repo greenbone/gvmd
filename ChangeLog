@@ -1,3 +1,15 @@
+2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (member): New function.
+	(print_report_latex): Add latex_file_2 arg.  Rename Result Overview
+	columns to threats.  Loop over the results instead of looping over the
+	hosts, in order to select the results defined by the parameters like
+	max_results.  This should match the results selected in the other formats.
+	Print half the report to a second file, to make it easier to list the
+	hosts involved.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS adjust the LaTeX case
+	to expect the report in two files.
+
 2010-10-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

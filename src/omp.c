@@ -6636,11 +6636,30 @@ print_report_overrides_latex (FILE *out, iterator_t *results, task_t task)
 }
 
 /**
+ * @brief Test whether a string equal to a given string exists in an array.
+ *
+ * @param[in]  array   Array of gchar* pointers.
+ * @param[in]  string  String.
+ *
+ * @return 1 if a string equal to \arg string exists in \arg array, else 0.
+ */
+static int
+member (GPtrArray *array, const char *string)
+{
+  const gchar *item;
+  int index = 0;
+  while ((item = (gchar*) g_ptr_array_index (array, index++)))
+    if (strcmp (item, string) == 0) return 1;
+  return 0;
+}
+
+/**
  * @brief Print LaTeX for a report to a file.
  *
  * @param[in]  report      The report.
  * @param[in]  task        Task associated with report.
  * @param[in]  latex_file  File name.
+ * @param[in]  latex_file_2  File name (second half of report).
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
@@ -6651,14 +6670,18 @@ print_report_overrides_latex (FILE *out, iterator_t *results, task_t task)
  */
 static int
 print_report_latex (report_t report, task_t task, gchar* latex_file,
+                    gchar* latex_file_2,
                     int ascending, const char* sort_field,
                     int result_hosts_only, const char* min_cvss_base)
 {
-  FILE *out;
+  FILE *out, *out2;
   iterator_t results, hosts;
   int num_hosts = 0, total_holes = 0, total_notes = 0, total_warnings = 0;
-  int total_false_positives = 0;
+  int total_false_positives = 0, hosts_host_result_count;
   char *start_time, *end_time;
+  const char *host, *hosts_host;
+  gchar *last_port;
+  array_t *overview_hosts;
 
   /**
    * @todo Also, this code produces empty tables (probably because of the
@@ -6711,13 +6734,13 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
   fprintf (out, "\\begin{longtable}{|l|l|l|l|l|l|}\n");
   fprintf (out, "\\hline\n"
                 "\\rowcolor{openvas_report}"
-                "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n"
+                "Host&Most Severe Result(s)&High&Medium&Low&False Positives\\\\\n"
                 "\\hline\n"
                 "\\endfirsthead\n"
                 "\\multicolumn{6}{l}{\\hfill\\ldots continued from previous page \\ldots}\\\\\n"
                 "\\hline\n"
                 "\\rowcolor{openvas_report}"
-                "Host&Most Severe Result(s)&Holes&Warnings&Notes&False Positives\\\\\n"
+                "Host&Most Severe Result(s)&High&Medium&Low&False Positives\\\\\n"
                 "\\endhead\n"
                 "\\hline\n"
                 "\\multicolumn{6}{l}{\\ldots continues on next page \\ldots}\\\\\n"
@@ -6725,19 +6748,341 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
                 "\\hline\n"
                 "\\endlastfoot\n");
 
-  /* In Overview, print the list of hosts. */
+  /* Host list is only known after results, so print rest to second file. */
+
+  out2 = fopen (latex_file_2, "w");
+
+  if (out2 == NULL)
+    {
+      fclose (out);
+      g_warning ("%s: fopen 2 failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return -1;
+    }
+
+  if (get_reports_data->apply_overrides)
+    fputs ("Overrides are on.  When a result has an override, this report"
+           " uses the threat of the override.\\\\\n",
+           out2);
+  else
+    fputs ("Overrides are off.  Even when a result has an override, this report"
+           " uses the actual threat of the result.\\\\\n",
+           out2);
+
+  const char *levels = get_reports_data->levels ? get_reports_data->levels
+                                               : "hmlgd";
+  if (get_reports_data->search_phrase || strcmp (levels, "hmlgd"))
+    {
+      fputs ("This report might not show details of all issues that were"
+             " found.\\\\\n",
+             out2);
+      if (result_hosts_only)
+        fputs ("It only lists hosts that produced issues.\\\\\n", out2);
+      if (get_reports_data->search_phrase
+          && strcmp (get_reports_data->search_phrase, ""))
+        fprintf (out2,
+                 "It shows issues that contain the search phrase \"%s\".\\\\\n",
+                 get_reports_data->search_phrase);
+      if (!strchr (levels, 'h'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"High\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'm'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Medium\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'l'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Low\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'g'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Log\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'd'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"Debug\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+      if (!strchr (levels, 'f'))
+        {
+          fputs ("Issues with the threat level ", out2);
+          fputs ("\"False Positive\"", out2);
+          fputs (" are not shown.\\\\\n", out2);
+        }
+    }
+
+  /* Print second section, "Results per Host". */
+
+  fprintf (out2, "%s\n\n", "\\section{Results per Host}");
+
+  /* Print a subsection for each host. */
 
   init_host_iterator (&hosts, report, NULL);
-  /** @todo Either modify this table or show another table in which the
-   *        filtered result count is shown. Also, one could alter columns
-   *        in the table, e.g. with \\cellcolor{inactive}. */
+  if (!next (&hosts))
+    {
+      fclose (out);
+      fclose (out2);
+      g_warning ("%s: empty hosts list\n", __FUNCTION__);
+      cleanup_iterator (&hosts);
+      return -1;
+    }
+  hosts_host = host_iterator_host (&hosts);
+  hosts_host_result_count = 0;
+  last_port = NULL;
+  if (result_hosts_only)
+    overview_hosts = make_array ();
+  else
+    /* Quiet erroneous compiler warning. */
+    overview_hosts = NULL;
+  init_result_iterator (&results, report, 0, NULL,
+                        get_reports_data->first_result,
+                        get_reports_data->max_results,
+                        ascending,
+                        sort_field,
+                        get_reports_data->levels,
+                        get_reports_data->search_phrase,
+                        min_cvss_base,
+                        get_reports_data->apply_overrides);
+  while (next (&results))
+    {
+      host = result_iterator_host (&results);
+      gchar *last_hosts_host = NULL;
+
+      while (strcmp (host, hosts_host))
+        {
+          if (last_port && (last_hosts_host == NULL))
+            {
+              g_free (last_port);
+              fprintf (out2,
+                       "\\end{longtable}\n"
+                       "\\begin{footnotesize}"
+                       "\\hyperref[host:%s]{[ return to %s ]}"
+                       "\\end{footnotesize}\n",
+                       hosts_host,
+                       hosts_host);
+            }
+
+          if (result_hosts_only)
+            {
+              if (hosts_host_result_count)
+                array_add (overview_hosts, g_strdup (hosts_host));
+            }
+          else if (last_hosts_host)
+            {
+              fprintf (out2,
+                       "\\subsection{%s}\n"
+                       "\\label{host:%s}\n",
+                       last_hosts_host,
+                       last_hosts_host);
+              g_free (last_hosts_host);
+              last_hosts_host = g_strdup (hosts_host);
+            }
+
+          if (!next (&hosts))
+            {
+              g_free (last_hosts_host);
+              g_warning ("%s: too few hosts\n", __FUNCTION__);
+              if (result_hosts_only)
+                array_free (overview_hosts);
+              cleanup_iterator (&results);
+              cleanup_iterator (&hosts);
+              fclose (out);
+              fclose (out2);
+              array_free (overview_hosts);
+              return -1;
+            }
+          hosts_host = host_iterator_host (&hosts);
+          hosts_host_result_count = 0;
+          last_port = NULL;
+        }
+      g_free (last_hosts_host);
+
+      if (last_port == NULL)
+        {
+          /* Print the times. */
+
+          fprintf (out2,
+                   "\\subsection{%s}\n"
+                   "\\label{host:%s}\n"
+                   "\n"
+                   "\\begin{tabular}{ll}\n"
+                   "Host scan start&%s\\\\\n"
+                   "Host scan end&%s\\\\\n"
+                   "\\end{tabular}\n\n",
+                   host,
+                   host,
+                   host_iterator_start_time (&hosts),
+                   ((host_iterator_end_time (&hosts)
+                     && strlen (host_iterator_end_time (&hosts)))
+                     ? host_iterator_end_time (&hosts)
+                     : ""));
+        }
+
+      hosts_host_result_count++;
+
+#if 0
+      fprintf (out2,
+               "\\end{longtable}\n"
+               "\n"
+               "%%\\subsection*{Security Issues and Fixes -- %s}\n\n",
+               host_iterator_host (&hosts));
+#endif
+
+      /* Print the result details. */
+
+      {
+        const char *severity, *original_severity, *cvss_base;
+
+        if (last_port == NULL
+            || strcmp (last_port, result_iterator_port (&results)))
+          {
+            gchar *result_port;
+            if (last_port)
+              {
+                fprintf (out2,
+                         "\\end{longtable}\n"
+                         "\\begin{footnotesize}"
+                         "\\hyperref[host:%s]{[ return to %s ]}\n"
+                         "\\end{footnotesize}\n",
+                         host,
+                         host);
+                g_free (last_port);
+                last_port = NULL;
+              }
+            result_port = latex_escape_text (result_iterator_port (&results));
+            fprintf (out2,
+                     "\\subsubsection{%s}\n"
+                     "\\label{port:%s %s}\n\n"
+                     "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
+                     result_port,
+                     host_iterator_host (&hosts),
+                     result_iterator_port (&results));
+            g_free (result_port);
+          }
+        if (last_port == NULL)
+          last_port = g_strdup (result_iterator_port (&results));
+        severity = result_iterator_type (&results);
+        original_severity = result_iterator_original_type (&results);
+        cvss_base = result_iterator_nvt_cvss_base (&results);
+        if (original_severity && strcmp (original_severity, severity))
+          fprintf (out2,
+                   "\\hline\n"
+                   "\\rowcolor%s{\\color{white}"
+                   "{%s (Overridden from %s)}}\\\\\n",
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity),
+                   latex_severity_heading (original_severity));
+        else
+          fprintf (out2,
+                   "\\hline\n"
+                   "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n",
+                   latex_severity_colour (severity),
+                   latex_severity_heading (severity),
+                   cvss_base ? " (CVSS: " : "",
+                   cvss_base ? cvss_base : "",
+                   cvss_base ? ") " : "");
+
+        if (result_iterator_nvt_name (&results))
+          fprintf (out2,
+                   "\\rowcolor%s{\\color{white}{NVT: %s}}\\\\\n",
+                   latex_severity_colour (severity),
+                   /** @todo Memory leak. */
+                   latex_escape_text (result_iterator_nvt_name (&results)));
+
+        fprintf (out2,
+                 "\\hline\n"
+                 "\\endfirsthead\n"
+                 "\\hfill\\ldots continued from previous page \\ldots \\\\\n"
+                 "\\hline\n"
+                 "\\endhead\n"
+                 "\\hline\n"
+                 "\\ldots continues on next page \\ldots \\\\\n"
+                 "\\endfoot\n"
+                 "\\hline\n"
+                 "\\endlastfoot\n");
+
+        latex_print_verbatim_text (out2,
+                                   result_iterator_descr (&results),
+                                   NULL);
+        fprintf (out2,
+                 "\\\\\n"
+                 "OID of test routine: %s\\\\\n",
+                 result_iterator_nvt_oid (&results));
+
+        if (get_reports_data->notes)
+          print_report_notes_latex (out2, &results, task);
+
+        if (get_reports_data->overrides)
+          print_report_overrides_latex (out2, &results, task);
+
+        fprintf (out2,
+                 "\\end{longtable}\n"
+                 "\n"
+                 "\\begin{longtable}{|p{\\textwidth * 1}|}\n");
+      }
+    }
+
+  if (host && result_hosts_only)
+    {
+      /* Add the final host. */
+      if (hosts_host_result_count)
+        array_add (overview_hosts, g_strdup (host));
+    }
+
+  if (last_port)
+    {
+      fprintf (out2,
+               "\\end{longtable}\n"
+               "\\begin{footnotesize}"
+               "\\hyperref[host:%s]{[ return to %s ]}\n"
+               "\\end{footnotesize}\n",
+               host,
+               host);
+      g_free (last_port);
+    }
+
+  cleanup_iterator (&results);
+  cleanup_iterator (&hosts);
+
+  /* Close off. */
+
+  fputs (latex_footer, out2);
+
+  if (fclose (out2))
+    {
+      fclose (out);
+      g_warning ("%s: fclose 2 failed: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      array_free (overview_hosts);
+      return -1;
+    }
+
+  /* In Overview, print the list of hosts. */
+
+  if (result_hosts_only)
+    array_terminate (overview_hosts);
+
+  init_host_iterator (&hosts, report, NULL);
   while (next (&hosts))
     {
       int holes, warnings, notes, false_positives;
+
       const char *host = host_iterator_host (&hosts);
 
       if (result_hosts_only
-          && manage_report_host_has_results (report, host) == 0)
+          && (member (overview_hosts, host) == 0))
         continue;
 
       report_counts_id (report, NULL, &holes, &notes, NULL, &warnings,
@@ -6772,6 +7117,9 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
     }
   cleanup_iterator (&hosts);
 
+  if (result_hosts_only)
+    array_free (overview_hosts);
+
   /* RATS: ignore, argument 2 is a constant string. */
   fprintf (out,
            "\\hline\n"
@@ -6784,278 +7132,6 @@ print_report_latex (report_t report, task_t task, gchar* latex_file,
            total_warnings,
            total_notes,
            total_false_positives);
-
-  if (get_reports_data->apply_overrides)
-    fputs ("Overrides are on.  When a result has an override, this report"
-           " uses the threat of the override.\\\\\n",
-           out);
-  else
-    fputs ("Overrides are off.  Even when a result has an override, this report"
-           " uses the actual threat of the result.\\\\\n",
-           out);
-
-  const char *levels = get_reports_data->levels ? get_reports_data->levels
-                                               : "hmlgd";
-  if (get_reports_data->search_phrase || strcmp (levels, "hmlgd"))
-    {
-      fputs ("This report might not show details of all issues that were"
-             " found.\\\\\n",
-             out);
-      if (result_hosts_only)
-        fputs ("It only lists hosts that produced issues.\\\\\n", out);
-      if (get_reports_data->search_phrase
-          && strcmp (get_reports_data->search_phrase, ""))
-        fprintf (out,
-                 "It shows issues that contain the search phrase \"%s\".\\\\\n",
-                 get_reports_data->search_phrase);
-      if (!strchr (levels, 'h'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"High\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-      if (!strchr (levels, 'm'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"Medium\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-      if (!strchr (levels, 'l'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"Low\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-      if (!strchr (levels, 'g'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"Log\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-      if (!strchr (levels, 'd'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"Debug\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-      if (!strchr (levels, 'f'))
-        {
-          fputs ("Issues with the threat level ", out);
-          fputs ("\"False Positive\"", out);
-          fputs (" are not shown.\\\\\n", out);
-        }
-    }
-
-  /* Print second section, "Results per Host". */
-
-  fprintf (out, "%s\n\n", "\\section{Results per Host}");
-
-  /* Print a subsection for each host. */
-
-  init_host_iterator (&hosts, report, NULL);
-  while (next (&hosts))
-    {
-      gchar *last_port;
-      const char *host = host_iterator_host (&hosts);
-
-      if (result_hosts_only
-          && manage_report_host_has_results (report, host) == 0)
-        continue;
-
-      /* Print the times. */
-
-      fprintf (out,
-               "\\subsection{%s}\n"
-               "\\label{host:%s}\n"
-               "\n"
-               "\\begin{tabular}{ll}\n"
-               "Host scan start&%s\\\\\n"
-               "Host scan end&%s\\\\\n"
-               "\\end{tabular}\n\n",
-               host,
-               host,
-               host_iterator_start_time (&hosts),
-               ((host_iterator_end_time (&hosts)
-                 && strlen (host_iterator_end_time (&hosts)))
-                 ? host_iterator_end_time (&hosts)
-                 : ""));
-
-      /* Print the result summary table. */
-
-      fprintf (out,
-               "\\begin{longtable}{|l|l|}\n"
-               "\\hline\n"
-               "\\rowcolor{openvas_report}Service (Port)&Threat Level\\\\\n"
-               "\\hline\n"
-               "\\endfirsthead\n"
-               "\\multicolumn{2}{l}{\\hfill\\ldots (continued) \\ldots}\\\\\n"
-               "\\hline\n"
-               "\\rowcolor{openvas_report}Service (Port)&Threat Level\\\\\n"
-               "\\hline\n"
-               "\\endhead\n"
-               "\\hline\n"
-               "\\multicolumn{2}{l}{\\ldots (continues) \\ldots}\\\\\n"
-               "\\endfoot\n"
-               "\\hline\n"
-               "\\endlastfoot\n");
-
-      init_result_iterator (&results, report, 0, host,
-                            get_reports_data->first_result,
-                            get_reports_data->max_results,
-                            ascending,
-                            sort_field,
-                            get_reports_data->levels,
-                            get_reports_data->search_phrase,
-                            min_cvss_base,
-                            get_reports_data->apply_overrides);
-      last_port = NULL;
-      while (next (&results))
-        {
-          if (last_port
-              && (strcmp (last_port, result_iterator_port (&results)) == 0))
-            continue;
-          if (last_port) g_free (last_port);
-          last_port = latex_escape_text (result_iterator_port (&results));
-          fprintf (out,
-                   "\\hyperref[port:%s %s]{%s}&%s\\\\\n"
-                   "\\hline\n",
-                   host_iterator_host (&hosts),
-                   result_iterator_port (&results),
-                   last_port,
-                   result_type_threat (result_iterator_type (&results)));
-        }
-      cleanup_iterator (&results);
-      if (last_port) g_free (last_port);
-
-      fprintf (out,
-               "\\end{longtable}\n"
-               "\n"
-               "%%\\subsection*{Security Issues and Fixes -- %s}\n\n",
-               host_iterator_host (&hosts));
-
-      /* Print the result details. */
-
-      init_result_iterator (&results, report, 0, host,
-                            get_reports_data->first_result,
-                            get_reports_data->max_results,
-                            ascending,
-                            sort_field,
-                            get_reports_data->levels,
-                            get_reports_data->search_phrase,
-                            min_cvss_base,
-                            get_reports_data->apply_overrides);
-      last_port = NULL;
-      /* Results are ordered according to given sort parameters. */
-      while (next (&results))
-        {
-          const char *severity, *original_severity, *cvss_base;
-
-          if (last_port == NULL
-              || strcmp (last_port, result_iterator_port (&results)))
-            {
-              gchar *result_port;
-              if (last_port)
-                {
-                  fprintf (out,
-                           "\\end{longtable}\n"
-                           "\\begin{footnotesize}"
-                           "\\hyperref[host:%s]{[ return to %s ]}\n"
-                           "\\end{footnotesize}\n",
-                           host,
-                           host);
-                  g_free (last_port);
-                  last_port = NULL;
-                }
-              result_port = latex_escape_text (result_iterator_port (&results));
-              fprintf (out,
-                       "\\subsubsection{%s}\n"
-                       "\\label{port:%s %s}\n\n"
-                       "\\begin{longtable}{|p{\\textwidth * 1}|}\n",
-                       result_port,
-                       host_iterator_host (&hosts),
-                       result_iterator_port (&results));
-              g_free (result_port);
-            }
-          if (last_port == NULL)
-            last_port = g_strdup (result_iterator_port (&results));
-          severity = result_iterator_type (&results);
-          original_severity = result_iterator_original_type (&results);
-          cvss_base = result_iterator_nvt_cvss_base (&results);
-          if (original_severity && strcmp (original_severity, severity))
-            fprintf (out,
-                     "\\hline\n"
-                     "\\rowcolor%s{\\color{white}"
-                     "{%s (Overridden from %s)}}\\\\\n",
-                     latex_severity_colour (severity),
-                     latex_severity_heading (severity),
-                     latex_severity_heading (original_severity));
-          else
-            fprintf (out,
-                     "\\hline\n"
-                     "\\rowcolor%s{\\color{white}{%s%s%s%s}}\\\\\n",
-                     latex_severity_colour (severity),
-                     latex_severity_heading (severity),
-                     cvss_base ? " (CVSS: " : "",
-                     cvss_base ? cvss_base : "",
-                     cvss_base ? ") " : "");
-
-          if (result_iterator_nvt_name (&results))
-            fprintf (out,
-                     "\\rowcolor%s{\\color{white}{NVT: %s}}\\\\\n",
-                     latex_severity_colour (severity),
-                     /** @todo Memory leak. */
-                     latex_escape_text (result_iterator_nvt_name (&results)));
-
-          fprintf (out,
-                   "\\hline\n"
-                   "\\endfirsthead\n"
-                   "\\hfill\\ldots continued from previous page \\ldots \\\\\n"
-                   "\\hline\n"
-                   "\\endhead\n"
-                   "\\hline\n"
-                   "\\ldots continues on next page \\ldots \\\\\n"
-                   "\\endfoot\n"
-                   "\\hline\n"
-                   "\\endlastfoot\n");
-
-          latex_print_verbatim_text (out,
-                                     result_iterator_descr (&results),
-                                     NULL);
-          fprintf (out,
-                   "\\\\\n"
-                   "OID of test routine: %s\\\\\n",
-                   result_iterator_nvt_oid (&results));
-
-          if (get_reports_data->notes)
-            print_report_notes_latex (out, &results, task);
-
-          if (get_reports_data->overrides)
-            print_report_overrides_latex (out, &results, task);
-
-          fprintf (out,
-                   "\\end{longtable}\n"
-                   "\n"
-                   "\\begin{longtable}{|p{\\textwidth * 1}|}\n");
-        }
-      if (last_port)
-        {
-          g_free (last_port);
-
-          fprintf (out,
-                   "\\end{longtable}\n"
-                   "\\begin{footnotesize}"
-                   "\\hyperref[host:%s]{[ return to %s ]}"
-                   "\\end{footnotesize}\n",
-                   host,
-                   host);
-        }
-      cleanup_iterator (&results);
-    }
-  cleanup_iterator (&hosts);
-
-  /* Close off. */
-
-  fputs (latex_footer, out);
 
   if (fclose (out))
     {
@@ -9341,7 +9417,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    || (strcasecmp (get_reports_data->format, "dvi") == 0))
             {
               task_t task;
-              gchar *latex_file;
+              gchar *latex_file, *latex_file_2;
               char latex_dir[] = "/tmp/openvasmd_XXXXXX";
               int dvi;
 
@@ -9367,9 +9443,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else if (latex_file = g_strdup_printf ("%s/report.tex",
                                                      latex_dir),
+                       latex_file_2 = g_strdup_printf ("%s/report2.tex",
+                                                       latex_dir),
                        print_report_latex (report,
                                            task,
                                            latex_file,
+                                           latex_file_2,
                                            get_reports_data->sort_order,
                                            get_reports_data->sort_field,
                                            get_reports_data->result_hosts_only,
@@ -9389,6 +9468,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   int ret;
 
                   pdf_file = g_strdup (latex_file);
+                  memcpy (pdf_file + strlen (pdf_file) - 10,
+                          "texput",
+                          strlen ("texput"));
                   pdf_file[strlen (pdf_file) - 1] = dvi ? 'i' : 'f';
                   pdf_file[strlen (pdf_file) - 2] = dvi ? 'v' : 'd';
                   pdf_file[strlen (pdf_file) - 3] = dvi ? 'd' : 'p';
@@ -9399,26 +9481,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   if (dvi)
                     command = g_strdup_printf
-                               ("latex -output-directory %s %s"
+                               ("cat %s %s"
+                                " | latex -halt-on-error -file-line-error -output-directory %s"
                                 " > /tmp/openvasmd_latex_out 2>&1"
-                                " && latex -output-directory %s %s"
+                                " && cat %s %s"
+                                " | latex -halt-on-error -file-line-error -output-directory %s"
                                 " > /tmp/openvasmd_latex_out 2>&1",
+                                latex_file,
+                                latex_file_2,
                                 latex_dir,
                                 latex_file,
-                                latex_dir,
-                                latex_file);
+                                latex_file_2,
+                                latex_dir);
                   else
                     command = g_strdup_printf
-                               ("pdflatex -output-directory %s %s"
+                               ("cat %s %s"
+                                " | pdflatex -halt-on-error -file-line-error -output-directory %s"
                                 " > /tmp/openvasmd_pdflatex_out 2>&1"
-                                " && pdflatex -output-directory %s %s"
+                                " && cat %s %s"
+                                " | pdflatex -halt-on-error -file-line-error -output-directory %s"
                                 " > /tmp/openvasmd_pdflatex_out 2>&1",
+                                latex_file,
+                                latex_file_2,
                                 latex_dir,
                                 latex_file,
-                                latex_dir,
-                                latex_file);
+                                latex_file_2,
+                                latex_dir);
 
                   g_free (latex_file);
+                  g_free (latex_file_2);
 
                   g_message ("   command: %s\n", command);
 
