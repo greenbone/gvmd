@@ -230,6 +230,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:text>"</xsl:text>
         </xsl:for-each>
       </xsl:when>
+      <xsl:when test="normalize-space(text()) = 'text'">
+        <xsl:text>text</xsl:text>
+      </xsl:when>
       <xsl:otherwise>
         <a href="#type_{text()}"><xsl:value-of select="text()"/></a>
       </xsl:otherwise>
