@@ -158,7 +158,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="type" mode="index">
     <tr id="index">
-      <td id="index"><a href="#{name}"><xsl:value-of select="name"/></a></td>
+      <td id="index"><a href="#type_{name}"><xsl:value-of select="name"/></a></td>
       <td id="index">
         <xsl:if test="summary">
           <div style="margin-left: 15px;"><xsl:value-of select="normalize-space(summary)"/>.</div>
@@ -178,9 +178,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:param name="index">3.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
-        <h3 id="{name}">
-          <xsl:value-of select="$index"/>
-          Data Type <tt><xsl:value-of select="name"/></tt></h3>
+        <h3 id="type_{name}">
+        <xsl:value-of select="$index"/>
+        Data Type <tt><xsl:value-of select="name"/></tt></h3>
       </div>
 
       <xsl:if test="summary">
@@ -231,7 +231,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="text()"/>
+        <a href="#type_{text()}"><xsl:value-of select="text()"/></a>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -250,7 +250,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="name() = 'attrib'">
         <li>
-          <b>"<xsl:value-of select="name"/>"</b>
+          <b>@<xsl:value-of select="name"/></b>
           (<xsl:apply-templates select="type"/>)
           <xsl:if test="summary">
             <xsl:value-of select="normalize-space(summary)"/>.
@@ -264,7 +264,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             &lt;<xsl:value-of select="text()"/>&gt;<xsl:value-of select="$element-suffix"/>
           </b>
           <div style="margin-left: 15px; display: inline;">
-            A response to a <a href="#{$element-name}"><xsl:value-of select="$element-name"/></a> command.
+            A response to a <a href="#command_{$element-name}"><xsl:value-of select="$element-name"/></a> command.
           </div>
         </li>
       </xsl:when>
@@ -345,9 +345,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:param name="index">4.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
-        <h3 id="{name}">
-          <xsl:value-of select="$index"/>
-          Command <tt><xsl:value-of select="name"/></tt></h3>
+        <h3 id="command_{name}">
+        <xsl:value-of select="$index"/>
+        Command <tt><xsl:value-of select="name"/></tt></h3>
       </div>
 
       <p><b>In short: </b><xsl:value-of select="normalize-space(summary)"/>.</p>
@@ -407,7 +407,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="command" mode="index">
     <tr id="index">
-      <td id="index"><a href="#{name}"><xsl:value-of select="name"/></a></td>
+      <td id="index"><a href="#command_{name}"><xsl:value-of select="name"/></a></td>
       <td id="index"><div style="margin-left: 15px;"><xsl:value-of select="normalize-space(summary)"/>.</div></td>
     </tr>
   </xsl:template>
@@ -465,9 +465,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
                 <h2 id="contents">Contents</h2>
                 <ol>
-                  <li><a href="#type_summary">Type Summary</a></li>
-                  <li><a href="#command_summary">Command Summary</a></li>
-                  <li><a href="#type_details">Type Details</a></li>
+                  <li><a href="#type_summary">Summary of Data Types</a></li>
+                  <li><a href="#command_summary">Summary of Commands</a></li>
+                  <li><a href="#type_details">Data Type Details</a></li>
                   <li><a href="#command_details">Command Details</a></li>
                 </ol>
 

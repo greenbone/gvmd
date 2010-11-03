@@ -1,5 +1,7 @@
 #### OpenVAS Management Protocol (OMP)
 ####
+#### Version: 1.0
+####
 #### The "management" protocol of the Open Vulnerability Assessment System.
 
 ### Preamble
@@ -104,27 +106,27 @@ response
 
 # Base64 encoded data.
 base64 = xsd:base64Binary
-
+# A true of false value.
 boolean = text
-
+# A true of false value, after conversion to an integer.
 boolean_atoi = text
-
+# A date and time, in the C `ctime' format.
 ctime = text
 # An integer.
 integer = xsd:integer
-
+# A name.
 name = xsd:string
-
+# An Object Identifier (OID)..
 oid = xsd:token { pattern = "[0-9\.]{1,80}" }
-
+# A string describing an order for sorting.
 sort_order = text
-
+# The success or failure status of a command.
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
-
+# A threat level.
 threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 # A unit of time.
 time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
-
+# A Universally Unique Identifier (UUID).
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 
 ### Commands

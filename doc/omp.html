@@ -7,194 +7,418 @@
 <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
 <h1>OMP:
                   OpenVAS Management Protocol</h1>
+<p>Version: 1.0</p>
 <p>The "management" protocol of the Open Vulnerability Assessment System.</p>
-<h2 id="command_summary">1 Summary of Commands</h2>
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#type_summary">Summary of Data Types</a></li>
+<li><a href="#command_summary">Summary of Commands</a></li>
+<li><a href="#type_details">Data Type Details</a></li>
+<li><a href="#command_details">Command Details</a></li>
+</ol>
+<h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
 <tr id="index">
-<td id="index"><a href="#authenticate">authenticate</a></td>
+<td id="index"><a href="#type_base64">base64</a></td>
+<td id="index"><div style="margin-left: 15px;">Base64 encoded data.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_boolean">boolean</a></td>
+<td id="index"><div style="margin-left: 15px;">A true of false value.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_boolean_atoi">boolean_atoi</a></td>
+<td id="index"><div style="margin-left: 15px;">A true of false value, after conversion to an integer.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_ctime">ctime</a></td>
+<td id="index"><div style="margin-left: 15px;">A date and time, in the C `ctime' format.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_integer">integer</a></td>
+<td id="index"><div style="margin-left: 15px;">An integer.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_name">name</a></td>
+<td id="index"><div style="margin-left: 15px;">A name.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_oid">oid</a></td>
+<td id="index"><div style="margin-left: 15px;">An Object Identifier (OID)..</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_sort_order">sort_order</a></td>
+<td id="index"><div style="margin-left: 15px;">A string describing an order for sorting.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_status">status</a></td>
+<td id="index"><div style="margin-left: 15px;">The success or failure status of a command.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_threat">threat</a></td>
+<td id="index"><div style="margin-left: 15px;">A threat level.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_time_unit">time_unit</a></td>
+<td id="index"><div style="margin-left: 15px;">A unit of time.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_uuid">uuid</a></td>
+<td id="index"><div style="margin-left: 15px;">A Universally Unique Identifier (UUID).</div></td>
+</tr>
+</table>
+<h2 id="command_summary">2 Summary of Commands</h2>
+<table id="index">
+<tr id="index">
+<td id="index"><a href="#command_authenticate">authenticate</a></td>
 <td id="index"><div style="margin-left: 15px;">Authenticate with the manager.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#commands">commands</a></td>
+<td id="index"><a href="#command_commands">commands</a></td>
 <td id="index"><div style="margin-left: 15px;">Run a list of commands.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_agent">create_agent</a></td>
+<td id="index"><a href="#command_create_agent">create_agent</a></td>
 <td id="index"><div style="margin-left: 15px;">Create an agent.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_config">create_config</a></td>
+<td id="index"><a href="#command_create_config">create_config</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a config.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_escalator">create_escalator</a></td>
+<td id="index"><a href="#command_create_escalator">create_escalator</a></td>
 <td id="index"><div style="margin-left: 15px;">Create an escalator.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_lsc_credential">create_lsc_credential</a></td>
+<td id="index"><a href="#command_create_lsc_credential">create_lsc_credential</a></td>
 <td id="index"><div style="margin-left: 15px;">Create an LSC credential.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_note">create_note</a></td>
+<td id="index"><a href="#command_create_note">create_note</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a note.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_override">create_override</a></td>
+<td id="index"><a href="#command_create_override">create_override</a></td>
 <td id="index"><div style="margin-left: 15px;">Create an override.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_schedule">create_schedule</a></td>
+<td id="index"><a href="#command_create_schedule">create_schedule</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a schedule.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_target">create_target</a></td>
+<td id="index"><a href="#command_create_target">create_target</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a target.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#create_task">create_task</a></td>
+<td id="index"><a href="#command_create_task">create_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Create a task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_agent">delete_agent</a></td>
+<td id="index"><a href="#command_delete_agent">delete_agent</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete an agent.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_config">delete_config</a></td>
+<td id="index"><a href="#command_delete_config">delete_config</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a config.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_escalator">delete_escalator</a></td>
+<td id="index"><a href="#command_delete_escalator">delete_escalator</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete an escalator.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_lsc_credential">delete_lsc_credential</a></td>
+<td id="index"><a href="#command_delete_lsc_credential">delete_lsc_credential</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete an LSC credential.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_note">delete_note</a></td>
+<td id="index"><a href="#command_delete_note">delete_note</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a note.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_override">delete_override</a></td>
+<td id="index"><a href="#command_delete_override">delete_override</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a override.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_report">delete_report</a></td>
+<td id="index"><a href="#command_delete_report">delete_report</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a report.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_schedule">delete_schedule</a></td>
+<td id="index"><a href="#command_delete_schedule">delete_schedule</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a schedule.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_target">delete_target</a></td>
+<td id="index"><a href="#command_delete_target">delete_target</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a target.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#delete_task">delete_task</a></td>
+<td id="index"><a href="#command_delete_task">delete_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Delete a task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_agents">get_agents</a></td>
+<td id="index"><a href="#command_get_agents">get_agents</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all agents.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_configs">get_configs</a></td>
+<td id="index"><a href="#command_get_configs">get_configs</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all configs.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_dependencies">get_dependencies</a></td>
+<td id="index"><a href="#command_get_dependencies">get_dependencies</a></td>
 <td id="index"><div style="margin-left: 15px;">Get dependencies for all available NVTs.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_escalators">get_escalators</a></td>
+<td id="index"><a href="#command_get_escalators">get_escalators</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all escalators.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_lsc_credentials">get_lsc_credentials</a></td>
+<td id="index"><a href="#command_get_lsc_credentials">get_lsc_credentials</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all LSC credentials.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_notes">get_notes</a></td>
+<td id="index"><a href="#command_get_notes">get_notes</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all notes.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_nvts">get_nvts</a></td>
+<td id="index"><a href="#command_get_nvts">get_nvts</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all NVTs.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_nvt_families">get_nvt_families</a></td>
+<td id="index"><a href="#command_get_nvt_families">get_nvt_families</a></td>
 <td id="index"><div style="margin-left: 15px;">Get a list of all NVT families.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_nvt_feed_checksum">get_nvt_feed_checksum</a></td>
+<td id="index"><a href="#command_get_nvt_feed_checksum">get_nvt_feed_checksum</a></td>
 <td id="index"><div style="margin-left: 15px;">Get checksum for entire NVT collection.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_overrides">get_overrides</a></td>
+<td id="index"><a href="#command_get_overrides">get_overrides</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all overrides.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#get_version">get_version</a></td>
+<td id="index"><a href="#command_get_version">get_version</a></td>
 <td id="index"><div style="margin-left: 15px;">Get the OpenVAS Manager Protocol version.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#help">help</a></td>
+<td id="index"><a href="#command_help">help</a></td>
 <td id="index"><div style="margin-left: 15px;">Get the help text.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#modify_config">modify_config</a></td>
+<td id="index"><a href="#command_modify_config">modify_config</a></td>
 <td id="index"><div style="margin-left: 15px;">Update an existing config.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#modify_note">modify_note</a></td>
+<td id="index"><a href="#command_modify_note">modify_note</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing note.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#modify_override">modify_override</a></td>
+<td id="index"><a href="#command_modify_override">modify_override</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing override.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#modify_report">modify_report</a></td>
+<td id="index"><a href="#command_modify_report">modify_report</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing report.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#modify_task">modify_task</a></td>
+<td id="index"><a href="#command_modify_task">modify_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Modify an existing task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#pause_task">pause_task</a></td>
+<td id="index"><a href="#command_pause_task">pause_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Pause a running task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#resume_or_start_task">resume_or_start_task</a></td>
+<td id="index"><a href="#command_resume_or_start_task">resume_or_start_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Resume task if stopped, else start task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#resume_paused_task">resume_paused_task</a></td>
+<td id="index"><a href="#command_resume_paused_task">resume_paused_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Resume a paused task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#resume_stopped_task">resume_stopped_task</a></td>
+<td id="index"><a href="#command_resume_stopped_task">resume_stopped_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Resume a stopped task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#start_task">start_task</a></td>
+<td id="index"><a href="#command_start_task">start_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Manually start an existing task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#stop_task">stop_task</a></td>
+<td id="index"><a href="#command_stop_task">stop_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Stop a running task.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#test_escalator">test_escalator</a></td>
+<td id="index"><a href="#command_test_escalator">test_escalator</a></td>
 <td id="index"><div style="margin-left: 15px;">Run an escalator.</div></td>
 </tr>
 </table>
-<h2 id="command_summary">2 Command Details</h2>
+<h2 id="type_details">3 Data Type Details</h2>
 <div>
-<div><h3 id="authenticate">2.1
-          Command <tt>authenticate</tt>
+<div><h3 id="type_base64">3.1
+        Data Type <tt>base64</tt>
+</h3></div>
+<p>In short: Base64 encoded data.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>base64
+ = element base64
+     {
+       xsd:base64Binary
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_boolean">3.2
+        Data Type <tt>boolean</tt>
+</h3></div>
+<p>In short: A true of false value.</p>
+<p>
+      Zero is false, anything else is true.  As a result, the empty string is
+      considered true.
+    </p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean
+ = element boolean
+     {
+       text
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_boolean_atoi">3.3
+        Data Type <tt>boolean_atoi</tt>
+</h3></div>
+<p>In short: A true of false value, after conversion to an integer.</p>
+<p>
+      Zero is false, anything else is true.  The value is first converted to
+      an integer, as by the C `atoi' routine.  This means that an empty string
+      is considered false.
+    </p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean_atoi
+ = element boolean_atoi
+     {
+       text
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_ctime">3.4
+        Data Type <tt>ctime</tt>
+</h3></div>
+<p>In short: A date and time, in the C `ctime' format.</p>
+<p>
+      An example string in this format is "Wed Jun 30 21:49:08 1993\n".
+    </p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>ctime
+ = element ctime
+     {
+       text
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_integer">3.5
+        Data Type <tt>integer</tt>
+</h3></div>
+<p>In short: An integer.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>integer
+ = element integer
+     {
+       xsd:integer
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_name">3.6
+        Data Type <tt>name</tt>
+</h3></div>
+<p>In short: A name.</p>
+<p>
+      Typically this is the name of one of the manager resources, like a
+      task or target.
+    </p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>name
+ = element name
+     {
+       xsd:string
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_oid">3.7
+        Data Type <tt>oid</tt>
+</h3></div>
+<p>In short: An Object Identifier (OID)..</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>oid
+ = element oid
+     {
+       xsd:token { pattern = "[0-9\.]{1,80}" }
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_sort_order">3.8
+        Data Type <tt>sort_order</tt>
+</h3></div>
+<p>In short: A string describing an order for sorting.</p>
+<p>
+      The string "descending" denotes descending order, anything else means
+      ascending.
+    </p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order
+ = element sort_order
+     {
+       text
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_status">3.9
+        Data Type <tt>status</tt>
+</h3></div>
+<p>In short: The success or failure status of a command.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status
+ = element status
+     {
+       xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_threat">3.10
+        Data Type <tt>threat</tt>
+</h3></div>
+<p>In short: A threat level.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat
+ = element threat
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_time_unit">3.11
+        Data Type <tt>time_unit</tt>
+</h3></div>
+<p>In short: A unit of time.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit
+ = element time_unit
+     {
+       xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_uuid">3.12
+        Data Type <tt>uuid</tt>
+</h3></div>
+<p>In short: A Universally Unique Identifier (UUID).</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid
+ = element uuid
+     {
+       xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
+     }
+</pre></div>
+</div>
+<h2 id="command_details">4 Command Details</h2>
+<div>
+<div><h3 id="command_authenticate">4.1
+        Command <tt>authenticate</tt>
 </h3></div>
 <p><b>In short: </b>Authenticate with the manager.</p>
 <p>
@@ -206,7 +430,7 @@
         connection.  The only commands permitted before authentication are
         get_version and commands.
       </p>
-<h4>2.1.1 Breakdown</h4>
+<h4>4.1.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -230,17 +454,17 @@
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.1.2 RNC</h4>
+<h4>4.1.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>authenticate
@@ -280,7 +504,7 @@ authenticate_credentials_password
      }
 </pre>
 </div>
-<h4>2.1.1 Example: Authenticate with a good password</h4>
+<h4>4.1.1 Example: Authenticate with a good password</h4>
 <b>Client:</b><br><pre> &lt;authenticate&gt;
    &lt;credentials&gt;
      &lt;username&gt;sally&lt;/username&gt;
@@ -290,7 +514,7 @@ authenticate_credentials_password
 </pre>
 <br><b>Manager:</b><br><pre> &lt;authenticate_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.1.1 Example: Authenticate with a bad password</h4>
+<h4>4.1.1 Example: Authenticate with a bad password</h4>
 <b>Client:</b><br><pre> &lt;authenticate&gt;
    &lt;credentials&gt;
      &lt;username&gt;sally&lt;/username&gt;
@@ -302,8 +526,8 @@ authenticate_credentials_password
 </pre>
 </div>
 <div>
-<div><h3 id="commands">2.2
-          Command <tt>commands</tt>
+<div><h3 id="command_commands">4.2
+        Command <tt>commands</tt>
 </h3></div>
 <p><b>In short: </b>Run a list of commands.</p>
 <p>
@@ -312,7 +536,7 @@ authenticate_credentials_password
       contains the result of each command, in the same order as the given
       commands.
     </p>
-<h4>2.2.1 Breakdown</h4>
+<h4>4.2.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -322,17 +546,17 @@ authenticate_credentials_password
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.2.2 RNC</h4>
+<h4>4.2.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>commands
@@ -355,14 +579,14 @@ authenticate_credentials_password
 </div>
 </div>
 <div>
-<div><h3 id="create_agent">2.3
-          Command <tt>create_agent</tt>
+<div><h3 id="command_create_agent">4.3
+        Command <tt>create_agent</tt>
 </h3></div>
 <p><b>In short: </b>Create an agent.</p>
 <p>
         The client uses the create_agent command to create a new agent.
       </p>
-<h4>2.3.1 Breakdown</h4>
+<h4>4.3.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -402,21 +626,21 @@ authenticate_credentials_password
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.3.2 RNC</h4>
+<h4>4.3.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_agent
@@ -478,7 +702,7 @@ create_agent_howto_use
      }
 </pre>
 </div>
-<h4>2.3.1 Example: Create an agent</h4>
+<h4>4.3.1 Example: Create an agent</h4>
 <b>Client:</b><br><pre> &lt;create_agent&gt;
    &lt;installer&gt;
      asdf3235saf3kjBVF...
@@ -491,8 +715,8 @@ create_agent_howto_use
 </pre>
 </div>
 <div>
-<div><h3 id="create_config">2.4
-          Command <tt>create_config</tt>
+<div><h3 id="command_create_config">4.4
+        Command <tt>create_config</tt>
 </h3></div>
 <p><b>In short: </b>Create a config.</p>
 <p>
@@ -517,7 +741,7 @@ create_agent_howto_use
           config is given this name.
         </li>
 </ul></p>
-<h4>2.4.1 Breakdown</h4>
+<h4>4.4.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -537,7 +761,7 @@ create_agent_howto_use
 <li>
 <b>
             &lt;get_configs&gt;</b><div style="margin-left: 15px; display: inline;">
-            A response to a <a href="#get_configs">get_configs</a> command.
+            A response to a <a href="#command_get_configs">get_configs</a> command.
           </div>
 </li>
 <li>
@@ -558,21 +782,21 @@ create_agent_howto_use
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.4.2 RNC</h4>
+<h4>4.4.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_config
@@ -621,7 +845,7 @@ create_config_name
      }
 </pre>
 </div>
-<h4>2.4.1 Example: Copy a config</h4>
+<h4>4.4.1 Example: Copy a config</h4>
 <b>Client:</b><br><pre> &lt;create_config&gt;
    &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
    &lt;name&gt;Full&lt;/name&gt;
@@ -629,7 +853,7 @@ create_config_name
 </pre>
 <br><b>Manager:</b><br><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre>
-<h4>2.4.1 Example: Create a config from an RC file</h4>
+<h4>4.4.1 Example: Create a config from an RC file</h4>
 <b>Client:</b><br><pre> &lt;create_config&gt;
    &lt;rcfile&gt;asdf3235saf3kjBVF...&lt;/rcfile&gt;
    &lt;name&gt;Full&lt;/name&gt;
@@ -637,7 +861,7 @@ create_config_name
 </pre>
 <br><b>Manager:</b><br><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre>
-<h4>2.4.1 Example: Create a config from a GET_CONFIGS response</h4>
+<h4>4.4.1 Example: Create a config from a GET_CONFIGS response</h4>
 <b>Client:</b><br><pre> &lt;create_config&gt;
    &lt;get_configs_response&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
@@ -651,15 +875,15 @@ create_config_name
 </pre>
 </div>
 <div>
-<div><h3 id="create_escalator">2.5
-          Command <tt>create_escalator</tt>
+<div><h3 id="command_create_escalator">4.5
+        Command <tt>create_escalator</tt>
 </h3></div>
 <p><b>In short: </b>Create an escalator.</p>
 <p>
         The client uses the create_escalator command to create a new
         escalator.
       </p>
-<h4>2.5.1 Breakdown</h4>
+<h4>4.5.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -719,21 +943,21 @@ create_config_name
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.5.2 RNC</h4>
+<h4>4.5.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_escalator
@@ -830,7 +1054,7 @@ create_escalator_method_data_name
      }
 </pre>
 </div>
-<h4>2.5.1 Example: Create an escalator</h4>
+<h4>4.5.1 Example: Create an escalator</h4>
 <b>Client:</b><br><pre> &lt;create_escalator&gt;
    &lt;name&gt;emergency&lt;/name&gt;
    &lt;condition&gt;
@@ -864,8 +1088,8 @@ create_escalator_method_data_name
 </pre>
 </div>
 <div>
-<div><h3 id="create_lsc_credential">2.6
-          Command <tt>create_lsc_credential</tt>
+<div><h3 id="command_create_lsc_credential">4.6
+        Command <tt>create_lsc_credential</tt>
 </h3></div>
 <p><b>In short: </b>Create an LSC credential.</p>
 <p>
@@ -877,7 +1101,7 @@ create_escalator_method_data_name
         password only credential, otherwise the manager creates a key-based
         credential.
       </p>
-<h4>2.6.1 Breakdown</h4>
+<h4>4.6.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -908,21 +1132,21 @@ create_escalator_method_data_name
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.6.2 RNC</h4>
+<h4>4.6.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_lsc_credential
@@ -970,7 +1194,7 @@ create_lsc_credential_password
      }
 </pre>
 </div>
-<h4>2.6.1 Example: Create an LSC credential</h4>
+<h4>4.6.1 Example: Create an LSC credential</h4>
 <b>Client:</b><br><pre> &lt;create_lsc_credential&gt;
    &lt;name&gt;cluster sally&lt;/name&gt;
    &lt;login&gt;sally&lt;/login&gt;
@@ -982,14 +1206,14 @@ create_lsc_credential_password
 </pre>
 </div>
 <div>
-<div><h3 id="create_note">2.7
-          Command <tt>create_note</tt>
+<div><h3 id="command_create_note">4.7
+        Command <tt>create_note</tt>
 </h3></div>
 <p><b>In short: </b>Create a note.</p>
 <p>
         The client uses the create_note command to create a new note.
       </p>
-<h4>2.7.1 Breakdown</h4>
+<h4>4.7.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1003,8 +1227,8 @@ create_lsc_credential_password
 <b>
             &lt;nvt&gt;</b><div style="margin-left: 15px; display: inline;">NVT to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li></ul>
 </li>
 <li>
@@ -1026,16 +1250,16 @@ create_lsc_credential_password
 <b>
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -1049,21 +1273,21 @@ create_lsc_credential_password
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.7.2 RNC</h4>
+<h4>4.7.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_note
@@ -1142,7 +1366,7 @@ create_note_threat
      }
 </pre>
 </div>
-<h4>2.7.1 Example: Create a note</h4>
+<h4>4.7.1 Example: Create a note</h4>
 <b>Client:</b><br><pre> &lt;create_note&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
    &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
@@ -1153,14 +1377,14 @@ create_note_threat
 </pre>
 </div>
 <div>
-<div><h3 id="create_override">2.8
-          Command <tt>create_override</tt>
+<div><h3 id="command_create_override">4.8
+        Command <tt>create_override</tt>
 </h3></div>
 <p><b>In short: </b>Create an override.</p>
 <p>
         The client uses the create_override command to create a new override.
       </p>
-<h4>2.8.1 Breakdown</h4>
+<h4>4.8.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1174,8 +1398,8 @@ create_note_threat
 <b>
             &lt;nvt&gt;</b><div style="margin-left: 15px; display: inline;">NVT to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li></ul>
 </li>
 <li>
@@ -1202,16 +1426,16 @@ create_note_threat
 <b>
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -1225,21 +1449,21 @@ create_note_threat
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.8.2 RNC</h4>
+<h4>4.8.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_override
@@ -1325,7 +1549,7 @@ create_override_threat
      }
 </pre>
 </div>
-<h4>2.8.1 Example: Create an override</h4>
+<h4>4.8.1 Example: Create an override</h4>
 <b>Client:</b><br><pre> &lt;create_override&gt;
    &lt;text&gt;This is actually of little concern.&lt;/text&gt;
    &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
@@ -1337,14 +1561,14 @@ create_override_threat
 </pre>
 </div>
 <div>
-<div><h3 id="create_schedule">2.9
-          Command <tt>create_schedule</tt>
+<div><h3 id="command_create_schedule">4.9
+        Command <tt>create_schedule</tt>
 </h3></div>
 <p><b>In short: </b>Create a schedule.</p>
 <p>
         The client uses the create_schedule command to create a new schedule.
       </p>
-<h4>2.9.1 Breakdown</h4>
+<h4>4.9.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1409,21 +1633,21 @@ create_override_threat
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.9.2 RNC</h4>
+<h4>4.9.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_schedule
@@ -1527,7 +1751,7 @@ create_schedule_period_unit
      }
 </pre>
 </div>
-<h4>2.9.1 Example: Create a schedule</h4>
+<h4>4.9.1 Example: Create a schedule</h4>
 <b>Client:</b><br><pre> &lt;create_schedule&gt;
    &lt;name&gt;Every night&lt;/name&gt;
    &lt;first_time&gt;
@@ -1551,8 +1775,8 @@ create_schedule_period_unit
 </pre>
 </div>
 <div>
-<div><h3 id="create_target">2.10
-          Command <tt>create_target</tt>
+<div><h3 id="command_create_target">4.10
+        Command <tt>create_target</tt>
 </h3></div>
 <p><b>In short: </b>Create a target.</p>
 <p>
@@ -1562,7 +1786,7 @@ create_schedule_period_unit
         If the list of hosts is empty, the command must also include a
         target locator.
       </p>
-<h4>2.10.1 Breakdown</h4>
+<h4>4.10.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1586,8 +1810,8 @@ create_schedule_period_unit
 <b>
             &lt;lsc_credential&gt;</b><div style="margin-left: 15px; display: inline;">Login credentials for target.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -1612,21 +1836,21 @@ create_schedule_period_unit
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.10.2 RNC</h4>
+<h4>4.10.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_target
@@ -1696,7 +1920,7 @@ create_target_target_locator_password
      }
 </pre>
 </div>
-<h4>2.10.1 Example: Create a target, giving a host list</h4>
+<h4>4.10.1 Example: Create a target, giving a host list</h4>
 <b>Client:</b><br><pre> &lt;create_target&gt;
    &lt;create_target&gt;
      &lt;name&gt;All GNU/Linux machines&lt;/name&gt;
@@ -1708,8 +1932,8 @@ create_target_target_locator_password
 </pre>
 </div>
 <div>
-<div><h3 id="create_task">2.11
-          Command <tt>create_task</tt>
+<div><h3 id="command_create_task">4.11
+        Command <tt>create_task</tt>
 </h3></div>
 <p><b>In short: </b>Create a task.</p>
 <p>
@@ -1720,7 +1944,7 @@ create_target_target_locator_password
         left out.  This form of the command is special support for
         OpenVAS-Client, and will likely be removed in future versions.
       </p>
-<h4>2.11.1 Breakdown</h4>
+<h4>4.11.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -1739,32 +1963,32 @@ create_target_target_locator_password
 <b>
             &lt;config&gt;</b><div style="margin-left: 15px; display: inline;">The scan configuration used by the task.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;target&gt;</b><div style="margin-left: 15px; display: inline;">The hosts scanned by the task.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;escalator&gt;?</b><div style="margin-left: 15px; display: inline;">An escalator that applies to the task.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;schedule&gt;?</b><div style="margin-left: 15px; display: inline;">When the task will run.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -1778,21 +2002,21 @@ create_target_target_locator_password
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.11.2 RNC</h4>
+<h4>4.11.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>create_task
@@ -1865,7 +2089,7 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.11.1 Example: Create a task, giving a host list</h4>
+<h4>4.11.1 Example: Create a task, giving a host list</h4>
 <b>Client:</b><br><pre> &lt;create_task&gt;
    &lt;name&gt;Scan Webserver&lt;/name&gt;
    &lt;comment&gt;Hourly scan of the webserver&lt;/comment&gt;
@@ -1877,8 +2101,8 @@ create_task_rcfile
 </pre>
 </div>
 <div>
-<div><h3 id="delete_agent">2.12
-          Command <tt>delete_agent</tt>
+<div><h3 id="command_delete_agent">4.12
+        Command <tt>delete_agent</tt>
 </h3></div>
 <p><b>In short: </b>Delete an agent.</p>
 <p>
@@ -1889,30 +2113,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.12.1 Breakdown</h4>
+<h4>4.12.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"agent_id"</b>
-          (uuid)
+<b>@agent_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.12.2 RNC</h4>
+<h4>4.12.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_agent
@@ -1932,15 +2156,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.12.1 Example: Delete an agent</h4>
+<h4>4.12.1 Example: Delete an agent</h4>
 <b>Client:</b><br><pre> &lt;delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_agent_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_config">2.13
-          Command <tt>delete_config</tt>
+<div><h3 id="command_delete_config">4.13
+        Command <tt>delete_config</tt>
 </h3></div>
 <p><b>In short: </b>Delete a config.</p>
 <p>
@@ -1951,30 +2175,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.13.1 Breakdown</h4>
+<h4>4.13.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"config_id"</b>
-          (uuid)
+<b>@config_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.13.2 RNC</h4>
+<h4>4.13.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_config
@@ -1994,15 +2218,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.13.1 Example: Delete a config</h4>
+<h4>4.13.1 Example: Delete a config</h4>
 <b>Client:</b><br><pre> &lt;delete_config config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_config_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_escalator">2.14
-          Command <tt>delete_escalator</tt>
+<div><h3 id="command_delete_escalator">4.14
+        Command <tt>delete_escalator</tt>
 </h3></div>
 <p><b>In short: </b>Delete an escalator.</p>
 <p>
@@ -2014,30 +2238,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.14.1 Breakdown</h4>
+<h4>4.14.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"escalator_id"</b>
-          (uuid)
+<b>@escalator_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.14.2 RNC</h4>
+<h4>4.14.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_escalator
@@ -2057,15 +2281,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.14.1 Example: Delete an escalator</h4>
+<h4>4.14.1 Example: Delete an escalator</h4>
 <b>Client:</b><br><pre> &lt;delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_escalator_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_lsc_credential">2.15
-          Command <tt>delete_lsc_credential</tt>
+<div><h3 id="command_delete_lsc_credential">4.15
+        Command <tt>delete_lsc_credential</tt>
 </h3></div>
 <p><b>In short: </b>Delete an LSC credential.</p>
 <p>
@@ -2077,30 +2301,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.15.1 Breakdown</h4>
+<h4>4.15.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"lsc_credential_id"</b>
-          (uuid)
+<b>@lsc_credential_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.15.2 RNC</h4>
+<h4>4.15.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_lsc_credential
@@ -2120,15 +2344,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.15.1 Example: Delete an LSC credential</h4>
+<h4>4.15.1 Example: Delete an LSC credential</h4>
 <b>Client:</b><br><pre> &lt;delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_lsc_credential_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_note">2.16
-          Command <tt>delete_note</tt>
+<div><h3 id="command_delete_note">4.16
+        Command <tt>delete_note</tt>
 </h3></div>
 <p><b>In short: </b>Delete a note.</p>
 <p>
@@ -2139,30 +2363,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.16.1 Breakdown</h4>
+<h4>4.16.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"note_id"</b>
-          (uuid)
+<b>@note_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.16.2 RNC</h4>
+<h4>4.16.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_note
@@ -2182,15 +2406,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.16.1 Example: Delete a note</h4>
+<h4>4.16.1 Example: Delete a note</h4>
 <b>Client:</b><br><pre> &lt;delete_note note_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_note_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_override">2.17
-          Command <tt>delete_override</tt>
+<div><h3 id="command_delete_override">4.17
+        Command <tt>delete_override</tt>
 </h3></div>
 <p><b>In short: </b>Delete a override.</p>
 <p>
@@ -2201,30 +2425,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.17.1 Breakdown</h4>
+<h4>4.17.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"override_id"</b>
-          (uuid)
+<b>@override_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.17.2 RNC</h4>
+<h4>4.17.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_override
@@ -2244,15 +2468,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.17.1 Example: Delete a override</h4>
+<h4>4.17.1 Example: Delete a override</h4>
 <b>Client:</b><br><pre> &lt;delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_override_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_report">2.18
-          Command <tt>delete_report</tt>
+<div><h3 id="command_delete_report">4.18
+        Command <tt>delete_report</tt>
 </h3></div>
 <p><b>In short: </b>Delete a report.</p>
 <p>
@@ -2263,30 +2487,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.18.1 Breakdown</h4>
+<h4>4.18.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"report_id"</b>
-          (uuid)
+<b>@report_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.18.2 RNC</h4>
+<h4>4.18.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_report
@@ -2306,15 +2530,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.18.1 Example: Delete a report</h4>
+<h4>4.18.1 Example: Delete a report</h4>
 <b>Client:</b><br><pre> &lt;delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_report_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_schedule">2.19
-          Command <tt>delete_schedule</tt>
+<div><h3 id="command_delete_schedule">4.19
+        Command <tt>delete_schedule</tt>
 </h3></div>
 <p><b>In short: </b>Delete a schedule.</p>
 <p>
@@ -2325,30 +2549,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.19.1 Breakdown</h4>
+<h4>4.19.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"schedule_id"</b>
-          (uuid)
+<b>@schedule_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.19.2 RNC</h4>
+<h4>4.19.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_schedule
@@ -2368,15 +2592,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.19.1 Example: Delete a schedule</h4>
+<h4>4.19.1 Example: Delete a schedule</h4>
 <b>Client:</b><br><pre> &lt;delete_schedule schedule_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_schedule_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_target">2.20
-          Command <tt>delete_target</tt>
+<div><h3 id="command_delete_target">4.20
+        Command <tt>delete_target</tt>
 </h3></div>
 <p><b>In short: </b>Delete a target.</p>
 <p>
@@ -2387,30 +2611,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.20.1 Breakdown</h4>
+<h4>4.20.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"target_id"</b>
-          (uuid)
+<b>@target_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.20.2 RNC</h4>
+<h4>4.20.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_target
@@ -2430,15 +2654,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.20.1 Example: Delete a target</h4>
+<h4>4.20.1 Example: Delete a target</h4>
 <b>Client:</b><br><pre> &lt;delete_target target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_target_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="delete_task">2.21
-          Command <tt>delete_task</tt>
+<div><h3 id="command_delete_task">4.21
+        Command <tt>delete_task</tt>
 </h3></div>
 <p><b>In short: </b>Delete a task.</p>
 <p>
@@ -2450,30 +2674,30 @@ create_task_rcfile
         for confirmation from the user before sending this command to the
         Manager.
       </p>
-<h4>2.21.1 Breakdown</h4>
+<h4>4.21.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.21.2 RNC</h4>
+<h4>4.21.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>delete_task
@@ -2493,15 +2717,15 @@ create_task_rcfile
      }
 </pre>
 </div>
-<h4>2.21.1 Example: Delete a task</h4>
+<h4>4.21.1 Example: Delete a task</h4>
 <b>Client:</b><br><pre> &lt;delete_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;delete_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="get_agents">2.22
-          Command <tt>get_agents</tt>
+<div><h3 id="command_get_agents">4.22
+        Command <tt>get_agents</tt>
 </h3></div>
 <p><b>In short: </b>Get all agents.</p>
 <p>
@@ -2514,27 +2738,27 @@ create_task_rcfile
         include installer elements, otherwise they include package
         elements.
       </p>
-<h4>2.22.1 Breakdown</h4>
+<h4>4.22.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"agent_id"</b>
-          (uuid)
+<b>@agent_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single agent to get.
           </li>
 <li>
-<b>"format"</b>
+<b>@format</b>
           ("installer", "howto_install" or "howto_use")
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -2542,19 +2766,19 @@ create_task_rcfile
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
             &lt;agent&gt;*</b><ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -2597,7 +2821,7 @@ create_task_rcfile
 </ul>
 </li>
 </ul>
-<h4>2.22.2 RNC</h4>
+<h4>4.22.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_agents
@@ -2677,7 +2901,7 @@ get_agents_response_agent_package_filename
      }
 </pre>
 </div>
-<h4>2.22.1 Example: Get all agents</h4>
+<h4>4.22.1 Example: Get all agents</h4>
 <b>Client:</b><br><pre> &lt;get_agents/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
@@ -2692,7 +2916,7 @@ get_agents_response_agent_package_filename
    ...
  &lt;/get_agents_response&gt;
 </pre>
-<h4>2.22.1 Example: Get one agent</h4>
+<h4>4.22.1 Example: Get one agent</h4>
 <b>Client:</b><br><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
@@ -2706,7 +2930,7 @@ get_agents_response_agent_package_filename
    &lt;/agent&gt;
  &lt;/get_agents_response&gt;
 </pre>
-<h4>2.22.1 Example: Get one agent, including the installer package</h4>
+<h4>4.22.1 Example: Get one agent, including the installer package</h4>
 <b>Client:</b><br><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf" format="installer"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
@@ -2723,8 +2947,8 @@ get_agents_response_agent_package_filename
 </pre>
 </div>
 <div>
-<div><h3 id="get_configs">2.23
-          Command <tt>get_configs</tt>
+<div><h3 id="command_get_configs">4.23
+        Command <tt>get_configs</tt>
 </h3></div>
 <p><b>In short: </b>Get all configs.</p>
 <p>
@@ -2732,31 +2956,31 @@ get_agents_response_agent_package_filename
       If the command sent by the client was valid, the manager will
       reply with a list of configs to the client.
     </p>
-<h4>2.23.1 Breakdown</h4>
+<h4>4.23.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"config_id"</b>
-          (uuid)
+<b>@config_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single config to get.
           </li>
 <li>
-<b>"families"</b>
-          (boolean)
+<b>@families</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"preferences"</b>
-          (boolean)
+<b>@preferences</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -2764,12 +2988,12 @@ get_agents_response_agent_package_filename
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -2814,8 +3038,8 @@ get_agents_response_agent_package_filename
 <b>
             &lt;task&gt;*</b><ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -2865,8 +3089,8 @@ get_agents_response_agent_package_filename
             &lt;nvt&gt;</b><div style="margin-left: 15px; display: inline;">NVT to which override applies.</div>
 <ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -2898,7 +3122,7 @@ get_agents_response_agent_package_filename
 </ul>
 </li>
 </ul>
-<h4>2.23.2 RNC</h4>
+<h4>4.23.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_configs
@@ -3092,7 +3316,7 @@ get_configs_response_config_preferences_preference_value
      }
 </pre>
 </div>
-<h4>2.23.1 Example: Get all configs</h4>
+<h4>4.23.1 Example: Get all configs</h4>
 <b>Client:</b><br><pre> &lt;get_configs/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_configs_response status="200" status_text="OK"&gt;
@@ -3120,7 +3344,7 @@ get_configs_response_config_preferences_preference_value
    ...
  &lt;/get_configs_response&gt;
 </pre>
-<h4>2.23.1 Example: Get a single config, including preference and family lists</h4>
+<h4>4.23.1 Example: Get a single config, including preference and family lists</h4>
 <b>Client:</b><br><pre> &lt;get_configs config_id="daba56c8-73ec-11df-a475-002264764cea" preferences="1" families="1"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_configs_response status="200" status_text="OK"&gt;
@@ -3170,21 +3394,21 @@ get_configs_response_config_preferences_preference_value
 </pre>
 </div>
 <div>
-<div><h3 id="get_dependencies">2.24
-          Command <tt>get_dependencies</tt>
+<div><h3 id="command_get_dependencies">4.24
+        Command <tt>get_dependencies</tt>
 </h3></div>
 <p><b>In short: </b>Get dependencies for all available NVTs.</p>
 <p>
       The client uses the get_dependencies command to request the
       dependencies for one or all NVTs available through this manager.
     </p>
-<h4>2.24.1 Breakdown</h4>
+<h4>4.24.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"nvt_oid"</b>
-          (oid)
+<b>@nvt_oid</b>
+          (<a href="#type_oid">oid</a>)
           ID of single NVT for which to get dependencies.
           </li></ul>
 </li>
@@ -3192,19 +3416,19 @@ get_configs_response_config_preferences_preference_value
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
             &lt;nvt&gt;*</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -3217,8 +3441,8 @@ get_configs_response_config_preferences_preference_value
 <b>
             &lt;nvt&gt;*</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -3233,7 +3457,7 @@ get_configs_response_config_preferences_preference_value
 </ul>
 </li>
 </ul>
-<h4>2.24.2 RNC</h4>
+<h4>4.24.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_dependencies
@@ -3290,7 +3514,7 @@ get_dependencies_response_nvt_requires_nvt_name
      }
 </pre>
 </div>
-<h4>2.24.1 Example: Get dependencies for all NVTs</h4>
+<h4>4.24.1 Example: Get dependencies for all NVTs</h4>
 <b>Client:</b><br><pre> &lt;get_dependencies/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_dependencies_response status="200" status_text="OK"&gt;
@@ -3305,7 +3529,7 @@ get_dependencies_response_nvt_requires_nvt_name
    ...
  &lt;/get_dependencies_response&gt;
 </pre>
-<h4>2.24.1 Example: Get dependencies for a single NVT</h4>
+<h4>4.24.1 Example: Get dependencies for a single NVT</h4>
 <b>Client:</b><br><pre> &lt;get_dependencies nvt_oid="1.3.6.1.4.1.25623.1.0.114664"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_dependencies_response status="200" status_text="OK"&gt;
@@ -3321,8 +3545,8 @@ get_dependencies_response_nvt_requires_nvt_name
 </pre>
 </div>
 <div>
-<div><h3 id="get_escalators">2.25
-          Command <tt>get_escalators</tt>
+<div><h3 id="command_get_escalators">4.25
+        Command <tt>get_escalators</tt>
 </h3></div>
 <p><b>In short: </b>Get all escalators.</p>
 <p>
@@ -3330,23 +3554,23 @@ get_dependencies_response_nvt_requires_nvt_name
       If the command sent by the client was valid, the manager will
       reply with a list of escalators to the client.
     </p>
-<h4>2.25.1 Breakdown</h4>
+<h4>4.25.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"escalator_id"</b>
-          (uuid)
+<b>@escalator_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single escalator to get.
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -3354,12 +3578,12 @@ get_dependencies_response_nvt_requires_nvt_name
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -3423,7 +3647,7 @@ get_dependencies_response_nvt_requires_nvt_name
 </ul>
 </li>
 </ul>
-<h4>2.25.2 RNC</h4>
+<h4>4.25.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_escalators
@@ -3536,7 +3760,7 @@ get_escalators_response_escalator_method_data_name
      }
 </pre>
 </div>
-<h4>2.25.1 Example: Get the escalators</h4>
+<h4>4.25.1 Example: Get the escalators</h4>
 <b>Client:</b><br><pre> &lt;get_escalators/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_escalators_response status="200" status_text="OK"&gt;
@@ -3579,8 +3803,8 @@ get_escalators_response_escalator_method_data_name
 </pre>
 </div>
 <div>
-<div><h3 id="get_lsc_credentials">2.26
-          Command <tt>get_lsc_credentials</tt>
+<div><h3 id="command_get_lsc_credentials">4.26
+        Command <tt>get_lsc_credentials</tt>
 </h3></div>
 <p><b>In short: </b>Get all LSC credentials.</p>
 <p>
@@ -3588,27 +3812,27 @@ get_escalators_response_escalator_method_data_name
       If the command sent by the client was valid, the manager will
       reply with a list of LSC credentials to the client.
     </p>
-<h4>2.26.1 Breakdown</h4>
+<h4>4.26.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"lsc_credential_id"</b>
-          (uuid)
+<b>@lsc_credential_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single LSC credential to get.
           </li>
 <li>
-<b>"format"</b>
+<b>@format</b>
           ("key", "rpm", "deb" or "exe")
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -3616,19 +3840,19 @@ get_escalators_response_escalator_method_data_name
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
             &lt;lsc_credential&gt;*</b><ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -3662,8 +3886,8 @@ get_escalators_response_escalator_method_data_name
 <b>
             &lt;target&gt;*</b><ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -3680,7 +3904,7 @@ get_escalators_response_escalator_method_data_name
 <li>
 <b>
             &lt;package&gt;?</b><ul style="list-style: none"><li>
-<b>"format"</b>
+<b>@format</b>
           ("rpm", "deb" or "exe")
           </li></ul>
 </li>
@@ -3689,7 +3913,7 @@ get_escalators_response_escalator_method_data_name
 </ul>
 </li>
 </ul>
-<h4>2.26.2 RNC</h4>
+<h4>4.26.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_lsc_credentials
@@ -3792,7 +4016,7 @@ get_lsc_credentials_response_lsc_credential_package
      }
 </pre>
 </div>
-<h4>2.26.1 Example: Get all the LSC credentials</h4>
+<h4>4.26.1 Example: Get all the LSC credentials</h4>
 <b>Client:</b><br><pre> &lt;get_lsc_credentials/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
@@ -3819,7 +4043,7 @@ get_lsc_credentials_response_lsc_credential_package
    ...
  &lt;/get_lsc_credentials_response&gt;
 </pre>
-<h4>2.26.1 Example: Get the public key of a single LSC credential</h4>
+<h4>4.26.1 Example: Get the public key of a single LSC credential</h4>
 <b>Client:</b><br><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15" format="key"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
@@ -3840,7 +4064,7 @@ get_lsc_credentials_response_lsc_credential_package
    &lt;/lsc_credential&gt;
  &lt;/get_lsc_credentials_response&gt;
 </pre>
-<h4>2.26.1 Example: Get the Debian package of a single LSC credential</h4>
+<h4>4.26.1 Example: Get the Debian package of a single LSC credential</h4>
 <b>Client:</b><br><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15" format="deb"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
@@ -3861,8 +4085,8 @@ get_lsc_credentials_response_lsc_credential_package
 </pre>
 </div>
 <div>
-<div><h3 id="get_notes">2.27
-          Command <tt>get_notes</tt>
+<div><h3 id="command_get_notes">4.27
+        Command <tt>get_notes</tt>
 </h3></div>
 <p><b>In short: </b>Get all notes.</p>
 <p>
@@ -3870,39 +4094,39 @@ get_lsc_credentials_response_lsc_credential_package
       If the command sent by the client was valid, the manager will
       reply with a list of notes to the client.
     </p>
-<h4>2.27.1 Breakdown</h4>
+<h4>4.27.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"note_id"</b>
-          (uuid)
+<b>@note_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single note to get.
           </li>
 <li>
-<b>"nvt_oid"</b>
-          (oid)
+<b>@nvt_oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
-<b>"details"</b>
-          (boolean)
+<b>@details</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"result"</b>
-          (boolean)
+<b>@result</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -3910,12 +4134,12 @@ get_lsc_credentials_response_lsc_credential_package
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -3924,8 +4148,8 @@ get_lsc_credentials_response_lsc_credential_package
 <b>
             &lt;nvt&gt;</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -3937,8 +4161,8 @@ get_lsc_credentials_response_lsc_credential_package
 <b>
             &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the note.</div>
 <ul style="list-style: none"><li>
-<b>"excerpt"</b>
-          (boolean)
+<b>@excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
           </li></ul>
 </li>
 <li>
@@ -3975,8 +4199,8 @@ get_lsc_credentials_response_lsc_credential_package
 <b>
             &lt;task&gt;</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -3984,8 +4208,8 @@ get_lsc_credentials_response_lsc_credential_package
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
 <ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -4003,8 +4227,8 @@ get_lsc_credentials_response_lsc_credential_package
 <b>
             &lt;nvt&gt;</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -4037,7 +4261,7 @@ get_lsc_credentials_response_lsc_credential_package
 </ul>
 </li>
 </ul>
-<h4>2.27.2 RNC</h4>
+<h4>4.27.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_notes
@@ -4215,7 +4439,7 @@ get_notes_response_note_result_description
      }
 </pre>
 </div>
-<h4>2.27.1 Example: Get all notes</h4>
+<h4>4.27.1 Example: Get all notes</h4>
 <b>Client:</b><br><pre> &lt;get_notes/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
@@ -4229,7 +4453,7 @@ get_notes_response_note_result_description
    ...
  &lt;/get_notes_response&gt;
 </pre>
-<h4>2.27.1 Example: Get details of a single note</h4>
+<h4>4.27.1 Example: Get details of a single note</h4>
 <b>Client:</b><br><pre> &lt;get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
@@ -4265,8 +4489,8 @@ get_notes_response_note_result_description
 </pre>
 </div>
 <div>
-<div><h3 id="get_nvts">2.28
-          Command <tt>get_nvts</tt>
+<div><h3 id="command_get_nvts">4.28
+        Command <tt>get_nvts</tt>
 </h3></div>
 <p><b>In short: </b>Get all NVTs.</p>
 <p>
@@ -4296,53 +4520,53 @@ get_notes_response_note_result_description
         NVT information.  If the manager cannot access a list of available
         NVTs at that time, it will reply with the 503 response.
       </p>
-<h4>2.28.1 Breakdown</h4>
+<h4>4.28.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"nvt_oid"</b>
-          (oid)
+<b>@nvt_oid</b>
+          (<a href="#type_oid">oid</a>)
           Single NVT to get.
           </li>
 <li>
-<b>"details"</b>
-          (boolean)
+<b>@details</b>
+          (<a href="#type_boolean">boolean</a>)
           Whether to include full details.
           </li>
 <li>
-<b>"preferences"</b>
-          (boolean)
+<b>@preferences</b>
+          (<a href="#type_boolean">boolean</a>)
           Whether to include preference.
           </li>
 <li>
-<b>"preference_count"</b>
-          (boolean)
+<b>@preference_count</b>
+          (<a href="#type_boolean">boolean</a>)
           Whether to include preference count.
           </li>
 <li>
-<b>"timeout"</b>
-          (boolean)
+<b>@timeout</b>
+          (<a href="#type_boolean">boolean</a>)
           Whether to include the special timeout preference.
           </li>
 <li>
-<b>"config_id"</b>
-          (uuid)
+<b>@config_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of config to which to limit the NVT listing.
           </li>
 <li>
-<b>"family"</b>
-          (text)
+<b>@family</b>
+          (<a href="#type_text">text</a>)
           Family to which to limit NVT listing.
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -4350,19 +4574,19 @@ get_notes_response_note_result_description
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
             &lt;nvt&gt;</b><ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -4475,7 +4699,7 @@ get_notes_response_note_result_description
 </ul>
 </li>
 </ul>
-<h4>2.28.2 RNC</h4>
+<h4>4.28.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_nvts
@@ -4686,7 +4910,7 @@ get_nvts_response_nvt_preferences_preference_value
      }
 </pre>
 </div>
-<h4>2.28.1 Example: Get full NVT listing</h4>
+<h4>4.28.1 Example: Get full NVT listing</h4>
 <b>Client:</b><br><pre> &lt;get_nvts details="1" timeout="1" preference_count="1" preferences="1"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
@@ -4738,7 +4962,7 @@ get_nvts_response_nvt_preferences_preference_value
    ...
  &lt;/get_nvts_response&gt;
 </pre>
-<h4>2.28.1 Example: Get minimal information about one NVT</h4>
+<h4>4.28.1 Example: Get minimal information about one NVT</h4>
 <b>Client:</b><br><pre> &lt;get_nvts nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
@@ -4753,8 +4977,8 @@ get_nvts_response_nvt_preferences_preference_value
 </pre>
 </div>
 <div>
-<div><h3 id="get_nvt_families">2.29
-          Command <tt>get_nvt_families</tt>
+<div><h3 id="command_get_nvt_families">4.29
+        Command <tt>get_nvt_families</tt>
 </h3></div>
 <p><b>In short: </b>Get a list of all NVT families.</p>
 <p>
@@ -4762,25 +4986,25 @@ get_nvts_response_nvt_preferences_preference_value
         information.  If the command sent by the client was valid, the
         manager will reply with a list of NVT families to the client.
       </p>
-<h4>2.29.1 Breakdown</h4>
+<h4>4.29.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -4803,7 +5027,7 @@ get_nvts_response_nvt_preferences_preference_value
 </ul>
 </li>
 </ul>
-<h4>2.29.2 RNC</h4>
+<h4>4.29.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_nvt_families
@@ -4851,7 +5075,7 @@ get_nvt_families_response_families_family_max_nvt_count
      }
 </pre>
 </div>
-<h4>2.29.1 Example: Get the NVT families</h4>
+<h4>4.29.1 Example: Get the NVT families</h4>
 <b>Client:</b><br><pre> &lt;get_nvt_families/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_nvt_families_response status="200" status_text="OK"&gt;
@@ -4870,8 +5094,8 @@ get_nvt_families_response_families_family_max_nvt_count
 </pre>
 </div>
 <div>
-<div><h3 id="get_nvt_feed_checksum">2.30
-          Command <tt>get_nvt_feed_checksum</tt>
+<div><h3 id="command_get_nvt_feed_checksum">4.30
+        Command <tt>get_nvt_feed_checksum</tt>
 </h3></div>
 <p><b>In short: </b>Get checksum for entire NVT collection.</p>
 <p>
@@ -4894,37 +5118,37 @@ get_nvt_families_response_families_family_max_nvt_count
         files. If the manager cannot access a list of available NVTs at
         present, it will reply with the 503 response.
       </p>
-<h4>2.30.1 Breakdown</h4>
+<h4>4.30.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"algorithm"</b>
-          (text)
+<b>@algorithm</b>
+          (<a href="#type_text">text</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
             &lt;checksum&gt;</b><ul style="list-style: none"><li>
-<b>"algorithm"</b>
-          (text)
+<b>@algorithm</b>
+          (<a href="#type_text">text</a>)
           </li></ul>
 </li>
 </ul>
 </li>
 </ul>
-<h4>2.30.2 RNC</h4>
+<h4>4.30.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_nvt_feed_checksum
@@ -4952,7 +5176,7 @@ get_nvt_feed_checksum_response_checksum
      }
 </pre>
 </div>
-<h4>2.30.1 Example: Get the NVT feed checksum</h4>
+<h4>4.30.1 Example: Get the NVT feed checksum</h4>
 <b>Client:</b><br><pre> &lt;get_nvt_feed_checksum/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_nvt_feed_checksum_response status="200" status_text="OK"&gt;
@@ -4961,8 +5185,8 @@ get_nvt_feed_checksum_response_checksum
 </pre>
 </div>
 <div>
-<div><h3 id="get_overrides">2.31
-          Command <tt>get_overrides</tt>
+<div><h3 id="command_get_overrides">4.31
+        Command <tt>get_overrides</tt>
 </h3></div>
 <p><b>In short: </b>Get all overrides.</p>
 <p>
@@ -4970,39 +5194,39 @@ get_nvt_feed_checksum_response_checksum
       If the command sent by the client was valid, the manager will
       reply with a list of overrides to the client.
     </p>
-<h4>2.31.1 Breakdown</h4>
+<h4>4.31.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"override_id"</b>
-          (uuid)
+<b>@override_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of single override to get.
           </li>
 <li>
-<b>"nvt_oid"</b>
-          (oid)
+<b>@nvt_oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
-<b>"details"</b>
-          (boolean)
+<b>@details</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"result"</b>
-          (boolean)
+<b>@result</b>
+          (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-<b>"sort_order"</b>
-          (sort_order)
+<b>@sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
           </li>
 <li>
-<b>"sort_field"</b>
-          (text)
+<b>@sort_field</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
@@ -5010,12 +5234,12 @@ get_nvt_feed_checksum_response_checksum
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -5024,8 +5248,8 @@ get_nvt_feed_checksum_response_checksum
 <b>
             &lt;nvt&gt;</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -5037,8 +5261,8 @@ get_nvt_feed_checksum_response_checksum
 <b>
             &lt;text&gt;</b><div style="margin-left: 15px; display: inline;">The text of the override.</div>
 <ul style="list-style: none"><li>
-<b>"excerpt"</b>
-          (boolean)
+<b>@excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
           </li></ul>
 </li>
 <li>
@@ -5080,8 +5304,8 @@ get_nvt_feed_checksum_response_checksum
 <b>
             &lt;task&gt;</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -5089,8 +5313,8 @@ get_nvt_feed_checksum_response_checksum
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
 <ul style="list-style: none">
 <li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
 <b>
@@ -5108,8 +5332,8 @@ get_nvt_feed_checksum_response_checksum
 <b>
             &lt;nvt&gt;</b><ul style="list-style: none">
 <li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
 <b>
@@ -5142,7 +5366,7 @@ get_nvt_feed_checksum_response_checksum
 </ul>
 </li>
 </ul>
-<h4>2.31.2 RNC</h4>
+<h4>4.31.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_overrides
@@ -5327,7 +5551,7 @@ get_overrides_response_override_result_description
      }
 </pre>
 </div>
-<h4>2.31.1 Example: Get all overrides</h4>
+<h4>4.31.1 Example: Get all overrides</h4>
 <b>Client:</b><br><pre> &lt;get_overrides/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
@@ -5343,7 +5567,7 @@ get_overrides_response_override_result_description
    ...
  &lt;/get_overrides_response&gt;
 </pre>
-<h4>2.31.1 Example: Get details of a single override</h4>
+<h4>4.31.1 Example: Get details of a single override</h4>
 <b>Client:</b><br><pre> &lt;get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
@@ -5369,11 +5593,11 @@ get_overrides_response_override_result_description
 </pre>
 </div>
 <div>
-<div><h3 id="get_version">2.32
-          Command <tt>get_version</tt>
+<div><h3 id="command_get_version">4.32
+        Command <tt>get_version</tt>
 </h3></div>
 <p><b>In short: </b>Get the OpenVAS Manager Protocol version.</p>
-<h4>2.32.1 Breakdown</h4>
+<h4>4.32.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -5383,12 +5607,12 @@ get_overrides_response_override_result_description
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
 <b>
@@ -5397,7 +5621,7 @@ get_overrides_response_override_result_description
 </ul>
 </li>
 </ul>
-<h4>2.32.2 RNC</h4>
+<h4>4.32.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>get_version
@@ -5423,7 +5647,7 @@ get_version_response_version
      }
 </pre>
 </div>
-<h4>2.32.1 Example: Get the version</h4>
+<h4>4.32.1 Example: Get the version</h4>
 <b>Client:</b><br><pre> &lt;get_version/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;get_version_response status="200" status_text="OK"&gt;
@@ -5432,11 +5656,11 @@ get_version_response_version
 </pre>
 </div>
 <div>
-<div><h3 id="help">2.33
-          Command <tt>help</tt>
+<div><h3 id="command_help">4.33
+        Command <tt>help</tt>
 </h3></div>
 <p><b>In short: </b>Get the help text.</p>
-<h4>2.33.1 Breakdown</h4>
+<h4>4.33.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
@@ -5446,17 +5670,17 @@ get_version_response_version
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.33.2 RNC</h4>
+<h4>4.33.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>help
@@ -5477,8 +5701,8 @@ get_version_response_version
 </div>
 </div>
 <div>
-<div><h3 id="modify_config">2.34
-          Command <tt>modify_config</tt>
+<div><h3 id="command_modify_config">4.34
+        Command <tt>modify_config</tt>
 </h3></div>
 <p><b>In short: </b>Update an existing config.</p>
 <p>
@@ -5528,14 +5752,14 @@ get_version_response_version
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>2.34.1 Breakdown</h4>
+<h4>4.34.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"config_id"</b>
-          (uuid)
+<b>@config_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of config to modify.
           </li>
 <li>
@@ -5552,8 +5776,8 @@ get_version_response_version
 <b>
             &lt;nvt&gt;?</b><div style="margin-left: 15px; display: inline;">NVT associated with preference to modify.</div>
 <ul style="list-style: none"><li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li></ul>
 </li>
 <li>
@@ -5603,8 +5827,8 @@ get_version_response_version
 <li>
 <b>
             &lt;nvt&gt;*</b><ul style="list-style: none"><li>
-<b>"oid"</b>
-          (oid)
+<b>@oid</b>
+          (<a href="#type_oid">oid</a>)
           </li></ul>
 </li>
 </ul>
@@ -5617,17 +5841,17 @@ get_version_response_version
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.34.2 RNC</h4>
+<h4>4.34.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_config
@@ -5740,7 +5964,7 @@ modify_config_nvt_selection_nvt
      }
 </pre>
 </div>
-<h4>2.34.1 Example: Modify a config preference</h4>
+<h4>4.34.1 Example: Modify a config preference</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
@@ -5751,7 +5975,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.34.1 Example: Modify the families that a config selects</h4>
+<h4>4.34.1 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -5775,7 +5999,7 @@ modify_config_nvt_selection_nvt
 </pre>
 <br><b>Manager:</b><br><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
 </pre>
-<h4>2.34.1 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>4.34.1 Example: Modify the NVTs that a config selects in a particular family</h4>
 <b>Client:</b><br><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
      &lt;family&gt;Debian Local Security Checks&lt;/family&gt;
@@ -5790,8 +6014,8 @@ modify_config_nvt_selection_nvt
 </pre>
 </div>
 <div>
-<div><h3 id="modify_note">2.35
-          Command <tt>modify_note</tt>
+<div><h3 id="command_modify_note">4.35
+        Command <tt>modify_note</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing note.</p>
 <p>
@@ -5801,14 +6025,14 @@ modify_config_nvt_selection_nvt
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.35.1 Breakdown</h4>
+<h4>4.35.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"note_id"</b>
-          (uuid)
+<b>@note_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of note to modify.
           </li>
 <li>
@@ -5825,16 +6049,16 @@ modify_config_nvt_selection_nvt
 <b>
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -5853,17 +6077,17 @@ modify_config_nvt_selection_nvt
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.35.2 RNC</h4>
+<h4>4.35.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_note
@@ -5927,7 +6151,7 @@ modify_note_result
      }
 </pre>
 </div>
-<h4>2.35.1 Example: Modify the text and result of a note</h4>
+<h4>4.35.1 Example: Modify the text and result of a note</h4>
 <b>Client:</b><br><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
    &lt;result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/&gt;
@@ -5937,8 +6161,8 @@ modify_note_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_override">2.36
-          Command <tt>modify_override</tt>
+<div><h3 id="command_modify_override">4.36
+        Command <tt>modify_override</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing override.</p>
 <p>
@@ -5949,14 +6173,14 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>2.36.1 Breakdown</h4>
+<h4>4.36.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"override_id"</b>
-          (uuid)
+<b>@override_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of override to modify.
           </li>
 <li>
@@ -5978,16 +6202,16 @@ modify_note_result
 <b>
             &lt;result&gt;?</b><div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <b>
             &lt;task&gt;?</b><div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -6006,17 +6230,17 @@ modify_note_result
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.36.2 RNC</h4>
+<h4>4.36.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_override
@@ -6087,7 +6311,7 @@ modify_override_result
      }
 </pre>
 </div>
-<h4>2.36.1 Example: Set the override threat to Low</h4>
+<h4>4.36.1 Example: Set the override threat to Low</h4>
 <b>Client:</b><br><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
    &lt;new_threat&gt;Low&lt;/new_threat&gt;
@@ -6097,22 +6321,22 @@ modify_override_result
 </pre>
 </div>
 <div>
-<div><h3 id="modify_report">2.37
-          Command <tt>modify_report</tt>
+<div><h3 id="command_modify_report">4.37
+        Command <tt>modify_report</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing report.</p>
 <p>
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>2.37.1 Breakdown</h4>
+<h4>4.37.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"report_id"</b>
-          (uuid)
+<b>@report_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of report to modify.
           </li>
 <li>
@@ -6126,17 +6350,17 @@ modify_override_result
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.37.2 RNC</h4>
+<h4>4.37.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_report
@@ -6163,7 +6387,7 @@ modify_report_comment
      }
 </pre>
 </div>
-<h4>2.37.1 Example: Modify a report comment</h4>
+<h4>4.37.1 Example: Modify a report comment</h4>
 <b>Client:</b><br><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_report&gt;
@@ -6172,22 +6396,22 @@ modify_report_comment
 </pre>
 </div>
 <div>
-<div><h3 id="modify_task">2.38
-          Command <tt>modify_task</tt>
+<div><h3 id="command_modify_task">4.38
+        Command <tt>modify_task</tt>
 </h3></div>
 <p><b>In short: </b>Modify an existing task.</p>
 <p>
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>2.38.1 Breakdown</h4>
+<h4>4.38.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none">
 <li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           ID of task to modify.
           </li>
 <li>
@@ -6201,8 +6425,8 @@ modify_report_comment
 <b>
             &lt;escalator&gt;</b><div style="margin-left: 15px; display: inline;">Task escalator.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -6219,8 +6443,8 @@ modify_report_comment
 <b>
             &lt;schedule&gt;</b><div style="margin-left: 15px; display: inline;">Task schedule.</div>
 <ul style="list-style: none"><li>
-<b>"id"</b>
-          (uuid)
+<b>@id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
@@ -6228,11 +6452,11 @@ modify_report_comment
             &lt;file&gt;</b><div style="margin-left: 15px; display: inline;">File to attach to task.</div>
 <ul style="list-style: none">
 <li>
-<b>"name"</b>
-          (text)
+<b>@name</b>
+          (<a href="#type_text">text</a>)
           </li>
 <li>
-<b>"action"</b>
+<b>@action</b>
           ("update" or "remove")
           </li>
 </ul>
@@ -6245,17 +6469,17 @@ modify_report_comment
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.38.2 RNC</h4>
+<h4>4.38.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>modify_task
@@ -6321,7 +6545,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.38.1 Example: Modify a task comment</h4>
+<h4>4.38.1 Example: Modify a task comment</h4>
 <b>Client:</b><br><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_task&gt;
@@ -6330,37 +6554,37 @@ modify_task_file
 </pre>
 </div>
 <div>
-<div><h3 id="pause_task">2.39
-          Command <tt>pause_task</tt>
+<div><h3 id="command_pause_task">4.39
+        Command <tt>pause_task</tt>
 </h3></div>
 <p><b>In short: </b>Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
       </p>
-<h4>2.39.1 Breakdown</h4>
+<h4>4.39.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.39.2 RNC</h4>
+<h4>4.39.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>pause_task
@@ -6380,15 +6604,15 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.39.1 Example: Pause a running task</h4>
+<h4>4.39.1 Example: Pause a running task</h4>
 <b>Client:</b><br><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_or_start_task">2.40
-          Command <tt>resume_or_start_task</tt>
+<div><h3 id="command_resume_or_start_task">4.40
+        Command <tt>resume_or_start_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume task if stopped, else start task.</p>
 <p>
@@ -6396,30 +6620,30 @@ modify_task_file
         an existing task, ensuring that the task will resume from its
         previous position if the task is in the Stopped state.
       </p>
-<h4>2.40.1 Breakdown</h4>
+<h4>4.40.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.40.2 RNC</h4>
+<h4>4.40.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_or_start_task
@@ -6439,45 +6663,45 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.40.1 Example: Resume a running task</h4>
+<h4>4.40.1 Example: Resume a running task</h4>
 <b>Client:</b><br><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_paused_task">2.41
-          Command <tt>resume_paused_task</tt>
+<div><h3 id="command_resume_paused_task">4.41
+        Command <tt>resume_paused_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume a paused task.</p>
 <p>
         The client uses the resume_paused_task command to manually resume a
         paused task.
       </p>
-<h4>2.41.1 Breakdown</h4>
+<h4>4.41.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.41.2 RNC</h4>
+<h4>4.41.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_paused_task
@@ -6497,45 +6721,45 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.41.1 Example: Resume a paused task</h4>
+<h4>4.41.1 Example: Resume a paused task</h4>
 <b>Client:</b><br><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="resume_stopped_task">2.42
-          Command <tt>resume_stopped_task</tt>
+<div><h3 id="command_resume_stopped_task">4.42
+        Command <tt>resume_stopped_task</tt>
 </h3></div>
 <p><b>In short: </b>Resume a stopped task.</p>
 <p>
         The client uses the resume_stopped_task command to manually resume a
         stopped task.
       </p>
-<h4>2.42.1 Breakdown</h4>
+<h4>4.42.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.42.2 RNC</h4>
+<h4>4.42.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>resume_stopped_task
@@ -6555,45 +6779,45 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.42.1 Example: Resume a stopped task</h4>
+<h4>4.42.1 Example: Resume a stopped task</h4>
 <b>Client:</b><br><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="start_task">2.43
-          Command <tt>start_task</tt>
+<div><h3 id="command_start_task">4.43
+        Command <tt>start_task</tt>
 </h3></div>
 <p><b>In short: </b>Manually start an existing task.</p>
 <p>
         The client uses the start_task command to manually start an
         existing task.
       </p>
-<h4>2.43.1 Breakdown</h4>
+<h4>4.43.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.43.2 RNC</h4>
+<h4>4.43.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>start_task
@@ -6613,45 +6837,45 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.43.1 Example: Start a task</h4>
+<h4>4.43.1 Example: Start a task</h4>
 <b>Client:</b><br><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="stop_task">2.44
-          Command <tt>stop_task</tt>
+<div><h3 id="command_stop_task">4.44
+        Command <tt>stop_task</tt>
 </h3></div>
 <p><b>In short: </b>Stop a running task.</p>
 <p>
         The client uses the stop_task command to manually stop a
         running task.
       </p>
-<h4>2.44.1 Breakdown</h4>
+<h4>4.44.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.44.2 RNC</h4>
+<h4>4.44.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>stop_task
@@ -6671,45 +6895,45 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.44.1 Example: Stop a running task</h4>
+<h4>4.44.1 Example: Stop a running task</h4>
 <b>Client:</b><br><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
 </pre>
 </div>
 <div>
-<div><h3 id="test_escalator">2.45
-          Command <tt>test_escalator</tt>
+<div><h3 id="command_test_escalator">4.45
+        Command <tt>test_escalator</tt>
 </h3></div>
 <p><b>In short: </b>Run an escalator.</p>
 <p>
         The client uses the test_escalator command to invoke a test run of
         an escalator.
       </p>
-<h4>2.45.1 Breakdown</h4>
+<h4>4.45.1 Breakdown</h4>
 <ul style="list-style: none">
 <li>
 <div style="font-weight:bold;">Command</div>
 <ul style="list-style: none"><li>
-<b>"task_id"</b>
-          (uuid)
+<b>@task_id</b>
+          (<a href="#type_uuid">uuid</a>)
           </li></ul>
 </li>
 <li>
 <div style="font-weight:bold;">Response</div>
 <ul style="list-style: none">
 <li>
-<b>"status"</b>
-          (status)
+<b>@status</b>
+          (<a href="#type_status">status</a>)
           </li>
 <li>
-<b>"status_text"</b>
-          (text)
+<b>@status_text</b>
+          (<a href="#type_text">text</a>)
           </li>
 </ul>
 </li>
 </ul>
-<h4>2.45.2 RNC</h4>
+<h4>4.45.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <div style="font-weight:bold;">Command</div>
 <pre>test_escalator
@@ -6729,7 +6953,7 @@ modify_task_file
      }
 </pre>
 </div>
-<h4>2.45.1 Example: Test an escalator</h4>
+<h4>4.45.1 Example: Test an escalator</h4>
 <b>Client:</b><br><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre>
 <br><b>Manager:</b><br><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;
