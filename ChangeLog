@@ -1,5 +1,11 @@
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add GET_PREFERENCES.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (type): Skip link for type "text".
 
 	* doc/omp.html: Update from source.

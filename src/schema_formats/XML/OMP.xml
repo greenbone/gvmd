@@ -2101,7 +2101,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
             <ele>
               <name>nvt</name>
-              <summary>NVT to which override applies</summary>
+              <summary>NVT to which preference applies</summary>
               <pattern>
                 <attrib>
                   <name>oid</name>
@@ -2118,7 +2118,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>name</name>
-              <summary>The name of the family</summary>
+              <summary>The name of the preference</summary>
               <pattern><t>name</t></pattern>
             </ele>
             <ele>
@@ -3719,6 +3719,167 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_preferences</name>
+    <summary>Get all preferences</summary>
+    <description>
+      <p>
+        The client uses the get_preferences command to get preference information.
+        If the command sent by the client was valid, the manager will reply with
+        a list of preferences to the client.  If the manager cannot access a list
+        of available NVTs at present, it will reply with the 503 response.
+      </p>
+      <p>
+        When the command includes a config_id attribute, the preference element
+        includes the preference name, type and value, and the NVT to which the
+        preference applies.  Otherwise, the preference element includes just the
+        name and value, with the NVT and type built into the name.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>nvt_oid</name>
+        <type>oid</type>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>ID of config of which to show preference values</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>preference</name>
+        <summary>The name of a particular preference to get</summary>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <o><e>nvt</e></o>
+          <e>name</e>
+          <o><e>type</e></o>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <summary>NVT to which preference applies</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the NVT</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the preference</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>The value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get default preferences for all NVTs</summary>
+      <request>
+        <get_preferences></get_preferences>
+      </request>
+      <response>
+        <get_preferences_response status="200" status_text="OK">
+          <preference>
+            <name>Services[entry]:Network connection timeout :</name>
+            <value>5</value>
+          </preference>
+          <truncated>...</truncated>
+        </get_preferences_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get default preferences for a single NVT</summary>
+      <request>
+        <get_preferences nvt_oid="1.3.6.1.4.1.25623.1.0.10330">
+        </get_preferences>
+      </request>
+      <response>
+        <get_preferences_response status="200" status_text="OK">
+          <preference>
+            <name>Services[entry]:Network connection timeout :</name>
+            <value>5</value>
+          </preference>
+          <truncated>...</truncated>
+        </get_preferences_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get preferences from a config for all NVTs</summary>
+      <request>
+        <get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea">
+        </get_preferences>
+      </request>
+      <response>
+        <get_preferences_response status="200" status_text="OK">
+          <preference>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+              <name>Services</name>
+            </nvt>
+            <name>Network connection timeout :</name>
+            <type>entry</type>
+            <value>5</value>
+          </preference>
+          <truncated>...</truncated>
+        </get_preferences_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get preferences from a config for a single NVT</summary>
+      <request>
+        <get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea"
+                         nvt_oid="1.3.6.1.4.1.25623.1.0.10330">
+        </get_preferences>
+      </request>
+      <response>
+        <get_preferences nvt_oid="1.3.6.1.4.1.25623.1.0.10330">
+          <preference>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+              <name>Services</name>
+            </nvt>
+            <name>Network connection timeout :</name>
+            <type>entry</type>
+            <value>5</value>
+          </preference>
+        </get_preferences>
       </response>
     </example>
   </command>

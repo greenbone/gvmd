@@ -40,6 +40,7 @@ command
     | get_nvt_families
     | get_nvt_feed_checksum
     | get_overrides
+    | get_preferences
     | get_version
     | help
     | modify_config
@@ -87,6 +88,7 @@ response
     | get_nvt_families_response
     | get_nvt_feed_checksum_response
     | get_overrides_response
+    | get_preferences_response
     | get_version_response
     | help_response
     | modify_config_response
@@ -1082,6 +1084,21 @@ get_overrides
        & attribute sort_field { text }?
      }
 
+## Command get_preferences
+##
+## Get all preferences.
+
+get_preferences
+ = element get_preferences
+     {
+       ""
+       & attribute nvt_oid { oid }?
+       & # ID of config of which to show preference values.
+       attribute config_id { uuid }?
+       & # The name of a particular preference to get.
+       attribute preference { text }?
+     }
+
 ## Command get_version
 ##
 ## Get the OpenVAS Manager Protocol version.
@@ -1972,7 +1989,7 @@ get_configs_response_config_preferences_preference
        & get_configs_response_config_preferences_preference_value
      }
 
-# NVT to which override applies.
+# NVT to which preference applies.
 get_configs_response_config_preferences_preference_nvt
  = element nvt
      {
@@ -1988,7 +2005,7 @@ get_configs_response_config_preferences_preference_nvt_name
        name
      }
 
-# The name of the family.
+# The name of the preference.
 get_configs_response_config_preferences_preference_name
  = element name
      {
@@ -2862,6 +2879,64 @@ get_overrides_response_override_result_threat
 
 get_overrides_response_override_result_description
  = element description
+     {
+       text
+     }
+
+## Response to get_preferences
+
+get_preferences_response
+ = element get_preferences_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_preferences_response_preference*
+     }
+
+get_preferences_response_preference
+ = element preference
+     {
+       ""
+       & get_preferences_response_preference_nvt?
+       & get_preferences_response_preference_name
+       & get_preferences_response_preference_type?
+       & get_preferences_response_preference_value
+     }
+
+# NVT to which preference applies.
+get_preferences_response_preference_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_preferences_response_preference_nvt_name
+     }
+
+# The name of the NVT.
+get_preferences_response_preference_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The name of the preference.
+get_preferences_response_preference_name
+ = element name
+     {
+       name
+     }
+
+# The type of preference.
+get_preferences_response_preference_type
+ = element type
+     {
+       text
+     }
+
+# The value of the preference.
+get_preferences_response_preference_value
+ = element value
      {
        text
      }
