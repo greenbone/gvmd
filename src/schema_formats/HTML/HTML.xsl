@@ -250,7 +250,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="name() = 'attrib'">
         <li>
-          <b>@<xsl:value-of select="name"/></b>
+          @<b><xsl:value-of select="name"/></b>
           (<xsl:apply-templates select="type"/>)
           <xsl:if test="summary">
             <xsl:value-of select="normalize-space(summary)"/>.
@@ -260,9 +260,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:when test="name() = 'r'">
         <li>
           <xsl:variable name="element-name" select="text()"/>
-          <b>
-            &lt;<xsl:value-of select="text()"/>&gt;<xsl:value-of select="$element-suffix"/>
-          </b>
+          &lt;<b><xsl:value-of select="text()"/>&gt;</b>
+          <xsl:value-of select="$element-suffix"/>
           <div style="margin-left: 15px; display: inline;">
             A response to a <a href="#command_{$element-name}"><xsl:value-of select="$element-name"/></a> command.
           </div>
@@ -273,9 +272,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:variable name="element-name" select="text()"/>
           <xsl:variable name="new-line-element"
                         select="$line-element/ele[name=$element-name]"/>
-          <b>
-            &lt;<xsl:value-of select="text()"/>&gt;<xsl:value-of select="$element-suffix"/>
-          </b>
+          &lt;<b><xsl:value-of select="text()"/></b>&gt;
+          <xsl:value-of select="$element-suffix"/>
           <xsl:if test="$new-line-element/summary">
             <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($new-line-element/summary)"/>.</div>
           </xsl:if>
@@ -350,7 +348,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         Command <tt><xsl:value-of select="name"/></tt></h3>
       </div>
 
-      <p><b>In short: </b><xsl:value-of select="normalize-space(summary)"/>.</p>
+      <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
 
       <xsl:apply-templates select="description"/>
 
@@ -358,11 +356,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <ul style="list-style: none">
         <li>
-          <div style="font-weight:bold;">Command</div>
+          <i>Command</i>
           <xsl:call-template name="command-breakdown"/>
         </li>
-        <li>
-          <div style="font-weight:bold;">Response</div>
+        <li style="margin-top: 15px;">
+          <i>Response</i>
           <xsl:for-each select="response">
             <xsl:call-template name="command-breakdown"/>
           </xsl:for-each>
@@ -372,10 +370,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <h4><xsl:value-of select="$index"/>.2 RNC</h4>
 
       <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-        <div style="font-weight:bold;">Command</div>
-        <xsl:call-template name="command-relax"/>
-        <div style="font-weight:bold;">Response</div>
-        <xsl:call-template name="response-relax"/>
+        <i>Command</i>
+        <div style="margin-left: 5%">
+          <xsl:call-template name="command-relax"/>
+        </div>
+        <i>Response</i>
+        <div style="margin-left: 5%">
+          <xsl:call-template name="response-relax"/>
+        </div>
       </div>
 
       <xsl:choose>
