@@ -21330,7 +21330,8 @@ DEF_ACCESS (slave_task_iterator_uuid, 1);
  * @brief Generate the OMP schema.
  *
  * @param[in]  format         Name of schema format, "XML" or NULL for XML.
- * @param[out] output_length  NULL or location for length of return.
+ * @param[out] output_return  NULL or location for output.
+ * @param[out] output_length  NULL or location for length of output.
  * @param[out] extension      NULL or location for report format extension.
  * @param[out] content_type   NULL or location for report format content type.
  *
