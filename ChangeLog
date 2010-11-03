@@ -1,5 +1,9 @@
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl: Remove more bold.
+
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl: Rename command "breakdown" to
 	"structure".
 

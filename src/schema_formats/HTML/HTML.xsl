@@ -385,19 +385,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:for-each select="example">
             <h4><xsl:value-of select="$index"/>.1 Example: <xsl:value-of select="summary"/></h4>
             <xsl:apply-templates select="description"/>
-            <b>Client:</b><br/>
-            <xsl:for-each select="request/*">
-              <pre>
-                <xsl:call-template name="pretty"/>
-              </pre>
-            </xsl:for-each>
-            <br/>
-            <b>Manager:</b><br/>
-            <xsl:for-each select="response/*">
-              <pre>
-                <xsl:call-template name="pretty"/>
-              </pre>
-            </xsl:for-each>
+            <div style="margin-left: 5%; margin-right: 5%;">
+              <i>Client</i>
+              <div style="margin-left: 2%; margin-right: 2%;">
+                <xsl:for-each select="request/*">
+                  <pre>
+                    <xsl:call-template name="pretty"/>
+                  </pre>
+                </xsl:for-each>
+              </div>
+              <i>Manager</i>
+              <div style="margin-left: 2%; margin-right: 2%;">
+                <xsl:for-each select="response/*">
+                  <pre>
+                    <xsl:call-template name="pretty"/>
+                  </pre>
+                </xsl:for-each>
+              </div>
+            </div>
           </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
