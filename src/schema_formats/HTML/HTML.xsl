@@ -168,7 +168,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="type-summary">
-    <h2 id="command_summary">1 Summary of Data Types</h2>
+    <h2 id="type_summary">1 Summary of Data Types</h2>
     <table id="index">
     <xsl:apply-templates select="type" mode="index"/>
     </table>
@@ -462,6 +462,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <xsl:if test="summary">
                   <p><xsl:value-of select="normalize-space(summary)"/>.</p>
                 </xsl:if>
+
+                <h2 id="contents">Contents</h2>
+                <ol>
+                  <li><a href="#type_summary">Type Summary</a></li>
+                  <li><a href="#command_summary">Command Summary</a></li>
+                  <li><a href="#type_details">Type Details</a></li>
+                  <li><a href="#command_details">Command Details</a></li>
+                </ol>
 
                 <xsl:call-template name="type-summary"/>
                 <xsl:call-template name="command-summary"/>
