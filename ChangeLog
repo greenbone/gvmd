@@ -1,5 +1,10 @@
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl: Rename command "breakdown" to
+	"structure".
+
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl: Reduce the amount of bold, so that the
 	headings stand out a bit better.
 

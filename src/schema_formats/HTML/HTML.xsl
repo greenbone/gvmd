@@ -236,13 +236,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template name="breakdown-line">
+  <xsl:template name="structure-line">
     <xsl:param name="line-element"/>
     <xsl:param name="element-suffix"/>
     <xsl:choose>
       <xsl:when test="name() = 'any'">
         <xsl:for-each select="*">
-          <xsl:call-template name="breakdown-line">
+          <xsl:call-template name="structure-line">
             <xsl:with-param name="line-element" select="$line-element"/>
             <xsl:with-param name="element-suffix" select="'*'"/>
           </xsl:call-template>
@@ -279,7 +279,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:if>
           <ul style="list-style: none">
             <xsl:for-each select="$new-line-element/pattern/*">
-              <xsl:call-template name="breakdown-line">
+              <xsl:call-template name="structure-line">
                 <xsl:with-param name="line-element" select="$new-line-element"/>
               </xsl:call-template>
             </xsl:for-each>
@@ -291,7 +291,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <i>The group</i><b><xsl:value-of select="$element-suffix"/></b>
           <ul style="list-style: none">
             <xsl:for-each select="*">
-              <xsl:call-template name="breakdown-line">
+              <xsl:call-template name="structure-line">
                 <xsl:with-param name="line-element" select="$line-element"/>
               </xsl:call-template>
             </xsl:for-each>
@@ -300,7 +300,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="name() = 'o'">
         <xsl:for-each select="*">
-          <xsl:call-template name="breakdown-line">
+          <xsl:call-template name="structure-line">
             <xsl:with-param name="line-element" select="$line-element"/>
             <xsl:with-param name="element-suffix" select="'?'"/>
           </xsl:call-template>
@@ -311,7 +311,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <i>One of</i>
           <ul style="list-style: none">
             <xsl:for-each select="*">
-              <xsl:call-template name="breakdown-line">
+              <xsl:call-template name="structure-line">
                 <xsl:with-param name="line-element" select="$line-element"/>
               </xsl:call-template>
             </xsl:for-each>
@@ -321,7 +321,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template name="command-breakdown">
+  <xsl:template name="command-structure">
     <ul style="list-style: none">
       <xsl:choose>
         <xsl:when test="(count(pattern/*) = 0) and (string-length(normalize-space(pattern)) = 0)">
@@ -330,7 +330,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:otherwise>
           <xsl:variable name="command" select="."/>
           <xsl:for-each select="pattern/*">
-            <xsl:call-template name="breakdown-line">
+            <xsl:call-template name="structure-line">
               <xsl:with-param name="line-element" select="$command"/>
             </xsl:call-template>
           </xsl:for-each>
@@ -352,17 +352,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <xsl:apply-templates select="description"/>
 
-      <h4><xsl:value-of select="$index"/>.1 Breakdown</h4>
+      <h4><xsl:value-of select="$index"/>.1 Structure</h4>
 
       <ul style="list-style: none">
         <li>
           <i>Command</i>
-          <xsl:call-template name="command-breakdown"/>
+          <xsl:call-template name="command-structure"/>
         </li>
         <li style="margin-top: 15px;">
           <i>Response</i>
           <xsl:for-each select="response">
-            <xsl:call-template name="command-breakdown"/>
+            <xsl:call-template name="command-structure"/>
           </xsl:for-each>
         </li>
       </ul>
