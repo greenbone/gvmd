@@ -36,14 +36,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>boolean</name>
+    <summary>A true of false value</summary>
+    <description>
+      Zero is false, anything else is true.  As a result, the empty string is
+      considered true.
+    </description>
     <pattern>text</pattern>
   </type>
   <type>
     <name>boolean_atoi</name>
+    <summary>A true of false value, after conversion to an integer</summary>
+    <description>
+      Zero is false, anything else is true.  The value is first converted to
+      an integer, as by the C `atoi' routine.  This means that an empty string
+      is considered false.
+    </description>
     <pattern>text</pattern>
   </type>
   <type>
     <name>ctime</name>
+    <summary>A date and time, in the C `ctime' format</summary>
+    <description>
+      An example string in this format is "Wed Jun 30 21:49:08 1993\n".
+    </description>
     <pattern>text</pattern>
   </type>
   <type>
@@ -53,22 +68,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>name</name>
+    <summary>A name</summary>
+    <description>
+      Typically this is the name of one of the manager resources, like a
+      task or target.
+    </description>
     <pattern>xsd:string</pattern>
   </type>
   <type>
     <name>oid</name>
+    <summary>An Object Identifier (OID).</summary>
     <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
   </type>
   <type>
     <name>sort_order</name>
+    <summary>A string describing an order for sorting</summary>
+    <description>
+      The string "descending" denotes descending order, anything else means
+      ascending.
+    </description>
     <pattern>text</pattern>
   </type>
   <type>
     <name>status</name>
+    <summary>The success or failure status of a command</summary>
     <pattern>xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }</pattern>
   </type>
   <type>
     <name>threat</name>
+    <summary>A threat level</summary>
     <pattern>xsd:token { pattern = "High|Medium|Low|Log|Debug" }</pattern>
   </type>
   <type>
@@ -78,6 +106,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>uuid</name>
+    <summary>A Universally Unique Identifier (UUID)</summary>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
   </type>
   <command>

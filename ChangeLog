@@ -1,5 +1,9 @@
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add missing type summaries.
+
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl: Add a small contents section.
 
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
