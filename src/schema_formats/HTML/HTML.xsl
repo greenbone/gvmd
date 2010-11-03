@@ -154,6 +154,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
+  <!-- Types. -->
+
+  <xsl:template match="type" mode="index">
+    <tr id="index">
+      <td id="index"><a href="#{name}"><xsl:value-of select="name"/></a></td>
+      <td id="index">
+        <xsl:if test="summary">
+          <div style="margin-left: 15px;"><xsl:value-of select="normalize-space(summary)"/>.</div>
+        </xsl:if>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template name="type-summary">
+    <h2 id="command_summary">1 Summary of Data Types</h2>
+    <table id="index">
+    <xsl:apply-templates select="type" mode="index"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match="type" mode="details">
+    <xsl:param name="index">3.<xsl:value-of select="position()"/></xsl:param>
+    <div>
+      <div>
+        <h3 id="{name}">
+          <xsl:value-of select="$index"/>
+          Data Type <tt><xsl:value-of select="name"/></tt></h3>
+      </div>
+
+      <xsl:if test="summary">
+        <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
+      </xsl:if>
+
+      <xsl:apply-templates select="description"/>
+
+      <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+        <xsl:call-template name="command-relax"/>
+      </div>
+
+    </div>
+  </xsl:template>
+
+  <xsl:template name="type-details">
+    <h2 id="type_details">3 Data Type Details</h2>
+    <xsl:apply-templates select="type" mode="details"/>
+  </xsl:template>
+
   <!-- Commands. -->
 
   <xsl:template name="command-relax">
@@ -295,7 +342,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="command">
-    <xsl:param name="index">2.<xsl:value-of select="position()"/></xsl:param>
+    <xsl:param name="index">4.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
         <h3 id="{name}">
@@ -366,14 +413,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="command-summary">
-    <h2 id="command_summary">1 Summary of Commands</h2>
+    <h2 id="command_summary">2 Summary of Commands</h2>
     <table id="index">
     <xsl:apply-templates select="command" mode="index"/>
     </table>
   </xsl:template>
 
   <xsl:template name="command-details">
-    <h2 id="command_summary">2 Command Details</h2>
+    <h2 id="command_details">4 Command Details</h2>
     <xsl:apply-templates select="command"/>
   </xsl:template>
 
@@ -416,7 +463,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <p><xsl:value-of select="normalize-space(summary)"/>.</p>
                 </xsl:if>
 
+                <xsl:call-template name="type-summary"/>
                 <xsl:call-template name="command-summary"/>
+                <xsl:call-template name="type-details"/>
                 <xsl:call-template name="command-details"/>
 
                 <div style="text-align: center; padding: 5px;">

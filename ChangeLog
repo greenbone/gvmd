@@ -1,5 +1,9 @@
 2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl: Add "Data Types".
+
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl, src/schema_formats/RNC/RNC.xsl: Add
 	version.
 
