@@ -29,10 +29,14 @@ command
     | delete_target
     | delete_task
     | get_agents
+    | get_configs
+    | get_dependencies
+    | get_escalators
+    | get_lsc_credentials
+    | get_notes
     | get_nvts
     | get_nvt_families
     | get_nvt_feed_checksum
-    | get_notes
     | get_overrides
     | get_version
     | help
@@ -72,10 +76,14 @@ response
     | delete_target_response
     | delete_task_response
     | get_agents_response
+    | get_configs_response
+    | get_dependencies_response
+    | get_escalators_response
+    | get_lsc_credentials_response
+    | get_notes_response
     | get_nvts_response
     | get_nvt_families_response
     | get_nvt_feed_checksum_response
-    | get_notes_response
     | get_overrides_response
     | get_version_response
     | help_response
@@ -300,7 +308,7 @@ create_escalator_condition
  = element condition
      {
        text
-       & create_escalator_condition_data
+       & create_escalator_condition_data*
      }
 
 # Some data that defines the condition.
@@ -323,7 +331,7 @@ create_escalator_event
  = element event
      {
        text
-       & create_escalator_event_data
+       & create_escalator_event_data*
      }
 
 # Some data that defines the event.
@@ -346,7 +354,7 @@ create_escalator_method
  = element method
      {
        text
-       & create_escalator_method_data
+       & create_escalator_method_data*
      }
 
 # Some data that defines the method.
@@ -926,7 +934,82 @@ get_agents
        ""
        & # ID of single agent to get.
        attribute agent_id { uuid }?
-       & attribute format { installerhowto_installhowto_use }?
+       & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_configs
+##
+## Get all configs.
+
+get_configs
+ = element get_configs
+     {
+       ""
+       & # ID of single config to get.
+       attribute config_id { uuid }?
+       & attribute families { boolean }?
+       & attribute preferences { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_dependencies
+##
+## Get dependencies for all available NVTs.
+
+get_dependencies
+ = element get_dependencies
+     {
+       ""
+       & # ID of single NVT for which to get dependencies.
+       attribute nvt_oid { oid }?
+     }
+
+## Command get_escalators
+##
+## Get all escalators.
+
+get_escalators
+ = element get_escalators
+     {
+       ""
+       & # ID of single escalator to get.
+       attribute escalator_id { uuid }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_lsc_credentials
+##
+## Get all LSC credentials.
+
+get_lsc_credentials
+ = element get_lsc_credentials
+     {
+       ""
+       & # ID of single LSC credential to get.
+       attribute lsc_credential_id { uuid }?
+       & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_notes
+##
+## Get all notes.
+
+get_notes
+ = element get_notes
+     {
+       ""
+       & # ID of single note to get.
+       attribute note_id { uuid }?
+       & attribute nvt_oid { oid }?
+       & attribute task_id { uuid }?
+       & attribute details { boolean }?
+       & attribute result { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
      }
@@ -977,24 +1060,6 @@ get_nvt_feed_checksum
      {
        ""
        & attribute algorithm { text }?
-     }
-
-## Command get_notes
-##
-## Get all notes.
-
-get_notes
- = element get_notes
-     {
-       ""
-       & # ID of single note to get.
-       attribute note_id { uuid }?
-       & attribute nvt_oid { oid }?
-       & attribute task_id { uuid }?
-       & attribute details { boolean }?
-       & attribute result { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_overrides
@@ -1360,7 +1425,7 @@ modify_task_file
      {
        base64
        & attribute name { text }
-       & attribute action { updateremove }
+       & attribute action { xsd:token { pattern = "update|remove" } }
      }
 
 ## Command pause_task
@@ -1717,7 +1782,7 @@ get_agents_response_agent_installer
 get_agents_response_agent_installer_trust
  = element trust
      {
-       
+       xsd:token { pattern = "yes|no|unknown" }
      }
 
 # Either the installer or one of the HOWTOs.
@@ -1731,6 +1796,641 @@ get_agents_response_agent_package
 # The filename of the package.
 get_agents_response_agent_package_filename
  = element filename
+     {
+       text
+     }
+
+## Response to get_configs
+
+get_configs_response
+ = element get_configs_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_configs_response_config*
+     }
+
+get_configs_response_config
+ = element config
+     {
+       ""
+       & get_configs_response_config_name
+       & get_configs_response_config_comment
+       & get_configs_response_config_family_count
+       & get_configs_response_config_nvt_count
+       & get_configs_response_config_in_use
+       & get_configs_response_config_tasks
+       & get_configs_response_config_families?
+       & get_configs_response_config_preferences?
+     }
+
+# The name of the config.
+get_configs_response_config_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the config.
+get_configs_response_config_comment
+ = element comment
+     {
+       text
+     }
+
+# The number of families selected by the config.
+get_configs_response_config_family_count
+ = element family_count
+     {
+       integer
+       & get_configs_response_config_family_count_growing
+     }
+
+# 
+              Whether new families are automatically added to the
+              config
+            .
+get_configs_response_config_family_count_growing
+ = element growing
+     {
+       boolean
+     }
+
+# The number of NVTs selected by the config.
+get_configs_response_config_nvt_count
+ = element nvt_count
+     {
+       integer
+       & get_configs_response_config_nvt_count_growing
+     }
+
+# 
+              Whether new NVTs are automatically added to the config
+            .
+get_configs_response_config_nvt_count_growing
+ = element growing
+     {
+       boolean
+     }
+
+# Whether any tasks are using the config.
+get_configs_response_config_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# All tasks using the config.
+get_configs_response_config_tasks
+ = element tasks
+     {
+       ""
+       & get_configs_response_config_tasks_task*
+     }
+
+get_configs_response_config_tasks_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+       & get_configs_response_config_tasks_task_name
+     }
+
+# The name of the task.
+get_configs_response_config_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+# All families selected by the config.
+get_configs_response_config_families
+ = element families
+     {
+       ""
+       & get_configs_response_config_families_family*
+     }
+
+get_configs_response_config_families_family
+ = element family
+     {
+       ""
+       & get_configs_response_config_families_family_name
+       & get_configs_response_config_families_family_nvt_count
+       & get_configs_response_config_families_family_max_nvt_count
+       & get_configs_response_config_families_family_growing
+     }
+
+# The name of the family.
+get_configs_response_config_families_family_name
+ = element name
+     {
+       name
+     }
+
+# The number of NVTs selected in the family.
+get_configs_response_config_families_family_nvt_count
+ = element nvt_count
+     {
+       integer
+     }
+
+# The total number of NVTs in the family.
+get_configs_response_config_families_family_max_nvt_count
+ = element max_nvt_count
+     {
+       integer
+     }
+
+# 
+                Whether new NVTs in the family are automatically added to the selection
+              .
+get_configs_response_config_families_family_growing
+ = element growing
+     {
+       boolean
+     }
+
+# Preferences for all NVTs selected by the config.
+get_configs_response_config_preferences
+ = element preferences
+     {
+       ""
+       & get_configs_response_config_preferences_preference*
+     }
+
+get_configs_response_config_preferences_preference
+ = element preference
+     {
+       ""
+       & get_configs_response_config_preferences_preference_nvt
+       & get_configs_response_config_preferences_preference_name
+       & get_configs_response_config_preferences_preference_type
+       & get_configs_response_config_preferences_preference_value
+     }
+
+# NVT to which override applies.
+get_configs_response_config_preferences_preference_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_configs_response_config_preferences_preference_nvt_name
+     }
+
+# The name of the NVT.
+get_configs_response_config_preferences_preference_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The name of the family.
+get_configs_response_config_preferences_preference_name
+ = element name
+     {
+       name
+     }
+
+# The type of preference.
+get_configs_response_config_preferences_preference_type
+ = element type
+     {
+       text
+     }
+
+# The value of the preference.
+get_configs_response_config_preferences_preference_value
+ = element value
+     {
+       text
+     }
+
+## Response to get_dependencies
+
+get_dependencies_response
+ = element get_dependencies_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_dependencies_response_nvt*
+     }
+
+get_dependencies_response_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_dependencies_response_nvt_name
+       & get_dependencies_response_nvt_requires
+     }
+
+# The name of the NVT.
+get_dependencies_response_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_dependencies_response_nvt_requires
+ = element requires
+     {
+       ""
+       & get_dependencies_response_nvt_requires_nvt*
+     }
+
+get_dependencies_response_nvt_requires_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_dependencies_response_nvt_requires_nvt_name
+     }
+
+# The name of the NVT.
+get_dependencies_response_nvt_requires_nvt_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_escalators
+
+get_escalators_response
+ = element get_escalators_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_escalators_response_escalator*
+     }
+
+get_escalators_response_escalator
+ = element escalator
+     {
+       ""
+       & get_escalators_response_escalator_name
+       & get_escalators_response_escalator_comment
+       & get_escalators_response_escalator_in_use
+       & get_escalators_response_escalator_condition
+       & get_escalators_response_escalator_event
+       & get_escalators_response_escalator_method
+     }
+
+# The name of the escalator.
+get_escalators_response_escalator_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the escalator.
+get_escalators_response_escalator_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether any tasks are using the escalator.
+get_escalators_response_escalator_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# The condition that must be satisfied for escalation.
+get_escalators_response_escalator_condition
+ = element condition
+     {
+       text
+       & get_escalators_response_escalator_condition_data*
+     }
+
+# Some data that defines the condition.
+get_escalators_response_escalator_condition_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_condition_data_name
+     }
+
+# The name of the condition data.
+get_escalators_response_escalator_condition_data_name
+ = element name
+     {
+       text
+     }
+
+# The event that must happen for escalation.
+get_escalators_response_escalator_event
+ = element event
+     {
+       text
+       & get_escalators_response_escalator_event_data*
+     }
+
+# Some data that defines the event.
+get_escalators_response_escalator_event_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_event_data_name
+     }
+
+# The name of the event data.
+get_escalators_response_escalator_event_data_name
+ = element name
+     {
+       text
+     }
+
+# The method by which escalation must occur.
+get_escalators_response_escalator_method
+ = element method
+     {
+       text
+       & get_escalators_response_escalator_method_data*
+     }
+
+# Some data that defines the method.
+get_escalators_response_escalator_method_data
+ = element data
+     {
+       text
+       & get_escalators_response_escalator_method_data_name
+     }
+
+# The name of the method data.
+get_escalators_response_escalator_method_data_name
+ = element name
+     {
+       text
+     }
+
+## Response to get_lsc_credentials
+
+get_lsc_credentials_response
+ = element get_lsc_credentials_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_lsc_credentials_response_lsc_credential*
+     }
+
+get_lsc_credentials_response_lsc_credential
+ = element lsc_credential
+     {
+       ""
+       & attribute id { uuid }
+       & get_lsc_credentials_response_lsc_credential_name
+       & get_lsc_credentials_response_lsc_credential_login
+       & get_lsc_credentials_response_lsc_credential_comment
+       & get_lsc_credentials_response_lsc_credential_in_use
+       & get_lsc_credentials_response_lsc_credential_type
+       & get_lsc_credentials_response_lsc_credential_targets
+       & get_lsc_credentials_response_lsc_credential_public_key?
+       & get_lsc_credentials_response_lsc_credential_package?
+     }
+
+# The name of the LSC credential.
+get_lsc_credentials_response_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# The username of the LSC credential.
+get_lsc_credentials_response_lsc_credential_login
+ = element login
+     {
+       name
+     }
+
+# The comment on the LSC credential.
+get_lsc_credentials_response_lsc_credential_comment
+ = element comment
+     {
+       text
+     }
+
+# Whether any targets are using the LSC credential.
+get_lsc_credentials_response_lsc_credential_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# The type of the LSC credential.
+get_lsc_credentials_response_lsc_credential_type
+ = element type
+     {
+       xsd:token { pattern = "gen|pass" }
+     }
+
+# All targets using this LSC credential.
+get_lsc_credentials_response_lsc_credential_targets
+ = element targets
+     {
+       ""
+       & get_lsc_credentials_response_lsc_credential_targets_target*
+     }
+
+get_lsc_credentials_response_lsc_credential_targets_target
+ = element target
+     {
+       ""
+       & attribute id { uuid }
+       & get_lsc_credentials_response_lsc_credential_targets_target_name
+     }
+
+# The name of the target.
+get_lsc_credentials_response_lsc_credential_targets_target_name
+ = element name
+     {
+       name
+     }
+
+get_lsc_credentials_response_lsc_credential_public_key
+ = element public_key
+     {
+       text
+     }
+
+get_lsc_credentials_response_lsc_credential_package
+ = element package
+     {
+       base64
+       & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+## Response to get_notes
+
+get_notes_response
+ = element get_notes_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_notes_response_note*
+     }
+
+get_notes_response_note
+ = element note
+     {
+       ""
+       & get_notes_response_note_nvt
+       & get_notes_response_note_text
+       & get_notes_response_note_orphan
+       & ( get_notes_response_note_creation_time
+           & get_notes_response_note_modification_time
+           & get_notes_response_note_hosts
+           & get_notes_response_note_port
+           & get_notes_response_note_threat
+           & get_notes_response_note_task
+           & get_notes_response_note_result? )?
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+get_notes_response_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       ctime
+     }
+
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       ctime
+     }
+
+# A textual list of hosts.
+get_notes_response_note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+get_notes_response_note_port
+ = element port
+     {
+       text
+     }
+
+# Threat level to which note applies.
+get_notes_response_note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+get_notes_response_note_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+     }
+
+# Result to which note applies.
+get_notes_response_note_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+       & get_notes_response_note_result_subnet
+       & get_notes_response_note_result_host
+       & get_notes_response_note_result_port
+       & get_notes_response_note_result_nvt
+       & get_notes_response_note_result_threat
+       & get_notes_response_note_result_description
+     }
+
+get_notes_response_note_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_notes_response_note_result_host
+ = element host
+     {
+       text
+     }
+
+get_notes_response_note_result_port
+ = element port
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_notes_response_note_result_nvt_name
+       & get_notes_response_note_result_nvt_cvss_base
+       & get_notes_response_note_result_nvt_risk_factor
+     }
+
+get_notes_response_note_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+get_notes_response_note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+get_notes_response_note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_notes_response_note_result_description
+ = element description
      {
        text
      }
@@ -1753,9 +2453,22 @@ get_nvts_response_nvt
        & attribute id { uuid }
        & get_nvts_response_nvt_name
        & get_nvts_response_nvt_checksum
-       & 
-        ERROR
-      ?
+       & ( get_nvts_response_nvt_category
+           & get_nvts_response_nvt_copyright
+           & get_nvts_response_nvt_description
+           & get_nvts_response_nvt_summary
+           & get_nvts_response_nvt_family
+           & get_nvts_response_nvt_version
+           & get_nvts_response_nvt_cvss_base
+           & get_nvts_response_nvt_risk_factor
+           & get_nvts_response_nvt_cve_id
+           & get_nvts_response_nvt_bugtraq_id
+           & get_nvts_response_nvt_xrefs
+           & get_nvts_response_nvt_fingerprints
+           & get_nvts_response_nvt_tags
+           & get_nvts_response_nvt_preference_count?
+           & get_nvts_response_nvt_timeout?
+           & get_nvts_response_nvt_preferences? )?
      }
 
 # The name of the NVT.
@@ -1974,171 +2687,6 @@ get_nvt_feed_checksum_response_checksum
        & attribute algorithm { text }
      }
 
-## Response to get_notes
-
-get_notes_response
- = element get_notes_response
-     {
-       ""
-       & attribute status { status }
-       & attribute status_text { text }
-       & get_notes_response_note*
-     }
-
-get_notes_response_note
- = element note
-     {
-       ""
-       & get_notes_response_note_nvt
-       & get_notes_response_note_text
-       & get_notes_response_note_orphan
-       & 
-        ERROR
-      ?
-     }
-
-get_notes_response_note_nvt
- = element nvt
-     {
-       ""
-       & attribute oid { oid }
-       & get_notes_response_note_nvt_name
-     }
-
-get_notes_response_note_nvt_name
- = element name
-     {
-       name
-     }
-
-# The text of the note.
-get_notes_response_note_text
- = element text
-     {
-       text
-       & attribute excerpt { boolean }
-     }
-
-# Whether the note is an orphan.
-get_notes_response_note_orphan
- = element orphan
-     {
-       boolean
-     }
-
-get_notes_response_note_creation_time
- = element creation_time
-     {
-       ctime
-     }
-
-get_notes_response_note_modification_time
- = element modification_time
-     {
-       ctime
-     }
-
-# A textual list of hosts.
-get_notes_response_note_hosts
- = element hosts
-     {
-       text
-     }
-
-# Port to which note applies.
-get_notes_response_note_port
- = element port
-     {
-       text
-     }
-
-# Threat level to which note applies.
-get_notes_response_note_threat
- = element threat
-     {
-       threat
-     }
-
-# Task to which note applies.
-get_notes_response_note_task
- = element task
-     {
-       ""
-       & attribute id { uuid }
-     }
-
-# Result to which note applies.
-get_notes_response_note_result
- = element result
-     {
-       ""
-       & attribute id { uuid }
-       & get_notes_response_note_result_subnet
-       & get_notes_response_note_result_host
-       & get_notes_response_note_result_port
-       & get_notes_response_note_result_nvt
-       & get_notes_response_note_result_threat
-       & get_notes_response_note_result_description
-     }
-
-get_notes_response_note_result_subnet
- = element subnet
-     {
-       text
-     }
-
-get_notes_response_note_result_host
- = element host
-     {
-       text
-     }
-
-get_notes_response_note_result_port
- = element port
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt
- = element nvt
-     {
-       ""
-       & attribute oid { oid }
-       & get_notes_response_note_result_nvt_name
-       & get_notes_response_note_result_nvt_cvss_base
-       & get_notes_response_note_result_nvt_risk_factor
-     }
-
-get_notes_response_note_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_result_nvt_cvss_base
- = element cvss_base
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt_risk_factor
- = element risk_factor
-     {
-       text
-     }
-
-get_notes_response_note_result_threat
- = element threat
-     {
-       threat
-     }
-
-get_notes_response_note_result_description
- = element description
-     {
-       text
-     }
-
 ## Response to get_overrides
 
 get_overrides_response
@@ -2159,9 +2707,12 @@ get_overrides_response_override
        & get_overrides_response_override_threat
        & get_overrides_response_override_new_threat
        & get_overrides_response_override_orphan
-       & 
-        ERROR
-      ?
+       & ( get_overrides_response_override_creation_time
+           & get_overrides_response_override_modification_time
+           & get_overrides_response_override_hosts
+           & get_overrides_response_override_port
+           & get_overrides_response_override_task
+           & get_overrides_response_override_result? )?
      }
 
 get_overrides_response_override_nvt
@@ -2321,6 +2872,13 @@ get_version_response
        ""
        & attribute status { status }
        & attribute status_text { text }
+       & get_version_response_version
+     }
+
+get_version_response_version
+ = element version
+     {
+       text
      }
 
 ## Response to help

@@ -206,7 +206,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <b>"<xsl:value-of select="name"/>"</b>
           (<xsl:apply-templates select="type"/>)
           <xsl:if test="summary">
-            <xsl:value-of select="summary"/>.
+            <xsl:value-of select="normalize-space(summary)"/>.
           </xsl:if>
         </li>
       </xsl:when>
@@ -230,7 +230,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             &lt;<xsl:value-of select="text()"/>&gt;<xsl:value-of select="$element-suffix"/>
           </b>
           <xsl:if test="$new-line-element/summary">
-            <div style="margin-left: 15px; display: inline;"><xsl:value-of select="$new-line-element/summary"/>.</div>
+            <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($new-line-element/summary)"/>.</div>
           </xsl:if>
           <ul style="list-style: none">
             <xsl:for-each select="$new-line-element/pattern/*">
@@ -303,7 +303,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           Command <tt><xsl:value-of select="name"/></tt></h3>
       </div>
 
-      <p><b>In short: </b><xsl:value-of select="summary"/>.</p>
+      <p><b>In short: </b><xsl:value-of select="normalize-space(summary)"/>.</p>
 
       <xsl:apply-templates select="description"/>
 
@@ -361,7 +361,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="command" mode="index">
     <tr id="index">
       <td id="index"><a href="#{name}"><xsl:value-of select="name"/></a></td>
-      <td id="index"><div style="margin-left: 15px;"><xsl:value-of select="summary"/>.</div></td>
+      <td id="index"><div style="margin-left: 15px;"><xsl:value-of select="normalize-space(summary)"/>.</div></td>
     </tr>
   </xsl:template>
 
@@ -409,7 +409,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </h1>
 
                 <xsl:if test="summary">
-                  <p><xsl:value-of select="summary"/>.</p>
+                  <p><xsl:value-of select="normalize-space(summary)"/>.</p>
                 </xsl:if>
 
                 <xsl:call-template name="command-summary"/>

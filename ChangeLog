@@ -1,3 +1,12 @@
+2010-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add more get commands.
+	(create_escalator): Make data elements "any".
+	(get_version): Add VERSION.
+
+	* src/schema_formats/HTML/HTML.xsl: Normalize space for summary, in case
+	the closing SUMMARY tag is on a new line.
+
 2010-11-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (longtable-continue-block): Rename
@@ -27,7 +36,7 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-	* src/schema_formats/XML/OMP.xml: Add more get commmands.  Use alts
+	* src/schema_formats/XML/OMP.xml: Add more get commands.  Use alts
 	instead of xsd:token string for file modify_task attach action.
 
 2010-10-27  Matthew Mundell <matthew.mundell@greenbone.net>

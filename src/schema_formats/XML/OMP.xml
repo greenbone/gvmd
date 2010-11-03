@@ -442,7 +442,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The condition that must be satisfied for escalation</summary>
       <pattern>
         text
-        <e>data</e>
+        <any><e>data</e></any>
       </pattern>
       <ele>
         <name>data</name>
@@ -465,7 +465,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The event that must happen for escalation</summary>
       <pattern>
         text
-        <e>data</e>
+        <any><e>data</e></any>
       </pattern>
       <ele>
         <name>data</name>
@@ -488,7 +488,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The method by which escalation must occur</summary>
       <pattern>
         text
-        <e>data</e>
+        <any><e>data</e></any>
       </pattern>
       <ele>
         <name>data</name>
@@ -1893,6 +1893,1085 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_configs</name>
+    <summary>Get all configs</summary>
+    <description>
+      The client uses the get_configs command to get config information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of configs to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>config_id</name>
+        <summary>ID of single config to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>families</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>preferences</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>config</e></any>
+      </pattern>
+      <ele>
+        <name>config</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>family_count</e>
+          <e>nvt_count</e>
+          <e>in_use</e>
+          <e>tasks</e>
+          <o><e>families</e></o>
+          <o><e>preferences</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the config</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the config</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>family_count</name>
+          <summary>The number of families selected by the config</summary>
+          <pattern>
+            integer
+            <e>growing</e>
+          </pattern>
+          <ele>
+            <name>growing</name>
+            <summary>
+              Whether new families are automatically added to the
+              config
+            </summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt_count</name>
+          <summary>The number of NVTs selected by the config</summary>
+          <pattern>
+            integer
+            <e>growing</e>
+          </pattern>
+          <ele>
+            <name>growing</name>
+            <summary>
+              Whether new NVTs are automatically added to the config
+            </summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the config</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the config</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>families</name>
+          <summary>All families selected by the config</summary>
+          <pattern>
+            <any><e>family</e></any>
+          </pattern>
+          <ele>
+            <name>family</name>
+            <pattern>
+              <e>name</e>
+              <e>nvt_count</e>
+              <e>max_nvt_count</e>
+              <e>growing</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the family</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>nvt_count</name>
+              <summary>The number of NVTs selected in the family</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>max_nvt_count</name>
+              <summary>The total number of NVTs in the family</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>growing</name>
+              <summary>
+                Whether new NVTs in the family are automatically added to the selection
+              </summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <summary>Preferences for all NVTs selected by the config</summary>
+          <pattern>
+            <any><e>preference</e></any>
+          </pattern>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <e>nvt</e>
+              <e>name</e>
+              <e>type</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>nvt</name>
+              <summary>NVT to which override applies</summary>
+              <pattern>
+                <attrib>
+                  <name>oid</name>
+                  <type>oid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the NVT</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>The name of the family</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The type of preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all configs</summary>
+      <request>
+        <get_configs></get_configs>
+      </request>
+      <response>
+        <get_configs_response status="200" status_text="OK">
+          <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <name>Full and fast</name>
+            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <family_count>
+              4
+              <growing>1</growing>
+            </family_count>
+            <nvt_count>
+              12
+              <growing>1</growing>
+            </nvt_count>
+            <in_use>1</in_use>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>Web Servers</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </config>
+          <truncated>...</truncated>
+        </get_configs_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single config, including preference and family lists</summary>
+      <request>
+        <get_configs config_id="daba56c8-73ec-11df-a475-002264764cea" preferences="1" families="1">
+        </get_configs>
+      </request>
+      <response>
+        <get_configs_response status="200" status_text="OK">
+          <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <name>Full and fast</name>
+            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <family_count>
+              4
+              <growing>1</growing>
+            </family_count>
+            <nvt_count>
+              12
+              <growing>1</growing>
+            </nvt_count>
+            <in_use>1</in_use>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>Web Servers</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+            <families>
+              <family>
+                <name>Credentials</name>
+                <nvt_count>8</nvt_count>
+                <max_nvt_count>8</max_nvt_count>
+                <growing>1</growing>
+              </family>
+              <truncated>...</truncated>
+            </families>
+            <preferences>
+              <preference>
+                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+                  <name>Services</name>
+                </nvt>
+                <name>Network connection timeout :</name>
+                <type>entry</type>
+                <value>5</value>
+              </preference>
+              <truncated>...</truncated>
+            </preferences>
+          </config>
+          <truncated>...</truncated>
+        </get_configs_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_dependencies</name>
+    <summary>Get dependencies for all available NVTs</summary>
+    <description>
+      The client uses the get_dependencies command to request the
+      dependencies for one or all NVTs available through this manager.
+    </description>
+    <pattern>
+      <attrib>
+        <name>nvt_oid</name>
+        <summary>ID of single NVT for which to get dependencies</summary>
+        <type>oid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>nvt</e></any>
+      </pattern>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>requires</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the NVT</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>requires</name>
+          <pattern>
+            <any><e>nvt</e></any>
+          </pattern>
+          <ele>
+            <name>nvt</name>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <type>oid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the NVT</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get dependencies for all NVTs</summary>
+      <request>
+        <get_dependencies></get_dependencies>
+      </request>
+      <response>
+        <get_dependencies_response status="200" status_text="OK">
+          <nvt oid="1.3.6.1.4.1.25623.1.0.114664">
+            <name>Dependency Test</name>
+            <requires>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.114663">
+                <name>File Upload Test</name>
+              </nvt>
+            </requires>
+          </nvt>
+          <truncated>...</truncated>
+        </get_dependencies_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get dependencies for a single NVT</summary>
+      <request>
+        <get_dependencies nvt_oid="1.3.6.1.4.1.25623.1.0.114664">
+        </get_dependencies>
+      </request>
+      <response>
+        <get_dependencies_response status="200" status_text="OK">
+          <nvt oid="1.3.6.1.4.1.25623.1.0.114664">
+            <name>Dependency Test</name>
+            <requires>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.114663">
+                <name>File Upload Test</name>
+              </nvt>
+            </requires>
+          </nvt>
+        </get_dependencies_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_escalators</name>
+    <summary>Get all escalators</summary>
+    <description>
+      The client uses the get_escalators command to get escalator information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of escalators to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>escalator_id</name>
+        <summary>ID of single escalator to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>escalator</e></any>
+      </pattern>
+      <ele>
+        <name>escalator</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>in_use</e>
+          <e>condition</e>
+          <e>event</e>
+          <e>method</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the escalator</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the escalator</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the escalator</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>condition</name>
+          <summary>The condition that must be satisfied for escalation</summary>
+          <pattern>
+            text
+            <any><e>data</e></any>
+          </pattern>
+          <ele>
+            <name>data</name>
+            <summary>Some data that defines the condition</summary>
+            <pattern>
+              text
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the condition data</summary>
+              <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>event</name>
+          <summary>The event that must happen for escalation</summary>
+          <pattern>
+            text
+            <any><e>data</e></any>
+          </pattern>
+          <ele>
+            <name>data</name>
+            <summary>Some data that defines the event</summary>
+            <pattern>
+              text
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the event data</summary>
+              <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>method</name>
+          <summary>The method by which escalation must occur</summary>
+          <pattern>
+            text
+            <any><e>data</e></any>
+          </pattern>
+          <ele>
+            <name>data</name>
+            <summary>Some data that defines the method</summary>
+            <pattern>
+              text
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the method data</summary>
+              <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the escalators</summary>
+      <request>
+        <get_escalators></get_escalators>
+      </request>
+      <response>
+        <get_escalators_response status="200" status_text="OK">
+          <escalator id="6181e65d-8ba0-4937-9c44-8f2b10b0def7">
+            <name>Team alert</name>
+            <comment></comment>
+            <in_use>1</in_use>
+            <condition>
+              Threat level at least
+              <data>
+                <name>level</name>
+                High
+              </data>
+            </condition>
+            <event>
+              Task run status changed
+              <data>
+                <name>status</name>
+                Done
+              </data>
+            </event>
+            <method>
+              Email
+              <data>
+                <name>to_address</name>
+                team@example.org
+              </data>
+              <data>
+                <name>from_address</name>
+                admin@example.org
+              </data>
+              <data>
+                <name>notice</name>
+                0
+              </data>
+            </method>
+          </escalator>
+          <truncated>...</truncated>
+        </get_escalators_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_lsc_credentials</name>
+    <summary>Get all LSC credentials</summary>
+    <description>
+      The client uses the get_lsc_credentials command to get LSC credential information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of LSC credentials to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>lsc_credential_id</name>
+        <summary>ID of single LSC credential to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>format</name>
+        <type>
+          <alts>
+            <alt>key</alt>
+            <alt>rpm</alt>
+            <alt>deb</alt>
+            <alt>exe</alt>
+          </alts>
+        </type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>lsc_credential</e></any>
+      </pattern>
+      <ele>
+        <name>lsc_credential</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>login</e>
+          <e>comment</e>
+          <e>in_use</e>
+          <e>type</e>
+          <e>targets</e>
+          <o><e>public_key</e></o>
+          <o><e>package</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the LSC credential</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>login</name>
+          <summary>The username of the LSC credential</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the LSC credential</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the LSC credential</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the LSC credential</summary>
+          <pattern>
+            <t>
+              <alts>
+                <alt>gen</alt>
+                <alt>pass</alt>
+              </alts>
+            </t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>targets</name>
+          <summary>All targets using this LSC credential</summary>
+          <pattern>
+            <any><e>target</e></any>
+          </pattern>
+          <ele>
+            <name>target</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the target</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>public_key</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>package</name>
+          <pattern>
+            <attrib>
+              <name>format</name>
+              <type>
+                <alts>
+                  <alt>rpm</alt>
+                  <alt>deb</alt>
+                  <alt>exe</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+            base64
+          </pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all the LSC credentials</summary>
+      <request>
+        <get_lsc_credentials></get_lsc_credentials>
+      </request>
+      <response>
+        <get_lsc_credentials_response status="200" status_text="OK">
+          <lsc_credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>sally</name>
+            <login>sally</login>
+            <comment></comment>
+            <in_use>0</in_use>
+            <type>gen</type>
+            <targets></targets>
+          </lsc_credential>
+          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <login>bob</login>
+            <comment>Bob on the web server.</comment>
+            <in_use>1</in_use>
+            <type>pass</type>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+          </lsc_credential>
+          <truncated>...</truncated>
+        </get_lsc_credentials_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get the public key of a single LSC credential</summary>
+      <request>
+        <get_lsc_credentials
+          lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+          format="key">
+        </get_lsc_credentials>
+      </request>
+      <response>
+        <get_lsc_credentials_response status="200" status_text="OK">
+          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <login>bob</login>
+            <comment>Bob on the web server.</comment>
+            <in_use>1</in_use>
+            <type>pass</type>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+            <public_key>
+              ssh-rsa AAAAB3...Z64IcQ== Key generated by OpenVAS Manager
+            </public_key>
+          </lsc_credential>
+        </get_lsc_credentials_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get the Debian package of a single LSC credential</summary>
+      <request>
+        <get_lsc_credentials
+          lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+          format="deb">
+        </get_lsc_credentials>
+      </request>
+      <response>
+        <get_lsc_credentials_response status="200" status_text="OK">
+          <lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15">
+            <name>bob</name>
+            <login>bob</login>
+            <comment>Bob on the web server.</comment>
+            <in_use>1</in_use>
+            <type>pass</type>
+            <targets>
+              <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                <name>Web server</name>
+              </target>
+            </targets>
+            <package format="deb">ITxhcmNoPgpk...DmvF0AKAAACg==</package>
+          </lsc_credential>
+        </get_lsc_credentials_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_notes</name>
+    <summary>Get all notes</summary>
+    <description>
+      The client uses the get_notes command to get note information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of notes to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>note_id</name>
+        <summary>ID of single note to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>nvt_oid</name>
+        <type>oid</type>
+      </attrib>
+      <attrib>
+        <name>task_id</name>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result</name>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>note</e></any>
+      </pattern>
+      <ele>
+        <name>note</name>
+        <pattern>
+          <e>nvt</e>
+          <e>text</e>
+          <e>orphan</e>
+          <o>
+            <g>
+              <e>creation_time</e>
+              <e>modification_time</e>
+              <e>hosts</e>
+              <e>port</e>
+              <e>threat</e>
+              <e>task</e>
+              <o><e>result</e></o>
+            </g>
+          </o>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>text</name>
+          <summary>The text of the note</summary>
+          <pattern>
+            <attrib>
+              <name>excerpt</name>
+              <name>Whether the contents is an excerpt of the full text</name>
+              <type>boolean</type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphan</name>
+          <summary>Whether the note is an orphan</summary>
+          <pattern>boolean</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>ctime</t></pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>A textual list of hosts</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Port to which note applies</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>threat</name>
+          <summary>Threat level to which note applies</summary>
+          <pattern>
+            <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Task to which note applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>result</name>
+          <summary>Result to which note applies</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>subnet</e>
+            <e>host</e>
+            <e>port</e>
+            <e>nvt</e>
+            <e>threat</e>
+            <e>description</e>
+          </pattern>
+          <ele>
+            <name>subnet</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>host</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>port</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <type>oid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>cvss_base</e>
+              <e>risk_factor</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>cvss_base</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>risk_factor</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <pattern>
+              <t>threat</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all notes</summary>
+      <request>
+        <get_notes></get_notes>
+      </request>
+      <response>
+        <get_notes_response status="200" status_text="OK">
+          <note id="b76b81a7-9df8-42df-afff-baa9d4620128">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.75">
+              <name>Test NVT: long lines</name>
+            </nvt>
+            <text excerpt="0">This is the full text of the note.</text>
+            <orphan>1</orphan>
+          </note>
+          <truncated>...</truncated>
+        </get_notes_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get details of a single note</summary>
+      <request>
+        <get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1">
+        </get_notes>
+      </request>
+      <response>
+        <get_notes_response status="200" status_text="OK">
+          <note id="7f618bbb-4664-419e-9bbf-367d93954cb0">
+            <nvt oid="1.3.6.1.4.1.25623.1.0.77">
+              <name>Test NVT: control chars in report result</name>
+            </nvt>
+            <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
+            <text>note fixed to result</text>
+            <hosts>127.0.0.1</hosts>
+            <port>general/tcp</port>
+            <threat>Medium</threat>
+            <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
+              <name>test</name>
+            </task>
+            <orphan>0</orphan>
+            <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
+              <subnet>127.0.0.1</subnet>
+              <host>127.0.0.1</host>
+              <port>general/tcp</port>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.77">
+                <name>Test NVT: control chars in report result</name>
+                <cvss_base></cvss_base>
+                <risk_factor></risk_factor>
+              </nvt>
+              <threat>Medium</threat>
+              <description>Warning with control char between fullstops: . .</description>
+            </result>
+          </note>
+          <truncated>...</truncated>
+        </get_notes_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_nvts</name>
     <summary>Get all NVTs</summary>
     <description>
@@ -2347,274 +3426,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>get_notes</name>
-    <summary>Get all notes</summary>
-    <description>
-      The client uses the get_notes command to get note information.
-      If the command sent by the client was valid, the manager will
-      reply with a list of notes to the client.
-    </description>
-    <pattern>
-      <attrib>
-        <name>note_id</name>
-        <summary>ID of single note to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>nvt_oid</name>
-        <type>oid</type>
-      </attrib>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>details</name>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>result</name>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>note</e></any>
-      </pattern>
-      <ele>
-        <name>note</name>
-        <pattern>
-          <e>nvt</e>
-          <e>text</e>
-          <e>orphan</e>
-          <o>
-            <g>
-              <e>creation_time</e>
-              <e>modification_time</e>
-              <e>hosts</e>
-              <e>port</e>
-              <e>threat</e>
-              <e>task</e>
-              <o><e>result</e></o>
-            </g>
-          </o>
-        </pattern>
-        <ele>
-          <name>nvt</name>
-          <pattern>
-            <attrib>
-              <name>oid</name>
-              <type>oid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>text</name>
-          <summary>The text of the note</summary>
-          <pattern>
-            <attrib>
-              <name>excerpt</name>
-              <name>Whether the contents is an excerpt of the full text</name>
-              <type>boolean</type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>orphan</name>
-          <summary>Whether the note is an orphan</summary>
-          <pattern>boolean</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <pattern><t>ctime</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <pattern><t>ctime</t></pattern>
-        </ele>
-        <ele>
-          <name>hosts</name>
-          <summary>A textual list of hosts</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>port</name>
-          <summary>Port to which note applies</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>threat</name>
-          <summary>Threat level to which note applies</summary>
-          <pattern>
-            <t>threat</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>task</name>
-          <summary>Task to which note applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-        <ele>
-          <name>result</name>
-          <summary>Result to which note applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>subnet</e>
-            <e>host</e>
-            <e>port</e>
-            <e>nvt</e>
-            <e>threat</e>
-            <e>description</e>
-          </pattern>
-          <ele>
-            <name>subnet</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>host</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>port</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>nvt</name>
-            <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>cvss_base</e>
-              <e>risk_factor</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>cvss_base</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>risk_factor</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>threat</name>
-            <pattern>
-              <t>threat</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>description</name>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get all notes</summary>
-      <request>
-        <get_notes></get_notes>
-      </request>
-      <response>
-        <get_notes_response status="200" status_text="OK">
-          <note id="b76b81a7-9df8-42df-afff-baa9d4620128">
-            <nvt oid="1.3.6.1.4.1.25623.1.0.75">
-              <name>Test NVT: long lines</name>
-            </nvt>
-            <text excerpt="0">This is the full text of the note.</text>
-            <orphan>1</orphan>
-          </note>
-          <truncated>...</truncated>
-        </get_notes_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get details of a single note</summary>
-      <request>
-        <get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1">
-        </get_notes>
-      </request>
-      <response>
-        <get_notes_response status="200" status_text="OK">
-          <note id="7f618bbb-4664-419e-9bbf-367d93954cb0">
-            <nvt oid="1.3.6.1.4.1.25623.1.0.77">
-              <name>Test NVT: control chars in report result</name>
-            </nvt>
-            <creation_time>Sun Jun 27 08:49:46 2010</creation_time>
-            <modification_time>Sun Jun 27 08:49:46 2010</modification_time>
-            <text>note fixed to result</text>
-            <hosts>127.0.0.1</hosts>
-            <port>general/tcp</port>
-            <threat>Medium</threat>
-            <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
-              <name>test</name>
-            </task>
-            <orphan>0</orphan>
-            <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
-              <subnet>127.0.0.1</subnet>
-              <host>127.0.0.1</host>
-              <port>general/tcp</port>
-              <nvt oid="1.3.6.1.4.1.25623.1.0.77">
-                <name>Test NVT: control chars in report result</name>
-                <cvss_base></cvss_base>
-                <risk_factor></risk_factor>
-              </nvt>
-              <threat>Medium</threat>
-              <description>Warning with control char between fullstops: . .</description>
-            </result>
-          </note>
-          <truncated>...</truncated>
-        </get_notes_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>get_overrides</name>
     <summary>Get all overrides</summary>
     <description>
@@ -2898,8 +3709,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>version</e>
       </pattern>
+      <ele>
+        <name>version</name>
+        <pattern>text</pattern>
+      </ele>
     </response>
+    <example>
+      <summary>Get the version</summary>
+      <request>
+        <get_version></get_version>
+      </request>
+      <response>
+        <get_version_response status="200" status_text="OK">
+          <version>1.0</version>
+        </get_version_response>
+      </response>
+    </example>
   </command>
   <command>
     <name>help</name>
