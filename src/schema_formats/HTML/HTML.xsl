@@ -408,6 +408,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <xsl:value-of select="name"/>
                 </h1>
 
+                <xsl:if test="version">
+                  <p>Version: <xsl:value-of select="normalize-space(version)"/></p>
+                </xsl:if>
+
                 <xsl:if test="summary">
                   <p><xsl:value-of select="normalize-space(summary)"/>.</p>
                 </xsl:if>

@@ -153,6 +153,13 @@ response
       </xsl:if>
       <xsl:call-template name="newline"/>
     </xsl:if>
+    <xsl:if test="version">
+      <xsl:text>####</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:text>#### Version: </xsl:text>
+      <xsl:value-of select="version"/>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
     <xsl:choose>
       <xsl:when test="($rnc-comments = 1) and summary">
         <xsl:text>####</xsl:text>
