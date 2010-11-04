@@ -1,3 +1,20 @@
+2010-11-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* report_formats/simple_map_plot/,
+	report_formats/simple_map_plot/join.awk,
+	report_formats/simple_map_plot/world_map.map,
+	report_formats/simple_map_plot/FreeSans.ttf,
+	report_formats/simple_map_plot/locations.csv,
+	report_formats/simple_map_plot/fonts.txt,
+	report_formats/simple_map_plot/create_report_import,
+	report_formats/simple_map_plot/hosts.vrt,
+	report_formats/simple_map_plot/report_to_csv_host.xsl,
+	report_formats/simple_map_plot/generate,
+	report_formats/simple_map_plot/README.txt,
+	report_formats/simple_map_plot/world_map.tiff: New.
+	Report Format plugin that rednders host scan results
+	on a world map. Most work done by Raimund Renkert.
+
 2010-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl, src/report_formats/HTML/HTML.xsl,
