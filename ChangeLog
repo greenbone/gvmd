@@ -1,5 +1,10 @@
 2010-11-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* report_formats/simple_map_plot/README.txt: Added note
+	on required tools.
+
+2010-11-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* report_formats/simple_map_plot/,
 	report_formats/simple_map_plot/join.awk,
 	report_formats/simple_map_plot/world_map.map,
