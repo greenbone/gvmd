@@ -342,8 +342,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-
     <xsl:call-template name="newline"/>
+
+    <xsl:variable name="last" select="/report/results/@start + count(/report/results/result) - 1"/>
+    <xsl:choose>
+      <xsl:when test="$last = 0">
+        <xsl:text>This report contains 0 results.</xsl:text>
+        <xsl:text>  Before the filtering described above</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text>there were </xsl:text>
+        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:text> results.</xsl:text>
+      </xsl:when>
+      <xsl:when test="$last = /report/results/@start">
+        <xsl:text>This report contains result </xsl:text>
+        <xsl:value-of select="$last"/>
+        <xsl:text> of the </xsl:text>
+        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:text> results selected by the</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text>filtering above.</xsl:text>
+        <xsl:text>  Before filtering there were </xsl:text>
+        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:text> results.</xsl:text>
+      </xsl:when>
+      <xsl:when test="$last = /report/result_count/filtered">
+        <xsl:text>This report contains all </xsl:text>
+        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:text> results selected by the</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text>filtering described above.</xsl:text>
+        <xsl:text>  Before filtering there were </xsl:text>
+        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:text> results.</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>This report contains results </xsl:text>
+        <xsl:value-of select="/report/results/@start"/>
+        <xsl:text> to </xsl:text>
+        <xsl:value-of select="$last"/>
+        <xsl:text> of the </xsl:text>
+        <xsl:value-of select="/report/result_count/filtered"/>
+        <xsl:text> results selected by the</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text>filtering described above.</xsl:text>
+        <xsl:text>  Before filtering there were </xsl:text>
+        <xsl:value-of select="/report/result_count/text()"/>
+        <xsl:text> results.</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+
     <xsl:text>Scan started: </xsl:text><xsl:value-of select="/report/scan_start"/><xsl:call-template name="newline"/>
     <xsl:text>Scan ended:   </xsl:text>
     <xsl:value-of select="/report/scan_end"/><xsl:call-template name="newline"/>

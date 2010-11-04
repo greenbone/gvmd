@@ -257,6 +257,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </p>
 
+    <p>
+      <xsl:variable name="last" select="/report/results/@start + count(/report/results/result) - 1"/>
+      <xsl:choose>
+        <xsl:when test="$last = 0">
+          <xsl:text>This report contains 0 results.</xsl:text>
+          <xsl:text>  Before the filtering described above</xsl:text>
+          <xsl:text> there were </xsl:text>
+          <xsl:value-of select="/report/result_count/text()"/>
+          <xsl:text> results.</xsl:text>
+        </xsl:when>
+        <xsl:when test="$last = /report/results/@start">
+          <xsl:text>This report contains result </xsl:text>
+          <xsl:value-of select="$last"/>
+          <xsl:text> of the </xsl:text>
+          <xsl:value-of select="/report/result_count/filtered"/>
+          <xsl:text> results selected by the</xsl:text>
+          <xsl:text> filtering above.</xsl:text>
+          <xsl:text>  Before filtering there were </xsl:text>
+          <xsl:value-of select="/report/result_count/text()"/>
+          <xsl:text> results.</xsl:text>
+        </xsl:when>
+        <xsl:when test="$last = /report/result_count/filtered">
+          <xsl:text>This report contains all </xsl:text>
+          <xsl:value-of select="/report/result_count/filtered"/>
+          <xsl:text> results selected by the</xsl:text>
+          <xsl:text> filtering described above.</xsl:text>
+          <xsl:text>  Before filtering there were </xsl:text>
+          <xsl:value-of select="/report/result_count/text()"/>
+          <xsl:text> results.</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>This report contains results </xsl:text>
+          <xsl:value-of select="/report/results/@start"/>
+          <xsl:text> to </xsl:text>
+          <xsl:value-of select="$last"/>
+          <xsl:text> of the </xsl:text>
+          <xsl:value-of select="/report/result_count/filtered"/>
+          <xsl:text> results selected by the</xsl:text>
+          <xsl:text> filtering described above.</xsl:text>
+          <xsl:text>  Before filtering there were </xsl:text>
+          <xsl:value-of select="/report/result_count/text()"/>
+          <xsl:text> results.</xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
+    </p>
+
     <table>
       <xsl:apply-templates select="scan_start" />
       <xsl:apply-templates select="scan_end" />
