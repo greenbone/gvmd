@@ -87,12 +87,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- Called within a PRE. -->
   <xsl:template name="print-attributes">
+    <xsl:param name="level">0</xsl:param>
+    <xsl:variable name="indent" select="string-length(name()) + 2"/>
     <xsl:for-each select="attribute::*">
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="name()"/>
-      <xsl:text>="</xsl:text>
-      <xsl:value-of select="."/>
-      <xsl:text>"</xsl:text>
+      <xsl:choose>
+        <xsl:when test="position() = 1">
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="name()"/>
+          <xsl:text>="</xsl:text>
+          <xsl:value-of select="."/>
+          <xsl:text>"</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="newline"/>
+          <xsl:call-template name="print-space">
+            <xsl:with-param name="count" select="$level * 2 + $indent"/>
+          </xsl:call-template>
+          <xsl:value-of select="name()"/>
+          <xsl:text>="</xsl:text>
+          <xsl:value-of select="."/>
+          <xsl:text>"</xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:for-each>
   </xsl:template>
 
@@ -110,15 +126,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:when test="(count(*) = 0) and (string-length(normalize-space(text())) = 0)">
         <xsl:text>&lt;</xsl:text>
         <xsl:value-of select="name()"/>
-        <xsl:call-template name="print-attributes"/>
+        <xsl:call-template name="print-attributes">
+          <xsl:with-param name="level" select="$level"/>
+        </xsl:call-template>
         <xsl:text>/&gt;</xsl:text>
         <xsl:call-template name="newline"/>
       </xsl:when>
       <xsl:when test="(count(*) = 0) and (string-length(text()) &lt;= 60)">
         <xsl:text>&lt;</xsl:text>
         <xsl:value-of select="name()"/>
-        <xsl:call-template name="print-attributes"/>
+        <xsl:call-template name="print-attributes">
+          <xsl:with-param name="level" select="$level"/>
+        </xsl:call-template>
         <xsl:text>&gt;</xsl:text>
+        <xsl:value-of select="normalize-space(text())"/>
         <xsl:value-of select="text()"/>
         <xsl:text>&lt;/</xsl:text>
         <xsl:value-of select="name()"/>
@@ -128,7 +149,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:otherwise>
         <xsl:text>&lt;</xsl:text>
         <xsl:value-of select="name()"/>
-        <xsl:call-template name="print-attributes"/>
+        <xsl:call-template name="print-attributes">
+          <xsl:with-param name="level" select="$level"/>
+        </xsl:call-template>
         <xsl:text>&gt;</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:if test="string-length(normalize-space(text())) &gt; 0">

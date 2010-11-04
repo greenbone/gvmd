@@ -39,6 +39,10 @@
 <td id="index"><div style="margin-left: 15px;">An integer.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#type_levels">levels</a></td>
+<td id="index"><div style="margin-left: 15px;">A string that may include the characters h, m, l, g and d.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_name">name</a></td>
 <td id="index"><div style="margin-left: 15px;">A name.</div></td>
 </tr>
@@ -53,6 +57,10 @@
 <tr id="index">
 <td id="index"><a href="#type_status">status</a></td>
 <td id="index"><div style="margin-left: 15px;">The success or failure status of a command.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#type_task_status">task_status</a></td>
+<td id="index"><div style="margin-left: 15px;">A task run status.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#type_threat">threat</a></td>
@@ -198,6 +206,22 @@
 <td id="index"><div style="margin-left: 15px;">Get all preferences.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#command_get_reports">get_reports</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all reports.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#command_get_results">get_results</a></td>
+<td id="index"><div style="margin-left: 15px;">Get results.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#command_get_schedules">get_schedules</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all schedules.</div></td>
+</tr>
+<tr id="index">
+<td id="index"><a href="#command_get_system_reports">get_system_reports</a></td>
+<td id="index"><div style="margin-left: 15px;">Get all system reports.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#command_get_version">get_version</a></td>
 <td id="index"><div style="margin-left: 15px;">Get the OpenVAS Manager Protocol version.</div></td>
 </tr>
@@ -264,6 +288,7 @@
  = element base64
      {
        xsd:base64Binary
+
      }
 </pre></div>
 </div>
@@ -280,6 +305,7 @@
  = element boolean
      {
        text
+
      }
 </pre></div>
 </div>
@@ -297,6 +323,7 @@
  = element boolean_atoi
      {
        text
+
      }
 </pre></div>
 </div>
@@ -312,6 +339,7 @@
  = element ctime
      {
        text
+
      }
 </pre></div>
 </div>
@@ -324,11 +352,25 @@
  = element integer
      {
        xsd:integer
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_name">3.6
+<div><h3 id="type_levels">3.6
+        Data Type <tt>levels</tt>
+</h3></div>
+<p>In short: A string that may include the characters h, m, l, g and d.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>levels
+ = element levels
+     {
+       xsd:token { pattern = "h?m?l?g?d?" }
+
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_name">3.7
         Data Type <tt>name</tt>
 </h3></div>
 <p>In short: A name.</p>
@@ -340,11 +382,12 @@
  = element name
      {
        xsd:string
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_oid">3.7
+<div><h3 id="type_oid">3.8
         Data Type <tt>oid</tt>
 </h3></div>
 <p>In short: An Object Identifier (OID)..</p>
@@ -352,11 +395,12 @@
  = element oid
      {
        xsd:token { pattern = "[0-9\.]{1,80}" }
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">3.8
+<div><h3 id="type_sort_order">3.9
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -368,11 +412,12 @@
  = element sort_order
      {
        text
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">3.9
+<div><h3 id="type_status">3.10
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
@@ -380,11 +425,26 @@
  = element status
      {
        xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">3.10
+<div><h3 id="type_task_status">3.11
+        Data Type <tt>task_status</tt>
+</h3></div>
+<p>In short: A task run status.</p>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status
+ = element task_status
+     {
+       xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume R↵
+equested|Running|Stop Requested|Stopped|Internal Error" }
+
+     }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_threat">3.12
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
@@ -392,11 +452,12 @@
  = element threat
      {
        xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">3.11
+<div><h3 id="type_time_unit">3.13
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
@@ -404,11 +465,12 @@
  = element time_unit
      {
        xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
+
      }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">3.12
+<div><h3 id="type_uuid">3.14
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
@@ -416,6 +478,7 @@
  = element uuid
      {
        xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
+
      }
 </pre></div>
 </div>
@@ -487,12 +550,14 @@ authenticate_credentials_username
  = element username
      {
        text
+
      }
 
 authenticate_credentials_password
  = element password
      {
        text
+
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>authenticate_response
@@ -508,24 +573,26 @@ authenticate_credentials_password
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate&gt;
    &lt;credentials&gt;
-     &lt;username&gt;sally&lt;/username&gt;
-     &lt;password&gt;secret&lt;/password&gt;
+     &lt;username&gt;sallysally&lt;/username&gt;
+     &lt;password&gt;secretsecret&lt;/password&gt;
    &lt;/credentials&gt;
  &lt;/authenticate&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate_response status="200"
+                        status_text="OK"/&gt;
 </pre></div>
 </div>
 <h4>4.1.1 Example: Authenticate with a bad password</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate&gt;
    &lt;credentials&gt;
-     &lt;username&gt;sally&lt;/username&gt;
-     &lt;password&gt;secrte&lt;/password&gt;
+     &lt;username&gt;sallysally&lt;/username&gt;
+     &lt;password&gt;secrtesecrte&lt;/password&gt;
    &lt;/credentials&gt;
  &lt;/authenticate&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate_response status="400" status_text="Authentication failed"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;authenticate_response status="400"
+                        status_text="Authentication failed"/&gt;
 </pre></div>
 </div>
 </div>
@@ -674,6 +741,7 @@ create_agent_comment
  = element comment
      {
        text
+
      }
 
 create_agent_howto_install
@@ -703,12 +771,14 @@ create_agent_howto_use
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_agent&gt;
    &lt;installer&gt;
      asdf3235saf3kjBVF...
-     &lt;signature&gt;iEYEABECAAYFA...&lt;/signature&gt;
+     &lt;signature&gt;iEYEABECAAYFA...iEYEABECAAYFA...&lt;/signature&gt;
    &lt;/installer&gt;
-   &lt;name&gt;SLAD&lt;/name&gt;
+   &lt;name&gt;SLADSLAD&lt;/name&gt;
  &lt;/create_agent&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_agent_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_agent_response status="201"
+                        status_text="OK, resource created"
+                        id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -808,6 +878,7 @@ create_config_comment
  = element comment
      {
        text
+
      }
 
 create_config_copy
@@ -841,21 +912,25 @@ create_config_name
 <h4>4.4.1 Example: Copy a config</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
-   &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
-   &lt;name&gt;Full&lt;/name&gt;
+   &lt;copy&gt;daba56c8-73ec-11df-a475-002264764ceadaba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
+   &lt;name&gt;FullFull&lt;/name&gt;
  &lt;/create_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 <h4>4.4.1 Example: Create a config from an RC file</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
-   &lt;rcfile&gt;asdf3235saf3kjBVF...&lt;/rcfile&gt;
-   &lt;name&gt;Full&lt;/name&gt;
+   &lt;rcfile&gt;asdf3235saf3kjBVF...asdf3235saf3kjBVF...&lt;/rcfile&gt;
+   &lt;name&gt;FullFull&lt;/name&gt;
  &lt;/create_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 <h4>4.4.1 Example: Create a config from a GET_CONFIGS response</h4>
@@ -863,13 +938,15 @@ create_config_name
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
    &lt;get_configs_response&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
-       &lt;name&gt;Full and fast&lt;/name&gt;
+       &lt;name&gt;Full and fastFull and fast&lt;/name&gt;
        ...
      &lt;/config&gt;
    &lt;/get_configs_response&gt;
  &lt;/create_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -977,12 +1054,14 @@ create_escalator_comment
  = element comment
      {
        text
+
      }
 
 create_escalator_condition
  = element condition
      {
        text
+
        &amp; create_escalator_condition_data*
      }
 
@@ -990,6 +1069,7 @@ create_escalator_condition_data
  = element data
      {
        text
+
        &amp; create_escalator_condition_data_name
      }
 
@@ -997,12 +1077,14 @@ create_escalator_condition_data_name
  = element name
      {
        text
+
      }
 
 create_escalator_event
  = element event
      {
        text
+
        &amp; create_escalator_event_data*
      }
 
@@ -1010,6 +1092,7 @@ create_escalator_event_data
  = element data
      {
        text
+
        &amp; create_escalator_event_data_name
      }
 
@@ -1017,12 +1100,14 @@ create_escalator_event_data_name
  = element name
      {
        text
+
      }
 
 create_escalator_method
  = element method
      {
        text
+
        &amp; create_escalator_method_data*
      }
 
@@ -1030,6 +1115,7 @@ create_escalator_method_data
  = element data
      {
        text
+
        &amp; create_escalator_method_data_name
      }
 
@@ -1037,6 +1123,7 @@ create_escalator_method_data_name
  = element name
      {
        text
+
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_escalator_response
@@ -1052,35 +1139,37 @@ create_escalator_method_data_name
 <h4>4.5.1 Example: Create an escalator</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_escalator&gt;
-   &lt;name&gt;emergency&lt;/name&gt;
+   &lt;name&gt;emergencyemergency&lt;/name&gt;
    &lt;condition&gt;
      Threat level at least
      &lt;data&gt;
        High
-       &lt;name&gt;level&lt;/name&gt;
+       &lt;name&gt;levellevel&lt;/name&gt;
      &lt;/data&gt;
    &lt;/condition&gt;
    &lt;event&gt;
      Task run status changed
      &lt;data&gt;
        Done
-       &lt;name&gt;status&lt;/name&gt;
+       &lt;name&gt;statusstatus&lt;/name&gt;
      &lt;/data&gt;
    &lt;/event&gt;
    &lt;method&gt;
      Email
      &lt;data&gt;
        sally@example.org
-       &lt;name&gt;to_address&lt;/name&gt;
+       &lt;name&gt;to_addressto_address&lt;/name&gt;
      &lt;/data&gt;
      &lt;data&gt;
        bob@example.org
-       &lt;name&gt;from_address&lt;/name&gt;
+       &lt;name&gt;from_addressfrom_address&lt;/name&gt;
      &lt;/data&gt;
    &lt;/method&gt;
  &lt;/create_escalator&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_escalator_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_escalator_response status="201"
+                            status_text="OK, resource created"
+                            id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -1163,18 +1252,21 @@ create_lsc_credential_comment
  = element comment
      {
        text
+
      }
 
 create_lsc_credential_login
  = element login
      {
        text
+
      }
 
 create_lsc_credential_password
  = element password
      {
        text
+
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_lsc_credential_response
@@ -1190,13 +1282,15 @@ create_lsc_credential_password
 <h4>4.6.1 Example: Create an LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_lsc_credential&gt;
-   &lt;name&gt;cluster sally&lt;/name&gt;
-   &lt;login&gt;sally&lt;/login&gt;
-   &lt;password&gt;secret&lt;/password&gt;
-   &lt;comment&gt;Sally's login to the cluster.&lt;/comment&gt;
+   &lt;name&gt;cluster sallycluster sally&lt;/name&gt;
+   &lt;login&gt;sallysally&lt;/login&gt;
+   &lt;password&gt;secretsecret&lt;/password&gt;
+   &lt;comment&gt;Sally's login to the cluster.Sally's login to the cluster.&lt;/comment&gt;
  &lt;/create_lsc_credential&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_lsc_credential_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_lsc_credential_response status="201"
+                                 status_text="OK, resource created"
+                                 id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -1300,6 +1394,7 @@ create_note_text
  = element text
      {
        text
+
      }
 
 create_note_nvt
@@ -1313,18 +1408,21 @@ create_note_comment
  = element comment
      {
        text
+
      }
 
 create_note_hosts
  = element hosts
      {
        text
+
      }
 
 create_note_port
  = element port
      {
        text
+
      }
 
 create_note_result
@@ -1360,12 +1458,14 @@ create_note_threat
 <h4>4.7.1 Example: Create a note</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_note&gt;
-   &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
-   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
-   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
+   &lt;text&gt;This issue should be resolved after the upgrade.This issue should be resolved after the upgrade.&lt;/text&gt;
+   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.103301.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
+   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
  &lt;/create_note&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_note_response status="202" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_note_response status="202"
+                       status_text="OK, resource created"
+                       id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -1475,6 +1575,7 @@ create_override_text
  = element text
      {
        text
+
      }
 
 create_override_nvt
@@ -1488,12 +1589,14 @@ create_override_comment
  = element comment
      {
        text
+
      }
 
 create_override_hosts
  = element hosts
      {
        text
+
      }
 
 create_override_new_threat
@@ -1506,6 +1609,7 @@ create_override_port
  = element port
      {
        text
+
      }
 
 create_override_result
@@ -1541,13 +1645,15 @@ create_override_threat
 <h4>4.8.1 Example: Create an override</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_override&gt;
-   &lt;text&gt;This is actually of little concern.&lt;/text&gt;
-   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
-   &lt;new_threat&gt;Low&lt;/new_threat&gt;
-   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
+   &lt;text&gt;This is actually of little concern.This is actually of little concern.&lt;/text&gt;
+   &lt;nvt&gt;1.3.6.1.4.1.25623.1.0.103301.3.6.1.4.1.25623.1.0.10330&lt;/nvt&gt;
+   &lt;new_threat&gt;LowLow&lt;/new_threat&gt;
+   &lt;result&gt;254cd3ef-bbe1-4d58-859d-21b8d0c046c6254cd3ef-bbe1-4d58-859d-21b8d0c046c6&lt;/result&gt;
  &lt;/create_override&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_override_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_override_response status="201"
+                           status_text="OK, resource created"
+                           id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -1659,6 +1765,7 @@ create_schedule_comment
  = element comment
      {
        text
+
      }
 
 create_schedule_first_time
@@ -1741,25 +1848,27 @@ create_schedule_period_unit
 <h4>4.9.1 Example: Create a schedule</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_schedule&gt;
-   &lt;name&gt;Every night&lt;/name&gt;
+   &lt;name&gt;Every nightEvery night&lt;/name&gt;
    &lt;first_time&gt;
-     &lt;day_of_month&gt;1&lt;/day_of_month&gt;
-     &lt;hour&gt;0&lt;/hour&gt;
-     &lt;minute&gt;0&lt;/minute&gt;
-     &lt;month&gt;1&lt;/month&gt;
-     &lt;year&gt;2011&lt;/year&gt;
+     &lt;day_of_month&gt;11&lt;/day_of_month&gt;
+     &lt;hour&gt;00&lt;/hour&gt;
+     &lt;minute&gt;00&lt;/minute&gt;
+     &lt;month&gt;11&lt;/month&gt;
+     &lt;year&gt;20112011&lt;/year&gt;
    &lt;/first_time&gt;
    &lt;duration&gt;
      3
-     &lt;unit&gt;hour&lt;/unit&gt;
+     &lt;unit&gt;hourhour&lt;/unit&gt;
    &lt;/duration&gt;
    &lt;period&gt;
      1
-     &lt;unit&gt;day&lt;/unit&gt;
+     &lt;unit&gt;dayday&lt;/unit&gt;
    &lt;/period&gt;
  &lt;/create_schedule&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_schedule_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_schedule_response status="201"
+                           status_text="OK, resource created"
+                           id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -1860,12 +1969,14 @@ create_target_comment
  = element comment
      {
        text
+
      }
 
 create_target_hosts
  = element hosts
      {
        text
+
      }
 
 create_target_lsc_credential
@@ -1887,12 +1998,14 @@ create_target_target_locator_username
  = element username
      {
        text
+
      }
 
 create_target_target_locator_password
  = element password
      {
        text
+
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_target_response
@@ -1909,12 +2022,14 @@ create_target_target_locator_password
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_target&gt;
    &lt;create_target&gt;
-     &lt;name&gt;All GNU/Linux machines&lt;/name&gt;
-     &lt;hosts&gt;192.168.1.0/24&lt;/hosts&gt;
+     &lt;name&gt;All GNU/Linux machinesAll GNU/Linux machines&lt;/name&gt;
+     &lt;hosts&gt;192.168.1.0/24192.168.1.0/24&lt;/hosts&gt;
    &lt;/create_target&gt;
  &lt;/create_target&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_target_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_target_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2026,6 +2141,7 @@ create_task_comment
  = element comment
      {
        text
+
      }
 
 create_task_config
@@ -2075,13 +2191,15 @@ create_task_rcfile
 <h4>4.11.1 Example: Create a task, giving a host list</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_task&gt;
-   &lt;name&gt;Scan Webserver&lt;/name&gt;
-   &lt;comment&gt;Hourly scan of the webserver&lt;/comment&gt;
+   &lt;name&gt;Scan WebserverScan Webserver&lt;/name&gt;
+   &lt;comment&gt;Hourly scan of the webserverHourly scan of the webserver&lt;/comment&gt;
    &lt;config id="daba56c8-73ec-11df-a475-002264764cea"/&gt;
    &lt;target id="b493b7a8-7489-11df-a3ec-002264764cea"/&gt;
  &lt;/create_task&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_task_response status="201" status_text="OK, resource created" id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_task_response status="201"
+                       status_text="OK, resource created"
+                       id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2141,7 +2259,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_agent_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_agent_response status="200"
+                        status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2201,7 +2320,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_config config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_config_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_config_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2262,7 +2382,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_escalator escalator_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_escalator_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_escalator_response status="200"
+                            status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2323,7 +2444,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_lsc_credential lsc_credential_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_lsc_credential_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_lsc_credential_response status="200"
+                                 status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2383,7 +2505,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_note note_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_note_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_note_response status="200"
+                       status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2443,7 +2566,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_override_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_override_response status="200"
+                           status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2503,7 +2627,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_report_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_report_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2563,7 +2688,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_schedule schedule_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_schedule_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_schedule_response status="200"
+                           status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2623,7 +2749,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_target target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_target_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_target_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2684,7 +2811,8 @@ create_task_rcfile
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_task_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;delete_task_response status="200"
+                       status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
@@ -2827,6 +2955,7 @@ get_agents_response_agent_comment
  = element comment
      {
        text
+
      }
 
 get_agents_response_agent_in_use
@@ -2859,6 +2988,7 @@ get_agents_response_agent_package_filename
  = element filename
      {
        text
+
      }
 </pre></div>
 </div>
@@ -2866,13 +2996,14 @@ get_agents_response_agent_package_filename
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200"
+                      status_text="OK"&gt;
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
-     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;name&gt;Custom Scan AgentCustom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;installer&gt;
-       &lt;trust&gt;yes&lt;/trust&gt;
+       &lt;trust&gt;yesyes&lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
    ...
@@ -2883,13 +3014,14 @@ get_agents_response_agent_package_filename
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200"
+                      status_text="OK"&gt;
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
-     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;name&gt;Custom Scan AgentCustom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;installer&gt;
-       &lt;trust&gt;yes&lt;/trust&gt;
+       &lt;trust&gt;yesyes&lt;/trust&gt;
      &lt;/installer&gt;
    &lt;/agent&gt;
  &lt;/get_agents_response&gt;
@@ -2897,16 +3029,18 @@ get_agents_response_agent_package_filename
 </div>
 <h4>4.22.1 Example: Get one agent, including the installer package</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf" format="installer"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents agent_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
+             format="installer"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_agents_response status="200"
+                      status_text="OK"&gt;
    &lt;agent id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;Custom Scan Agent&lt;/name&gt;
-     &lt;comment&gt;Custom agent for use on the Web servers.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;name&gt;Custom Scan AgentCustom Scan Agent&lt;/name&gt;
+     &lt;comment&gt;Custom agent for use on the Web servers.Custom agent for use on the Web servers.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;package format="installer"&gt;
        CgoKCgoKCgoKCgoKCSAgI...
-       &lt;filename&gt;agent.deb&lt;/filename&gt;
+       &lt;filename&gt;agent.debagent.deb&lt;/filename&gt;
      &lt;/package&gt;
    &lt;/agent&gt;
  &lt;/get_agents_response&gt;
@@ -3133,12 +3267,14 @@ get_configs_response_config_comment
  = element comment
      {
        text
+
      }
 
 get_configs_response_config_family_count
  = element family_count
      {
        integer
+
        &amp; get_configs_response_config_family_count_growing
      }
 
@@ -3152,6 +3288,7 @@ get_configs_response_config_nvt_count
  = element nvt_count
      {
        integer
+
        &amp; get_configs_response_config_nvt_count_growing
      }
 
@@ -3270,12 +3407,14 @@ get_configs_response_config_preferences_preference_type
  = element type
      {
        text
+
      }
 
 get_configs_response_config_preferences_preference_value
  = element value
      {
        text
+
      }
 </pre></div>
 </div>
@@ -3283,24 +3422,25 @@ get_configs_response_config_preferences_preference_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs_response status="200"
+                       status_text="OK"&gt;
    &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
-     &lt;name&gt;Full and fast&lt;/name&gt;
+     &lt;name&gt;Full and fastFull and fast&lt;/name&gt;
      &lt;comment&gt;
        All NVT's; optimized by using previously collected information.
      &lt;/comment&gt;
      &lt;family_count&gt;
        4
-       &lt;growing&gt;1&lt;/growing&gt;
+       &lt;growing&gt;11&lt;/growing&gt;
      &lt;/family_count&gt;
      &lt;nvt_count&gt;
        12
-       &lt;growing&gt;1&lt;/growing&gt;
+       &lt;growing&gt;11&lt;/growing&gt;
      &lt;/nvt_count&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
-         &lt;name&gt;Web Servers&lt;/name&gt;
+         &lt;name&gt;Web ServersWeb Servers&lt;/name&gt;
        &lt;/task&gt;
        ...
      &lt;/tasks&gt;
@@ -3311,46 +3451,49 @@ get_configs_response_config_preferences_preference_value
 </div>
 <h4>4.23.1 Example: Get a single config, including preference and family lists</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs config_id="daba56c8-73ec-11df-a475-002264764cea" preferences="1" families="1"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs config_id="daba56c8-73ec-11df-a475-002264764cea"
+              preferences="1"
+              families="1"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_configs_response status="200"
+                       status_text="OK"&gt;
    &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
-     &lt;name&gt;Full and fast&lt;/name&gt;
+     &lt;name&gt;Full and fastFull and fast&lt;/name&gt;
      &lt;comment&gt;
        All NVT's; optimized by using previously collected information.
      &lt;/comment&gt;
      &lt;family_count&gt;
        4
-       &lt;growing&gt;1&lt;/growing&gt;
+       &lt;growing&gt;11&lt;/growing&gt;
      &lt;/family_count&gt;
      &lt;nvt_count&gt;
        12
-       &lt;growing&gt;1&lt;/growing&gt;
+       &lt;growing&gt;11&lt;/growing&gt;
      &lt;/nvt_count&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
-         &lt;name&gt;Web Servers&lt;/name&gt;
+         &lt;name&gt;Web ServersWeb Servers&lt;/name&gt;
        &lt;/task&gt;
        ...
      &lt;/tasks&gt;
      &lt;families&gt;
        &lt;family&gt;
-         &lt;name&gt;Credentials&lt;/name&gt;
-         &lt;nvt_count&gt;8&lt;/nvt_count&gt;
-         &lt;max_nvt_count&gt;8&lt;/max_nvt_count&gt;
-         &lt;growing&gt;1&lt;/growing&gt;
+         &lt;name&gt;CredentialsCredentials&lt;/name&gt;
+         &lt;nvt_count&gt;88&lt;/nvt_count&gt;
+         &lt;max_nvt_count&gt;88&lt;/max_nvt_count&gt;
+         &lt;growing&gt;11&lt;/growing&gt;
        &lt;/family&gt;
        ...
      &lt;/families&gt;
      &lt;preferences&gt;
        &lt;preference&gt;
          &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
-           &lt;name&gt;Services&lt;/name&gt;
+           &lt;name&gt;ServicesServices&lt;/name&gt;
          &lt;/nvt&gt;
-         &lt;name&gt;Network connection timeout :&lt;/name&gt;
-         &lt;type&gt;entry&lt;/type&gt;
-         &lt;value&gt;5&lt;/value&gt;
+         &lt;name&gt;Network connection timeout :Network connection timeout :&lt;/name&gt;
+         &lt;type&gt;entryentry&lt;/type&gt;
+         &lt;value&gt;55&lt;/value&gt;
        &lt;/preference&gt;
        ...
      &lt;/preferences&gt;
@@ -3481,12 +3624,13 @@ get_dependencies_response_nvt_requires_nvt_name
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies_response status="200"
+                            status_text="OK"&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.0.114664"&gt;
-     &lt;name&gt;Dependency Test&lt;/name&gt;
+     &lt;name&gt;Dependency TestDependency Test&lt;/name&gt;
      &lt;requires&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.114663"&gt;
-         &lt;name&gt;File Upload Test&lt;/name&gt;
+         &lt;name&gt;File Upload TestFile Upload Test&lt;/name&gt;
        &lt;/nvt&gt;
      &lt;/requires&gt;
    &lt;/nvt&gt;
@@ -3498,12 +3642,13 @@ get_dependencies_response_nvt_requires_nvt_name
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies nvt_oid="1.3.6.1.4.1.25623.1.0.114664"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_dependencies_response status="200"
+                            status_text="OK"&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.0.114664"&gt;
-     &lt;name&gt;Dependency Test&lt;/name&gt;
+     &lt;name&gt;Dependency TestDependency Test&lt;/name&gt;
      &lt;requires&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.114663"&gt;
-         &lt;name&gt;File Upload Test&lt;/name&gt;
+         &lt;name&gt;File Upload TestFile Upload Test&lt;/name&gt;
        &lt;/nvt&gt;
      &lt;/requires&gt;
    &lt;/nvt&gt;
@@ -3654,6 +3799,7 @@ get_escalators_response_escalator_comment
  = element comment
      {
        text
+
      }
 
 get_escalators_response_escalator_in_use
@@ -3666,6 +3812,7 @@ get_escalators_response_escalator_condition
  = element condition
      {
        text
+
        &amp; get_escalators_response_escalator_condition_data*
      }
 
@@ -3673,6 +3820,7 @@ get_escalators_response_escalator_condition_data
  = element data
      {
        text
+
        &amp; get_escalators_response_escalator_condition_data_name
      }
 
@@ -3680,12 +3828,14 @@ get_escalators_response_escalator_condition_data_name
  = element name
      {
        text
+
      }
 
 get_escalators_response_escalator_event
  = element event
      {
        text
+
        &amp; get_escalators_response_escalator_event_data*
      }
 
@@ -3693,6 +3843,7 @@ get_escalators_response_escalator_event_data
  = element data
      {
        text
+
        &amp; get_escalators_response_escalator_event_data_name
      }
 
@@ -3700,12 +3851,14 @@ get_escalators_response_escalator_event_data_name
  = element name
      {
        text
+
      }
 
 get_escalators_response_escalator_method
  = element method
      {
        text
+
        &amp; get_escalators_response_escalator_method_data*
      }
 
@@ -3713,6 +3866,7 @@ get_escalators_response_escalator_method_data
  = element data
      {
        text
+
        &amp; get_escalators_response_escalator_method_data_name
      }
 
@@ -3720,6 +3874,7 @@ get_escalators_response_escalator_method_data_name
  = element name
      {
        text
+
      }
 </pre></div>
 </div>
@@ -3727,38 +3882,39 @@ get_escalators_response_escalator_method_data_name
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_escalators/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_escalators_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_escalators_response status="200"
+                          status_text="OK"&gt;
    &lt;escalator id="6181e65d-8ba0-4937-9c44-8f2b10b0def7"&gt;
-     &lt;name&gt;Team alert&lt;/name&gt;
+     &lt;name&gt;Team alertTeam alert&lt;/name&gt;
      &lt;comment/&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
      &lt;condition&gt;
        Threat level at least
        &lt;data&gt;
          High
-         &lt;name&gt;level&lt;/name&gt;
+         &lt;name&gt;levellevel&lt;/name&gt;
        &lt;/data&gt;
      &lt;/condition&gt;
      &lt;event&gt;
        Task run status changed
        &lt;data&gt;
          Done
-         &lt;name&gt;status&lt;/name&gt;
+         &lt;name&gt;statusstatus&lt;/name&gt;
        &lt;/data&gt;
      &lt;/event&gt;
      &lt;method&gt;
        Email
        &lt;data&gt;
          team@example.org
-         &lt;name&gt;to_address&lt;/name&gt;
+         &lt;name&gt;to_addressto_address&lt;/name&gt;
        &lt;/data&gt;
        &lt;data&gt;
          admin@example.org
-         &lt;name&gt;from_address&lt;/name&gt;
+         &lt;name&gt;from_addressfrom_address&lt;/name&gt;
        &lt;/data&gt;
        &lt;data&gt;
          0
-         &lt;name&gt;notice&lt;/name&gt;
+         &lt;name&gt;noticenotice&lt;/name&gt;
        &lt;/data&gt;
      &lt;/method&gt;
    &lt;/escalator&gt;
@@ -3928,6 +4084,7 @@ get_lsc_credentials_response_lsc_credential_comment
  = element comment
      {
        text
+
      }
 
 get_lsc_credentials_response_lsc_credential_in_use
@@ -3967,12 +4124,14 @@ get_lsc_credentials_response_lsc_credential_public_key
  = element public_key
      {
        text
+
      }
 
 get_lsc_credentials_response_lsc_credential_package
  = element package
      {
        base64
+
        &amp; attribute format { xsd:token { pattern = "rpm|deb|exe" } }
      }
 </pre></div>
@@ -3981,24 +4140,25 @@ get_lsc_credentials_response_lsc_credential_package
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
+                               status_text="OK"&gt;
    &lt;lsc_credential id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
-     &lt;name&gt;sally&lt;/name&gt;
-     &lt;login&gt;sally&lt;/login&gt;
+     &lt;name&gt;sallysally&lt;/name&gt;
+     &lt;login&gt;sallysally&lt;/login&gt;
      &lt;comment/&gt;
-     &lt;in_use&gt;0&lt;/in_use&gt;
-     &lt;type&gt;gen&lt;/type&gt;
+     &lt;in_use&gt;00&lt;/in_use&gt;
+     &lt;type&gt;gengen&lt;/type&gt;
      &lt;targets/&gt;
    &lt;/lsc_credential&gt;
    &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;type&gt;pass&lt;/type&gt;
+     &lt;name&gt;bobbob&lt;/name&gt;
+     &lt;login&gt;bobbob&lt;/login&gt;
+     &lt;comment&gt;Bob on the web server.Bob on the web server.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
+     &lt;type&gt;passpass&lt;/type&gt;
      &lt;targets&gt;
        &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
-         &lt;name&gt;Web server&lt;/name&gt;
+         &lt;name&gt;Web serverWeb server&lt;/name&gt;
        &lt;/target&gt;
      &lt;/targets&gt;
    &lt;/lsc_credential&gt;
@@ -4008,18 +4168,20 @@ get_lsc_credentials_response_lsc_credential_package
 </div>
 <h4>4.26.1 Example: Get the public key of a single LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15" format="key"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+                      format="key"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
+                               status_text="OK"&gt;
    &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;type&gt;pass&lt;/type&gt;
+     &lt;name&gt;bobbob&lt;/name&gt;
+     &lt;login&gt;bobbob&lt;/login&gt;
+     &lt;comment&gt;Bob on the web server.Bob on the web server.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
+     &lt;type&gt;passpass&lt;/type&gt;
      &lt;targets&gt;
        &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
-         &lt;name&gt;Web server&lt;/name&gt;
+         &lt;name&gt;Web serverWeb server&lt;/name&gt;
        &lt;/target&gt;
      &lt;/targets&gt;
      &lt;public_key&gt;
@@ -4031,21 +4193,23 @@ get_lsc_credentials_response_lsc_credential_package
 </div>
 <h4>4.26.1 Example: Get the Debian package of a single LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15" format="deb"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
+                      format="deb"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials_response status="200"
+                               status_text="OK"&gt;
    &lt;lsc_credential id="8e305b0b-260d-450d-91a8-dadf0b144e15"&gt;
-     &lt;name&gt;bob&lt;/name&gt;
-     &lt;login&gt;bob&lt;/login&gt;
-     &lt;comment&gt;Bob on the web server.&lt;/comment&gt;
-     &lt;in_use&gt;1&lt;/in_use&gt;
-     &lt;type&gt;pass&lt;/type&gt;
+     &lt;name&gt;bobbob&lt;/name&gt;
+     &lt;login&gt;bobbob&lt;/login&gt;
+     &lt;comment&gt;Bob on the web server.Bob on the web server.&lt;/comment&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
+     &lt;type&gt;passpass&lt;/type&gt;
      &lt;targets&gt;
        &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
-         &lt;name&gt;Web server&lt;/name&gt;
+         &lt;name&gt;Web serverWeb server&lt;/name&gt;
        &lt;/target&gt;
      &lt;/targets&gt;
-     &lt;package format="deb"&gt;ITxhcmNoPgpk...DmvF0AKAAACg==&lt;/package&gt;
+     &lt;package format="deb"&gt;ITxhcmNoPgpk...DmvF0AKAAACg==ITxhcmNoPgpk...DmvF0AKAAACg==&lt;/package&gt;
    &lt;/lsc_credential&gt;
  &lt;/get_lsc_credentials_response&gt;
 </pre></div>
@@ -4284,6 +4448,7 @@ get_notes_response_note_text
  = element text
      {
        text
+
        &amp; attribute excerpt { boolean }
      }
 
@@ -4309,12 +4474,14 @@ get_notes_response_note_hosts
  = element hosts
      {
        text
+
      }
 
 get_notes_response_note_port
  = element port
      {
        text
+
      }
 
 get_notes_response_note_threat
@@ -4347,18 +4514,21 @@ get_notes_response_note_result_subnet
  = element subnet
      {
        text
+
      }
 
 get_notes_response_note_result_host
  = element host
      {
        text
+
      }
 
 get_notes_response_note_result_port
  = element port
      {
        text
+
      }
 
 get_notes_response_note_result_nvt
@@ -4381,12 +4551,14 @@ get_notes_response_note_result_nvt_cvss_base
  = element cvss_base
      {
        text
+
      }
 
 get_notes_response_note_result_nvt_risk_factor
  = element risk_factor
      {
        text
+
      }
 
 get_notes_response_note_result_threat
@@ -4399,6 +4571,7 @@ get_notes_response_note_result_description
  = element description
      {
        text
+
      }
 </pre></div>
 </div>
@@ -4406,13 +4579,14 @@ get_notes_response_note_result_description
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes_response status="200"
+                     status_text="OK"&gt;
    &lt;note id="b76b81a7-9df8-42df-afff-baa9d4620128"&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
-       &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+       &lt;name&gt;Test NVT: long linesTest NVT: long lines&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;text excerpt="0"&gt;This is the full text of the note.&lt;/text&gt;
-     &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;text excerpt="0"&gt;This is the full text of the note.This is the full text of the note.&lt;/text&gt;
+     &lt;orphan&gt;11&lt;/orphan&gt;
    &lt;/note&gt;
    ...
  &lt;/get_notes_response&gt;
@@ -4420,34 +4594,37 @@ get_notes_response_note_result_description
 </div>
 <h4>4.27.1 Example: Get details of a single note</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1" result="1"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0"
+            details="1"
+            result="1"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes_response status="200"
+                     status_text="OK"&gt;
    &lt;note id="7f618bbb-4664-419e-9bbf-367d93954cb0"&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
-       &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+       &lt;name&gt;Test NVT: control chars in report resultTest NVT: control chars in report result&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
-     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
-     &lt;text&gt;note fixed to result&lt;/text&gt;
-     &lt;hosts&gt;127.0.0.1&lt;/hosts&gt;
-     &lt;port&gt;general/tcp&lt;/port&gt;
-     &lt;threat&gt;Medium&lt;/threat&gt;
+     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
+     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
+     &lt;text&gt;note fixed to resultnote fixed to result&lt;/text&gt;
+     &lt;hosts&gt;127.0.0.1127.0.0.1&lt;/hosts&gt;
+     &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
+     &lt;threat&gt;MediumMedium&lt;/threat&gt;
      &lt;task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"&gt;
-       &lt;name&gt;test&lt;/name&gt;
+       &lt;name&gt;testtest&lt;/name&gt;
      &lt;/task&gt;
-     &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;orphan&gt;00&lt;/orphan&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"&gt;
-       &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
-       &lt;host&gt;127.0.0.1&lt;/host&gt;
-       &lt;port&gt;general/tcp&lt;/port&gt;
+       &lt;subnet&gt;127.0.0.1127.0.0.1&lt;/subnet&gt;
+       &lt;host&gt;127.0.0.1127.0.0.1&lt;/host&gt;
+       &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
-         &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+         &lt;name&gt;Test NVT: control chars in report resultTest NVT: control chars in report result&lt;/name&gt;
          &lt;cvss_base/&gt;
          &lt;risk_factor/&gt;
        &lt;/nvt&gt;
-       &lt;threat&gt;Medium&lt;/threat&gt;
-       &lt;description&gt;Warning with control char between fullstops: . .&lt;/description&gt;
+       &lt;threat&gt;MediumMedium&lt;/threat&gt;
+       &lt;description&gt;Warning with control char between fullstops: . .Warning with control char between fullstops: . .&lt;/description&gt;
      &lt;/result&gt;
    &lt;/note&gt;
    ...
@@ -4725,96 +4902,112 @@ get_nvts_response_nvt_category
  = element category
      {
        text
+
      }
 
 get_nvts_response_nvt_copyright
  = element copyright
      {
        text
+
      }
 
 get_nvts_response_nvt_description
  = element description
      {
        text
+
      }
 
 get_nvts_response_nvt_summary
  = element summary
      {
        text
+
      }
 
 get_nvts_response_nvt_family
  = element family
      {
        text
+
      }
 
 get_nvts_response_nvt_version
  = element version
      {
        text
+
      }
 
 get_nvts_response_nvt_cvss_base
  = element cvss_base
      {
        text
+
      }
 
 get_nvts_response_nvt_risk_factor
  = element risk_factor
      {
        text
+
      }
 
 get_nvts_response_nvt_cve_id
  = element cve_id
      {
        text
+
      }
 
 get_nvts_response_nvt_bugtraq_id
  = element bugtraq_id
      {
        text
+
      }
 
 get_nvts_response_nvt_xrefs
  = element xrefs
      {
        text
+
      }
 
 get_nvts_response_nvt_fingerprints
  = element fingerprints
      {
        text
+
      }
 
 get_nvts_response_nvt_tags
  = element tags
      {
        text
+
      }
 
 get_nvts_response_nvt_preference_count
  = element preference_count
      {
        text
+
      }
 
 get_nvts_response_nvt_timeout
  = element timeout
      {
        text
+
      }
 
 get_nvts_response_nvt_checksum
  = element checksum
      {
        text
+
        &amp; get_nvts_response_nvt_checksum_algorithm
      }
 
@@ -4822,12 +5015,14 @@ get_nvts_response_nvt_checksum_algorithm
  = element algorithm
      {
        text
+
      }
 
 get_nvts_response_nvt_preferences
  = element preferences
      {
        text
+
        &amp; get_nvts_response_nvt_preferences_timeout
        &amp; get_nvts_response_nvt_preferences_preference*
      }
@@ -4836,6 +5031,7 @@ get_nvts_response_nvt_preferences_timeout
  = element timeout
      {
        text
+
      }
 
 get_nvts_response_nvt_preferences_preference
@@ -4858,66 +5054,73 @@ get_nvts_response_nvt_preferences_preference_name
  = element name
      {
        text
+
      }
 
 get_nvts_response_nvt_preferences_preference_type
  = element type
      {
        text
+
      }
 
 get_nvts_response_nvt_preferences_preference_value
  = element value
      {
        text
+
      }
 </pre></div>
 </div>
 <h4>4.28.1 Example: Get full NVT listing</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts details="1" timeout="1" preference_count="1" preferences="1"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts details="1"
+           timeout="1"
+           preference_count="1"
+           preferences="1"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts_response status="200"
+                    status_text="OK"&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.7.13005"&gt;
-     &lt;name&gt;Services&lt;/name&gt;
-     &lt;category&gt;Services&lt;/category&gt;
-     &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
+     &lt;name&gt;ServicesServices&lt;/name&gt;
+     &lt;category&gt;ServicesServices&lt;/category&gt;
+     &lt;copyright&gt;GNU GPL v2GNU GPL v2&lt;/copyright&gt;
      &lt;description&gt;
        This script attepts to detects with service is running on which port.
      &lt;/description&gt;
-     &lt;summary&gt;Find what is listening on which port&lt;/summary&gt;
-     &lt;family&gt;Service detection&lt;/family&gt;
-     &lt;version&gt;$Revision: 1852 $&lt;/version&gt;
+     &lt;summary&gt;Find what is listening on which portFind what is listening on which port&lt;/summary&gt;
+     &lt;family&gt;Service detectionService detection&lt;/family&gt;
+     &lt;version&gt;$Revision: 1852 $$Revision: 1852 $&lt;/version&gt;
      &lt;cvss_base/&gt;
-     &lt;risk_factor&gt;None&lt;/risk_factor&gt;
-     &lt;cve_id&gt;NOCVE&lt;/cve_id&gt;
-     &lt;bugtraq_id&gt;NOBID&lt;/bugtraq_id&gt;
-     &lt;xrefs&gt;NOXREF&lt;/xrefs&gt;
-     &lt;fingerprints&gt;NOSIGNKEYS&lt;/fingerprints&gt;
-     &lt;tags&gt;NOTAG&lt;/tags&gt;
-     &lt;preference_count&gt;-1&lt;/preference_count&gt;
+     &lt;risk_factor&gt;NoneNone&lt;/risk_factor&gt;
+     &lt;cve_id&gt;NOCVENOCVE&lt;/cve_id&gt;
+     &lt;bugtraq_id&gt;NOBIDNOBID&lt;/bugtraq_id&gt;
+     &lt;xrefs&gt;NOXREFNOXREF&lt;/xrefs&gt;
+     &lt;fingerprints&gt;NOSIGNKEYSNOSIGNKEYS&lt;/fingerprints&gt;
+     &lt;tags&gt;NOTAGNOTAG&lt;/tags&gt;
+     &lt;preference_count&gt;-1-1&lt;/preference_count&gt;
      &lt;timeout/&gt;
      &lt;checksum&gt;
        2397586ea5cd3a69f953836f7be9ef7b
-       &lt;algorithm&gt;md5&lt;/algorithm&gt;
+       &lt;algorithm&gt;md5md5&lt;/algorithm&gt;
      &lt;/checksum&gt;
      &lt;preferences&gt;
        &lt;timeout/&gt;
        &lt;preference&gt;
          &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
-           &lt;name&gt;Services&lt;/name&gt;
+           &lt;name&gt;ServicesServices&lt;/name&gt;
          &lt;/nvt&gt;
-         &lt;name&gt;Network connection timeout :&lt;/name&gt;
-         &lt;type&gt;entry&lt;/type&gt;
-         &lt;value&gt;5&lt;/value&gt;
+         &lt;name&gt;Network connection timeout :Network connection timeout :&lt;/name&gt;
+         &lt;type&gt;entryentry&lt;/type&gt;
+         &lt;value&gt;55&lt;/value&gt;
        &lt;/preference&gt;
        ...
      &lt;/preferences&gt;
    &lt;/nvt&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.7.13006"&gt;
-     &lt;name&gt;FooBar 21&lt;/name&gt;
-     &lt;category&gt;Services&lt;/category&gt;
-     &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
+     &lt;name&gt;FooBar 21FooBar 21&lt;/name&gt;
+     &lt;category&gt;ServicesServices&lt;/category&gt;
+     &lt;copyright&gt;GNU GPL v2GNU GPL v2&lt;/copyright&gt;
      &lt;description&gt;
        This script detects whether the FooBar 2.1 XSS vulnerability is present.
      &lt;/description&gt;
@@ -4931,12 +5134,13 @@ get_nvts_response_nvt_preferences_preference_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts_response status="200"
+                    status_text="OK"&gt;
    &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
-     &lt;name&gt;Services&lt;/name&gt;
+     &lt;name&gt;ServicesServices&lt;/name&gt;
      &lt;checksum&gt;
        2397586ea5cd3a69f953836f7be9ef7b
-       &lt;algorithm&gt;md5&lt;/algorithm&gt;
+       &lt;algorithm&gt;md5md5&lt;/algorithm&gt;
      &lt;/checksum&gt;
    &lt;/nvt&gt;
  &lt;/get_nvts_response&gt;
@@ -5042,15 +5246,16 @@ get_nvt_families_response_families_family_max_nvt_count
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_families/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_families_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_families_response status="200"
+                            status_text="OK"&gt;
    &lt;families&gt;
      &lt;family&gt;
-       &lt;name&gt;Credentials&lt;/name&gt;
-       &lt;max_nvt_count&gt;8&lt;/max_nvt_count&gt;
+       &lt;name&gt;CredentialsCredentials&lt;/name&gt;
+       &lt;max_nvt_count&gt;88&lt;/max_nvt_count&gt;
      &lt;/family&gt;
      &lt;family&gt;
-       &lt;name&gt;Port scanners&lt;/name&gt;
-       &lt;max_nvt_count&gt;12&lt;/max_nvt_count&gt;
+       &lt;name&gt;Port scannersPort scanners&lt;/name&gt;
+       &lt;max_nvt_count&gt;1212&lt;/max_nvt_count&gt;
      &lt;/family&gt;
      ...
    &lt;/families&gt;
@@ -5141,8 +5346,9 @@ get_nvt_feed_checksum_response_checksum
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_checksum/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_checksum_response status="200" status_text="OK"&gt;
-   &lt;checksum algorithm="md5"&gt;931db829a06b9a440a2ecaeb68c03715&lt;/checksum&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_checksum_response status="200"
+                                 status_text="OK"&gt;
+   &lt;checksum algorithm="md5"&gt;931db829a06b9a440a2ecaeb68c03715931db829a06b9a440a2ecaeb68c03715&lt;/checksum&gt;
  &lt;/get_nvt_feed_checksum_response&gt;
 </pre></div>
 </div>
@@ -5386,6 +5592,7 @@ get_overrides_response_override_text
  = element text
      {
        text
+
        &amp; attribute excerpt { boolean }
      }
 
@@ -5423,12 +5630,14 @@ get_overrides_response_override_hosts
  = element hosts
      {
        text
+
      }
 
 get_overrides_response_override_port
  = element port
      {
        text
+
      }
 
 get_overrides_response_override_task
@@ -5455,18 +5664,21 @@ get_overrides_response_override_result_subnet
  = element subnet
      {
        text
+
      }
 
 get_overrides_response_override_result_host
  = element host
      {
        text
+
      }
 
 get_overrides_response_override_result_port
  = element port
      {
        text
+
      }
 
 get_overrides_response_override_result_nvt
@@ -5489,12 +5701,14 @@ get_overrides_response_override_result_nvt_cvss_base
  = element cvss_base
      {
        text
+
      }
 
 get_overrides_response_override_result_nvt_risk_factor
  = element risk_factor
      {
        text
+
      }
 
 get_overrides_response_override_result_threat
@@ -5507,6 +5721,7 @@ get_overrides_response_override_result_description
  = element description
      {
        text
+
      }
 </pre></div>
 </div>
@@ -5514,15 +5729,16 @@ get_overrides_response_override_result_description
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides_response status="200"
+                         status_text="OK"&gt;
    &lt;override id="b76b81a7-9df8-42df-afff-baa9d4620128"&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
-       &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+       &lt;name&gt;Test NVT: long linesTest NVT: long lines&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;text excerpt="0"&gt;This is the full text of the override.&lt;/text&gt;
-     &lt;threat&gt;High&lt;/threat&gt;
-     &lt;new_threat&gt;Log&lt;/new_threat&gt;
-     &lt;orphan&gt;1&lt;/orphan&gt;
+     &lt;text excerpt="0"&gt;This is the full text of the override.This is the full text of the override.&lt;/text&gt;
+     &lt;threat&gt;HighHigh&lt;/threat&gt;
+     &lt;new_threat&gt;LogLog&lt;/new_threat&gt;
+     &lt;orphan&gt;11&lt;/orphan&gt;
    &lt;/override&gt;
    ...
  &lt;/get_overrides_response&gt;
@@ -5530,24 +5746,26 @@ get_overrides_response_override_result_description
 </div>
 <h4>4.31.1 Example: Get details of a single override</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0" details="1"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0"
+                details="1"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides_response status="200"
+                         status_text="OK"&gt;
    &lt;override id="7f618bbb-4664-419e-9bbf-367d93954cb0"&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
-       &lt;name&gt;Test NVT: control chars in report result&lt;/name&gt;
+       &lt;name&gt;Test NVT: control chars in report resultTest NVT: control chars in report result&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
-     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
-     &lt;text&gt;override fixed to result&lt;/text&gt;
-     &lt;hosts&gt;127.0.0.1&lt;/hosts&gt;
-     &lt;port&gt;general/tcp&lt;/port&gt;
-     &lt;threat&gt;Medium&lt;/threat&gt;
-     &lt;new_threat&gt;Low&lt;/new_threat&gt;
+     &lt;creation_time&gt;Sun Jun 27 08:49:46 2010Sun Jun 27 08:49:46 2010&lt;/creation_time&gt;
+     &lt;modification_time&gt;Sun Jun 27 08:49:46 2010Sun Jun 27 08:49:46 2010&lt;/modification_time&gt;
+     &lt;text&gt;override fixed to resultoverride fixed to result&lt;/text&gt;
+     &lt;hosts&gt;127.0.0.1127.0.0.1&lt;/hosts&gt;
+     &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
+     &lt;threat&gt;MediumMedium&lt;/threat&gt;
+     &lt;new_threat&gt;LowLow&lt;/new_threat&gt;
      &lt;task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"&gt;
-       &lt;name&gt;test&lt;/name&gt;
+       &lt;name&gt;testtest&lt;/name&gt;
      &lt;/task&gt;
-     &lt;orphan&gt;0&lt;/orphan&gt;
+     &lt;orphan&gt;00&lt;/orphan&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"/&gt;
    &lt;/override&gt;
    ...
@@ -5694,12 +5912,14 @@ get_preferences_response_preference_type
  = element type
      {
        text
+
      }
 
 get_preferences_response_preference_value
  = element value
      {
        text
+
      }
 </pre></div>
 </div>
@@ -5707,10 +5927,11 @@ get_preferences_response_preference_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200"
+                           status_text="OK"&gt;
    &lt;preference&gt;
-     &lt;name&gt;Services[entry]:Network connection timeout :&lt;/name&gt;
-     &lt;value&gt;5&lt;/value&gt;
+     &lt;name&gt;Services[entry]:Network connection timeout :Services[entry]:Network connection timeout :&lt;/name&gt;
+     &lt;value&gt;55&lt;/value&gt;
    &lt;/preference&gt;
    ...
  &lt;/get_preferences_response&gt;
@@ -5720,10 +5941,11 @@ get_preferences_response_preference_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200"
+                           status_text="OK"&gt;
    &lt;preference&gt;
-     &lt;name&gt;Services[entry]:Network connection timeout :&lt;/name&gt;
-     &lt;value&gt;5&lt;/value&gt;
+     &lt;name&gt;Services[entry]:Network connection timeout :Services[entry]:Network connection timeout :&lt;/name&gt;
+     &lt;value&gt;55&lt;/value&gt;
    &lt;/preference&gt;
    ...
  &lt;/get_preferences_response&gt;
@@ -5733,14 +5955,15 @@ get_preferences_response_preference_value
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200" status_text="OK"&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences_response status="200"
+                           status_text="OK"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
-       &lt;name&gt;Services&lt;/name&gt;
+       &lt;name&gt;ServicesServices&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;name&gt;Network connection timeout :&lt;/name&gt;
-     &lt;type&gt;entry&lt;/type&gt;
-     &lt;value&gt;5&lt;/value&gt;
+     &lt;name&gt;Network connection timeout :Network connection timeout :&lt;/name&gt;
+     &lt;type&gt;entryentry&lt;/type&gt;
+     &lt;value&gt;55&lt;/value&gt;
    &lt;/preference&gt;
    ...
  &lt;/get_preferences_response&gt;
@@ -5748,27 +5971,1713 @@ get_preferences_response_preference_value
 </div>
 <h4>4.32.1 Example: Get preferences from a config for a single NVT</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea" nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea"
+                  nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences nvt_oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.10330"&gt;
-       &lt;name&gt;Services&lt;/name&gt;
+       &lt;name&gt;ServicesServices&lt;/name&gt;
      &lt;/nvt&gt;
-     &lt;name&gt;Network connection timeout :&lt;/name&gt;
-     &lt;type&gt;entry&lt;/type&gt;
-     &lt;value&gt;5&lt;/value&gt;
+     &lt;name&gt;Network connection timeout :Network connection timeout :&lt;/name&gt;
+     &lt;type&gt;entryentry&lt;/type&gt;
+     &lt;value&gt;55&lt;/value&gt;
    &lt;/preference&gt;
  &lt;/get_preferences&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_get_version">4.33
+<div><h3 id="command_get_reports">4.33
+        Command <tt>get_reports</tt>
+</h3></div>
+<p>In short: Get all reports.</p>
+<p>
+        The client uses the get_reports command to get report information.
+      </p>
+<p>
+        The XML report format is sent as XML.  All other formats are sent in
+        Base64 encoding.
+      </p>
+<h4>4.33.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>report_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of single report to get.
+          </li>
+<li>
+          @<b>format</b>
+          (text)
+          Required report format.
+          </li>
+<li>
+          @<b>first_result</b>
+          (<a href="#type_integer">integer</a>)
+          First result to get.
+          </li>
+<li>
+          @<b>max_results</b>
+          (<a href="#type_integer">integer</a>)
+          Maximum number of results to get.
+          </li>
+<li>
+          @<b>sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
+          </li>
+<li>
+          @<b>sort_field</b>
+          (text)
+          </li>
+<li>
+          @<b>levels</b>
+          (<a href="#type_levels">levels</a>)
+          Which threat levels to include in the report.
+          </li>
+<li>
+          @<b>search_phrase</b>
+          (text)
+          A string that all results in the report must contain.
+          </li>
+<li>
+          @<b>min_cvss_base</b>
+          (<a href="#type_integer">integer</a>)
+          Minimum CVSS base of results in report.
+          </li>
+<li>
+          @<b>notes</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include notes in the report.
+          </li>
+<li>
+          @<b>note_details</b>
+          (<a href="#type_boolean">boolean</a>)
+          If notes are included, whether to include note details.
+          </li>
+<li>
+          @<b>overrides</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include overrides in the report.
+          </li>
+<li>
+          @<b>override_details</b>
+          (<a href="#type_boolean">boolean</a>)
+          If overrides are included, whether to include override details.
+          </li>
+<li>
+          @<b>result_hosts_only</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include only those hosts that have results.
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          &lt;<b>report</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+          &lt;<b>sort</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Result sorting information.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>field</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Sort field.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>order</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Sort order of field.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+          &lt;<b>filters</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Result filtering information.</div>
+<ul style="list-style: none">
+<li>
+          &lt;<b>phrase</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Search phrase.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>notes</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether notes are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>overrides</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether overrides are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>apply_overrides</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether overrides are applied.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>result_hosts_only</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether only those hosts that have results are included.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>min_cvss_base</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>filter</b>&gt;
+          *<div style="margin-left: 15px; display: inline;">Level filter.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>scan_run_status</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Run status of task scan at time of report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>result_count</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results produced by scan.</div>
+<ul style="list-style: none">
+<li>
+          &lt;<b>filtered</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>debug</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "debug" (threat level Debug).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>hole</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "hole" (threat level High).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>info</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "info" (threat level Low).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>log</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "log" (threat level Log).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>warning</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Number of results of scanner message type "warning" (threat level Medium).</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>task</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>ports</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+<li>
+          &lt;<b>port</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          &lt;<b>host</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>threat</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>results</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+<li>
+          &lt;<b>result</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          &lt;<b>subnet</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>host</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>port</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>nvt</b>&gt;
+          <div style="margin-left: 15px; display: inline;">NVT to which result applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>cvss_base</b>&gt;
+          <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>risk_factor</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>threat</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>description</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Description of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>scan_start</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>host_start</b>&gt;
+          *<div style="margin-left: 15px; display: inline;">Start time of a particular host.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>host</b>&gt;
+          <ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+          &lt;<b>host_end</b>&gt;
+          *<div style="margin-left: 15px; display: inline;">End time of a particular host.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>host</b>&gt;
+          <ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+          &lt;<b>scan_end</b>&gt;
+          <div style="margin-left: 15px; display: inline;">End time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>4.33.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>get_reports
+ = element get_reports
+     {
+       ""
+       &amp; attribute report_id { uuid }?
+       &amp; attribute format { text }?
+       &amp; attribute first_result { integer }?
+       &amp; attribute max_results { integer }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+       &amp; attribute levels { levels }?
+       &amp; attribute search_phrase { text }?
+       &amp; attribute min_cvss_base { integer }?
+       &amp; attribute notes { boolean }?
+       &amp; attribute note_details { boolean }?
+       &amp; attribute overrides { boolean }?
+       &amp; attribute override_details { boolean }?
+       &amp; attribute result_hosts_only { boolean }?
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
+ = element get_reports_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_reports_response_report*
+     }
+
+get_reports_response_report
+ = element report
+     {
+       base64
+       &amp; attribute id { uuid }
+       &amp; ( get_reports_response_report_sort
+           &amp; get_reports_response_report_filters
+           &amp; get_reports_response_report_scan_run_status
+           &amp; get_reports_response_report_result_count
+           &amp; get_reports_response_report_task
+           &amp; get_reports_response_report_ports
+           &amp; get_reports_response_report_results
+           &amp; get_reports_response_report_scan_start
+           &amp; get_reports_response_report_host_start*
+           &amp; get_reports_response_report_host_end*
+           &amp; get_reports_response_report_scan_end )?
+     }
+
+get_reports_response_report_sort
+ = element sort
+     {
+       ""
+       &amp; get_reports_response_report_sort_field
+     }
+
+get_reports_response_report_sort_field
+ = element field
+     {
+       text
+
+       &amp; get_reports_response_report_sort_field_order
+     }
+
+get_reports_response_report_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_reports_response_report_filters
+ = element filters
+     {
+       levels
+       &amp; get_reports_response_report_filters_phrase
+       &amp; get_reports_response_report_filters_notes
+       &amp; get_reports_response_report_filters_overrides
+       &amp; get_reports_response_report_filters_apply_overrides
+       &amp; get_reports_response_report_filters_result_hosts_only
+       &amp; get_reports_response_report_filters_min_cvss_base
+       &amp; get_reports_response_report_filters_filter*
+     }
+
+get_reports_response_report_filters_phrase
+ = element phrase
+     {
+       text
+     }
+
+get_reports_response_report_filters_notes
+ = element notes
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_reports_response_report_filters_overrides
+ = element overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_reports_response_report_filters_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_reports_response_report_filters_result_hosts_only
+ = element result_hosts_only
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_reports_response_report_filters_minimum_cvss_base
+ = element minimum_cvss_base
+     {
+       text
+
+     }
+
+get_reports_response_report_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+get_reports_response_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+get_reports_response_report_result_count
+ = element result_count
+     {
+       integer
+       &amp; get_reports_response_report_result_count_filtered
+       &amp; get_reports_response_report_result_count_debug
+       &amp; get_reports_response_report_result_count_hole
+       &amp; get_reports_response_report_result_count_info
+       &amp; get_reports_response_report_result_count_log
+       &amp; get_reports_response_report_result_count_warning
+     }
+
+get_reports_response_report_result_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_reports_response_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_reports_response_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_reports_response_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_reports_response_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_reports_response_report_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_reports_response_report_task_name
+     }
+
+get_reports_response_report_task_name
+ = element name
+     {
+       name
+     }
+
+get_reports_response_report_ports
+ = element ports
+     {
+       ""
+       &amp; attribute start { integer }
+       &amp; attribute max { integer }
+       &amp; get_reports_response_report_ports_port*
+     }
+
+get_reports_response_report_ports_port
+ = element port
+     {
+       text
+
+       &amp; get_reports_response_report_ports_port_host
+       &amp; get_reports_response_report_ports_port_threat
+     }
+
+get_reports_response_report_ports_port_host
+ = element host
+     {
+       text
+
+     }
+
+get_reports_response_report_ports_port_threat
+ = element threat
+     {
+       threat
+     }
+
+get_reports_response_report_results
+ = element results
+     {
+       ""
+       &amp; attribute start { integer }
+       &amp; attribute max { integer }
+       &amp; get_reports_response_report_results_result*
+     }
+
+get_reports_response_report_results_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_reports_response_report_results_result_subnet
+       &amp; get_reports_response_report_results_result_host
+       &amp; get_reports_response_report_results_result_port
+       &amp; get_reports_response_report_results_result_nvt
+       &amp; get_reports_response_report_results_result_threat
+       &amp; get_reports_response_report_results_result_description
+     }
+
+get_reports_response_report_results_result_subnet
+ = element subnet
+     {
+       text
+
+     }
+
+get_reports_response_report_results_result_host
+ = element host
+     {
+       text
+
+     }
+
+get_reports_response_report_results_result_port
+ = element port
+     {
+       text
+
+     }
+
+get_reports_response_report_results_result_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_reports_response_report_results_result_nvt_name
+       &amp; get_reports_response_report_results_result_nvt_cvss_base
+       &amp; get_reports_response_report_results_result_nvt_risk_factor
+     }
+
+get_reports_response_report_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_reports_response_report_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+get_reports_response_report_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_reports_response_report_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_reports_response_report_results_result_description
+ = element description
+     {
+       text
+
+     }
+
+get_reports_response_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+get_reports_response_report_host_start
+ = element host_start
+     {
+       ctime
+       &amp; get_reports_response_report_host_start_host
+     }
+
+get_reports_response_report_host_start_host
+ = element host
+     {
+       text
+
+     }
+
+get_reports_response_report_host_end
+ = element host_end
+     {
+       ctime
+       &amp; get_reports_response_report_host_end_host
+     }
+
+get_reports_response_report_host_end_host
+ = element host
+     {
+       text
+
+     }
+
+get_reports_response_report_scan_end
+ = element scan_end
+     {
+       ctime
+     }
+</pre></div>
+</div>
+<h4>4.33.1 Example: Get a report in PDF</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
+              format="PDF"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports_response status="200"
+                       status_text="OK"&gt;
+   &lt;report id="267a3405-e84a-47da-97b2-5fa0d2e8995e"&gt;hsisn3qaVFhkjFRG4...
+            hsisn3qaVFhkjFRG4...
+          &lt;/report&gt;
+ &lt;/get_reports_response&gt;
+</pre></div>
+</div>
+<h4>4.33.1 Example: Get a report in XML</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports report_id="f0fdf522-276d-4893-9274-fb8699dc2270"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports_response status="200"
+                       status_text="OK"&gt;
+   &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
+     &lt;sort&gt;
+       &lt;field&gt;
+         type
+         &lt;order&gt;descendingdescending&lt;/order&gt;
+       &lt;/field&gt;
+     &lt;/sort&gt;
+     &lt;filters&gt;
+       hmlgd
+       &lt;phrase/&gt;
+       &lt;notes&gt;00&lt;/notes&gt;
+       &lt;overrides&gt;00&lt;/overrides&gt;
+       &lt;apply_overrides&gt;00&lt;/apply_overrides&gt;
+       &lt;result_hosts_only&gt;11&lt;/result_hosts_only&gt;
+       &lt;min_cvss_base/&gt;
+       &lt;filter&gt;HighHigh&lt;/filter&gt;
+       &lt;filter&gt;MediumMedium&lt;/filter&gt;
+       &lt;filter&gt;LowLow&lt;/filter&gt;
+       &lt;filter&gt;LogLog&lt;/filter&gt;
+       &lt;filter&gt;DebugDebug&lt;/filter&gt;
+     &lt;/filters&gt;
+     &lt;scan_run_status&gt;DoneDone&lt;/scan_run_status&gt;
+     &lt;result_count&gt;
+       10
+       &lt;filtered&gt;1010&lt;/filtered&gt;
+       &lt;debug&gt;00&lt;/debug&gt;
+       &lt;hole&gt;00&lt;/hole&gt;
+       &lt;info&gt;77&lt;/info&gt;
+       &lt;log&gt;00&lt;/log&gt;
+       &lt;warning&gt;33&lt;/warning&gt;
+     &lt;/result_count&gt;
+     &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
+       &lt;name&gt;dik mmdik mm&lt;/name&gt;
+     &lt;/task&gt;
+     &lt;ports start="1"
+            max="-1"&gt;
+       &lt;port&gt;
+         general/tcp
+         &lt;host&gt;127.0.1.1127.0.1.1&lt;/host&gt;
+         &lt;threat&gt;MediumMedium&lt;/threat&gt;
+       &lt;/port&gt;
+       ...
+     &lt;/ports&gt;
+     &lt;results start="1"
+              max="-1"&gt;
+       &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+         &lt;subnet&gt;127.0.1.1127.0.1.1&lt;/subnet&gt;
+         &lt;host&gt;127.0.1.1127.0.1.1&lt;/host&gt;
+         &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
+         &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
+           &lt;name&gt;Test NVT: fields with ISO-8859-1 chars ()Test NVT: fields with ISO-8859-1 chars ()&lt;/name&gt;
+           &lt;cvss_base&gt;5.05.0&lt;/cvss_base&gt;
+           &lt;risk_factor&gt;MediumMedium&lt;/risk_factor&gt;
+         &lt;/nvt&gt;
+         &lt;threat&gt;MediumMedium&lt;/threat&gt;
+         &lt;description&gt;Test with umlaut Warning Port 0.Test with  umlaut Warning Port 0.&lt;/description&gt;
+       &lt;/result&gt;
+       ...
+     &lt;/results&gt;
+     &lt;scan_start&gt;Mon Feb 1 19:11:21 2010Mon Feb  1 19:11:21 2010&lt;/scan_start&gt;
+     &lt;host_start&gt;
+       Mon Feb 1 19:11:21 2010
+       &lt;host&gt;127.0.1.1127.0.1.1&lt;/host&gt;
+     &lt;/host_start&gt;
+     &lt;host_end&gt;
+       Mon Feb 1 19:11:52 2010
+       &lt;host&gt;127.0.1.1127.0.1.1&lt;/host&gt;
+     &lt;/host_end&gt;
+     &lt;scan_end&gt;Mon Feb 1 19:11:52 2010Mon Feb  1 19:11:52 2010&lt;/scan_end&gt;
+   &lt;/report&gt;
+ &lt;/get_reports_response&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_get_results">4.34
+        Command <tt>get_results</tt>
+</h3></div>
+<p>In short: Get results.</p>
+<p>
+        The client uses the get_results command to get result information.
+      </p>
+<p>
+        If the request includes a notes flag, an overrides flag or an
+        apply_overrides flag and any of these is true, then the request
+        must also include a task ID.
+      </p>
+<h4>4.34.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>result_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of single result to get.
+          </li>
+<li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of task for note and override handling.
+          </li>
+<li>
+          @<b>notes</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include notes in the result.
+          </li>
+<li>
+          @<b>note_details</b>
+          (<a href="#type_boolean">boolean</a>)
+          If notes are included, whether to include note details.
+          </li>
+<li>
+          @<b>overrides</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include overrides in the result.
+          </li>
+<li>
+          @<b>override_details</b>
+          (<a href="#type_boolean">boolean</a>)
+          If overrides are included, whether to include override details.
+          </li>
+<li>
+          @<b>apply_overrides</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to override result threat levels.
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          &lt;<b>results</b>&gt;
+          <ul style="list-style: none"><li>
+          &lt;<b>result</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          &lt;<b>subnet</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>host</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>port</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>nvt</b>&gt;
+          <div style="margin-left: 15px; display: inline;">NVT to which result applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>cvss_base</b>&gt;
+          <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>risk_factor</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>threat</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>description</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Description of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>notes</b>&gt;
+          ?<div style="margin-left: 15px; display: inline;">Notes on the result.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>note</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          &lt;<b>nvt</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>text</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The text of the note.</div>
+<ul style="list-style: none"><li>
+          @<b>excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
+          </li></ul>
+</li>
+<li>
+          &lt;<b>orphan</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+          &lt;<b>overrides</b>&gt;
+          ?<div style="margin-left: 15px; display: inline;">Overrides on the result.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>override</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          &lt;<b>nvt</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+          &lt;<b>text</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The text of the override.</div>
+<ul style="list-style: none"><li>
+          @<b>excerpt</b>
+          (<a href="#type_boolean">boolean</a>)
+          </li></ul>
+</li>
+<li>
+          &lt;<b>threat</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>new_threat</b>&gt;
+          <div style="margin-left: 15px; display: inline;">New threat for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>orphan</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>4.34.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>get_results
+ = element get_results
+     {
+       ""
+       &amp; attribute result_id { uuid }?
+       &amp; attribute task_id { uuid }?
+       &amp; attribute notes { boolean }?
+       &amp; attribute note_details { boolean }?
+       &amp; attribute overrides { boolean }?
+       &amp; attribute override_details { boolean }?
+       &amp; attribute apply_overrides { boolean }?
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>get_results_response
+ = element get_results_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_results_response_results
+     }
+
+get_results_response_results
+ = element results
+     {
+       ""
+       &amp; get_results_response_results_result*
+     }
+
+get_results_response_results_result
+ = element result
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_results_response_results_result_subnet
+       &amp; get_results_response_results_result_host
+       &amp; get_results_response_results_result_port
+       &amp; get_results_response_results_result_nvt
+       &amp; get_results_response_results_result_threat
+       &amp; get_results_response_results_result_description
+       &amp; get_results_response_results_result_notes?
+       &amp; get_results_response_results_result_overrides?
+     }
+
+get_results_response_results_result_subnet
+ = element subnet
+     {
+       text
+
+     }
+
+get_results_response_results_result_host
+ = element host
+     {
+       text
+
+     }
+
+get_results_response_results_result_port
+ = element port
+     {
+       text
+
+     }
+
+get_results_response_results_result_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_results_response_results_result_nvt_name
+       &amp; get_results_response_results_result_nvt_cvss_base
+       &amp; get_results_response_results_result_nvt_risk_factor
+     }
+
+get_results_response_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_results_response_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+get_results_response_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_results_response_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+get_results_response_results_result_description
+ = element description
+     {
+       text
+
+     }
+
+get_results_response_results_result_notes
+ = element notes
+     {
+       ""
+       &amp; get_results_response_results_result_notes_note*
+     }
+
+get_results_response_results_result_notes_note
+ = element note
+     {
+       ""
+       &amp; get_results_response_results_result_notes_note_nvt
+       &amp; get_results_response_results_result_notes_note_text
+       &amp; get_results_response_results_result_notes_note_orphan
+     }
+
+get_results_response_results_result_notes_note_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_results_response_results_result_notes_note_nvt_name
+     }
+
+get_results_response_results_result_notes_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_results_response_results_result_notes_note_text
+ = element text
+     {
+       text
+
+       &amp; attribute excerpt { boolean }
+     }
+
+get_results_response_results_result_notes_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+get_results_response_results_result_overrides
+ = element overrides
+     {
+       ""
+       &amp; get_results_response_results_result_overrides_override*
+     }
+
+get_results_response_results_result_overrides_override
+ = element override
+     {
+       ""
+       &amp; get_results_response_results_result_overrides_override_nvt
+       &amp; get_results_response_results_result_overrides_override_text
+       &amp; get_results_response_results_result_overrides_override_threat
+       &amp; get_results_response_results_result_overrides_override_new_threat
+       &amp; get_results_response_results_result_overrides_override_orphan
+     }
+
+get_results_response_results_result_overrides_override_nvt
+ = element nvt
+     {
+       ""
+       &amp; attribute oid { oid }
+       &amp; get_results_response_results_result_overrides_override_nvt_name
+     }
+
+get_results_response_results_result_overrides_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_results_response_results_result_overrides_override_text
+ = element text
+     {
+       text
+
+       &amp; attribute excerpt { boolean }
+     }
+
+get_results_response_results_result_overrides_override_threat
+ = element threat
+     {
+       threat
+     }
+
+get_results_response_results_result_overrides_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+get_results_response_results_result_overrides_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+</pre></div>
+</div>
+<h4>4.34.1 Example: Get all results</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results_response status="200"
+                       status_text="OK"&gt;
+   &lt;results&gt;
+     &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+       &lt;subnet&gt;127.0.1.1127.0.1.1&lt;/subnet&gt;
+       &lt;host&gt;127.0.1.1127.0.1.1&lt;/host&gt;
+       &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
+       &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
+         &lt;name&gt;Test NVT: fields with ISO-8859-1 charsTest NVT: fields with ISO-8859-1 chars&lt;/name&gt;
+         &lt;cvss_base&gt;5.05.0&lt;/cvss_base&gt;
+         &lt;risk_factor&gt;MediumMedium&lt;/risk_factor&gt;
+       &lt;/nvt&gt;
+       &lt;threat&gt;MediumMedium&lt;/threat&gt;
+       &lt;description&gt;Test with umlaut.Test with umlaut.&lt;/description&gt;
+     &lt;/result&gt;
+     ...
+   &lt;/results&gt;
+ &lt;/get_results_response&gt;
+</pre></div>
+</div>
+<h4>4.34.1 Example: Get a result, including notes and overrides</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results result_id="cac9e7c8-c726-49fd-a710-5f99079ab93e"
+              task_id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"
+              notes="1"
+              overrides="1"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results_response status="200"
+                       status_text="OK"&gt;
+   &lt;results&gt;
+     &lt;result id="cac9e7c8-c726-49fd-a710-5f99079ab93e"&gt;
+       &lt;subnet&gt;127.0.0.1127.0.0.1&lt;/subnet&gt;
+       &lt;host&gt;127.0.0.1127.0.0.1&lt;/host&gt;
+       &lt;port&gt;general/tcpgeneral/tcp&lt;/port&gt;
+       &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+         &lt;name&gt;Test NVT: long linesTest NVT: long lines&lt;/name&gt;
+         &lt;cvss_base&gt;99&lt;/cvss_base&gt;
+         &lt;risk_factor&gt;HighHigh&lt;/risk_factor&gt;
+       &lt;/nvt&gt;
+       &lt;threat&gt;HighHigh&lt;/threat&gt;
+       &lt;description&gt;Test with very long warning.Test with very long warning.&lt;/description&gt;
+       &lt;original_threat&gt;MediumMedium&lt;/original_threat&gt;
+       &lt;notes/&gt;
+       &lt;overrides&gt;
+         &lt;override id="b0832812-75f1-45eb-b676-99c6e6bf2b24"&gt;
+           &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+             &lt;name&gt;Test NVT: long linesTest NVT: long lines&lt;/name&gt;
+           &lt;/nvt&gt;
+           &lt;text excerpt="0"&gt;Test overrideTest override&lt;/text&gt;
+           &lt;new_threat&gt;HighHigh&lt;/new_threat&gt;
+           &lt;orphan&gt;00&lt;/orphan&gt;
+         &lt;/override&gt;
+       &lt;/overrides&gt;
+     &lt;/result&gt;
+   &lt;/results&gt;
+ &lt;/get_results_response&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_get_schedules">4.35
+        Command <tt>get_schedules</tt>
+</h3></div>
+<p>In short: Get all schedules.</p>
+<p>
+        The client uses the get_schedules command to get schedule information.
+      </p>
+<h4>4.35.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>schedule_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of single schedule to get.
+          </li>
+<li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include full schedule details.
+          </li>
+<li>
+          @<b>sort_order</b>
+          (<a href="#type_sort_order">sort_order</a>)
+          </li>
+<li>
+          @<b>sort_field</b>
+          (text)
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          &lt;<b>schedule</b>&gt;
+          <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+          &lt;<b>comment</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The comment on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>first_time</b>&gt;
+          <div style="margin-left: 15px; display: inline;">First time the task ran or will run.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>next_time</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The next time the task will run.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>period</b>&gt;
+          <div style="margin-left: 15px; display: inline;">How often the task will run, in seconds.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>period_months</b>&gt;
+          <div style="margin-left: 15px; display: inline;">How often the task will run, months portion.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>duration</b>&gt;
+          <div style="margin-left: 15px; display: inline;">How long the task will run for (0 for entire task).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>in_use</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Whether any tasks are using the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>tasks</b>&gt;
+          <ul style="list-style: none"><li>
+          &lt;<b>task</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>4.35.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>get_schedules
+ = element get_schedules
+     {
+       ""
+       &amp; attribute schedule_id { uuid }?
+       &amp; attribute details { boolean }?
+       &amp; attribute sort_order { sort_order }?
+       &amp; attribute sort_field { text }?
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>get_schedules_response
+ = element get_schedules_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_schedules_response_schedule
+     }
+
+get_schedules_response_schedule
+ = element schedule
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_schedules_response_schedule_name
+       &amp; ( get_schedules_response_schedule_comment
+           &amp; get_schedules_response_schedule_first_time
+           &amp; get_schedules_response_schedule_next_time
+           &amp; get_schedules_response_schedule_period
+           &amp; get_schedules_response_schedule_period_months
+           &amp; get_schedules_response_schedule_duration
+           &amp; get_schedules_response_schedule_in_use
+           &amp; get_schedules_response_schedule_tasks )?
+     }
+
+get_schedules_response_schedule_name
+ = element name
+     {
+       name
+     }
+
+get_schedules_response_schedule_comment
+ = element comment
+     {
+       text
+
+     }
+
+get_schedules_response_schedule_first_time
+ = element first_time
+     {
+       ctime
+     }
+
+get_schedules_response_schedule_next_time
+ = element next_time
+     {
+       ctime
+     }
+
+get_schedules_response_schedule_period
+ = element period
+     {
+       integer
+     }
+
+get_schedules_response_schedule_period_months
+ = element period_months
+     {
+       integer
+     }
+
+get_schedules_response_schedule_duration
+ = element duration
+     {
+       integer
+     }
+
+get_schedules_response_schedule_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_schedules_response_schedule_tasks
+ = element tasks
+     {
+       ""
+       &amp; get_schedules_response_schedule_tasks_task*
+     }
+
+get_schedules_response_schedule_tasks_task
+ = element task
+     {
+       ""
+       &amp; attribute id { uuid }
+       &amp; get_schedules_response_schedule_tasks_task_name
+     }
+
+get_schedules_response_schedule_tasks_task_name
+ = element name
+     {
+       name
+     }
+</pre></div>
+</div>
+<h4>4.35.1 Example: Get all schedules</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules_response status="200"
+                         status_text="OK"&gt;
+   &lt;schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;OvernightOvernight&lt;/name&gt;
+   &lt;/schedule&gt;
+   ...
+ &lt;/get_schedules_response&gt;
+</pre></div>
+</div>
+<h4>4.35.1 Example: Get full details of a single schedule</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"
+                details="1"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules_response status="200"
+                         status_text="OK"&gt;
+   &lt;schedule id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"&gt;
+     &lt;name&gt;OvernightOvernight&lt;/name&gt;
+     &lt;comment&gt;3 hours, starting at 12h00.3 hours, starting at 12h00.&lt;/comment&gt;
+     &lt;first_time&gt;Tue Jun 29 00:00:00 2010Tue Jun 29 00:00:00 2010&lt;/first_time&gt;
+     &lt;next_time&gt;Tue Jun 29 00:00:00 2010Tue Jun 29 00:00:00 2010&lt;/next_time&gt;
+     &lt;period&gt;8640086400&lt;/period&gt;
+     &lt;period_months&gt;00&lt;/period_months&gt;
+     &lt;duration&gt;1080010800&lt;/duration&gt;
+     &lt;in_use&gt;11&lt;/in_use&gt;
+     &lt;tasks&gt;
+       &lt;task id="d4daf4c4-25c7-40ac-87d3-38e489f34330"&gt;
+         &lt;name&gt;kkkk&lt;/name&gt;
+       &lt;/task&gt;
+     &lt;/tasks&gt;
+   &lt;/schedule&gt;
+ &lt;/get_schedules_response&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_get_system_reports">4.36
+        Command <tt>get_system_reports</tt>
+</h3></div>
+<p>In short: Get all system reports.</p>
+<p>
+        The client uses the get_system_reports command to get system reports.
+      </p>
+<h4>4.36.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none">
+<li>
+          @<b>name</b>
+          (text)
+          A string describing the required report.
+          </li>
+<li>
+          @<b>duration</b>
+          (<a href="#type_integer">integer</a>)
+          The number of seconds into the past that the report should include.
+          </li>
+<li>
+          @<b>brief</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include the actual reports.
+          </li>
+</ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          &lt;<b>system_report</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the system report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>title</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The title of the system report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>report</b>&gt;
+          ?<ul style="list-style: none">
+<li>
+          @<b>format</b>
+          (<a href="#type_%22png%22">"png"</a>)
+          </li>
+<li>
+          @<b>duration</b>
+          (<a href="#type_integer">integer</a>)
+          </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>4.36.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>get_system_reports
+ = element get_system_reports
+     {
+       ""
+       &amp; attribute name { text }?
+       &amp; attribute duration { integer }?
+       &amp; attribute brief { boolean }?
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>get_system_reports_response
+ = element get_system_reports_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; get_system_reports_response_system_report*
+     }
+
+get_system_reports_response_system_report
+ = element system_report
+     {
+       ""
+       &amp; get_system_reports_response_system_report_name
+       &amp; get_system_reports_response_system_report_title
+       &amp; get_system_reports_response_system_report_report?
+     }
+
+get_system_reports_response_system_report_name
+ = element name
+     {
+       name
+     }
+
+get_system_reports_response_system_report_title
+ = element title
+     {
+       text
+
+     }
+
+get_system_reports_response_system_report_report
+ = element report
+     {
+       base64
+       &amp; attribute format { "png" }
+       &amp; attribute duration { integer }
+     }
+</pre></div>
+</div>
+<h4>4.36.1 Example: Get listing of available system reports</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports brief="1"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports_response status="200"
+                              status_text="OK"&gt;
+   &lt;system_report&gt;
+     &lt;name&gt;procproc&lt;/name&gt;
+     &lt;title&gt;ProcessesProcesses&lt;/title&gt;
+   &lt;/system_report&gt;
+   &lt;system_report&gt;
+     &lt;name&gt;loadload&lt;/name&gt;
+     &lt;title&gt;System LoadSystem Load&lt;/title&gt;
+   &lt;/system_report&gt;
+   &lt;system_report&gt;
+     &lt;name&gt;cpu_0cpu_0&lt;/name&gt;
+     &lt;title&gt;CPU Usage: CPU 0CPU Usage: CPU 0&lt;/title&gt;
+   &lt;/system_report&gt;
+   ...
+ &lt;/get_system_reports_response&gt;
+</pre></div>
+</div>
+<h4>4.36.1 Example: Get a system report</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports name="proc"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports_response status="200"
+                              status_text="OK"&gt;
+   &lt;system_report&gt;
+     &lt;name&gt;procproc&lt;/name&gt;
+     &lt;title&gt;ProcessesProcesses&lt;/title&gt;
+     &lt;report format="png"
+             duration="86400"&gt;
+       iVBORw0KGgoAAAANSUhEUgAAArkAAAE...2bEdAAAAAElFTkSuQmCC
+     &lt;/report&gt;
+   &lt;/system_report&gt;
+ &lt;/get_system_reports_response&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_get_version">4.37
         Command <tt>get_version</tt>
 </h3></div>
 <p>In short: Get the OpenVAS Manager Protocol version.</p>
-<h4>4.33.1 Structure</h4>
+<h4>4.37.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
@@ -5790,7 +7699,7 @@ get_preferences_response_preference_value
 </ul>
 </li>
 </ul>
-<h4>4.33.2 RNC</h4>
+<h4>4.37.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_version
  = element get_version
@@ -5811,25 +7720,27 @@ get_version_response_version
  = element version
      {
        text
+
      }
 </pre></div>
 </div>
-<h4>4.33.1 Example: Get the version</h4>
+<h4>4.37.1 Example: Get the version</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_version/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_version_response status="200" status_text="OK"&gt;
-   &lt;version&gt;1.0&lt;/version&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_version_response status="200"
+                       status_text="OK"&gt;
+   &lt;version&gt;1.01.0&lt;/version&gt;
  &lt;/get_version_response&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_help">4.34
+<div><h3 id="command_help">4.38
         Command <tt>help</tt>
 </h3></div>
 <p>In short: Get the help text.</p>
-<h4>4.34.1 Structure</h4>
+<h4>4.38.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
@@ -5847,7 +7758,7 @@ get_version_response_version
 </ul>
 </li>
 </ul>
-<h4>4.34.2 RNC</h4>
+<h4>4.38.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>help
  = element help
@@ -5866,7 +7777,7 @@ get_version_response_version
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_config">4.35
+<div><h3 id="command_modify_config">4.39
         Command <tt>modify_config</tt>
 </h3></div>
 <p>In short: Update an existing config.</p>
@@ -5917,7 +7828,7 @@ get_version_response_version
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>4.35.1 Structure</h4>
+<h4>4.39.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -6014,7 +7925,7 @@ get_version_response_version
 </ul>
 </li>
 </ul>
-<h4>4.35.2 RNC</h4>
+<h4>4.39.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_config
  = element modify_config
@@ -6125,20 +8036,21 @@ modify_config_nvt_selection_nvt
      }
 </pre></div>
 </div>
-<h4>4.35.1 Example: Modify a config preference</h4>
+<h4>4.39.1 Example: Modify a config preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.14259"/&gt;
-     &lt;name&gt;Nmap (NASL wrapper)[checkbox]:UDP port scan&lt;/name&gt;
-     &lt;value&gt;eWVz&lt;/value&gt;
+     &lt;name&gt;Nmap (NASL wrapper)[checkbox]:UDP port scanNmap (NASL wrapper)[checkbox]:UDP port scan&lt;/name&gt;
+     &lt;value&gt;eWVzeWVz&lt;/value&gt;
    &lt;/preference&gt;
  &lt;/modify_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>4.35.1 Example: Modify the families that a config selects</h4>
+<h4>4.39.1 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -6152,23 +8064,24 @@ modify_config_nvt_selection_nvt
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;family_selection&gt;
-     &lt;growing&gt;1&lt;/growing&gt;
+     &lt;growing&gt;11&lt;/growing&gt;
      &lt;family&gt;
-       &lt;name&gt;Debian Local Security Checks&lt;/name&gt;
-       &lt;all&gt;1&lt;/all&gt;
-       &lt;growing&gt;1&lt;/growing&gt;
+       &lt;name&gt;Debian Local Security ChecksDebian Local Security Checks&lt;/name&gt;
+       &lt;all&gt;11&lt;/all&gt;
+       &lt;growing&gt;11&lt;/growing&gt;
      &lt;/family&gt;
    &lt;/family_selection&gt;
  &lt;/modify_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>4.35.1 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>4.39.1 Example: Modify the NVTs that a config selects in a particular family</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
-     &lt;family&gt;Debian Local Security Checks&lt;/family&gt;
+     &lt;family&gt;Debian Local Security ChecksDebian Local Security Checks&lt;/family&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.53797"/&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.63272"/&gt;
      &lt;nvt oid="1.3.6.1.4.1.25623.1.0.55615"/&gt;
@@ -6176,12 +8089,13 @@ modify_config_nvt_selection_nvt
    &lt;/nvt_selection&gt;
  &lt;/modify_config&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_note">4.36
+<div><h3 id="command_modify_note">4.40
         Command <tt>modify_note</tt>
 </h3></div>
 <p>In short: Modify an existing note.</p>
@@ -6192,7 +8106,7 @@ modify_config_nvt_selection_nvt
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>4.36.1 Structure</h4>
+<h4>4.40.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -6252,7 +8166,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>4.36.2 RNC</h4>
+<h4>4.40.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_note
  = element modify_note
@@ -6271,18 +8185,21 @@ modify_note_hosts
  = element hosts
      {
        text
+
      }
 
 modify_note_port
  = element port
      {
        text
+
      }
 
 modify_note_text
  = element text
      {
        text
+
      }
 
 modify_note_threat
@@ -6314,19 +8231,20 @@ modify_note_result
      }
 </pre></div>
 </div>
-<h4>4.36.1 Example: Modify the text and result of a note</h4>
+<h4>4.40.1 Example: Modify the text and result of a note</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
-   &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
+   &lt;text&gt;This issue should be resolved after the upgrade.This issue should be resolved after the upgrade.&lt;/text&gt;
    &lt;result result_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c"/&gt;
  &lt;/modify_note&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_note_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_note_response status="200"
+                       status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_override">4.37
+<div><h3 id="command_modify_override">4.41
         Command <tt>modify_override</tt>
 </h3></div>
 <p>In short: Modify an existing override.</p>
@@ -6338,7 +8256,7 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>4.37.1 Structure</h4>
+<h4>4.41.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -6403,7 +8321,7 @@ modify_note_result
 </ul>
 </li>
 </ul>
-<h4>4.37.2 RNC</h4>
+<h4>4.41.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_override
  = element modify_override
@@ -6423,6 +8341,7 @@ modify_override_hosts
  = element hosts
      {
        text
+
      }
 
 modify_override_new_threat
@@ -6435,12 +8354,14 @@ modify_override_port
  = element port
      {
        text
+
      }
 
 modify_override_text
  = element text
      {
        text
+
      }
 
 modify_override_threat
@@ -6472,19 +8393,20 @@ modify_override_result
      }
 </pre></div>
 </div>
-<h4>4.37.1 Example: Set the override threat to Low</h4>
+<h4>4.41.1 Example: Set the override threat to Low</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
-   &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
-   &lt;new_threat&gt;Low&lt;/new_threat&gt;
+   &lt;text&gt;This issue is less important in our setup.This issue is less important in our setup.&lt;/text&gt;
+   &lt;new_threat&gt;LowLow&lt;/new_threat&gt;
  &lt;/modify_override&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_override_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_override_response status="200"
+                           status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_report">4.38
+<div><h3 id="command_modify_report">4.42
         Command <tt>modify_report</tt>
 </h3></div>
 <p>In short: Modify an existing report.</p>
@@ -6492,7 +8414,7 @@ modify_override_result
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>4.38.1 Structure</h4>
+<h4>4.42.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -6521,7 +8443,7 @@ modify_override_result
 </ul>
 </li>
 </ul>
-<h4>4.38.2 RNC</h4>
+<h4>4.42.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_report
  = element modify_report
@@ -6535,6 +8457,7 @@ modify_report_comment
  = element comment
      {
        text
+
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_report_response
@@ -6546,18 +8469,19 @@ modify_report_comment
      }
 </pre></div>
 </div>
-<h4>4.38.1 Example: Modify a report comment</h4>
+<h4>4.42.1 Example: Modify a report comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
-   &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
+   &lt;comment&gt;Monthly scan of the webserver.Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_report&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_response status="200"
+                         status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_task">4.39
+<div><h3 id="command_modify_task">4.43
         Command <tt>modify_task</tt>
 </h3></div>
 <p>In short: Modify an existing task.</p>
@@ -6565,7 +8489,7 @@ modify_report_comment
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>4.39.1 Structure</h4>
+<h4>4.43.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -6638,7 +8562,7 @@ modify_report_comment
 </ul>
 </li>
 </ul>
-<h4>4.39.2 RNC</h4>
+<h4>4.43.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_task
  = element modify_task
@@ -6657,6 +8581,7 @@ modify_task_comment
  = element comment
      {
        text
+
      }
 
 modify_task_escalator
@@ -6702,248 +8627,24 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>4.39.1 Example: Modify a task comment</h4>
+<h4>4.43.1 Example: Modify a task comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
-   &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
+   &lt;comment&gt;Monthly scan of the webserver.Monthly scan of the webserver.&lt;/comment&gt;
  &lt;/modify_task&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_task_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_task_response status="200"
+                       status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_pause_task">4.40
+<div><h3 id="command_pause_task">4.44
         Command <tt>pause_task</tt>
 </h3></div>
 <p>In short: Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
-      </p>
-<h4>4.40.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>4.40.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>pause_task
- = element pause_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>pause_task_response
- = element pause_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>4.40.1 Example: Pause a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task_response status="200" status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_or_start_task">4.41
-        Command <tt>resume_or_start_task</tt>
-</h3></div>
-<p>In short: Resume task if stopped, else start task.</p>
-<p>
-        The client uses the resume_or_start_task command to manually start
-        an existing task, ensuring that the task will resume from its
-        previous position if the task is in the Stopped state.
-      </p>
-<h4>4.41.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>4.41.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
- = element resume_or_start_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
- = element resume_or_start_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>4.41.1 Example: Resume a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200" status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_paused_task">4.42
-        Command <tt>resume_paused_task</tt>
-</h3></div>
-<p>In short: Resume a paused task.</p>
-<p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
-      </p>
-<h4>4.42.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>4.42.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
- = element resume_paused_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
- = element resume_paused_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>4.42.1 Example: Resume a paused task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200" status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_stopped_task">4.43
-        Command <tt>resume_stopped_task</tt>
-</h3></div>
-<p>In short: Resume a stopped task.</p>
-<p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
-      </p>
-<h4>4.43.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>4.43.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_stopped_task
- = element resume_stopped_task
-     {
-       ""
-       &amp; attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_stopped_task_response
- = element resume_stopped_task_response
-     {
-       ""
-       &amp; attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>4.43.1 Example: Resume a stopped task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task_response status="200" status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_start_task">4.44
-        Command <tt>start_task</tt>
-</h3></div>
-<p>In short: Manually start an existing task.</p>
-<p>
-        The client uses the start_task command to manually start an
-        existing task.
       </p>
 <h4>4.44.1 Structure</h4>
 <ul style="list-style: none">
@@ -6968,15 +8669,15 @@ modify_task_file
 </ul>
 <h4>4.44.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>start_task
- = element start_task
+<i>Command</i><div style="margin-left: 5%"><pre>pause_task
+ = element pause_task
      {
        ""
        &amp; attribute task_id { uuid }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
- = element start_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>pause_task_response
+ = element pause_task_response
      {
        ""
        &amp; attribute status { status }
@@ -6984,22 +8685,24 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>4.44.1 Example: Start a task</h4>
+<h4>4.44.1 Example: Pause a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task_response status="200"
+                      status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_stop_task">4.45
-        Command <tt>stop_task</tt>
+<div><h3 id="command_resume_or_start_task">4.45
+        Command <tt>resume_or_start_task</tt>
 </h3></div>
-<p>In short: Stop a running task.</p>
+<p>In short: Resume task if stopped, else start task.</p>
 <p>
-        The client uses the stop_task command to manually stop a
-        running task.
+        The client uses the resume_or_start_task command to manually start
+        an existing task, ensuring that the task will resume from its
+        previous position if the task is in the Stopped state.
       </p>
 <h4>4.45.1 Structure</h4>
 <ul style="list-style: none">
@@ -7024,15 +8727,15 @@ modify_task_file
 </ul>
 <h4>4.45.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>stop_task
- = element stop_task
+<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
+ = element resume_or_start_task
      {
        ""
        &amp; attribute task_id { uuid }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
- = element stop_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
+ = element resume_or_start_task_response
      {
        ""
        &amp; attribute status { status }
@@ -7040,22 +8743,23 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>4.45.1 Example: Stop a running task</h4>
+<h4>4.45.1 Example: Resume a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
+                                status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_test_escalator">4.46
-        Command <tt>test_escalator</tt>
+<div><h3 id="command_resume_paused_task">4.46
+        Command <tt>resume_paused_task</tt>
 </h3></div>
-<p>In short: Run an escalator.</p>
+<p>In short: Resume a paused task.</p>
 <p>
-        The client uses the test_escalator command to invoke a test run of
-        an escalator.
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
       </p>
 <h4>4.46.1 Structure</h4>
 <ul style="list-style: none">
@@ -7080,6 +8784,234 @@ modify_task_file
 </ul>
 <h4>4.46.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
+ = element resume_paused_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
+ = element resume_paused_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>4.46.1 Example: Resume a paused task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
+                              status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_stopped_task">4.47
+        Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p>In short: Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
+      </p>
+<h4>4.47.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>4.47.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_stopped_task
+ = element resume_stopped_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_stopped_task_response
+ = element resume_stopped_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>4.47.1 Example: Resume a stopped task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task_response status="200"
+                               status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_start_task">4.48
+        Command <tt>start_task</tt>
+</h3></div>
+<p>In short: Manually start an existing task.</p>
+<p>
+        The client uses the start_task command to manually start an
+        existing task.
+      </p>
+<h4>4.48.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>4.48.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>start_task
+ = element start_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
+ = element start_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>4.48.1 Example: Start a task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
+                      status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_stop_task">4.49
+        Command <tt>stop_task</tt>
+</h3></div>
+<p>In short: Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>4.49.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>4.49.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>stop_task
+ = element stop_task
+     {
+       ""
+       &amp; attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
+ = element stop_task_response
+     {
+       ""
+       &amp; attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>4.49.1 Example: Stop a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200"
+                     status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_test_escalator">4.50
+        Command <tt>test_escalator</tt>
+</h3></div>
+<p>In short: Run an escalator.</p>
+<p>
+        The client uses the test_escalator command to invoke a test run of
+        an escalator.
+      </p>
+<h4>4.50.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>4.50.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_escalator
  = element test_escalator
      {
@@ -7096,11 +9028,12 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>4.46.1 Example: Test an escalator</h4>
+<h4>4.50.1 Example: Test an escalator</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_escalator escalator_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_escalator_response status="200" status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_escalator_response status="200"
+                          status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>

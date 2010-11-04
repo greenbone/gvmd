@@ -41,6 +41,10 @@ command
     | get_nvt_feed_checksum
     | get_overrides
     | get_preferences
+    | get_reports
+    | get_results
+    | get_schedules
+    | get_system_reports
     | get_version
     | help
     | modify_config
@@ -89,6 +93,10 @@ response
     | get_nvt_feed_checksum_response
     | get_overrides_response
     | get_preferences_response
+    | get_reports_response
+    | get_results_response
+    | get_schedules_response
+    | get_system_reports_response
     | get_version_response
     | help_response
     | modify_config_response
@@ -116,6 +124,8 @@ boolean_atoi = text
 ctime = text
 # An integer.
 integer = xsd:integer
+# A string that may include the characters h, m, l, g and d.
+levels = xsd:token { pattern = "h?m?l?g?d?" }
 # A name.
 name = xsd:string
 # An Object Identifier (OID)..
@@ -124,6 +134,10 @@ oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 sort_order = text
 # The success or failure status of a command.
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
+# A task run status.
+task_status = 
+      xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+    
 # A threat level.
 threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 # A unit of time.
@@ -1097,6 +1111,100 @@ get_preferences
        attribute config_id { uuid }?
        & # The name of a particular preference to get.
        attribute preference { text }?
+     }
+
+## Command get_reports
+##
+## Get all reports.
+
+get_reports
+ = element get_reports
+     {
+       ""
+       & # ID of single report to get.
+       attribute report_id { uuid }?
+       & # Required report format.
+       attribute format { text }?
+       & # First result to get.
+       attribute first_result { integer }?
+       & # Maximum number of results to get.
+       attribute max_results { integer }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+       & # Which threat levels to include in the report.
+       attribute levels { levels }?
+       & # A string that all results in the report must contain.
+       attribute search_phrase { text }?
+       & # Minimum CVSS base of results in report.
+       attribute min_cvss_base { integer }?
+       & # Whether to include notes in the report.
+       attribute notes { boolean }?
+       & # If notes are included, whether to include note details.
+       attribute note_details { boolean }?
+       & # Whether to include overrides in the report.
+       attribute overrides { boolean }?
+       & # If overrides are included, whether to include override details.
+       attribute override_details { boolean }?
+       & # Whether to include only those hosts that have results.
+       attribute result_hosts_only { boolean }?
+     }
+
+## Command get_results
+##
+## Get results.
+
+get_results
+ = element get_results
+     {
+       ""
+       & # ID of single result to get.
+       attribute result_id { uuid }?
+       & # ID of task for note and override handling.
+       attribute task_id { uuid }?
+       & # Whether to include notes in the result.
+       attribute notes { boolean }?
+       & # If notes are included, whether to include note details.
+       attribute note_details { boolean }?
+       & # Whether to include overrides in the result.
+       attribute overrides { boolean }?
+       & # If overrides are included, whether to include override details.
+       attribute override_details { boolean }?
+       & # Whether to override result threat levels.
+       attribute apply_overrides { boolean }?
+     }
+
+## Command get_schedules
+##
+## Get all schedules.
+
+get_schedules
+ = element get_schedules
+     {
+       ""
+       & # ID of single schedule to get.
+       attribute schedule_id { uuid }?
+       & # Whether to include full schedule details.
+       attribute details { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_system_reports
+##
+## Get all system reports.
+
+get_system_reports
+ = element get_system_reports
+     {
+       ""
+       & # A string describing the required report.
+       attribute name { text }?
+       & # 
+          The number of seconds into the past that the report should include
+        .
+       attribute duration { integer }?
+       & # Whether to include the actual reports.
+       attribute brief { boolean }?
      }
 
 ## Command get_version
@@ -2939,6 +3047,722 @@ get_preferences_response_preference_value
  = element value
      {
        text
+     }
+
+## Response to get_reports
+
+get_reports_response
+ = element get_reports_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_reports_response_report*
+     }
+
+get_reports_response_report
+ = element report
+     {
+       base64
+       & attribute id { uuid }
+       & ( get_reports_response_report_sort
+           & get_reports_response_report_filters
+           & get_reports_response_report_scan_run_status
+           & get_reports_response_report_result_count
+           & get_reports_response_report_task
+           & get_reports_response_report_ports
+           & get_reports_response_report_results
+           & get_reports_response_report_scan_start
+           & get_reports_response_report_host_start*
+           & get_reports_response_report_host_end*
+           & get_reports_response_report_scan_end )?
+     }
+
+# Result sorting information.
+get_reports_response_report_sort
+ = element sort
+     {
+       ""
+       & get_reports_response_report_sort_field
+     }
+
+# Sort field.
+get_reports_response_report_sort_field
+ = element field
+     {
+       text
+       & get_reports_response_report_sort_field_order
+     }
+
+# Sort order of field.
+get_reports_response_report_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+# Result filtering information.
+get_reports_response_report_filters
+ = element filters
+     {
+       levels
+       & get_reports_response_report_filters_phrase
+       & get_reports_response_report_filters_notes
+       & get_reports_response_report_filters_overrides
+       & get_reports_response_report_filters_apply_overrides
+       & get_reports_response_report_filters_result_hosts_only
+       & get_reports_response_report_filters_min_cvss_base
+       & get_reports_response_report_filters_filter*
+     }
+
+# Search phrase.
+get_reports_response_report_filters_phrase
+ = element phrase
+     {
+       text
+     }
+
+# Whether notes are included.
+get_reports_response_report_filters_notes
+ = element notes
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are included.
+get_reports_response_report_filters_overrides
+ = element overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Whether overrides are applied.
+get_reports_response_report_filters_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# 
+              Whether only those hosts that have results are included
+            .
+get_reports_response_report_filters_result_hosts_only
+ = element result_hosts_only
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+# Minimum CVSS base if in effect, else empty string.
+get_reports_response_report_filters_minimum_cvss_base
+ = element minimum_cvss_base
+     {
+       text
+     }
+
+# Level filter.
+get_reports_response_report_filters_filter
+ = element filter
+     {
+       xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+     }
+
+# Run status of task scan at time of report.
+get_reports_response_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+# Number of results produced by scan.
+get_reports_response_report_result_count
+ = element result_count
+     {
+       integer
+       & get_reports_response_report_result_count_filtered
+       & get_reports_response_report_result_count_debug
+       & get_reports_response_report_result_count_hole
+       & get_reports_response_report_result_count_info
+       & get_reports_response_report_result_count_log
+       & get_reports_response_report_result_count_warning
+     }
+
+# Number of results after filtering.
+get_reports_response_report_result_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# 
+              Number of results of scanner message type "debug" (threat level
+              Debug)
+            .
+get_reports_response_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+# 
+              Number of results of scanner message type "hole" (threat level
+              High)
+            .
+get_reports_response_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+# 
+              Number of results of scanner message type "info" (threat level
+              Low)
+            .
+get_reports_response_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+# 
+              Number of results of scanner message type "log" (threat level
+              Log)
+            .
+get_reports_response_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+# 
+              Number of results of scanner message type "warning" (threat level
+              Medium)
+            .
+get_reports_response_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_reports_response_report_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+       & get_reports_response_report_task_name
+     }
+
+# The name of the task.
+get_reports_response_report_task_name
+ = element name
+     {
+       name
+     }
+
+get_reports_response_report_ports
+ = element ports
+     {
+       ""
+       & attribute start { integer }
+       & attribute max { integer }
+       & get_reports_response_report_ports_port*
+     }
+
+get_reports_response_report_ports_port
+ = element port
+     {
+       text
+       & get_reports_response_report_ports_port_host
+       & get_reports_response_report_ports_port_threat
+     }
+
+get_reports_response_report_ports_port_host
+ = element host
+     {
+       text
+     }
+
+get_reports_response_report_ports_port_threat
+ = element threat
+     {
+       threat
+     }
+
+get_reports_response_report_results
+ = element results
+     {
+       ""
+       & attribute start { integer }
+       & attribute max { integer }
+       & get_reports_response_report_results_result*
+     }
+
+get_reports_response_report_results_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+       & get_reports_response_report_results_result_subnet
+       & get_reports_response_report_results_result_host
+       & get_reports_response_report_results_result_port
+       & get_reports_response_report_results_result_nvt
+       & get_reports_response_report_results_result_threat
+       & get_reports_response_report_results_result_description
+     }
+
+get_reports_response_report_results_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_reports_response_report_results_result_host
+ = element host
+     {
+       text
+     }
+
+get_reports_response_report_results_result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+get_reports_response_report_results_result_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_reports_response_report_results_result_nvt_name
+       & get_reports_response_report_results_result_nvt_cvss_base
+       & get_reports_response_report_results_result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+get_reports_response_report_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+get_reports_response_report_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+get_reports_response_report_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_reports_response_report_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+get_reports_response_report_results_result_description
+ = element description
+     {
+       text
+     }
+
+# Start time of scan.
+get_reports_response_report_scan_start
+ = element scan_start
+     {
+       ctime
+     }
+
+# Start time of a particular host.
+get_reports_response_report_host_start
+ = element host_start
+     {
+       ctime
+       & get_reports_response_report_host_start_host
+     }
+
+get_reports_response_report_host_start_host
+ = element host
+     {
+       text
+     }
+
+# End time of a particular host.
+get_reports_response_report_host_end
+ = element host_end
+     {
+       ctime
+       & get_reports_response_report_host_end_host
+     }
+
+get_reports_response_report_host_end_host
+ = element host
+     {
+       text
+     }
+
+# End time of scan.
+get_reports_response_report_scan_end
+ = element scan_end
+     {
+       ctime
+     }
+
+## Response to get_results
+
+get_results_response
+ = element get_results_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_results_response_results
+     }
+
+get_results_response_results
+ = element results
+     {
+       ""
+       & get_results_response_results_result*
+     }
+
+get_results_response_results_result
+ = element result
+     {
+       ""
+       & attribute id { uuid }
+       & get_results_response_results_result_subnet
+       & get_results_response_results_result_host
+       & get_results_response_results_result_port
+       & get_results_response_results_result_nvt
+       & get_results_response_results_result_threat
+       & get_results_response_results_result_description
+       & get_results_response_results_result_notes?
+       & get_results_response_results_result_overrides?
+     }
+
+get_results_response_results_result_subnet
+ = element subnet
+     {
+       text
+     }
+
+get_results_response_results_result_host
+ = element host
+     {
+       text
+     }
+
+get_results_response_results_result_port
+ = element port
+     {
+       text
+     }
+
+# NVT to which result applies.
+get_results_response_results_result_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_results_response_results_result_nvt_name
+       & get_results_response_results_result_nvt_cvss_base
+       & get_results_response_results_result_nvt_risk_factor
+     }
+
+# The name of the NVT.
+get_results_response_results_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+# CVSS base value associated with the NVT.
+get_results_response_results_result_nvt_cvss_base
+ = element cvss_base
+     {
+       integer
+     }
+
+# Risk factor associated with the NVT.
+get_results_response_results_result_nvt_risk_factor
+ = element risk_factor
+     {
+       integer
+     }
+
+get_results_response_results_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# Description of the result.
+get_results_response_results_result_description
+ = element description
+     {
+       text
+     }
+
+# Notes on the result.
+get_results_response_results_result_notes
+ = element notes
+     {
+       ""
+       & get_results_response_results_result_notes_note*
+     }
+
+get_results_response_results_result_notes_note
+ = element note
+     {
+       ""
+       & get_results_response_results_result_notes_note_nvt
+       & get_results_response_results_result_notes_note_text
+       & get_results_response_results_result_notes_note_orphan
+     }
+
+get_results_response_results_result_notes_note_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_results_response_results_result_notes_note_nvt_name
+     }
+
+get_results_response_results_result_notes_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the note.
+get_results_response_results_result_notes_note_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_results_response_results_result_notes_note_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+# Overrides on the result.
+get_results_response_results_result_overrides
+ = element overrides
+     {
+       ""
+       & get_results_response_results_result_overrides_override*
+     }
+
+get_results_response_results_result_overrides_override
+ = element override
+     {
+       ""
+       & get_results_response_results_result_overrides_override_nvt
+       & get_results_response_results_result_overrides_override_text
+       & get_results_response_results_result_overrides_override_threat
+       & get_results_response_results_result_overrides_override_new_threat
+       & get_results_response_results_result_overrides_override_orphan
+     }
+
+get_results_response_results_result_overrides_override_nvt
+ = element nvt
+     {
+       ""
+       & attribute oid { oid }
+       & get_results_response_results_result_overrides_override_nvt_name
+     }
+
+get_results_response_results_result_overrides_override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The text of the override.
+get_results_response_results_result_overrides_override_text
+ = element text
+     {
+       text
+       & attribute excerpt { boolean }
+     }
+
+# Threat level to which override applies.
+get_results_response_results_result_overrides_override_threat
+ = element threat
+     {
+       threat
+     }
+
+# New threat for result.
+get_results_response_results_result_overrides_override_new_threat
+ = element new_threat
+     {
+       threat
+     }
+
+# Whether the override is an orphan.
+get_results_response_results_result_overrides_override_orphan
+ = element orphan
+     {
+       boolean
+     }
+
+## Response to get_schedules
+
+get_schedules_response
+ = element get_schedules_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_schedules_response_schedule
+     }
+
+get_schedules_response_schedule
+ = element schedule
+     {
+       ""
+       & attribute id { uuid }
+       & get_schedules_response_schedule_name
+       & ( get_schedules_response_schedule_comment
+           & get_schedules_response_schedule_first_time
+           & get_schedules_response_schedule_next_time
+           & get_schedules_response_schedule_period
+           & get_schedules_response_schedule_period_months
+           & get_schedules_response_schedule_duration
+           & get_schedules_response_schedule_in_use
+           & get_schedules_response_schedule_tasks )?
+     }
+
+# The name of the schedule.
+get_schedules_response_schedule_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the schedule.
+get_schedules_response_schedule_comment
+ = element comment
+     {
+       text
+     }
+
+# First time the task ran or will run.
+get_schedules_response_schedule_first_time
+ = element first_time
+     {
+       ctime
+     }
+
+# The next time the task will run.
+get_schedules_response_schedule_next_time
+ = element next_time
+     {
+       ctime
+     }
+
+# How often the task will run, in seconds.
+get_schedules_response_schedule_period
+ = element period
+     {
+       integer
+     }
+
+# How often the task will run, months portion.
+get_schedules_response_schedule_period_months
+ = element period_months
+     {
+       integer
+     }
+
+# How long the task will run for (0 for entire task).
+get_schedules_response_schedule_duration
+ = element duration
+     {
+       integer
+     }
+
+# Whether any tasks are using the schedule.
+get_schedules_response_schedule_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_schedules_response_schedule_tasks
+ = element tasks
+     {
+       ""
+       & get_schedules_response_schedule_tasks_task*
+     }
+
+get_schedules_response_schedule_tasks_task
+ = element task
+     {
+       ""
+       & attribute id { uuid }
+       & get_schedules_response_schedule_tasks_task_name
+     }
+
+# The name of the task.
+get_schedules_response_schedule_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_system_reports
+
+get_system_reports_response
+ = element get_system_reports_response
+     {
+       ""
+       & attribute status { status }
+       & attribute status_text { text }
+       & get_system_reports_response_system_report*
+     }
+
+get_system_reports_response_system_report
+ = element system_report
+     {
+       ""
+       & get_system_reports_response_system_report_name
+       & get_system_reports_response_system_report_title
+       & get_system_reports_response_system_report_report?
+     }
+
+# The name of the system report.
+get_system_reports_response_system_report_name
+ = element name
+     {
+       name
+     }
+
+# The title of the system report.
+get_system_reports_response_system_report_title
+ = element title
+     {
+       text
+     }
+
+get_system_reports_response_system_report_report
+ = element report
+     {
+       base64
+       & attribute format { "png" }
+       & attribute duration { integer }
      }
 
 ## Response to get_version

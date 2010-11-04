@@ -32,6 +32,62 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+  <!-- Helpers. -->
+
+<!-- This is called within a PRE. -->
+<xsl:template name="wrap">
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:for-each select="str:tokenize($string, '&#10;')">
+    <xsl:call-template name="wrap-line">
+      <xsl:with-param name="string"><xsl:value-of select="."/></xsl:with-param>
+    </xsl:call-template>
+    <xsl:text>
+</xsl:text>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- This is called within a PRE. -->
+<xsl:template name="wrap-line">
+  <xsl:param name="string"></xsl:param>
+
+  <xsl:variable name="to-next-newline">
+    <xsl:value-of select="substring-before($string, '&#10;')"/>
+  </xsl:variable>
+
+  <xsl:choose>
+    <xsl:when test="string-length($string) = 0">
+      <!-- The string is empty. -->
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) = 0) and (substring($string, 1, 1) != '&#10;')">
+      <!-- A single line missing a newline, output up to the edge. -->
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:when>
+    <xsl:when test="(string-length($to-next-newline) + 1 &lt; string-length($string)) and (string-length($to-next-newline) &lt; 90)">
+      <!-- There's a newline before the edge, so output the line. -->
+<xsl:value-of select="substring($string, 1, string-length($to-next-newline) + 1)"/>
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, string-length($to-next-newline) + 2, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- Any newline comes after the edge, so output up to the edge. -->
+<xsl:value-of select="substring($string, 1, 90)"/>
+      <xsl:if test="string-length($string) &gt; 90">&#8629;
+<xsl:call-template name="wrap-line">
+  <xsl:with-param name="string"><xsl:value-of select="substring($string, 91, string-length($string))"/></xsl:with-param>
+</xsl:call-template>
+      </xsl:if>
+    </xsl:otherwise>
+  </xsl:choose>
+
+</xsl:template>
+
   <!-- Commands. -->
 
   <xsl:template name="rnc-type">
@@ -215,7 +271,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="count (t) = 0">
         <xsl:text>       </xsl:text>
-        <xsl:value-of select="normalize-space (text ())"/>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string">
+            <xsl:value-of select="normalize-space (text())"/>
+          </xsl:with-param>
+        </xsl:call-template>
         <xsl:call-template name="newline"/>
       </xsl:when>
       <xsl:otherwise>

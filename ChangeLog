@@ -1,3 +1,15 @@
+2010-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add more GET commands.
+
+	* src/schema_formats/HTML/HTML.xsl (print-attributes): Add level arg to
+	print each attribute after first on a new line.  Update callers.
+
+	* src/schema_formats/HTML/rnc.xsl (wrap, wrap-line): New templates.
+	(pattern): Wrap text in patterns.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2010-11-04  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* report_formats/simple_map_plot/README.txt: Added note
