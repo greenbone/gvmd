@@ -56,7 +56,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="text()"/>
+        <xsl:value-of select="normalize-space(text())"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -64,7 +64,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template name="attrib" match="attrib">
     <xsl:if test="($rnc-comments = 1) and summary">
       <xsl:text># </xsl:text>
-      <xsl:value-of select="summary"/>
+      <xsl:value-of select="normalize-space(summary)"/>
       <xsl:text>.</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:text>       </xsl:text>
@@ -120,7 +120,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="text()"/>
+        <xsl:value-of select="normalize-space(text())"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -247,7 +247,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:param name="parent-name"/>
     <xsl:if test="($rnc-comments = 1) and summary">
       <xsl:text># </xsl:text>
-      <xsl:value-of select="summary"/>
+      <xsl:value-of select="normalize-space(summary)"/>
       <xsl:text>.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>

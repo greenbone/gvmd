@@ -89,7 +89,7 @@ response
       <xsl:call-template name="newline"/>
       <xsl:value-of select="name"/>
       <xsl:text> = </xsl:text>
-      <xsl:value-of select="pattern"/>
+      <xsl:value-of select="normalize-space (pattern)"/>
       <xsl:call-template name="newline"/>
     </xsl:for-each>
   </xsl:template>

@@ -140,7 +140,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:call-template>
         <xsl:text>&gt;</xsl:text>
         <xsl:value-of select="normalize-space(text())"/>
-        <xsl:value-of select="text()"/>
         <xsl:text>&lt;/</xsl:text>
         <xsl:value-of select="name()"/>
         <xsl:text>&gt;</xsl:text>
@@ -212,7 +211,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <xsl:apply-templates select="description"/>
 
-      <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
         <xsl:call-template name="command-relax"/>
       </div>
 
@@ -395,7 +394,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <h4><xsl:value-of select="$index"/>.2 RNC</h4>
 
-      <div style="border: 1px solid; padding:10px; width: 75%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
         <i>Command</i>
         <div style="margin-left: 5%">
           <xsl:call-template name="command-relax"/>

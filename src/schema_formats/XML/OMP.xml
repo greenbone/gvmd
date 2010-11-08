@@ -107,6 +107,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </pattern>
   </type>
   <type>
+    <name>task_trend</name>
+    <summary>The trend of results for a task</summary>
+    <pattern>
+      xsd:token { pattern = "up|down|more|less|same" }
+    </pattern>
+  </type>
+  <type>
     <name>threat</name>
     <summary>A threat level</summary>
     <pattern>xsd:token { pattern = "High|Medium|Low|Log|Debug" }</pattern>
@@ -120,6 +127,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>uuid</name>
     <summary>A Universally Unique Identifier (UUID)</summary>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
+  </type>
+  <type>
+    <name>uuid_or_empty</name>
+    <summary>A Universally Unique Identifier (UUID), or the empty string</summary>
+    <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }</pattern>
   </type>
   <command>
     <name>authenticate</name>
@@ -2004,7 +2016,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>family_count</name>
           <summary>The number of families selected by the config</summary>
           <pattern>
-            integer
+            <t>integer</t>
             <e>growing</e>
           </pattern>
           <ele>
@@ -2020,7 +2032,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>nvt_count</name>
           <summary>The number of NVTs selected by the config</summary>
           <pattern>
-            integer
+            <t>integer</t>
             <e>growing</e>
           </pattern>
           <ele>
@@ -2391,7 +2403,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>comment</name>
           <summary>The comment on the escalator</summary>
-          <pattern>text</pattern>
+          <pattern>
+            text
+          </pattern>
         </ele>
         <ele>
           <name>in_use</name>
@@ -5039,6 +5053,964 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </report>
           </system_report>
         </get_system_reports_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_target_locators</name>
+    <summary>Get configured target locators</summary>
+    <description>
+      <p>
+        The client uses the get_target_locators command to get target locators.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>target_locator</e></any>
+      </pattern>
+      <ele>
+        <name>target_locator</name>
+        <pattern>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the target locator</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get target locators</summary>
+      <request>
+        <get_target_locators>
+        </get_target_locators>
+      </request>
+      <response>
+        <get_target_locators_response status="200" status_text="OK">
+          <target_locator>
+            <name>ldap</name>
+          </target_locator>
+          <truncated>...</truncated>
+        </get_target_locators_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_targets</name>
+    <summary>Get all targets</summary>
+    <description>
+      The client uses the get_targets command to get target information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>target_id</name>
+        <summary>ID of single target to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Whether to include list of tasks that use the target</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>target</e></any>
+      </pattern>
+      <ele>
+        <name>target</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>hosts</e>
+          <e>max_hosts</e>
+          <e>in_use</e>
+          <e>lsc_credential</e>
+          <o><e>tasks</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the target</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the target</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>A list of hosts</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>max_hosts</name>
+          <summary>The maximum number of hosts defined by the target</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the target</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>lsc_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the target</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all targets</summary>
+      <request>
+        <get_targets></get_targets>
+      </request>
+      <response>
+        <get_targets_response status="200" status_text="OK">
+          <target id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Localhost</name>
+            <hosts>localhost</hosts>
+            <max_hosts>1</max_hosts>
+            <comment></comment>
+            <in_use>7</in_use>
+            <lsc_credential id="">
+              <name></name>
+            </lsc_credential>
+          </target>
+          <truncated>...</truncated>
+        </get_targets_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single target, including tasks using the target</summary>
+      <request>
+        <get_targets target_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf" tasks="1">
+        </get_targets>
+      </request>
+      <response>
+        <get_targets_response status="200" status_text="OK">
+          <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+            <name>dik</name>
+            <hosts>dik.example.org</hosts>
+            <max_hosts>1</max_hosts>
+            <comment>dik mm</comment>
+            <in_use>4</in_use>
+            <lsc_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
+              <name>mm</name>
+            </lsc_credential>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>dik mm</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </target>
+        </get_targets_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_tasks</name>
+    <summary>Get all tasks</summary>
+    <description>
+      <p>
+        The client uses the get_tasks command to get task information.
+      </p>
+      <p>
+        As a convenience for clients the response includes a task count and
+        the values of the sort order, sort field and apply overrides flag
+        that the manager applied when selecting the tasks.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>task_id</name>
+        <summary>ID of single task to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include full task details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>rcfile</name>
+        <summary>Whether to include task RC file (for openvas-client)</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>apply_overrides</name>
+        <summary>Whether to override result threat levels</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
+      <attrib>
+        <name>sort_field</name>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>task_count</e>
+        <e>sort</e>
+        <e>apply_overrides</e>
+        <any><e>task</e></any>
+      </pattern>
+      <ele>
+        <name>task_count</name>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          <any><e>field</e></any>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>apply_overrides</name>
+        <pattern>
+          <t><alts><alt>0</alt><alt>1</alt></alts></t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>task</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>status</e>
+          <e>progress</e>
+          <e>config</e>
+          <e>target</e>
+          <e>escalator</e>
+          <e>schedule</e>
+          <e>result_count</e>
+          <e>report_count</e>
+          <e>trend</e>
+          <o><e>first_report</e></o>
+          <o><e>last_report</e></o>
+          <o><e>second_last_report</e></o>
+          <o><e>rcfile</e></o>
+          <any><e>reports</e></any>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the task</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the task</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>status</name>
+          <summary>The run status of the task</summary>
+          <pattern><t>task_status</t></pattern>
+        </ele>
+        <ele>
+          <name>progress</name>
+          <summary>The percentage of the task that is complete</summary>
+          <pattern>
+            <t>integer</t>
+            <any><e>host_progress</e></any>
+          </pattern>
+          <ele>
+            <name>host_progress</name>
+            <summary>Percentage complete for a particular host</summary>
+            <pattern>
+              <t>integer</t>
+              <e>host</e>
+            </pattern>
+            <ele>
+              <name>host</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>config</name>
+          <summary>The scan configuration used by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the config</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>target</name>
+          <summary>The hosts scanned by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>escalator</name>
+          <summary>An escalator that applies to the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the escalator</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>schedule</name>
+          <summary>When the task will run</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the schedule</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary>Result count across all scans</summary>
+          <pattern>
+            <e>debug</e>
+            <e>log</e>
+            <e>info</e>
+            <e>warning</e>
+            <e>hole</e>
+          </pattern>
+          <ele>
+            <name>debug</name>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>log</name>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>info</name>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>hole</name>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>report_count</name>
+          <summary>Number of reports</summary>
+          <pattern>
+            <t>integer</t>
+            <e>finished</e>
+          </pattern>
+          <ele>
+            <name>finished</name>
+            <summary>Number of reports where the scan completed</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>trend</name>
+          <pattern><t>task_trend</t></pattern>
+        </ele>
+        <ele>
+          <name>first_report</name>
+          <pattern>
+            <e>report</e>
+          </pattern>
+          <ele>
+            <name>report</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+              <e>result_count</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <pattern><t>ctime</t></pattern>
+            </ele>
+            <ele>
+              <name>result_count</name>
+              <summary>Result counts for this report</summary>
+              <pattern>
+                <e>debug</e>
+                <e>log</e>
+                <e>info</e>
+                <e>warning</e>
+                <e>hole</e>
+              </pattern>
+              <ele>
+                <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>log</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>info</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>warning</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>hole</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>last_report</name>
+          <pattern>
+            <e>report</e>
+          </pattern>
+          <ele>
+            <name>report</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+              <e>result_count</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <pattern><t>ctime</t></pattern>
+            </ele>
+            <ele>
+              <name>result_count</name>
+              <summary>Result counts for this report</summary>
+              <pattern>
+                <e>debug</e>
+                <e>log</e>
+                <e>info</e>
+                <e>warning</e>
+                <e>hole</e>
+              </pattern>
+              <ele>
+                <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>log</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>info</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>warning</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>hole</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>second_last_report</name>
+          <pattern>
+            <e>report</e>
+          </pattern>
+          <ele>
+            <name>report</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+              <e>result_count</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <pattern><t>ctime</t></pattern>
+            </ele>
+            <ele>
+              <name>result_count</name>
+              <summary>Result counts for this report</summary>
+              <pattern>
+                <e>debug</e>
+                <e>log</e>
+                <e>info</e>
+                <e>warning</e>
+                <e>hole</e>
+              </pattern>
+              <ele>
+                <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>log</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>info</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>warning</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>hole</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>rcfile</name>
+          <pattern><t>base64</t></pattern>
+        </ele>
+        <ele>
+          <name>reports</name>
+          <pattern>
+            <any><e>report</e></any>
+          </pattern>
+          <ele>
+            <name>report</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+              <e>scan_run_status</e>
+              <e>result_count</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <pattern><t>ctime</t></pattern>
+            </ele>
+            <ele>
+              <name>scan_run_status</name>
+              <summary>Run status of task scan</summary>
+              <pattern><t>task_status</t></pattern>
+            </ele>
+            <ele>
+              <name>result_count</name>
+              <summary>Result counts for this report</summary>
+              <pattern>
+                <e>debug</e>
+                <e>log</e>
+                <e>info</e>
+                <e>warning</e>
+                <e>hole</e>
+              </pattern>
+              <ele>
+                <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>log</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>info</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>warning</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>hole</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+
+
+        <ele>
+          <name>lsc_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the task</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all tasks</summary>
+      <request>
+        <get_tasks></get_tasks>
+      </request>
+      <response>
+        <get_tasks_response status="200" status_text="OK">
+          <task_count>2</task_count>
+          <sort>
+            <field>
+              ROWID
+              <order>ascending</order>
+            </field>
+          </sort>
+          <apply_overrides>0</apply_overrides>
+          <task id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+            <name>Scan Webserver</name>
+            <comment>Scan of the web server.</comment>
+            <status>Done</status>
+            <progress>-1</progress>
+            <config id="daba56c8-73ec-11df-a475-002264764cea">
+              <name>Full and fast</name>
+            </config>
+            <escalator id="">
+              <name></name>
+            </escalator>
+            <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+              <name>dik</name>
+            </target>
+            <schedule id="">
+              <name></name>
+              <next_time>over</next_time>
+            </schedule>
+            <result_count>
+              <debug>0</debug>
+              <log>0</log>
+              <info>14</info>
+              <warning>0</warning>
+              <hole>6</hole>
+            </result_count>
+            <report_count>
+              2
+              <finished>2</finished>
+            </report_count>
+            <trend></trend>
+            <first_report>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </first_report>
+            <last_report>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </last_report>
+            <second_last_report>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </second_last_report>
+          </task>
+          <task id="f14747d3-a4d7-4e79-99bb-a0a1276cb78c">
+            <name>Scan Mailserver</name>
+            <truncated>...</truncated>
+          </task>
+        </get_tasks_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single task, including all reports</summary>
+      <request>
+        <get_tasks task_id="f14747d3-a4d7-4e79-99bb-a0a1276cb78c" details="1">
+        </get_tasks>
+      </request>
+      <response>
+        <get_tasks_response status="200" status_text="OK">
+          <task_count>1</task_count>
+          <sort>
+            <field>
+              ROWID
+              <order>ascending</order>
+            </field>
+          </sort>
+          <apply_overrides>0</apply_overrides>
+          <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+            <name>Scan Mailserver</name>
+            <comment>Scan of the web server.</comment>
+            <status>Done</status>
+            <progress>-1</progress>
+            <config id="daba56c8-73ec-11df-a475-002264764cea">
+              <name>Full and fast</name>
+            </config>
+            <escalator id="">
+              <name></name>
+            </escalator>
+            <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+              <name>dik</name>
+            </target>
+            <schedule id="">
+              <name></name>
+              <next_time>over</next_time>
+            </schedule>
+            <result_count>
+              <debug>0</debug>
+              <log>0</log>
+              <info>14</info>
+              <warning>0</warning>
+              <hole>6</hole>
+            </result_count>
+            <report_count>
+              2
+              <finished>2</finished>
+            </report_count>
+            <trend></trend>
+            <first_report>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </first_report>
+            <last_report>
+              <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </last_report>
+            <second_last_report>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </second_last_report>
+            <reports>
+              <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+                <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
+                <scan_run_status>Done</scan_run_status>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+              <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
+                <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
+                <scan_run_status>Done</scan_run_status>
+                <result_count>
+                  <debug>0</debug>
+                  <hole>0</hole>
+                  <info>7</info>
+                  <log>0</log>
+                  <warning>3</warning>
+                </result_count>
+              </report>
+            </reports>
+          </task>
+        </get_tasks_response>
       </response>
     </example>
   </command>

@@ -1,3 +1,19 @@
+2010-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add remaining GET commands.
+
+	* src/schema_formats/HTML/HTML.xsl (pretty): Remove extra select.
+	(type [details], command): Make RNC blocks wider.
+
+	* src/schema_formats/HTML/rnc.xsl (wrap): Only add the final newline
+	when the text contains newlines.
+	(wrap-line): Bring width down to 76.
+
+	* src/schema_formats/RNC/RNC.xsl (types): Normalise space of pattern.
+
+	* src/schema_formats/RNC/rnc.xsl (rnc-type, attrib, t, ele): Normalise
+	space.
+
 2010-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Add more GET commands.
