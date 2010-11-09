@@ -16049,9 +16049,7 @@ create_lsc_credential (const char* name, const char* comment,
                        lsc_credential_t *lsc_credential)
 {
   gchar *quoted_name;
-  gchar *quoted_comment, *quoted_login, *public_key, *private_key, *base64;
-  void *rpm, *deb, *exe;
-  gsize rpm_size, deb_size, exe_size;
+  gchar *public_key, *private_key;
   int i;
   GRand *rand;
   gchar password[PASSWORD_LENGTH];
@@ -16060,6 +16058,7 @@ create_lsc_credential (const char* name, const char* comment,
   assert (name && strlen (name) > 0);
   assert (login && strlen (login) > 0);
   assert (current_credentials.uuid);
+  assert (comment);
 
   quoted_name = sql_quote (name);
 
@@ -16130,246 +16129,46 @@ create_lsc_credential (const char* name, const char* comment,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_all_create (login,
-                           password,
-                           &public_key,
-                           &private_key,
-                           &rpm, &rpm_size,
-                           &deb, &deb_size,
-                           &exe, &exe_size))
+  if (lsc_user_keys_create (login,
+                            password,
+                            &public_key,
+                            &private_key))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
     }
 
-  /* Insert the packages. */
-
   {
-    const char* tail;
-    int ret;
-    sqlite3_stmt* stmt;
-    gchar* formatted, *quoted_password;
+    gchar *quoted_login = sql_quote (login);
+    gchar *quoted_password = sql_quote (password);
+    gchar *quoted_comment = sql_quote (comment);
+    gchar *quoted_public_key = sql_quote (public_key);
+    gchar *quoted_private_key = sql_quote (private_key);
 
-    quoted_login = sql_quote (login);
-    quoted_password = sql_nquote (password, strlen (password));
-    if (comment)
-      {
-        quoted_comment = sql_nquote (comment, strlen (comment));
-        formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (uuid, name, owner, login, password,"
-                                     "  comment, public_key, private_key,"
-                                     "  rpm, deb, exe)"
-                                     " VALUES"
-                                     " (make_uuid (), '%s',"
-                                     "  (SELECT ROWID FROM users"
-                                     "   WHERE users.uuid = '%s'),"
-                                     "  '%s', '%s', '%s',"
-                                     "  $public_key, $private_key,"
-                                     "  $rpm, $deb, $exe);",
-                                     quoted_name,
-                                     current_credentials.uuid,
-                                     quoted_login,
-                                     quoted_password,
-                                     quoted_comment);
-        g_free (quoted_comment);
-      }
-    else
-      {
-        formatted = g_strdup_printf ("INSERT INTO lsc_credentials"
-                                     " (uuid, name, owner, login, password,"
-                                     "  comment, public_key, private_key,"
-                                     "  rpm, deb, exe)"
-                                     " VALUES"
-                                     " (make_uuid (), '%s',"
-                                     "  (SELECT ROWID FROM users"
-                                     "   WHERE users.uuid = '%s'),"
-                                     "  '%s', '%s', '',"
-                                     "  $public_key, $private_key,"
-                                     "  $rpm, $deb, $exe);",
-                                     quoted_name,
-                                     current_credentials.uuid,
-                                     quoted_login,
-                                     quoted_password);
-      }
+    /* Password-only credential. */
+
+    sql ("INSERT INTO lsc_credentials"
+         " (uuid, name, owner, login, password, comment, public_key,"
+         "  private_key, rpm, deb, exe)"
+         " VALUES"
+         " (make_uuid (), '%s',"
+         "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+         "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL);",
+         quoted_name,
+         current_credentials.uuid,
+         quoted_login,
+         quoted_password,
+         quoted_comment,
+         quoted_public_key,
+         quoted_private_key);
 
     g_free (quoted_name);
     g_free (quoted_login);
     g_free (quoted_password);
-
-    tracef ("   sql: %s\n", formatted);
-
-    /* Prepare statement. */
-
-    while (1)
-      {
-        ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-        if (ret == SQLITE_BUSY) continue;
-        g_free (formatted);
-        if (ret == SQLITE_OK)
-          {
-            if (stmt == NULL)
-              {
-                g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                           __FUNCTION__,
-                           sqlite3_errmsg (task_db));
-                sql ("ROLLBACK;");
-                g_free (public_key);
-                g_free (private_key);
-                g_free (rpm);
-                g_free (deb);
-                g_free (exe);
-                return -1;
-              }
-            break;
-          }
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (public_key);
-        g_free (private_key);
-        g_free (rpm);
-        g_free (deb);
-        g_free (exe);
-        return -1;
-      }
-
-    /* Bind the keys to the "$values" in the SQL statement. */
-
-    while (1)
-      {
-        ret = sqlite3_bind_text (stmt,
-                                 1,
-                                 public_key,
-                                 strlen (public_key),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (public_key);
-        g_free (private_key);
-        g_free (rpm);
-        g_free (deb);
-        g_free (exe);
-        return -1;
-      }
-    g_free (public_key);
-
-    while (1)
-      {
-        ret = sqlite3_bind_text (stmt,
-                                 2,
-                                 private_key,
-                                 strlen (private_key),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (private_key);
-        g_free (rpm);
-        g_free (deb);
-        g_free (exe);
-        return -1;
-      }
-    g_free (private_key);
-
-    /* Bind the packages to the "$values" in the SQL statement. */
-
-    base64 = (rpm && strlen (rpm))
-             ? g_base64_encode (rpm, rpm_size)
-             : g_strdup ("");
-    g_free (rpm);
-    while (1)
-      {
-        ret = sqlite3_bind_text (stmt,
-                                 3,
-                                 base64,
-                                 strlen (base64),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (base64);
-        g_free (deb);
-        g_free (exe);
-        return -1;
-      }
-    g_free (base64);
-
-    base64 = (deb && strlen (deb))
-             ? g_base64_encode (deb, deb_size)
-             : g_strdup ("");
-    g_free (deb);
-    while (1)
-      {
-        ret = sqlite3_bind_text (stmt,
-                                 4,
-                                 base64,
-                                 strlen (base64),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (base64);
-        g_free (exe);
-        return -1;
-      }
-    g_free (base64);
-
-    base64 = (exe && strlen (exe))
-             ? g_base64_encode (exe, exe_size)
-             : g_strdup ("");
-    g_free (exe);
-    while (1)
-      {
-        ret = sqlite3_bind_blob (stmt,
-                                 5,
-                                 base64,
-                                 strlen (base64),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
-        sql ("ROLLBACK;");
-        g_free (base64);
-        return -1;
-      }
-    g_free (base64);
-
-    /* Run the statement. */
-
-    while (1)
-      {
-        ret = sqlite3_step (stmt);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_DONE) break;
-        if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-          {
-            if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-            g_warning ("%s: sqlite3_step failed: %s\n",
-                       __FUNCTION__,
-                       sqlite3_errmsg (task_db));
-            sql ("ROLLBACK;");
-            return -1;
-          }
-      }
-
-    sqlite3_finalize (stmt);
+    g_free (quoted_comment);
+    g_free (quoted_public_key);
+    g_free (quoted_private_key);
   }
 
   if (lsc_credential)
@@ -16630,7 +16429,26 @@ DEF_ACCESS (lsc_credential_iterator_private_key, 7);
  * @return Rpm, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_rpm, 8);
+const char*
+lsc_credential_iterator_rpm (iterator_t *iterator)
+{
+  const char *public_key, *name;
+  void *rpm;
+  gsize rpm_size;
+  gchar *rpm64;
+
+  if (iterator->done) return NULL;
+
+  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
+  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
+    return NULL;
+  rpm64 = (rpm && rpm_size)
+          ? g_base64_encode (rpm, rpm_size)
+          : g_strdup ("");
+  free (rpm);
+  return rpm64;
+}
 
 /**
  * @brief Get the deb from an LSC credential iterator.
@@ -16640,7 +16458,33 @@ DEF_ACCESS (lsc_credential_iterator_rpm, 8);
  * @return Deb, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_deb, 9);
+const char*
+lsc_credential_iterator_deb (iterator_t *iterator)
+{
+  const char *name, *public_key;
+  void *deb, *rpm;
+  gsize deb_size, rpm_size;
+  gchar *deb64;
+
+  if (iterator->done) return NULL;
+
+  public_key = (const char*) sqlite3_column_text (iterator->stmt, 6);
+  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
+    return NULL;
+
+  if (lsc_user_deb_recreate (name, rpm, rpm_size, &deb, &deb_size))
+    {
+      free (rpm);
+      return NULL;
+    }
+  free (rpm);
+  deb64 = (deb && deb_size)
+          ? g_base64_encode (deb, deb_size)
+          : g_strdup ("");
+  free (deb);
+  return deb64;
+}
 
 /**
  * @brief Get the exe from an LSC credential iterator.
@@ -16650,7 +16494,26 @@ DEF_ACCESS (lsc_credential_iterator_deb, 9);
  * @return Exe, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (lsc_credential_iterator_exe, 10);
+const char*
+lsc_credential_iterator_exe (iterator_t *iterator)
+{
+  const char *name, *password;
+  void *exe;
+  gsize exe_size;
+  gchar *exe64;
+
+  if (iterator->done) return NULL;
+
+  name = (const char*) sqlite3_column_text (iterator->stmt, 2);
+  password = (const char*) sqlite3_column_text (iterator->stmt, 4);
+  if (lsc_user_exe_recreate (name, password, &exe, &exe_size))
+    return NULL;
+  exe64 = (exe && exe_size)
+          ? g_base64_encode (exe, exe_size)
+          : g_strdup ("");
+  free (exe);
+  return exe64;
+}
 
 /**
  * @brief Get the "in use" state from an LSC credential iterator.

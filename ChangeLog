@@ -1,3 +1,20 @@
+2010-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Create LSC credential packages on every GET_LSC_CREDENTIAL, instead of
+	once in CREATE_LSC_CREDENTIAL.
+
+	* src/lsc_user.c (lsc_user_keys_create, lsc_user_rpm_recreate)
+	(lsc_user_deb_recreate, lsc_user_exe_recreate): New functions.
+	(alien_found): Move up in file.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/manage_sql.c (create_lsc_credential): Just create the keys,
+	instead of all packages.
+	(lsc_credential_iterator_rpm, lsc_credential_iterator_deb)
+	(lsc_credential_iterator_exe): Create packages instead of returning
+	cached packages.
+
 2010-11-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/ompd.c, src/otpd.c, src/lsc_user.h, src/manage.c,

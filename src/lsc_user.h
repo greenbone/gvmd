@@ -28,7 +28,19 @@
 #define _OPENVASMD_LSC_USER_H
 
 #include <glib.h>
-#include <openvas/misc/openvas_ssh_login.h>
+
+int
+lsc_user_keys_create (const gchar *, const gchar *, gchar **, gchar **);
+
+int
+lsc_user_rpm_recreate (const gchar *, const gchar *,
+                       void **, gsize *);
+
+int
+lsc_user_deb_recreate (const gchar *, const char *, gsize, void **, gsize *);
+
+int
+lsc_user_exe_recreate (const gchar *, const gchar *, void **, gsize *);
 
 int
 lsc_user_all_create (const gchar *,
