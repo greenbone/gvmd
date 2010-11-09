@@ -3,6 +3,20 @@
 	* src/schema_formats/HTML/HTML.xsl (type [details]): Add RNC heading.
 	Print type RNC as a type instead of as an element.
 
+	* src/schema_formats/HTML/rnc.xsl, src/schema_formats/RNC/rnc.xsl: Work
+	around RNC restrictions on treating element text as data when element
+	contains other elements.
+
+	* src/schema_formats/XML/OMP.xml: Remove GET_TASKS elements left over from
+	sample.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2010-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/HTML/HTML.xsl (type [details]): Add RNC heading.
+	Print type RNC as a type instead of as an element.
+
 	* src/schema_formats/HTML/rnc.xsl: Normalise space as in RNC version.
 	Remove rare wrap to match RNC version.
 

@@ -274,9 +274,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template name="pattern" match="pattern">
     <xsl:param name="parent-name"/>
     <xsl:choose>
-      <xsl:when test="(count (t) = 0) and (string-length (normalize-space (text ())) = 0)">
+      <xsl:when test="(count (*) = 0) and (string-length (normalize-space (text ())) = 0)">
         <xsl:text>       ""</xsl:text>
         <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:when test="(count (t) = 0) and (string-length (normalize-space (text ())) = 0)">
       </xsl:when>
       <xsl:when test="count (t) = 0">
         <xsl:text>       </xsl:text>
@@ -286,16 +288,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:otherwise>
         <xsl:text>       </xsl:text>
         <!-- There should be only one t. -->
+        <xsl:choose>
+          <xsl:when test="(count (*[name()!='t']) = 0)">
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>text # RNC limitation: </xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:for-each select="t">
           <xsl:call-template name="t"/>
           <xsl:call-template name="newline"/>
         </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:variable
+      name="empty"
+      select="(count (t) = 0) and (string-length (normalize-space (text ())) = 0)"/>
     <xsl:for-each select="*[name()!='t']">
       <xsl:choose>
         <xsl:when test="preceding-sibling::*">
           <xsl:text>       &amp; </xsl:text>
+        </xsl:when>
+        <xsl:when test="$empty">
+          <xsl:text>       </xsl:text>
         </xsl:when>
         <xsl:otherwise>
           <xsl:text>       &amp; </xsl:text>

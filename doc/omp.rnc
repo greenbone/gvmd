@@ -45,6 +45,9 @@ command
     | get_results
     | get_schedules
     | get_system_reports
+    | get_target_locators
+    | get_targets
+    | get_tasks
     | get_version
     | help
     | modify_config
@@ -97,6 +100,9 @@ response
     | get_results_response
     | get_schedules_response
     | get_system_reports_response
+    | get_target_locators_response
+    | get_targets_response
+    | get_tasks_response
     | get_version_response
     | help_response
     | modify_config_response
@@ -116,9 +122,9 @@ response
 
 # Base64 encoded data.
 base64 = xsd:base64Binary
-# A true of false value.
+# A true or false value.
 boolean = text
-# A true of false value, after conversion to an integer.
+# A true or false value, after conversion to an integer.
 boolean_atoi = text
 # A date and time, in the C `ctime' format.
 ctime = text
@@ -135,15 +141,17 @@ sort_order = text
 # The success or failure status of a command.
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 # A task run status.
-task_status = 
-      xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
-    
+task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+# The trend of results for a task.
+task_trend = xsd:token { pattern = "up|down|more|less|same" }
 # A threat level.
 threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 # A unit of time.
 time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 # A Universally Unique Identifier (UUID).
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
+# A Universally Unique Identifier (UUID), or the empty string.
+uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 
 ### Commands
 
@@ -154,15 +162,13 @@ uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 authenticate
  = element authenticate
      {
-       ""
-       & authenticate_credentials
+       authenticate_credentials
      }
 
 authenticate_credentials
  = element credentials
      {
-       ""
-       & authenticate_credentials_username
+       authenticate_credentials_username
        & authenticate_credentials_password
      }
 
@@ -187,8 +193,7 @@ authenticate_credentials_password
 commands
  = element commands
      {
-       ""
-       & command*
+       command*
      }
 
 ## Command create_agent
@@ -198,8 +203,7 @@ commands
 create_agent
  = element create_agent
      {
-       ""
-       & create_agent_installer
+       create_agent_installer
        & create_agent_name
        & create_agent_comment?
        & create_agent_howto_install?
@@ -210,7 +214,7 @@ create_agent
 create_agent_installer
  = element installer
      {
-       base64
+       text # RNC limitation: base64
        & create_agent_installer_signature
      }
 
@@ -256,8 +260,7 @@ create_agent_howto_use
 create_config
  = element create_config
      {
-       ""
-       & create_config_comment?
+       create_config_comment?
        & ( create_config_copy
            | get_configs_response
            | create_config_rcfile )
@@ -278,7 +281,7 @@ create_config_copy
        uuid
      }
 
-# A openvasrc style file that defines the config.
+# An openvasrc style file that defines the config.
 create_config_rcfile
  = element rcfile
      {
@@ -299,8 +302,7 @@ create_config_name
 create_escalator
  = element create_escalator
      {
-       ""
-       & create_escalator_name
+       create_escalator_name
        & create_escalator_comment?
        & create_escalator_condition
        & create_escalator_event
@@ -397,8 +399,7 @@ create_escalator_method_data_name
 create_lsc_credential
  = element create_lsc_credential
      {
-       ""
-       & create_lsc_credential_name
+       create_lsc_credential_name
        & create_lsc_credential_comment?
        & create_lsc_credential_login
        & create_lsc_credential_password?
@@ -439,8 +440,7 @@ create_lsc_credential_password
 create_note
  = element create_note
      {
-       ""
-       & create_note_text
+       create_note_text
        & create_note_nvt
        & create_note_comment?
        & create_note_hosts?
@@ -461,8 +461,7 @@ create_note_text
 create_note_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
      }
 
 # A comment on the note.
@@ -490,16 +489,14 @@ create_note_port
 create_note_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Task to which note applies.
 create_note_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Threat level to which note applies.
@@ -516,8 +513,7 @@ create_note_threat
 create_override
  = element create_override
      {
-       ""
-       & create_override_text
+       create_override_text
        & create_override_nvt
        & create_override_comment?
        & create_override_hosts?
@@ -539,8 +535,7 @@ create_override_text
 create_override_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
      }
 
 # A comment on the override.
@@ -575,16 +570,14 @@ create_override_port
 create_override_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Task to which override applies.
 create_override_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Threat level to which override applies.
@@ -601,8 +594,7 @@ create_override_threat
 create_schedule
  = element create_schedule
      {
-       ""
-       & create_schedule_name
+       create_schedule_name
        & create_schedule_comment?
        & create_schedule_first_time
        & create_schedule_duration
@@ -627,8 +619,7 @@ create_schedule_comment
 create_schedule_first_time
  = element first_time
      {
-       ""
-       & create_schedule_first_time_minute
+       create_schedule_first_time_minute
        & create_schedule_first_time_hour
        & create_schedule_first_time_day_of_month
        & create_schedule_first_time_month
@@ -669,8 +660,7 @@ create_schedule_first_time_year
 create_schedule_duration
  = element duration
      {
-       ""
-       & create_schedule_duration_unit
+       create_schedule_duration_unit
      }
 
 # Duration time unit.
@@ -684,8 +674,7 @@ create_schedule_duration_unit
 create_schedule_period
  = element period
      {
-       ""
-       & create_schedule_period_unit
+       create_schedule_period_unit
      }
 
 # Period time unit.
@@ -702,8 +691,7 @@ create_schedule_period_unit
 create_target
  = element create_target
      {
-       ""
-       & create_target_name
+       create_target_name
        & create_target_comment?
        & create_target_hosts
        & create_target_lsc_credential
@@ -735,16 +723,14 @@ create_target_hosts
 create_target_lsc_credential
  = element lsc_credential
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Target locator (for example, for LDAP).
 create_target_target_locator
  = element target_locator
      {
-       ""
-       & create_target_target_locator_username?
+       create_target_target_locator_username?
        & create_target_target_locator_password?
      }
 
@@ -769,8 +755,7 @@ create_target_target_locator_password
 create_task
  = element create_task
      {
-       ""
-       & create_task_name
+       create_task_name
        & create_task_comment?
        & create_task_config
        & create_task_target
@@ -797,32 +782,28 @@ create_task_comment
 create_task_config
  = element config
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # The hosts scanned by the task.
 create_task_target
  = element target
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # An escalator that applies to the task.
 create_task_escalator
  = element escalator
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # When the task will run.
 create_task_schedule
  = element schedule
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # An openvasrc style file defining the task.
@@ -839,8 +820,7 @@ create_task_rcfile
 delete_agent
  = element delete_agent
      {
-       ""
-       & attribute agent_id { uuid }
+       attribute agent_id { uuid }
      }
 
 ## Command delete_config
@@ -850,8 +830,7 @@ delete_agent
 delete_config
  = element delete_config
      {
-       ""
-       & attribute config_id { uuid }
+       attribute config_id { uuid }
      }
 
 ## Command delete_escalator
@@ -861,8 +840,7 @@ delete_config
 delete_escalator
  = element delete_escalator
      {
-       ""
-       & attribute escalator_id { uuid }
+       attribute escalator_id { uuid }
      }
 
 ## Command delete_lsc_credential
@@ -872,8 +850,7 @@ delete_escalator
 delete_lsc_credential
  = element delete_lsc_credential
      {
-       ""
-       & attribute lsc_credential_id { uuid }
+       attribute lsc_credential_id { uuid }
      }
 
 ## Command delete_note
@@ -883,19 +860,17 @@ delete_lsc_credential
 delete_note
  = element delete_note
      {
-       ""
-       & attribute note_id { uuid }
+       attribute note_id { uuid }
      }
 
 ## Command delete_override
 ##
-## Delete a override.
+## Delete an override.
 
 delete_override
  = element delete_override
      {
-       ""
-       & attribute override_id { uuid }
+       attribute override_id { uuid }
      }
 
 ## Command delete_report
@@ -905,8 +880,7 @@ delete_override
 delete_report
  = element delete_report
      {
-       ""
-       & attribute report_id { uuid }
+       attribute report_id { uuid }
      }
 
 ## Command delete_schedule
@@ -916,8 +890,7 @@ delete_report
 delete_schedule
  = element delete_schedule
      {
-       ""
-       & attribute schedule_id { uuid }
+       attribute schedule_id { uuid }
      }
 
 ## Command delete_target
@@ -927,8 +900,7 @@ delete_schedule
 delete_target
  = element delete_target
      {
-       ""
-       & attribute target_id { uuid }
+       attribute target_id { uuid }
      }
 
 ## Command delete_task
@@ -938,8 +910,7 @@ delete_target
 delete_task
  = element delete_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command get_agents
@@ -949,8 +920,7 @@ delete_task
 get_agents
  = element get_agents
      {
-       ""
-       & # ID of single agent to get.
+       # ID of single agent to get.
        attribute agent_id { uuid }?
        & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
        & attribute sort_order { sort_order }?
@@ -964,8 +934,7 @@ get_agents
 get_configs
  = element get_configs
      {
-       ""
-       & # ID of single config to get.
+       # ID of single config to get.
        attribute config_id { uuid }?
        & attribute families { boolean }?
        & attribute preferences { boolean }?
@@ -980,8 +949,7 @@ get_configs
 get_dependencies
  = element get_dependencies
      {
-       ""
-       & # ID of single NVT for which to get dependencies.
+       # ID of single NVT for which to get dependencies.
        attribute nvt_oid { oid }?
      }
 
@@ -992,8 +960,7 @@ get_dependencies
 get_escalators
  = element get_escalators
      {
-       ""
-       & # ID of single escalator to get.
+       # ID of single escalator to get.
        attribute escalator_id { uuid }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
@@ -1006,8 +973,7 @@ get_escalators
 get_lsc_credentials
  = element get_lsc_credentials
      {
-       ""
-       & # ID of single LSC credential to get.
+       # ID of single LSC credential to get.
        attribute lsc_credential_id { uuid }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
        & attribute sort_order { sort_order }?
@@ -1021,8 +987,7 @@ get_lsc_credentials
 get_notes
  = element get_notes
      {
-       ""
-       & # ID of single note to get.
+       # ID of single note to get.
        attribute note_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
@@ -1039,8 +1004,7 @@ get_notes
 get_nvts
  = element get_nvts
      {
-       ""
-       & # Single NVT to get.
+       # Single NVT to get.
        attribute nvt_oid { oid }
        & # Whether to include full details.
        attribute details { boolean }?
@@ -1065,8 +1029,7 @@ get_nvts
 get_nvt_families
  = element get_nvt_families
      {
-       ""
-       & attribute sort_order { sort_order }?
+       attribute sort_order { sort_order }?
      }
 
 ## Command get_nvt_feed_checksum
@@ -1076,8 +1039,7 @@ get_nvt_families
 get_nvt_feed_checksum
  = element get_nvt_feed_checksum
      {
-       ""
-       & attribute algorithm { text }?
+       attribute algorithm { text }?
      }
 
 ## Command get_overrides
@@ -1087,8 +1049,7 @@ get_nvt_feed_checksum
 get_overrides
  = element get_overrides
      {
-       ""
-       & # ID of single override to get.
+       # ID of single override to get.
        attribute override_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
@@ -1105,8 +1066,7 @@ get_overrides
 get_preferences
  = element get_preferences
      {
-       ""
-       & attribute nvt_oid { oid }?
+       attribute nvt_oid { oid }?
        & # ID of config of which to show preference values.
        attribute config_id { uuid }?
        & # The name of a particular preference to get.
@@ -1120,8 +1080,7 @@ get_preferences
 get_reports
  = element get_reports
      {
-       ""
-       & # ID of single report to get.
+       # ID of single report to get.
        attribute report_id { uuid }?
        & # Required report format.
        attribute format { text }?
@@ -1156,8 +1115,7 @@ get_reports
 get_results
  = element get_results
      {
-       ""
-       & # ID of single result to get.
+       # ID of single result to get.
        attribute result_id { uuid }?
        & # ID of task for note and override handling.
        attribute task_id { uuid }?
@@ -1180,8 +1138,7 @@ get_results
 get_schedules
  = element get_schedules
      {
-       ""
-       & # ID of single schedule to get.
+       # ID of single schedule to get.
        attribute schedule_id { uuid }?
        & # Whether to include full schedule details.
        attribute details { boolean }?
@@ -1196,15 +1153,56 @@ get_schedules
 get_system_reports
  = element get_system_reports
      {
-       ""
-       & # A string describing the required report.
+       # A string describing the required report.
        attribute name { text }?
-       & # 
-          The number of seconds into the past that the report should include
-        .
+       & # The number of seconds into the past that the report should include.
        attribute duration { integer }?
        & # Whether to include the actual reports.
        attribute brief { boolean }?
+     }
+
+## Command get_target_locators
+##
+## Get configured target locators.
+
+get_target_locators
+ = element get_target_locators
+     {
+       ""
+     }
+
+## Command get_targets
+##
+## Get all targets.
+
+get_targets
+ = element get_targets
+     {
+       # ID of single target to get.
+       attribute target_id { uuid }?
+       & # Whether to include list of tasks that use the target.
+       attribute tasks { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
+     }
+
+## Command get_tasks
+##
+## Get all tasks.
+
+get_tasks
+ = element get_tasks
+     {
+       # ID of single task to get.
+       attribute task_id { uuid }?
+       & # Whether to include full task details.
+       attribute details { boolean }?
+       & # Whether to include task RC file (for openvas-client).
+       attribute rcfile { boolean }?
+       & # Whether to override result threat levels.
+       attribute apply_overrides { boolean }?
+       & attribute sort_order { sort_order }?
+       & attribute sort_field { text }?
      }
 
 ## Command get_version
@@ -1234,8 +1232,7 @@ help
 modify_config
  = element modify_config
      {
-       ""
-       & # ID of config to modify.
+       # ID of config to modify.
        attribute config_id { uuid }
        & ( modify_config_preference
            | modify_config_family_selection
@@ -1245,8 +1242,7 @@ modify_config
 modify_config_preference
  = element preference
      {
-       ""
-       & modify_config_preference_name
+       modify_config_preference_name
        & modify_config_preference_nvt?
        & modify_config_preference_value?
      }
@@ -1262,8 +1258,7 @@ modify_config_preference_name
 modify_config_preference_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
      }
 
 # New value for preference.
@@ -1276,8 +1271,7 @@ modify_config_preference_value
 modify_config_family_selection
  = element family_selection
      {
-       ""
-       & modify_config_family_selection_growing?
+       modify_config_family_selection_growing?
        & modify_config_family_selection_family*
      }
 
@@ -1291,8 +1285,7 @@ modify_config_family_selection_growing
 modify_config_family_selection_family
  = element family
      {
-       ""
-       & modify_config_family_selection_family_all?
+       modify_config_family_selection_family_all?
        & modify_config_family_selection_family_growing?
        & modify_config_family_selection_family_name
      }
@@ -1320,8 +1313,7 @@ modify_config_family_selection_family_name
 modify_config_nvt_selection
  = element nvt_selection
      {
-       ""
-       & modify_config_nvt_selection_family
+       modify_config_nvt_selection_family
        & modify_config_nvt_selection_nvt*
      }
 
@@ -1335,8 +1327,7 @@ modify_config_nvt_selection_family
 modify_config_nvt_selection_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
      }
 
 ## Command modify_note
@@ -1346,8 +1337,7 @@ modify_config_nvt_selection_nvt
 modify_note
  = element modify_note
      {
-       ""
-       & # ID of note to modify.
+       # ID of note to modify.
        attribute note_id { uuid }
        & modify_note_hosts?
        & modify_note_port?
@@ -1389,16 +1379,14 @@ modify_note_threat
 modify_note_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Result to which note applies.
 modify_note_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 ## Command modify_override
@@ -1408,8 +1396,7 @@ modify_note_result
 modify_override
  = element modify_override
      {
-       ""
-       & # ID of override to modify.
+       # ID of override to modify.
        attribute override_id { uuid }
        & modify_override_hosts?
        & modify_override_new_threat?
@@ -1459,16 +1446,14 @@ modify_override_threat
 modify_override_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Result to which override applies.
 modify_override_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 ## Command modify_report
@@ -1478,8 +1463,7 @@ modify_override_result
 modify_report
  = element modify_report
      {
-       ""
-       & # ID of report to modify.
+       # ID of report to modify.
        attribute report_id { uuid }
        & modify_report_comment
      }
@@ -1498,8 +1482,7 @@ modify_report_comment
 modify_task
  = element modify_task
      {
-       ""
-       & # ID of task to modify.
+       # ID of task to modify.
        attribute task_id { uuid }
        & ( modify_task_comment
            | modify_task_escalator
@@ -1520,8 +1503,7 @@ modify_task_comment
 modify_task_escalator
  = element escalator
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # The name of the task.
@@ -1542,15 +1524,14 @@ modify_task_rcfile
 modify_task_schedule
  = element schedule
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # File to attach to task.
 modify_task_file
  = element file
      {
-       base64
+       text # RNC limitation: base64
        & attribute name { text }
        & attribute action { xsd:token { pattern = "update|remove" } }
      }
@@ -1562,8 +1543,7 @@ modify_task_file
 pause_task
  = element pause_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command resume_or_start_task
@@ -1573,8 +1553,7 @@ pause_task
 resume_or_start_task
  = element resume_or_start_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command resume_paused_task
@@ -1584,8 +1563,7 @@ resume_or_start_task
 resume_paused_task
  = element resume_paused_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command resume_stopped_task
@@ -1595,8 +1573,7 @@ resume_paused_task
 resume_stopped_task
  = element resume_stopped_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command start_task
@@ -1606,8 +1583,7 @@ resume_stopped_task
 start_task
  = element start_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command stop_task
@@ -1617,8 +1593,7 @@ start_task
 stop_task
  = element stop_task
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ## Command test_escalator
@@ -1628,8 +1603,7 @@ stop_task
 test_escalator
  = element test_escalator
      {
-       ""
-       & attribute task_id { uuid }
+       attribute task_id { uuid }
      }
 
 ### Responses
@@ -1639,8 +1613,7 @@ test_escalator
 authenticate_response
  = element authenticate_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1649,8 +1622,7 @@ authenticate_response
 commands_response
  = element commands_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & response*
      }
@@ -1660,8 +1632,7 @@ commands_response
 create_agent_response
  = element create_agent_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1671,8 +1642,7 @@ create_agent_response
 create_config_response
  = element create_config_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1682,8 +1652,7 @@ create_config_response
 create_escalator_response
  = element create_escalator_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1693,8 +1662,7 @@ create_escalator_response
 create_lsc_credential_response
  = element create_lsc_credential_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1704,8 +1672,7 @@ create_lsc_credential_response
 create_note_response
  = element create_note_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1715,8 +1682,7 @@ create_note_response
 create_override_response
  = element create_override_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1726,8 +1692,7 @@ create_override_response
 create_schedule_response
  = element create_schedule_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1737,8 +1702,7 @@ create_schedule_response
 create_target_response
  = element create_target_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1748,8 +1712,7 @@ create_target_response
 create_task_response
  = element create_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
      }
@@ -1759,8 +1722,7 @@ create_task_response
 delete_agent_response
  = element delete_agent_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1769,8 +1731,7 @@ delete_agent_response
 delete_config_response
  = element delete_config_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1779,8 +1740,7 @@ delete_config_response
 delete_escalator_response
  = element delete_escalator_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1789,8 +1749,7 @@ delete_escalator_response
 delete_lsc_credential_response
  = element delete_lsc_credential_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1799,8 +1758,7 @@ delete_lsc_credential_response
 delete_note_response
  = element delete_note_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1809,8 +1767,7 @@ delete_note_response
 delete_override_response
  = element delete_override_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1819,8 +1776,7 @@ delete_override_response
 delete_report_response
  = element delete_report_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1829,8 +1785,7 @@ delete_report_response
 delete_schedule_response
  = element delete_schedule_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1839,8 +1794,7 @@ delete_schedule_response
 delete_target_response
  = element delete_target_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1849,8 +1803,7 @@ delete_target_response
 delete_task_response
  = element delete_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -1859,8 +1812,7 @@ delete_task_response
 get_agents_response
  = element get_agents_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_agents_response_agent*
      }
@@ -1868,8 +1820,7 @@ get_agents_response
 get_agents_response_agent
  = element agent
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_agents_response_agent_name
        & get_agents_response_agent_comment
        & get_agents_response_agent_in_use
@@ -1901,8 +1852,7 @@ get_agents_response_agent_in_use
 get_agents_response_agent_installer
  = element installer
      {
-       ""
-       & get_agents_response_agent_installer_trust
+       get_agents_response_agent_installer_trust
      }
 
 # Whether signature verification succeeded.
@@ -1916,7 +1866,7 @@ get_agents_response_agent_installer_trust
 get_agents_response_agent_package
  = element package
      {
-       base64
+       text # RNC limitation: base64
        & get_agents_response_agent_package_filename
      }
 
@@ -1932,8 +1882,7 @@ get_agents_response_agent_package_filename
 get_configs_response
  = element get_configs_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_configs_response_config*
      }
@@ -1941,8 +1890,7 @@ get_configs_response
 get_configs_response_config
  = element config
      {
-       ""
-       & get_configs_response_config_name
+       get_configs_response_config_name
        & get_configs_response_config_comment
        & get_configs_response_config_family_count
        & get_configs_response_config_nvt_count
@@ -1970,14 +1918,11 @@ get_configs_response_config_comment
 get_configs_response_config_family_count
  = element family_count
      {
-       integer
+       text # RNC limitation: integer
        & get_configs_response_config_family_count_growing
      }
 
-# 
-              Whether new families are automatically added to the
-              config
-            .
+# Whether new families are automatically added to the config.
 get_configs_response_config_family_count_growing
  = element growing
      {
@@ -1988,13 +1933,11 @@ get_configs_response_config_family_count_growing
 get_configs_response_config_nvt_count
  = element nvt_count
      {
-       integer
+       text # RNC limitation: integer
        & get_configs_response_config_nvt_count_growing
      }
 
-# 
-              Whether new NVTs are automatically added to the config
-            .
+# Whether new NVTs are automatically added to the config.
 get_configs_response_config_nvt_count_growing
  = element growing
      {
@@ -2012,15 +1955,13 @@ get_configs_response_config_in_use
 get_configs_response_config_tasks
  = element tasks
      {
-       ""
-       & get_configs_response_config_tasks_task*
+       get_configs_response_config_tasks_task*
      }
 
 get_configs_response_config_tasks_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_configs_response_config_tasks_task_name
      }
 
@@ -2035,15 +1976,13 @@ get_configs_response_config_tasks_task_name
 get_configs_response_config_families
  = element families
      {
-       ""
-       & get_configs_response_config_families_family*
+       get_configs_response_config_families_family*
      }
 
 get_configs_response_config_families_family
  = element family
      {
-       ""
-       & get_configs_response_config_families_family_name
+       get_configs_response_config_families_family_name
        & get_configs_response_config_families_family_nvt_count
        & get_configs_response_config_families_family_max_nvt_count
        & get_configs_response_config_families_family_growing
@@ -2070,9 +2009,7 @@ get_configs_response_config_families_family_max_nvt_count
        integer
      }
 
-# 
-                Whether new NVTs in the family are automatically added to the selection
-              .
+# Whether new NVTs in the family are automatically added to the selection.
 get_configs_response_config_families_family_growing
  = element growing
      {
@@ -2083,15 +2020,13 @@ get_configs_response_config_families_family_growing
 get_configs_response_config_preferences
  = element preferences
      {
-       ""
-       & get_configs_response_config_preferences_preference*
+       get_configs_response_config_preferences_preference*
      }
 
 get_configs_response_config_preferences_preference
  = element preference
      {
-       ""
-       & get_configs_response_config_preferences_preference_nvt
+       get_configs_response_config_preferences_preference_nvt
        & get_configs_response_config_preferences_preference_name
        & get_configs_response_config_preferences_preference_type
        & get_configs_response_config_preferences_preference_value
@@ -2101,8 +2036,7 @@ get_configs_response_config_preferences_preference
 get_configs_response_config_preferences_preference_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_configs_response_config_preferences_preference_nvt_name
      }
 
@@ -2139,8 +2073,7 @@ get_configs_response_config_preferences_preference_value
 get_dependencies_response
  = element get_dependencies_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_dependencies_response_nvt*
      }
@@ -2148,8 +2081,7 @@ get_dependencies_response
 get_dependencies_response_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_dependencies_response_nvt_name
        & get_dependencies_response_nvt_requires
      }
@@ -2164,15 +2096,13 @@ get_dependencies_response_nvt_name
 get_dependencies_response_nvt_requires
  = element requires
      {
-       ""
-       & get_dependencies_response_nvt_requires_nvt*
+       get_dependencies_response_nvt_requires_nvt*
      }
 
 get_dependencies_response_nvt_requires_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_dependencies_response_nvt_requires_nvt_name
      }
 
@@ -2188,8 +2118,7 @@ get_dependencies_response_nvt_requires_nvt_name
 get_escalators_response
  = element get_escalators_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_escalators_response_escalator*
      }
@@ -2197,8 +2126,7 @@ get_escalators_response
 get_escalators_response_escalator
  = element escalator
      {
-       ""
-       & get_escalators_response_escalator_name
+       get_escalators_response_escalator_name
        & get_escalators_response_escalator_comment
        & get_escalators_response_escalator_in_use
        & get_escalators_response_escalator_condition
@@ -2301,8 +2229,7 @@ get_escalators_response_escalator_method_data_name
 get_lsc_credentials_response
  = element get_lsc_credentials_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_lsc_credentials_response_lsc_credential*
      }
@@ -2310,8 +2237,7 @@ get_lsc_credentials_response
 get_lsc_credentials_response_lsc_credential
  = element lsc_credential
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_lsc_credentials_response_lsc_credential_name
        & get_lsc_credentials_response_lsc_credential_login
        & get_lsc_credentials_response_lsc_credential_comment
@@ -2361,15 +2287,13 @@ get_lsc_credentials_response_lsc_credential_type
 get_lsc_credentials_response_lsc_credential_targets
  = element targets
      {
-       ""
-       & get_lsc_credentials_response_lsc_credential_targets_target*
+       get_lsc_credentials_response_lsc_credential_targets_target*
      }
 
 get_lsc_credentials_response_lsc_credential_targets_target
  = element target
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_lsc_credentials_response_lsc_credential_targets_target_name
      }
 
@@ -2398,8 +2322,7 @@ get_lsc_credentials_response_lsc_credential_package
 get_notes_response
  = element get_notes_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_notes_response_note*
      }
@@ -2407,8 +2330,7 @@ get_notes_response
 get_notes_response_note
  = element note
      {
-       ""
-       & get_notes_response_note_nvt
+       get_notes_response_note_nvt
        & get_notes_response_note_text
        & get_notes_response_note_orphan
        & ( get_notes_response_note_creation_time
@@ -2423,8 +2345,7 @@ get_notes_response_note
 get_notes_response_note_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_notes_response_note_nvt_name
      }
 
@@ -2486,16 +2407,14 @@ get_notes_response_note_threat
 get_notes_response_note_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Result to which note applies.
 get_notes_response_note_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_notes_response_note_result_subnet
        & get_notes_response_note_result_host
        & get_notes_response_note_result_port
@@ -2525,8 +2444,7 @@ get_notes_response_note_result_port
 get_notes_response_note_result_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_notes_response_note_result_nvt_name
        & get_notes_response_note_result_nvt_cvss_base
        & get_notes_response_note_result_nvt_risk_factor
@@ -2567,8 +2485,7 @@ get_notes_response_note_result_description
 get_nvts_response
  = element get_nvts_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_nvts_response_nvt
      }
@@ -2576,8 +2493,7 @@ get_nvts_response
 get_nvts_response_nvt
  = element nvt
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_nvts_response_nvt_name
        & get_nvts_response_nvt_checksum
        & ( get_nvts_response_nvt_category
@@ -2725,8 +2641,7 @@ get_nvts_response_nvt_preferences_timeout
 get_nvts_response_nvt_preferences_preference
  = element preference
      {
-       ""
-       & get_nvts_response_nvt_preferences_preference_nvt
+       get_nvts_response_nvt_preferences_preference_nvt
        & get_nvts_response_nvt_preferences_preference_name
        & get_nvts_response_nvt_preferences_preference_type
        & get_nvts_response_nvt_preferences_preference_value
@@ -2761,8 +2676,7 @@ get_nvts_response_nvt_preferences_preference_value
 get_nvt_families_response
  = element get_nvt_families_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_nvt_families_response_families
      }
@@ -2770,15 +2684,13 @@ get_nvt_families_response
 get_nvt_families_response_families
  = element families
      {
-       ""
-       & get_nvt_families_response_families_family*
+       get_nvt_families_response_families_family*
      }
 
 get_nvt_families_response_families_family
  = element family
      {
-       ""
-       & get_nvt_families_response_families_family_name
+       get_nvt_families_response_families_family_name
        & get_nvt_families_response_families_family_max_nvt_count
      }
 
@@ -2801,8 +2713,7 @@ get_nvt_families_response_families_family_max_nvt_count
 get_nvt_feed_checksum_response
  = element get_nvt_feed_checksum_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_nvt_feed_checksum_response_checksum
      }
@@ -2810,7 +2721,7 @@ get_nvt_feed_checksum_response
 get_nvt_feed_checksum_response_checksum
  = element checksum
      {
-       base64
+       text # RNC limitation: base64
        & attribute algorithm { text }
      }
 
@@ -2819,8 +2730,7 @@ get_nvt_feed_checksum_response_checksum
 get_overrides_response
  = element get_overrides_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_overrides_response_override*
      }
@@ -2828,8 +2738,7 @@ get_overrides_response
 get_overrides_response_override
  = element override
      {
-       ""
-       & get_overrides_response_override_nvt
+       get_overrides_response_override_nvt
        & get_overrides_response_override_text
        & get_overrides_response_override_threat
        & get_overrides_response_override_new_threat
@@ -2845,8 +2754,7 @@ get_overrides_response_override
 get_overrides_response_override_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_overrides_response_override_nvt_name
      }
 
@@ -2915,16 +2823,14 @@ get_overrides_response_override_port
 get_overrides_response_override_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
      }
 
 # Result to which override applies.
 get_overrides_response_override_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_overrides_response_override_result_subnet
        & get_overrides_response_override_result_host
        & get_overrides_response_override_result_port
@@ -2954,8 +2860,7 @@ get_overrides_response_override_result_port
 get_overrides_response_override_result_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_overrides_response_override_result_nvt_name
        & get_overrides_response_override_result_nvt_cvss_base
        & get_overrides_response_override_result_nvt_risk_factor
@@ -2996,8 +2901,7 @@ get_overrides_response_override_result_description
 get_preferences_response
  = element get_preferences_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_preferences_response_preference*
      }
@@ -3005,8 +2909,7 @@ get_preferences_response
 get_preferences_response_preference
  = element preference
      {
-       ""
-       & get_preferences_response_preference_nvt?
+       get_preferences_response_preference_nvt?
        & get_preferences_response_preference_name
        & get_preferences_response_preference_type?
        & get_preferences_response_preference_value
@@ -3016,8 +2919,7 @@ get_preferences_response_preference
 get_preferences_response_preference_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_preferences_response_preference_nvt_name
      }
 
@@ -3054,8 +2956,7 @@ get_preferences_response_preference_value
 get_reports_response
  = element get_reports_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_reports_response_report*
      }
@@ -3063,7 +2964,7 @@ get_reports_response
 get_reports_response_report
  = element report
      {
-       base64
+       text # RNC limitation: base64
        & attribute id { uuid }
        & ( get_reports_response_report_sort
            & get_reports_response_report_filters
@@ -3082,8 +2983,7 @@ get_reports_response_report
 get_reports_response_report_sort
  = element sort
      {
-       ""
-       & get_reports_response_report_sort_field
+       get_reports_response_report_sort_field
      }
 
 # Sort field.
@@ -3105,7 +3005,7 @@ get_reports_response_report_sort_field_order
 get_reports_response_report_filters
  = element filters
      {
-       levels
+       text # RNC limitation: levels
        & get_reports_response_report_filters_phrase
        & get_reports_response_report_filters_notes
        & get_reports_response_report_filters_overrides
@@ -3143,9 +3043,7 @@ get_reports_response_report_filters_apply_overrides
        xsd:token { pattern = "0|1" }
      }
 
-# 
-              Whether only those hosts that have results are included
-            .
+# Whether only those hosts that have results are included.
 get_reports_response_report_filters_result_hosts_only
  = element result_hosts_only
      {
@@ -3153,8 +3051,8 @@ get_reports_response_report_filters_result_hosts_only
      }
 
 # Minimum CVSS base if in effect, else empty string.
-get_reports_response_report_filters_minimum_cvss_base
- = element minimum_cvss_base
+get_reports_response_report_filters_min_cvss_base
+ = element min_cvss_base
      {
        text
      }
@@ -3177,7 +3075,7 @@ get_reports_response_report_scan_run_status
 get_reports_response_report_result_count
  = element result_count
      {
-       integer
+       text # RNC limitation: integer
        & get_reports_response_report_result_count_filtered
        & get_reports_response_report_result_count_debug
        & get_reports_response_report_result_count_hole
@@ -3193,50 +3091,35 @@ get_reports_response_report_result_count_filtered
        integer
      }
 
-# 
-              Number of results of scanner message type "debug" (threat level
-              Debug)
-            .
+# Number of results of scanner message type "debug" (threat level Debug).
 get_reports_response_report_result_count_debug
  = element debug
      {
        integer
      }
 
-# 
-              Number of results of scanner message type "hole" (threat level
-              High)
-            .
+# Number of results of scanner message type "hole" (threat level High).
 get_reports_response_report_result_count_hole
  = element hole
      {
        integer
      }
 
-# 
-              Number of results of scanner message type "info" (threat level
-              Low)
-            .
+# Number of results of scanner message type "info" (threat level Low).
 get_reports_response_report_result_count_info
  = element info
      {
        integer
      }
 
-# 
-              Number of results of scanner message type "log" (threat level
-              Log)
-            .
+# Number of results of scanner message type "log" (threat level Log).
 get_reports_response_report_result_count_log
  = element log
      {
        integer
      }
 
-# 
-              Number of results of scanner message type "warning" (threat level
-              Medium)
-            .
+# Number of results of scanner message type "warning" (threat level Medium).
 get_reports_response_report_result_count_warning
  = element warning
      {
@@ -3246,8 +3129,7 @@ get_reports_response_report_result_count_warning
 get_reports_response_report_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_reports_response_report_task_name
      }
 
@@ -3261,8 +3143,7 @@ get_reports_response_report_task_name
 get_reports_response_report_ports
  = element ports
      {
-       ""
-       & attribute start { integer }
+       attribute start { integer }
        & attribute max { integer }
        & get_reports_response_report_ports_port*
      }
@@ -3290,8 +3171,7 @@ get_reports_response_report_ports_port_threat
 get_reports_response_report_results
  = element results
      {
-       ""
-       & attribute start { integer }
+       attribute start { integer }
        & attribute max { integer }
        & get_reports_response_report_results_result*
      }
@@ -3299,8 +3179,7 @@ get_reports_response_report_results
 get_reports_response_report_results_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_reports_response_report_results_result_subnet
        & get_reports_response_report_results_result_host
        & get_reports_response_report_results_result_port
@@ -3331,8 +3210,7 @@ get_reports_response_report_results_result_port
 get_reports_response_report_results_result_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_reports_response_report_results_result_nvt_name
        & get_reports_response_report_results_result_nvt_cvss_base
        & get_reports_response_report_results_result_nvt_risk_factor
@@ -3383,7 +3261,7 @@ get_reports_response_report_scan_start
 get_reports_response_report_host_start
  = element host_start
      {
-       ctime
+       text # RNC limitation: ctime
        & get_reports_response_report_host_start_host
      }
 
@@ -3397,7 +3275,7 @@ get_reports_response_report_host_start_host
 get_reports_response_report_host_end
  = element host_end
      {
-       ctime
+       text # RNC limitation: ctime
        & get_reports_response_report_host_end_host
      }
 
@@ -3419,8 +3297,7 @@ get_reports_response_report_scan_end
 get_results_response
  = element get_results_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_results_response_results
      }
@@ -3428,15 +3305,13 @@ get_results_response
 get_results_response_results
  = element results
      {
-       ""
-       & get_results_response_results_result*
+       get_results_response_results_result*
      }
 
 get_results_response_results_result
  = element result
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_results_response_results_result_subnet
        & get_results_response_results_result_host
        & get_results_response_results_result_port
@@ -3469,8 +3344,7 @@ get_results_response_results_result_port
 get_results_response_results_result_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_results_response_results_result_nvt_name
        & get_results_response_results_result_nvt_cvss_base
        & get_results_response_results_result_nvt_risk_factor
@@ -3514,15 +3388,13 @@ get_results_response_results_result_description
 get_results_response_results_result_notes
  = element notes
      {
-       ""
-       & get_results_response_results_result_notes_note*
+       get_results_response_results_result_notes_note*
      }
 
 get_results_response_results_result_notes_note
  = element note
      {
-       ""
-       & get_results_response_results_result_notes_note_nvt
+       get_results_response_results_result_notes_note_nvt
        & get_results_response_results_result_notes_note_text
        & get_results_response_results_result_notes_note_orphan
      }
@@ -3530,8 +3402,7 @@ get_results_response_results_result_notes_note
 get_results_response_results_result_notes_note_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_results_response_results_result_notes_note_nvt_name
      }
 
@@ -3560,15 +3431,13 @@ get_results_response_results_result_notes_note_orphan
 get_results_response_results_result_overrides
  = element overrides
      {
-       ""
-       & get_results_response_results_result_overrides_override*
+       get_results_response_results_result_overrides_override*
      }
 
 get_results_response_results_result_overrides_override
  = element override
      {
-       ""
-       & get_results_response_results_result_overrides_override_nvt
+       get_results_response_results_result_overrides_override_nvt
        & get_results_response_results_result_overrides_override_text
        & get_results_response_results_result_overrides_override_threat
        & get_results_response_results_result_overrides_override_new_threat
@@ -3578,8 +3447,7 @@ get_results_response_results_result_overrides_override
 get_results_response_results_result_overrides_override_nvt
  = element nvt
      {
-       ""
-       & attribute oid { oid }
+       attribute oid { oid }
        & get_results_response_results_result_overrides_override_nvt_name
      }
 
@@ -3623,8 +3491,7 @@ get_results_response_results_result_overrides_override_orphan
 get_schedules_response
  = element get_schedules_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_schedules_response_schedule
      }
@@ -3632,8 +3499,7 @@ get_schedules_response
 get_schedules_response_schedule
  = element schedule
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_schedules_response_schedule_name
        & ( get_schedules_response_schedule_comment
            & get_schedules_response_schedule_first_time
@@ -3704,15 +3570,13 @@ get_schedules_response_schedule_in_use
 get_schedules_response_schedule_tasks
  = element tasks
      {
-       ""
-       & get_schedules_response_schedule_tasks_task*
+       get_schedules_response_schedule_tasks_task*
      }
 
 get_schedules_response_schedule_tasks_task
  = element task
      {
-       ""
-       & attribute id { uuid }
+       attribute id { uuid }
        & get_schedules_response_schedule_tasks_task_name
      }
 
@@ -3728,8 +3592,7 @@ get_schedules_response_schedule_tasks_task_name
 get_system_reports_response
  = element get_system_reports_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_system_reports_response_system_report*
      }
@@ -3737,8 +3600,7 @@ get_system_reports_response
 get_system_reports_response_system_report
  = element system_report
      {
-       ""
-       & get_system_reports_response_system_report_name
+       get_system_reports_response_system_report_name
        & get_system_reports_response_system_report_title
        & get_system_reports_response_system_report_report?
      }
@@ -3760,9 +3622,612 @@ get_system_reports_response_system_report_title
 get_system_reports_response_system_report_report
  = element report
      {
-       base64
+       text # RNC limitation: base64
        & attribute format { "png" }
        & attribute duration { integer }
+     }
+
+## Response to get_target_locators
+
+get_target_locators_response
+ = element get_target_locators_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_target_locators_response_target_locator*
+     }
+
+get_target_locators_response_target_locator
+ = element target_locator
+     {
+       get_target_locators_response_target_locator_name
+     }
+
+# The name of the target locator.
+get_target_locators_response_target_locator_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_targets
+
+get_targets_response
+ = element get_targets_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_targets_response_target*
+     }
+
+get_targets_response_target
+ = element target
+     {
+       get_targets_response_target_name
+       & get_targets_response_target_comment
+       & get_targets_response_target_hosts
+       & get_targets_response_target_max_hosts
+       & get_targets_response_target_in_use
+       & get_targets_response_target_lsc_credential
+       & get_targets_response_target_tasks?
+     }
+
+# The name of the target.
+get_targets_response_target_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the target.
+get_targets_response_target_comment
+ = element comment
+     {
+       text
+     }
+
+# A list of hosts.
+get_targets_response_target_hosts
+ = element hosts
+     {
+       text
+     }
+
+# The maximum number of hosts defined by the target.
+get_targets_response_target_max_hosts
+ = element max_hosts
+     {
+       integer
+     }
+
+# Whether any tasks are using the target.
+get_targets_response_target_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_targets_response_target_lsc_credential
+ = element lsc_credential
+     {
+       attribute id { uuid_or_empty }
+       & get_targets_response_target_lsc_credential_name
+     }
+
+# The name of the LSC credential.
+get_targets_response_target_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# All tasks using the target.
+get_targets_response_target_tasks
+ = element tasks
+     {
+       get_targets_response_target_tasks_task*
+     }
+
+get_targets_response_target_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_targets_response_target_tasks_task_name
+     }
+
+# The name of the task.
+get_targets_response_target_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+## Response to get_tasks
+
+get_tasks_response
+ = element get_tasks_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_tasks_response_task_count
+       & get_tasks_response_sort
+       & get_tasks_response_apply_overrides
+       & get_tasks_response_task*
+     }
+
+get_tasks_response_task_count
+ = element task_count
+     {
+       integer
+     }
+
+get_tasks_response_sort
+ = element sort
+     {
+       get_tasks_response_sort_field*
+     }
+
+get_tasks_response_sort_field
+ = element field
+     {
+       text
+       & get_tasks_response_sort_field_order
+     }
+
+get_tasks_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_tasks_response_apply_overrides
+ = element apply_overrides
+     {
+       xsd:token { pattern = "0|1" }
+     }
+
+get_tasks_response_task
+ = element task
+     {
+       get_tasks_response_task_name
+       & get_tasks_response_task_comment
+       & get_tasks_response_task_status
+       & get_tasks_response_task_progress
+       & get_tasks_response_task_config
+       & get_tasks_response_task_target
+       & get_tasks_response_task_escalator
+       & get_tasks_response_task_schedule
+       & get_tasks_response_task_result_count
+       & get_tasks_response_task_report_count
+       & get_tasks_response_task_trend
+       & get_tasks_response_task_first_report?
+       & get_tasks_response_task_last_report?
+       & get_tasks_response_task_second_last_report?
+       & get_tasks_response_task_rcfile?
+       & get_tasks_response_task_reports*
+     }
+
+# The name of the task.
+get_tasks_response_task_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the task.
+get_tasks_response_task_comment
+ = element comment
+     {
+       text
+     }
+
+# The run status of the task.
+get_tasks_response_task_status
+ = element status
+     {
+       task_status
+     }
+
+# The percentage of the task that is complete.
+get_tasks_response_task_progress
+ = element progress
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_progress_host_progress*
+     }
+
+# Percentage complete for a particular host.
+get_tasks_response_task_progress_host_progress
+ = element host_progress
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_progress_host_progress_host
+     }
+
+get_tasks_response_task_progress_host_progress_host
+ = element host
+     {
+       text
+     }
+
+# The scan configuration used by the task.
+get_tasks_response_task_config
+ = element config
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_config_name
+     }
+
+# The name of the config.
+get_tasks_response_task_config_name
+ = element name
+     {
+       name
+     }
+
+# The hosts scanned by the task.
+get_tasks_response_task_target
+ = element target
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_target_name
+     }
+
+# The name of the target.
+get_tasks_response_task_target_name
+ = element name
+     {
+       name
+     }
+
+# An escalator that applies to the task.
+get_tasks_response_task_escalator
+ = element escalator
+     {
+       attribute id { uuid_or_empty }
+       & get_tasks_response_task_escalator_name
+     }
+
+# The name of the escalator.
+get_tasks_response_task_escalator_name
+ = element name
+     {
+       name
+     }
+
+# When the task will run.
+get_tasks_response_task_schedule
+ = element schedule
+     {
+       attribute id { uuid_or_empty }
+       & get_tasks_response_task_schedule_name
+     }
+
+# The name of the schedule.
+get_tasks_response_task_schedule_name
+ = element name
+     {
+       name
+     }
+
+# Result count across all scans.
+get_tasks_response_task_result_count
+ = element result_count
+     {
+       get_tasks_response_task_result_count_debug
+       & get_tasks_response_task_result_count_log
+       & get_tasks_response_task_result_count_info
+       & get_tasks_response_task_result_count_warning
+       & get_tasks_response_task_result_count_hole
+     }
+
+get_tasks_response_task_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+# Number of reports.
+get_tasks_response_task_report_count
+ = element report_count
+     {
+       text # RNC limitation: integer
+       & get_tasks_response_task_report_count_finished
+     }
+
+# Number of reports where the scan completed.
+get_tasks_response_task_report_count_finished
+ = element finished
+     {
+       integer
+     }
+
+get_tasks_response_task_trend
+ = element trend
+     {
+       task_trend
+     }
+
+get_tasks_response_task_first_report
+ = element first_report
+     {
+       get_tasks_response_task_first_report_report
+     }
+
+get_tasks_response_task_first_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_first_report_report_timestamp
+       & get_tasks_response_task_first_report_report_result_count
+     }
+
+get_tasks_response_task_first_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_first_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_first_report_report_result_count_debug
+       & get_tasks_response_task_first_report_report_result_count_log
+       & get_tasks_response_task_first_report_report_result_count_info
+       & get_tasks_response_task_first_report_report_result_count_warning
+       & get_tasks_response_task_first_report_report_result_count_hole
+     }
+
+get_tasks_response_task_first_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report
+ = element last_report
+     {
+       get_tasks_response_task_last_report_report
+     }
+
+get_tasks_response_task_last_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_last_report_report_timestamp
+       & get_tasks_response_task_last_report_report_result_count
+     }
+
+get_tasks_response_task_last_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_last_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_last_report_report_result_count_debug
+       & get_tasks_response_task_last_report_report_result_count_log
+       & get_tasks_response_task_last_report_report_result_count_info
+       & get_tasks_response_task_last_report_report_result_count_warning
+       & get_tasks_response_task_last_report_report_result_count_hole
+     }
+
+get_tasks_response_task_last_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report
+ = element second_last_report
+     {
+       get_tasks_response_task_second_last_report_report
+     }
+
+get_tasks_response_task_second_last_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_second_last_report_report_timestamp
+       & get_tasks_response_task_second_last_report_report_result_count
+     }
+
+get_tasks_response_task_second_last_report_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Result counts for this report.
+get_tasks_response_task_second_last_report_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_second_last_report_report_result_count_debug
+       & get_tasks_response_task_second_last_report_report_result_count_log
+       & get_tasks_response_task_second_last_report_report_result_count_info
+       & get_tasks_response_task_second_last_report_report_result_count_warning
+       & get_tasks_response_task_second_last_report_report_result_count_hole
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_hole
+ = element hole
+     {
+       integer
+     }
+
+get_tasks_response_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
+get_tasks_response_task_reports
+ = element reports
+     {
+       get_tasks_response_task_reports_report*
+     }
+
+get_tasks_response_task_reports_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_reports_report_timestamp
+       & get_tasks_response_task_reports_report_scan_run_status
+       & get_tasks_response_task_reports_report_result_count
+     }
+
+get_tasks_response_task_reports_report_timestamp
+ = element timestamp
+     {
+       ctime
+     }
+
+# Run status of task scan.
+get_tasks_response_task_reports_report_scan_run_status
+ = element scan_run_status
+     {
+       task_status
+     }
+
+# Result counts for this report.
+get_tasks_response_task_reports_report_result_count
+ = element result_count
+     {
+       get_tasks_response_task_reports_report_result_count_debug
+       & get_tasks_response_task_reports_report_result_count_log
+       & get_tasks_response_task_reports_report_result_count_info
+       & get_tasks_response_task_reports_report_result_count_warning
+       & get_tasks_response_task_reports_report_result_count_hole
+     }
+
+get_tasks_response_task_reports_report_result_count_debug
+ = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_log
+ = element log
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_info
+ = element info
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_warning
+ = element warning
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_hole
+ = element hole
+     {
+       integer
      }
 
 ## Response to get_version
@@ -3770,8 +4235,7 @@ get_system_reports_response_system_report_report
 get_version_response
  = element get_version_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
        & get_version_response_version
      }
@@ -3787,8 +4251,7 @@ get_version_response_version
 help_response
  = element help_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3797,8 +4260,7 @@ help_response
 modify_config_response
  = element modify_config_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3807,8 +4269,7 @@ modify_config_response
 modify_note_response
  = element modify_note_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3817,8 +4278,7 @@ modify_note_response
 modify_override_response
  = element modify_override_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3827,8 +4287,7 @@ modify_override_response
 modify_report_response
  = element modify_report_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3837,8 +4296,7 @@ modify_report_response
 modify_task_response
  = element modify_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3847,8 +4305,7 @@ modify_task_response
 pause_task_response
  = element pause_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3857,8 +4314,7 @@ pause_task_response
 resume_or_start_task_response
  = element resume_or_start_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3867,8 +4323,7 @@ resume_or_start_task_response
 resume_paused_task_response
  = element resume_paused_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3877,8 +4332,7 @@ resume_paused_task_response
 resume_stopped_task_response
  = element resume_stopped_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3887,8 +4341,7 @@ resume_stopped_task_response
 start_task_response
  = element start_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3897,8 +4350,7 @@ start_task_response
 stop_task_response
  = element stop_task_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }
 
@@ -3907,7 +4359,6 @@ stop_task_response
 test_escalator_response
  = element test_escalator_response
      {
-       ""
-       & attribute status { status }
+       attribute status { status }
        & attribute status_text { text }
      }

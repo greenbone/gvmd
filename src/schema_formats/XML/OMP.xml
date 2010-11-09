@@ -5768,50 +5768,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
           </ele>
         </ele>
-
-
-        <ele>
-          <name>lsc_credential</name>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <comment>
-                A UUID if there is a credential, otherwise the empty string
-              </comment>
-              <type>uuid_or_empty</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the LSC credential</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>tasks</name>
-          <summary>All tasks using the task</summary>
-          <pattern>
-            <any><e>task</e></any>
-          </pattern>
-          <ele>
-            <name>task</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the task</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
       </ele>
     </response>
     <example>
