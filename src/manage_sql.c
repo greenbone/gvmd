@@ -48,10 +48,10 @@
 #include <sys/wait.h>
 
 #include <openvas/base/openvas_string.h>
-#include <openvas/openvas_auth.h>
-#include <openvas/openvas_logging.h>
-#include <openvas/openvas_uuid.h>
-#include <openvas/resource_request.h>
+#include <openvas/misc/openvas_auth.h>
+#include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/openvas_uuid.h>
+#include <openvas/misc/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

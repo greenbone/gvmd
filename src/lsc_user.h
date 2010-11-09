@@ -28,7 +28,7 @@
 #define _OPENVASMD_LSC_USER_H
 
 #include <glib.h>
-#include "openvas_ssh_login.h"
+#include <openvas/misc/openvas_ssh_login.h>
 
 int
 lsc_user_all_create (const gchar *,

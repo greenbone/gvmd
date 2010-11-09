@@ -113,8 +113,8 @@
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/nvt_categories.h>
-#include <openvas/openvas_logging.h>
-#include <openvas/resource_request.h>
+#include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/resource_request.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

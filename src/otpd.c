@@ -48,7 +48,7 @@
 #include <gnutls/gnutls.h>
 #include <string.h>
 
-#include <openvas_server.h>
+#include <openvas/misc/openvas_server.h>
 
 /**
  * @brief File descriptor set mask: selecting on client read.

@@ -30,7 +30,7 @@
 #include <glib.h>
 #include <gnutls/gnutls.h>
 
-#include <openvas/openvas_auth.h>
+#include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/credentials.h>

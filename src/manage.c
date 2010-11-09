@@ -54,8 +54,8 @@
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/omp/omp.h>
-#include <openvas/openvas_server.h>
-#include <openvas/openvas_uuid.h>
+#include <openvas/misc/openvas_server.h>
+#include <openvas/misc/openvas_uuid.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"

@@ -56,7 +56,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <openvas_server.h>
+#include <openvas/misc/openvas_server.h>
 
 #ifdef S_SPLINT_S
 /** @todo Weird that these are missing. */
