@@ -121,7 +121,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="text()"/>
+        <xsl:value-of select="normalize-space(text())"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -129,7 +129,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template name="attrib" match="attrib">
     <xsl:if test="($rnc-comments = 1) and summary">
       <xsl:text># </xsl:text>
-      <xsl:value-of select="summary"/>
+      <xsl:value-of select="normalize-space(summary)"/>
       <xsl:text>.</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:text>       </xsl:text>
@@ -185,7 +185,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="text()"/>
+        <xsl:value-of select="normalize-space(text())"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -280,11 +280,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:when test="count (t) = 0">
         <xsl:text>       </xsl:text>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string">
-            <xsl:value-of select="normalize-space (text())"/>
-          </xsl:with-param>
-        </xsl:call-template>
+        <xsl:value-of select="normalize-space (text())"/>
         <xsl:call-template name="newline"/>
       </xsl:when>
       <xsl:otherwise>
@@ -316,7 +312,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:param name="parent-name"/>
     <xsl:if test="($rnc-comments = 1) and summary">
       <xsl:text># </xsl:text>
-      <xsl:value-of select="summary"/>
+      <xsl:value-of select="normalize-space(summary)"/>
       <xsl:text>.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>

@@ -211,8 +211,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
       <xsl:apply-templates select="description"/>
 
+      <h4><xsl:value-of select="$index"/>.1 RNC</h4>
+
       <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-        <xsl:call-template name="command-relax"/>
+        <pre>
+          <xsl:value-of select="name"/>
+          <xsl:text> = </xsl:text>
+          <xsl:call-template name="wrap">
+            <xsl:with-param name="string">
+              <xsl:value-of select="normalize-space (pattern)"/>
+            </xsl:with-param>
+          </xsl:call-template>
+          <xsl:call-template name="newline"/>
+        </pre>
       </div>
 
     </div>

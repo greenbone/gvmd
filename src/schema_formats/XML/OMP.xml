@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>boolean</name>
-    <summary>A true of false value</summary>
+    <summary>A true or false value</summary>
     <description>
       Zero is false, anything else is true.  As a result, the empty string is
       considered true.
@@ -45,7 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>boolean_atoi</name>
-    <summary>A true of false value, after conversion to an integer</summary>
+    <summary>A true or false value, after conversion to an integer</summary>
     <description>
       Zero is false, anything else is true.  The value is first converted to
       an integer, as by the C `atoi' routine.  This means that an empty string
@@ -386,7 +386,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>rcfile</name>
-      <summary>A openvasrc style file that defines the config</summary>
+      <summary>An openvasrc style file that defines the config</summary>
       <pattern>
         <t>base64</t>
       </pattern>
@@ -1546,7 +1546,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>delete_override</name>
-    <summary>Delete a override</summary>
+    <summary>Delete an override</summary>
     <description>
       <p>
         The client uses the delete_override command to delete an existing override.
@@ -1579,7 +1579,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Delete a override</summary>
+      <summary>Delete an override</summary>
       <request>
         <delete_override override_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
         </delete_override>
@@ -4108,7 +4108,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
-            <name>minimum_cvss_base</name>
+            <name>min_cvss_base</name>
             <summary>Minimum CVSS base if in effect, else empty string</summary>
             <pattern>
               text
