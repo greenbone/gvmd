@@ -35,7 +35,10 @@ TMP=`mktemp -d` || exit 1
 RWD=`pwd | sed -e "s/\//\\\\\\\\\//g"`
 
 # Create csv file from report using xslt.
-xsltproc ./report_to_csv_host.xsl $1 | grep -v "^ *$" > ${TMP}/hosts_clean.csv
+xsltproc ./report_to_csv_host.xsl $1 | grep -v "^ *$" > ${TMP}/hosts.csv
+
+# Remove leading whitespaces from file.
+sed -e 's/^[ \t]*//' ${TMP}/hosts.csv > ${TMP}/hosts_clean.csv
 
 # Merge locations file and host file
 cat locations.csv ${TMP}/hosts_clean.csv | awk -f ./join.awk > \
@@ -51,6 +54,26 @@ echo  "sed -e \"s/__RWD__/"${RWD}"/g\"" > ${TMP}/do_sed
 # Create shape file using ogr2ogr.
 ( cd ${TMP} ; ogr2ogr -f "ESRI Shapefile" . host_locations.csv )
 ( cd ${TMP} ; ogr2ogr -f "ESRI Shapefile" . hosts.vrt )
+
+# Get host count (all hosts)
+HIGH_COUNTER_1=`grep ", red" ${TMP}/hosts_clean.csv | wc -l`
+MED_COUNTER_1=`grep ", orange" ${TMP}/hosts_clean.csv | wc -l`
+LOW_COUNTER_1=`grep ", blue" ${TMP}/hosts_clean.csv | wc -l`
+
+# Get host count (referenced hosts)
+HIGH_COUNTER_2=`grep ", red" ${TMP}/host_locations.csv | wc -l`
+MED_COUNTER_2=`grep ", orange" ${TMP}/host_locations.csv | wc -l`
+LOW_COUNTER_2=`grep ", blue" ${TMP}/host_locations.csv | wc -l`
+
+# Calculate none referenced hosts
+HIGH_COUNT=$((HIGH_COUNTER_1-HIGH_COUNTER_2))
+MED_COUNT=$((MED_COUNTER_1-MED_COUNTER_2))
+LOW_COUNT=$((LOW_COUNTER_1-LOW_COUNTER_2))
+
+sed -e "s/target_count_high/$HIGH_COUNT/g; \
+  s/target_count_med/$MED_COUNT/g; \
+  s/target_count_low/$LOW_COUNT/g" \
+  non-georeferenced.map > ${TMP}/non-georeferenced.map
 
 # Render image
 ( cd "${TMP}" ; shp2img -m world_map.map -o "${TMP}/out.png" )

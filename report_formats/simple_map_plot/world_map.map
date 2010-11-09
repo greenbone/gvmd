@@ -198,4 +198,5 @@ MAP
       END
     END
   END
+  INCLUDE "non-georeferenced.map"
 END
