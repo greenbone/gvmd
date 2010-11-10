@@ -14426,14 +14426,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  "<status>%s</status>"
                                  "<progress>%s</progress>"
                                  "%s"
-                                 "<result_count>"
-                                 "<debug>%i</debug>"
-                                 "<hole>%i</hole>"
-                                 "<info>%i</info>"
-                                 "<log>%i</log>"
-                                 "<warning>%i</warning>"
-                                 "<false_positive>%i</false_positive>"
-                                 "</result_count>"
                                  "<report_count>"
                                  "%u<finished>%u</finished>"
                                  "</report_count>"
@@ -14457,12 +14449,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                  task_run_status_name (task),
                                  progress_xml,
                                  description64,
-                                 task_debugs_size (task),
-                                 task_holes_size (task),
-                                 task_infos_size (task),
-                                 task_logs_size (task),
-                                 task_warnings_size (task),
-                                 task_false_positive_size (task),
                                  task_report_count (task),
                                  task_finished_report_count (task),
                                  task_trend (task,
@@ -14536,6 +14522,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     int maximum_hosts;
                     schedule_t schedule;
                     time_t next_time;
+                    int debugs, holes, infos, logs, warnings;
 
                     /** @todo Buffer entire response so respond with error.
                      *
@@ -14553,7 +14540,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     first_report_id = task_first_report_id (index);
                     if (first_report_id)
                       {
-                        int debugs, holes, infos, logs, warnings;
                         int false_positives;
                         gchar *timestamp;
 
@@ -14602,14 +14588,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     last_report_id = task_last_report_id (index);
                     if (last_report_id)
                       {
-                        int debugs, holes, infos, logs, warnings;
                         int false_positives;
                         gchar *timestamp;
 
-                        if (report_counts (last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                        if (((first_report_id == NULL)
+                             || (last_report_id != first_report_id))
+                            && (report_counts
+                                 (last_report_id,
+                                  &debugs, &holes, &infos, &logs,
+                                  &warnings, &false_positives,
+                                  get_tasks_data->apply_overrides)))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -14673,10 +14661,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         int false_positives;
                         gchar *timestamp;
 
-                        if (report_counts (second_last_report_id,
-                                           &debugs, &holes, &infos, &logs,
-                                           &warnings, &false_positives,
-                                           get_tasks_data->apply_overrides))
+                        if (((first_report_id == NULL)
+                             || (second_last_report_id != first_report_id))
+                            && report_counts (second_last_report_id,
+                                              &debugs, &holes, &infos, &logs,
+                                              &warnings, &false_positives,
+                                              get_tasks_data->apply_overrides))
                           /** @todo Either fail better or abort at SQL level. */
                           abort ();
 
@@ -14745,7 +14735,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             total += progress;
                             num_hosts++;
 
-#if 1
+#if 0
                             tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
                             tracef ("   current_port: %u\n", current_port);
                             tracef ("   max_port: %u\n", max_port);
@@ -14765,7 +14755,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                         total_progress = maximum_hosts ? (total / maximum_hosts) : 0;
 
-#if 1
+#if 0
                         tracef ("   total: %li\n", total);
                         tracef ("   num_hosts: %i\n", num_hosts);
                         tracef ("   maximum_hosts: %i\n", maximum_hosts);
@@ -14819,16 +14809,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             "<status>%s</status>"
                                             "<progress>%s</progress>"
                                             "%s"
-                                            "<result_count>"
-                                            "<debug>%i</debug>"
-                                            "<hole>%i</hole>"
-                                            "<info>%i</info>"
-                                            "<log>%i</log>"
-                                            "<warning>%i</warning>"
-                                            "<false_positive>"
-                                            "%i"
-                                            "</false_positive>"
-                                            "</result_count>"
                                             "<report_count>"
                                             "%u<finished>%u</finished>"
                                             "</report_count>"
@@ -14853,12 +14833,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                             task_run_status_name (index),
                                             progress_xml,
                                             description64,
-                                            task_debugs_size (index),
-                                            task_holes_size (index),
-                                            task_infos_size (index),
-                                            task_logs_size (index),
-                                            task_warnings_size (index),
-                                            task_false_positive_size (index),
                                             task_report_count (index),
                                             task_finished_report_count (index),
                                             task_trend

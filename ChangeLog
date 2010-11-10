@@ -1,5 +1,21 @@
 2010-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Speed up GET_TASKS.
+
+	* src/manage_sql.c (create_tables): Add more indexes.
+	(report_count): Select ID fields as integers instead of strings.  Reorder
+	the constraints in the standard case.
+	(report_counts_id): Just set debugs and false_positives to 0, to save some
+	time.
+	(delete_agent): Select ID fields as integers instead of strings.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TASKS remove the
+	result counts over all scans for a task, use the report count for the
+	first report for the last and second last reports if they are the same
+	report and turn off the progress tracing.
+
+2010-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_tables): Add a task index for table results.
 
 2010-11-09  Matthew Mundell <matthew.mundell@greenbone.net>

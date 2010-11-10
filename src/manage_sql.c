@@ -795,13 +795,17 @@ create_tables ()
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS overrides (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt, creation_time, modification_time, text, hosts, port, threat, new_threat, task INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time, attack_state, current_port, max_port);");
+  sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report ON report_hosts (report);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_param_options (id INTEGER PRIMARY KEY, report_format_param, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_format_params (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value, type_min, type_max, type_regex, fallback);");
   sql ("CREATE TABLE IF NOT EXISTS report_formats (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension, content_type, summary, description, signature, trust INTEGER, trust_time, flags INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS report_results_by_report ON report_results (report);");
+  sql ("CREATE INDEX IF NOT EXISTS report_results_by_result ON report_results (result);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_type ON results (type);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");
@@ -9017,7 +9021,7 @@ report_count (report_t report, const char *type, int override, const char *host)
                            " WHERE results.host = '%s'"
                            " AND new_type = '%s'"
                            " AND results.ROWID = report_results.result"
-                           " AND report_results.report = '%llu';",
+                           " AND report_results.report = %llu;",
                            new_type_sql,
                            quoted_host,
                            type,
@@ -9030,7 +9034,7 @@ report_count (report_t report, const char *type, int override, const char *host)
                          " FROM results, report_results"
                          " WHERE new_type = '%s'"
                          " AND results.ROWID = report_results.result"
-                         " AND report_results.report = '%llu';",
+                         " AND report_results.report = %llu;",
                          new_type_sql,
                          type,
                          report);
@@ -9046,7 +9050,7 @@ report_count (report_t report, const char *type, int override, const char *host)
                            "SELECT count(*) FROM results, report_results"
                            " WHERE results.host = '%s' AND results.type = '%s'"
                            " AND results.ROWID = report_results.result"
-                           " AND report_results.report = '%llu';",
+                           " AND report_results.report = %llu;",
                            quoted_host,
                            type,
                            report);
@@ -9056,11 +9060,11 @@ report_count (report_t report, const char *type, int override, const char *host)
   else
     return sql_int (0, 0,
                     "SELECT count(*) FROM results, report_results"
-                    " WHERE results.type = '%s'"
-                    " AND results.ROWID = report_results.result"
-                    " AND report_results.report = '%llu';",
-                    type,
-                    report);
+                    " WHERE report_results.report = %llu"
+                    " AND report_results.result = results.ROWID"
+                    " AND results.type = '%s';",
+                    report,
+                    type);
 }
 
 /**
@@ -9111,14 +9115,16 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives, int override,
                   const char *host)
 {
-  if (debugs) *debugs = report_count (report, "Debug Message", override, host);
   if (holes) *holes = report_count (report, "Security Hole", override, host);
   if (infos) *infos = report_count (report, "Security Note", override, host);
   if (logs) *logs = report_count (report, "Log Message", override, host);
   if (warnings)
     *warnings = report_count (report, "Security Warning", override, host);
+  /* These add time and are out of scope of OMP threat levels, so skip them. */
+  if (debugs)
+    *debugs = 0;
   if (false_positives)
-    *false_positives = report_count (report, "False Positive", override, host);
+    *false_positives = 0;
   return 0;
 }
 
@@ -17125,7 +17131,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 int
 delete_agent (agent_t agent)
 {
-  sql ("DELETE FROM agents WHERE ROWID = '%llu';", agent);
+  sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
   return 0;
 }
 
