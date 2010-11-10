@@ -801,6 +801,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_results (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER, task INTEGER, date INTEGER, start_time, end_time, nbefile, comment, scan_run_status INTEGER, slave_progress, slave_task_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS results (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt, type, description)");
+  sql ("CREATE INDEX IF NOT EXISTS results_by_task ON results (task);");
   sql ("CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, first_time, period, period_months, duration);");
   sql ("CREATE TABLE IF NOT EXISTS slaves (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host, port, login, password);");
   sql ("CREATE TABLE IF NOT EXISTS targets (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts, comment, lsc_credential INTEGER);");

@@ -1,3 +1,7 @@
+2010-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Add a task index for table results.
+
 2010-11-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Create LSC credential packages on every GET_LSC_CREDENTIAL, instead of
