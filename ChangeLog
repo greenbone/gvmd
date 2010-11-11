@@ -1,3 +1,15 @@
+2010-11-11  Raimund Renkert <raimund.renkert@greenbone.net>
+
+	* report_formats/simple_map_plot/generate: Generate the symbol for
+	non-georeferenced IPs using twopi.
+
+	* report_formats/simple_map_plot/non-georeferenced.map: Render png symbol
+	instead of a label on the map.
+
+	* report_formats/simple_map_plot/create_report_import: Added new files.
+
+	* report_formats/simple_map_plot/non-georeferenced.dot: New.
+
 2010-11-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Speed up GET_TASKS.

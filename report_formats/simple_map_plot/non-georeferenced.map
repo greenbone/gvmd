@@ -11,26 +11,9 @@ LAYER # non-georeferenced IPs
 
   CLASS
     NAME "non-georeferenced"
-    MINSIZE 15
-    MAXSIZE 15
-    TEXT "Non-georeferenced IPs#High: target_count_high #Medium: target_count_med #Low: target_count_low"
-
-    LABEL
-      WRAP "#"
-      BACKGROUNDCOLOR 255 255 255
-      BACKGROUNDSHADOWCOLOR 0 0 0
-      TYPE TRUETYPE
-      FONT "FreeSans"
-      COLOR  0 0 0
-      SIZE 14
-      POSITION AUTO
-    END
-    STYLE
-      SYMBOL 'point'
-      SIZE 1
-      COLOR 0 0 0
-      OUTLINECOLOR 255 255 255
-    END
+    MINSIZE 150
+    MAXSIZE 150
+    SYMBOL "non-georeferenced.png"
   END
 END
 

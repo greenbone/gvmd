@@ -73,7 +73,10 @@ LOW_COUNT=$((LOW_COUNTER_1-LOW_COUNTER_2))
 sed -e "s/target_count_high/$HIGH_COUNT/g; \
   s/target_count_med/$MED_COUNT/g; \
   s/target_count_low/$LOW_COUNT/g" \
-  non-georeferenced.map > ${TMP}/non-georeferenced.map
+  non-georeferenced.dot > ${TMP}/non-georeferenced.dot
+
+cp non-georeferenced.map ${TMP}
+twopi -Tpng ${TMP}/non-georeferenced.dot > ${TMP}/non-georeferenced.png
 
 # Render image
 ( cd "${TMP}" ; shp2img -m world_map.map -o "${TMP}/out.png" )
