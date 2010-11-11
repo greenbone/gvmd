@@ -1,3 +1,8 @@
+2010-11-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count): Only do the overrides case if the user
+	has overrides.
+
 2010-11-11  Raimund Renkert <raimund.renkert@greenbone.net>
 
 	* report_formats/simple_map_plot/generate: Generate the symbol for

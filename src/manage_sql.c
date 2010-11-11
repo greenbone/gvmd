@@ -8971,7 +8971,15 @@ report_scan_result_count (report_t report, const char* levels,
 int
 report_count (report_t report, const char *type, int override, const char *host)
 {
-  if (override)
+  if (override
+      && sql_int (0, 0,
+                  "SELECT count(*)"
+                  " FROM overrides"
+                  " WHERE (overrides.owner IS NULL)"
+                  " OR (overrides.owner ="
+                  " (SELECT ROWID FROM users"
+                  "  WHERE users.uuid = '%s'))",
+                  current_credentials.uuid))
     {
       int count;
       gchar *ov, *new_type_sql;
