@@ -8982,73 +8982,290 @@ report_count (report_t report, const char *type, int override, const char *host)
                   current_credentials.uuid))
     {
       int count;
-      gchar *ov, *new_type_sql;
+      iterator_t results;
+      task_t task;
 
-      assert (current_credentials.uuid);
+      sqlite3_stmt *stmt, *full_stmt;
+      gchar *select;
+      int ret;
 
-      ov = g_strdup_printf
-            ("SELECT overrides.new_threat"
-             " FROM overrides"
-             " WHERE overrides.nvt = results.nvt"
-             " AND ((overrides.owner IS NULL)"
-             " OR (overrides.owner ="
-             " (SELECT ROWID FROM users"
-             "  WHERE users.uuid = '%s')))"
-             " AND (overrides.task ="
-             "      (SELECT reports.task FROM reports"
-             "       WHERE report_results.report = reports.ROWID)"
-             "      OR overrides.task = 0)"
-             " AND (overrides.result = results.ROWID"
-             "      OR overrides.result = 0)"
-             " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = \"\""
-             "      OR hosts_contains (overrides.hosts, results.host))"
-             " AND (overrides.port is NULL"
-             "      OR overrides.port = \"\""
-             "      OR overrides.port = results.port)"
-             " AND (overrides.threat is NULL"
-             "      OR overrides.threat = \"\""
-             "      OR overrides.threat = results.type)"
-             " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC",
-             current_credentials.uuid);
+      /* Prepare quick inner statement. */
 
-      new_type_sql = g_strdup_printf ("(CASE WHEN (%s) IS NULL"
-                                      " THEN type ELSE (%s) END)",
-                                      ov, ov);
-
-      g_free (ov);
-
-      if (host)
+      select = g_strdup_printf ("SELECT 1 FROM overrides"
+                                " WHERE (overrides.nvt = $nvt)"
+                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
+                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))",
+                                current_credentials.uuid);
+      while (1)
         {
-          gchar* quoted_host = sql_quote (host);
-          count = sql_int (0, 0,
-                           "SELECT count(*), %s AS new_type"
-                           " FROM results, report_results"
-                           " WHERE results.host = '%s'"
-                           " AND new_type = '%s'"
-                           " AND results.ROWID = report_results.result"
-                           " AND report_results.report = %llu;",
-                           new_type_sql,
-                           quoted_host,
-                           type,
-                           report);
-          g_free (quoted_host);
+          const char* tail;
+          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
+          if (ret == SQLITE_BUSY) continue;
+          g_free (select);
+          if (ret == SQLITE_OK)
+            {
+              if (stmt == NULL)
+                {
+                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+              break;
+            }
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          /** @todo ROLLBACK if in transaction. */
+          abort ();
         }
-      else
-        count = sql_int (0, 0,
-                         "SELECT count(*), %s AS new_type"
-                         " FROM results, report_results"
-                         " WHERE new_type = '%s'"
-                         " AND results.ROWID = report_results.result"
-                         " AND report_results.report = %llu;",
-                         new_type_sql,
-                         type,
-                         report);
 
-      g_free (new_type_sql);
+      /* Prepare full inner statement. */
 
+      report_task (report, &task);
+
+      select = g_strdup_printf
+                ("SELECT overrides.new_threat"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = $nvt" // 1
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT users.ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 // FIX 0 first
+                 " AND (overrides.task = %llu"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = $result" // 2
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, $host))" // 3
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = $port)" // 4
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = $type)" // 5
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC;",
+                 current_credentials.uuid,
+                 task);
+
+      while (1)
+        {
+          const char* tail;
+          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
+          if (ret == SQLITE_BUSY) continue;
+          g_free (select);
+          if (ret == SQLITE_OK)
+            {
+              if (full_stmt == NULL)
+                {
+                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+              break;
+            }
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          /** @todo ROLLBACK if in transaction. */
+          abort ();
+        }
+
+      /* Loop through all results. */
+
+      count = 0;
+      init_iterator (&results,
+                     "SELECT results.ROWID, results.nvt, results.type,"
+                     " results.host, results.port"
+                     " FROM results, report_results"
+                     " WHERE report_results.report = %llu"
+                     " AND results.ROWID = report_results.result",
+                     report);
+      while (next (&results))
+        {
+          const char *nvt, *new_type;
+
+          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
+
+          /* Bind the current result values into the quick statement. */
+
+          while (1)
+            {
+              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
+              if (ret == SQLITE_BUSY) continue;
+              if (ret == SQLITE_OK) break;
+              g_warning ("%s: sqlite3_prepare failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              abort ();
+            }
+
+          /* Run the quick inner statement to check for overrides. */
+
+          while (1)
+            {
+              ret = sqlite3_step (stmt);
+              if (ret == SQLITE_BUSY) continue;
+              if (ret == SQLITE_DONE) break;
+              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+                {
+                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+                  g_warning ("%s: sqlite3_step failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+              break;
+            }
+
+          /* Check the result. */
+
+          if (ret == SQLITE_DONE)
+            {
+              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+              if (new_type && (strcmp (new_type, type) == 0))
+                count++;
+            }
+          else
+            {
+              /* There is an override on this NVT, get the new threat value. */
+
+              /* Bind the current result values into the full statement. */
+
+              while (1)
+                {
+                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_OK) break;
+                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+
+              while (1)
+                {
+                  result_t result;
+                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
+                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_OK) break;
+                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+
+              while (1)
+                {
+                  const char *host;
+                  host = (const char*) sqlite3_column_text (results.stmt, 3);
+                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
+                                           SQLITE_TRANSIENT);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_OK) break;
+                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+
+              while (1)
+                {
+                  const char *port;
+                  port = (const char*) sqlite3_column_text (results.stmt, 4);
+                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
+                                           SQLITE_TRANSIENT);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_OK) break;
+                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+
+              while (1)
+                {
+                  const char *type;
+                  type = (const char*) sqlite3_column_text (results.stmt, 2);
+                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
+                                           SQLITE_TRANSIENT);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_OK) break;
+                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+
+              /* Run the full inner statement. */
+
+              while (1)
+                {
+                  ret = sqlite3_step (full_stmt);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_DONE) break;
+                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+                    {
+                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
+                      g_warning ("%s: sqlite3_step failed: %s\n",
+                                 __FUNCTION__,
+                                 sqlite3_errmsg (task_db));
+                      abort ();
+                    }
+                  break;
+                }
+
+              /* Check the result. */
+
+              if (ret == SQLITE_DONE)
+                new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+              else
+                new_type = (const char*) sqlite3_column_text (full_stmt, 0);
+
+              if (new_type && (strcmp (new_type, type) == 0))
+                count++;
+
+              /* Reset the full inner statement. */
+
+              while (1)
+                {
+                  ret = sqlite3_reset (full_stmt);
+                  if (ret == SQLITE_BUSY) continue;
+                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
+                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+                    {
+                      g_warning ("%s: sqlite3_reset failed: %s\n",
+                                 __FUNCTION__,
+                                 sqlite3_errmsg (task_db));
+                      abort ();
+                    }
+                }
+            }
+
+          /* Reset the quick inner statement. */
+
+          while (1)
+            {
+              ret = sqlite3_reset (stmt);
+              if (ret == SQLITE_BUSY) continue;
+              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
+              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+                {
+                  g_warning ("%s: sqlite3_reset failed: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  abort ();
+                }
+            }
+        }
+      cleanup_iterator (&results);
+      sqlite3_finalize (stmt);
       return count;
     }
   else if (host)
