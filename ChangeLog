@@ -1,5 +1,10 @@
 2010-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_count): Put the zero comparisons first in the
+	overrides select.
+
+2010-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count): Convert the complex override select to
 	multiple simpler selects, to increase speed.
 

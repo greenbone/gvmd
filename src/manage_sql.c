@@ -9032,11 +9032,10 @@ report_count (report_t report, const char *type, int override, const char *host)
                  " OR (overrides.owner ="
                  " (SELECT users.ROWID FROM users"
                  "  WHERE users.uuid = '%s')))"
-                 // FIX 0 first
-                 " AND (overrides.task = %llu"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = $result" // 2
-                 "      OR overrides.result = 0)"
+                 " AND (overrides.task = 0"
+                 "      OR overrides.task = %llu)"
+                 " AND (overrides.result = 0"
+                 "      OR overrides.result = $result)" // 2
                  " AND (overrides.hosts is NULL"
                  "      OR overrides.hosts = \"\""
                  "      OR hosts_contains (overrides.hosts, $host))" // 3
