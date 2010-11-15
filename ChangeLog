@@ -1,8 +1,21 @@
 2010-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_config_data_reset)
+	(create_report_format_data_reset): Check item exists, in case array is
+	NULL terminated.
+
+	* ChangeLog: Restore overwritten entry.
+
+2010-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_counts_id): Remove initialisation of debugs
 	from "all" case.
 	(task_trend): Pass logs to report_counts_id, as this is faster.
+
+2010-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_counts_id): If all levels are required count
+	them all in one go, using the three part select from report_count.
 
 2010-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 

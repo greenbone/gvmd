@@ -745,7 +745,8 @@ create_config_data_reset (create_config_data_t *data)
           const preference_t *preference;
           preference = (preference_t*) g_ptr_array_index (import->preferences,
                                                           index);
-          array_free (preference->alts);
+          if (preference)
+            array_free (preference->alts);
         }
       array_free (import->preferences);
     }
@@ -955,8 +956,12 @@ create_report_format_data_reset (create_report_format_data_t *data)
     {
       guint index = data->params_options->len;
       while (index--)
-        array_free ((array_t*) g_ptr_array_index (data->params_options,
-                                                  index));
+        {
+          array_t *options;
+          options = (array_t*) g_ptr_array_index (data->params_options, index);
+          if (options)
+            array_free (options);
+        }
       g_ptr_array_free (data->params_options, TRUE);
     }
 
