@@ -9452,7 +9452,7 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
 
           /* Loop through all results. */
 
-          *debugs = *holes = *infos = *logs = *warnings = 0;
+          *holes = *infos = *logs = *warnings = 0;
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
                          " results.host, results.port"
@@ -11046,8 +11046,8 @@ const char *
 task_trend (task_t task, int override)
 {
   report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, threat_a;
-  int holes_b, warns_b, infos_b, threat_b;
+  int holes_a, warns_a, infos_a, logs_a, threat_a;
+  int holes_b, warns_b, infos_b, logs_b, threat_b;
 
   /* Ensure there are enough reports. */
 
@@ -11065,7 +11065,8 @@ task_trend (task_t task, int override)
   if (last_report == 0)
     return "";
 
-  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, NULL, &warns_a,
+  /* Count the logs too, as report_counts_id is faster with all four. */
+  if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
                         NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
@@ -11085,7 +11086,8 @@ task_trend (task_t task, int override)
   if (second_last_report == 0)
     return "";
 
-  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, NULL,
+  /* Count the logs too, as report_counts_id is faster with all four. */
+  if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
                         &warns_b, NULL, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
