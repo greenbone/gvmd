@@ -1,3 +1,8 @@
+2010-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (wrap-row): Call escape_verb_env
+	directly, instead of as the value of a variable, to increase speed.
+
 2010-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (create_config_data_reset)

@@ -339,8 +339,11 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:if test="$indented = 1">
       <xsl:text>$\hookrightarrow$</xsl:text>
     </xsl:if>
-    <xsl:variable name="line_escaped"><xsl:call-template name="escape_verb_env"><xsl:with-param name="string" select="$line"/></xsl:call-template></xsl:variable>
-    <xsl:text>\verb=</xsl:text><xsl:value-of select="$line_escaped"/><xsl:text>=}</xsl:text>
+    <xsl:text>\verb=</xsl:text>
+    <xsl:call-template name="escape_verb_env">
+      <xsl:with-param name="string" select="$line"/>
+    </xsl:call-template>
+    <xsl:text>=}</xsl:text>
     <xsl:call-template name="latex-newline"/>
   </xsl:template>
 
