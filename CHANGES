@@ -19,7 +19,7 @@ Central new features of OpenVAS Manager 2.0:
 
 * Report Format plugin framework. All previous reporting features
   were converted to plugins. The XML representation of a report
-  is not the base for any plugin and thus consistency of reports
+  is now the base for any plugin and thus consistency of reports
   is improved.
 
   Report Format Plugins can be set active so that they
@@ -29,7 +29,7 @@ Central new features of OpenVAS Manager 2.0:
 
   It is possible to use parameters for the plugins so the
   user can adjust the behaviour of the Report Format to
-  the indivual preferences or needs.
+  the individual preferences or needs.
 
   A verification method allows to distribute signatures
   for valid plugins via the NVT Feed.
@@ -55,7 +55,7 @@ Central new features of OpenVAS Manager 2.0:
 
 * Master-Slave feature. Any OpenVAS Manager can use one or many other
   OpenVAS Manager as slave to run scans. The whole scan task
-  is transferred to the slave, results are continously reported
+  is transferred to the slave, results are continuously reported
   to the Master during scan process. After the scan is finished
   all data are removed from the slave.
 
@@ -82,7 +82,7 @@ Central new features of OpenVAS Manager 2.0:
 * OMP self-documentation: Part of the Managers' XML-based communication protocol
   OMP 2.0 is to deliver the full specification and documentation of the
   protocol itself (command "HELP"). It can be retrieved as XML-,
-  RNC- or HTML represention.
+  RNC- or HTML representation.
 
 * Targets: Various opportunities have been added to specify and combine IP ranges.
 

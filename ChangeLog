@@ -1,3 +1,12 @@
+2010-11-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 2.0+beta1 release.
+
+	* CHANGES: Fixed typos.
+
+	* CMakeLists.txt: Updated version number. Changed
+	CPACK_PACKAGE_VERSION for use with "+beta" versioning scheme.
+
 2010-11-19  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* CHANGES: Improved.
