@@ -1,5 +1,10 @@
 2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl
+	(latex-replace-backslash-dollar): Correct template name.
+
+2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Speed up row wrapping in the LaTeX report XSLT.
 
 	* src/report_formats/LaTeX/latex.xsl (wrap-row-indented): New template.
