@@ -1,5 +1,13 @@
 2010-11-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Increased required openvas-libraries version.
+
+	* CMakeLists.txt: Updated LO_MAJOR_MIN_VER and LO_MINOR_MIN_VER.
+
+	* INSTALL: Document required version.
+
+2010-11-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Post release version bump.
 
 	* CMakeLists.txt: Updated version number.

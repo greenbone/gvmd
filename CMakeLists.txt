@@ -197,8 +197,8 @@ if (PATH_TO_LIBOPENVASCONFIG)
   # TODO Would like something like set (MIN_LO_VER "3" "0" "1")
   #      which would then make it easier to modify these. However, had serious
   #      issues with the conditionals, thus this clumsy implementation.
-  set (LO_MAJOR_MIN_VER 3)
-  set (LO_MINOR_MIN_VER 1)
+  set (LO_MAJOR_MIN_VER 4)
+  set (LO_MINOR_MIN_VER 0)
   set (LO_PATCH_MIN_VER 0)
   set (LO_MAJOR_VER_FAIL FALSE)
   set (LO_MINOR_VER_FAIL FALSE)
