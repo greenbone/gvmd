@@ -1,3 +1,16 @@
+2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Speed up row wrapping in the LaTeX report XSLT.
+
+	* src/report_formats/LaTeX/latex.xsl (wrap-row-indented): New template.
+	The indented case of wrap-row.
+	(wrap-row): Remove indented test, which is covered by wrap-row-indented.
+	Inline latex-newline.
+	(break-into-rows-indented): New template.  The indented case of
+	break-into-rows.
+	(break-into-rows): Remove indented and max params.  Call break-into-rows
+	instead of recursing with these params.
+
 2010-11-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Increased required openvas-libraries version.

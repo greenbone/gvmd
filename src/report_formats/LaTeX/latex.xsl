@@ -330,44 +330,74 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     <xsl:value-of select="$string_replace7"/>
   </xsl:template>
 
-  <!-- Create a verbatim row. -->
-  <xsl:template name="wrap-row">
+  <!-- Create a verbatim indented row. -->
+  <xsl:template name="wrap-row-indented">
     <xsl:param name="line"/>
-    <xsl:param name="indented"/> <!-- shall be bool -->
     <xsl:param name="color">white</xsl:param>
-    <xsl:text>\rowcolor{</xsl:text><xsl:value-of select="$color"/><xsl:text>}{</xsl:text>
-    <xsl:if test="$indented = 1">
-      <xsl:text>$\hookrightarrow$</xsl:text>
-    </xsl:if>
-    <xsl:text>\verb=</xsl:text>
+    <xsl:text>\rowcolor{</xsl:text>
+    <xsl:value-of select="$color"/>
+    <xsl:text>}{$\hookrightarrow$\verb=</xsl:text>
     <xsl:call-template name="escape_verb_env">
       <xsl:with-param name="string" select="$line"/>
     </xsl:call-template>
-    <xsl:text>=}</xsl:text>
-    <xsl:call-template name="latex-newline"/>
+    <!-- Inline latex-newline for speed. -->
+    <xsl:text>=}\\
+</xsl:text>
+  </xsl:template>
+
+  <!-- Create a verbatim row. -->
+  <!-- This is called very often, and is relatively slow. -->
+  <xsl:template name="wrap-row">
+    <xsl:param name="line"/>
+    <xsl:param name="color">white</xsl:param>
+    <xsl:text>\rowcolor{</xsl:text>
+    <xsl:value-of select="$color"/>
+    <xsl:text>}{\verb=</xsl:text>
+    <xsl:call-template name="escape_verb_env">
+      <xsl:with-param name="string" select="$line"/>
+    </xsl:call-template>
+    <!-- Inline latex-newline for speed. -->
+    <xsl:text>=}\\
+</xsl:text>
+  </xsl:template>
+
+  <!-- Takes a string that does not contain a newline char and outputs $max
+       characters long lines. -->
+  <xsl:template name="break-into-rows-indented">
+    <xsl:param name="string"/>
+    <xsl:param name="color">white</xsl:param>
+    <xsl:variable name="head" select="substring($string, 1, 78)"/>
+    <xsl:variable name="tail" select="substring($string, 79)"/>
+    <xsl:if test="string-length($head) &gt; 0">
+      <xsl:call-template name="wrap-row-indented">
+        <xsl:with-param name="line" select="$head"/>
+        <xsl:with-param name="color" select="$color"/>
+      </xsl:call-template>
+    </xsl:if>
+    <xsl:if test="string-length($tail) &gt; 0">
+      <xsl:call-template name="break-into-rows-indented">
+        <xsl:with-param name="string" select="$tail"/>
+        <xsl:with-param name="color" select="$color"/>
+      </xsl:call-template>
+    </xsl:if>
   </xsl:template>
 
   <!-- Takes a string that does not contain a newline char and outputs $max
        characters long lines. -->
   <xsl:template name="break-into-rows">
     <xsl:param name="string"/>
-    <xsl:param name="indented"/> <!-- shall be bool -->
-    <xsl:param name="max">80</xsl:param>
     <xsl:param name="color">white</xsl:param>
-    <xsl:variable name="head" select="substring($string, 1, $max)"/>
-    <xsl:variable name="tail" select="substring($string, $max+1)"/>
+    <xsl:variable name="head" select="substring($string, 1, 80)"/>
+    <xsl:variable name="tail" select="substring($string, 81)"/>
     <xsl:if test="string-length($head) &gt; 0">
       <xsl:call-template name="wrap-row">
         <xsl:with-param name="line" select="$head"/>
-        <xsl:with-param name="indented" select="$indented"/>
         <xsl:with-param name="color" select="$color"/>
       </xsl:call-template>
     </xsl:if>
     <xsl:if test="string-length($tail) &gt; 0">
-      <xsl:call-template name="break-into-rows">
+      <xsl:call-template name="break-into-rows-indented">
         <xsl:with-param name="string" select="$tail"/>
-        <xsl:with-param name="indented">1</xsl:with-param>
-        <xsl:with-param name="max">78</xsl:with-param>
         <xsl:with-param name="color" select="$color"/>
       </xsl:call-template>
     </xsl:if>
