@@ -1,3 +1,92 @@
+openvas-manager 2.0+beta1 (2010-11-19)
+
+This is the first beta version of the upcoming 2.0 release of the
+OpenVAS Manager. It is the central management service between
+the actual security scanner and various user clients of the
+Open Vulnerability Assessment System.
+
+OpenVAS Manager 2.0 represents a significantly advanced feature set.
+Most notable is the new plugin-based report format framework which
+allows to produce arbitrary scan reports (text, graphs, maps, connectors etc).
+The new master-slave mode allow to network multiple Manager instances.
+The whole functionality is available via the extended protocol: OMP 2.0.
+
+Central new features of OpenVAS Manager 2.0:
+
+* Report Format plugin framework. All previous reporting features
+  were converted to plugins. The XML representation of a report
+  is not the base for any plugin and thus consistency of reports
+  is improved.
+
+  Report Format Plugins can be set active so that they
+  appear in the selection lists. Selections can consider
+  content types so that for example only the plugins with
+  content type "text" are offered as Email body.
+
+  It is possible to use parameters for the plugins so the
+  user can adjust the behaviour of the Report Format to
+  the indivual preferences or needs.
+
+  A verification method allows to distribute signatures
+  for valid plugins via the NVT Feed.
+
+* New default Report Format: TXT for simple text.
+
+* New default Report Format: LaTeX for LaTeX source.
+
+* New sample Report Format: Simple Bar Chart.
+  Demonstrates how to use Gnuplot for graphical reports.
+
+* New sample Report Format: Simple Topo Plot.
+  Demonstrates how to use Graphviz for graphical reports.
+
+* New sample Report Format: Simple Pie Chart.
+  Demonstrates how to use PyChart for graphical reports.
+
+* New sample Report Format: Simple Map Plot.
+  Demonstrates how to use MapServer and GDAL for graphical reports.
+
+* New sample Report Format: Sourcefire Host Input.
+  Demonstrates that Report Formats can be used to build connectors.
+
+* Master-Slave feature. Any OpenVAS Manager can use one or many other
+  OpenVAS Manager as slave to run scans. The whole scan task
+  is transferred to the slave, results are continously reported
+  to the Master during scan process. After the scan is finished
+  all data are removed from the slave.
+
+  The master can also retrieve system reports from the slave and
+  thus can collect the performance overview for all configured slaves.
+
+* New Escalator: HTTP GET. This allows for example to access
+  text message (SMS) gateways or ticket management systems.
+
+* Extended Escalator: For EMail escalation it is now possible
+  to select from configured Report Formats to be included in the
+  Email body.
+
+* Agents: A verification method was added. This allows to
+  distribute signatures for valid agents via the NVT Feed.
+
+* Credentials: Can now be edited. This allows to change the login
+  name or password without the need to create a new scan configuration.
+
+* Credentials: Auto-generated installer packages are now created on
+  the fly. If the generators are improved, it is now easy to create
+  an updated package for already existing credentials.
+
+* OMP self-documentation: Part of the Managers' XML-based communication protocol
+  OMP 2.0 is to deliver the full specification and documentation of the
+  protocol itself (command "HELP"). It can be retrieved as XML-,
+  RNC- or HTML represention.
+
+* Targets: Various opportunities have been added to specify and combine IP ranges.
+
+* Tasks: The task overview is delivered much faster now.
+
+* Reports: The report filtering is much faster now.
+
+
 openvas-manager 1.0.0 (2010-07-29)
 
 This is the 1.0.0 release of the openvas-manager module for the Open
