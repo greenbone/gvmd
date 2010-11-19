@@ -2,14 +2,18 @@ openvas-manager 2.0+beta1 (2010-11-19)
 
 This is the first beta version of the upcoming 2.0 release of the
 OpenVAS Manager. It is the central management service between
-the actual security scanner and various user clients of the
-Open Vulnerability Assessment System.
+the actual security scanner and various user clients.
+Release 2.0 is part of OpenVAS 4, the next generation
+of the Open Vulnerability Assessment System.
 
 OpenVAS Manager 2.0 represents a significantly advanced feature set.
 Most notable is the new plugin-based report format framework which
 allows to produce arbitrary scan reports (text, graphs, maps, connectors etc).
 The new master-slave mode allow to network multiple Manager instances.
 The whole functionality is available via the extended protocol: OMP 2.0.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Jan-Oliver Wagner, Michael Wiegand and Felix Wolfsteller.
 
 Central new features of OpenVAS Manager 2.0:
 
