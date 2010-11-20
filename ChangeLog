@@ -1,5 +1,11 @@
 2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_id): Count false positives too.
+	(task_trend): Request false positive count, as report_counts_id is faster
+	with this count.
+
+2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl
 	(latex-replace-backslash-dollar): Correct template name.
 

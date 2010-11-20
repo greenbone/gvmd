@@ -9339,13 +9339,11 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives, int override,
                   const char *host)
 {
-  /* These add time and are out of scope of OMP threat levels, so skip them. */
+  /* This adds time and is out of scope of OMP threat levels, so skip it */
   if (debugs)
     *debugs = 0;
-  if (false_positives)
-    *false_positives = 0;
 
-  if (holes && infos && logs && warnings)
+  if (holes && infos && logs && warnings && false_positives)
     {
       if (override
           && sql_int (0, 0,
@@ -9452,7 +9450,7 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
 
           /* Loop through all results. */
 
-          *holes = *infos = *logs = *warnings = 0;
+          *holes = *infos = *logs = *warnings = *false_positives = 0;
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
                          " results.host, results.port"
@@ -9512,6 +9510,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                         (*infos)++;
                       else if (strcmp (new_type, "Log Message") == 0)
                         (*logs)++;
+                      else if (strcmp (new_type, "False Positive") == 0)
+                        (*false_positives)++;
                     }
                 }
               else
@@ -9621,6 +9621,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                         (*infos)++;
                       else if (strcmp (new_type, "Log Message") == 0)
                         (*logs)++;
+                      else if (strcmp (new_type, "False Positive") == 0)
+                        (*false_positives)++;
                     }
 
                   /* Reset the full inner statement. */
@@ -9663,6 +9665,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
         }
     }
 
+  if (false_positives)
+    *false_positives = report_count (report, "False Positive", override, host);
   if (holes) *holes = report_count (report, "Security Hole", override, host);
   if (infos) *infos = report_count (report, "Security Note", override, host);
   if (logs) *logs = report_count (report, "Log Message", override, host);
@@ -11046,8 +11050,8 @@ const char *
 task_trend (task_t task, int override)
 {
   report_t last_report, second_last_report;
-  int holes_a, warns_a, infos_a, logs_a, threat_a;
-  int holes_b, warns_b, infos_b, logs_b, threat_b;
+  int holes_a, warns_a, infos_a, logs_a, threat_a, false_positives_a;
+  int holes_b, warns_b, infos_b, logs_b, threat_b, false_positives_b;
 
   /* Ensure there are enough reports. */
 
@@ -11065,9 +11069,10 @@ task_trend (task_t task, int override)
   if (last_report == 0)
     return "";
 
-  /* Count the logs too, as report_counts_id is faster with all four. */
+  /* Count the logs and false positives too, as report_counts_id is faster
+   * with all five. */
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        NULL, override, NULL))
+                        &false_positives_a, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -11086,9 +11091,10 @@ task_trend (task_t task, int override)
   if (second_last_report == 0)
     return "";
 
-  /* Count the logs too, as report_counts_id is faster with all four. */
+  /* Count the logs and false positives too, as report_counts_id is faster
+   * with all five. */
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
-                        &warns_b, NULL, override, NULL))
+                        &warns_b, &false_positives_b, override, NULL))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
