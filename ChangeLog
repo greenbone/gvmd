@@ -1,3 +1,14 @@
+2010-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (compare_message_types_desc)
+	(compare_message_types_asc): Include port in comparison.
+	(compare_port_threat): New function.
+	(print_report_xml): Also do the threat sorting when sort_field is NULL,
+	because init_result_iterator will have sorted by threat.  Call
+	compare_port_threat instead of alphasort so that the ports are sorted
+	by port and threat.  Remove array index with g_array_remove_index so that
+	order is preserved.
+
 2010-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_id): Count false positives too.

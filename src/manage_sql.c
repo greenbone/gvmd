@@ -9983,11 +9983,19 @@ compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
+  gint type;
   one += strlen (one) + 1;
   two += strlen (two) + 1;
-  return collate_message_type (NULL,
+  type = collate_message_type (NULL,
                                strlen (two), two,
                                strlen (one), one);
+  if (type == 0)
+    {
+      one = *((gchar**) arg_one);
+      two = *((gchar**) arg_two);
+      return strcmp (one, two);
+    }
+  return type;
 }
 
 /**
@@ -10004,11 +10012,45 @@ compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
 {
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
+  gint type;
   one += strlen (one) + 1;
   two += strlen (two) + 1;
-  return collate_message_type (NULL,
+  type = collate_message_type (NULL,
                                strlen (one), one,
                                strlen (two), two);
+  if (type == 0)
+    {
+      one = *((gchar**) arg_one);
+      two = *((gchar**) arg_two);
+      return strcmp (two, one);
+    }
+  return type;
+}
+
+/**
+ * @brief Compares two buffered results, sorting by port then threat.
+ *
+ * @param[in]  arg_one  First result.
+ * @param[in]  arg_two  Second result.
+ *
+ * @return -1, 0 or 1 if first given result is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
+{
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  int port = strcmp (one, two);
+  if (port == 0)
+    {
+      one += strlen (one) + 1;
+      two += strlen (two) + 1;
+      return collate_message_type (NULL,
+                                   strlen (two), two,
+                                   strlen (one), one);
+    }
+  return port;
 }
 
 /**
@@ -10028,6 +10070,19 @@ compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
 
 /** @todo Defined in omp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int);
+
+#if 0
+void
+dump (GArray *ports)
+{
+  int index;
+  for (index = 0; index < ports->len; index++)
+    {
+      char *port = g_array_index (ports, char*, index);
+      tracef ("  == %s %s", port, port + strlen (port) + 1);
+    }
+}
+#endif
 
 /**
  * @brief Print the XML for a report to a file.
@@ -10231,13 +10286,15 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
     /* Handle sorting by threat and ROWID. */
 
-    if (sort_field && strcmp (sort_field, "port"))
+    if (sort_field == NULL || strcmp (sort_field, "port"))
       {
         int index, length;
 
-        /* Sort by port. */
+        /** @todo Sort by ROWID if was requested. */
 
-        g_array_sort (ports, alphasort);
+        /* Sort by port then threat. */
+
+        g_array_sort (ports, compare_port_threat);
 
         /* Remove duplicates. */
 
@@ -10247,7 +10304,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
             char *port = g_array_index (ports, char*, index);
             if (last_port && (strcmp (port, last_port) == 0))
               {
-                g_array_remove_index_fast (ports, index);
+                g_array_remove_index (ports, index);
                 length = ports->len;
                 index--;
               }
@@ -10256,8 +10313,6 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
           }
 
         /* Sort by threat. */
-
-        /** @todo Sort by ROWID if was requested. */
 
         if (sort_order)
           g_array_sort (ports, compare_message_types_asc);
