@@ -9981,21 +9981,35 @@ trim_partial_report (report_t report)
 static gint
 compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
+  gchar *one_type, *two_type;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
-  gint type;
+  gint host;
+
   one += strlen (one) + 1;
   two += strlen (two) + 1;
-  type = collate_message_type (NULL,
-                               strlen (two), two,
-                               strlen (one), one);
-  if (type == 0)
+  one_type = one;
+  two_type = two;
+
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  host = strcmp (one, two);
+  if (host == 0)
     {
-      one = *((gchar**) arg_one);
-      two = *((gchar**) arg_two);
-      return strcmp (one, two);
+      gint type;
+      type = collate_message_type (NULL,
+                                   strlen (two_type), two_type,
+                                   strlen (one_type), one_type);
+      if (type == 0)
+        {
+          one = *((gchar**) arg_one);
+          two = *((gchar**) arg_two);
+          return strcmp (one, two);
+        }
+
+      return type;
     }
-  return type;
+  return host;
 }
 
 /**
@@ -10010,21 +10024,35 @@ compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
 static gint
 compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
 {
+  gchar *one_type, *two_type;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
-  gint type;
+  gint host;
+
   one += strlen (one) + 1;
   two += strlen (two) + 1;
-  type = collate_message_type (NULL,
-                               strlen (one), one,
-                               strlen (two), two);
-  if (type == 0)
+  one_type = one;
+  two_type = two;
+
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  host = strcmp (one, two);
+  if (host == 0)
     {
-      one = *((gchar**) arg_one);
-      two = *((gchar**) arg_two);
-      return strcmp (two, one);
+      gint type;
+      type = collate_message_type (NULL,
+                                   strlen (one_type), one_type,
+                                   strlen (two_type), two_type);
+      if (type == 0)
+        {
+          one = *((gchar**) arg_one);
+          two = *((gchar**) arg_two);
+          return strcmp (two, one);
+        }
+
+      return type;
     }
-  return type;
+  return host;
 }
 
 /**
@@ -10039,18 +10067,24 @@ compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
 static gint
 compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
 {
+  int host;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
-  int port = strcmp (one, two);
-  if (port == 0)
+  gchar *one_threat = one + strlen (one) + 1;
+  gchar *two_threat = two + strlen (two) + 1;
+
+  host = strcmp (one_threat + strlen (one_threat) + 1,
+                 two_threat + strlen (two_threat) + 1);
+  if (host == 0)
     {
-      one += strlen (one) + 1;
-      two += strlen (two) + 1;
-      return collate_message_type (NULL,
-                                   strlen (two), two,
-                                   strlen (one), one);
+      int port = strcmp (one, two);
+      if (port == 0)
+        return collate_message_type (NULL,
+                                     strlen (two_threat), two_threat,
+                                     strlen (one_threat), one_threat);
+      return port;
     }
-  return port;
+  return host;
 }
 
 /**
@@ -10079,7 +10113,8 @@ dump (GArray *ports)
   for (index = 0; index < ports->len; index++)
     {
       char *port = g_array_index (ports, char*, index);
-      tracef ("  == %s %s", port, port + strlen (port) + 1);
+      char *threat = port + strlen (port) + 1;
+      tracef ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
     }
 }
 #endif
@@ -10234,7 +10269,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
   /* Port summary. */
 
   {
-    gchar *last_port;
+    gchar *last_port, *last_host;
     GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
 
     init_result_iterator
@@ -10254,20 +10289,24 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
     /* Buffer the results, removing duplicates. */
 
     last_port = NULL;
+    last_host = NULL;
     while (next (&results))
       {
         const char *port = result_iterator_port (&results);
+        const char *host = result_iterator_host (&results);
 
-        if (last_port == NULL || strcmp (port, last_port))
+        if (last_port == NULL || strcmp (port, last_port)
+            || strcmp (host, last_host))
           {
-            const char *host, *type;
+            const char *type;
             gchar *item;
             int port_len, type_len;
 
             g_free (last_port);
             last_port = g_strdup (port);
+            g_free (last_host);
+            last_host = g_strdup (host);
 
-            host = result_iterator_host (&results);
             type = result_iterator_type (&results);
             port_len = strlen (port);
             type_len = strlen (type);
@@ -10283,6 +10322,7 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
 
       }
     g_free (last_port);
+    g_free (last_host);
 
     /* Handle sorting by threat and ROWID. */
 
@@ -10299,17 +10339,25 @@ print_report_xml (report_t report, task_t task, gchar* xml_file,
         /* Remove duplicates. */
 
         last_port = NULL;
+        last_host = NULL;
         for (index = 0, length = ports->len; index < length; index++)
           {
             char *port = g_array_index (ports, char*, index);
-            if (last_port && (strcmp (port, last_port) == 0))
+            char *host = port + strlen (port) + 1;
+            host += strlen (host) + 1;
+            if (last_port
+                && (strcmp (port, last_port) == 0)
+                && (strcmp (host, last_host) == 0))
               {
                 g_array_remove_index (ports, index);
                 length = ports->len;
                 index--;
               }
             else
-              last_port = port;
+              {
+                last_port = port;
+                last_host = host;
+              }
           }
 
         /* Sort by threat. */

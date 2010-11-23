@@ -1,3 +1,10 @@
+2010-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (compare_message_types_desc)
+	(compare_message_types_asc, compare_port_threat): Include host in
+	comparison.
+	(print_report_xml): Account for host when removing duplicates.
+
 2010-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (compare_message_types_desc)
