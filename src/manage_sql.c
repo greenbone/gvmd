@@ -440,8 +440,6 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE)
         {
-          g_warning ("%s: sqlite3_step finished too soon",
-                     __FUNCTION__);
           return 1;
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
@@ -464,13 +462,17 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
 /**
  * @brief Get a particular cell from a SQL query, as an int.
  *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
  * @param[in]  col    Column.
  * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return Result of the query as an integer.
- * @warning Aborts on invalid queries.
  */
 static int
 sql_int (unsigned int col, unsigned int row, char* sql, ...)
@@ -502,6 +504,8 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
  * @param[in]  ...    Arguments for format string.
  *
  * @return Freshly allocated string containing the result, NULL otherwise.
+ *         NULL means that either the selected value was NULL or there were
+ *         fewer rows in the result than \p row.
  */
 static char*
 sql_string (unsigned int col, unsigned int row, char* sql, ...)

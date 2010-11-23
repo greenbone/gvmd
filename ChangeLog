@@ -1,5 +1,13 @@
 2010-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (sql_x): Remove warning for too few rows, as caller can
+	legitimately provide SQL that will select too few rows, for example when
+	checking for existence.
+	(sql_int): Add row expectation to doc.
+	(sql_string): Note NULL ambiguity in return doc.
+
+2010-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (compare_message_types_desc)
 	(compare_message_types_asc, compare_port_threat): Include host in
 	comparison.
