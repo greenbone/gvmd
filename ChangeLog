@@ -1,3 +1,8 @@
+2010-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ompd.c (serve_omp): Make the second timeout check like the first.
+	Make the second timeout trace message unique.
+
 2010-11-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (sql_x): Remove warning for too few rows, as caller can

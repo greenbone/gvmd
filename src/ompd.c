@@ -1407,9 +1407,10 @@ serve_omp (gnutls_session_t* client_session,
                                    *client_credentials);
               return -1;
             }
-          if (last_client_activity_time - current_time >= CLIENT_TIMEOUT)
+          if ((CLIENT_TIMEOUT - (current_time - last_client_activity_time))
+              <= 0)
             {
-              tracef ("client timeout (1)\n");
+              tracef ("client timeout (2)\n");
               openvas_server_free (client_socket,
                                    *client_session,
                                    *client_credentials);
