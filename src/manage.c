@@ -51,6 +51,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/omp/omp.h>

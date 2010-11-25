@@ -46,6 +46,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/openvas_auth.h>

@@ -1,5 +1,10 @@
 2010-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c, src/manage_sql.c: Include unistd.h, for when tracing is
+	off.
+
+2010-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (func:string-left-trim-nl)
 	(func:string-right-trim-nl, func:string-trim-nl): New function.
 	(pretty): Special case help_response to preserve formatting.
