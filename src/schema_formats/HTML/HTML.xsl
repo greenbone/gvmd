@@ -3,7 +3,8 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
-    extension-element-prefixes="str">
+    xmlns:func = "http://exslt.org/functions"
+    extension-element-prefixes="str func">
   <xsl:output method="html"
               doctype-system="http://www.w3.org/TR/html4/strict.dtd"
               doctype-public="-//W3C//DTD HTML 4.01//EN"
@@ -45,6 +46,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>
 </xsl:text>
   </xsl:template>
+
+  <!-- Remove leading newlines, leaving other newlines intact. -->
+  <func:function name="func:string-left-trim-nl">
+    <xsl:param name="string"/>
+    <xsl:choose>
+      <xsl:when test="string-length($string) = 0">
+        <func:result select="''"/>
+      </xsl:when>
+      <xsl:when test="starts-with($string,'&#10;')">
+        <func:result select="func:string-left-trim-nl(substring($string,2))"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="$string"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
+  <!-- Remove trailing newlines, leaving other newlines intact. -->
+  <func:function name="func:string-right-trim-nl">
+    <xsl:param name="string"/>
+    <xsl:choose>
+      <xsl:when test="string-length($string) = 0">
+        <func:result select="''"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="last"
+                      select="substring($string, string-length($string))"/>
+        <xsl:choose>
+          <xsl:when test="$last = '&#10;' or $last = ' '">
+            <func:result
+              select="func:string-right-trim-nl(substring($string,1,string-length($string) - 1))"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <func:result select="$string"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
+  <!-- Remove leading and trailing newlines, leaving other newlines
+       intact. -->
+  <func:function name="func:string-trim-nl">
+    <xsl:param name="string"/>
+    <func:result
+      select="func:string-left-trim-nl(func:string-right-trim-nl($string))"/>
+  </func:function>
 
   <xsl:template match="description">
     <xsl:choose>
@@ -153,13 +201,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:call-template>
         <xsl:text>&gt;</xsl:text>
         <xsl:call-template name="newline"/>
-        <xsl:if test="string-length(normalize-space(text())) &gt; 0">
-          <xsl:call-template name="print-space">
-            <xsl:with-param name="count" select="$level * 2 + 2"/>
-          </xsl:call-template>
-          <xsl:value-of select="normalize-space(text())"/>
-          <xsl:call-template name="newline"/>
-        </xsl:if>
+        <xsl:choose>
+          <xsl:when test="name() = 'help_response'">
+            <!-- Special case the help response to preserve whitespace. -->
+            <xsl:variable name="string" select="func:string-trim-nl(text())"/>
+            <xsl:if test="string-length($string) &gt; 0">
+              <xsl:value-of select="$string"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:if test="string-length(normalize-space(text())) &gt; 0">
+              <xsl:call-template name="print-space">
+                <xsl:with-param name="count" select="$level * 2 + 2"/>
+              </xsl:call-template>
+              <xsl:value-of select="normalize-space(text())"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+          </xsl:otherwise>
+        </xsl:choose>
         <xsl:for-each select="*">
           <xsl:call-template name="pretty">
             <xsl:with-param name="level" select="$level + 1"/>

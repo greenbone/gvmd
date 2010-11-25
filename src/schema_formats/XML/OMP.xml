@@ -6023,6 +6023,69 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </attrib>
       </pattern>
     </response>
+    <example>
+      <summary>Get the help text</summary>
+      <request>
+        <help></help>
+      </request>
+      <response>
+        <help_response status="200" status_text="OK">
+            AUTHENTICATE           Authenticate with the manager.
+            COMMANDS               Run a list of commands.
+            CREATE_AGENT           Create an agent.
+            CREATE_CONFIG          Create a config.
+            CREATE_ESCALATOR       Create an escalator.
+            CREATE_LSC_CREDENTIAL  Create a local security check credential.
+            CREATE_NOTE            Create a note.
+            CREATE_OVERRIDE        Create an override.
+            CREATE_SCHEDULE        Create a schedule.
+            CREATE_TARGET          Create a target.
+            CREATE_TASK            Create a task.
+            DELETE_AGENT           Delete an agent.
+            DELETE_CONFIG          Delete a config.
+            DELETE_ESCALATOR       Delete an escalator.
+            DELETE_LSC_CREDENTIAL  Delete a local security check credential.
+            DELETE_NOTE            Delete a note.
+            DELETE_OVERRIDE        Delete an override.
+            DELETE_REPORT          Delete a report.
+            DELETE_SCHEDULE        Delete a schedule.
+            DELETE_TARGET          Delete a target.
+            DELETE_TASK            Delete a task.
+            GET_AGENTS             Get all agents.
+            GET_CONFIGS            Get all configs.
+            GET_DEPENDENCIES       Get dependencies for all available NVTs.
+            GET_ESCALATORS         Get all escalators.
+            GET_LSC_CREDENTIALS    Get all local security check credentials.
+            GET_NOTES              Get all notes.
+            GET_NVTS               Get one or all available NVTs.
+            GET_NVT_FAMILIES       Get a list of all NVT families.
+            GET_NVT_FEED_CHECKSUM  Get checksum for entire NVT collection.
+            GET_OVERRIDES          Get all overrides.
+            GET_PREFERENCES        Get preferences for all available NVTs.
+            GET_REPORTS            Get all reports.
+            GET_RESULTS            Get results.
+            GET_SCHEDULES          Get all schedules.
+            GET_SYSTEM_REPORTS     Get all system reports.
+            GET_TARGET_LOCATORS    Get configured target locators.
+            GET_TARGETS            Get all targets.
+            GET_TASKS              Get all tasks.
+            GET_VERSION            Get the OpenVAS Manager Protocol version.
+            HELP                   Get this help text.
+            MODIFY_CONFIG          Update an existing config.
+            MODIFY_NOTE            Modify an existing note.
+            MODIFY_OVERRIDE        Modify an existing override.
+            MODIFY_REPORT          Modify an existing report.
+            MODIFY_TASK            Update an existing task.
+            PAUSE_TASK             Pause a running task.
+            RESUME_OR_START_TASK   Resume task if stopped, else start task.
+            RESUME_PAUSED_TASK     Resume a paused task.
+            RESUME_STOPPED_TASK    Resume a stopped task.
+            START_TASK             Manually start an existing task.
+            STOP_TASK              Stop a running task.
+            TEST_ESCALATOR         Run an escalator.
+        </help_response>
+      </response>
+    </example>
   </command>
   <command>
     <name>modify_config</name>

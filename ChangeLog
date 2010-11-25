@@ -1,3 +1,13 @@
+2010-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/HTML/HTML.xsl (func:string-left-trim-nl)
+	(func:string-right-trim-nl, func:string-trim-nl): New function.
+	(pretty): Special case help_response to preserve formatting.
+
+	* src/schema_formats/XML/OMP.xml: Add HELP example.
+
+	* doc/omp.html: Update from source.
+
 2010-11-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Make the second timeout check like the first.
