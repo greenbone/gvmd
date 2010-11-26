@@ -153,8 +153,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="e" match="e">
     <xsl:param name="parent-name"/>
-    <xsl:value-of select="$parent-name"/>
-    <xsl:value-of select="text()"/>
+    <xsl:param name="parent"/>
+    <xsl:variable name="name" select="text()"/>
+    <xsl:choose>
+      <xsl:when test="$parent/ele[name=$name]">
+        <xsl:value-of select="$parent-name"/>
+        <xsl:value-of select="$name"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- Presume there is a top level element with this name. -->
+        <xsl:value-of select="$name"/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template name="r" match="r">
@@ -192,11 +202,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="pattern-part">
     <xsl:param name="parent-name"/>
+    <xsl:param name="parent"/>
     <xsl:choose>
       <xsl:when test="name()='any'">
         <xsl:for-each select="*">
           <xsl:call-template name="pattern-part">
             <xsl:with-param name="parent-name" select="$parent-name"/>
+            <xsl:with-param name="parent" select="$parent"/>
           </xsl:call-template>
         </xsl:for-each>
         <xsl:text>*</xsl:text>
@@ -210,6 +222,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:when test="name()='e'">
         <xsl:call-template name="e">
           <xsl:with-param name="parent-name" select="$parent-name"/>
+          <xsl:with-param name="parent" select="$parent"/>
         </xsl:call-template>
       </xsl:when>
       <xsl:when test="name()='g'">
@@ -224,6 +237,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:choose>
           <xsl:call-template name="pattern-part">
             <xsl:with-param name="parent-name" select="$parent-name"/>
+            <xsl:with-param name="parent" select="$parent"/>
           </xsl:call-template>
           <xsl:if test="following-sibling::*">
             <xsl:call-template name="newline"/>
@@ -235,6 +249,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:for-each select="*">
           <xsl:call-template name="pattern-part">
             <xsl:with-param name="parent-name" select="$parent-name"/>
+            <xsl:with-param name="parent" select="$parent"/>
           </xsl:call-template>
         </xsl:for-each>
         <xsl:text>?</xsl:text>
@@ -251,6 +266,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </xsl:choose>
           <xsl:call-template name="pattern-part">
             <xsl:with-param name="parent-name" select="$parent-name"/>
+            <xsl:with-param name="parent" select="$parent"/>
           </xsl:call-template>
           <xsl:if test="following-sibling::*">
             <xsl:call-template name="newline"/>
@@ -273,6 +289,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="pattern" match="pattern">
     <xsl:param name="parent-name"/>
+    <xsl:param name="parent"/>
     <xsl:choose>
       <xsl:when test="(count (*) = 0) and (string-length (normalize-space (text ())) = 0)">
         <xsl:text>       ""</xsl:text>
@@ -318,6 +335,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:choose>
       <xsl:call-template name="pattern-part">
         <xsl:with-param name="parent-name" select="$parent-name"/>
+        <xsl:with-param name="parent" select="$parent"/>
       </xsl:call-template>
       <xsl:call-template name="newline"/>
     </xsl:for-each>
@@ -331,13 +349,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:text>.</xsl:text>
       <xsl:call-template name="newline"/>
     </xsl:if>
-    <xsl:call-template name="command-body">
-      <xsl:with-param name="parent-name" select="$parent-name"/>
-    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="type">
+        <xsl:variable name="command-name" select="concat ($parent-name, name)"/>
+        <xsl:value-of select="$command-name"/>
+        <xsl:text> = </xsl:text>
+        <xsl:value-of select="type"/>
+        <xsl:call-template name="newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="command-body">
+          <xsl:with-param name="parent-name" select="$parent-name"/>
+          <xsl:with-param name="parent" select="."/>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template name="command-body">
     <xsl:param name="parent-name"/>
+    <xsl:param name="parent" select="."/>
     <xsl:variable name="command-name" select="concat ($parent-name, name)"/>
     <xsl:value-of select="$command-name"/>
     <xsl:call-template name="newline"/>
@@ -349,6 +380,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:for-each select="pattern">
       <xsl:call-template name="pattern">
         <xsl:with-param name="parent-name" select="concat ($command-name, '_')"/>
+        <xsl:with-param name="parent" select="$parent"/>
       </xsl:call-template>
     </xsl:for-each>
     <xsl:text>     }</xsl:text>
@@ -375,6 +407,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:for-each select="response/pattern">
       <xsl:call-template name="pattern">
         <xsl:with-param name="parent-name" select="concat ($command-name, '_')"/>
+        <xsl:with-param name="parent" select="./.."/>
       </xsl:call-template>
     </xsl:for-each>
     <xsl:text>     }</xsl:text>

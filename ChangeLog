@@ -1,3 +1,30 @@
+2010-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add the schema parts of the HELP command to the HELP response, including
+	an example.  To make it easier to define the recursive parts of the HELP
+	response syntax, add a new PROTOCOL element, ELEMENT, alongside TYPE and
+	COMMAND.
+
+	* src/schema_formats/XML/OMP.xml: Add schema parts of HELP.
+
+	* src/schema_formats/HTML/rnc.xsl,
+	src/schema_formats/RNC/rnc.xsl (e): Adjust for new top level ELEMENTs.
+	Update callers accordingly.
+	(ele): Adjust for new TYPE property, which allows ELEs to be defined
+	by refering to ELEMENTs instead of including PATTERNs.
+
+	* src/schema_formats/RNC/rnc.xsl (elements): New template.
+	(protocol): Add elements section.
+
+	* src/schema_formats/HTML/HTML.xsl (pretty): Special case p to preserve
+	formatting.
+	(type [details], type-details, command, command-summary)
+	(command-details): Update section numbers.
+	(element [index], element-summary, element): New templates.
+	(protocol): Add element sections.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2010-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c, src/manage_sql.c: Include unistd.h, for when tracing is

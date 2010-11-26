@@ -62,6 +62,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>text</pattern>
   </type>
   <type>
+    <name>type_name</name>
+    <summary>A name of a data type</summary>
+    <pattern>xsd:string - xsd:whitespace</pattern>
+  </type>
+  <type>
     <name>integer</name>
     <summary>An integer</summary>
     <pattern>xsd:integer</pattern>
@@ -133,6 +138,150 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <summary>A Universally Unique Identifier (UUID), or the empty string</summary>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }</pattern>
   </type>
+  <element>
+    <name>c</name>
+    <summary>A reference to a command</summary>
+    <pattern>text</pattern>
+  </element>
+  <element>
+    <name>e</name>
+    <summary>A reference to an element</summary>
+    <pattern>text</pattern>
+  </element>
+  <element>
+    <name>r</name>
+    <summary>A reference to a response</summary>
+    <pattern>text</pattern>
+  </element>
+  <element>
+    <name>o</name>
+    <summary>An optional pattern item</summary>
+    <pattern>
+      <or>
+        <e>c</e>
+        <e>e</e>
+        <e>r</e>
+        <e>g</e>
+      </or>
+    </pattern>
+  </element>
+  <element>
+    <name>g</name>
+    <summary>A group of pattern items</summary>
+    <pattern>
+      <any><e>c</e></any>
+      <any><e>e</e></any>
+      <any><e>r</e></any>
+      <any><e>o</e></any>
+      <any><e>any</e></any>
+    </pattern>
+  </element>
+  <element>
+    <name>any</name>
+    <summary>Pattern item indicating "any number of".</summary>
+    <pattern>
+      <or>
+        <e>c</e>
+        <e>e</e>
+        <e>r</e>
+        <e>g</e>
+      </or>
+    </pattern>
+  </element>
+  <element>
+    <name>command_definition</name>
+    <summary>Definition of a command in OMP describing HELP command</summary>
+    <pattern>
+      <e>name</e>
+      <o><e>summary</e></o>
+      <o><e>description</e></o>
+      <or>
+        <e>pattern</e>
+        <g>
+          <e>type</e>
+          <any><e>ele</e></any>
+        </g>
+      </or>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the command</summary>
+      <description>The name must be unique</description>
+      <pattern><t>type_name</t></pattern>
+    </ele>
+    <ele>
+      <name>summary</name>
+      <summary>A summary of the command</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>description</name>
+      <summary>A description of the command</summary>
+      <pattern>
+        <any><e>p</e></any>
+        text
+      </pattern>
+      <ele>
+        <name>p</name>
+        <summary>A paragraph</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>pattern</name>
+      <description>
+        It's actually either a 't' element, or the word "text", or "".
+      </description>
+      <pattern>
+        <any><e>attrib</e></any>
+        <any><e>c</e></any>
+        <any><e>e</e></any>
+        <any><e>r</e></any>
+        <any><e>o</e></any>
+        <any><e>g</e></any>
+        <any><e>any</e></any>
+        <o><e>t</e></o>
+        text
+      </pattern>
+      <ele>
+        <name>attrib</name>
+        <summary>An attribute</summary>
+        <pattern>
+          <e>name</e>
+          <e>type</e>
+          <e>required</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <pattern><t>type_name</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <pattern><t>type_name</t></pattern>
+        </ele>
+        <ele>
+          <name>required</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>t</name>
+        <summary>The type of the text of the element</summary>
+        <pattern><t>type_name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>type</name>
+      <summary>The type of the element</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>ele</name>
+      <summary>An element</summary>
+      <description>This is a recursive definition</description>
+      <type>command_definition</type>
+    </ele>
+  </element>
   <command>
     <name>authenticate</name>
     <summary>Authenticate with the manager</summary>
@@ -6008,7 +6157,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <command>
     <name>help</name>
     <summary>Get the help text</summary>
-    <pattern></pattern>
+    <pattern>
+      <attrib>
+        <name>format</name>
+        <summary>Required help format</summary>
+        <type>
+          <alts>
+            <alt>html</alt>
+            <alt>HTML</alt>
+            <alt>rnc</alt>
+            <alt>RNC</alt>
+            <alt>text</alt>
+            <alt>TEXT</alt>
+            <alt>xml</alt>
+            <alt>XML</alt>
+          </alts>
+        </type>
+      </attrib>
+    </pattern>
     <response>
       <pattern>
         <attrib>
@@ -6021,7 +6187,87 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <o><e>schema</e></o>
+        text
       </pattern>
+      <ele>
+        <name>schema</name>
+        <pattern><e>protocol</e></pattern>
+        <ele>
+          <name>protocol</name>
+          <pattern>
+            <e>name</e>
+            <o><e>abbreviation</e></o>
+            <o><e>summary</e></o>
+            <o><e>version</e></o>
+            <any><e>type</e></any>
+            <any><e>command</e></any>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The full name of the protocol</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>abbreviation</name>
+            <summary>The abbreviated name of the protocol</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>summary</name>
+            <summary>A summary of the protocol</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>version</name>
+            <summary>The version number of the protocol</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>A data type</summary>
+            <pattern>
+              <e>name</e>
+              <o><e>summary</e></o>
+              <o><e>description</e></o>
+              <e>pattern</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the data type</summary>
+              <pattern><t>type_name</t></pattern>
+            </ele>
+            <ele>
+              <name>summary</name>
+              <summary>A summary of the data type</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>description</name>
+              <summary>A description of the data type</summary>
+              <pattern>
+                <any><e>p</e></any>
+                text
+              </pattern>
+              <ele>
+                <name>p</name>
+                <summary>A paragraph</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>pattern</name>
+              <summary>The RNC pattern for the data type</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>command</name>
+            <summary>A command</summary>
+            <type>command_definition</type>
+          </ele>
+        </ele>
+      </ele>
     </response>
     <example>
       <summary>Get the help text</summary>
@@ -6083,6 +6329,100 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
             TEST_ESCALATOR         Run an escalator.
+        </help_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get the OMP schema</summary>
+      <request>
+        <help format="XML"></help>
+      </request>
+      <response>
+        <help_response status="200" status_text="OK">
+          <schema format="XML" extension="xml" content_type="text/xml">
+            <protocol>
+              <name>OpenVAS Management Protocol</name>
+              <abbreviation>OMP</abbreviation>
+              <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
+              <version>1.0</version>
+              <type>
+                <name>base64</name>
+                <summary>Base64 encoded data</summary>
+                <pattern>xsd:base64Binary</pattern>
+              </type>
+              <truncated>...</truncated>
+              <command>
+                <name>authenticate</name>
+                <summary>Authenticate with the manager</summary>
+                <description>
+                  <p>
+                    The client uses the authenticate command to authenticate with the
+                    Manager.
+                  </p>
+                  <p>
+                    The client normally executes this command at the beginning of each
+                    connection.  The only commands permitted before authentication are
+                    get_version and commands.
+                  </p>
+                </description>
+                <pattern>
+                  <e>credentials</e>
+                </pattern>
+                <ele>
+                  <name>credentials</name>
+                  <pattern>
+                    <e>username</e>
+                    <e>password</e>
+                  </pattern>
+                  <ele>
+                    <name>username</name>
+                    <summary>The login name of the user</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>password</name>
+                    <summary>The user's password</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                </ele>
+                <response>
+                  <pattern>
+                    <attrib>
+                      <name>status</name>
+                      <type>status</type>
+                      <required>1</required>
+                    </attrib>
+                    <attrib>
+                      <name>status_text</name>
+                      <type>text</type>
+                      <required>1</required>
+                    </attrib>
+                  </pattern>
+                </response>
+                <example>
+                  <summary>Authenticate with a good password</summary>
+                  <request>
+                    <authenticate>
+                      <credentials>
+                        <username>sally</username>
+                        <password>secret</password>
+                      </credentials>
+                    </authenticate>
+                  </request>
+                  <response>
+                    <authenticate_response status="200" status_text="OK">
+                    </authenticate_response>
+                  </response>
+                </example>
+                <truncated>...</truncated>
+              </command>
+              <truncated>...</truncated>
+            </protocol>
+          </schema>
         </help_response>
       </response>
     </example>

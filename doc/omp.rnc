@@ -128,6 +128,8 @@ boolean = text
 boolean_atoi = text
 # A date and time, in the C `ctime' format.
 ctime = text
+# A name of a data type.
+type_name = xsd:string - xsd:whitespace
 # An integer.
 integer = xsd:integer
 # A string that may include the characters h, m, l, g and d.
@@ -152,6 +154,180 @@ time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 # A Universally Unique Identifier (UUID), or the empty string.
 uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
+
+### Element Types
+
+## Element Type c
+##
+## A reference to a command.
+
+c
+ = element c
+     {
+       text
+     }
+
+## Element Type e
+##
+## A reference to an element.
+
+e
+ = element e
+     {
+       text
+     }
+
+## Element Type r
+##
+## A reference to a response.
+
+r
+ = element r
+     {
+       text
+     }
+
+## Element Type o
+##
+## An optional pattern item.
+
+o
+ = element o
+     {
+       ( c
+           | e
+           | r
+           | g )
+     }
+
+## Element Type g
+##
+## A group of pattern items.
+
+g
+ = element g
+     {
+       c*
+       & e*
+       & r*
+       & o*
+       & any*
+     }
+
+## Element Type any
+##
+## Pattern item indicating "any number of"..
+
+any
+ = element any
+     {
+       ( c
+           | e
+           | r
+           | g )
+     }
+
+## Element Type command_definition
+##
+## Definition of a command in OMP describing HELP command.
+
+command_definition
+ = element command_definition
+     {
+       command_definition_name
+       & command_definition_summary?
+       & command_definition_description?
+       & ( command_definition_pattern
+           | ( command_definition_type
+           & command_definition_ele* ) )
+     }
+
+# The name of the command.
+command_definition_name
+ = element name
+     {
+       type_name
+     }
+
+# A summary of the command.
+command_definition_summary
+ = element summary
+     {
+       text
+     }
+
+# A description of the command.
+command_definition_description
+ = element description
+     {
+       text
+       & command_definition_description_p*
+     }
+
+# A paragraph.
+command_definition_description_p
+ = element p
+     {
+       text
+     }
+
+command_definition_pattern
+ = element pattern
+     {
+       text
+       & command_definition_pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & command_definition_pattern_t?
+     }
+
+# An attribute.
+command_definition_pattern_attrib
+ = element attrib
+     {
+       command_definition_pattern_attrib_name
+       & command_definition_pattern_attrib_type
+       & command_definition_pattern_attrib_required
+     }
+
+command_definition_pattern_attrib_name
+ = element name
+     {
+       type_name
+     }
+
+command_definition_pattern_attrib_type
+ = element type
+     {
+       type_name
+     }
+
+command_definition_pattern_attrib_required
+ = element required
+     {
+       boolean
+     }
+
+# The type of the text of the element.
+command_definition_pattern_t
+ = element t
+     {
+       type_name
+     }
+
+# The type of the element.
+command_definition_type
+ = element type
+     {
+       text
+     }
+
+# An element.
+command_definition_ele = command_definition
 
 ### Commands
 
@@ -1222,7 +1398,8 @@ get_version
 help
  = element help
      {
-       ""
+       # Required help format.
+       attribute format { xsd:token { pattern = "html|HTML|rnc|RNC|text|TEXT|xml|XML" } }?
      }
 
 ## Command modify_config
@@ -4251,9 +4428,105 @@ get_version_response_version
 help_response
  = element help_response
      {
-       attribute status { status }
+       text
+       & attribute status { status }
        & attribute status_text { text }
+       & help_response_schema?
      }
+
+help_response_schema
+ = element schema
+     {
+       help_response_schema_protocol
+     }
+
+help_response_schema_protocol
+ = element protocol
+     {
+       help_response_schema_protocol_name
+       & help_response_schema_protocol_abbreviation?
+       & help_response_schema_protocol_summary?
+       & help_response_schema_protocol_version?
+       & help_response_schema_protocol_type*
+       & help_response_schema_protocol_command*
+     }
+
+# The full name of the protocol.
+help_response_schema_protocol_name
+ = element name
+     {
+       text
+     }
+
+# The abbreviated name of the protocol.
+help_response_schema_protocol_abbreviation
+ = element abbreviation
+     {
+       text
+     }
+
+# A summary of the protocol.
+help_response_schema_protocol_summary
+ = element summary
+     {
+       text
+     }
+
+# The version number of the protocol.
+help_response_schema_protocol_version
+ = element version
+     {
+       text
+     }
+
+# A data type.
+help_response_schema_protocol_type
+ = element type
+     {
+       help_response_schema_protocol_type_name
+       & help_response_schema_protocol_type_summary?
+       & help_response_schema_protocol_type_description?
+       & help_response_schema_protocol_type_pattern
+     }
+
+# The name of the data type.
+help_response_schema_protocol_type_name
+ = element name
+     {
+       type_name
+     }
+
+# A summary of the data type.
+help_response_schema_protocol_type_summary
+ = element summary
+     {
+       text
+     }
+
+# A description of the data type.
+help_response_schema_protocol_type_description
+ = element description
+     {
+       text
+       & help_response_schema_protocol_type_description_p*
+     }
+
+# A paragraph.
+help_response_schema_protocol_type_description_p
+ = element p
+     {
+       text
+     }
+
+# The RNC pattern for the data type.
+help_response_schema_protocol_type_pattern
+ = element pattern
+     {
+       text
+     }
+
+# A command.
+help_response_schema_protocol_command = command_definition
 
 ## Response to modify_config
 

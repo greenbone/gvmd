@@ -94,6 +94,29 @@ response
     </xsl:for-each>
   </xsl:template>
 
+  <!-- Elements. -->
+
+  <xsl:template name="elements">
+    <xsl:text>### Element Types</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:for-each select="element">
+      <xsl:call-template name="newline"/>
+      <xsl:text>## Element Type </xsl:text>
+      <xsl:value-of select="name"/>
+      <xsl:call-template name="newline"/>
+      <xsl:if test="($rnc-comments = 1) and summary">
+        <xsl:text>##</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:text>## </xsl:text>
+        <xsl:value-of select="summary"/>
+        <xsl:text>.</xsl:text>
+        <xsl:call-template name="newline"/>
+      </xsl:if>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="command-body"/>
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- Commands. -->
 
   <xsl:template name="commands">
@@ -177,6 +200,8 @@ response
     <xsl:call-template name="preamble"/>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="types"/>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="elements"/>
     <xsl:call-template name="newline"/>
     <xsl:call-template name="commands"/>
     <xsl:call-template name="newline"/>
