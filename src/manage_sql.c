@@ -4706,7 +4706,7 @@ http_get (const char *url)
     {
       if (strlen (standard_out) > 80)
         standard_out[80] = '\0';
-      g_message ("   HTTP_GET %s: %s", url, standard_out);
+      g_debug ("   HTTP_GET %s: %s", url, standard_out);
       ret = 0;
     }
 
@@ -5492,7 +5492,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                     collate_message_type)
           != SQLITE_OK)
         {
-          g_message ("%s: failed to create collate_message_type", __FUNCTION__);
+          g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
           abort ();
         }
 
@@ -5503,7 +5503,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                     collate_ip)
           != SQLITE_OK)
         {
-          g_message ("%s: failed to create collate_ip", __FUNCTION__);
+          g_warning ("%s: failed to create collate_ip", __FUNCTION__);
           abort ();
         }
 
@@ -5517,7 +5517,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_message ("%s: failed to create make_uuid", __FUNCTION__);
+          g_warning ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
 
@@ -5531,7 +5531,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
                                    NULL)            /* xFinal. */
           != SQLITE_OK)
         {
-          g_message ("%s: failed to create make_uuid", __FUNCTION__);
+          g_warning ("%s: failed to create make_uuid", __FUNCTION__);
           abort ();
         }
     }
@@ -10725,7 +10725,7 @@ manage_report (report_t report, report_format_t report_format, int sort_order,
                                  output_file);
       g_free (script);
 
-      g_message ("   command: %s\n", command);
+      g_debug ("   command: %s\n", command);
 
       /* RATS: ignore, command is defined above. */
       if (ret = system (command),
@@ -10978,7 +10978,7 @@ manage_send_report (report_t report, report_format_t report_format,
       g_free (script);
       g_free (xml_file);
 
-      g_message ("   command: %s\n", command);
+      g_debug ("   command: %s\n", command);
 
       /* RATS: ignore, command is defined above. */
       if (ret = system (command),
@@ -21988,7 +21988,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
                                  output_file);
       g_free (script);
 
-      g_message ("   command: %s\n", command);
+      g_debug ("   command: %s\n", command);
 
       /* RATS: ignore, command is defined above. */
       if (ret = system (command),

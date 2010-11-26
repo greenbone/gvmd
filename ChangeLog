@@ -1,5 +1,14 @@
 2010-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (http_get, manage_report, manage_send_report)
+	(manage_schema): Make trace messages g_debug instead of g_message.
+	(init_manage_process): Make failure messages g_warnings.
+
+	* src/omp.c, src/openvasmd.c: Downgrade messages of possibly interesting
+	events to level info.
+
+2010-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add the schema parts of the HELP command to the HELP response, including
 	an example.  To make it easier to define the recursive parts of the HELP
 	response syntax, add a new PROTOCOL element, ELEMENT, alongside TYPE and

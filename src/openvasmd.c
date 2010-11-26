@@ -365,7 +365,9 @@ serve_client (int client_socket)
           goto server_fail;
         break;
       case PROTOCOL_CLOSE:
-        g_message ("   EOF while trying to read protocol\n");
+        g_log (G_LOG_DOMAIN,
+               G_LOG_LEVEL_INFO,
+               "   EOF while trying to read protocol\n");
         goto fail;
       case PROTOCOL_TIMEOUT:
         openvas_server_free (client_socket,
