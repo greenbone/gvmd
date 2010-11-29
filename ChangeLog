@@ -1,5 +1,18 @@
 2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl (rnc-preamble): New template.
+	(protocol): Add RNC preamble section.  Adjust index numbers accordingly.
+
+	* src/schema_formats/HTML/rnc.xsl (preamble): New template.  From ../RNC/.
+
+	* src/schema_formats/RNC/rnc.xsl (preamble): New template.  From RNC.xsl.
+
+	* src/schema_formats/RNC/RNC.xsl (preamble): Remove.  To rnc.xsl.
+
+	* doc/omp.html: Update from source.
+
+2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Add COMMAND/EXAMPLE to the schema case
 	of HELP.
 

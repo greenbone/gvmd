@@ -43,37 +43,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:text>
   </xsl:template>
 
-  <!-- Preamble. -->
-
-  <xsl:template name="preamble">
-    <xsl:text>### Preamble
-
-start = command | response
-
-command
-  = </xsl:text>
-    <xsl:for-each select="command">
-      <xsl:value-of select="name"/>
-      <xsl:if test="following-sibling::command">
-        <xsl:call-template name="newline"/>
-        <xsl:text>    | </xsl:text>
-      </xsl:if>
-    </xsl:for-each>
-    <xsl:text>
-
-response
-  = </xsl:text>
-    <xsl:for-each select="command">
-      <xsl:value-of select="name"/>
-      <xsl:text>_response</xsl:text>
-      <xsl:if test="following-sibling::command">
-        <xsl:call-template name="newline"/>
-        <xsl:text>    | </xsl:text>
-      </xsl:if>
-    </xsl:for-each>
-    <xsl:call-template name="newline"/>
-  </xsl:template>
-
   <!-- Data types. -->
 
   <xsl:template name="types">

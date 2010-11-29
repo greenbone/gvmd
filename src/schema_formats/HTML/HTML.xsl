@@ -236,6 +236,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
+  <!-- RNC preamble. -->
+
+  <xsl:template name="rnc-preamble">
+    <h2 id="rnc_preamble">4 RNC Preamble</h2>
+    <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+      <pre>
+        <xsl:call-template name="preamble"/>
+      </pre>
+    </div>
+  </xsl:template>
+
   <!-- Types. -->
 
   <xsl:template match="type" mode="index">
@@ -257,7 +268,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="type" mode="details">
-    <xsl:param name="index">4.<xsl:value-of select="position()"/></xsl:param>
+    <xsl:param name="index">5.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
         <h3 id="type_{name}">
@@ -290,7 +301,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="type-details">
-    <h2 id="type_details">4 Data Type Details</h2>
+    <h2 id="type_details">5 Data Type Details</h2>
     <xsl:apply-templates select="type" mode="details"/>
   </xsl:template>
 
@@ -315,12 +326,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="element-details">
-    <h2 id="element_details">5 Element Details</h2>
+    <h2 id="element_details">6 Element Details</h2>
     <xsl:apply-templates select="element"/>
   </xsl:template>
 
   <xsl:template match="element">
-    <xsl:param name="index">5.<xsl:value-of select="position()"/></xsl:param>
+    <xsl:param name="index">6.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
         <h3 id="element_{name}">
@@ -493,7 +504,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template match="command">
-    <xsl:param name="index">6.<xsl:value-of select="position()"/></xsl:param>
+    <xsl:param name="index">7.<xsl:value-of select="position()"/></xsl:param>
     <div>
       <div>
         <h3 id="command_{name}">
@@ -580,7 +591,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="command-details">
-    <h2 id="command_details">6 Command Details</h2>
+    <h2 id="command_details">7 Command Details</h2>
     <xsl:apply-templates select="command"/>
   </xsl:template>
 
@@ -628,6 +639,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <li><a href="#type_summary">Summary of Data Types</a></li>
                   <li><a href="#element_summary">Summary of Elements</a></li>
                   <li><a href="#command_summary">Summary of Commands</a></li>
+                  <li><a href="#rnc_preamble">RNC Preamble</a></li>
                   <li><a href="#type_details">Data Type Details</a></li>
                   <li><a href="#element_details">Element Details</a></li>
                   <li><a href="#command_details">Command Details</a></li>
@@ -636,6 +648,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <xsl:call-template name="type-summary"/>
                 <xsl:call-template name="element-summary"/>
                 <xsl:call-template name="command-summary"/>
+                <xsl:call-template name="rnc-preamble"/>
                 <xsl:call-template name="type-details"/>
                 <xsl:call-template name="element-details"/>
                 <xsl:call-template name="command-details"/>
