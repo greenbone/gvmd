@@ -3,7 +3,7 @@
  * Description: Test running OMP START_TASK twice in one session.
  *
  * Authors:
- * Matthew Mundell <matt@mundell.ukfsn.org>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

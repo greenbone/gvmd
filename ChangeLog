@@ -1,3 +1,47 @@
+2010-11-29  Matthew Mundell <matthew.mundell@intevation.de>
+
+	* CMakeLists.txt, ChangeLog, doc/CMakeLists.txt, doc/openvasmd.8.xml,
+	src/CMakeLists.txt, src/logf.h, src/manage.c, src/manage.h,
+	src/manage_sql.c, src/omp.c, src/omp.h, src/ompd.c, src/ompd.h,
+	src/openvasmd.c, src/otp.c, src/otp.h, src/otpd.c, src/otpd.h,
+	src/ovas-mngr-comm.c, src/oxpd.c, src/oxpd.h, src/splint.h,
+	src/tests/CMakeLists.txt, src/tests/common.c, src/tests/common.h,
+	src/tests/make_report_uuid_0.c, src/tests/omp_abort_task_0.c,
+	src/tests/omp_bogus_0.c, src/tests/omp_bogus_1.c,
+	src/tests/omp_create_task_0.c, src/tests/omp_create_task_1.c,
+	src/tests/omp_delete_report_0.c, src/tests/omp_delete_report_1.c,
+	src/tests/omp_delete_task_0.c, src/tests/omp_delete_task_1.c,
+	src/tests/omp_delete_task_2.c, src/tests/omp_get_certificates_0.c,
+	src/tests/omp_get_certificates_1.c, src/tests/omp_get_dependencies_0.c,
+	src/tests/omp_get_dependencies_1.c, src/tests/omp_get_nvt_all_0.c,
+	src/tests/omp_get_nvt_all_1.c, src/tests/omp_get_nvt_details_0.c,
+	src/tests/omp_get_nvt_details_1.c, src/tests/omp_get_nvt_details_2.c,
+	src/tests/omp_get_nvt_details_3.c, src/tests/omp_get_nvt_details_4.c,
+	src/tests/omp_get_nvt_feed_checksum_0.c,
+	src/tests/omp_get_nvt_feed_checksum_1.c,
+	src/tests/omp_get_nvt_feed_checksum_2.c,
+	src/tests/omp_get_nvt_feed_checksum_3.c,
+	src/tests/omp_get_nvt_feed_checksum_4.c,
+	src/tests/omp_get_nvt_feed_checksum_5.c,
+	src/tests/omp_get_preferences_0.c, src/tests/omp_get_preferences_1.c,
+	src/tests/omp_get_preferences_2.c, src/tests/omp_get_report_0.c,
+	src/tests/omp_get_report_1.c, src/tests/omp_get_report_2.c,
+	src/tests/omp_get_report_3.c, src/tests/omp_get_report_4.c,
+	src/tests/omp_get_report_5.c, src/tests/omp_get_report_6.c,
+	src/tests/omp_get_report_7.c, src/tests/omp_get_rules_0.c,
+	src/tests/omp_get_rules_1.c, src/tests/omp_get_status_0.c,
+	src/tests/omp_get_status_1.c, src/tests/omp_get_status_2.c,
+	src/tests/omp_get_status_3.c, src/tests/omp_get_status_4.c,
+	src/tests/omp_get_status_5.c, src/tests/omp_get_version_0.c,
+	src/tests/omp_help_0.c, src/tests/omp_help_1.c,
+	src/tests/omp_modify_report_0.c, src/tests/omp_modify_task_0.c,
+	src/tests/omp_modify_task_1.c, src/tests/omp_start_task_0.c,
+	src/tests/omp_start_task_1.c, src/tests/omp_start_task_2.c,
+	src/tests/omp_start_task_4.c, src/tests/read_protocol_0.c,
+	src/tests/strip_space_0.c, src/tests/strip_space_1.c,
+	src/tests/strip_space_2.c, src/tests/strip_space_3.c,
+	src/tests/timeout_0.c, src/tracef.h, src/types.h: Use Greenbone address.
+
 2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_nvts_md5sum): Doc arg.
@@ -13005,7 +13049,7 @@
 	* src/omp.c (omp_xml_handle_start_element): Correct lengths in
 	CLIENT_TOP comparisons.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README, INSTALL: Update requirements and descriptions.
 
@@ -13019,27 +13063,27 @@
 
 	* CMakeLists.txt: Adjusted version.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/CMakeLists.txt: Add SQLite linkage.  Move tests of support
 	libraries before rest.  Order tests alphabetically.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Add check for SQLite3 library.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (start_task): Free task_plugins string after use.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (task_plugins): New function.
 	(start_task): Request plugins listed in RC file instead of always
 	requesting all plugins.
 	(task_preference): Correct parsing.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Ensure that the memory allocated in sql_string is always freed.
 
@@ -13067,7 +13111,7 @@
 
 	* src/otp.c (save_report): Free task_start_time return after use.
 
-2009-05-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ovas-mngr-comm.c (sendf_to_server): New function.
 
@@ -13082,7 +13126,7 @@
 	* CMakeLists.txt: Added initial support for creating source and binary
 	packages with CPack.
 
-2009-05-06  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch to an embedded database for task storage, keeping file
 	system based storage as an alternative.
@@ -13118,7 +13162,7 @@
 	controlling task backend.  Add to targets.
 	(C_FILES): Add task include files.
 
-2009-04-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve the task abstraction by moving parsing of the task ID into
 	find_task.  Separate out task code specific to the task representation.
@@ -13136,7 +13180,7 @@
 
 	* src/omp.c: Update find_task callers.
 
-2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve the task abstraction by accessing all task fields via functions
 	and storing the current report in a global variable instead of in the
@@ -13160,7 +13204,7 @@
 	* src/otp.c, src/omp.c: Use new task access functions and new global
 	current_report.
 
-2009-04-14  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve task abstraction by changing task_t to a pointer and adding a
 	task iterator.
@@ -13180,7 +13224,7 @@
 	(omp_xml_handle_end_element): Add tracing and comment to
 	CLIENT_DELETE_TASK case.  In CLIENT_STATUS iterate with task iterator.
 
-2009-04-09  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Write OTP report messages directly to the report on disk, instead of
 	buffering the messages in memory.
@@ -13216,7 +13260,7 @@
 	ports. Made connect_to_manager a wrapper around
 	connect_to_manager_host_port using OPENVASMD_ADDRESS and OPENVASMD_PORT.
 
-2009-04-08  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate more, from Splint.
 
@@ -13360,16 +13404,16 @@
 
 	* src/tests/CMakeLists.txt: Added missing GLIB_CFLAGS to target properties.
 
-2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.c (env_authenticate): Remove RATS annotation.
 
-2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/omp_delete_task_0.c: Test by checking status instead of
 	counting tasks.
 
-2009-03-31  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate, from Splint.  Comment RATS annotations.
 
@@ -13417,7 +13461,7 @@
 	(grow_description): Comment RATS annotation.  Change tracef specifier.
 	(add_task_description_line): Compare return to integer.
 
-2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate, from Splint.
 
@@ -13451,7 +13495,7 @@
 	* src/openvasmd.c (from_buffer_size, from_client_start, from_server_start,
 	from_server_end): Change types to size_t.
 
-2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate, from Splint.
 
@@ -13481,7 +13525,7 @@
 	(end_session): Return success if shutdown error is ENOTCONN.
 	(write_string_to_server): Cast gnutls_record_send arg.
 
-2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate, from Splint.
 
@@ -13509,7 +13553,7 @@
 	from g_dir_open directly, and on failure check that temp_error is set.
 	Remove duplicate cleanup calls.
 
-2009-03-30  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup and annotate, from Splint.
 
@@ -13560,15 +13604,15 @@
 	(grow_description): Change new_size to size_t.  Cast char for memset.
 	(add_task_description_line): Use return from g_array_append_val.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.c (env_authenticate): Add "RATS: ignore" for getenv.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/CMakeLists.txt: Add omp_delete_report_1.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Start implementing splint and RATS cleanups.
 
@@ -13591,7 +13635,7 @@
 	* src/otpd.c: Move all local vars to beginnings of blocks.
 	(serve_otp): Annotate reach.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Start implementing splint and RATS cleanups.
 
@@ -13616,7 +13660,7 @@
 	* src/string.h (append_string, free_string_var): Drop arg names.
 	(strip_space): Annotate return as shared.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Start implementing splint and RATS cleanups.
 
@@ -13642,7 +13686,7 @@
 	(serve_omp): Add OMP freeing note from src/openvasmd.c.  Cast
 	variables.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/logf.h: Include stdlib.
 	(logf): Cast getpid return.  Check fflush return.
@@ -13650,17 +13694,17 @@
 	* src/tracef.h: Include stdlib.
 	(tracef): Cast getpid return.  Check fflush return.
 
-2009-03-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/CMakeLists.txt (splint, rats, flawfinder, check, etags, ctags,
 	tags): New targets.
 	(ovas-mngr-comm): Add Glib C flags.
 
-2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/omp_delete_task_1.c: Read report ID from response.
 
-2009-03-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Always respond to the client,
 	in CLIENT_DELETE_REPORT.
@@ -13668,7 +13712,7 @@
 	* src/tests/omp_delete_report_1.c: New test.  Tests DELETE_REPORT with
 	empty ID.
 
-2009-03-24  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add more tests.
 
@@ -13690,7 +13734,7 @@
 
 	* src/tests/CMakeLists.txt: Add rules for new tests.
 
-2009-03-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch to universal report identifiers.
 
@@ -13709,7 +13753,7 @@
 
 	* src/CMakeLists.txt: Add -lossp-uuid to openvasmd.
 
-2009-03-20  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a task status enumeration.  Rename task_t running slot to run_status.
 
@@ -13732,7 +13776,7 @@
 	* packaging/debian/control: New. First approaches for
 	Debian packaging.
 
-2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add per-report directories.  Add initial OMP MODIFY_REPORT.
 
@@ -13749,7 +13793,7 @@
 	* src/manage.c (set_report_parameter): New function.
 	(delete_report): Account for per-report directory.
 
-2009-03-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Update OTP BYE handling for reconnecting to the server during an OMP
 	session.
@@ -13774,27 +13818,27 @@
 	SERVER_INIT_SENT_VERSION.  In SERVER_BYE add success case and correct the
 	"need more input" return value.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Revert bogus typo correction.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Free name in CLIENT_GET_REPORT
 	case.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_reports): Use scandir's report_name directly, instead
 	of wrapping it in a g_path_get_basename.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (delete_report): Add @return doc.
 
 	* ChangeLog: Fixup pathnames for today's entries.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Reactivate BYE-initiated server socket shutdown.
 
@@ -13804,15 +13848,15 @@
 	* src/ompd.c (serve_omp): Shutdown server socket according to
 	process_otp_server_input return.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Correct typo and formatting.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (stop_task, start_task): Correct conditions of running checks.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Ensure that delete_task also removes the symlinks to the directory of
 	all the user's reports.
@@ -13823,7 +13867,7 @@
 	(delete_reports): New function.
 	(delete_task): Call delete_reports to delete reports.
 
-2009-03-13  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move report deleting into manage library.
 
@@ -13833,7 +13877,7 @@
 
 	* src/omp.c (omp_xml_handle_end_element): Use new function delete_report.
 
-2009-03-12  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP DELETE_REPORT.
 
@@ -13841,11 +13885,11 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add DELETE_REPORT handling.
 
-2009-03-12  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/otp.c (save_report): Move the actual report into the task directory.
 
-2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add per-user reports directories.
 
@@ -13858,40 +13902,40 @@
 	has the right format.  Free content_error.  Free current_task_task_id in
 	the fail case.
 
-2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (output_reports_xml): Rename to send_reports.
 	(send_reports): Rename from output_reports_xml.  Add doc.
 
-2009-03-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (client_state_t): Add GET_REPORT states.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add GET_REPORT handling.
 
-2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.c (wait_for_task_end): New function.
 
 	* src/tests/common.h (wait_for_task_end): New header.
 
-2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (output_reports_xml): New function.
 	(omp_xml_handle_end_element): Add reports to STATUS response
 	in case where STATUS is given a task ID.
 
-2009-03-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/otp.c (process_otp_server_input): Add "done" task state.
 
 	* src/omp.c (omp_xml_handle_end_element): Add "done" task state.
 
-2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (delete_task): Correct error check.
 
-2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add "Requested" task running state.  Correct STATUS_RESPONSE tags and
 	CLIENT_MODIFY_TASK variable usage.
@@ -13906,7 +13950,7 @@
 
 	* src/manage.h (task_t): Note new running state.
 
-2009-03-02  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.c: Turn off some tracing.
 	(DO_CHILDREN, id_string, wait_for_task_start, delete_task): New functions.
@@ -13917,7 +13961,7 @@
 	src/tests/omp_modify_task_0.c, src/tests/omp_modify_task_0.c: Wait for
 	server with	wait_for_task_start.  Delete task on exit.
 
-2009-03-01  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-03-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Reduce number of gotos.
 
@@ -13939,7 +13983,7 @@
 	* src/manage.c (load_tasks, save_task): Move fail destinations to ends
 	of functions.
 
-2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add env_authenticate and use it in tests.
 
@@ -13954,7 +13998,7 @@
 	src/tests/omp_start_task_0.c, src/tests/omp_modify_task_0.c,
 	src/tests/omp_status_0.c: Use env_authenticate instead of authenticate.
 
-2009-02-28  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Start separating the implementation into components.
 
@@ -13994,7 +14038,7 @@
 
 	* doc/Doxyfile (INPUT): Add new files.
 
-2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Update commands to clear current_task_task_id after use.
 
@@ -14005,7 +14049,7 @@
 	(omp_xml_handle_text): Append to string variables with append_string.
 	(serve_omp): Note exit behaviour.
 
-2009-02-23  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use shared functions for starting tasks.  Authenticate only once per
 	session, for now.
@@ -14026,7 +14070,7 @@
 
 	* src/tests/omp_status_0.c: Use start_task.  Authenticate once.
 
-2009-02-22  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Cleanup docs.  Neaten XML strings.  Rename XML_RESPOND to
 	SEND_TO_CLIENT.  Update load_tasks to loop through dirs forwards
@@ -14051,7 +14095,7 @@
 
 	* doc/Doxyfile: Adjust paths for running in top-level dir.
 
-2009-02-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add Base64 task file handling.  Add new library with function
 	rmdir_recursively.  Add tests of rmdir_recursively.  Update DELETE_TASK
@@ -14094,7 +14138,7 @@
 
 	* src/tests/omp_delete_task_0.c: Use create_task_from_rc_file.
 
-2009-02-20  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP AUTHENTICATE.  Remove handling of first OMP specification.
 
@@ -14133,7 +14177,7 @@
 	src/tests/omp_start_task_0.c, src/tests/omp_modify_task_0.c,
 	src/tests/omp_status_0.c: Add authentication.
 
-2009-02-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add saving of reports and tasks on disk.  Rename "reports" to
 	"messages".  Move port code up to a dedicated page.  Check for alerts
@@ -14173,13 +14217,13 @@
 
 	* Changelog: Replace some space offsets with tabs.
 
-2009-02-09  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (client_state_t, omp_xml_handle_start_element,
 	omp_xml_handle_end_element): Add dummy GET_NVT_FEED_ALL,
 	GET_NVT_FEED_CHECKSUM and GET_NVT_FEED_DETAILS handling.
 
-2009-02-06  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP GET_DEPENDENCIES and GET_RULES.  Correct OTP rule parsing.
 
@@ -14204,11 +14248,11 @@
 	* doc/CMakeLists.txt: Fixed syntax error which caused the build process
 	to fail.
 
-2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/CMakeLists.txt: Only install manpage if xmltoman is installed.
 
-2009-02-05  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP GET_PREFERENCES.  Retry reading from server on error.
 
@@ -14219,12 +14263,12 @@
 	(print_preference): New function.
 	(read_from_server): Retry the recv on error, up to 5 times.
 
-2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/omp_delete_task_0.c: New file.
 	* src/tests/omp_delete_task_0: Remove.
 
-2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add test of DELETE_TASK.
 
@@ -14232,7 +14276,7 @@
 
 	* src/tests/omp_delete_task_0.c: New file.
 
-2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add a few entity access functions.
 
@@ -14241,7 +14285,7 @@
 
 	* src/tests/common.h: Declare new functions.
 
-2009-02-04  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (free_task, delete_task): New functions.
 	(free_tasks): Move single task freeing to free_task.
@@ -14251,7 +14295,7 @@
 
 	* ChangeLog: Correct function name on 2009-02-03 entry.
 
-2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add test of ABORT_TASK.
 
@@ -14259,17 +14303,17 @@
 
 	* src/tests/omp_abort_task_0.c: New file.
 
-2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/omp_start_task_0.c: Correct comment.
 
-2009-02-03  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (stop_task): New function.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add ABORT_TASK handling.
 
-2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.h (close_manager_connection): New function.
 
@@ -14284,7 +14328,7 @@
 	* src/tests/omp_status_0.c: Add expected problem counts.
 	Use close_manager_connection.
 
-2009-02-02  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OTP problem report handling (DEBUG, HOLE, INFO, NOTE).  Fix
 	errors in append_task_open_port and omp_xml_handle_end_element.
@@ -14312,12 +14356,12 @@
 	introduced on 2008-12-10).  This is to ensure that the client or server
 	is read when the other party is writing alot.
 
-2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: (omp_xml_handle_end_element): Flush whitespace from
 	task response XML.
 
-2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Improve entity reading and comparison.
 
@@ -14335,11 +14379,11 @@
 	src/tests/omp_start_task_0.c, src/tests/omp_status_0.c,
 	src/tests/omp_version_0.c: Use new entity reading and comparison.
 
-2009-01-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/common.c: Match comments to style guide.
 
-2009-01-20  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Do server connection and initialisation lazily, when the first command
 	is written to the server.  Start OMP STATUS TASK_ID handling.  Add OTP
@@ -14372,18 +14416,18 @@
 	(serve_client): Move server connecting to write_to_server (via new
 	function connect_to_server).
 
-2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/Doxyfile (INPUT): Add string.c and tracef.h.
 
 	* doc/CMakeLists.txt: Add string.c and tracef.h to .built-html rule dependencies.
 	Drop dependencies from doc rule that are covered by .built-html.
 
-2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ovas-mngr-comm.c: Add TRACE define.  Move @file comment to beginning.
 
-2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/string.h: Add header comment.
 
@@ -14391,7 +14435,7 @@
 
 	* src/tracef.h: Add header and @file comments.  Match comment docs to style guide.
 
-2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add simple test of XML OMP STATUS.
 
@@ -14401,7 +14445,7 @@
 
 	* ChangeLog: Correct file name on previous entry.
 
-2009-01-18  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add initial XML OMP STATUS and improve server initialisation.
 
@@ -14418,38 +14462,38 @@
 
 	* ChangeLog: Correct file name on previous entry.
 
-2009-01-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/Doxyfile: Turn off JAVADOC_AUTOBRIEF.
 
-2009-01-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Match comments to coding style.
 
 	* src/ovas-mngr-comm.c: Match comments to coding style.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (server_context, xml_context, port_protocol_t,
 	port_t): Add comments docs.
 	(append_to_task_comment, append_to_task_identifier): Correct doc for
 	length param.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/Doxyfile (INPUT): Add ovas-mngr-comm.c.
 
 	* doc/CMakeLists.txt: Add ovas-mngr-comm.c to doc depends.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ovas-mngr-comm.c: Fix a few file doc typos.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ovas-mngr-comm.c (send_to_server): Add space after function name.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add simple test of XML OMP START_TASK.
 
@@ -14457,7 +14501,7 @@
 
 	* src/tests/CMakeLists.txt: Add new test.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add initial XML OMP START_TASK.
 
@@ -14466,7 +14510,7 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element,
 	omp_xml_handle_text): Add START_TASK handling.
 
-2009-01-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Convert tabs to spaces.
 
@@ -14489,7 +14533,7 @@
 
 	* src/CMakeLists.txt: Added handling for module ovas-mngr-comm.
 
-2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add simple tests of XML OMP OMP_VERSION, NEW_TASK and MODIFY_TASK.
 
@@ -14498,7 +14542,7 @@
 
 	* src/tests/CMakeLists.txt: Add config library and new tests.
 
-2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add initial XML OMP NEW_TASK and MODIFY_TASK.  Document functions.
 
@@ -14513,17 +14557,17 @@
 	MODIFY_TASK.
 	(omp_xml_handle_error): Add comment doc.
 
-2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/tests/strip_space_0.c, src/tests/strip_space_1.c,
 	src/tests/strip_space_2.c, src/tests/strip_space_2.c: Add file header
 	comments.
 
-2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* INSTALL: Correct Cmake command.
 
-2009-01-15  Matthew Mundell <matt@mundell.ukfsn.org>
+2009-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Start XML OMP handling.
 
@@ -14555,7 +14599,7 @@
 
 	* INSTALL: Added information about the prefix setting for cmake.
 
-2008-12-22  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Enable testing.
 
@@ -14570,17 +14614,17 @@
 	(process_omp_server_input): Correct from_start and input updating in
 	<|> field loop.  Correct and update call to strip_space.
 
-2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (process_omp_server_input): Improve open port number
 	parsing.
 
-2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (serve_otp): Use a flag instead of a goto when
 	writing to the fd.
 
-2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add server PORT command handling.
 
@@ -14590,22 +14634,22 @@
 	(port_protocol_t, port_t): New types.
 	(process_omp_server_input): Add PORT handling.
 
-2008-12-19  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Convert tabs to spaces.
 
-2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (write_to_client, write_to_server): New functions.
 	(serve_omp): Describe and simplify the select loop.  Move writing code
 	out to new functions write_to_client and write_to_server.
 
-2008-12-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Drop the OVAS_SSL directive in favour of always
 	compiling secure transmission.
 
-2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: (strip_space): Correct terminating check.
 	(make_task, serve_client): Replace goto loops with structured loops.
@@ -14614,17 +14658,17 @@
 	(process_omp_server_input): Finish TIME HOST_END handling.  Move the
 	out of memory destination to be a fail case.
 
-2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: (set_server_state): New function.
 	(process_omp_server_input): Always set the server state via
 	set_server_state, to reduce the amount of tracing code.
 
-2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Replace \return with @return in comment docs.
 
-2008-12-16  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (current_server_task): New variable.
 	(set_task_ports): New function.
@@ -14634,41 +14678,41 @@
 	(process_omp_server_input): Turn off messages tracing.  Add TIME and
 	STATUS message handling.
 
-2008-12-12  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (read_from_client, read_from_server
 	read_protocol): Improve function docs.
 
-2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Bring code documentation up to date.
 
-2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (process_omp_client_input): Replace use of asprintf
 	with g_strdup_printf.
 
-2008-12-11  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Prefix paths in variables with CMAKE_INSTALL_PREFIX.
 
 	* src/CMakeLists.txt: Drop hard coded include paths.
 
-2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* openvasmd.c: Convert tabs to spaces.
 
-2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* openvasmd.c (OPENVASMD_ADDRESS): Remove.
 	(main): Bind to INADDR_ANY by default.
 
-2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* openvasmd.c (serve_otp, read_protocol, serve_client):
 	Drop EAGAIN and EINTR checks from OVAL_SSL cases.
 
-2008-12-10  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	After selecting, ensure that all input is read before the fd is
 	selected again.  Start handling server input: preferences, plugins
@@ -14709,7 +14753,7 @@
 	maybe_free_server_rules, make_server_rules, add_server_rule,
 	read_from_client, read_from_server): New functions.
 
-2008-12-03  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add more OMP commands, start adding server communication.
 
@@ -14730,7 +14774,7 @@
 	(accept_and_maybe_fork): Add client socket shutdowns.  Move client socket
 	close out of OVAS_SSL case.
 
-2008-11-27  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add OMP commands OTP_VERSION, LOGIN and NEW_TASK.
 
@@ -14740,7 +14784,7 @@
 	(serve_omp): Handle OTP_VERSION, LOGIN and NEW_TASK.
 	Convert tabs to spaces.
 
-2008-11-26  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add choosing of protocol based on first message.
 
@@ -14750,11 +14794,11 @@
 	of serve_omp.
 	(serve_omp): Move OTP code to serve_otp.
 
-2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README: Update for new build system.
 
-2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/CMakeLists.txt: Ensure html/ exists.
 
@@ -14762,7 +14806,7 @@
 
 	* doc/openvasmd.8.xml: Add header comment.
 
-2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add cmake build support and a manpage.
 
@@ -14775,7 +14819,7 @@
 
 	* doc/footer.html, doc/Doxyfile: New (moved from ..).
 
-2008-11-21  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Flesh out \mainpage.  Add parameters to function
 	docs.  Clean up docs a little.
@@ -14785,13 +14829,13 @@
 
 	* README: Fixed typo.
 
-2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmc.c: Add Doxygen documentation.
 
 	* Doxyfile, footer.html: New.
 
-2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Drop the *_PORT_OVERRIDE directives.  Turn off
 	tracing.
@@ -14800,7 +14844,7 @@
 
 	* src/Makefile: Add flags for glib.
 
-2008-11-17  Matthew Mundell <matt@mundell.ukfsn.org>
+2008-11-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c: Rename directives for consistency.
 

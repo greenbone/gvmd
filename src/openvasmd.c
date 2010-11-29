@@ -3,7 +3,7 @@
  * Description: Main module for OpenVAS Manager: the system daemon.
  *
  * Authors:
- * Matthew Mundell <matt@mundell.ukfsn.org>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009, 2010 Greenbone Networks GmbH

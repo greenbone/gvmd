@@ -3,7 +3,7 @@
  * Description: Test openvas_strip_space on "abcd".
  *
  * Authors:
- * Matthew Mundell <matt@mundell.ukfsn.org>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2008 Greenbone Networks GmbH

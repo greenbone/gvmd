@@ -3,7 +3,7 @@
 # Description: CMakefile for the tests of the OpenVAS Manager program
 #
 # Authors:
-# Matthew Mundell <matt@mundell.ukfsn.org>
+# Matthew Mundell <matthew.mundell@greenbone.net>
 #
 # Copyright:
 # Copyright (C) 2009 Greenbone Networks GmbH
