@@ -14505,6 +14505,8 @@ nvts_md5sum ()
 /**
  * @brief Set the md5sum of the plugins in the plugin cache.
  *
+ * @param[in]  md5sum  New md5sum.
+ *
  * Also queue an update to the nvti cache.
  */
 void

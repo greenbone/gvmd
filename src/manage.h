@@ -1499,12 +1499,12 @@ lookup_report_format (const char*, report_format_t*);
  */
 typedef struct
 {
-  gchar *fallback;
-  gchar *name;
-  gchar *type;
-  gchar *type_max;
-  gchar *type_min;
-  gchar *value;
+  gchar *fallback;  ///< Fallback value.
+  gchar *name;      ///< Name.
+  gchar *type;      ///< Type (boolean, string, integer, ...).
+  gchar *type_max;  ///< Maximum value for integer type.
+  gchar *type_min;  ///< Minimum value for integer type.
+  gchar *value;     ///< Value of param.
 } create_report_format_param_t;
 
 int

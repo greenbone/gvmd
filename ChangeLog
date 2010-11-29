@@ -1,5 +1,11 @@
 2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_nvts_md5sum): Doc arg.
+
+	* src/manage.h (create_report_format_param_t): Doc fields.
+
+2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/HTML/HTML.xsl (rnc-preamble): New template.
 	(protocol): Add RNC preamble section.  Adjust index numbers accordingly.
 
