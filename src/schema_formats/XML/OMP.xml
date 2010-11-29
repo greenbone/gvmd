@@ -249,6 +249,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <any><e>ele</e></any>
         </g>
       </or>
+      <any><e>example</e></any>
     </pattern>
     <ele>
       <name>name</name>
@@ -281,6 +282,35 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>response</name>
       <type>pattern</type>
+    </ele>
+    <ele>
+      <name>example</name>
+      <pattern>
+        <o><e>summary</e></o>
+        <o><e>description</e></o>
+        <e>request</e>
+        <e>response</e>
+      </pattern>
+      <ele>
+        <name>summary</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>description</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>request</name>
+        <summary>Example request</summary>
+        <description>This can actually contain any XML</description>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>response</name>
+        <summary>Response to example request</summary>
+        <description>This can actually contain any XML</description>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>type</name>

@@ -836,6 +836,29 @@ pattern_t
 </li>
 </ul>
 </li>
+<li>
+          &lt;<b>example</b>&gt;
+          *<ul style="list-style: none">
+<li>
+          &lt;<b>summary</b>&gt;
+          ?<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>description</b>&gt;
+          ?<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>request</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Example request.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>response</b>&gt;
+          <div style="margin-left: 15px; display: inline;">Response to example request.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul></li></ul>
 <h4>5.8.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>command_definition
@@ -848,6 +871,7 @@ pattern_t
            &amp; command_definition_response )
            | ( command_definition_type
            &amp; command_definition_ele* ) )
+       &amp; command_definition_example*
      }
 
 command_definition_name
@@ -878,6 +902,39 @@ command_definition_description_p
 command_definition_pattern = pattern
 
 command_definition_response = pattern
+
+command_definition_example
+ = element example
+     {
+       command_definition_example_summary?
+       &amp; command_definition_example_description?
+       &amp; command_definition_example_request
+       &amp; command_definition_example_response
+     }
+
+command_definition_example_summary
+ = element summary
+     {
+       text
+     }
+
+command_definition_example_description
+ = element description
+     {
+       text
+     }
+
+command_definition_example_request
+ = element request
+     {
+       text
+     }
+
+command_definition_example_response
+ = element response
+     {
+       text
+     }
 
 command_definition_type
  = element type
