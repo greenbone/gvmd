@@ -3,9 +3,9 @@
  * Description: LSC user credentials package generation.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@intevation.de>
- * Michael Wiegand <michael.wiegand@intevation.de>
- * Felix Wolfsteller <felix.wolfsteller@intevation.de>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
+ * Michael Wiegand <michael.wiegand@greenbone.net>
+ * Felix Wolfsteller <felix.wolfsteller@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

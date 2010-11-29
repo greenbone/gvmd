@@ -3,7 +3,7 @@
  * Description: Test OMP CREATE_TASK with rcfile, target and config.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@intevation.de>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

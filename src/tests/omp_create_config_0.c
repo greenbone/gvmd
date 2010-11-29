@@ -3,7 +3,7 @@
  * Description: Test the OMP CREATE_CONFIG command.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@intevation.de>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

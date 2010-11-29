@@ -3,7 +3,7 @@
  * Description: Test OMP AUTHENTICATE, where the username includes a quote.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@intevation.de>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2009 Greenbone Networks GmbH

@@ -3,7 +3,7 @@
  * Description: Manager Manage library: SQL backend headers.
  *
  * Authors:
- * Matthew Mundell <matthew.mundell@intevation.de>
+ * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
  * Copyright (C) 2010 Greenbone Networks GmbH
