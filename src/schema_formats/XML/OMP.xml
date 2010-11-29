@@ -189,6 +189,50 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </pattern>
   </element>
   <element>
+    <name>pattern</name>
+    <summary>The pattern element of a command or command descendant</summary>
+    <description>
+      It's actually either a 't' element, or the word "text", or "".
+    </description>
+    <pattern>
+      <any><e>attrib</e></any>
+      <any><e>c</e></any>
+      <any><e>e</e></any>
+      <any><e>r</e></any>
+      <any><e>o</e></any>
+      <any><e>g</e></any>
+      <any><e>any</e></any>
+      <o><e>t</e></o>
+      text
+    </pattern>
+    <ele>
+      <name>attrib</name>
+      <summary>An attribute</summary>
+      <pattern>
+        <e>name</e>
+        <e>type</e>
+        <e>required</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <pattern><t>type_name</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <pattern><t>type_name</t></pattern>
+      </ele>
+      <ele>
+        <name>required</name>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>t</name>
+      <summary>The type of the text of the element</summary>
+      <pattern><t>type_name</t></pattern>
+    </ele>
+  </element>
+  <element>
     <name>command_definition</name>
     <summary>Definition of a command in OMP describing HELP command</summary>
     <pattern>
@@ -196,7 +240,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>summary</e></o>
       <o><e>description</e></o>
       <or>
-        <e>pattern</e>
+        <g>
+          <e>pattern</e>
+          <e>response</e>
+        </g>
         <g>
           <e>type</e>
           <any><e>ele</e></any>
@@ -229,46 +276,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>pattern</name>
-      <description>
-        It's actually either a 't' element, or the word "text", or "".
-      </description>
-      <pattern>
-        <any><e>attrib</e></any>
-        <any><e>c</e></any>
-        <any><e>e</e></any>
-        <any><e>r</e></any>
-        <any><e>o</e></any>
-        <any><e>g</e></any>
-        <any><e>any</e></any>
-        <o><e>t</e></o>
-        text
-      </pattern>
-      <ele>
-        <name>attrib</name>
-        <summary>An attribute</summary>
-        <pattern>
-          <e>name</e>
-          <e>type</e>
-          <e>required</e>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern><t>type_name</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <pattern><t>type_name</t></pattern>
-        </ele>
-        <ele>
-          <name>required</name>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>t</name>
-        <summary>The type of the text of the element</summary>
-        <pattern><t>type_name</t></pattern>
-      </ele>
+      <type>pattern</type>
+    </ele>
+    <ele>
+      <name>response</name>
+      <type>pattern</type>
     </ele>
     <ele>
       <name>type</name>
@@ -278,7 +290,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>ele</name>
       <summary>An element</summary>
-      <description>This is a recursive definition</description>
+      <description>
+        <p>
+          This is a recursive definition.
+        </p>
+        <p>
+          command_definition actually includes an extra response element, but
+          it's convenient to use it for the elements.
+        </p>
+      </description>
       <type>command_definition</type>
     </ele>
   </element>

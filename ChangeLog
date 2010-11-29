@@ -1,3 +1,10 @@
+2010-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add COMMAND/RESPONSE to the schema case
+	of HELP.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2010-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (http_get, manage_report, manage_send_report)

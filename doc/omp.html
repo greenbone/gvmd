@@ -116,6 +116,10 @@
 <td id="index"><div style="margin-left: 15px;">Pattern item indicating "any number of"..</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#element_pattern">pattern</a></td>
+<td id="index"><div style="margin-left: 15px;">The pattern element of a command or command descendant.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#element_command_definition">command_definition</a></td>
 <td id="index"><div style="margin-left: 15px;">Definition of a command in OMP describing HELP command.</div></td>
 </tr>
@@ -671,36 +675,15 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_command_definition">5.7
-        Element <tt>command_definition</tt>
+<div><h3 id="element_pattern">5.7
+        Element <tt>pattern</tt>
 </h3></div>
-<p>In short: Definition of a command in OMP describing HELP command.</p>
+<p>In short: The pattern element of a command or command descendant.</p>
+<p>
+      It's actually either a 't' element, or the word "text", or "".
+    </p>
 <h4>5.7.1 Structure</h4>
 <ul style="list-style: none"><li><ul style="list-style: none">
-<li>
-          &lt;<b>name</b>&gt;
-          <div style="margin-left: 15px; display: inline;">The name of the command.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-          &lt;<b>summary</b>&gt;
-          ?<div style="margin-left: 15px; display: inline;">A summary of the command.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-          &lt;<b>description</b>&gt;
-          ?<div style="margin-left: 15px; display: inline;">A description of the command.</div>
-<ul style="list-style: none"><li>
-          &lt;<b>p</b>&gt;
-          *<div style="margin-left: 15px; display: inline;">A paragraph.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-<i>One of</i><ul style="list-style: none">
-<li>
-          &lt;<b>pattern</b>&gt;
-          <ul style="list-style: none">
 <li>
           &lt;<b>attrib</b>&gt;
           *<div style="margin-left: 15px; display: inline;">An attribute.</div>
@@ -748,6 +731,93 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
           ?<div style="margin-left: 15px; display: inline;">The type of the text of the element.</div>
 <ul style="list-style: none"></ul>
 </li>
+</ul></li></ul>
+<h4>5.7.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>pattern
+ = element pattern
+     {
+       text
+       &amp; pattern_attrib*
+       &amp; c*
+       &amp; e*
+       &amp; r*
+       &amp; o*
+       &amp; g*
+       &amp; any*
+       &amp; pattern_t?
+     }
+
+pattern_attrib
+ = element attrib
+     {
+       pattern_attrib_name
+       &amp; pattern_attrib_type
+       &amp; pattern_attrib_required
+     }
+
+pattern_attrib_name
+ = element name
+     {
+       type_name
+     }
+
+pattern_attrib_type
+ = element type
+     {
+       type_name
+     }
+
+pattern_attrib_required
+ = element required
+     {
+       boolean
+     }
+
+pattern_t
+ = element t
+     {
+       type_name
+     }
+</pre></div></div>
+</div>
+<div>
+<div><h3 id="element_command_definition">5.8
+        Element <tt>command_definition</tt>
+</h3></div>
+<p>In short: Definition of a command in OMP describing HELP command.</p>
+<h4>5.8.1 Structure</h4>
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+          &lt;<b>name</b>&gt;
+          <div style="margin-left: 15px; display: inline;">The name of the command.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>summary</b>&gt;
+          ?<div style="margin-left: 15px; display: inline;">A summary of the command.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>description</b>&gt;
+          ?<div style="margin-left: 15px; display: inline;">A description of the command.</div>
+<ul style="list-style: none"><li>
+          &lt;<b>p</b>&gt;
+          *<div style="margin-left: 15px; display: inline;">A paragraph.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+<i>One of</i><ul style="list-style: none">
+<li>
+<i>The group</i><b></b><ul style="list-style: none">
+<li>
+          &lt;<b>pattern</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
+<li>
+          &lt;<b>response</b>&gt;
+          <ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -767,14 +837,15 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </ul>
 </li>
 </ul></li></ul>
-<h4>5.7.2 RNC</h4>
+<h4>5.8.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>command_definition
  = element command_definition
      {
        command_definition_name
        &amp; command_definition_summary?
        &amp; command_definition_description?
-       &amp; ( command_definition_pattern
+       &amp; ( ( command_definition_pattern
+           &amp; command_definition_response )
            | ( command_definition_type
            &amp; command_definition_ele* ) )
      }
@@ -804,51 +875,9 @@ command_definition_description_p
        text
      }
 
-command_definition_pattern
- = element pattern
-     {
-       text
-       &amp; command_definition_pattern_attrib*
-       &amp; c*
-       &amp; e*
-       &amp; r*
-       &amp; o*
-       &amp; g*
-       &amp; any*
-       &amp; command_definition_pattern_t?
-     }
+command_definition_pattern = pattern
 
-command_definition_pattern_attrib
- = element attrib
-     {
-       command_definition_pattern_attrib_name
-       &amp; command_definition_pattern_attrib_type
-       &amp; command_definition_pattern_attrib_required
-     }
-
-command_definition_pattern_attrib_name
- = element name
-     {
-       type_name
-     }
-
-command_definition_pattern_attrib_type
- = element type
-     {
-       type_name
-     }
-
-command_definition_pattern_attrib_required
- = element required
-     {
-       boolean
-     }
-
-command_definition_pattern_t
- = element t
-     {
-       type_name
-     }
+command_definition_response = pattern
 
 command_definition_type
  = element type

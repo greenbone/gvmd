@@ -227,6 +227,58 @@ any
            | g )
      }
 
+## Element Type pattern
+##
+## The pattern element of a command or command descendant.
+
+pattern
+ = element pattern
+     {
+       text
+       & pattern_attrib*
+       & c*
+       & e*
+       & r*
+       & o*
+       & g*
+       & any*
+       & pattern_t?
+     }
+
+# An attribute.
+pattern_attrib
+ = element attrib
+     {
+       pattern_attrib_name
+       & pattern_attrib_type
+       & pattern_attrib_required
+     }
+
+pattern_attrib_name
+ = element name
+     {
+       type_name
+     }
+
+pattern_attrib_type
+ = element type
+     {
+       type_name
+     }
+
+pattern_attrib_required
+ = element required
+     {
+       boolean
+     }
+
+# The type of the text of the element.
+pattern_t
+ = element t
+     {
+       type_name
+     }
+
 ## Element Type command_definition
 ##
 ## Definition of a command in OMP describing HELP command.
@@ -237,7 +289,8 @@ command_definition
        command_definition_name
        & command_definition_summary?
        & command_definition_description?
-       & ( command_definition_pattern
+       & ( ( command_definition_pattern
+           & command_definition_response )
            | ( command_definition_type
            & command_definition_ele* ) )
      }
@@ -271,53 +324,9 @@ command_definition_description_p
        text
      }
 
-command_definition_pattern
- = element pattern
-     {
-       text
-       & command_definition_pattern_attrib*
-       & c*
-       & e*
-       & r*
-       & o*
-       & g*
-       & any*
-       & command_definition_pattern_t?
-     }
+command_definition_pattern = pattern
 
-# An attribute.
-command_definition_pattern_attrib
- = element attrib
-     {
-       command_definition_pattern_attrib_name
-       & command_definition_pattern_attrib_type
-       & command_definition_pattern_attrib_required
-     }
-
-command_definition_pattern_attrib_name
- = element name
-     {
-       type_name
-     }
-
-command_definition_pattern_attrib_type
- = element type
-     {
-       type_name
-     }
-
-command_definition_pattern_attrib_required
- = element required
-     {
-       boolean
-     }
-
-# The type of the text of the element.
-command_definition_pattern_t
- = element t
-     {
-       type_name
-     }
+command_definition_response = pattern
 
 # The type of the element.
 command_definition_type
