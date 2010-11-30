@@ -136,7 +136,7 @@ integer = xsd:integer
 levels = xsd:token { pattern = "h?m?l?g?d?" }
 # A name.
 name = xsd:string
-# An Object Identifier (OID)..
+# An Object Identifier (OID).
 oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 # A string describing an order for sorting.
 sort_order = text
@@ -216,7 +216,7 @@ g
 
 ## Element Type any
 ##
-## Pattern item indicating "any number of"..
+## Pattern item indicating "any number of".
 
 any
  = element any

@@ -87,7 +87,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </type>
   <type>
     <name>oid</name>
-    <summary>An Object Identifier (OID).</summary>
+    <summary>An Object Identifier (OID)</summary>
     <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
   </type>
   <type>
@@ -178,7 +178,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </element>
   <element>
     <name>any</name>
-    <summary>Pattern item indicating "any number of".</summary>
+    <summary>Pattern item indicating "any number of"</summary>
     <pattern>
       <or>
         <e>c</e>
