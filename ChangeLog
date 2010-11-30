@@ -1,5 +1,12 @@
 2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/HTML/HTML.xsl (structure-line): Handle the global
+	element case separately, so that summaries show up.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2010-11-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Remove fullstops from summaries.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

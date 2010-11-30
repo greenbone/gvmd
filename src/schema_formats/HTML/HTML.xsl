@@ -464,21 +464,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:variable name="element-name" select="text()"/>
           <xsl:variable name="new-line-element"
                         select="$line-element/ele[name=$element-name]"/>
-          &lt;<b><xsl:value-of select="text()"/></b>&gt;
-          <xsl:value-of select="$element-suffix"/>
-          <xsl:if test="$new-line-element/type">
-            <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$new-line-element/type" mode="element"/>)</div>
-          </xsl:if>
-          <xsl:if test="$new-line-element/summary">
-            <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($new-line-element/summary)"/>.</div>
-          </xsl:if>
-          <ul style="list-style: none">
-            <xsl:for-each select="$new-line-element/pattern/*">
-              <xsl:call-template name="structure-line">
-                <xsl:with-param name="line-element" select="$new-line-element"/>
-              </xsl:call-template>
-            </xsl:for-each>
-          </ul>
+          <xsl:choose>
+            <xsl:when test="$new-line-element">
+              &lt;<b><xsl:value-of select="text()"/></b>&gt;
+              <xsl:value-of select="$element-suffix"/>
+              <xsl:if test="$new-line-element/type">
+                <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$new-line-element/type" mode="element"/>)</div>
+              </xsl:if>
+              <xsl:if test="$new-line-element/summary">
+                <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($new-line-element/summary)"/>.</div>
+              </xsl:if>
+              <ul style="list-style: none">
+                <xsl:for-each select="$new-line-element/pattern/*">
+                  <xsl:call-template name="structure-line">
+                    <xsl:with-param name="line-element" select="$new-line-element"/>
+                  </xsl:call-template>
+                </xsl:for-each>
+              </ul>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:variable name="global-element"
+                            select="/protocol/element[name=$element-name]"/>
+              &lt;<b><xsl:value-of select="text()"/></b>&gt;
+              <xsl:value-of select="$element-suffix"/>
+              <xsl:if test="$global-element/type">
+                <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$global-element/type" mode="element"/>)</div>
+              </xsl:if>
+              <xsl:if test="$global-element/summary">
+                <div style="margin-left: 15px; display: inline;"><xsl:value-of select="normalize-space($global-element/summary)"/>.</div>
+              </xsl:if>
+            </xsl:otherwise>
+          </xsl:choose>
         </li>
       </xsl:when>
       <xsl:when test="name() = 'g'">
