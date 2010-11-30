@@ -1,3 +1,25 @@
+openvas-manager 2.0+beta2 (2010-12-01)
+
+This is the second beta version of the upcoming 2.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.  Release 2.0 is part of OpenVAS 4, the next
+generation of the Open Vulnerability Assessment System.
+
+This release includes a fix for incorrect counting in the ports overview and
+features an improved protocol self-documentation, an improved logging
+infrastructure and a speed up for LaTeX and PDF report generation.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell and Michael Wiegand.
+
+Main changes since 2.0+beta2:
+* The protocol self-documentation has been improved.
+* A number of superfluous log messages has been downgraded or removed.
+* A bug which caused issues to be counted incorrectly in the ports overview has
+  been fixed.
+* The generation of PDF and LaTeX reports is now faster.
+
+
 openvas-manager 2.0+beta1 (2010-11-19)
 
 This is the first beta version of the upcoming 2.0 release of the
